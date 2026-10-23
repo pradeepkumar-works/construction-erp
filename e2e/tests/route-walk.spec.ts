@@ -8,7 +8,7 @@ import { SCREENS_DIR, WALK_ROLES, WALK_VIEWS, navHrefs, routesFile, stateFile, t
  * The route walk (UX item 89): every page in the sidebar, for each role whose sidebar differs, at 1440×900 and 390×844
  * (a touch screen) in the light and the dark theme, plus every tab of a project page for the project manager.
  *
- * The pages come from the app itself: one test per link in nav.ts and per tab key in the project page's source, and
+ * The pages come from the app itself: one test per sidebar link (the navigation tree) and per tab key in the project page's source, and
  * `route-walk.setup.ts` (one sign-in per role) saves the links each role's sidebar draws, which that role's test for
  * each view then walks (nothing is skipped). A new module is walked without editing this file. On each page:
  * - axe finds nothing at WCAG 2.2 AA (every view);
@@ -130,5 +130,5 @@ combos.slice(half).forEach(({ role, view }) => sidebarTest(role, view));
 test('every sidebar link is walked by at least one role', async () => {
   const walked = new Set(WALK_ROLES.flatMap(sidebarOf));
   const missed = navHrefs().filter((href) => !walked.has(href));
-  expect(missed, 'no role in WALK_ROLES (route-walk.ts) sees these nav.ts links; add one that does').toEqual([]);
+  expect(missed, 'no role in WALK_ROLES (route-walk.ts) sees these sidebar links; add one that does').toEqual([]);
 });

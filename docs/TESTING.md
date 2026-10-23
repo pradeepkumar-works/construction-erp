@@ -39,8 +39,9 @@ Every page in the sidebar, for each role whose sidebar differs (`WALK_ROLES` in 
 engineer, accounts, admin and the client's engineer), at 1440×900 and at 390×844 on a touch screen, in the light and the
 dark theme, plus every tab of a project page (`?tab=` keys) for pm@demo.com. The pages are not listed in the test:
 `route-walk.setup.ts` signs each role in once (saved sessions, no login per page) and keeps the links its sidebar draws
-from `components/shell/nav.ts`, and the tabs are read from the project page's source. A new module is walked as soon as
-it is in `nav.ts`, and the walk fails if no role in `WALK_ROLES` sees a link. On each page:
+from the navigation tree (`navSidebar` in `packages/shared/src/navigation.ts`, which `components/shell/nav.ts` draws), and
+the tabs are read from the project page's source. A new page or module screen is walked as soon as it is in the tree, and the
+walk fails if no role in `WALK_ROLES` sees a link. On each page:
 
 - axe at WCAG 2.2 AA (every view);
 - one `<h1>` and a tab title of its own, not just "Nirmaan" (1440, light);

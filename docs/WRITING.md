@@ -7,7 +7,7 @@ How the web app and the phone app word things. Short on purpose: when in doubt, 
 - **Sentence case** for everything: page titles, sidebar links, tabs, buttons, column heads, form labels, menu items
   ("Staff and leave", "Payroll inputs", "New purchase order"). Capitals only for names and abbreviations (GST, RA bill,
   DPR, Tally, Odisha). Write "and", not "&".
-- **One name per module**, the same in the sidebar (`components/shell/nav.ts`), the page's `PageHeader` title (and so the
+- **One name per module**, the same in the sidebar (the navigation tree, `packages/shared/src/navigation.ts`), the page's `PageHeader` title (and so the
   browser tab), the breadcrumb and Search. Pick the shorter one that is still clear: "Daily reports", not "Daily progress
   reports". A record's own heading names the record ("PO-2026-0012 · Tata Steel"), and its kind sits in the breadcrumb.
 - **Status words come from `@erp/shared`** (`SUBMISSION_STATUS_LABELS` and the other `…_LABELS`), so the web and the phone

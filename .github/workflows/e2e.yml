@@ -76,6 +76,10 @@ jobs:
           DATABASE_URL="$OWNER_URL" npx prisma migrate deploy
           DATABASE_URL="$OWNER_URL" npx tsx prisma/seed.ts > /dev/null
           psql "postgresql://erp_owner:owner@localhost:5432/erp" -c "ALTER ROLE erp_runtime LOGIN PASSWORD 'runtime'"
+      - name: Navigation tree opens real pages, with its icons, access checks and the Concord items placed
+        if: matrix.suite == 'flows'
+        working-directory: apps/web
+        run: npx tsx --tsconfig tsconfig.json scripts/nav-check.ts
       - name: Start the API as erp_runtime
         working-directory: apps/api
         run: |

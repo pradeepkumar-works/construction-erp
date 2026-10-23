@@ -16,8 +16,7 @@ test("a site engineer's sidebar has no finance module", async ({ page }) => {
   for (const name of ['Vendor bills', 'Payables', 'RA bills', 'Receivables', 'Books', 'GST registers', 'Tally export', 'Project cost', 'Payroll', 'Approvals']) {
     await expect(link(page, name)).toHaveCount(0);
   }
-  await expect(sidebar(page).getByRole('button', { name: 'Billing', exact: true })).toHaveCount(0);
-  await expect(sidebar(page).getByRole('button', { name: 'Accounts', exact: true })).toHaveCount(0);
+  for (const name of ['Client billing', 'Accounts']) await expect(sidebar(page).getByRole('button', { name, exact: true })).toHaveCount(0);
 });
 
 test("an accountant's sidebar has no site-only module", async ({ page }) => {
@@ -40,9 +39,9 @@ test('a closed section stays closed after a reload, and opens itself on one of i
   await expect(purchases()).toHaveAttribute('aria-expanded', 'false');
 
   // Arriving on one of its pages opens it, without forgetting it was closed.
-  await page.goto('/payables');
+  await page.goto('/vendor-bills');
   await expect(purchases()).toHaveAttribute('aria-expanded', 'true');
-  await expect(link(page, 'Payables')).toHaveAttribute('aria-current', 'page');
+  await expect(link(page, 'Vendor bills')).toHaveAttribute('aria-current', 'page');
   await page.goto('/');
   await expect(purchases()).toHaveAttribute('aria-expanded', 'false');
 });
@@ -67,7 +66,7 @@ test('Search with nothing typed shows a record opened lately', async ({ page }) 
 });
 
 test("each sidebar link is named like the page it opens", async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   await signIn(page, 'pm@demo.com');
   const links = await sidebar(page)
     .getByRole('link')

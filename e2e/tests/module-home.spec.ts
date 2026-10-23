@@ -8,11 +8,12 @@ type ModuleHome = {
 };
 
 /**
- * Module home pages (v6 item 98): each sidebar section leads with its overview. The project manager's Site home shows the
- * site figures and what waits for them there; accounts get the money figures of Purchases and none of the site ones; a
- * module a role does not use is not found.
+ * Module screens (v6 item 98, launcher phase 1): each sidebar section leads with its overview, a tile for each of the
+ * module's pages above its figures. The project manager's Site screen shows the site figures and what waits for them
+ * there; accounts get the money figures of Accounts and none of the site ones; a module a role does not use is not found,
+ * and a module with one page for the role opens that page.
  */
-test('each module has a home with its figures, what waits, and its pages', async ({ page }) => {
+test('each module has a screen with its tiles, figures and what waits', async ({ page }) => {
   const pm = await apiToken('pm@demo.com');
   const site = await api<ModuleHome>(pm, '/dashboard/modules/site');
   expect(site.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['dprToday', 'openRisks']));
@@ -20,8 +21,10 @@ test('each module has a home with its figures, what waits, and its pages', async
   expect(Number(dpr.value)).toBeLessThanOrEqual(dpr.of ?? 0);
 
   const accounts = await apiToken('accounts@demo.com');
-  const buying = await api<ModuleHome>(accounts, '/dashboard/modules/purchases');
-  expect(buying.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['payable', 'payableOverdue']));
+  const money = await api<ModuleHome>(accounts, '/dashboard/modules/accounts');
+  expect(money.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['payable', 'payableOverdue']));
+  const quality = await api<ModuleHome>(pm, '/dashboard/modules/quality');
+  expect(quality.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['openNcrs', 'incidents']));
   const accountsSite = await api<ModuleHome>(accounts, '/dashboard/modules/site');
   expect(accountsSite.figures.map((f) => f.key)).not.toContain('dprToday');
   await expect(api(pm, '/dashboard/modules/nowhere')).rejects.toThrow(/404/);
@@ -34,14 +37,34 @@ test('each module has a home with its figures, what waits, and its pages', async
   await expect(page).toHaveTitle(/^Site overview/);
   await expect(page.getByText('Daily reports today')).toBeVisible();
   await expect(page.getByText('Waiting for you')).toBeVisible();
-  // The module's pages, each a card with what it is for.
-  const pages = page.getByRole('region', { name: /^Pages in site$/i }).or(page.locator('.ant-card').filter({ hasText: 'Pages in site' }));
-  await expect(pages.getByRole('link', { name: /Daily reports/ })).toBeVisible();
+  // The module's pages, each a tile with what it is for; the arrow keys move between them.
+  const pages = page.getByRole('group', { name: 'Pages in site' });
+  const first = pages.getByRole('link').first();
+  await expect(first).toContainText('Daily reports');
+  await first.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(pages.getByRole('link').nth(1)).toBeFocused();
+  await expect(pages.locator('a[tabindex="0"]')).toHaveCount(1);
   if (site.waiting.length) {
     await page.getByRole('link', { name: new RegExp(`${site.waiting[0].count} .* to approve`) }).first().click();
     await expect(page).toHaveURL(new RegExp(`/approvals\\?type=${site.waiting[0].type}`));
   }
 
+  // A project tab tile with no project chosen asks for the project.
+  await page.goto('/modules/projects');
+  const projects = page.getByRole('group', { name: 'Pages in projects' });
+  await projects.getByRole('button', { name: /BOQ and activities/ }).click();
+  const dialog = page.getByRole('dialog', { name: /for a project/ });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('combobox', { name: 'Project' }).click();
+  await page.locator('.ant-select-item-option').first().click();
+  await dialog.getByRole('button', { name: 'Open' }).click();
+  await expect(page).toHaveURL(/\/projects\/[\w-]+\?tab=boq$/);
+
   await page.goto('/modules/nowhere');
   await expect(page.getByText('This module is not in your menu')).toBeVisible();
+
+  // Payroll has one page for the project manager (labour contractors' man-days): its screen opens that page.
+  await page.goto('/modules/payroll');
+  await expect(page).toHaveURL(/\/payroll\?tab=contractors$/);
 });

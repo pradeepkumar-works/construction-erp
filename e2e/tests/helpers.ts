@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type BrowserContext, type Locator, type Page } from '@playwright/test';
+import { ROLE_KEYS } from '../../packages/shared/src/enums';
+import { navSidebar } from '../../packages/shared/src/navigation';
 
 export const API_URL = process.env.E2E_API_URL ?? 'http://localhost:4000/api';
 export const PASSWORD = 'password123';
@@ -200,14 +202,20 @@ export function measureTargets(min: number): { targets: SizeFinding[]; text: Siz
 }
 
 /*
- * The web app's own source, read rather than copied, so the checks follow it: the sidebar's links (nav.ts), the project
- * page's tabs, the product name and the Web Vitals budgets.
+ * The web app's own source, read rather than copied, so the checks follow it: the sidebar's links (the navigation tree in
+ * `@erp/shared` and the guests' links in nav.ts), the project page's tabs, the product name and the Web Vitals budgets.
  */
 const webSource = (file: string) => fs.readFileSync(path.resolve(__dirname, '../../apps/web/src', file), 'utf8');
 
-/** Every page the sidebar can link to (`components/shell/nav.ts`), for any role. */
+/**
+ * Every page the sidebar can link to, for any role: the tree's sidebar (`navSidebar`) for each role, with and without
+ * approval rights and as a platform admin on a billed server, plus the guests' links written out in nav.ts.
+ */
 export function navHrefs(): string[] {
-  return [...new Set([...webSource('components/shell/nav.ts').matchAll(/href:\s*(['"`])(\/[^'"`$]*)\1/g)].map((m) => m[2]))];
+  const variants = [{}, { approvalRights: [] }, { platformAdmin: true, billing: {} }];
+  const tree = ROLE_KEYS.flatMap((roleKey) => variants.flatMap((v) => navSidebar({ roleKey, ...v }).flatMap((s) => s.links.map((l) => l.href))));
+  const guests = [...webSource('components/shell/nav.ts').matchAll(/href:\s*(['"`])(\/[^'"`$]*)\1/g)].map((m) => m[2]);
+  return [...new Set([...tree, ...guests])];
 }
 
 /** The project page's tab keys, the `?tab=` values (`app/(app)/projects/[id]/page.tsx`). */

@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Empty, Flex, Grid, Result, Row, Statistic, Typography, theme } from 'antd';
-import { CheckSquareOutlined, HourglassOutlined, RightOutlined, RollbackOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Flex, Grid, Result, Row, Statistic, Typography, theme } from 'antd';
+import { CheckSquareOutlined, HourglassOutlined, RollbackOutlined } from '@ant-design/icons';
 import type { ModuleFigureDto, ModuleHomeDto, ModuleKey } from '@erp/shared';
-import { MODULE_INTROS, MODULE_LABELS, SUBMISSION_TYPE_LABELS, canManageStaff, canViewEmployeePrivate, submissionListHref } from '@erp/shared';
+import { MODULE_INTROS, MODULE_LABELS, MODULE_SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useModuleHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
@@ -17,7 +17,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { KpiTile, kpiColumns } from '@/components/home/KpiTile';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { HrDashboard } from '@/components/staff/HrDashboard';
-import { NAV_DESCRIPTIONS, moduleSection, type NavItem } from '@/components/shell/nav';
+import { TileGrid, tileEntries } from '@/components/launcher/TileGrid';
 
 const days = (n: number) => (n === 0 ? 'today' : `${n} day${n === 1 ? '' : 's'}`);
 
@@ -89,61 +89,39 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
   );
 }
 
-/** A page of the module: its icon, name and what it is for, the whole card a link. */
-function PageCard({ item }: { item: NavItem }) {
-  const { token } = theme.useToken();
-  const Icon = item.icon;
-  return (
-    <Link href={item.href} style={{ display: 'block', height: '100%' }}>
-      <Card size="small" hoverable style={{ height: '100%' }}>
-        <Flex gap={token.marginSM} align="flex-start">
-          <span
-            aria-hidden
-            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none', width: token.controlHeight, height: token.controlHeight, borderRadius: token.borderRadiusLG, background: token.colorPrimaryBg, color: token.colorPrimary, fontSize: token.fontSizeLG }}
-          >
-            <Icon />
-          </span>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <Typography.Text strong style={{ display: 'block' }}>
-              {item.label}
-            </Typography.Text>
-            {NAV_DESCRIPTIONS[item.href] && (
-              <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
-                {NAV_DESCRIPTIONS[item.href]}
-              </Typography.Text>
-            )}
-          </div>
-          <RightOutlined aria-hidden style={{ color: token.colorTextTertiary, marginTop: token.marginXXS }} />
-        </Flex>
-      </Card>
-    </Link>
-  );
-}
-
 /**
- * A module's home page (v6 item 98): its figures for the header's project (or every project the person sees), what
- * waits for them in the module, the module's pages with a line on each, and what they can start in it.
+ * A module's screen (v6 item 98, launcher phase 1): a tile for each of the module's pages this person may open, then its
+ * figures for the header's project (or every project they see), what waits for them in it, and what they can start there.
+ * A module where they see one page only opens that page.
  */
 export function ModuleHome({ moduleKey }: { moduleKey: string }) {
   const { user } = useAuth();
   const router = useRouter();
   const [projectId] = useProjectScope();
-  const section = user ? moduleSection(user, moduleKey) : null;
-  const { data, isLoading, error, refetch } = useModuleHome(moduleKey, projectId, !!section);
+  const node = navNode(moduleKey);
+  const visible = !!user && !!node && isModuleKey(moduleKey) && canSeeNav(user, node);
+  const tiles = visible ? navTilesFor(user, moduleKey) : [];
+  const { data, isLoading, error, refetch } = useModuleHome(moduleKey, projectId, visible && tiles.length > 1);
   const screens = Grid.useBreakpoint();
 
-  if (!user) return <PageSkeleton shape="home" />;
-  if (!section || !section.module)
+  // One page only: no screen of one tile, that page opens instead.
+  const only = tiles.length === 1 ? navDestination(tiles[0]) : null;
+  const onlyHref = only?.kind === 'page' ? only.href : only?.kind === 'project' && projectId ? projectTabHref(projectId, only.tab, only.query) : null;
+  useEffect(() => {
+    if (onlyHref) router.replace(onlyHref);
+  }, [onlyHref, router]);
+
+  if (!user || onlyHref) return <PageSkeleton shape="home" />;
+  if (!visible || !isModuleKey(moduleKey))
     return (
       <div className="page-container">
         <PageHeader title="Module" docTitle="Module not found" />
         <Result status="404" title="This module is not in your menu" subTitle="Your role does not use it. Choose a page from the menu on the left." />
       </div>
     );
-  const key: ModuleKey = section.module;
+  const key: ModuleKey = moduleKey;
   const label = MODULE_LABELS[key];
-  const pages = section.items.filter((i) => !i.overview);
-  const paths = new Set(pages.map((p) => p.href));
+  const paths = new Set(tiles.map(navDestination).flatMap((d) => (d?.kind === 'page' ? [d.href.split('?')[0]] : [])));
   const starts = newEntriesFor(user)
     .flat()
     .filter((e) => paths.has('/' + e.href.split(/[/?]/)[1]));
@@ -157,48 +135,39 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
     </>
   ) : undefined;
   const perRow = kpiColumns(data?.figures.length ?? 4, screens);
+  const waits = MODULE_SUBMISSION_TYPES[key].length > 0;
 
   return (
     <div className="page-container">
       <PageHeader title={`${label} overview`} subtitle={MODULE_INTROS[key]} extra={actions} />
-      {isLoading && <PageSkeleton shape="home" header={false} />}
-      {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {data && (
-        <Flex vertical gap={16}>
-          {data.figures.length > 0 && (
-            <section aria-label={`${label} figures`}>
-              <Row gutter={[16, 16]}>
-                {data.figures.map((f) => (
-                  <Col key={f.key} flex={`0 0 ${100 / perRow}%`}>
-                    <Figure f={f} />
-                  </Col>
-                ))}
-              </Row>
-            </section>
-          )}
+      <Flex vertical gap={24}>
+        <TileGrid entries={tileEntries(tiles)} label={`Pages in ${label.toLowerCase()}`} />
+        {isLoading && <PageSkeleton shape="home" header={false} />}
+        {error && <QueryError error={error} onRetry={() => refetch()} />}
+        {data && (data.figures.length > 0 || waits) && (
           <Row gutter={[16, 16]}>
-            <Col xs={24} lg={9}>
-              <Waiting data={data} label={label} />
-            </Col>
-            <Col xs={24} lg={15}>
-              <Card size="small" title={`Pages in ${label.toLowerCase()}`}>
-                {pages.length ? (
-                  <Row gutter={[12, 12]}>
-                    {pages.map((p) => (
-                      <Col key={p.href} xs={24} md={12}>
-                        <PageCard item={p} />
+            {data.figures.length > 0 && (
+              <Col xs={24} xl={waits ? 15 : 24}>
+                <section aria-label={`${label} figures`}>
+                  <Row gutter={[16, 16]}>
+                    {data.figures.map((f) => (
+                      <Col key={f.key} flex={`0 0 ${100 / (waits && screens.xl ? Math.min(perRow, 3) : perRow)}%`}>
+                        <Figure f={f} />
                       </Col>
                     ))}
                   </Row>
-                ) : (
-                  <Empty description="No pages" />
-                )}
-              </Card>
-            </Col>
+                </section>
+              </Col>
+            )}
+            {waits && (
+              <Col xs={24} xl={data.figures.length > 0 ? 9 : 12}>
+                <Waiting data={data} label={label} />
+              </Col>
+            )}
           </Row>
-          {key === 'people' && (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) && <HrDashboard />}
-        </Flex>
-      )}
+        )}
+        {key === 'people' && (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) && <HrDashboard />}
+      </Flex>
     </div>
   );
 }

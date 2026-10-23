@@ -30,8 +30,8 @@ test('sections fold and stay folded, and the rail opens a section beside it', as
 
   await page.getByRole('button', { name: 'Collapse sidebar' }).click();
   await page.getByRole('button', { name: 'Site', exact: true }).click();
-  await page.getByRole('link', { name: 'Quality' }).click();
-  await expect(page).toHaveURL(/\/inspections$/);
+  await page.getByRole('link', { name: 'Daily reports', exact: true }).click();
+  await expect(page).toHaveURL(/\/dpr$/);
   await page.reload();
   await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible();
 });

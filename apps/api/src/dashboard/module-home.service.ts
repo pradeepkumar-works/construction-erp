@@ -116,8 +116,12 @@ export class ModuleHomeService {
     switch (key) {
       case 'site':
         return this.site(user, today, projectId);
+      case 'quality':
+        return this.quality(user, today, projectId);
       case 'materials':
-        return this.materials(user, today, projectId);
+        return this.materials(user, projectId);
+      case 'plant':
+        return this.plant(user, today, projectId);
       case 'purchases':
         return this.purchases(user, projectId);
       case 'billing':
@@ -125,9 +129,12 @@ export class ModuleHomeService {
       case 'rmc':
         return this.rmc(user, today, projectId);
       case 'accounts':
-        return this.accounts(user);
+        return [...(await this.accounts(user, projectId)), ...(await this.bookFigures(user))];
       case 'people':
         return this.people(user, today, projectId);
+      default:
+        // Projects, Documents, Subcontracts, Payroll, Reports and Admin show their pages and what waits, no figures yet.
+        return [];
     }
   }
 
@@ -141,15 +148,12 @@ export class ModuleHomeService {
     const onSite = canReportSafety(role);
     const where = this.where(user, projectId);
     const day = parseDate(today);
-    const monthStart = parseDate(`${today.slice(0, 7)}-01`);
-    const [active, reported, labourSheets, labourNamed, risks, ncrs, incidents] = await Promise.all([
+    const [active, reported, labourSheets, labourNamed, risks] = await Promise.all([
       this.prisma.project.findMany({ where: { ...this.access.projectWhere(user), status: 'ACTIVE', ...(projectId ? { id: projectId } : {}) }, select: { id: true } }),
       onSite ? this.prisma.dailyReport.findMany({ where: { ...where, date: day }, distinct: ['projectId'], select: { projectId: true } }) : null,
       onSite || canViewWorkers(role) ? this.prisma.attendanceSheet.aggregate({ where: { ...where, date: day }, _sum: { totalWorkers: true } }) : null,
       onSite || canViewWorkers(role) ? this.prisma.workerAttendance.count({ where: { ...where, date: day, status: { in: ['PRESENT', 'HALF_DAY'] } } }) : null,
       onSite || canViewContract(role) ? this.prisma.risk.groupBy({ by: ['kind'], where: { ...where, status: { not: 'CLOSED' } }, _count: { _all: true } }) : null,
-      onSite ? this.prisma.ncr.count({ where: { ...where, status: { not: 'CLOSED' } } }) : null,
-      onSite && moduleOn(user, 'safety') ? this.prisma.safetyIncident.count({ where: { ...where, date: { gte: monthStart, lte: day } } }) : null,
     ]);
     const out: ModuleFigureDto[] = [];
     if (reported) {
@@ -173,43 +177,69 @@ export class ModuleHomeService {
       const total = risks.reduce((s, r) => s + r._count._all, 0);
       out.push(count('openRisks', 'Open delays and risks', total, '/risks', { note: delays ? `${plural(delays, 'delay')} holding up work` : 'No open delays', tone: delays ? 'warning' : 'default' }));
     }
-    if (ncrs !== null) out.push(count('openNcrs', 'Open NCRs', ncrs, '/inspections?tab=ncrs', { tone: ncrs ? 'warning' : 'default', note: ncrs ? 'Waiting for action or closing' : 'None open' }));
-    if (incidents !== null) out.push(count('incidents', 'Safety incidents this month', incidents, '/safety', { tone: incidents ? 'danger' : 'default', note: incidents ? 'Reported since the 1st' : 'None since the 1st' }));
     return out;
   }
 
-  private async materials(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
+  private async quality(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
+    if (!canReportSafety(user.roleKey)) return [];
+    const where = this.where(user, projectId);
+    const day = parseDate(today);
+    const monthStart = parseDate(`${today.slice(0, 7)}-01`);
+    const safety = moduleOn(user, 'safety');
+    const [ncrs, incidents] = await Promise.all([
+      this.prisma.ncr.count({ where: { ...where, status: { not: 'CLOSED' } } }),
+      safety ? this.prisma.safetyIncident.count({ where: { ...where, date: { gte: monthStart, lte: day } } }) : 0,
+    ]);
+    const out = [count('openNcrs', 'Open NCRs', ncrs, '/inspections?tab=ncrs', { tone: ncrs ? 'warning' : 'default', note: ncrs ? 'Waiting for action or closing' : 'None open' })];
+    if (safety) out.push(count('incidents', 'Safety incidents this month', incidents, '/safety', { tone: incidents ? 'danger' : 'default', note: incidents ? 'Reported since the 1st' : 'None since the 1st' }));
+    return out;
+  }
+
+  private async materials(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {
     const role = user.roleKey;
     const onSite = canReportSafety(role);
     const where = this.where(user, projectId);
     const seesStock = onSite || canPurchase(role) || canViewCost(role);
-    const seesMachinery = onSite || canPurchase(role);
-    const [openRequests, low, jobCards, fuel] = await Promise.all([
+    const [openRequests, low] = await Promise.all([
       onSite || canPurchase(role) ? this.prisma.materialRequest.count({ where: { ...where, status: 'SUBMITTED' } }) : null,
       seesStock ? this.stock.balances(user, { lowOnly: true, page: 1, pageSize: 1, ...(projectId ? { projectId } : {}) }) : null,
-      seesMachinery ? this.prisma.maintenanceJob.count({ where: { organizationId: user.organizationId, status: 'OPEN', ...(projectId ? { projectId } : { OR: [{ projectId: null }, { project: this.access.projectWhere(user) }] }) } }) : null,
-      seesMachinery ? this.prisma.stockEntry.count({ where: { ...where, type: 'ISSUE', equipmentId: { not: null }, date: parseDate(today) } }) : null,
     ]);
     const out: ModuleFigureDto[] = [];
     if (openRequests !== null) out.push(count('openRequests', 'Material requests to approve', openRequests, '/material-requests', { note: 'Raised by the sites, not yet decided' }));
     if (low) out.push(count('lowStock', 'Items below minimum', low.total, '/stock?low=1', { tone: low.total ? 'warning' : 'default', note: low.total ? 'Order or transfer before they run out' : 'All above their minimum' }));
-    if (jobCards !== null) out.push(count('jobCards', 'Open job cards', jobCards, '/machinery?tab=maintenance', { note: 'Services and breakdowns not closed' }));
-    if (fuel !== null) out.push(count('fuelToday', 'Fuel issues today', fuel, '/machinery?tab=fuel', { note: 'Diesel issued to machines' }));
     return out;
   }
 
-  private async purchases(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {
+  private async plant(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
     const role = user.roleKey;
-    const [orders, payables, requests] = await Promise.all([
-      canViewPurchaseOrders(role) ? this.purchaseOrders.status(user, { show: 'PENDING', ...(projectId ? { projectId } : {}) }) : null,
+    if (!canReportSafety(role) && !canPurchase(role)) return [];
+    const where = this.where(user, projectId);
+    const [jobCards, fuel] = await Promise.all([
+      this.prisma.maintenanceJob.count({ where: { organizationId: user.organizationId, status: 'OPEN', ...(projectId ? { projectId } : { OR: [{ projectId: null }, { project: this.access.projectWhere(user) }] }) } }),
+      this.prisma.stockEntry.count({ where: { ...where, type: 'ISSUE', equipmentId: { not: null }, date: parseDate(today) } }),
+    ]);
+    return [
+      count('jobCards', 'Open job cards', jobCards, '/machinery?tab=maintenance', { note: 'Services and breakdowns not closed' }),
+      count('fuelToday', 'Fuel issues today', fuel, '/machinery?tab=fuel', { note: 'Diesel issued to machines' }),
+    ];
+  }
+
+  private async purchases(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {
+    if (!canViewPurchaseOrders(user.roleKey)) return [];
+    const orders = await this.purchaseOrders.status(user, { show: 'PENDING', ...(projectId ? { projectId } : {}) });
+    return [
+      rupees('ordersOpen', 'Orders to receive', orders.totals.pendingValue, '/purchase-orders', { note: plural(orders.totals.pending, 'order') }),
+      count('ordersLate', 'Late deliveries', orders.totals.late, '/purchase-orders', { tone: orders.totals.late ? 'warning' : 'default', note: orders.totals.late ? 'Past their delivery date' : 'None late' }),
+    ];
+  }
+
+  private async accounts(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {
+    const role = user.roleKey;
+    const [payables, requests] = await Promise.all([
       canViewPayables(role) ? this.payables.summary(user, projectId ? { projectId } : {}) : null,
       canViewPaymentRequests(role) ? this.prisma.paymentRequest.count({ where: { ...this.where(user, projectId), status: 'APPROVED', paidDate: null } }) : null,
     ]);
     const out: ModuleFigureDto[] = [];
-    if (orders) {
-      out.push(rupees('ordersOpen', 'Orders to receive', orders.totals.pendingValue, '/purchase-orders', { note: plural(orders.totals.pending, 'order') }));
-      out.push(count('ordersLate', 'Late deliveries', orders.totals.late, '/purchase-orders', { tone: orders.totals.late ? 'warning' : 'default', note: orders.totals.late ? 'Past their delivery date' : 'None late' }));
-    }
     if (payables) {
       const overdue = new Prisma.Decimal(payables.totals.overdue);
       out.push(rupees('payable', 'We owe', payables.totals.outstanding, '/payables', { note: '{money} due in 7 days', noteMoney: payables.totals.dueSoon }));
@@ -242,7 +272,6 @@ export class ModuleHomeService {
     return out;
   }
 
-  /** The books are the company's, so these do not follow the header's project. */
   /** RMC (v6 item 104): the plants the caller sees (or the one asked for). */
   private async rmc(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
     const role = user.roleKey;
@@ -273,7 +302,8 @@ export class ModuleHomeService {
     return out;
   }
 
-  private async accounts(user: RequestUser): Promise<ModuleFigureDto[]> {
+  /** The books are the company's, so these do not follow the header's project. */
+  private async bookFigures(user: RequestUser): Promise<ModuleFigureDto[]> {
     if (!moduleOn(user, 'books')) return [];
     const [f, s] = await Promise.all([this.books.figures(user), this.statements.figures(user)]);
     if (!f || !s) return [];
