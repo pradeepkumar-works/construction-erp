@@ -31,6 +31,9 @@ Playwright tests of the main web flows:
   manager, recording one opens the delay with its notice clock (the delay is deleted afterwards), Draft notice opens the
   letter form under clause 5.1 with the delay chosen (nothing saved), a DPR's page offers its hindrance, and the delay
   register prints.
+- `attendance-check.spec.ts`: Attendance cross-check (AI item 124): Sri Jagannath's labour bill on the road site flagged on
+  the page with its working and on the bill's own checks, the three helpers with no punch named to the project manager
+  and only counted for management, the watch list carrying the bill, and a site engineer refused.
 - `cash-forecast.spec.ts`: Cash forecast and billing readiness (AI item 122): the forecast's weeks and receipts for accounts,
   no forecast for a project manager, and Draft reminder opening the letter form with the contract's clause (nothing saved).
 - `leakage.spec.ts`: Leakage checks (AI item 121): the month's flags open their working, the store sees no rates and a

@@ -41,6 +41,7 @@ import type {
   BillChecksDto,
   WatchListDto,
   LeakageDto,
+  AttendanceCheckDto,
   CashForecastDto,
   AiDraftDto,
   BillingReadinessDto,
@@ -3218,6 +3219,14 @@ export const useBillingReadiness = (projectId: string | undefined, enabled = tru
 
 /** A payment reminder for a sent bill, drafted from its figures and the contract's payment clause; nothing is saved. */
 export const usePaymentReminder = () => useMutation({ mutationFn: async (billId: string) => (await api.get<AiDraftDto>(`/billing-readiness/reminder/${billId}`)).data });
+
+/** Attendance cross-check (AI item 124): the month's flags and man-day bills, and with a project its days. */
+export const useAttendanceCheck = (month: string, projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['attendance-check', month, projectId ?? 'all'],
+    queryFn: async () => (await api.get<AttendanceCheckDto>('/attendance-check', { params: { month, projectId } })).data,
+    enabled,
+  });
 
 // ---- Hindrance register to notice (AI item 123) ----
 

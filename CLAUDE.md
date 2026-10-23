@@ -170,6 +170,11 @@ and the pre-delivery checklist.
   through `RisksService.create`. The notice clock is `noticeClock` over `Project.noticeDays` (else 14), shared by the delay,
   the register and the watch list's NOTICE_DUE. A new cause is a rule in `RULES` plus labelled remarks in `hindrance-cases.ts`;
   keep `src/scripts/hindrance-test.ts` passing (9 in 10).
+- Attendance cross-check (item 124, `apps/api/src/attendance-check`, ARCHITECTURE "Attendance cross-check"): a subcontractor
+  bill's man-day lines (`isManDayUnit`) are checked over the bill's days against the head count, roll call and punches by
+  `AttendanceCheckService`, which the bill's checks (`mandays` in `bill-rules.ts`), the page and the watch list's
+  MANDAYS_ABOVE share; the arithmetic is pure in `attendance-check-rules.ts`. Workers are named only for
+  `canSeeAttendanceNames` (HR and the PM), never on a bill. Keep `src/scripts/attendance-check-test.ts` passing (6 in 10).
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.

@@ -8,6 +8,7 @@ import { canSeeWatchList } from './warnings';
 import { canUseWhatsappCapture } from './whatsapp';
 import { canSeeLeakage } from './leakage';
 import { canSeeCashForecast } from './cash-forecast';
+import { canSeeAttendanceCheck } from './attendance-check';
 import { canManageModules, pathIsOff } from './module-switches';
 
 /**
@@ -141,6 +142,7 @@ export const NAV_ACCESS = {
   whatsappCapture: (u: NavUser) => canUseWhatsappCapture(u.roleKey),
   leakage: (u: NavUser) => canSeeLeakage(u.roleKey),
   cashForecast: (u: NavUser) => canSeeCashForecast(u.roleKey),
+  attendanceCheck: (u: NavUser) => canSeeAttendanceCheck(u.roleKey),
   subscription: (u: NavUser) => !!u.billing && P.canManageBilling(u.roleKey),
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
@@ -194,6 +196,7 @@ export const NAV_TREE: NavNode[] = [
   // ── Site ──────────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'site.dpr', parent: 'site', label: 'Daily reports', icon: 'clipboard-list', route: '/dpr', access: 'onSite', status: 'live', badge: 'dprMissing', description: 'The day at each site: work, labour, machines, weather, hold-ups.', keywords: 'dpr daily progress report diary', concord: ['p5-exec'] },
   { id: 'site.attendance', parent: 'site', label: 'Labour attendance', icon: 'users-round', route: '/attendance', nav: 'Attendance', access: 'attendance', status: 'live', description: 'Head count, roll call, workers and the monthly muster.', keywords: 'labour manpower muster workers', concord: ['p5-labour'] },
+  { id: 'site.attendanceCheck', parent: 'site', label: 'Attendance cross-check', icon: 'check-check', route: '/attendance-check', access: 'attendanceCheck', status: 'live', newUntil: '2027-03-31', description: 'Man-days labour contractors bill against the head count, roll call, biometric punches and DPR.', keywords: 'labour contractor man-days bill biometric punch muster proxy padding ghost workers headcount', concord: ['p5-labour'] },
   { id: 'site.progress', parent: 'site', label: 'Progress entries', icon: 'trending-up', route: '/progress', access: 'onSite', status: 'live', description: 'Quantities done against each activity.', keywords: 'work done quantity', concord: ['p5-exec', 'p4-bm'] },
   { id: 'site.mb', parent: 'site', label: 'Measurement book', icon: 'ruler', route: '/measurements', access: 'measure', status: 'live', badge: 'mbWaiting', description: "Measured quantities for the client's bill.", keywords: 'mb measurements', concord: ['p5-progress'] },
   { id: 'site.risks', parent: 'site', label: 'Delays and risks', icon: 'triangle-alert', route: '/risks', access: 'risks', status: 'live', description: 'Hindrances, extensions of time and liquidated damages.', keywords: 'hindrance issues eot ld' },
@@ -292,6 +295,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'people.letters', parent: 'people', label: 'Service records', icon: 'scroll-text', route: '/staff?tab=service', access: 'hrRecords', status: 'live', description: 'Confirmations, transfers, promotions, increments and exits, with their letters.', keywords: 'hr letters transfer promotion increment warning exit' },
   { id: 'people.holidays', parent: 'people', label: 'Holidays', icon: 'calendar', route: '/staff?tab=holidays', access: 'internal', status: 'live', description: 'Holidays by site.' },
   { id: 'people.biometric', parent: 'people', label: 'Biometric devices', icon: 'fingerprint-pattern', route: '/biometric', access: 'biometric', status: 'live', description: 'Fingerprint and face devices, who is enrolled on them, and their punches marking attendance.', keywords: 'fingerprint face punch attendance machine zkteco essl adms', concord: ['p7-bio'] },
+  { id: 'people.attendanceCheck', parent: 'people', label: 'Attendance cross-check', icon: 'check-check', shortcutOf: 'site.attendanceCheck', access: 'attendanceCheck', status: 'live', description: 'Man-days labour contractors bill against the head count, roll call, biometric punches and DPR.' },
 
   // ── Payroll ───────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'payroll.runs', parent: 'payroll', label: 'Salary runs', icon: 'banknote', route: '/payroll?tab=runs', nav: 'Payroll', access: 'payroll', status: 'live', description: 'Prepare, approve and pay a month, with payslips, the bank file and the PF and ESI files.', keywords: 'salary wages payslip pf esi tds bank file', concord: ['p4-payroll'] },

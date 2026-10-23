@@ -226,6 +226,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/hindrance-test.js
+      - name: Man-day bills checked against the head count, roll call and punches, with the labelled crew backtest
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/attendance-check-test.js
       - name: Site photo checks keep the confidence bar, the 50 labelled photos and the safety officer's switch
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/photo-checks-test.js

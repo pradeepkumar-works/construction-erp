@@ -679,8 +679,13 @@ intelligence: build plan". Rules first, models only to read what sites send; not
      model for those it cannot place, recorded, added to an open delay or dismissed on Delays and risks or the DPR; the
      contract's notice days (the filed contract's clause suggested) and NOTICE_DUE at 7, 3 and 0 days; Draft notice; the
      delay register printout. ARCHITECTURE "Hindrance register to notice".
-124. **Attendance cross-check** (M): man-days billed against biometric punches, roll call, head-count sheet and DPR
-     manpower, as a bill check and a page for HR and the PM.
+124. ~~**Attendance cross-check** (M): man-days billed against biometric punches, roll call, head-count sheet and DPR
+     manpower, as a bill check and a page for HR and the PM.~~
+     Done: a subcontractor bill's man-day lines against the head count, the named roll call and the punches over the
+     bill's days (a check on the bill, MANDAYS_ABOVE on the watch list), and `/attendance-check` with those bills,
+     workers on the roll call with no punch, a crew's head count above its roll call and a site's head count above its
+     DPR; workers named to HR and the PM only. Backtest on 24 labelled crews: 9 of 11 flags real, every padding the
+     records show caught. ARCHITECTURE "Attendance cross-check".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

@@ -2450,6 +2450,34 @@ export; the client portal and the phone app show the amount.
   clock and the letter; on the demo company the seeded remarks, record, link, dismiss, the model's path, the notice
   periods, NOTICE_DUE moving with the contract's days and stopping when a letter is linked, Draft notice and the register.
 
+## Attendance cross-check
+
+- **What it is.** AI item 124. What a labour contractor bills in man-days, against what the site recorded over the
+  bill's days: the head-count sheet (`AttendanceSheet`), the named roll call (`WorkerAttendance`) and the biometric
+  punches (`BiometricPunch` on a device at the site); and each day's records against each other and the DPR's manpower.
+  Rules only. A flag is a reason to ask for the muster: nobody's wage is held or cut by it.
+- **Bills** (`AttendanceCheckService.billChecks`): a subcontractor bill's lines whose work order unit is a man-day
+  (`isManDayUnit`: Man-day, MD, Mandays) cover the days after the bill before it (or from the work order's start) up to
+  its "measured up to" (`billSpan`). The crew is the work order's vendor (by id, or by name on the sheet and the
+  worker register), the trade is read from the line (`tradeOf`, else the whole crew). What the records support is the
+  higher of the head count and the roll call (`supportedOf`; punches are a part of the roll call and never raise it);
+  a line is flagged from `MANDAY_TOLERANCE_MIN` (2) man-days and `MANDAY_TOLERANCE_PCT` (5%) above it, or when the site
+  kept neither (`billExcess`). The rupees are the excess at the line's rate.
+- **Where it shows.** On the bill's checks (`mandays` rule in `bill-rules.ts`, through `forBill`), counts only; on the
+  watch list as `MANDAYS_ABOVE` for bills waiting for approval (`canApprove`, key per line's billed and supported
+  figures); and on `/attendance-check` (`GET /api/attendance-check?month&projectId`, `canSeeAttendanceCheck`: HR and
+  approvers) with every man-day bill of the month.
+- **Days.** `NO_PUNCH`: workers on a day's roll call, enrolled on a device, with no punch on a day others of the crew
+  punched on the site's device, from `NO_PUNCH_MIN` (2) in a crew, at their daily wages (`unpunched`). `HEADCOUNT_ABOVE`: a crew's head count
+  above the heads on its roll call, and `DPR_GAP`: a site's head count above its DPR's manpower, each from
+  `HEADCOUNT_GAP_MIN` (3) and `HEADCOUNT_GAP_PCT` (10%) (`headGap`). With a project, the page lists each day's DPR, head
+  count, roll call and punches. Workers are named only for `canSeeAttendanceNames` (HR and the project manager).
+- **Tests.** `src/scripts/attendance-check-test.ts` (CI flows): the rules, and a backtest on 24 labelled crews (the bar
+  is 6 flags in 10 real; it gives 9 of 11, and every padding a record can show); on the demo company Sri Jagannath's
+  padded helpers on the page, the bill's checks and the watch list, Maa Tarini's clean bill, the unpunched helpers named
+  to the PM and HR only, a planted padded head count, and roles. `bill-checks-test` counts the padded bill as a seeded
+  anomaly.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

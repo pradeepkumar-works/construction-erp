@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-attendance-check',
+    date: '2026-12-22',
+    title: 'Attendance cross-check for labour bills',
+    points: [
+      "A labour contractor's bill in man-days is now checked against the site's head count, roll call and biometric punches for the days it covers. A bill asking for more shows it on its checks and on the Watch list, with the man-days and rupees to hold until the contractor shows the muster.",
+      'Site › Attendance cross-check (also under People) lists those bills, workers marked present who did not punch on a day the device worked, and head counts above the roll call or the DPR, each with its working. Workers are named only to HR and the project manager, and nothing cuts a wage by itself.',
+    ],
+  },
+  {
     id: '2026-12-hindrance-notice',
     date: '2026-12-20',
     title: 'Hindrances from the DPRs, and the notice clock',

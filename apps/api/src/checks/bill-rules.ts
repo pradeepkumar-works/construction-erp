@@ -243,6 +243,11 @@ export interface SubcontractBillFacts {
   totalDeductions: number;
   netPayable: number;
   duplicates: Link[];
+  /**
+   * Man-day lines against the site's attendance over the bill's days (AI item 124, `AttendanceCheckService.forBill`):
+   * absent when the bill has none. Counts only; workers are never named on a bill.
+   */
+  manDays?: { lineId: string; no: number; description: string; billed: number; supported: number | null; excess: number; excessInr: number; flagged: boolean; sources: string; span: string; link: Link }[];
 }
 
 export function subcontractBillChecks(f: SubcontractBillFacts): Check[] {
@@ -287,9 +292,23 @@ export function subcontractBillChecks(f: SubcontractBillFacts): Check[] {
     { label: 'Net payable', expected: f.grossAmount + f.gstAmount - f.totalDeductions, actual: f.netPayable },
   ]);
 
+  const days = (f.manDays ?? [])
+    .filter((l) => l.flagged)
+    .map((l) =>
+      flag(
+        `mandays:${l.lineId}:${fig(l.billed)}:${l.supported === null ? 'none' : fig(l.supported)}`,
+        l.supported === null
+          ? `Line ${l.no} bills ${qty(l.billed)} man-days with no head count or roll call for ${l.span}`
+          : `Line ${l.no} bills ${qty(l.billed)} man-days; the site's attendance for ${l.span} supports ${qty(l.supported)}`,
+        `${l.description}: ${l.sources}. ${qty(l.excess)} man-days (${inr(l.excessInr)}) above the records; hold them until the contractor shows the muster.`,
+        [l.link],
+      ),
+    );
+
   return [
     ...(f.invoiceNo ? rule('duplicates', 'No other bill for this invoice', duplicates) : []),
     ...rule('wo-qty', 'Quantities within the work order', pastOrder),
+    ...(f.manDays?.length ? rule('mandays', "Man-days within the site's head count and roll call", days) : []),
     ...(f.lines.some((l) => l.measuredToDate !== null) ? rule('measured', 'Quantities match the measurement book', measured) : []),
     ...rule('rates', 'Rates as on the work order', rates),
     ...rule('prev', 'Previous quantities match earlier bills', previous),

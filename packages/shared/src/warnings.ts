@@ -5,7 +5,7 @@ import { canApprove, canManageMachineLoans, canManageMaintenance, canManageStore
  * Early warnings (AI roadmap item 73): plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
-export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE'] as const;
+export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE'] as const;
 export type WarningKind = (typeof WARNING_KINDS)[number];
 
 export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
@@ -22,6 +22,7 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
   FUEL_NO_LOG: 'Fuel issued with no log',
   IDLE_HIRE: 'Hired machine paid for idle time',
   NOTICE_DUE: 'Hindrance notice due',
+  MANDAYS_ABOVE: 'Man-days billed above attendance',
 };
 
 /** The warning kinds a role sees: each is the business of the role that can act on it. */
@@ -41,6 +42,8 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   if (canManageMaintenance(role)) out.push('FUEL_NO_LOG', 'IDLE_HIRE');
   // Hindrance notices (item 123): the project manager signs them.
   if (canApprove(role) && canRaiseRisk(role)) out.push('NOTICE_DUE');
+  // Attendance cross-check (item 124): whoever approves the bill.
+  if (canApprove(role)) out.push('MANDAYS_ABOVE');
   return out;
 }
 
@@ -78,6 +81,7 @@ export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
   FUEL_NO_LOG: 'CHECKED',
   IDLE_HIRE: 'CHECKED',
   NOTICE_DUE: 'CHECKED',
+  MANDAYS_ABOVE: 'CHECKED',
 };
 
 /**
