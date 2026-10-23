@@ -71,6 +71,7 @@ import Lock from 'lucide-react-native/icons/lock';
 import Mail from 'lucide-react-native/icons/mail';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import ScanSearch from 'lucide-react-native/icons/scan-search';
+import ChartArea from 'lucide-react-native/icons/chart-area';
 import MessageSquareText from 'lucide-react-native/icons/message-square-text';
 import Network from 'lucide-react-native/icons/network';
 import NotebookPen from 'lucide-react-native/icons/notebook-pen';
@@ -187,6 +188,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'mail': Mail,
   'message-circle': MessageCircle,
   'scan-search': ScanSearch,
+  'chart-area': ChartArea,
   'message-square-text': MessageSquareText,
   'network': Network,
   'notebook-pen': NotebookPen,

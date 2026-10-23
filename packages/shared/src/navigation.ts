@@ -7,6 +7,7 @@ import { canManageAi } from './ai';
 import { canSeeWatchList } from './warnings';
 import { canUseWhatsappCapture } from './whatsapp';
 import { canSeeLeakage } from './leakage';
+import { canSeeCashForecast } from './cash-forecast';
 import { canManageModules, pathIsOff } from './module-switches';
 
 /**
@@ -139,6 +140,7 @@ export const NAV_ACCESS = {
   ai: (u: NavUser) => canManageAi(u.roleKey),
   whatsappCapture: (u: NavUser) => canUseWhatsappCapture(u.roleKey),
   leakage: (u: NavUser) => canSeeLeakage(u.roleKey),
+  cashForecast: (u: NavUser) => canSeeCashForecast(u.roleKey),
   subscription: (u: NavUser) => !!u.billing && P.canManageBilling(u.roleKey),
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
@@ -254,12 +256,14 @@ export const NAV_TREE: NavNode[] = [
   // ── Client billing ────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'billing.bills', parent: 'billing', label: 'RA bills', icon: 'receipt-indian-rupee', route: '/bills', access: 'bills', status: 'live', badge: 'billsWaiting', description: 'Running account bills from the measurement book.', keywords: 'running account invoice client bill', concord: ['p5-billing', 'p4-bm'] },
   { id: 'billing.variations', parent: 'billing', label: 'Variations', icon: 'diff', route: '/variations', access: 'variations', status: 'live', description: 'Extra and changed items sent to the client.', keywords: 'extra items deviation', concord: ['p5-progress'] },
+  { id: 'billing.readiness', parent: 'billing', label: 'Billing readiness', icon: 'receipt-text', route: '/billing-readiness', access: 'contract', status: 'live', newUntil: '2027-03-31', description: 'Measured work not billed, bills not sent and bills unpaid, with a payment reminder drafted from the contract.', keywords: 'unbilled measurement not sent overdue reminder collection payment clause' },
   { id: 'billing.receivables', parent: 'billing', label: 'Receivables', icon: 'coins', route: '/receivables', access: 'contract', status: 'live', description: 'What clients owe, by age.', keywords: 'collections retention' },
   { id: 'billing.receipts', parent: 'billing', label: 'Money received', icon: 'indian-rupee', route: '/receivables?tab=receipts', access: 'contract', status: 'live', description: 'Receipts from clients and retention released.' },
   { id: 'billing.clients', parent: 'billing', label: 'Clients', icon: 'building-2', route: '/clients', access: 'clients', status: 'live', description: 'Clients and their contacts.', keywords: 'customers', concord: ['p4-crm'] },
   { id: 'billing.guarantees', parent: 'billing', label: 'Guarantees and licences', icon: 'file-badge', route: '/compliance', access: 'compliance', status: 'live', description: 'Bank guarantees, EMDs, insurance and licences with renewals.', keywords: 'bank guarantee bg insurance car policy licence labour expiry', concord: ['p4-bglc'] },
 
   // ── Accounts (Payables out of Purchases, plus items 102 and 103) ──────────────────────────────────────────────
+  { id: 'accounts.cashForecast', parent: 'accounts', group: 'Payments', label: 'Cash forecast', icon: 'chart-area', route: '/cash-forecast', access: 'cashForecast', status: 'live', newUntil: '2027-03-31', description: 'Bank and cash for the next 13 weeks as a range, why a week runs short, and what to chase or hold.', keywords: 'cash flow forecast liquidity short gap 13 weeks chase hold' },
   { id: 'accounts.payables', parent: 'accounts', group: 'Payments', label: 'Payables', icon: 'wallet-cards', route: '/payables', access: 'payables', status: 'live', description: 'What we owe, by age and MSME due date.', keywords: 'payments due msme' },
   { id: 'accounts.requests', parent: 'accounts', group: 'Payments', label: 'Payment requests', icon: 'send', route: '/payables?tab=requests', access: 'paymentRequests', status: 'live', badge: 'paymentRequestsWaiting', description: 'Requests to release money, and advances.', keywords: 'advance' },
   { id: 'accounts.payments', parent: 'accounts', group: 'Payments', label: 'Payments', icon: 'banknote', route: '/payables?tab=payments', access: 'payables', status: 'live', description: 'Money paid out, with TDS and deductions.' },

@@ -3,7 +3,7 @@
 import React from 'react';
 import { Grid, theme } from 'antd';
 import { Column, Line, Pie } from '@ant-design/plots';
-import type { CostHeadsDto, EarnedValuePointDto, HomeTrendsDto } from '@erp/shared';
+import type { CashWeekDto, CostHeadsDto, EarnedValuePointDto, HomeTrendsDto } from '@erp/shared';
 import { useAppearance, useReducedMotion } from '@/lib/appearance';
 import { formatINRCompact, formatPct, toNumber, RUPEE } from '@/lib/format';
 import { COST_HEADS, monthLabel } from './chartData';
@@ -78,6 +78,34 @@ export function EarnedValueChart({ data }: { data: EarnedValuePointDto[] }) {
       axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatINRCompact(v).replace(RUPEE, '₹') } }}
       style={{ lineWidth: 2.5, lineDash: (d: { series: string }[]) => (d[0]?.series === series[0] ? [6, 4] : [0, 0]) }}
       point={{ shapeField: 'circle', sizeField: 2 }}
+      tooltip={{ channel: 'y', valueFormatter: (v: number) => formatINRCompact(v) }}
+    />
+  );
+}
+
+/** The 13-week cash forecast (item 122): the balance at each week's end, likely with its low and high case. */
+export function CashForecastChart({ weeks }: { weeks: CashWeekDto[] }) {
+  const { token, base } = useChartTheme();
+  const series = ['Low', 'Likely', 'High'] as const;
+  const label = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const rows = weeks.flatMap((w) => [
+    { week: label(w.start), series: series[0], amount: w.closing.low },
+    { week: label(w.start), series: series[1], amount: w.closing.likely },
+    { week: label(w.start), series: series[2], amount: w.closing.high },
+  ]);
+  return (
+    <Line
+      {...base}
+      height={300}
+      data={rows}
+      xField="week"
+      yField="amount"
+      colorField="series"
+      scale={{ color: { domain: [...series], range: [token.colorError, token.colorPrimary, token.colorSuccess] }, y: { nice: true } }}
+      axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatINRCompact(v).replace(RUPEE, '₹') } }}
+      style={{ lineWidth: (d: { series: string }[]) => (d[0]?.series === series[1] ? 2.5 : 1.5), lineDash: (d: { series: string }[]) => (d[0]?.series === series[1] ? [0, 0] : [6, 4]) }}
+      point={{ shapeField: 'circle', sizeField: 2 }}
+      annotations={[{ type: 'lineY', yField: 0, style: { stroke: token.colorTextQuaternary, lineWidth: 1 } }]}
       tooltip={{ channel: 'y', valueFormatter: (v: number) => formatINRCompact(v) }}
     />
   );

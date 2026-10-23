@@ -15,6 +15,7 @@ import {
   WARNING_KIND_LABELS,
   WARNING_OUTCOME_LABELS,
   canResumeWarningKind,
+  canSeeCashForecast,
   fuelNormText,
   watchListKinds,
 } from '@erp/shared';
@@ -30,6 +31,7 @@ import { ReconciliationService } from '../reconciliation/reconciliation.service'
 import { moduleOn } from '../common/module-switch.guard';
 import { LeakageService } from '../leakage/leakage.service';
 import { monthSpan } from '../leakage/leakage-rules';
+import { CashForecastService } from '../cash-forecast/cash-forecast.service';
 import {
   type Delivery,
   type MachineDay,
@@ -112,6 +114,7 @@ export class WarningsService {
     private payables: PayablesService,
     private reconciliation: ReconciliationService,
     private leakage: LeakageService,
+    private cashForecast: CashForecastService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -754,6 +757,7 @@ export class WarningsService {
 
   private async cash(user: RequestUser, projects: Project[], today: string): Promise<Draft[]> {
     if (!projects.length) return [];
+    if (canSeeCashForecast(user.roleKey)) return this.cashFromForecast(user);
     const [recv, pay, paidBills, contracts] = await Promise.all([
       this.receivables.summary(user),
       this.payables.summary(user),
@@ -809,6 +813,47 @@ export class WarningsService {
         links: [
           { label: 'Payables', href: '/payables' },
           { label: 'Receivables', href: '/receivables' },
+        ],
+        projectId: null,
+        projectName: null,
+      },
+    ];
+  }
+  /**
+   * The cash gap from the 13-week forecast (item 122) for whoever keeps the books: the bank and cash in hand, every
+   * receipt and payment the forecast knows, and the first week whose likely balance goes below zero.
+   */
+  private async cashFromForecast(user: RequestUser): Promise<Draft[]> {
+    const f = await this.cashForecast.forecast(user);
+    const gap = f.weeks.find((w) => w.short);
+    if (!gap) return [];
+    const upTo = f.weeks.slice(0, f.weeks.indexOf(gap) + 1);
+    const inn = upTo.reduce((s, w) => s + w.in.likely, 0);
+    const out = upTo.reduce((s, w) => s + w.out.likely, 0);
+    const lowest = f.weeks.find((w) => w.start === f.lowest.week)!;
+    return [
+      {
+        key: `cash:${gap.start}:${Math.round(-gap.closing.likely / 1e5)}`,
+        kind: 'CASH',
+        title: `Cash gap of ${rupees(-gap.closing.likely)} by the week of ${day(gap.start)}`,
+        detail: `${rupees(f.opening.total)} in bank and cash today, ${rupees(inn)} likely to come in and ${rupees(out)} to go out by ${day(gap.end)}.${gap.reasons.length ? ` ${gap.reasons[0]}.` : ''}`,
+        action: f.chase.length ? `Chase ${f.chase[0].label}${f.hold.length ? `, or hold ${f.hold[0].label}` : ''}, before ${day(gap.start)}` : `Agree which payments wait past ${day(gap.start)}`,
+        impact: { text: `${rupees(-gap.closing.likely)} short`, inr: -gap.closing.likely, days: null },
+        working: [
+          `Opening: bank ${rupees(f.opening.bank)} + cash ${rupees(f.opening.cash)} = ${rupees(f.opening.total)}`,
+          ...upTo.map((w) => `Week of ${day(w.start)}: in ${rupees(w.in.likely)}, out ${rupees(w.out.likely)}, balance ${rupees(w.closing.likely)} (low ${rupees(w.closing.low)}, high ${rupees(w.closing.high)})`),
+          ...gap.reasons,
+        ],
+        facts: [
+          { label: 'Bank and cash today', value: rupees(f.opening.total) },
+          { label: 'Likely in to then', value: rupees(inn) },
+          { label: 'Likely out to then', value: rupees(out) },
+          { label: 'Lowest in 13 weeks', value: `${rupees(lowest.closing.likely)}, week of ${day(lowest.start)}` },
+        ],
+        links: [
+          { label: 'Cash forecast', href: '/cash-forecast' },
+          { label: 'Receivables', href: '/receivables' },
+          { label: 'Payables', href: '/payables' },
         ],
         projectId: null,
         projectName: null,

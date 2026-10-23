@@ -69,6 +69,8 @@ export interface AiDraftDto {
   flags: { field: string; note: string }[];
   /** Drafted from a WhatsApp message (item 120): saving the form marks that message saved */
   captureId?: string;
+  /** Who filled it in, for the form's banner when not Ask Nirmaan: "Drafted from the bill and the contract, page 14" */
+  note?: string;
 }
 
 /** A drafted value at a path like `items.0.itemName`. */

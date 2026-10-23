@@ -41,6 +41,9 @@ import type {
   BillChecksDto,
   WatchListDto,
   LeakageDto,
+  CashForecastDto,
+  AiDraftDto,
+  BillingReadinessDto,
   RateBenchmarksDto,
   WarningKind,
   WarningOutcome,
@@ -3199,6 +3202,17 @@ export const useSnagDraft = () =>
 /** Leakage checks (item 121) for a month, YYYY-MM. */
 export const useLeakage = (month: string, enabled = true) =>
   useQuery({ queryKey: ['leakage', month], queryFn: async () => (await api.get<LeakageDto>(`/leakage?month=${month}`)).data, enabled });
+
+/** The 13-week cash forecast (item 122): accounts and management. */
+export const useCashForecast = (enabled = true) =>
+  useQuery({ queryKey: ['cash-forecast'], queryFn: async () => (await api.get<CashForecastDto>('/cash-forecast')).data, enabled });
+
+/** Billing readiness (item 122): measured work not billed, bills not sent, bills unpaid; one project or all. */
+export const useBillingReadiness = (projectId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['billing-readiness', projectId ?? 'all'], queryFn: async () => (await api.get<BillingReadinessDto>('/billing-readiness', { params: { projectId } })).data, enabled });
+
+/** A payment reminder for a sent bill, drafted from its figures and the contract's payment clause; nothing is saved. */
+export const usePaymentReminder = () => useMutation({ mutationFn: async (billId: string) => (await api.get<AiDraftDto>(`/billing-readiness/reminder/${billId}`)).data });
 
 export const useWatchList = (enabled = true) =>
   useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
