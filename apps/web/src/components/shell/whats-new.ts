@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-cash-forecast',
+    date: '2026-12-18',
+    title: 'Cash forecast and billing readiness',
+    points: [
+      'Accounts, Cash forecast shows bank and cash for the next 13 weeks as a low, likely and high balance, from the books and every client bill, supplier bill, order, salary run, EMI and due on record. A client bill is expected when that client usually pays, not when the contract says.',
+      'A short week says why, and the page lists which client bills to chase and which payments can wait (never MSME bills, salaries or EMIs). Each week the forecast is kept, and four weeks on it shows how far it was out.',
+      'Client billing, Billing readiness lists measured work not billed, bills not sent and bills not paid on each project. Draft reminder opens a letter to the client filled in from the bill and the contract\'s payment clause.',
+    ],
+  },
+  {
     id: '2026-12-leakage-checks',
     date: '2026-12-16',
     title: 'Leakage checks',

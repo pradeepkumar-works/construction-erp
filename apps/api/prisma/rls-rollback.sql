@@ -500,5 +500,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "WarningAlert";
 ALTER TABLE "InboundMessage" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "InboundMessage" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "InboundMessage";
+ALTER TABLE "CashForecastSnapshot" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "CashForecastSnapshot" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "CashForecastSnapshot";
 
 DROP FUNCTION IF EXISTS app_current_org();

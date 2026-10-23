@@ -161,6 +161,10 @@ and the pre-delivery checklist.
   record, page and watch list share it), and the arithmetic is pure in `leakage-rules.ts`. Who sees a section is
   `leakageSections(role)`; the watch list's RATE_ABOVE, FUEL_NO_LOG and IDLE_HIRE come from `LeakageService.compute`.
   Keep `src/scripts/leakage-test.ts` passing.
+- Cash forecast (item 122, `apps/api/src/cash-forecast`, ARCHITECTURE "Cash forecast and billing readiness"): every receipt
+  and payment is a `CashFlowItemDto` built in `CashForecastService.items` from the modules' own services and the books; dates,
+  weeks, reasons, chase and hold are pure in `cash-forecast-rules.ts`. A new kind of money in or out is a `CASH_FLOW_KINDS`
+  key and a block there. The CASH warning reads the forecast for `canSeeCashForecast`. Keep `src/scripts/cash-forecast-test.ts` passing.
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.

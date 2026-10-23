@@ -667,8 +667,12 @@ intelligence: build plan". Rules first, models only to read what sites send; not
      hourly and monthly hire), the rate check on the PO form, record and approval pane, and the RATE_ABOVE, FUEL_NO_LOG
      and IDLE_HIRE watch-list kinds. Per-activity material waits for the DPR work lines (item 127). ARCHITECTURE
      "Leakage checks".
-122. **13-week cash forecast and billing readiness** (L): the bank balance and 13 weeks of money in and out as a range,
-     why each short week is short, last month's error; measured work not billed and a drafted payment reminder.
+122. ~~**13-week cash forecast and billing readiness** (L): the bank balance and 13 weeks of money in and out as a range,
+     why each short week is short, last month's error; measured work not billed and a drafted payment reminder.~~
+     Done: `/cash-forecast` (opening from the books, client bills at each client's days with their spread, measured work
+     not billed, payables, open POs and WOs, salaries, EMIs, dues and advances; why a week is short, chase and hold, the
+     weekly snapshot and its error four weeks on) and the CASH warning read from it; `/billing-readiness` with Draft
+     reminder quoting the contract's payment clause. ARCHITECTURE "Cash forecast and billing readiness".
 123. **Hindrance to notice** (M): a hindrance in a DPR or message suggested as a delay, the contract's notice clock on the
      watch list, and the notice letter drafted for the PM.
 124. **Attendance cross-check** (M): man-days billed against biometric punches, roll call, head-count sheet and DPR

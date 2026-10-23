@@ -2373,6 +2373,46 @@ export; the client portal and the phone app show the amount.
   check, the roles' sections, and this month's flags on the watch list. The seed gives the hired grader a 200-hour
   minimum and diesel into the excavator on a day with no log.
 
+## Cash forecast and billing readiness
+
+- **What it is.** AI item 122. Accounts › Cash forecast (`/cash-forecast`, `GET /api/cash-forecast`) is the bank and cash
+  ledgers today and 13 weeks from this Monday of money in and out, each week's closing balance as a low, likely and high
+  case, why a short week is short, what to chase and what can wait, and how far the forecast of four weeks ago was out.
+  Client billing › Billing readiness (`/billing-readiness`, `GET /api/billing-readiness?projectId=`) is, per project,
+  approved measurements in no RA bill, approved RA bills not sent and sent bills not paid. The forecast is for whoever
+  keeps the books (`canSeeCashForecast`); readiness for whoever sees the contract (`canViewContract`), over their projects.
+- **Opening.** `BooksService.accounts` (which posts what is new first): the Bank Accounts and Cash-in-Hand groups.
+- **Money in.** Each open client bill (from `ReceivablesService.summary`) at what is still owed, scaled to its net
+  payable (after retention, TDS and recoveries), dated its sent date plus the client's days (`payTiming`: the mean of the
+  client's paid bills, spread by their standard deviation and at least `MIN_PAY_SPREAD_DAYS`; with fewer than two paid
+  bills the contract's days, or 30, spread `CONTRACT_PAY_SPREAD_DAYS`). One past its days is due today, late by the
+  spread, and marked overdue. Approved measurements in no RA bill (and no work order) at BOQ rates times the last bill's
+  net ÷ gross, in the next RA bill (`nextBillDate`, the last bill's day of the month) plus the client's days; they are
+  left out of the low case.
+- **Money out.** Open vendor and subcontractor bills (`PayablesService.summary`) on their due dates; approved, open
+  purchase orders' unbilled balance their payment days (`DEFAULT_PO_PAYMENT_DAYS`) after delivery; open work orders at
+  their last 90 days' pace (`workOrderRunRate`); the latest month's payroll net each month on the day it was paid; unpaid
+  EMIs of active machine loans; the Duties & Taxes credit balance on the next 20th (`STATUTORY_DUE_DAY`); approved fund
+  requests and PO/WO advances not yet paid on the day needed. MSME bills are marked.
+- **Weeks** (`forecastWeeks`, pure): the low case takes money in late and money out early, the high case the reverse; a
+  week is short when its likely balance is below zero, at risk when only the low one is. `weekReasons` names the client
+  bills that would have closed the gap but come later than the client's days, the MSME bills due and the largest other
+  payments. `chaseAndHold`: chase client bills past their days or expected after the first squeezed week; hold vendor,
+  subcontractor, PO and WO payments due by then, never MSME, salaries, EMIs, dues or site funds.
+- **Last month's error.** The first forecast of each week is stored in `CashForecastSnapshot` (one per organisation and
+  Monday, RLS). The page compares the snapshot made `FORECAST_ERROR_WEEKS` weeks back, for the week that ended last
+  Sunday, with the books' bank and cash on that Sunday (`forecastError`).
+- **Watch list.** For whoever keeps the books the `CASH` warning is the forecast's first short week (its key carries the
+  week and the gap in lakhs); other roles keep the earlier receivables-against-payables check.
+- **Payment reminder** (`GET /api/billing-readiness/reminder/:billId`): for a sent, unpaid RA bill, an OUT letter as an
+  `AiDraftDto` (with `note`, shown on the form's banner): the bill, how long it has waited and the contract's payment
+  clause, found with `DocumentTextService.search` and cut to the numbered clause by `paymentClause`. Nothing is saved;
+  Draft reminder opens the letter form through `requestNew('letter', …)`.
+- **Tests.** `cash-forecast-rules.ts` is pure; `src/scripts/cash-forecast-test.ts` (CI flows) tests the rules, then on
+  the demo company checks the opening against the books, the weeks adding up, the snapshot and a four-week-old one
+  against the books, the watch list agreeing, readiness and the reminder quoting clause 7.2, and replays the past
+  twelve Mondays (with a year of the road client's bills put in and taken out) against what was received and paid.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

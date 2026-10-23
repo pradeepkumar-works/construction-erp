@@ -218,6 +218,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/leakage-test.js
+      - name: Cash forecast adds up from the books, keeps its weekly snapshot and replays past weeks against what was paid
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/cash-forecast-test.js
       - name: Site photo checks keep the confidence bar, the 50 labelled photos and the safety officer's switch
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/photo-checks-test.js

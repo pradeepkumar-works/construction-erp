@@ -400,7 +400,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
           icon={<SparkleIcon />}
           className="ai-draft-note"
           style={{ marginBottom: token.margin }}
-          title={`Filled in by Ask ${PRODUCT_NAME} from what you wrote`}
+          title={aiDraft.note ?? `Filled in by Ask ${PRODUCT_NAME} from what you wrote`}
           description={
             <>
               Check each field before you {okText.toLowerCase()}. Nothing is saved until you do.

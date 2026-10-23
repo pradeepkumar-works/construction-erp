@@ -661,6 +661,7 @@ model Organization {
   drawingScales        DrawingScale[]
   drawingTakeoffs      DrawingTakeoff[]
   inboundMessages      InboundMessage[]
+  cashSnapshots        CashForecastSnapshot[]
 }
 
 model Role {
@@ -5027,6 +5028,22 @@ model WarningOutcomeLog {
   createdAt      DateTime       @default(now())
 
   @@index([organizationId, kind, createdAt])
+}
+
+/// A week's cash forecast as it was made (AI item 122), kept so a later week can show how far it was out.
+model CashForecastSnapshot {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// The Monday of the week it was made in: one a week
+  weekStart      DateTime     @db.Date
+  asOf           DateTime     @db.Date
+  opening        Decimal      @db.Decimal(18, 2)
+  /// The 13 CashWeekDto rows
+  weeks          Json
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, weekStart])
 }
 
 /// A paused warning kind resumed by an admin (item 119): outcomes from before `resumedAt` no longer count to a pause.
