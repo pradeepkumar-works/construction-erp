@@ -12,6 +12,9 @@ export function notificationHref(n: NotificationDto): string {
   if (n.type === 'COMPLIANCE') return `/compliance${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.type === 'DEFECT' && n.projectId) return `/projects/${n.projectId}?tab=handover${n.entityType === 'DEFECT' && n.entityId ? `&defect=${n.entityId}` : ''}`;
   if (n.type === 'WATCH_LIST') return '/watch-list';
+  // A request for access (launcher phase 3): admins answer it in Admin › Home tiles; the person's answer opens Home.
+  if (n.entityType === 'ACCESS_REQUEST') return `/home-tiles${n.entityId ? `?request=${n.entityId}` : ''}`;
+  if (n.entityType === 'ACCESS_DECISION') return '/';
   // An RFI: the client's engineer or consultant answers it in their portal; staff open it in Documents.
   if (n.entityType === 'RFI' && n.entityId) return n.type === 'PORTAL' && n.projectId ? `/portal/${n.projectId}?tab=rfis&open=${n.entityId}` : `/documents?tab=rfis&rfi=${n.entityId}`;
   if (n.type === 'MORNING_BRIEF') return '/';

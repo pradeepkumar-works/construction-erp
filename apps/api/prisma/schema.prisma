@@ -157,6 +157,7 @@ enum NotificationType {
   MORNING_BRIEF
   SUPPLIER
   COMMENT
+  ACCESS_REQUEST
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -504,6 +505,8 @@ model Organization {
   /// Module switches (v6 item 117): the switchable modules (SWITCHABLE_MODULES in @erp/shared) an admin turned off.
   /// Their data stays; turning one on again brings it back.
   modulesOff          String[]    @default([])
+  /// Launcher phase 3: Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
+  discoverLocked      Boolean     @default(true)
   /// The plan's module set, set from the Nirmaan console; null = every module
   moduleTier          ModuleTier?
 
@@ -633,6 +636,8 @@ model Organization {
   savedViews           SavedView[]
   navPins              NavPin[]
   navVisits            NavVisit[]
+  launcherFlags        LauncherFlag[]
+  accessRequests       AccessRequest[]
   aiThreads            AiThread[]
   aiMessages           AiMessage[]
   billCheckAcceptances BillCheckAcceptance[]
@@ -761,6 +766,8 @@ model User {
   savedViews            SavedView[]
   navPins               NavPin[]
   navVisits             NavVisit[]
+  accessRequests        AccessRequest[]            @relation("AccessRequester")
+  accessDecisions       AccessRequest[]            @relation("AccessDecider")
   aiThreads             AiThread[]
   billChecksAccepted    BillCheckAcceptance[]      @relation("BillCheckAcceptedBy")
   warningsDismissed     WarningDismissal[]         @relation("WarningDismissedBy")
@@ -6589,4 +6596,50 @@ enum NavVisitKind {
   NODE
   PROJECT
   RECORD
+}
+
+/// A company's own New and Featured marks on Home's tiles (launcher phase 3, Admin › Home tiles); a null keeps the
+/// navigation tree's default (`newUntil`, `featured` on the node).
+model LauncherFlag {
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// A top-level node id of the navigation tree.
+  nodeId         String
+  isNew          Boolean?
+  /// With isNew, the last day it shows as New.
+  newUntil       DateTime?    @db.Date
+  featured       Boolean?
+  updatedById    String
+  updatedAt      DateTime     @updatedAt
+
+  @@id([organizationId, nodeId])
+}
+
+/// Someone asks, from Discover, for a module their role cannot open (launcher phase 3). The company's admins are told
+/// (ACCESS_REQUEST); granting means changing the person's role or turning the module on, then marking it granted. Audited.
+model AccessRequest {
+  id             String              @id @default(uuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User                @relation("AccessRequester", fields: [userId], references: [id], onDelete: Cascade)
+  /// A top-level node id of the navigation tree.
+  nodeId         String
+  note           String?
+  status         AccessRequestStatus @default(OPEN)
+  /// The admin's answer, sent to the person.
+  reply          String?
+  decidedById    String?
+  decidedBy      User?               @relation("AccessDecider", fields: [decidedById], references: [id])
+  decidedAt      DateTime?
+  createdAt      DateTime            @default(now())
+
+  @@index([organizationId, status])
+  @@index([userId, nodeId])
+}
+
+enum AccessRequestStatus {
+  OPEN
+  GRANTED
+  DECLINED
 }

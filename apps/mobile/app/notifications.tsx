@@ -38,6 +38,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   MORNING_BRIEF: { name: 'cafe', color: colors.primary, bg: colors.primarySoft },
   SUPPLIER: { name: 'cube', color: colors.info, bg: colors.infoSoft },
   COMMENT: { name: 'chatbubbles', color: colors.primary, bg: colors.primarySoft },
+  ACCESS_REQUEST: { name: 'key', color: colors.accent, bg: colors.accentSoft },
 };
 
 export default function NotificationsScreen() {

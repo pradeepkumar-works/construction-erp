@@ -67,11 +67,12 @@ export interface NavNode {
   top?: boolean;
   /** In the sidebar but not a tile (Home itself) */
   tile?: false;
-  /** Defaults; companies will override them (phase 3) */
-  isNew?: boolean;
-  featured?: boolean;
   /** Items of the Concord brochure this node covers (`apps/web/scripts/concord-items.ts`, checked in CI) */
   concord?: string[];
+  /** Launcher phase 3: Discover marks the node New until this day (`YYYY-MM-DD`), or always shows it as Featured, unless
+   *  an admin of the company says otherwise in Admin › Home tiles (`LauncherFlag`). */
+  newUntil?: string;
+  featured?: boolean;
 }
 
 /** What the checks need of the signed-in user. */
@@ -168,8 +169,8 @@ export const NAV_TREE: NavNode[] = [
   { id: 'accounts', parent: null, label: 'Accounts', icon: 'landmark', family: 'money', access: 'internal', status: 'live', description: 'Payables and payments, books, statements, GST and Tally.', keywords: 'finance', concord: ['p3-fa', 'p4-fa', 'p5-fa'] },
   { id: 'people', parent: null, label: 'People', icon: 'users', family: 'people', access: 'internal', status: 'live', badge: 'module', description: 'Your attendance and leave, staff records, holidays.', keywords: 'hr staff employees', concord: ['p3-hr', 'p5-hrms'] },
   { id: 'payroll', parent: null, label: 'Payroll', icon: 'banknote', family: 'people', access: 'internal', status: 'live', description: 'Salary runs, payslips, PF, ESI, PT and TDS, loans.', keywords: 'salary wages', concord: ['p4-payroll'] },
-  { id: 'tenders', parent: null, label: 'Tenders', icon: 'gavel', family: 'business', access: 'tenders', status: 'live', description: 'Tenders being priced and bid, and the schedules of rates they are priced from.', keywords: 'bid boq sor', concord: ['p3-tender', 'p4-tendering'] },
-  { id: 'rmc', parent: null, label: 'RMC plant', icon: 'factory', family: 'business', access: 'rmc', status: 'live', description: 'Ready-mix concrete: quotes and orders, the plant\'s day, trucks and challans, cubes and bills.', keywords: 'ready mix batching plant concrete', concord: ['p4-plantperf'] },
+  { id: 'tenders', parent: null, label: 'Tenders', icon: 'gavel', family: 'business', access: 'tenders', status: 'live', newUntil: '2027-03-31', description: 'Tenders being priced and bid, and the schedules of rates they are priced from.', keywords: 'bid boq sor', concord: ['p3-tender', 'p4-tendering'] },
+  { id: 'rmc', parent: null, label: 'RMC plant', icon: 'factory', family: 'business', access: 'rmc', status: 'live', newUntil: '2027-03-31', description: 'Ready-mix concrete: quotes and orders, the plant\'s day, trucks and challans, cubes and bills.', keywords: 'ready mix batching plant concrete', concord: ['p4-plantperf'] },
   { id: 'reports', parent: null, label: 'Reports', icon: 'chart-column', family: 'insight', access: 'internal', status: 'live', description: 'Progress reports, project cost, cash flow and more.', keywords: 'mis dashboard', concord: ['p7-finrep'] },
   { id: 'watch', parent: null, label: 'Watch list', icon: 'eye', route: '/watch-list', family: 'insight', access: 'watchList', status: 'live', badge: 'watchOpen', description: 'Early warnings: slipping work, cash gaps, stock running out.', keywords: 'early warnings alerts forecast risk slipping cash gap running out' },
   { id: 'admin', parent: null, label: 'Admin', icon: 'settings', family: 'admin', access: 'internal', status: 'live', description: 'Users, approval rules, modules and the subscription.', keywords: 'settings' },
@@ -318,7 +319,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'admin.users', parent: 'admin', label: 'Users', icon: 'user-cog', route: '/users', access: 'users', status: 'live', description: 'Invite people and set their role.', keywords: 'invite roles access' },
   { id: 'admin.rules', parent: 'admin', label: 'Approval rules', icon: 'git-branch', route: '/approval-rules', access: 'users', status: 'live', description: 'Who approves what, levels, limits and escalation.', keywords: 'matrix limits', concord: ['p7-workflow'] },
   { id: 'admin.modules', parent: 'admin', label: 'Modules', icon: 'toggle-right', route: '/company-modules', access: 'modules', status: 'live', description: 'Turn off the modules the company does not use; their data is kept.', keywords: 'switch on off turn features plan hide' },
-  { id: 'admin.home', parent: 'admin', label: 'Home tiles', icon: 'layout-grid', route: '/admin/home-tiles', access: 'users', status: 'planned', description: 'Mark modules as new or featured; see access requests.' },
+  { id: 'admin.home', parent: 'admin', label: 'Home tiles', icon: 'layout-grid', route: '/home-tiles', access: 'users', status: 'live', description: 'Mark modules as new or featured, and answer requests for access.', keywords: 'discover new featured request access' },
   { id: 'admin.data', parent: 'admin', label: 'Data and privacy', icon: 'database', route: '/company-data', access: 'companyData', status: 'live', description: 'Export or delete company data.', keywords: 'export delete' },
   { id: 'admin.ai', parent: 'admin', label: `Ask ${PRODUCT_NAME}`, icon: 'sparkles', route: '/ai-settings', access: 'ai', status: 'live', description: 'Who may ask, allowance and the conversation log.', keywords: 'ai assistant chat allowance' },
   { id: 'admin.billing', parent: 'admin', label: 'Subscription', icon: 'credit-card', route: '/billing', access: 'subscription', status: 'live', description: 'Plan, invoices and renewal.', keywords: 'billing plan invoice pay renew' },

@@ -1,14 +1,18 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { LauncherService } from './launcher.service';
-import { CreatePinDto, ImportDto, MovePinDto, VisitDto } from './launcher.dto';
+import { AccessDecisionDto, AccessRequestCreateDto, CreatePinDto, HomeTilesSettingsDto, ImportDto, LauncherFlagSetDto, MovePinDto, VisitDto } from './launcher.dto';
+import { HomeTilesService } from './home-tiles.service';
 
 @ApiTags('launcher')
 @ApiBearerAuth()
 @Controller('launcher')
 export class LauncherController {
-  constructor(private launcher: LauncherService) {}
+  constructor(
+    private launcher: LauncherService,
+    private tiles: HomeTilesService,
+  ) {}
 
   @ApiOperation({ summary: 'Pins and Recent for Home', description: 'Launcher phase 2: your pins in order and the places you opened last, with project names as they are now.' })
   @Get()
@@ -50,5 +54,35 @@ export class LauncherController {
   @Post('import')
   import(@CurrentUser() user: RequestUser, @Body() dto: ImportDto) {
     return this.launcher.import(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Ask for a module', description: 'Launcher phase 3: from Discover, for a module your role cannot open. The company admins are told.' })
+  @Post('access-requests')
+  requestAccess(@CurrentUser() user: RequestUser, @Body() dto: AccessRequestCreateDto) {
+    return this.tiles.request(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Admin › Home tiles', description: "The company's New and Featured marks, its Discover switch and the requests for access. Admins only." })
+  @Get('home-tiles')
+  homeTiles(@CurrentUser() user: RequestUser) {
+    return this.tiles.get(user);
+  }
+
+  @ApiOperation({ summary: "Mark a Home tile New or Featured, or go back to the default" })
+  @Put('flags/:nodeId')
+  setFlag(@CurrentUser() user: RequestUser, @Param('nodeId') nodeId: string, @Body() dto: LauncherFlagSetDto) {
+    return this.tiles.setFlag(user, nodeId, dto);
+  }
+
+  @ApiOperation({ summary: 'Turn showing modules a role cannot open in Discover on or off' })
+  @Patch('settings')
+  settings(@CurrentUser() user: RequestUser, @Body() dto: HomeTilesSettingsDto) {
+    return this.tiles.setSettings(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Grant or decline a request for access', description: 'Grant after changing the role or turning the module on; the person is told either way.' })
+  @Patch('access-requests/:id')
+  decide(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AccessDecisionDto) {
+    return this.tiles.decide(user, id, dto);
   }
 }

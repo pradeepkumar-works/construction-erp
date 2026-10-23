@@ -9,6 +9,7 @@ import {
   MODULE_SUBMISSION_TYPES,
   byPosition,
   navNode,
+  navRootOf,
   pathIsOff,
   positionBetween,
   type LauncherBadgesDto,
@@ -23,6 +24,7 @@ import { RequestUser } from '../common/current-user';
 import { iso } from '../common/serialize';
 import { HomeService } from '../dashboard/home.service';
 import { CreatePinDto, ImportDto, VisitDto } from './launcher.dto';
+import { flagDto, myRequestDto } from './home-tiles.service';
 
 const pinDto = (p: NavPin, label = p.label): NavPinDto => ({ id: p.id, kind: p.kind, target: p.target, label, position: p.position });
 const visitDto = (v: NavVisit, label = v.label): NavVisitDto => ({ kind: v.kind, target: v.target, label, href: v.href, lastAt: iso(v.lastAt)! });
@@ -40,12 +42,21 @@ export class LauncherService {
     private home: HomeService,
   ) {}
 
-  /** Pins and the latest places, with project names as they are now. */
+  /** Pins and the latest places, with project names as they are now; and for Discover (phase 3), the company's marks, the
+   *  tiles the user has opened and their requests for access. */
   async get(user: RequestUser): Promise<LauncherDto> {
-    const [pins, visits] = await Promise.all([
-      this.prisma.navPin.findMany({ where: { userId: user.id, organizationId: user.organizationId } }),
-      this.prisma.navVisit.findMany({ where: { userId: user.id, organizationId: user.organizationId }, orderBy: { lastAt: 'desc' }, take: LAUNCHER_RECENT_SHOWN * 3 }),
+    const mine = { userId: user.id, organizationId: user.organizationId };
+    const [pins, visits, nodeVisits, flags, requests, org] = await Promise.all([
+      this.prisma.navPin.findMany({ where: mine }),
+      this.prisma.navVisit.findMany({ where: mine, orderBy: { lastAt: 'desc' }, take: LAUNCHER_RECENT_SHOWN * 3 }),
+      this.prisma.navVisit.findMany({ where: { ...mine, kind: 'NODE' }, select: { target: true } }),
+      this.prisma.launcherFlag.findMany({ where: { organizationId: user.organizationId } }),
+      this.prisma.accessRequest.findMany({ where: mine, orderBy: { createdAt: 'desc' } }),
+      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { discoverLocked: true } }),
     ]);
+    const latestRequest = new Map<string, (typeof requests)[number]>();
+    for (const r of requests) if (!latestRequest.has(r.nodeId)) latestRequest.set(r.nodeId, r);
+    const opened = [...new Set(nodeVisits.flatMap((v) => navRootOf(v.target) ?? []))];
     const projectIds = [...new Set([...pins, ...visits].filter((x) => x.kind === 'PROJECT').map((x) => x.target))];
     const projects = projectIds.length ? await this.prisma.project.findMany({ where: { AND: [this.access.projectWhere(user), { id: { in: projectIds } }] }, select: { id: true, name: true } }) : [];
     const projectName = new Map(projects.map((p) => [p.id, p.name]));
@@ -68,6 +79,10 @@ export class LauncherService {
         const label = nameOf(v.kind, v.target, v.label);
         return label === null ? [] : [visitDto(v, label)];
       }),
+      flags: flags.map(flagDto),
+      opened,
+      requests: [...latestRequest.values()].map(myRequestDto),
+      discoverLocked: org.discoverLocked,
     };
   }
 

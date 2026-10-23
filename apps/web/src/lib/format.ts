@@ -143,6 +143,7 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   MORNING_BRIEF: 'cyan',
   SUPPLIER: 'geekblue',
   COMMENT: 'blue',
+  ACCESS_REQUEST: 'purple',
 };
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */

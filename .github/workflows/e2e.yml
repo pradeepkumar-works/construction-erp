@@ -187,6 +187,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/module-switches-test.js
+      - name: Launcher pins sort, Discover shows each role New, never opened and modules to ask for, and who may ask
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/launcher-test.js
       - name: Measures on drawings scale right, add up lines, areas and counts, and make measurement book lines
         if: matrix.suite == 'flows'
         working-directory: apps/api

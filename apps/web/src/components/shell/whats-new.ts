@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-discover',
+    date: '2026-12-08',
+    title: 'Discover on Home, and asking for a module',
+    points: [
+      'Discover on Home shows what is new, modules you have not opened yet, and modules your role does not open. Open any tile to see what the module is for and its pages.',
+      'For a module your role does not open, Request access sends a note to your admins, and you get a notification when they answer.',
+      'Admins answer requests in Admin › Home tiles, and can mark modules New or Featured for the whole company, or keep modules a role cannot open out of Discover.',
+    ],
+  },
+  {
     id: '2026-12-launcher-home',
     date: '2026-12-06',
     title: 'A new Home: your modules, pins and recent pages',
