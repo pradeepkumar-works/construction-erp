@@ -3,7 +3,7 @@
 import React from 'react';
 import { App, Table, Tag, Typography } from 'antd';
 import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
-import { WEATHER_LABELS } from '@erp/shared';
+import { WEATHER_LABELS, canReviewHindrances } from '@erp/shared';
 import { useDpr } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
@@ -17,6 +17,7 @@ import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
+import { DprHindrance } from '@/components/risks/HindranceSuggestions';
 
 function Note({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -125,6 +126,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
                   <Note title="Tests conducted">{data.testsConducted}</Note>
                   <Note title="Safety observations">{data.safetyObservations}</Note>
                   <Note title="Issues / hindrances">{data.issues}</Note>
+                  {mode !== 'pane' && data.issues && data.status !== 'DRAFT' && user && canReviewHindrances(user.roleKey) ? <DprHindrance dprId={data.id} /> : null}
                   <Note title="Next day plan">{data.nextDayPlan}</Note>
                 </>
               ),

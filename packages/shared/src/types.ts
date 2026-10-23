@@ -1396,6 +1396,8 @@ export interface ProjectContractDto {
   defectLiabilityMonths: number | null;
   /** Days the client takes to pay a bill once sent; null = not set (the cash-flow forecast assumes 30) */
   clientPaymentDays: number | null;
+  /** Days the contract allows to give notice of a hindrance; null = not set (the notice clock assumes 14) */
+  noticeDays: number | null;
   priceVariation: boolean;
   /** Price variation: the date the base indices are taken at */
   pvBaseDate: string | null;

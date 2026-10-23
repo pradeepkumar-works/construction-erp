@@ -97,6 +97,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, aiD
               subject: aiDraft.values.subject as string | undefined,
               summary: aiDraft.values.summary as string | undefined,
               inReplyToId: aiDraft.values.inReplyToId as string | undefined,
+              riskId: (aiDraft.values.riskId as string | undefined) ?? prefill?.riskId ?? undefined,
             }
           : {}),
       });

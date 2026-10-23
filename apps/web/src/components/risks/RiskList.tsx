@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Checkbox, Segmented, Select, Space, Statistic, Tag, Tooltip, Typography } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Alert, App, Button, Checkbox, Segmented, Select, Space, Statistic, Tag, Tooltip, Typography } from 'antd';
+import { PlusOutlined, PrinterOutlined } from '@ant-design/icons';
 import type { RiskCategory, RiskDto, RiskKind, RiskSortField, RiskStatus } from '@erp/shared';
-import { LIST_SORT_FIELDS, RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, canRaiseRisk } from '@erp/shared';
+import { LIST_SORT_FIELDS, RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, canRaiseRisk, canReviewHindrances, canViewContract, canViewLetters } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useAuth } from '@/lib/auth';
-import { useRisks, useRiskSuggestions, useRiskSummary } from '@/lib/queries';
+import { useDelayRegister, useRisks, useRiskSuggestions, useRiskSummary } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { RISK_EXPORT } from '@/lib/exportColumns';
@@ -22,6 +22,8 @@ import { riskColumns } from './RiskTable';
 import { RiskDrawer } from './RiskDrawer';
 import { RiskFormModal, type RiskPrefill } from './RiskFormModal';
 import { RiskHeatMap } from './RiskHeatMap';
+import { HindranceSuggestions } from './HindranceSuggestions';
+import { openDelayRegisterPrint } from './delayRegisterPrint';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
@@ -32,6 +34,7 @@ const KEYS = ['kind', 'status', 'category', 'mine', 'overdue'] as const;
 /** Delay and risk register with totals and the heat map; the Delays and risks page and a project tab. */
 export function RiskList({ projectId: fixedProject, initialProject, initialOpenId }: { projectId?: string; initialProject?: string; initialOpenId?: string }) {
   const { user } = useAuth();
+  const { message } = App.useApp();
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [formOpen, setFormOpen] = useState(false);
   const [prefill, setPrefill] = useState<RiskPrefill | null>(null);
@@ -86,6 +89,14 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
   const { data: summary } = useRiskSummary(filters);
   const mayRaise = !!user && canRaiseRisk(user.roleKey);
   const { data: suggestions } = useRiskSuggestions(projectId, mayRaise);
+  const register = useDelayRegister();
+  const seesRegister = !!user && (canViewLetters(user.roleKey) || canViewContract(user.roleKey));
+  const printRegister = async () => {
+    if (!projectId) return;
+    const r = await register.mutateAsync(projectId).catch(() => null);
+    if (!r) return void message.error('The delay register could not be loaded. Try again.');
+    if (!openDelayRegisterPrint(r, user?.organizationName ?? '')) message.warning('Pop-up blocked. Allow pop-ups to print the delay register.');
+  };
   const raise = (p: RiskPrefill | null) => {
     setPrefill(p);
     setFormOpen(true);
@@ -120,6 +131,13 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
         extra={
           <>
             <ExportButton onExport={exportRows} />
+            {seesRegister ? (
+              <Tooltip title={projectId ? 'Every delay with its notice, letters and DPR entries, for an extension-of-time claim' : 'Choose a project to print its delay register'}>
+                <Button icon={<PrinterOutlined />} disabled={!projectId} loading={register.isPending} onClick={() => void printRegister()}>
+                  Delay register
+                </Button>
+              </Tooltip>
+            ) : null}
             {mayRaise ? (
               <Button icon={<PlusOutlined />} onClick={() => raise({ kind: 'DELAY', projectId })}>
                 Record delay
@@ -172,6 +190,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
           }
         />
       ) : null}
+      {user && canReviewHindrances(user.roleKey) ? <HindranceSuggestions projectId={projectId} onRecorded={(r) => setOpenId(r.id)} /> : null}
       {summary ? (
         <CardToolbar variant="summary" wrap gap={32} align="flex-start">
           <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', flex: 1, minWidth: 300 }}>

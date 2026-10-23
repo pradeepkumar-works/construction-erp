@@ -16,6 +16,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { KindTag, RiskStatusTag, ScoreTag } from './riskUi';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { NoticeClock } from './NoticeClock';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'gray', UPDATED: 'blue', CLOSED: 'green', REOPENED: 'orange', DELETED: 'red' };
 
@@ -146,6 +147,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               ...(data.status === 'CLOSED' ? [{ key: 'closed', label: 'Closed', children: `${formatDateTime(data.closedAt)}${data.closureNote ? `: ${data.closureNote}` : ''}`, span: 2 }] : []),
             ]}
           />
+          <NoticeClock risk={data} />
           <Divider titlePlacement="start" plain>
             Photos / letters ({data.attachments.length})
           </Divider>

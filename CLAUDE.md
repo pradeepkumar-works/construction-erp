@@ -165,6 +165,11 @@ and the pre-delivery checklist.
   and payment is a `CashFlowItemDto` built in `CashForecastService.items` from the modules' own services and the books; dates,
   weeks, reasons, chase and hold are pure in `cash-forecast-rules.ts`. A new kind of money in or out is a `CASH_FLOW_KINDS`
   key and a block there. The CASH warning reads the forecast for `canSeeCashForecast`. Keep `src/scripts/cash-forecast-test.ts` passing.
+- Hindrances (item 123, `apps/api/src/hindrance`, ARCHITECTURE "Hindrance register to notice"): a DPR remark is read by the pure
+  `classifyRemark` (the model only for UNSURE ones, gated by `AiService.status`) and kept in `HindranceCheck`; recording goes
+  through `RisksService.create`. The notice clock is `noticeClock` over `Project.noticeDays` (else 14), shared by the delay,
+  the register and the watch list's NOTICE_DUE. A new cause is a rule in `RULES` plus labelled remarks in `hindrance-cases.ts`;
+  keep `src/scripts/hindrance-test.ts` passing (9 in 10).
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.

@@ -27,6 +27,10 @@ Playwright tests of the main web flows:
   company's marks and waiting requests through the API first.
 - `whatsapp-capture.spec.ts`: WhatsApp entries (AI item 120): a message to WATI's webhook address becomes a draft that the
   sender saves from the page, or changes in its form. Start the API with `AI_PROVIDER=fake WATI_WEBHOOK_SECRET=e2e-wati`.
+- `hindrance.spec.ts`: Hindrance register to notice (AI item 123): the road site's DPR remarks come up for the project
+  manager, recording one opens the delay with its notice clock (the delay is deleted afterwards), Draft notice opens the
+  letter form under clause 5.1 with the delay chosen (nothing saved), a DPR's page offers its hindrance, and the delay
+  register prints.
 - `cash-forecast.spec.ts`: Cash forecast and billing readiness (AI item 122): the forecast's weeks and receipts for accounts,
   no forecast for a project manager, and Draft reminder opening the letter form with the contract's clause (nothing saved).
 - `leakage.spec.ts`: Leakage checks (AI item 121): the month's flags open their working, the store sees no rates and a

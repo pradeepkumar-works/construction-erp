@@ -9,6 +9,7 @@ import type { ContractPercentField, LdPeriod, ProjectContractDto } from '@erp/sh
 import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
+import { useNoticePeriod } from '@/lib/queries';
 import { ClientSelect } from '@/components/common/SearchSelect';
 import { ClientFormModal } from '@/components/clients/ClientFormModal';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -24,6 +25,7 @@ type FormValues = {
   mobilisationAdvance?: number | null;
   defectLiabilityMonths?: number | null;
   clientPaymentDays?: number | null;
+  noticeDays?: number | null;
   priceVariation?: boolean;
   ldRatePct?: number | null;
   ldPeriod?: LdPeriod;
@@ -46,6 +48,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
   const { message } = App.useApp();
   const qc = useQueryClient();
   const [newClient, setNewClient] = useState(false);
+  const found = useNoticePeriod(contract.projectId, open).data?.found ?? null;
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +63,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       mobilisationAdvance: Number(contract.mobilisationAdvance),
       defectLiabilityMonths: contract.defectLiabilityMonths,
       clientPaymentDays: contract.clientPaymentDays,
+      noticeDays: contract.noticeDays,
       priceVariation: contract.priceVariation,
       ldRatePct: Number(contract.ldRatePct),
       ldPeriod: contract.ldPeriod,
@@ -81,6 +85,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
         mobilisationAdvance: String(v.mobilisationAdvance ?? 0),
         defectLiabilityMonths: v.defectLiabilityMonths ?? null,
         clientPaymentDays: v.clientPaymentDays ?? null,
+        noticeDays: v.noticeDays ?? null,
         priceVariation: !!v.priceVariation,
         ldRatePct: String(v.ldRatePct ?? 0),
         ldPeriod: v.ldPeriod ?? 'WEEK',
@@ -92,6 +97,8 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
     onSuccess: () => {
       message.success('Contract terms saved');
       qc.invalidateQueries({ queryKey: ['contract', contract.projectId] });
+      qc.invalidateQueries({ queryKey: ['contract', 'notice-period', contract.projectId] });
+      qc.invalidateQueries({ queryKey: ['risks'] });
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['clients'] });
     },
@@ -155,6 +162,23 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               </Form.Item>
               <Form.Item name="clientPaymentDays" label="Client pays within (days)" tooltip="Days the client takes to pay a bill once it is sent. The cash-flow forecast assumes 30 when left empty.">
                 <InputNumber<number> style={{ width: '100%' }} min={0} max={365} precision={0} inputMode="numeric" placeholder="30" />
+              </Form.Item>
+            </FormGrid>
+            <FormGrid cols={3}>
+              <Form.Item
+                name="noticeDays"
+                label="Hindrance notice within (days)"
+                tooltip="Days the contract allows to give the client notice of a hindrance. Each delay the contractor is not answerable for runs a notice clock; 14 is assumed when left empty."
+                extra={found ? (
+                  <span>
+                    {`The filed contract says ${found.days} days (clause ${found.clause} of ${found.docNo}, page ${found.page}). `}
+                    <Button type="link" size="small" style={{ padding: 0, height: 'auto' }} onClick={() => form.setFieldValue('noticeDays', found.days)}>
+                      Use {found.days} days
+                    </Button>
+                  </span>
+                ) : undefined}
+              >
+                <InputNumber<number> style={{ width: '100%' }} min={1} max={180} precision={0} inputMode="numeric" placeholder="14" />
               </Form.Item>
             </FormGrid>
           </FormSection>

@@ -79,6 +79,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           </Descriptions.Item>
           <Descriptions.Item label="Defect liability">{c.defectLiabilityMonths !== null ? `${c.defectLiabilityMonths} months` : '-'}</Descriptions.Item>
           <Descriptions.Item label="Client pays within">{c.clientPaymentDays !== null ? `${c.clientPaymentDays} days` : 'Not set (30 days assumed)'}</Descriptions.Item>
+          <Descriptions.Item label="Hindrance notice within">{c.noticeDays !== null ? `${c.noticeDays} days` : 'Not set (14 days assumed)'}</Descriptions.Item>
           <Descriptions.Item label="Price variation">{c.priceVariation ? 'Yes' : 'No'}</Descriptions.Item>
           <Descriptions.Item label="Mobilisation advance">{Number(c.mobilisationAdvance) > 0 ? formatINR(c.mobilisationAdvance) : 'None'}</Descriptions.Item>
         </Descriptions>

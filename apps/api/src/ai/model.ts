@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { AiEffort, AiUsage } from './ai.config';
 import { fakePhotoReply } from '../photo-checks/fake-photos';
+import { fakeHindranceReply } from '../hindrance/fake-hindrance';
 
 type Block = Anthropic.Beta.BetaContentBlock;
 export type ModelMessage = Anthropic.Beta.BetaMessageParam;
@@ -118,6 +119,9 @@ export class FakeModel implements AiModel {
       const kind = blocks.map((b) => (b.type === 'text' ? b.text : '')).join(' ').match(/Kind: (\w+)/)?.[1] ?? 'invoice';
       return { content: [{ type: 'text', text: JSON.stringify(FAKE_READS[kind] ?? FAKE_READS.invoice), citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
     }
+    // A DPR remark the hindrance rules could not place (item 123).
+    const said = blocks.map((b) => (b.type === 'text' ? b.text : '')).join(' ');
+    if (!args.tools.length && said.includes('Hindrance check.')) return { content: [{ type: 'text', text: fakeHindranceReply(said), citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
     // A call with no tools (a bill-check summary) gets its draft line back.
     if (!args.tools.length) {
       const text = `${(typeof last.content === 'string' ? last.content : '').split('Draft: ').pop()?.trim() ?? ''}`;

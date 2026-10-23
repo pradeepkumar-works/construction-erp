@@ -3,6 +3,9 @@ import { Prisma } from '@prisma/client';
 import type { WarningDto, WarningKind, WarningOutcome, WarningRecordDto, WatchListDto } from '@erp/shared';
 import {
   DEFAULT_CLIENT_PAYMENT_DAYS,
+  DEFAULT_NOTICE_DAYS,
+  DELAY_PARTY_LABELS,
+  NOTICE_PARTIES,
   FUEL_TOLERANCE_DEFAULT_PCT,
   MATERIAL_OVERUSE_MIN_PCT,
   PAUSE_MIN_OUTCOMES,
@@ -32,6 +35,7 @@ import { moduleOn } from '../common/module-switch.guard';
 import { LeakageService } from '../leakage/leakage.service';
 import { monthSpan } from '../leakage/leakage-rules';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
+import { noticeClock } from '../hindrance/hindrance-rules';
 import {
   type Delivery,
   type MachineDay,
@@ -242,6 +246,7 @@ export class WarningsService {
         if (k === 'FUEL_NORM') return this.fuel(projects, today);
         if (k === 'LOAN_EMI') return this.loanEmis(user.organizationId, today);
         if (k in LEAK_SECTION) return leaks.then((ws) => ws.filter((w) => w.kind === k));
+        if (k === 'NOTICE_DUE') return this.notices(active, today);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -536,6 +541,61 @@ export class WarningsService {
       });
     }
     return out.sort((a, b) => b.days - a.days).map(({ days: _d, ...w }) => w);
+  }
+
+  /**
+   * Hindrance notices (item 123): an open delay the contractor is not answerable for, with no outgoing letter linked by
+   * `today`, at 7, 3 and 0 days or fewer before its notice is due (the delay's start plus the contract's notice days).
+   * The key carries the stage, so a dismissal holds until the next one. Overdue ones stay until a letter is linked.
+   */
+  private async notices(projects: Project[], today: string): Promise<Draft[]> {
+    if (!projects.length) return [];
+    const delays = await this.prisma.risk.findMany({
+      where: {
+        projectId: { in: projects.map((p) => p.id) },
+        kind: 'DELAY',
+        responsibleParty: { in: NOTICE_PARTIES },
+        delayStart: { lte: parseDate(today) },
+        OR: [{ status: { not: 'CLOSED' } }, { closedAt: { gt: parseDate(today) } }],
+        letters: { none: { direction: 'OUT', letterDate: { lte: parseDate(today) } } },
+      },
+      select: { id: true, riskNo: true, title: true, projectId: true, delayStart: true, delayEnd: true, responsibleParty: true, project: { select: { noticeDays: true } } },
+      orderBy: { delayStart: 'asc' },
+    });
+    const byId = new Map(projects.map((p) => [p.id, p]));
+    const out: Draft[] = [];
+    for (const d of delays) {
+      const p = byId.get(d.projectId)!;
+      const start = dateOnly(d.delayStart)!;
+      const days = d.project.noticeDays ?? DEFAULT_NOTICE_DAYS;
+      const clock = noticeClock(start, days, today);
+      if (clock.stage === null) continue;
+      const end = dateOnly(d.delayEnd);
+      const lost = daysBetween(start, end && end < today ? end : today) + 1;
+      const when = clock.daysLeft > 1 ? `in ${plural(clock.daysLeft, 'day')}` : clock.daysLeft === 1 ? 'tomorrow' : clock.daysLeft === 0 ? 'today' : `${plural(-clock.daysLeft, 'day')} ago`;
+      out.push({
+        key: `notice:${d.id}:${clock.stage}`,
+        kind: 'NOTICE_DUE',
+        title: `Hindrance notice for ${d.riskNo} ${clock.daysLeft < 0 ? 'was due' : 'due'} ${when}`,
+        detail: `${d.title} has held up ${p.name} since ${day(start)}. The contract allows ${days} days to give notice, so it is due ${day(clock.due)}, and no letter to the client is linked to the delay.`,
+        action: clock.daysLeft >= 0 ? `Draft the notice from the delay and send it by ${day(clock.due)}` : `Send the notice today and link it to ${d.riskNo}`,
+        impact: { text: clock.daysLeft < 0 ? `${plural(lost, 'day')} lost that a late notice may not cover` : `${plural(lost, 'day')} lost so far, to claim as an extension of time`, inr: null, days: lost },
+        working: [
+          `Held up since ${day(start)}, caused by ${DELAY_PARTY_LABELS[d.responsibleParty!].toLowerCase()}`,
+          `Notice period: ${days} days${d.project.noticeDays === null ? ' (none set on the contract, 14 assumed)' : ' (set on the contract)'}`,
+          `Due ${day(clock.due)}: ${clock.daysLeft >= 0 ? `${plural(clock.daysLeft, 'day')} left` : `${plural(-clock.daysLeft, 'day')} past`}`,
+          'Shown 7, 3 and 0 days before it is due, until an outgoing letter is linked to the delay',
+        ],
+        facts: [
+          { label: 'Notice due', value: day(clock.due) },
+          { label: 'Days lost so far', value: String(lost) },
+        ],
+        links: [{ label: d.riskNo, href: `/risks?id=${d.id}` }],
+        projectId: p.id,
+        projectName: p.name,
+      });
+    }
+    return out;
   }
 
   private async dprs(projects: Project[], today: string): Promise<Draft[]> {

@@ -673,8 +673,12 @@ intelligence: build plan". Rules first, models only to read what sites send; not
      not billed, payables, open POs and WOs, salaries, EMIs, dues and advances; why a week is short, chase and hold, the
      weekly snapshot and its error four weeks on) and the CASH warning read from it; `/billing-readiness` with Draft
      reminder quoting the contract's payment clause. ARCHITECTURE "Cash forecast and billing readiness".
-123. **Hindrance to notice** (M): a hindrance in a DPR or message suggested as a delay, the contract's notice clock on the
-     watch list, and the notice letter drafted for the PM.
+123. ~~**Hindrance to notice** (M): a hindrance in a DPR or message suggested as a delay, the contract's notice clock on the
+     watch list, and the notice letter drafted for the PM.~~
+     Done: DPR remarks (a WhatsApp DPR's too) read by `hindrance-rules.ts` (100 labelled remarks, all read right) and the
+     model for those it cannot place, recorded, added to an open delay or dismissed on Delays and risks or the DPR; the
+     contract's notice days (the filed contract's clause suggested) and NOTICE_DUE at 7, 3 and 0 days; Draft notice; the
+     delay register printout. ARCHITECTURE "Hindrance register to notice".
 124. **Attendance cross-check** (M): man-days billed against biometric punches, roll call, head-count sheet and DPR
      manpower, as a bill check and a page for HR and the PM.
 
