@@ -1657,6 +1657,15 @@ three-way match (`apps/api/src/purchasing`).
   (`PURCHASE_ORDER`, `VENDOR_BILL`) with the six status columns; their amount for the approval matrix is the total.
 - **Comparative.** `GET /material-requests/:id/comparative` puts the quotations side by side; the lowest landed rate
   (rate with GST) per line is marked, and `lowestQuotationId` is the cheapest quotation that covers every line.
+- **To the supplier.** Approving a PO emails it to the vendor's email in the master (`PurchaseOrdersService.mailOrder`,
+  the body from `poEmail` in `po-supplier-rules.ts`: items, totals, delivery, payment and terms, and the portal's orders
+  page when the vendor has a login), after the item rates; a failure never undoes the approval. The order keeps
+  `supplierEmailedAt` / `supplierEmailTo` / `supplierEmailError`, and a buyer sends it again with
+  `POST /purchase-orders/:id/email`. No PDF is attached: the mail service takes a subject and an HTML body only.
+- **Choosing a dearer quote.** When the request has a quotation pricing every line, an order not from the lowest of
+  them (`QuotationsService.lowestFor`, as the comparative marks it) carries `selectionReason`, asked by the form and
+  checked on every submit (`selectionProblem`). The approver reads it on the order. Both rules are tested in
+  `src/scripts/po-supplier-test.ts` (CI runs it).
 - **Ordering.** An MR-linked PO line may order at most what the request line still needs: requested less what other
   POs hold (a closed PO holds only what it received) less what was received directly against the request.
   `MaterialRequestItemDto.toOrderQty` carries that. Editing a PO is allowed until it is approved; an approved PO

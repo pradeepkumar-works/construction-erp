@@ -178,6 +178,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/supplier-test.js
+      - name: A PO not from the lowest quotation says why, and the order email carries the order
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/po-supplier-test.js
       - name: Machine loan EMIs, schedules, positions and foreclosures add up
         if: matrix.suite == 'flows'
         working-directory: apps/api
