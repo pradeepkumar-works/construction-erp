@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, Button, Col, Empty, Row, Skeleton, Statistic, Table, Tabs, Typography } from 'antd';
+import { Alert, Button, Col, Empty, Row, Skeleton, Statistic, Table, Typography } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { TeamOutlined } from '@ant-design/icons';
 import type { ProjectCostDto } from '@erp/shared';
 import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
@@ -109,11 +110,13 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
             )}
           </Section>
           <Section style={{ marginTop: 16 }}>
-            <Tabs
+            <AppTabs
               items={[
                 {
                   key: 'expenses',
-                  label: `Site expenses (${data.expensesByCategory.length})`,
+                  label: 'Site expenses',
+                  count: data.expensesByCategory.length,
+                  countLabel: 'categories',
                   children: (
                     <Table
                       rowKey="category"
@@ -130,7 +133,9 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                 },
                 {
                   key: 'material',
-                  label: `Material issued (${data.materialByItem.length})`,
+                  label: 'Material issued',
+                  count: data.materialByItem.length,
+                  countLabel: 'items',
                   children: (
                     <Table
                       rowKey="itemId"
@@ -149,7 +154,9 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                 },
                 {
                   key: 'machinery',
-                  label: `Machinery (${data.machineryByEquipment.length})`,
+                  label: 'Machinery',
+                  count: data.machineryByEquipment.length,
+                  countLabel: 'machines',
                   children: (
                     <Table
                       rowKey="equipmentId"
@@ -169,7 +176,9 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                 },
                 {
                   key: 'labour',
-                  label: `Labour (${data.labourByTrade.length})`,
+                  label: 'Labour',
+                  count: data.labourByTrade.length,
+                  countLabel: 'trades',
                   children: (
                     <Table
                       rowKey="category"
@@ -187,7 +196,9 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                 },
                 {
                   key: 'subcontract',
-                  label: `Subcontractors (${data.subcontractByOrder.length})`,
+                  label: 'Subcontractors',
+                  count: data.subcontractByOrder.length,
+                  countLabel: 'work orders',
                   children: (
                     <Table
                       rowKey="workOrderId"

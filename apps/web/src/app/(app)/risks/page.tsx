@@ -2,7 +2,8 @@
 
 import React, { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, Tabs } from 'antd';
+import { Card } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { canViewContract } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -23,10 +24,10 @@ function RisksPage() {
       <PageHeader title="Delays and risks" subtitle="What has held up work (days lost, who caused it, extension of time) and what might, scored probability × impact, with owners and due dates." />
       <Card size="small">
         {seesLd ? (
-          <Tabs
+          <AppTabs
             activeKey={search.get('tab') === 'ld' ? 'ld' : 'register'}
             onChange={(k) => router.replace(k === 'ld' ? '/risks?tab=ld' : '/risks')}
-            tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+            variant="page"
             destroyOnHidden
             items={[
               { key: 'register', label: 'Register', children: register },

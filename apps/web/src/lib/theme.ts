@@ -103,7 +103,8 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
         }),
   };
   // The header is a card-coloured bar in either mode.
-  const surface = theme.getDesignToken({ algorithm, token }).colorBgContainer;
+  const base = theme.getDesignToken({ algorithm, token });
+  const surface = base.colorBgContainer;
   return {
     // Every token is set here, so nothing carries over from the light theme above the signed-in app.
     inherit: false,
@@ -141,9 +142,25 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
       Modal: { titleFontSize: TYPE_SCALE[2] },
       // Initials avatars: antd fills them with the placeholder grey, which white initials fail AA on in dark mode.
       Avatar: { colorTextPlaceholder: c.muted },
-      // The selected tab's text is primary-coloured, which in dark mode needs the lighter blue to read.
+      // Tabs (every screen has them; `AppTabs` adds counts, buttons and the sticky bar): the tabs not chosen recede to
+      // secondary text, the chosen one is the link blue (the lighter one at night) over a 3 px bar, and the bar is a little
+      // tighter than antd's (24 px apart, 42 px high; 44 on a touch screen, globals.css) so six tabs fit a laptop's card.
+      Tabs: {
+        itemColor: base.colorTextSecondary,
+        itemSelectedColor: dark ? c.nightLink : c.link,
+        itemHoverColor: dark ? c.accentLight : c.primary,
+        itemActiveColor: dark ? c.nightLink : c.accentDeep,
+        inkBarColor: dark ? c.nightLink : c.accent,
+        lineWidthBold: 3,
+        horizontalItemGutter: base.marginLG,
+        horizontalItemPadding: `${Math.max(base.paddingSM - 2, 6)}px 0`,
+        horizontalItemPaddingSM: `${Math.max(base.paddingXS - 2, 4)}px 0`,
+        horizontalItemPaddingLG: `${base.paddingSM + 2}px 0`,
+        horizontalMargin: `0 0 ${base.marginSM}px 0`,
+        titleFontSizeSM: TYPE_SCALE[1],
+      },
       // A record's stage bar names a sent-back or rejected step in red, which needs the lighter red to read at night.
-      ...(dark ? { Badge: { colorError: c.danger }, Steps: { colorError: c.nightDanger }, Tabs: { itemSelectedColor: c.nightLink, itemActiveColor: c.nightLink, itemHoverColor: c.accentLight, inkBarColor: c.nightLink } } : {}),
+      ...(dark ? { Badge: { colorError: c.danger }, Steps: { colorError: c.nightDanger } } : {}),
     },
   };
 }
@@ -161,11 +178,13 @@ export const approveTheme: ThemeConfig = {
 const tabularNums = { fontVariantNumeric: 'tabular-nums' } as const;
 
 /** Defaults for every instance of a component, passed to the root ConfigProvider with the theme. */
-export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 'form'> = {
+export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 'form' | 'tabs'> = {
   // A field left empty says which one, so the error reads on its own (and in the form's summary).
   form: { validateMessages: { required: '${label} is required', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } } },
   table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap' } } } },
   statistic: { styles: { content: tabularNums } },
+  // The chosen tab's bar has rounded ends on top, so it reads as a tab's edge rather than an underline.
+  tabs: { styles: { indicator: { borderRadius: '3px 3px 0 0' } } },
 };
 
 /** Colour tokens: the semantic ones (`colorErrorText`) and antd's preset palettes (`orange7`). */

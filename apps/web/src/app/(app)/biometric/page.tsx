@@ -2,7 +2,8 @@
 
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, Result, Tabs } from 'antd';
+import { Card, Result } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { canManageBiometric } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -30,10 +31,10 @@ function BiometricPage() {
     <div className="page-container">
       <PageHeader title="Biometric devices" subtitle="Fingerprint and face devices, the people enrolled on them, and their punches turned into attendance." />
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => router.replace(`${pathname}?tab=${k}`, { scroll: false })}
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+          variant="page"
           destroyOnHidden
           items={[
             { key: 'punches', label: 'Punches', children: <Punches /> },

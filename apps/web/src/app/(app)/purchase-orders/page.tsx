@@ -2,7 +2,8 @@
 
 import React, { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, Tabs } from 'antd';
+import { Card } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
 import { ProcurementStatusPanel } from '@/components/purchasing/ProcurementStatusPanel';
@@ -15,10 +16,10 @@ function PurchaseOrdersPage() {
     <div className="page-container">
       <PageHeader title="Purchase orders" subtitle="Orders on vendors from approved material requests and their quotations, through approval, receipt at site (GRN) and the vendor's bill." />
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => router.replace(k === 'status' ? '/purchase-orders?tab=status' : '/purchase-orders')}
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+          variant="page"
           destroyOnHidden
           items={[
             { key: 'orders', label: 'Orders', children: <PurchaseOrderList openId={search.get('id')} /> },

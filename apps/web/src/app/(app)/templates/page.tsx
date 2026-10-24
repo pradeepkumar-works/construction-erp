@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Card, Tabs } from 'antd';
+import { Card } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { PROJECT_TYPE_LABELS, canManageTemplates } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useActivityTemplates } from '@/lib/queries';
@@ -23,7 +24,7 @@ export default function Page() {
       {isLoading ? <PageSkeleton header={false} /> : null}
       {data ? (
         <Card size="small">
-          <Tabs items={data.map((t) => ({ key: t.projectType, label: PROJECT_TYPE_LABELS[t.projectType], children: <TemplateEditor template={t} editable={editable} /> }))} />
+          <AppTabs items={data.map((t) => ({ key: t.projectType, label: PROJECT_TYPE_LABELS[t.projectType], children: <TemplateEditor template={t} editable={editable} /> }))} />
         </Card>
       ) : null}
     </div>

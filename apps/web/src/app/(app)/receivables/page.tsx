@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Col, Row, Select, Space, Statistic, Tabs, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Space, Statistic, Typography, theme } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientReceivableDto, OpenBillDto, ProjectReceivableDto, ReceiptDto, ReceiptKind, ReceiptSortField } from '@erp/shared';
@@ -400,14 +401,16 @@ export default function ReceivablesPage() {
       )}
       {isLoading ? null : (
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => setTab(k as ReceivablesTab)}
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+          variant="page"
           items={[
             {
               key: 'open',
-              label: `Open bills${data ? ` (${data.openBills.length})` : ''}`,
+              label: 'Open bills',
+              count: data?.openBills.length,
+              countLabel: 'bills',
               children: (
                 <>
                   <ListToolbar

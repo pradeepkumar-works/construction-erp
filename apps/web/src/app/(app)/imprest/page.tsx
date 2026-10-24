@@ -2,7 +2,8 @@
 
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, Tabs } from 'antd';
+import { Card } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { canRequestFunds, canViewPaymentRequests } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -32,7 +33,7 @@ function ImprestPage() {
       <PageHeader title="Site imprest" subtitle="Petty cash floats held at the sites: the cash in hand after each holder's cash expenses, top-ups to bring it back to the float, and the sites' requests for funds." />
       <Card size="small">
         {funds ? (
-          <Tabs
+          <AppTabs
             activeKey={tab}
             onChange={setTab}
             items={[

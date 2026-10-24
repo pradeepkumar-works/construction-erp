@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tabs } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { canViewWorkers } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { AttendanceList } from '@/components/attendance/AttendanceList';
@@ -22,11 +22,11 @@ export function AttendancePanel({ projectId }: { projectId?: string }) {
   const [tab, setTab] = useUrlTab<AttendanceTab>(ATTENDANCE_TABS, 'headcount');
   if (!user || !canViewWorkers(user.roleKey)) return <AttendanceList projectId={projectId} />;
   return (
-    <Tabs
+    <AppTabs
       className="attendance-tabs"
       activeKey={tab}
       onChange={(k) => setTab(k as AttendanceTab)}
-      tabBarStyle={{ padding: '0 16px', marginBottom: 0 }}
+      variant="page"
       items={[
         { key: 'headcount', label: 'Head count', children: <AttendanceList projectId={projectId} /> },
         { key: 'rollcall', label: 'Roll call', children: <RollCallPanel projectId={projectId} /> },

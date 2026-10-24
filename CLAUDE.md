@@ -94,7 +94,7 @@ and the pre-delivery checklist.
   (jsx-a11y, antd components mapped to their elements in `apps/web/eslint.config.mjs`) must pass): text colours come
   from tokens, never antd's raw `colorWarning`/`colorSuccess` for text (use the `…Text` token); a filter or search control outside a
   labelled `Form.Item` gets an `aria-label` (`ListToolbar` takes `searchLabel`), a `Progress` gets one too; buttons beside a
-  tab bar go through `renderTabBar={tabBarWithExtra(…)}` (`components/common/tabBarWithExtra.tsx`), not `tabBarExtraContent`.
+  tab bar are `AppTabs`' `extra`, never `tabBarExtraContent` (antd puts it inside the tablist).
   The route walk (`e2e/tests/route-walk.spec.ts`) opens every sidebar link (the navigation tree) for each role in `WALK_ROLES` and every project
   tab, at 1440 and 390 (touch) in both themes: axe, one `<h1>`, own tab title, targets 24 px (44 touch), text 12 px, no
   sideways scroll at 390. A new page is in it with no test edit and must pass it; a link no listed role sees needs a role.
@@ -152,6 +152,12 @@ and the pre-delivery checklist.
   `epc-rules.ts` (`packageStatus` is shared by the tab, the payment stages and the watch list's PACKAGE_LATE). Money on a
   project in another currency stays in rupees at `Project.exchangeRate`; screens convert with `formatMoney`, `inContract`
   and `outOfContract` (`src/lib/format.ts`), never a rate of their own. Keep `src/scripts/epc-test.ts` passing.
+- Tabs: every tab set is `AppTabs` (`components/common/AppTabs.tsx`), never antd `Tabs` directly (the project page's
+  group bar and a list's saved views are the two exceptions). Its look is the theme's `Tabs` tokens (`lib/theme.ts`, both
+  modes) and `componentConfig.tabs`, never `tabBarStyle` or CSS of a page's own. `variant="page"` for the tabs at the top of
+  a page's Card (in line with its padding, sticky under the header on a wider screen), the default `section` anywhere else;
+  a count is the item's `count` + `countLabel` (said after the count by a screen reader; `attention` for what waits on
+  someone), never "Label (3)" or a `Badge` in the label.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.

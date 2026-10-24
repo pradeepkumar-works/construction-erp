@@ -2,7 +2,8 @@
 
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, Result, Tabs } from 'antd';
+import { Card, Result } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { canBillRmc, canSellRmc, canViewRmc } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useRmcPlants } from '@/lib/queries';
@@ -34,10 +35,10 @@ function RmcPage() {
         <Result status="info" title="No RMC plant yet" subTitle="Add a project of type RMC plant (Projects, New project); its store, materials and staff work as at any site. You see the plants you are a member of." />
       ) : (
         <Card size="small">
-          <Tabs
+          <AppTabs
             activeKey={tab}
             onChange={(k) => router.replace(`${pathname}?tab=${k}`, { scroll: false })}
-            tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+            variant="page"
             destroyOnHidden
             items={[
               { key: 'day', label: 'The day', children: <DayView /> },

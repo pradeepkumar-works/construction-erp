@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Col, DatePicker, Row, Statistic, Table, Tabs, Tag, Typography, theme } from 'antd';
+import { Card, Col, DatePicker, Row, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import dayjs, { type Dayjs } from 'dayjs';
 import { PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, type PaymentMode, SUPPLIER_STATEMENT_KIND_LABELS, type SupplierBillDto, type SupplierPaymentDto, type SupplierStatementRowDto } from '@erp/shared';
 import { useSupplierStatement } from '@/lib/queries';
@@ -55,11 +56,11 @@ export default function SupplierStatementPage() {
             {stat('Due on open bills', String(due), overdue > 0 ? `${formatINR(overdue)} past its due date` : 'Nothing past its due date')}
             {stat('Retention held', data.retentionHeld, 'Released at the end of the work')}
           </Row>
-          <Tabs
+          <AppTabs
             items={[
               { key: 'rows', label: 'Statement', children: <Rows rows={data.rows} /> },
-              { key: 'bills', label: `Bills (${data.bills.length})`, children: <Bills bills={data.bills} /> },
-              { key: 'payments', label: `Payments (${data.payments.length})`, children: <Payments payments={data.payments} /> },
+              { key: 'bills', label: 'Bills', count: data.bills.length, countLabel: 'bills', children: <Bills bills={data.bills} /> },
+              { key: 'payments', label: 'Payments', count: data.payments.length, countLabel: 'payments', children: <Payments payments={data.payments} /> },
             ]}
           />
         </>

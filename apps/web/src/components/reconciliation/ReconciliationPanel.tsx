@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tabs, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tag, Tooltip, Typography } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ActivityNormDto, FrontFlag, MaterialNormDto, ProjectType, ReconciliationItemDto, ReconciliationLineDto, ReconciliationStatus, UnreconciledItemDto } from '@erp/shared';
@@ -103,10 +104,9 @@ export function ReconciliationPanel({ projectId, projectType }: { projectId: str
   const cost = !!user && canViewCost(user.roleKey);
   const network = projectType === 'WATER_SUPPLY' || projectType === 'SEWERAGE';
   return (
-    <Tabs
+    <AppTabs
       activeKey={view}
       onChange={(k) => setView(k as View)}
-      tabBarStyle={{ marginBottom: 12 }}
       items={[
         { key: 'materials', label: 'Materials', children: <MaterialsView projectId={projectId} /> },
         { key: 'structure', label: 'Structure', children: <StructureView projectId={projectId} /> },

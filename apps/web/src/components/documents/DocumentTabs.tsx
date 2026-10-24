@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Badge, Tabs } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import type { AiDraftDto } from '@erp/shared';
 import { canViewLetters } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -23,12 +23,8 @@ import { useUrlTab } from '@/lib/url-state';
 export const DOCUMENT_TABS = ['register', 'transmittals', 'letters', 'rfis'] as const;
 export type DocumentTab = (typeof DOCUMENT_TABS)[number];
 
-const count = (label: string, n: number | null | undefined, title: string) => (
-  <span>
-    {label}
-    {n ? <Badge count={n} size="small" title={title} style={{ marginLeft: 6 }} /> : null}
-  </span>
-);
+/** A tab with what waits in it: "NCRs", 2, "not closed". */
+const count = (label: string, n: number | null | undefined, countLabel: string) => ({ label, count: n, countLabel, attention: true });
 
 /**
  * The register, transmittals and letters: on the Documents page and as a project tab. The drawers live here so a
@@ -56,15 +52,15 @@ export function DocumentTabs({ projectId, tab, onTab, openId, openLetterId, open
   });
   return (
     <>
-      <Tabs
+      <AppTabs
         activeKey={tab === 'letters' && !letters ? 'register' : tab}
         onChange={(k) => onTab(k as DocumentTab)}
-        tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+        variant="page"
         items={[
-          { key: 'register', label: count('Register', summary?.awaitingApproval, 'Current revision awaiting approval'), children: <DocumentList projectId={projectId} onOpen={setDocId} /> },
-          { key: 'transmittals', label: count('Transmittals', summary?.unacknowledged, 'Not acknowledged'), children: <TransmittalList projectId={projectId} onOpen={setTransmittalId} onNew={() => setSend('new')} /> },
-          ...(letters ? [{ key: 'letters', label: count('Letters', summary?.lettersAwaitingReply, 'Reply due'), children: <LetterList projectId={projectId} onOpen={setLetterId} onNew={() => setNewLetter(true)} /> }] : []),
-          { key: 'rfis', label: count('RFIs', rfiSummary?.open, 'Waiting for an answer'), children: <RfiList projectId={projectId} onOpen={setRfiId} onNew={() => setNewRfi(true)} /> },
+          { key: 'register', ...count('Register', summary?.awaitingApproval, 'current revision awaiting approval'), children: <DocumentList projectId={projectId} onOpen={setDocId} /> },
+          { key: 'transmittals', ...count('Transmittals', summary?.unacknowledged, 'not acknowledged'), children: <TransmittalList projectId={projectId} onOpen={setTransmittalId} onNew={() => setSend('new')} /> },
+          ...(letters ? [{ key: 'letters', ...count('Letters', summary?.lettersAwaitingReply, 'reply due'), children: <LetterList projectId={projectId} onOpen={setLetterId} onNew={() => setNewLetter(true)} /> }] : []),
+          { key: 'rfis', ...count('RFIs', rfiSummary?.open, 'waiting for an answer'), children: <RfiList projectId={projectId} onOpen={setRfiId} onNew={() => setNewRfi(true)} /> },
         ]}
       />
       <DocumentDrawer

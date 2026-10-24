@@ -3,7 +3,8 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Badge, Card, Tabs } from 'antd';
+import { Card } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { usePortalBills, usePortalInspections, usePortalProject, usePortalRfis } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -60,42 +61,35 @@ function PortalProject() {
       {isLoading ? <PageSkeleton shape="workspace" header={false} /> : null}
       {data ? (
         <Card size="small">
-          <Tabs
+          <AppTabs
             activeKey={tab}
             onChange={(k) => go(k as Tab)}
-            tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+            variant="page"
             items={[
               { key: 'overview', label: 'Progress', children: <PortalOverview project={data} /> },
               { key: 'dprs', label: 'Daily reports', children: <PortalDprs projectId={data.id} /> },
               { key: 'report', label: 'Progress report', children: <div style={{ padding: 12 }}><ProgressReportView projectId={data.id} portal /></div> },
               {
                 key: 'bills',
-                label: (
-                  <span>
-                    RA bills
-                    {toCertify ? <Badge count={toCertify} size="small" title="Waiting for your certificate" style={{ marginLeft: 6 }} /> : null}
-                  </span>
-                ),
+                label: 'RA bills',
+                count: toCertify,
+                countLabel: 'waiting for your certificate',
+                attention: true,
                 children: <PortalBills bills={bills} openId={billId} onOpen={setBillId} />,
               },
               {
                 key: 'inspections',
-                label: (
-                  <span>
-                    Inspections
-                    {requested ? <Badge count={requested} size="small" color="purple" title="Requested" style={{ marginLeft: 6 }} /> : null}
-                  </span>
-                ),
+                label: 'Inspections',
+                count: requested || null,
+                countLabel: 'requested',
                 children: <PortalInspections inspections={inspections} openId={inspectionId} onOpen={setInspectionId} />,
               },
               {
                 key: 'rfis',
-                label: (
-                  <span>
-                    RFIs
-                    {toAnswer ? <Badge count={toAnswer} size="small" title="Waiting for your answer" style={{ marginLeft: 6 }} /> : null}
-                  </span>
-                ),
+                label: 'RFIs',
+                count: toAnswer,
+                countLabel: 'waiting for your answer',
+                attention: true,
                 children: <PortalRfis rfis={rfis} openId={rfiId} onOpen={setRfiId} />,
               },
             ]}

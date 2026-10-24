@@ -2,7 +2,8 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Flex, Pagination, Segmented, Space, Spin, Tabs } from 'antd';
+import { Button, Card, Flex, Pagination, Segmented, Space, Spin } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { CheckOutlined, MessageOutlined } from '@ant-design/icons';
 import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shared';
 import { canViewMessageLog, NOTIFICATION_TABS, NOTIFICATION_TAB_LABELS, SUBMISSION_TYPES } from '@erp/shared';
@@ -116,10 +117,10 @@ function NotificationsPageInner() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
         {showLog ? (
-          <Tabs
+          <AppTabs
             activeKey={tab}
             onChange={(k) => router.replace(k === 'messages' ? '/notifications?tab=messages' : '/notifications', { scroll: false })}
-            tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+            variant="page"
             items={[
               {
                 key: 'notifications',

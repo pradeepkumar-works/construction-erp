@@ -2,7 +2,8 @@
 
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, Result, Tabs } from 'antd';
+import { Card, Result } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { canKeepBooks } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -28,10 +29,10 @@ function BooksPage() {
         <Result status="403" title="Only admin, management and accounts see the books" />
       ) : (
         <Card size="small">
-          <Tabs
+          <AppTabs
             activeKey={tab}
             onChange={(k) => router.replace(`${pathname}?tab=${k}`, { scroll: false })}
-            tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+            variant="page"
             destroyOnHidden
             items={[
               { key: 'day', label: 'Day book', children: <DayBook /> },

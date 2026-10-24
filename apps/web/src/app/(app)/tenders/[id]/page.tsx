@@ -3,24 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  App,
-  Button,
-  Card,
-  Col,
-  Descriptions,
-  Dropdown,
-  Flex,
-  InputNumber,
-  Row,
-  Space,
-  Statistic,
-  Table,
-  Tabs,
-  Tag,
-  Typography,
-  theme,
-} from "antd";
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, InputNumber, Row, Space, Statistic, Table, Tag, Typography, theme } from "antd";
+import { AppTabs } from "@/components/common/AppTabs";
 import type { MenuProps } from "antd";
 import {
   DeleteOutlined,
@@ -387,13 +371,15 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
               "Quote less cost and overheads",
             )}
       </Row>
-      <Tabs
+      <AppTabs
         activeKey={tab}
         onChange={(k) => setTab(k as Tab)}
         items={[
           {
             key: "boq",
-            label: `Bid BOQ (${tot.itemCount})`,
+            label: 'Bid BOQ',
+            count: tot.itemCount,
+            countLabel: 'items',
             children: (
               <BoqTab
                 tender={t}
@@ -405,7 +391,9 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
           },
           {
             key: "bids",
-            label: `Bids at opening (${t.bids.length})`,
+            label: 'Bids at opening',
+            count: t.bids.length,
+            countLabel: 'bids',
             children: <BidsTab tender={t} onAdd={() => setBidding(true)} />,
           },
           {

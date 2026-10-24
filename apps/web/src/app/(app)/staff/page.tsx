@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Badge, Card, Tabs } from 'antd';
+import { Card } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { canManageStaff, canMarkStaff, canViewEmployeePrivate } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useStaffSummary } from '@/lib/queries';
@@ -48,10 +49,10 @@ function StaffPage() {
     <div className="page-container">
       <PageHeader title="Staff and leave" subtitle="Check in, apply for leave and see your balance. Site in-charges mark the staff register; HR keeps staff records and holidays." />
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => router.replace(`${pathname}?tab=${k}`, { scroll: false })}
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+          variant="page"
           items={[
             { key: 'me', label: 'My attendance and leave', children: <MyStaff /> },
             { key: 'payslips', label: 'My payslips', children: <MyPayslips /> },
@@ -59,12 +60,10 @@ function StaffPage() {
               ? [
                   {
                     key: 'leave',
-                    label: (
-                      <span>
-                        Leave
-                        {summary?.leaveToDecide ? <Badge count={summary.leaveToDecide} size="small" title="Waiting on you" style={{ marginLeft: 6 }} /> : null}
-                      </span>
-                    ),
+                    label: 'Leave',
+                    count: summary?.leaveToDecide,
+                    countLabel: 'waiting on you',
+                    attention: true,
                     children: <LeaveList onOpen={setLeaveId} onNew={() => setApplyFor(true)} toDecideFirst={!!summary?.leaveToDecide} />,
                   },
                 ]
@@ -73,12 +72,10 @@ function StaffPage() {
               ? [
                   {
                     key: 'overtime',
-                    label: (
-                      <span>
-                        Overtime
-                        {summary?.overtimeToDecide ? <Badge count={summary.overtimeToDecide} size="small" title="Waiting on you" style={{ marginLeft: 6 }} /> : null}
-                      </span>
-                    ),
+                    label: 'Overtime',
+                    count: summary?.overtimeToDecide,
+                    countLabel: 'waiting on you',
+                    attention: true,
                     children: <OvertimeList />,
                   },
                 ]

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Switch, Table, Tabs, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Switch, Table, Tag, Typography } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import type { TableProps } from 'antd';
 import { useIsPhone } from '@/lib/screen';
 import { useUrlTab } from '@/lib/url-state';
@@ -421,10 +422,10 @@ export default function TallyPage() {
         <Link href="/payables" className="text-link">Payables</Link> until their export is undone.
       </Typography.Paragraph>
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => setTab(k as TallyTab)}
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+          variant="page"
           items={[
             { key: 'export', label: 'To export', children: <ToExport /> },
             { key: 'exports', label: 'Exports', children: <Exports /> },

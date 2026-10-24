@@ -3,7 +3,8 @@
 import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Alert, Button, Card, Col, DatePicker, Row, Statistic, Table, Tabs, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Col, DatePicker, Row, Statistic, Table, Tag, Typography } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { DownloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { GstInwardRowDto, GstOutwardRowDto } from '@erp/shared';
@@ -14,7 +15,6 @@ import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format'
 import { CONSTRUCTION_SAC, GST_SOURCE_LABELS, downloadGstWorkbook, hsnSummary, placeOfSupply } from '@/lib/gstExport';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { tabBarWithExtra } from '@/components/common/tabBarWithExtra';
 import { rangePresets } from '@/lib/dates';
 import { useUrlTab, writeUrlParam } from '@/lib/url-state';
 import { LocalDataTable } from '@/components/list/LocalDataTable';
@@ -215,19 +215,21 @@ function GstRegistersPage() {
         </>
       )}
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => setTab(k as GstTab)}
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
-          renderTabBar={tabBarWithExtra(
-            <Button icon={<DownloadOutlined />} disabled={!data} onClick={() => data && downloadGstWorkbook(data)} style={{ marginRight: 12 }}>
+          variant="page"
+          extra={
+            <Button icon={<DownloadOutlined />} disabled={!data} onClick={() => data && downloadGstWorkbook(data)}>
               Excel
-            </Button>,
-          )}
+            </Button>
+          }
           items={[
             {
               key: 'outward',
-              label: `Outward supplies${data ? ` (${data.outward.length})` : ''}`,
+              label: 'Outward supplies',
+              count: data?.outward.length,
+              countLabel: 'bills',
               children: (
                 <LocalDataTable<Keyed<GstOutwardRowDto>>
                   list="gst-outward"
@@ -243,7 +245,9 @@ function GstRegistersPage() {
             },
             {
               key: 'inward',
-              label: `Input tax${data ? ` (${data.inward.length})` : ''}`,
+              label: 'Input tax',
+              count: data?.inward.length,
+              countLabel: 'bills',
               children: (
                 <LocalDataTable<Keyed<GstInwardRowDto>>
                   list="gst-inward"

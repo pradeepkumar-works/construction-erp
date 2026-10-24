@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, DatePicker, Tabs } from 'antd';
+import { Card, DatePicker } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import dayjs from 'dayjs';
 import { canViewLabourSummary, canViewPayroll } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
@@ -50,10 +51,10 @@ function PayrollPage() {
     <div className="page-container">
       <PageHeader title="Payroll" subtitle="Monthly salary runs with payslips, PF, ESI and TDS; salaries, loans and full and final settlements; and the month's inputs for staff and labour contractors." />
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => router.replace(`${pathname}?tab=${k}`, { scroll: false })}
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+          variant="page"
           destroyOnHidden
           items={[
             ...(staff

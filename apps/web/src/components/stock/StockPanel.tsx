@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button, Dropdown, Space, Tabs } from "antd";
+import { Button, Dropdown, Space } from "antd";
+import { AppTabs } from "@/components/common/AppTabs";
 import {
   DownOutlined,
   ExportOutlined,
@@ -16,7 +17,6 @@ import {
 } from "@erp/shared";
 import { useAuth } from "@/lib/auth";
 import { useUrlTab } from "@/lib/url-state";
-import { tabBarWithExtra } from "@/components/common/tabBarWithExtra";
 import { StockBalances } from "./StockBalances";
 import { StockEntries } from "./StockEntries";
 import { ItemsTable } from "./ItemsTable";
@@ -148,13 +148,11 @@ export function StockPanel({
   return (
     <>
       <IncomingTransfers projectId={projectId} />
-      <Tabs
+      <AppTabs
         activeKey={tab}
         onChange={setTab}
-        tabBarStyle={{ padding: "0 12px", marginBottom: 0 }}
-        renderTabBar={tabBarWithExtra(
-          projectId ? <StockActions projectId={projectId} /> : undefined,
-        )}
+        variant="page"
+        extra={projectId ? <StockActions projectId={projectId} /> : undefined}
         items={[
           {
             key: "balances",

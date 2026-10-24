@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Statistic, Tabs, Tag, Tooltip } from 'antd';
+import { Statistic, Tag, Tooltip } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { SAFETY_INCIDENT_TYPE_LABELS } from '@erp/shared';
 import { useSafetySummary } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -55,14 +56,14 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
           ) : null}
         </CardToolbar>
       ) : null}
-      <Tabs
+      <AppTabs
         activeKey={tab}
         onChange={(k) => setTab(k as SafetyTab)}
-        tabBarStyle={{ padding: '0 16px', marginBottom: 0 }}
+        variant="page"
         items={[
           { key: 'incidents', label: 'Incidents and near misses', children: <IncidentList projectId={projectId} initialOpenId={initialTab === 'incidents' || !initialTab ? initialId : undefined} /> },
           { key: 'talks', label: 'Toolbox talks', children: <TalkList projectId={projectId} /> },
-          { key: 'permits', label: `Permits to work${s && s.permitsRequested ? ` (${s.permitsRequested} waiting)` : ''}`, children: <PermitList projectId={projectId} initialOpenId={initialTab === 'permits' ? initialId : undefined} /> },
+          { key: 'permits', label: 'Permits to work', count: s?.permitsRequested, countLabel: 'waiting', attention: true, children: <PermitList projectId={projectId} initialOpenId={initialTab === 'permits' ? initialId : undefined} /> },
           { key: 'ppe', label: 'PPE', children: <PpePanel projectId={projectId} /> },
         ]}
       />

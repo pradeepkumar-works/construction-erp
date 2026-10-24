@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Segmented, Select, Statistic, Tabs, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Segmented, Select, Statistic, Typography, theme } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@ant-design/icons';
 import { MEETING_KIND_LABELS, canRecordMeetings, type MeetingActionDto, type MeetingDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -203,7 +204,7 @@ function MeetingsPage() {
         </Row>
       ) : null}
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={view}
           onChange={(k) => {
             page.setFilter('status', undefined);
