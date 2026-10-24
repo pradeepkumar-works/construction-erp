@@ -1455,6 +1455,12 @@ model PurchaseOrder {
   supplierAcceptedById String?
   supplierAcceptedBy   User?            @relation("PoSupplierAccepter", fields: [supplierAcceptedById], references: [id], onDelete: SetNull)
   supplierNote         String?
+  /// Why the order went to this vendor when a complete quotation on its request was lower; asked before it is submitted
+  selectionReason      String?
+  /// The order emailed to the vendor on approval (or again by hand): when, to whom, and why it was not sent
+  supplierEmailedAt    DateTime?
+  supplierEmailTo      String?
+  supplierEmailError   String?
   status               SubmissionStatus @default(DRAFT)
   submittedById        String
   submittedBy          User             @relation("PoSubmitter", fields: [submittedById], references: [id])

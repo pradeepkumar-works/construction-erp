@@ -19,6 +19,15 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2027-01-po-email',
+    date: '2027-01-18',
+    title: 'Purchase orders go to the supplier by email',
+    points: [
+      'An approved purchase order is emailed to the vendor at the email in the vendor master: the items, totals, delivery, payment and terms, with a button to accept it when they have a supplier portal login. The order shows when it went and to whom, or why it did not, with Email vendor again.',
+      'An order not from the lowest quotation that prices every item on its request asks why before it goes for approval, and the approver reads the reason on the order.',
+    ],
+  },
+  {
     id: '2027-01-om',
     date: '2027-01-16',
     title: 'Operation and maintenance after handover',

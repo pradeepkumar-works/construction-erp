@@ -95,6 +95,8 @@ class PoFields {
   @ApiPropertyOptional({ example: 30, description: 'Days from invoice to payment; 45 at most for micro and small enterprises' }) @IsOptional() @nullable() @IsInt() @Min(0) @Max(365) paymentDays?: number | null;
   @ApiPropertyOptional({ example: '2500.00' }) @IsOptional() @num() @IsNumberString() freight?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
+  @ApiPropertyOptional({ description: 'Why the order goes to this vendor when a complete quotation on its request was lower; needed before it is submitted' })
+  @IsOptional() @trim() @IsString() @MaxLength(500) selectionReason?: string | null;
   @ApiPropertyOptional({ type: [String], description: 'Quotation or other documents' }) @IsOptional() @IsArray() @IsUUID('all', { each: true }) attachmentIds?: string[];
   @ApiPropertyOptional({ default: false, description: 'Submit for approval as well' }) @IsOptional() @IsBoolean() submit?: boolean;
 }
