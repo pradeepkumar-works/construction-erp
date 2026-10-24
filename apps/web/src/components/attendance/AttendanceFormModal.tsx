@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Tag, Typography } from 'antd';
+import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -204,9 +205,9 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
               Fills the DPR manpower:
             </Typography.Text>
             {byTrade.map((m) => (
-              <Tag key={m.category} style={{ margin: 0 }}>
+              <AppTag key={m.category} style={{ margin: 0 }}>
                 {m.category} {m.count}
-              </Tag>
+              </AppTag>
             ))}
           </div>
         ) : null}

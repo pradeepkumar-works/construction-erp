@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { App, Flex, Image, Spin, Switch, Tag, Typography, theme } from 'antd';
+import { App, Flex, Image, Spin, Switch, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { PHOTO_FLAG_INFO, type AttachmentDto, type PhotoCheckKind } from '@erp/shared';
 import { errorMessage, fileUrl } from '@/lib/api';
@@ -85,9 +86,9 @@ function PhotoChecks({ kind, id, photos }: { kind: PhotoCheckKind; id: string; p
                   <span>
                     <Typography.Text strong>{f.label}</Typography.Text>
                     {PHOTO_FLAG_INFO[f.key].safety ? (
-                      <Tag color="warning" style={{ marginInlineStart: 6 }}>
+                      <AppTag tone="pending" style={{ marginInlineStart: 6 }}>
                         Safety
-                      </Tag>
+                      </AppTag>
                     ) : null}
                     <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), display: 'block' }}>
                       {f.detail ? `${f.detail}. ` : ''}

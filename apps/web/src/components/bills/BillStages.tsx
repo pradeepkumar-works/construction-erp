@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, Form, Input, InputNumber, Table, Tag, Tooltip, Typography } from 'antd';
+import { App, Button, Form, Input, InputNumber, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, RaBillDto, RaBillStageLineDto, SlippageLineDto } from '@erp/shared';
 import { STAGE_TRIGGER_LABELS } from '@erp/shared';
@@ -70,9 +71,9 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
                 {l.claimedByHand ? (
                   <div>
                     <Tooltip title={l.note ?? undefined}>
-                      <Tag color="orange" style={{ marginInlineEnd: 0 }}>
+                      <AppTag tone="pending" style={{ marginInlineEnd: 0 }}>
                         Claimed by hand
-                      </Tag>
+                      </AppTag>
                     </Tooltip>
                     <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       Evidence gives {formatPct(l.suggestedPct, { digits: 2 })}

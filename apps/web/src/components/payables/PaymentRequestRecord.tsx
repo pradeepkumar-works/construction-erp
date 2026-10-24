@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Table, Tag, Typography } from 'antd';
+import { Button, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PaymentRequestDto, VendorPaymentDto } from '@erp/shared';
 import { FUND_PURPOSE_LABELS, MSME_CATEGORY_LABELS, PAYMENT_REQUEST_KIND_LABELS, RECEIPT_MODE_LABELS, canEditSubmission, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
@@ -59,17 +60,17 @@ export function RequestPaidTag({ request }: { request: Pick<PaymentRequestDto, '
   const released = requestReleases(request);
   if (request.paidDate)
     return (
-      <Tag color="green" style={{ margin: 0 }}>
+      <AppTag tone="success" style={{ margin: 0 }}>
         {released ? 'Released' : 'Paid'}
-      </Tag>
+      </AppTag>
     );
   if (toNumber(request.paidAmount) > 0)
     return (
-      <Tag color="gold" style={{ margin: 0 }}>
+      <AppTag tone="pending" style={{ margin: 0 }}>
         {released ? 'Part released' : 'Part paid'}
-      </Tag>
+      </AppTag>
     );
-  return <Tag style={{ margin: 0 }}>{released ? 'To release' : 'To pay'}</Tag>;
+  return <AppTag style={{ margin: 0 }}>{released ? 'To release' : 'To pay'}</AppTag>;
 }
 
 interface RecordProps {
@@ -178,9 +179,9 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                     {releases && targetHref ? <Link href={targetHref}>{requestPayee(data)}</Link> : requestPayee(data)}
                     {fund && !releases ? <span className="text-muted"> · on account</span> : null}
                     {data.vendorMsme && data.vendorMsme !== 'MEDIUM' ? (
-                      <Tag color="orange" style={{ marginLeft: 8 }}>
+                      <AppTag tone="pending" style={{ marginLeft: 8 }}>
                         {MSME_CATEGORY_LABELS[data.vendorMsme]}
-                      </Tag>
+                      </AppTag>
                     ) : null}
                   </span>
                 ),

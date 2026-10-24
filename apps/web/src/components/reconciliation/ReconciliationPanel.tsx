@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
@@ -36,9 +37,9 @@ export const qty = (v: string, unit?: string) => (
 export function StatusCell({ status }: { status: ReconciliationStatus }) {
   return (
     <Tooltip title={RECONCILIATION_STATUS_HINTS[status]}>
-      <Tag color={STATUS_COLOR[status]} style={{ margin: 0 }}>
+      <AppTag color={STATUS_COLOR[status]} style={{ margin: 0 }}>
         {RECONCILIATION_STATUS_LABELS[status]}
-      </Tag>
+      </AppTag>
     </Tooltip>
   );
 }
@@ -51,9 +52,9 @@ export function FrontCell({ qtyValue, unit, flag }: { qtyValue: string | null; u
       {flag ? (
         <div>
           <Tooltip title={FRONT_FLAG_HINTS[flag]}>
-            <Tag color={flag === 'USED_NOT_ISSUED' ? 'error' : 'warning'} style={{ margin: 0 }}>
+            <AppTag color={flag === 'USED_NOT_ISSUED' ? 'error' : 'warning'} style={{ margin: 0 }}>
               {FRONT_FLAG_LABELS[flag]}
-            </Tag>
+            </AppTag>
           </Tooltip>
         </div>
       ) : null}

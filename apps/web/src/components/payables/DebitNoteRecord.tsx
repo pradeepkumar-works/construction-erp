@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Form, Input, Table, Tag, Typography } from 'antd';
+import { Button, Form, Input, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DebitNoteDto, DebitNoteLineDto } from '@erp/shared';
 import { DEBIT_NOTE_REASON_LABELS, canRaiseDebitNote } from '@erp/shared';
@@ -30,15 +31,15 @@ export const debitNoteBillHref = (n: Pick<DebitNoteDto, 'vendorBillId' | 'subcon
 
 export const DebitNoteTag = ({ note }: { note: Pick<DebitNoteDto, 'cancelledAt' | 'exportedToTally'> }) =>
   note.cancelledAt ? (
-    <Tag style={{ margin: 0 }}>Cancelled</Tag>
+    <AppTag style={{ margin: 0 }}>Cancelled</AppTag>
   ) : note.exportedToTally ? (
-    <Tag color="blue" style={{ margin: 0 }}>
+    <AppTag tone="info" style={{ margin: 0 }}>
       In Tally
-    </Tag>
+    </AppTag>
   ) : (
-    <Tag color="green" style={{ margin: 0 }}>
+    <AppTag tone="success" style={{ margin: 0 }}>
       Taken off the bill
-    </Tag>
+    </AppTag>
   );
 
 /** Cancel a debit note with a reason; the bill's payable goes back up. */

@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Statistic, Tag, Tooltip } from 'antd';
+import { Statistic, Tooltip } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { SAFETY_INCIDENT_TYPE_LABELS } from '@erp/shared';
 import { useSafetySummary } from '@/lib/queries';
@@ -45,9 +46,9 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
                 This year:
               </span>
               {s.byType.map((t) => (
-                <Tag key={t.type} color={INCIDENT_TYPE_COLORS[t.type]}>
+                <AppTag key={t.type} color={INCIDENT_TYPE_COLORS[t.type]}>
                   {SAFETY_INCIDENT_TYPE_LABELS[t.type]}: {t.count}
-                </Tag>
+                </AppTag>
               ))}
               <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {s.injuredThisYear} {s.injuredThisYear === 1 ? 'person' : 'people'} hurt, {s.lostTimeThisYear} lost-time

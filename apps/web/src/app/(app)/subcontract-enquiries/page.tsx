@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Select, Statistic, Tag, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@ant-design/icons';
 import { canRunSubcontractEnquiries, type ScEnquiryDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -84,7 +85,7 @@ function ScEnquiriesPage() {
         r.closesOn ? (
           <div>
             <span translate="no">{formatDate(r.closesOn)}</span>
-            {r.status === 'OPEN' && r.closesOn < today() ? <div><Tag color="warning">Closed</Tag></div> : null}
+            {r.status === 'OPEN' && r.closesOn < today() ? <div><AppTag tone="pending">Closed</AppTag></div> : null}
           </div>
         ) : (
           '-'

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Descriptions, Empty, Flex, Form, Input, InputNumber, Popconfirm, Progress, Segmented, Select, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Descriptions, Empty, Flex, Form, Input, InputNumber, Popconfirm, Progress, Segmented, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -86,7 +87,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
       key: 'trigger',
       render: (t: StageTrigger) => (
         <Tooltip title={STAGE_TRIGGER_HINTS[t]}>
-          <Tag color={TRIGGER_COLORS[t]}>{STAGE_TRIGGER_LABELS[t]}</Tag>
+          <AppTag color={TRIGGER_COLORS[t]}>{STAGE_TRIGGER_LABELS[t]}</AppTag>
         </Tooltip>
       ),
     },
@@ -236,7 +237,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
                   </div>
                 ),
               },
-              { title: 'Paid by', dataIndex: 'basis', key: 'basis', render: (b: BillingComponentDto['basis']) => <Tag>{BILLING_BASIS_LABELS[b]}</Tag> },
+              { title: 'Paid by', dataIndex: 'basis', key: 'basis', render: (b: BillingComponentDto['basis']) => <AppTag>{BILLING_BASIS_LABELS[b]}</AppTag> },
               {
                 title: 'Share',
                 key: 'share',

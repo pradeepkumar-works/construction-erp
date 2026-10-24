@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, Card, Col, Descriptions, Form, Input, Radio, Row, Select, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Col, Descriptions, Form, Input, Radio, Row, Select, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CreditCardOutlined, PrinterOutlined } from '@ant-design/icons';
 import type { BillingDetailsDto, BillingInvoiceDto, BillingStatus } from '@erp/shared';
 import { BILLING_STATUS_LABELS, BILLING_UNIT_LABELS, BILLING_YEAR_CHARGED_MONTHS, GST_STATES, PRODUCT_NAME, canManageBilling } from '@erp/shared';
@@ -76,7 +77,7 @@ export default function BillingPage() {
               size="small"
               column={{ xs: 1, sm: 2 }}
               items={[
-                { key: 'status', label: 'Status', children: <Tag color={STATUS_COLORS[data.status]}>{BILLING_STATUS_LABELS[data.status]}</Tag> },
+                { key: 'status', label: 'Status', children: <AppTag color={STATUS_COLORS[data.status]}>{BILLING_STATUS_LABELS[data.status]}</AppTag> },
                 ...(data.paidUntil ? [{ key: 'paid', label: 'Paid until', children: formatDate(data.paidUntil) }] : []),
                 ...(data.trialEndsAt ? [{ key: 'trial', label: 'Free trial ends', children: formatDate(data.trialEndsAt) }] : []),
                 { key: 'price', label: 'Price', children: `${formatINR(data.unitPrice)} per ${unit.one} per month, plus GST` },

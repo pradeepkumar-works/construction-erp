@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tag } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { ExpiryState, MaintenanceKind, MaintenanceStatus, ServiceState } from '@erp/shared';
 import { EXPIRY_STATE_LABELS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUS_LABELS, SERVICE_STATE_LABELS } from '@erp/shared';
 
@@ -9,31 +9,31 @@ const SERVICE_COLORS: Record<ServiceState, string> = { OVERDUE: 'red', DUE_SOON:
 const EXPIRY_COLORS: Record<ExpiryState, string> = { EXPIRED: 'red', EXPIRING: 'gold', VALID: 'green' };
 
 export const ServiceStateTag = ({ state }: { state: ServiceState }) => (
-  <Tag color={SERVICE_COLORS[state]} style={{ margin: 0 }}>
+  <AppTag color={SERVICE_COLORS[state]} style={{ margin: 0 }}>
     {SERVICE_STATE_LABELS[state]}
-  </Tag>
+  </AppTag>
 );
 
 /** Expired / expiring in N days / valid. */
 export const ExpiryTag = ({ state, daysLeft }: { state: ExpiryState | null; daysLeft: number | null }) =>
   state ? (
-    <Tag color={EXPIRY_COLORS[state]} style={{ margin: 0 }}>
+    <AppTag color={EXPIRY_COLORS[state]} style={{ margin: 0 }}>
       {state === 'EXPIRING' && daysLeft !== null ? (daysLeft === 0 ? 'Expires today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`) : EXPIRY_STATE_LABELS[state]}
-    </Tag>
+    </AppTag>
   ) : (
     <span className="text-muted">-</span>
   );
 
 export const JobKindTag = ({ kind }: { kind: MaintenanceKind }) => (
-  <Tag color={kind === 'BREAKDOWN' ? 'volcano' : 'blue'} style={{ margin: 0 }}>
+  <AppTag color={kind === 'BREAKDOWN' ? 'volcano' : 'blue'} style={{ margin: 0 }}>
     {MAINTENANCE_KIND_LABELS[kind]}
-  </Tag>
+  </AppTag>
 );
 
 export const JobStatusTag = ({ status }: { status: MaintenanceStatus }) => (
-  <Tag color={status === 'OPEN' ? 'orange' : 'default'} style={{ margin: 0 }}>
+  <AppTag color={status === 'OPEN' ? 'orange' : 'default'} style={{ margin: 0 }}>
     {MAINTENANCE_STATUS_LABELS[status]}
-  </Tag>
+  </AppTag>
 );
 
 /** "120 h or 12 days left", "overdue by 5 days". */

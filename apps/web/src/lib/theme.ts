@@ -226,8 +226,8 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
       // Progress is a flat blue datum line on a hairline track; done is the brand green.
       Progress: { remainingColor: dark ? c.nightBorder : c.border, lineBorderRadius: 2, colorSuccess: dark ? c.nightSuccess : c.success },
       Skeleton: { gradientFromColor: dark ? c.nightSkeletonFrom : c.skeletonFrom, gradientToColor: dark ? c.nightSkeletonTo : c.skeletonTo },
-      // A record's stage bar names a sent-back or rejected step in red, which needs the lighter red to read at night.
-      ...(dark ? { Badge: { colorError: c.danger }, Steps: { colorError: c.nightDanger } } : {}),
+      // A count badge keeps the day's red at night: white on antd's night red falls under 4.5:1.
+      ...(dark ? { Badge: { colorError: c.danger } } : {}),
     },
   };
 }

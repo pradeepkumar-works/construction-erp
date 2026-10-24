@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Button, Table, Tag, Tooltip, Typography } from 'antd';
+import { Button, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import type { ContractorMonthRowDto } from '@erp/shared';
@@ -57,7 +58,7 @@ export function ContractorMonth({ month, projectId }: { month: string; projectId
     { title: 'Man-days', dataIndex: 'manDays', width: 100, align: 'right' },
     { title: 'Daily rate', dataIndex: 'dailyRate', width: 110, align: 'right', render: (v: string | null) => (v ? formatINR(v) : <Typography.Text type="secondary">No rate</Typography.Text>) },
     { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v: string | null) => (v ? formatINR(v) : '') },
-    { title: '', key: 'wo', width: 150, render: (_, r) => (r.onWorkOrder ? <Tooltip title="They have an approved work order on this project, so they are paid through its bills"><Tag>On work order</Tag></Tooltip> : null) },
+    { title: '', key: 'wo', width: 150, render: (_, r) => (r.onWorkOrder ? <Tooltip title="They have an approved work order on this project, so they are paid through its bills"><AppTag>On work order</AppTag></Tooltip> : null) },
   ];
 
   return (

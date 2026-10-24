@@ -3,7 +3,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { App, Button, Drawer, Empty, Flex, Result, Spin, Tag, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Drawer, Empty, Flex, Result, Spin, Tooltip, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { ArrowLeftOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, DislikeFilled, DislikeOutlined, HistoryOutlined, LikeFilled, LikeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Bubble, Prompts, Sender, Welcome } from '@ant-design/x';
 import type { BubbleItemType } from '@ant-design/x';
@@ -463,9 +464,9 @@ function AnswerFooter({ item, onRate, onCopy, onRetry }: { item: ChatItem; onRat
             Sources
           </Typography.Text>
           {item.citations.map((c) => (
-            <Tag key={c.href} variant="filled" style={{ marginInlineEnd: 0 }}>
+            <AppTag key={c.href} variant="filled" style={{ marginInlineEnd: 0 }}>
               <CitationLink href={c.href}>{c.label}</CitationLink>
-            </Tag>
+            </AppTag>
           ))}
         </Flex>
       )}

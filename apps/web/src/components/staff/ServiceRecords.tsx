@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, DatePicker, Select, Space, Table, Tag, Typography } from 'antd';
+import { Button, DatePicker, Select, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PrinterOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -41,7 +42,7 @@ export function ServiceRecords({ onOpen }: { onOpen: (employeeId: string) => voi
         </span>
       ),
     },
-    { title: 'What', dataIndex: 'type', width: 130, render: (v: EmployeeEventType) => <Tag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</Tag> },
+    { title: 'What', dataIndex: 'type', width: 130, render: (v: EmployeeEventType) => <AppTag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</AppTag> },
     { title: 'Change', key: 'change', ellipsis: true, render: (_, r) => eventChange(r) || '-' },
     { title: 'Letter', dataIndex: 'letterNo', width: 130, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Recorded by', dataIndex: 'createdByName', width: 160, ellipsis: true },

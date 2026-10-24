@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Badge, Card, Col, Empty, Progress, Row, Space, Tag, Typography } from 'antd';
+import { Badge, Card, Col, Empty, Progress, Row, Space, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { usePortalProjects } from '@/lib/queries';
 import { formatDate, formatINRCompact, PROJECT_STATUS_COLORS } from '@/lib/format';
@@ -29,10 +30,10 @@ export default function PortalPage() {
                 <Space orientation="vertical" size={8} style={{ width: '100%' }}>
                   <Space wrap size={6}>
                     <Typography.Text type="secondary">{p.code}</Typography.Text>
-                    <Tag color={PROJECT_STATUS_COLORS[p.status]} style={{ margin: 0 }}>
+                    <AppTag color={PROJECT_STATUS_COLORS[p.status]} style={{ margin: 0 }}>
                       {PROJECT_STATUS_LABELS[p.status]}
-                    </Tag>
-                    <Tag style={{ margin: 0 }}>{PROJECT_TYPE_LABELS[p.type]}</Tag>
+                    </AppTag>
+                    <AppTag style={{ margin: 0 }}>{PROJECT_TYPE_LABELS[p.type]}</AppTag>
                   </Space>
                   <Typography.Title level={5} style={{ margin: 0 }}>
                     {p.name}

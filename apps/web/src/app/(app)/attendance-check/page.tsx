@@ -3,7 +3,8 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, DatePicker, Empty, Flex, Result, Segmented, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Button, Card, DatePicker, Empty, Flex, Result, Segmented, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
@@ -92,7 +93,7 @@ function AttendanceCheck() {
     return (
       <Card key={f.key} data-flag-key={f.key} size="small">
         <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXS }}>
-          <Tag color={KIND_COLOR[f.kind]}>{ATTENDANCE_FLAG_LABELS[f.kind]}</Tag>
+          <AppTag color={KIND_COLOR[f.kind]}>{ATTENDANCE_FLAG_LABELS[f.kind]}</AppTag>
           <Typography.Text type="secondary" translate="no">
             {f.projectName}
           </Typography.Text>
@@ -105,9 +106,9 @@ function AttendanceCheck() {
           <Typography.Text strong>To check:</Typography.Text>
           <Typography.Text translate="no">{f.quantity}</Typography.Text>
           {f.valueInr ? (
-            <Tag color="red" translate="no">
+            <AppTag tone="danger" translate="no">
               {formatINR(f.valueInr)}
-            </Tag>
+            </AppTag>
           ) : null}
         </Flex>
         <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginXS }}>

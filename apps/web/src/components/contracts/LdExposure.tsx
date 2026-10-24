@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Alert, Descriptions, Flex, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Alert, Descriptions, Flex, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { LdExposureDto } from '@erp/shared';
 import { LD_PERIOD_LABELS, PROJECT_STATUS_LABELS } from '@erp/shared';
 import { useLdExposure } from '@/lib/queries';
@@ -29,7 +30,7 @@ export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
         <Descriptions.Item label="LD terms">{rateLine(ld)}</Descriptions.Item>
         <Descriptions.Item label="On contract value">{formatINR(ld.contractValue)}</Descriptions.Item>
         <Descriptions.Item label="Cap">
-          {formatINR(ld.ldCap)} {ld.capReached ? <Tag color="red">Forecast reaches the cap</Tag> : null}
+          {formatINR(ld.ldCap)} {ld.capReached ? <AppTag tone="danger">Forecast reaches the cap</AppTag> : null}
         </Descriptions.Item>
         <Descriptions.Item label="Completion with extensions">{formatDate(ld.revisedEndDate)}</Descriptions.Item>
         <Descriptions.Item label={ld.completedOn ? 'Completed' : 'Forecast finish'}>
@@ -94,7 +95,7 @@ export function LdExposureTable() {
           { title: 'Days late', dataIndex: 'daysLate', width: 100, align: 'right', render: (v: number) => (v ? <Typography.Text type="danger">{v}</Typography.Text> : 0) },
           { title: 'Forecast late', dataIndex: 'forecastDaysLate', width: 110, align: 'right' },
           { title: 'LD to date', dataIndex: 'ldToDate', width: 140, align: 'right', render: (v: string) => formatINR(v) },
-          { title: 'Forecast LD', dataIndex: 'ldForecast', width: 150, align: 'right', render: (v: string, r) => <span>{formatINR(v)} {r.capReached ? <Tag color="red">cap</Tag> : null}</span> },
+          { title: 'Forecast LD', dataIndex: 'ldForecast', width: 150, align: 'right', render: (v: string, r) => <span>{formatINR(v)} {r.capReached ? <AppTag tone="danger">cap</AppTag> : null}</span> },
           { title: 'Extension to claim', dataIndex: 'eotPendingDays', width: 140, align: 'right', render: (v: number) => (v ? <Typography.Text type="warning">{v} days</Typography.Text> : '-') },
         ]}
       />

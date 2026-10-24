@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, DatePicker, Form, Input, Select, Tag, Typography } from 'antd';
+import { Alert, App, DatePicker, Form, Input, Select, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableBillType, PaymentMode, PaymentRequestDto, VendorPaymentDto } from '@erp/shared';
@@ -173,9 +174,9 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
               </>
             )}
             {chosenBill?.vendorMsme && (chosenBill.vendorMsme === 'MICRO' || chosenBill.vendorMsme === 'SMALL') ? (
-              <Tag color="orange" style={{ marginLeft: 8 }}>
+              <AppTag tone="pending" style={{ marginLeft: 8 }}>
                 {MSME_CATEGORY_LABELS[chosenBill.vendorMsme]}: 45 days at most
-              </Tag>
+              </AppTag>
             ) : null}
           </Typography.Paragraph>
         )}

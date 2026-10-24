@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Col, Flex, Grid, Row, Skeleton, Tag, Typography, theme } from 'antd';
+import { Card, Col, Flex, Grid, Row, Skeleton, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import {
   CarryOutOutlined,
   CheckCircleOutlined,
@@ -95,7 +96,7 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
   if (!present.length) return null;
 
   return (
-    <Card title="My work" style={{ marginBottom: token.margin }} extra={busy.length === 0 ? <Tag color="success">All caught up</Tag> : undefined}>
+    <Card title="My work" style={{ marginBottom: token.margin }} extra={busy.length === 0 ? <AppTag tone="success">All caught up</AppTag> : undefined}>
       {busy.length === 0 ? (
         <Flex align="center" gap={token.marginXS}>
           <CheckCircleOutlined style={{ color: token.colorSuccess }} aria-hidden />

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Checkbox, Empty, Flex, Form, Input, Radio, Segmented, Select, Space, Tag, Typography, theme } from 'antd';
+import { Alert, Button, Checkbox, Empty, Flex, Form, Input, Radio, Segmented, Select, Space, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { BookOutlined, ColumnWidthOutlined, DeleteOutlined, EditOutlined, TableOutlined } from '@ant-design/icons';
 import type { BoqItemDto, DrawingScaleDto, DrawingTakeoffDto, TakeoffBoqField, TakeoffKind } from '@erp/shared';
 import { DRAWING_UNIT_METRES, TAKEOFF_KINDS, TAKEOFF_KIND_LABELS, TAKEOFF_LABEL_MAX, TAKEOFF_UNITS, canEditMarkup, takeoffBoqQty, takeoffTotal, type DrawingUnit } from '@erp/shared';
@@ -254,15 +255,15 @@ export function TakeoffList({
                           {takeoffFigure(t.kind, t.value)}
                         </Typography.Text>
                         {scope === 'all' ? (
-                          <Tag translate="no" style={{ margin: 0 }}>
+                          <AppTag translate="no" style={{ margin: 0 }}>
                             Rev {t.revision}
                             {t.page > 1 ? `, p ${t.page}` : ''}
-                          </Tag>
+                          </AppTag>
                         ) : null}
                         {t.mbNo ? (
-                          <Tag translate="no" style={{ margin: 0 }}>
+                          <AppTag translate="no" style={{ margin: 0 }}>
                             In {t.mbNo}
-                          </Tag>
+                          </AppTag>
                         ) : null}
                       </Space>
                       <div style={{ marginTop: 2, overflowWrap: 'anywhere' }}>{t.label}</div>

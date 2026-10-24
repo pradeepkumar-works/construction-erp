@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import dayjs from 'dayjs';
 import type { AttachmentDto, EmployeeDto, LeaveRequestDto, StaffAttendanceDto } from '@erp/shared';
@@ -34,7 +35,7 @@ function EmployeeDetails({ data }: { data: EmployeeDto }) {
         <Descriptions.Item label="Grade">{val(data.grade)}</Descriptions.Item>
         <Descriptions.Item label="Joined">
           {formatDate(data.joinedOn)}
-          {!data.isActive && <Tag style={{ marginLeft: 8 }}>Left {formatDate(data.leftOn)}</Tag>}
+          {!data.isActive && <AppTag style={{ marginLeft: 8 }}>Left {formatDate(data.leftOn)}</AppTag>}
         </Descriptions.Item>
         <Descriptions.Item label={data.confirmedOn ? 'Confirmed' : 'Probation until'}>{formatDate(data.confirmedOn ?? data.probationEndsOn)}</Descriptions.Item>
         <Descriptions.Item label="Notice period">{data.noticeDays ? `${data.noticeDays} days` : none}</Descriptions.Item>

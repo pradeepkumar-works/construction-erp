@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Space, Tag, theme } from 'antd';
+import { Button, Space, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@ant-design/icons';
 import type { SubcontractBillDto, SubcontractBillSortField, VendorKind } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPrepareSubcontractBill } from '@erp/shared';
@@ -84,9 +85,9 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
             {formatDate(v)}
             {late ? (
               <div>
-                <Tag color="red" style={{ margin: 0 }}>
+                <AppTag tone="danger" style={{ margin: 0 }}>
                   {late} days late
-                </Tag>
+                </AppTag>
               </div>
             ) : null}
           </div>

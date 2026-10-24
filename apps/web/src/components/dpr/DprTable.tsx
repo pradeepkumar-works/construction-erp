@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Tag } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { DailyReportDto, DprSortField } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
 import { formatDate } from '@/lib/format';
@@ -31,7 +31,7 @@ export function dprColumns({
     ...(showProject
       ? [{ card: 'meta' as const, cardText: (r: DailyReportDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: DailyReportDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
-    { defaultFrom: 1600, key: 'weather', title: 'Weather', dataIndex: 'weather', width: 100, render: (w) => (w ? <Tag style={{ margin: 0 }}>{WEATHER_LABELS[w as keyof typeof WEATHER_LABELS] ?? w}</Tag> : '-') },
+    { defaultFrom: 1600, key: 'weather', title: 'Weather', dataIndex: 'weather', width: 100, render: (w) => (w ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[w as keyof typeof WEATHER_LABELS] ?? w}</AppTag> : '-') },
     { card: 'meta', key: 'workExecuted', title: 'Work executed', dataIndex: 'workExecuted', width: 260, ellipsis: true },
     { card: 'amount', cardText: (r) => `Manpower ${r.totalManpower ?? 0}`, key: 'manpower', title: 'Manpower', dataIndex: 'totalManpower', width: 110, align: 'right', total: (rows) => rows.reduce((n, r) => n + (r.totalManpower ?? 0), 0) },
     { defaultFrom: 1600, key: 'machinery', title: 'Machinery', width: 100, align: 'right', render: (_, r) => r.machinery.length, total: (rows) => rows.reduce((n, r) => n + r.machinery.length, 0) },

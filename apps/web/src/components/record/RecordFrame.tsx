@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Steps, Tooltip, theme } from 'antd';
+import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
 import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@ant-design/icons';
 import { useComments, type ApprovalTypeParam } from '@/lib/queries';
@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { LinkButton } from '@/components/common/LinkButton';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ApprovalLevels } from './ApprovalLevels';
+import { StageBar } from './StageBar';
 import type { Lifecycle } from './lifecycle';
 import type { SubmissionBase } from '@erp/shared';
 
@@ -164,7 +165,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
           <Descriptions size="small" column={{ xs: 1, sm: 2, xxl: 3 }} bordered items={record.facts} style={{ marginBottom: token.margin }} />
           {record.lifecycle && (
             <div role="group" aria-label="Stage">
-              <Steps size="small" {...record.lifecycle} style={{ marginBottom: token.marginXS }} />
+              <StageBar {...record.lifecycle} label="Where it stands" style={{ marginBottom: token.marginSM }} />
               {levelsOf(record)}
             </div>
           )}
@@ -245,7 +246,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
           <Descriptions size="small" column={drawerSize >= 960 ? { xs: 1, sm: 2, lg: 3 } : { xs: 1, sm: 2 }} bordered items={record.facts} style={{ marginBottom: token.margin }} />
           {record.lifecycle && (
             <div role="group" aria-label="Stage">
-              <Steps size="small" {...record.lifecycle} style={{ marginBottom: token.marginXS }} />
+              <StageBar {...record.lifecycle} label="Where it stands" style={{ marginBottom: token.marginSM }} />
               {levelsOf(record)}
             </div>
           )}
@@ -330,7 +331,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 3, xxl: 4 }} items={record.facts} />
             {record.lifecycle && (
               <div role="group" aria-label="Stage" style={{ marginTop: token.margin, paddingTop: token.padding, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
-                <Steps size="small" {...record.lifecycle} />
+                <StageBar {...record.lifecycle} label="Where it stands" />
                 {levelsOf(record)}
               </div>
             )}

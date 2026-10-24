@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { App, Avatar, Button, Card, Dropdown, Flex, Mentions, Tag, Typography, theme } from 'antd';
+import { App, Avatar, Button, Card, Dropdown, Flex, Mentions, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { GetRef } from 'antd';
 import { CheckCircleOutlined, EllipsisOutlined, MessageOutlined, UndoOutlined } from '@ant-design/icons';
 import { commentSegments, COMMENT_MAX_LENGTH, type CommentDto, type CommentKind, type CommentThreadDto } from '@erp/shared';
@@ -235,9 +236,9 @@ function Thread({ t, kind, entityId, canComment, askRemove }: { t: CommentThread
       }}
     >
       {resolved && (
-        <Tag color="success" icon={<CheckCircleOutlined />} style={{ marginBottom: token.marginXS }}>
+        <AppTag tone="success" icon={<CheckCircleOutlined />} style={{ marginBottom: token.marginXS }}>
           {`Resolved by ${t.resolvedByName ?? 'someone'} on ${formatDateTime(t.resolvedAt)}`}
-        </Tag>
+        </AppTag>
       )}
       <Comment c={t} kind={kind} entityId={entityId} canComment={canComment} askRemove={askRemove} extra={t.replies.length ? null : tools} />
       {t.replies.length > 0 && (

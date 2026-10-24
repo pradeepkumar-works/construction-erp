@@ -56,6 +56,7 @@ export default defineConfig([
           'Typography.Paragraph': 'div',
           'Typography.Text': 'span',
           Tag: 'span',
+          AppTag: 'span',
         },
       },
     },
@@ -68,6 +69,10 @@ export default defineConfig([
       // The repo's way to leave a value out on purpose: `_name`, or `{ omitted, ...rest }`.
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_', ignoreRestSiblings: true }],
 
+      // The brand look (UI roadmap, Nirmaan's own look): a tag is `AppTag` (a tone, not an antd colour) and an entry's stages
+      // are `StageBar`; AppTag.tsx, which wraps antd's tag, is the one file that imports it.
+      'no-restricted-imports': ['error', { paths: [{ name: 'antd', importNames: ['Tag', 'Steps'], message: 'Use AppTag (components/common/AppTag) or StageBar (components/record/StageBar).' }] }],
+
       // Still warnings, with findings left after this pass:
       // 51 effects that set state as they start (a value read from this browser after hydration, a form reset when it
       // opens, state following a prop). Each wants its own rewrite (state during render, a key, an external store),
@@ -76,5 +81,9 @@ export default defineConfig([
       // The 2 landing page screenshots: next/image would move them onto Vercel's image optimiser, a hosting choice.
       '@next/next/no-img-element': 'warn',
     },
+  },
+  {
+    files: ['src/components/common/AppTag.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
   },
 ]);

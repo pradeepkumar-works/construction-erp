@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input, Select, Table, Tag, Typography } from 'antd';
+import { Input, Select, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { MessageChannel, OutboundMessageDto, OutboundMessageStatus } from '@erp/shared';
 import { formatPhone, MESSAGE_CHANNEL_LABELS, MESSAGE_CHANNELS, MESSAGE_TEMPLATE_LABELS, OUTBOUND_MESSAGE_STATUS_LABELS, OUTBOUND_MESSAGE_STATUSES } from '@erp/shared';
 import { useMessageLog } from '@/lib/queries';
@@ -112,7 +113,7 @@ export function MessageLog() {
             width: 190,
             render: (_, m) => (
               <>
-                <Tag color={STATUS_COLOR[m.status]}>{OUTBOUND_MESSAGE_STATUS_LABELS[m.status]}</Tag>
+                <AppTag color={STATUS_COLOR[m.status]}>{OUTBOUND_MESSAGE_STATUS_LABELS[m.status]}</AppTag>
                 {m.error ? (
                   <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     <Typography.Text type="secondary">{m.error}</Typography.Text>

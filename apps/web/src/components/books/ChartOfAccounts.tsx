@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, DatePicker, Form, Input, Segmented, Select, Space, Switch, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Form, Input, Segmented, Select, Space, Switch, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { AccountGroup, AccountNature, LedgerAccountDto, StatementLine } from '@erp/shared';
@@ -134,7 +135,7 @@ export function ChartOfAccounts() {
                   <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setEditing(a)}>
                     <span translate="no">{a.code ? `${a.code} · ${n}` : n}</span>
                   </Button>
-                  {!a.isActive && <Tag>Closed</Tag>}
+                  {!a.isActive && <AppTag>Closed</AppTag>}
                   {!a.isSystem && <Typography.Text type="secondary">added by hand</Typography.Text>}
                 </Space>
               ),

@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Tag } from 'antd';
+import { Button } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CloseOutlined } from '@ant-design/icons';
 import { formatDate } from '@/lib/format';
 import type { ListFilters } from '@/lib/listPage';
@@ -27,9 +28,9 @@ export function FilterChips({ filters, labels, onClear, onClearAll }: { filters:
   return (
     <>
       {chips.map((c) => (
-        <Tag key={c.keys.join()} closable onClose={() => onClear(c.keys)} closeIcon={<CloseOutlined aria-label={`Remove ${c.text}`} />} style={{ margin: 0 }}>
+        <AppTag key={c.keys.join()} closable onClose={() => onClear(c.keys)} closeIcon={<CloseOutlined aria-label={`Remove ${c.text}`} />} style={{ margin: 0 }}>
           {c.text}
-        </Tag>
+        </AppTag>
       ))}
       {chips.length > 1 && (
         <Button type="link" size="small" onClick={onClearAll}>

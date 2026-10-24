@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, RaBillDto, RaBillItemDto, RaBillStageLineDto, ReceiptDto } from '@erp/shared';
@@ -239,7 +240,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         render: (_, i) => (
                           <div>
                             <span className="mono" translate="no">{i.itemNo}</span> {i.description}
-                            {i.extraItem ? <Tag color="orange" style={{ marginLeft: 6 }}>Extra item</Tag> : toNumber(i.excessQty) > 0 ? <Tag color="red" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</Tag> : null}
+                            {i.extraItem ? <AppTag tone="pending" style={{ marginLeft: 6 }}>Extra item</AppTag> : toNumber(i.excessQty) > 0 ? <AppTag tone="danger" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</AppTag> : null}
                           </div>
                         ),
                       },

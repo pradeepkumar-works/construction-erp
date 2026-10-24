@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Button, Checkbox, Flex, Tag, Tooltip, Typography, theme } from 'antd';
+import { Button, Checkbox, Flex, Tooltip, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
 import { formatDateTime, formatINR, timeAgo } from '@/lib/format';
@@ -75,9 +76,9 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
               >
                 {g.label}
               </Button>
-              <Tag variant="filled" style={{ marginInlineStart: 'auto', marginInlineEnd: 0 }}>
+              <AppTag variant="filled" style={{ marginInlineStart: 'auto', marginInlineEnd: 0 }}>
                 {g.items.length}
-              </Tag>
+              </AppTag>
             </Flex>
             {!isCollapsed && (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -157,8 +158,8 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
 
 export function TypeTag({ type, label }: { type: SubmissionType; label: string }) {
   return (
-    <Tag color={TYPE_COLORS[type]} style={{ margin: 0 }}>
+    <AppTag color={TYPE_COLORS[type]} style={{ margin: 0 }}>
       {label}
-    </Tag>
+    </AppTag>
   );
 }

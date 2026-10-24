@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Drawer, Flex, Switch, Table, Tag, Typography, theme } from 'antd';
+import { App, Button, Drawer, Flex, Switch, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { canApproveSupplierChange, type PasswordLinkDto, type SupplierChangeDto, type SupplierLoginDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useSupplierAction, useVendorPortal } from '@/lib/queries';
@@ -68,7 +69,7 @@ export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; 
             { title: 'Name', dataIndex: 'fullName', render: (v: string, l) => <span translate="no">{v}<br /><Typography.Text type="secondary">{l.email}</Typography.Text></span> },
             { title: 'Phone', dataIndex: 'phone', width: 140, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
             { title: 'Since', dataIndex: 'createdAt', width: 110, render: (v: string) => formatDate(v) },
-            { title: 'State', key: 'state', width: 130, render: (_, l) => (!l.isActive ? <Tag>Off</Tag> : l.invitePending ? <Tag color="warning">Invite not used</Tag> : <Tag color="success">Signed up</Tag>) },
+            { title: 'State', key: 'state', width: 130, render: (_, l) => (!l.isActive ? <AppTag>Off</AppTag> : l.invitePending ? <AppTag tone="pending">Invite not used</AppTag> : <AppTag tone="success">Signed up</AppTag>) },
             {
               title: 'Action',
               key: 'action',

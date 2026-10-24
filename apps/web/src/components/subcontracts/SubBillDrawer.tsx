@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Divider, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Divider, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
@@ -125,9 +126,9 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   {data.vendorName}
                   {data.vendorPan && <span className="text-muted"> · PAN {data.vendorPan}</span>}
                   {data.vendorMsme && (
-                    <Tag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>
+                    <AppTag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>
                       {MSME_CATEGORY_LABELS[data.vendorMsme]}
-                    </Tag>
+                    </AppTag>
                   )}
                 </span>
               ),
@@ -145,9 +146,9 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                 <span>
                   {formatDate(data.dueDate)}
                   {late && (
-                    <Tag color="red" style={{ marginLeft: 8 }}>
+                    <AppTag tone="danger" style={{ marginLeft: 8 }}>
                       {late} days overdue
-                    </Tag>
+                    </AppTag>
                   )}
                 </span>
               ),
@@ -178,7 +179,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         title: 'Item',
                         render: (_, l) => (
                           <div>
-                            {l.itemNo ? <Tag style={{ marginRight: 6 }}>{l.itemNo}</Tag> : <Tag color="purple" style={{ marginRight: 6 }}>Own item</Tag>}
+                            {l.itemNo ? <AppTag style={{ marginRight: 6 }}>{l.itemNo}</AppTag> : <AppTag tone="violet" style={{ marginRight: 6 }}>Own item</AppTag>}
                             {l.description}
                           </div>
                         ),

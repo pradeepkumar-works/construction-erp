@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Input, InputNumber, Segmented, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Input, InputNumber, Segmented, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { formatDayMonth } from '@/lib/format';
 import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
@@ -94,11 +95,11 @@ export function StaffRegister() {
       width: 170,
       render: (_, r) =>
         r.leave ? (
-          <Tag color={r.leave.status === 'APPROVED' ? 'blue' : 'orange'}>
+          <AppTag color={r.leave.status === 'APPROVED' ? 'blue' : 'orange'}>
             {LEAVE_TYPE_LABELS[r.leave.type]}
             {r.leave.halfDay ? ', half day' : ''}
             {r.leave.status === 'PENDING' ? ' (waiting)' : ''}
-          </Tag>
+          </AppTag>
         ) : null,
     },
     {

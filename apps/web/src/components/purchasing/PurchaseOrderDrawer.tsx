@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Divider, Form, Input, Progress, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Divider, Form, Input, Progress, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { ImportOutlined, MailOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
@@ -35,8 +36,8 @@ const money = (v: string | number) => <span className="mono" translate="no" styl
 /** Tag for where an approved order stands: open, fully received or closed short. */
 export function PoStateTag({ order }: { order: Pick<PurchaseOrderDto, 'status' | 'closedAt' | 'open'> }) {
   if (order.status !== 'APPROVED') return null;
-  if (order.closedAt) return <Tag style={{ margin: 0 }}>Closed</Tag>;
-  return order.open ? <Tag color="blue" style={{ margin: 0 }}>Open</Tag> : <Tag color="green" style={{ margin: 0 }}>Received</Tag>;
+  if (order.closedAt) return <AppTag style={{ margin: 0 }}>Closed</AppTag>;
+  return order.open ? <AppTag tone="info" style={{ margin: 0 }}>Open</AppTag> : <AppTag tone="success" style={{ margin: 0 }}>Received</AppTag>;
 }
 
 interface RecordProps {
@@ -137,7 +138,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                 <span>
                   {data.vendorName}
                   {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
-                  {data.vendorMsme && <Tag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</Tag>}
+                  {data.vendorMsme && <AppTag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
                 </span>
               ),
             },
@@ -358,7 +359,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                           { title: 'Bill', dataIndex: 'billNo', width: 140, render: (v, b) => <Link href={`/vendor-bills/${b.id}`} className="mono">{v}</Link> },
                           { title: 'Invoice', dataIndex: 'invoiceNo', render: (v, b) => `${v}, ${formatDate(b.invoiceDate)}` },
                           { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => money(v) },
-                          { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <Tag color="green">Matches</Tag> : <Tag color="red">Exceptions</Tag>) },
+                          { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <AppTag tone="success">Matches</AppTag> : <AppTag tone="danger">Exceptions</AppTag>) },
                           { title: 'Status', dataIndex: 'status', width: 130, render: (st) => <StatusTag status={st} /> },
                         ]}
                       />

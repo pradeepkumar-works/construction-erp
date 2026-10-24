@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Col, DatePicker, Row, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Card, Col, DatePicker, Row, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import dayjs, { type Dayjs } from 'dayjs';
 import { PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, type PaymentMode, SUPPLIER_STATEMENT_KIND_LABELS, type SupplierBillDto, type SupplierPaymentDto, type SupplierStatementRowDto } from '@erp/shared';
@@ -109,12 +110,12 @@ function Bills({ bills }: { bills: SupplierBillDto[] }) {
           title: 'Due',
           dataIndex: 'dueDate',
           width: 130,
-          render: (v: string, b) => (b.status === 'APPROVED' && toNumber(b.due) > 0 && v < today ? <Tag color="error">{formatDate(v)}</Tag> : formatDate(v)),
+          render: (v: string, b) => (b.status === 'APPROVED' && toNumber(b.due) > 0 && v < today ? <AppTag tone="danger">{formatDate(v)}</AppTag> : formatDate(v)),
         },
         { title: 'Worth', dataIndex: 'payable', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Paid', dataIndex: 'paid', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Still due', dataIndex: 'due', width: 130, align: 'right', render: (v: string, b) => (b.status === 'APPROVED' ? <Money value={v} /> : <Typography.Text type="secondary">Once approved</Typography.Text>) },
-        { title: 'State', dataIndex: 'status', width: 110, render: (s: SupplierBillDto['status']) => <Tag color={STATUS_COLORS[s]}>{SUBMISSION_STATUS_LABELS[s]}</Tag> },
+        { title: 'State', dataIndex: 'status', width: 110, render: (s: SupplierBillDto['status']) => <AppTag color={STATUS_COLORS[s]}>{SUBMISSION_STATUS_LABELS[s]}</AppTag> },
       ]}
     />
   );

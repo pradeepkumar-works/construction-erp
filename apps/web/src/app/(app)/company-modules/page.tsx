@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Alert, App, Card, Flex, Switch, Tag, Typography, theme } from 'antd';
+import { Alert, App, Card, Flex, Switch, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { MODULE_KEYS, MODULE_LABELS, MODULE_TIER_LABELS, SWITCHABLE_MODULE_INFO, canManageModules, type ModuleSwitchDto, type ModuleSwitchesDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useNotify } from '@/lib/notify';
@@ -21,7 +22,7 @@ function ModuleRow({ m, busy, onChange }: { m: ModuleSwitchDto; busy: boolean; o
           <label htmlFor={id} style={{ fontWeight: 600 }}>
             {m.label}
           </label>
-          {!m.inPlan && <Tag>Not in your plan</Tag>}
+          {!m.inPlan && <AppTag>Not in your plan</AppTag>}
         </Flex>
         <Typography.Paragraph id={`${id}-help`} type="secondary" style={{ margin: 0 }}>
           {m.description}

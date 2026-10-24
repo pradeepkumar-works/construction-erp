@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, SendOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -24,9 +25,9 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
 
 export const VariationStatusTag = ({ status }: { status: VariationStatus }) => (
-  <Tag color={STATUS_COLORS[status]} style={{ margin: 0 }}>
+  <AppTag color={STATUS_COLORS[status]} style={{ margin: 0 }}>
     {VARIATION_STATUS_LABELS[status]}
-  </Tag>
+  </AppTag>
 );
 
 /** A variation with its items, claimed and approved; sends it to the client and records the client's decision. */
@@ -56,9 +57,9 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
         <div>
           <span className="mono" translate="no">{l.itemNo}</span> {l.description}
           {l.isNewItem ? (
-            <Tag color="orange" style={{ marginLeft: 6 }}>
+            <AppTag tone="pending" style={{ marginLeft: 6 }}>
               New item
-            </Tag>
+            </AppTag>
           ) : null}
         </div>
       ),

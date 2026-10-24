@@ -1,19 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  App,
-  Button,
-  Card,
-  DatePicker,
-  Form,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-} from "antd";
+import { Alert, App, Button, Card, DatePicker, Form, Select, Space, Table, Typography } from "antd";
+import { AppTag } from "@/components/common/AppTag";
 import type { FormInstance } from "antd";
 import { LockOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -443,12 +432,12 @@ export function YearClose() {
               render: (_, y) =>
                 y.closed ? (
                   <Space size={4} wrap>
-                    <Tag color="success">Closed</Tag>
+                    <AppTag tone="success">Closed</AppTag>
                     <Typography.Text type="secondary">{`${y.closedByName ?? ""}${y.closedAt ? `, ${formatDateTime(y.closedAt)}` : ""}`}</Typography.Text>
                   </Space>
                 ) : (
                   <Space orientation="vertical" size={0}>
-                    <Tag>Open</Tag>
+                    <AppTag>Open</AppTag>
                     {y.blockers.map((b) => (
                       <Typography.Text key={b} type="secondary">
                         {b}

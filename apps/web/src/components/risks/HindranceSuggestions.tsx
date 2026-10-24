@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Flex, Tag, Typography, theme } from 'antd';
+import { App, Button, Flex, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, type HindranceSuggestionDto, type RiskDto } from '@erp/shared';
 import { useDecideHindrance, useDprHindrance, useHindranceSuggestions } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -24,9 +25,9 @@ export function HindranceRow({ s, onRecorded, showProject = true, showDpr = true
     <Flex data-hindrance={s.id} vertical gap={token.marginXXS} style={{ paddingBlock: token.paddingXS, borderTop: `1px solid ${token.colorSplit}` }}>
       <Flex wrap align="center" gap={token.marginXS}>
         <Typography.Text strong>{s.title}</Typography.Text>
-        <Tag>{RISK_CATEGORY_LABELS[s.category]}</Tag>
+        <AppTag>{RISK_CATEGORY_LABELS[s.category]}</AppTag>
         {s.party ? <Typography.Text type="secondary">{DELAY_PARTY_LABELS[s.party]}</Typography.Text> : <Typography.Text type="secondary">Cause not clear</Typography.Text>}
-        {s.source === 'MODEL' ? <Tag color="purple">Check this</Tag> : null}
+        {s.source === 'MODEL' ? <AppTag tone="violet">Check this</AppTag> : null}
       </Flex>
       <p style={{ margin: 0 }}>
         “{s.remark}”{' '}

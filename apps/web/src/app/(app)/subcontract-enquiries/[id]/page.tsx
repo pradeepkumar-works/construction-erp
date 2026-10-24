@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Grid, Row, Space, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Grid, Row, Space, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps, TableColumnType } from 'antd';
 import { DeleteOutlined, EditOutlined, MoreOutlined, PlusOutlined, RollbackOutlined, StopOutlined, TrophyOutlined } from '@ant-design/icons';
 import { type ScEnquiryDetailDto, type ScEnquiryItemDto, type ScQuoteDto } from '@erp/shared';
@@ -145,7 +146,7 @@ function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
         subtitle={
           <span>
             <ScEnquiryStatusTag status={e.status} />
-            {isOpen && e.closed ? <Tag color="warning">Past its last day</Tag> : null}
+            {isOpen && e.closed ? <AppTag tone="pending">Past its last day</AppTag> : null}
             <span translate="no">{`${e.enquiryNo} · ${e.projectCode} ${e.projectName}`}</span>
           </span>
         }
@@ -262,8 +263,8 @@ function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (
       <div style={{ textAlign: 'right' }}>
         <div translate="no">{q.vendorName}</div>
         <Flex gap={4} justify="flex-end" wrap>
-          {q.rank ? <RankTag rank={q.rank} /> : <Tag>{q.complete ? '-' : `${q.priced} of ${e.items.length} priced`}</Tag>}
-          {q.awarded ? <Tag color="success">Awarded</Tag> : null}
+          {q.rank ? <RankTag rank={q.rank} /> : <AppTag>{q.complete ? '-' : `${q.priced} of ${e.items.length} priced`}</AppTag>}
+          {q.awarded ? <AppTag tone="success">Awarded</AppTag> : null}
         </Flex>
         <Space size={0} style={{ marginTop: 4 }}>
           {e.status === 'OPEN' && e.canEdit ? (

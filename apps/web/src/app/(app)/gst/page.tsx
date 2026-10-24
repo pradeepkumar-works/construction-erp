@@ -3,7 +3,8 @@
 import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Alert, Button, Card, Col, DatePicker, Row, Statistic, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Col, DatePicker, Row, Statistic, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { DownloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -85,7 +86,7 @@ function GstRegistersPage() {
       cardText: (r) => [r.recipientName, r.section, r.recipientGstin ?? 'Unregistered'].join(' · '),
       render: (_, r) => (
         <div>
-          {r.recipientName} <Tag style={{ marginLeft: 4 }}>{r.section}</Tag>
+          {r.recipientName} <AppTag style={{ marginLeft: 4 }}>{r.section}</AppTag>
           <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.recipientGstin ? <span translate="no">{r.recipientGstin}</span> : 'Unregistered'} · {placeOfSupply(r.placeOfSupply) || 'place of supply not known'}
           </div>
@@ -124,9 +125,9 @@ function GstRegistersPage() {
         <div>
           {r.supplierName}
           {!r.itcEligible && (
-            <Tag color="red" style={{ marginLeft: 6 }}>
+            <AppTag tone="danger" style={{ marginLeft: 6 }}>
               No GSTIN
-            </Tag>
+            </AppTag>
           )}
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             <span className="mono" translate="no">{r.supplierGstin ?? '-'}</span> · {GST_SOURCE_LABELS[r.source]} {r.ref} · {r.projectCode}

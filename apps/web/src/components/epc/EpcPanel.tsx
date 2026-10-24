@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import Link from 'next/link';
@@ -149,7 +150,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
               { key: 't', title: 'Deliverables', align: 'right', render: (_, r) => <span translate="no">{r.total}</span> },
               { key: 's', title: 'Submitted', align: 'right', render: (_, r) => <span translate="no">{r.submitted}</span> },
               { key: 'a', title: 'Approved', align: 'right', render: (_, r) => <span translate="no">{`${r.approved} (${formatPct((100 * r.approved) / r.total)})`}</span> },
-              { key: 'l', title: 'Late', align: 'right', render: (_, r) => (r.late ? <Tag color="red">{r.late}</Tag> : '0') },
+              { key: 'l', title: 'Late', align: 'right', render: (_, r) => (r.late ? <AppTag tone="danger">{r.late}</AppTag> : '0') },
             ]}
           />
         </Section>
@@ -209,9 +210,9 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
               width: 210,
               render: (_, d) => (
                 <Flex vertical gap={2} align="start">
-                  <Tag color={STATUS_COLORS[d.status]}>{d.approvalCode ? `${DELIVERABLE_STATUS_LABELS[d.status]}, code ${d.approvalCode}` : DELIVERABLE_STATUS_LABELS[d.status]}</Tag>
+                  <AppTag color={STATUS_COLORS[d.status]}>{d.approvalCode ? `${DELIVERABLE_STATUS_LABELS[d.status]}, code ${d.approvalCode}` : DELIVERABLE_STATUS_LABELS[d.status]}</AppTag>
                   {d.approvedOn ? <span translate="no">{formatDate(d.approvedOn)}</span> : null}
-                  {d.lateDays !== null ? <Tag color="red">{`${d.lateDays} days late for ${d.lateFor === 'SUBMISSION' ? 'submission' : 'approval'}`}</Tag> : null}
+                  {d.lateDays !== null ? <AppTag tone="danger">{`${d.lateDays} days late for ${d.lateFor === 'SUBMISSION' ? 'submission' : 'approval'}`}</AppTag> : null}
                 </Flex>
               ),
             },
@@ -389,7 +390,7 @@ function StageTimeline({ p }: { p: PackageDto }) {
             title: 'Slip',
             align: 'right',
             render: (_, r) =>
-              r.slipDays === null ? (r.stage === p.nextStage && p.nextOverdueDays ? <Tag color="orange">{`${p.nextOverdueDays} days overdue`}</Tag> : '-') : r.slipDays > 0 ? <Tag color="orange">{`${r.slipDays} days late`}</Tag> : r.slipDays < 0 ? `${-r.slipDays} days early` : 'On the day',
+              r.slipDays === null ? (r.stage === p.nextStage && p.nextOverdueDays ? <AppTag tone="pending">{`${p.nextOverdueDays} days overdue`}</AppTag> : '-') : r.slipDays > 0 ? <AppTag tone="pending">{`${r.slipDays} days late`}</AppTag> : r.slipDays < 0 ? `${-r.slipDays} days early` : 'On the day',
           },
         ]}
       />
@@ -488,7 +489,7 @@ function Packages({ data, onEdit }: { data: EpcDto; onEdit: (p: PackageDto | 'ne
                       {p.nextPlannedOn ? <span translate="no">{`, ${formatDate(p.nextPlannedOn)}`}</span> : null}
                     </Typography.Text>
                   ) : null}
-                  {p.nextOverdueDays ? <Tag color="orange">{`${p.nextOverdueDays} days overdue`}</Tag> : null}
+                  {p.nextOverdueDays ? <AppTag tone="pending">{`${p.nextOverdueDays} days overdue`}</AppTag> : null}
                 </Flex>
               ),
             },
@@ -505,10 +506,10 @@ function Packages({ data, onEdit }: { data: EpcDto; onEdit: (p: PackageDto | 'ne
                       {p.forecastFrom === 'ETA' ? 'From the ship’s ETA' : 'From the plan and the slip so far'}
                     </Typography.Text>
                   ) : p.forecastFrom === 'DELIVERED' ? (
-                    <Tag color="green">Delivered</Tag>
+                    <AppTag tone="success">Delivered</AppTag>
                   ) : null}
-                  {p.lateDays !== null ? <Tag color="red">{`${p.lateDays} days late for site`}</Tag> : null}
-                  {p.problems.length ? <Tag color="red">Dates to check</Tag> : null}
+                  {p.lateDays !== null ? <AppTag tone="danger">{`${p.lateDays} days late for site`}</AppTag> : null}
+                  {p.problems.length ? <AppTag tone="danger">Dates to check</AppTag> : null}
                 </Flex>
               ),
             },
@@ -758,10 +759,10 @@ function ClientInputs({ data, onEdit }: { data: EpcDto; onEdit: (m: ClientInputD
               m.achievedOn ? (
                 <Flex vertical gap={2} align="start">
                   <span translate="no">{formatDate(m.achievedOn)}</span>
-                  {lateGiven(m) ? <Tag color="orange">{`${dayjs(m.achievedOn).diff(dayjs(m.dueDate), 'day')} days late`}</Tag> : null}
+                  {lateGiven(m) ? <AppTag tone="pending">{`${dayjs(m.achievedOn).diff(dayjs(m.dueDate), 'day')} days late`}</AppTag> : null}
                 </Flex>
               ) : m.overdueDays ? (
-                <Tag color="red">{`${m.overdueDays} days overdue`}</Tag>
+                <AppTag tone="danger">{`${m.overdueDays} days overdue`}</AppTag>
               ) : (
                 'Not yet due'
               ),

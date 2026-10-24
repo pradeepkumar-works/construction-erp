@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { App, Button, Divider, Table, Tag, Typography } from 'antd';
+import { App, Button, Divider, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorBillDto, VendorBillLineDto, VendorBillSourceDto } from '@erp/shared';
@@ -32,13 +33,13 @@ const money = (v: string | number) => <span className="mono" translate="no">{for
 /** Whether a bill matches its PO and GRNs, or (a bill without a PO) passed its own checks. */
 export const MatchTag = ({ matched, po = true }: { matched: boolean; po?: boolean }) =>
   matched ? (
-    <Tag color="green" style={{ margin: 0 }}>
+    <AppTag tone="success" style={{ margin: 0 }}>
       {po ? 'Matches PO' : 'Checked'}
-    </Tag>
+    </AppTag>
   ) : (
-    <Tag color="red" style={{ margin: 0 }}>
+    <AppTag tone="danger" style={{ margin: 0 }}>
       Exceptions
-    </Tag>
+    </AppTag>
   );
 
 /** Days past the due date of an approved bill not yet paid in full; null when it is not yet due or is settled. */
@@ -124,7 +125,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 <span>
                   {data.vendorName}
                   {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
-                  {data.vendorMsme && <Tag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</Tag>}
+                  {data.vendorMsme && <AppTag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
                 </span>
               ),
             },
@@ -157,7 +158,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               label: 'Due',
               children: (
                 <span>
-                  {formatDate(data.dueDate)} {late ? <Tag color="red">{late} days overdue</Tag> : null}
+                  {formatDate(data.dueDate)} {late ? <AppTag tone="danger">{late} days overdue</AppTag> : null}
                 </span>
               ),
             },

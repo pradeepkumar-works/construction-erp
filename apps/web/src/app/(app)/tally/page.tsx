@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Switch, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Switch, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import type { TableProps } from 'antd';
 import { useIsPhone } from '@/lib/screen';
@@ -44,9 +45,9 @@ const exportFile = (e: Pick<TallyExportDto, 'id' | 'upTo'>) => `nirmaan-tally-up
 
 function KindTag({ kind }: { kind: TallyVoucherKind }) {
   return (
-    <Tag color={KIND_COLORS[kind]} style={{ margin: 0 }}>
+    <AppTag color={KIND_COLORS[kind]} style={{ margin: 0 }}>
       {TALLY_VOUCHER_KIND_LABELS[kind]}
-    </Tag>
+    </AppTag>
   );
 }
 
@@ -117,9 +118,9 @@ function ToExport() {
         </Space>
         <Space wrap size={4}>
           {TALLY_VOUCHER_KINDS.filter((k) => data?.counts[k]).map((k) => (
-            <Tag key={k} color={KIND_COLORS[k]}>
+            <AppTag key={k} color={KIND_COLORS[k]}>
               {TALLY_VOUCHER_KIND_LABELS[k]}: {data!.counts[k]}
-            </Tag>
+            </AppTag>
           ))}
         </Space>
         <Popconfirm
@@ -229,9 +230,9 @@ function Exports() {
         <Space wrap size={4}>
           <strong>{r.voucherCount}</strong>
           {TALLY_VOUCHER_KINDS.filter((k) => r.counts[k]).map((k) => (
-            <Tag key={k} color={KIND_COLORS[k]} style={{ margin: 0 }}>
+            <AppTag key={k} color={KIND_COLORS[k]} style={{ margin: 0 }}>
               {TALLY_VOUCHER_KIND_LABELS[k]}: {r.counts[k]}
-            </Tag>
+            </AppTag>
           ))}
         </Space>
       ),

@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Badge, Flex, Tag, Tooltip, theme } from 'antd';
+import { Badge, Flex, Tooltip, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
 import { canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -117,7 +118,7 @@ export function ProjectHealth({ signals, compact }: { signals: HealthSignal[]; c
     <Flex gap={compact ? token.marginXS : token.marginXXS} wrap={!compact} align="center" role="list" aria-label="Project health">
       {signals.map((s) => (
         <Tooltip key={s.key} title={compact ? `${s.text}. ${s.detail}` : s.detail}>
-          <span role="listitem">{compact ? <span role="img" aria-label={s.text}><Badge status={s.level} /></span> : <Tag color={s.level} style={{ margin: 0 }}>{s.text}</Tag>}</span>
+          <span role="listitem">{compact ? <span role="img" aria-label={s.text}><Badge status={s.level} /></span> : <AppTag color={s.level} style={{ margin: 0 }}>{s.text}</AppTag>}</span>
         </Tooltip>
       ))}
     </Flex>

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Dropdown, Select, Space, Tag, theme } from 'antd';
+import { Button, Checkbox, Dropdown, Select, Space, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type { VendorBillDto, VendorBillKind, VendorBillSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, VENDOR_BILL_KINDS, VENDOR_BILL_KIND_LABELS, canRecordVendorBill } from '@erp/shared';
@@ -98,7 +99,7 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
       dataIndex: 'dueDate',
       width: 130,
       ...sort('dueDate'),
-      render: (v, r) => (overdueDays(r) ? <Tag color="red">{formatDate(v)}</Tag> : formatDate(v)),
+      render: (v, r) => (overdueDays(r) ? <AppTag tone="danger">{formatDate(v)}</AppTag> : formatDate(v)),
     },
     { defaultFrom: 1400, key: 'matched', title: 'Match', label: 'Match with the PO', dataIndex: 'matched', width: 120, render: (v, r) => <span title={r.exceptions.join('\n')}><MatchTag matched={v} po={!!r.purchaseOrderId} /></span> },
     { key: 'submittedByName', title: 'Recorded by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, DatePicker, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, LeftOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -205,7 +206,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                 </Flex>
               ),
             },
-            { key: 'p', title: 'Penalty', width: 130, align: 'right', render: (_, b) => (Number(b.penalty) ? <Tag color="red">{formatINR(b.penalty)}</Tag> : <span translate="no">{formatINR(0)}</span>) },
+            { key: 'p', title: 'Penalty', width: 130, align: 'right', render: (_, b) => (Number(b.penalty) ? <AppTag tone="danger">{formatINR(b.penalty)}</AppTag> : <span translate="no">{formatINR(0)}</span>) },
           ]}
         />
       </Section>
@@ -243,9 +244,9 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                   {d.failures.length ? (
                     <Flex gap={4} wrap>
                       {d.failures.map((f) => (
-                        <Tag key={f} color="red">
+                        <AppTag key={f} tone="danger">
                           {OM_BENCHMARK_INFO[f].short}
-                        </Tag>
+                        </AppTag>
                       ))}
                     </Flex>
                   ) : null}
@@ -458,7 +459,7 @@ function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
           { key: 's', title: 'Staff short', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.staffDeduction) ? `− ${formatINR(p.staffDeduction)}` : '-'}</span> },
           { key: 'pen', title: 'Penalties', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.penalty) ? `− ${formatINR(p.penalty)}` : '-'}</span> },
           { key: 'n', title: 'Net', width: 130, align: 'right', render: (_, p) => <Typography.Text strong translate="no">{formatINR(p.net)}</Typography.Text> },
-          { key: 'st', title: 'Status', width: 120, render: (_, p) => <Tag color={PERIOD_COLORS[p.status]}>{PERIOD_LABELS[p.status]}</Tag> },
+          { key: 'st', title: 'Status', width: 120, render: (_, p) => <AppTag color={PERIOD_COLORS[p.status]}>{PERIOD_LABELS[p.status]}</AppTag> },
           {
             key: 'bill',
             title: 'Bill',
@@ -520,7 +521,7 @@ function Staff({ data, onRecord }: { data: OmDto; onRecord: () => void }) {
           { key: 'r', title: 'Role', dataIndex: 'role' },
           { key: 'q', title: 'Minimum', width: 100, align: 'right', render: (_, r) => <span translate="no">{r.required}</span> },
           { key: 'd', title: 'Deployed', width: 100, align: 'right', render: (_, r) => (r.deployed === null ? '-' : <span translate="no">{r.deployed}</span>) },
-          { key: 's', title: 'Short', width: 90, align: 'right', render: (_, r) => (r.short ? <Tag color="red">{r.short}</Tag> : '0') },
+          { key: 's', title: 'Short', width: 90, align: 'right', render: (_, r) => (r.short ? <AppTag tone="danger">{r.short}</AppTag> : '0') },
           { key: 'x', title: 'Deducted', width: 130, align: 'right', render: (_, r) => <span translate="no">{formatINR(r.deduction)}</span> },
         ]}
       />
@@ -615,7 +616,7 @@ function Chemicals({ data }: { data: OmDto }) {
             key: 's',
             title: 'Against the norm',
             width: 190,
-            render: (_, r) => <Tag color={CHEMICAL_COLORS[r.status]}>{r.variancePct === null ? CHEMICAL_LABELS[r.status] : `${CHEMICAL_LABELS[r.status]} (${r.variancePct > 0 ? '+' : ''}${formatPct(r.variancePct)})`}</Tag>,
+            render: (_, r) => <AppTag color={CHEMICAL_COLORS[r.status]}>{r.variancePct === null ? CHEMICAL_LABELS[r.status] : `${CHEMICAL_LABELS[r.status]} (${r.variancePct > 0 ? '+' : ''}${formatPct(r.variancePct)})`}</AppTag>,
           },
         ]}
       />

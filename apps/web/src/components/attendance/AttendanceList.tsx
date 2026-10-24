@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Tag, Tooltip, theme } from 'antd';
+import { Button, Tooltip, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { LockOutlined, PlusOutlined } from '@ant-design/icons';
 import type { AttendanceSheetDto, AttendanceSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canRecordAttendance } from '@erp/shared';
@@ -59,9 +60,9 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
             r.manpower.length ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {r.manpower.map((m) => (
-                  <Tag key={m.category} style={{ margin: 0 }}>
+                  <AppTag key={m.category} style={{ margin: 0 }}>
                     {m.category} {m.count}
-                  </Tag>
+                  </AppTag>
                 ))}
               </div>
             ) : (

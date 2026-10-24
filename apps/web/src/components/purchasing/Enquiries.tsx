@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { ENQUIRY_DEFAULT_DAYS, ENQUIRY_VENDOR_STATE_LABELS, MAX_PAGE_SIZE, type EnquiryDto, type EnquiryVendorDto, type EnquiryVendorState, type MaterialRequestDto } from '@erp/shared';
@@ -148,9 +149,9 @@ export function EnquiriesList({ requestId }: { requestId: string }) {
           width: 170,
           render: (_, r) => (
             <div>
-              <Tag color={STATE_COLOR[r.state]} style={{ margin: 0 }}>
+              <AppTag color={STATE_COLOR[r.state]} style={{ margin: 0 }}>
                 {ENQUIRY_VENDOR_STATE_LABELS[r.state]}
-              </Tag>
+              </AppTag>
               {r.respondedAt ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{formatDateTime(r.respondedAt)}</div> : null}
             </div>
           ),

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Input, Modal, Progress, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Input, Modal, Progress, Skeleton, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CustomerServiceOutlined, DeleteOutlined, DownloadOutlined, StopOutlined, UndoOutlined } from '@ant-design/icons';
 import type { CompanyLogEntryDto } from '@erp/shared';
 import { DELETION_GRACE_DAYS, PRODUCT_NAME, SUPPORT_ACCESS_DAYS, canManageCompanyData } from '@erp/shared';
@@ -190,10 +191,10 @@ function SupportAccessCard() {
           </Typography.Paragraph>
           {active ? (
             <Space wrap>
-              <Tag color="blue" icon={<CustomerServiceOutlined />}>
+              <AppTag tone="info" icon={<CustomerServiceOutlined />}>
                 Allowed until {formatDateTime(data!.until!)}
                 {data?.grantedByName ? ` by ${data.grantedByName}` : ''}
-              </Tag>
+              </AppTag>
               <Button icon={<StopOutlined />} loading={set.isPending} onClick={() => change(false)}>
                 Withdraw access
               </Button>

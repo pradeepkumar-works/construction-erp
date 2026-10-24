@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Flex, Tag, Typography, theme } from 'antd';
+import { Flex, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, ClockCircleOutlined, RiseOutlined } from '@ant-design/icons';
 import { formatDateTime } from '@/lib/format';
 import { useApprovalStage, type ApprovalTypeParam } from '@/lib/queries';
@@ -29,15 +30,15 @@ export function ApprovalLevels({ type, id }: { type: ApprovalTypeParam; id: stri
             return (
               <span role="listitem" key={l}>
                 {step ? (
-                  <Tag color="green" icon={<CheckOutlined />} style={{ margin: 0 }}>
+                  <AppTag tone="success" icon={<CheckOutlined />} style={{ margin: 0 }}>
                     Level {l}: {step.byName ?? 'approved'}, {formatDateTime(step.at)}
-                  </Tag>
+                  </AppTag>
                 ) : waiting && l === data.level ? (
-                  <Tag color="orange" icon={<ClockCircleOutlined />} style={{ margin: 0 }}>
+                  <AppTag tone="pending" icon={<ClockCircleOutlined />} style={{ margin: 0 }}>
                     Level {l}: waiting
-                  </Tag>
+                  </AppTag>
                 ) : (
-                  <Tag style={{ margin: 0 }}>Level {l}</Tag>
+                  <AppTag style={{ margin: 0 }}>Level {l}</AppTag>
                 )}
               </span>
             );
@@ -55,9 +56,9 @@ export function ApprovalLevels({ type, id }: { type: ApprovalTypeParam; id: stri
           )}
           {data.waitingSince ? ` since ${formatDateTime(data.waitingSince)}` : ''}
           {data.escalated ? (
-            <Tag color="volcano" icon={<RiseOutlined />} style={{ marginInlineStart: token.marginXS }}>
+            <AppTag tone="pending" icon={<RiseOutlined />} style={{ marginInlineStart: token.marginXS }}>
               Escalated
-            </Tag>
+            </AppTag>
           ) : null}
         </Typography.Text>
       )}

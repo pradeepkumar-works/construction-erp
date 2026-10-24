@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Form, Input, Progress, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Progress, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { FileAddOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
@@ -32,8 +33,8 @@ const money = (v: string | number) => <span className="mono" translate="no">{for
 /** Tag for where an approved order stands: open for work and bills, or closed. */
 export function WoStateTag({ order }: { order: Pick<WorkOrderDto, 'status' | 'closedAt' | 'open'> }) {
   if (order.status !== 'APPROVED') return null;
-  if (order.closedAt) return <Tag style={{ margin: 0 }}>Closed</Tag>;
-  return <Tag color="blue" style={{ margin: 0 }}>Open</Tag>;
+  if (order.closedAt) return <AppTag style={{ margin: 0 }}>Closed</AppTag>;
+  return <AppTag tone="info" style={{ margin: 0 }}>Open</AppTag>;
 }
 
 interface RecordProps {
@@ -142,9 +143,9 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                   {data.vendorPan && <span className="text-muted"> · PAN {data.vendorPan}</span>}
                   {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
                   {data.vendorMsme && (
-                    <Tag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>
+                    <AppTag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>
                       {MSME_CATEGORY_LABELS[data.vendorMsme]}
-                    </Tag>
+                    </AppTag>
                   )}
                 </span>
               ),
@@ -204,7 +205,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                         title: 'Item',
                         render: (_, l) => (
                           <div>
-                            {l.itemNo ? <Tag style={{ marginRight: 6 }}>{l.itemNo}</Tag> : <Tag color="purple" style={{ marginRight: 6 }}>Own item</Tag>}
+                            {l.itemNo ? <AppTag style={{ marginRight: 6 }}>{l.itemNo}</AppTag> : <AppTag tone="violet" style={{ marginRight: 6 }}>Own item</AppTag>}
                             {l.description}
                           </div>
                         ),

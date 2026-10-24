@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, Button, Descriptions, Skeleton, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Descriptions, Skeleton, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined } from '@ant-design/icons';
 import type { ContractExtensionDto } from '@erp/shared';
 import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract, isForeign } from '@erp/shared';
@@ -53,7 +54,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
               </div>
             ) : (
               <span>
-                {c.clientName ?? '-'} {c.clientName && <Tag>not in the client master</Tag>}
+                {c.clientName ?? '-'} {c.clientName && <AppTag>not in the client master</AppTag>}
               </span>
             )}
           </Descriptions.Item>
@@ -83,7 +84,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Completion (agreement)">{formatDate(c.endDate)}</Descriptions.Item>
           <Descriptions.Item label="Completion (with extensions)">
             {formatDate(c.revisedEndDate)}
-            {c.extensionDays > 0 && <Tag color="blue" style={{ marginLeft: 8 }}>+{c.extensionDays} days</Tag>}
+            {c.extensionDays > 0 && <AppTag tone="info" style={{ marginLeft: 8 }}>+{c.extensionDays} days</AppTag>}
           </Descriptions.Item>
           <Descriptions.Item label="Defect liability">{c.defectLiabilityMonths !== null ? `${c.defectLiabilityMonths} months` : '-'}</Descriptions.Item>
           <Descriptions.Item label="Client pays within">{c.clientPaymentDays !== null ? `${c.clientPaymentDays} days` : 'Not set (30 days assumed)'}</Descriptions.Item>
@@ -115,7 +116,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
             { title: 'Held up', key: 'dates', render: (_, e) => `${formatDate(e.delayStart)} to ${e.delayEnd ? formatDate(e.delayEnd) : 'date'}` },
             { title: 'Days lost', dataIndex: 'daysLost', align: 'right', render: (v: number | null) => v ?? '-' },
             { title: 'Caused by', dataIndex: 'responsibleParty', render: (v: ContractExtensionDto['responsibleParty']) => (v ? DELAY_PARTY_LABELS[v] : '-') },
-            { title: 'Granted (days)', dataIndex: 'eotGrantedDays', align: 'right', render: (v: number | null, e) => (v !== null ? v : e.eotClaimed ? <Tag color="orange">Claimed</Tag> : '-') },
+            { title: 'Granted (days)', dataIndex: 'eotGrantedDays', align: 'right', render: (v: number | null, e) => (v !== null ? v : e.eotClaimed ? <AppTag tone="pending">Claimed</AppTag> : '-') },
           ]}
           summary={() =>
             c.extensions.length ? (

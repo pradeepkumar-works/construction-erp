@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, DatePicker, Flex, Progress, Segmented, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Card, DatePicker, Flex, Progress, Segmented, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { DeliveryState, ProcurementStatusLineDto, ProcurementStatusRowDto } from '@erp/shared';
@@ -114,9 +115,9 @@ export function ProcurementStatusPanel() {
       width: 170,
       render: (_, r) => (
         <Flex vertical gap={2} align="flex-start">
-          <Tag color={STATE_COLORS[r.state]} style={{ margin: 0 }}>
+          <AppTag color={STATE_COLORS[r.state]} style={{ margin: 0 }}>
             {DELIVERY_STATE_LABELS[r.state]}
-          </Tag>
+          </AppTag>
           {r.awaitingQc ? (
             <Typography.Text type="warning" style={{ fontSize: token.fontSizeSM }}>
               {r.awaitingQc} GRN{r.awaitingQc === 1 ? '' : 's'} awaiting QA/QC

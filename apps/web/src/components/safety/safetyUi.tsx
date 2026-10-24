@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Tag, Timeline, Typography } from 'antd';
+import { Timeline, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { AuditLogDto, SafetyIncidentStatus, SafetyIncidentType, WorkPermitDto } from '@erp/shared';
 import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_STATUS_LABELS, WORK_PERMIT_TYPE_LABELS } from '@erp/shared';
 import { formatDateTime, formatDayMonth } from '@/lib/format';
@@ -18,15 +19,15 @@ export const INCIDENT_TYPE_COLORS: Record<SafetyIncidentType, string> = {
 };
 
 export const IncidentTypeTag = ({ type }: { type: SafetyIncidentType }) => (
-  <Tag color={INCIDENT_TYPE_COLORS[type]} style={{ margin: 0 }}>
+  <AppTag color={INCIDENT_TYPE_COLORS[type]} style={{ margin: 0 }}>
     {SAFETY_INCIDENT_TYPE_LABELS[type]}
-  </Tag>
+  </AppTag>
 );
 
 export const IncidentStatusTag = ({ status }: { status: SafetyIncidentStatus }) => (
-  <Tag color={status === 'OPEN' ? 'red' : 'default'} style={{ margin: 0 }}>
+  <AppTag color={status === 'OPEN' ? 'red' : 'default'} style={{ margin: 0 }}>
     {SAFETY_INCIDENT_STATUS_LABELS[status]}
-  </Tag>
+  </AppTag>
 );
 
 const PERMIT_COLORS = { REQUESTED: 'gold', ISSUED: 'green', REJECTED: 'red', CLOSED: 'default' } as const;
@@ -34,13 +35,13 @@ const PERMIT_COLORS = { REQUESTED: 'gold', ISSUED: 'green', REJECTED: 'red', CLO
 /** Status, with an issued permit past its end shown as expired. */
 export const PermitStatusTag = ({ p }: { p: Pick<WorkPermitDto, 'status' | 'expired'> }) =>
   p.expired ? (
-    <Tag color="volcano" style={{ margin: 0 }}>
+    <AppTag tone="pending" style={{ margin: 0 }}>
       Expired
-    </Tag>
+    </AppTag>
   ) : (
-    <Tag color={PERMIT_COLORS[p.status]} style={{ margin: 0 }}>
+    <AppTag color={PERMIT_COLORS[p.status]} style={{ margin: 0 }}>
       {p.status === 'ISSUED' ? 'Live' : WORK_PERMIT_STATUS_LABELS[p.status]}
-    </Tag>
+    </AppTag>
   );
 
 export const permitTypeLabel = (t: WorkPermitDto['type']) => WORK_PERMIT_TYPE_LABELS[t];

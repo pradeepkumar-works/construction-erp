@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { FileExcelOutlined } from '@ant-design/icons';
 import type {
@@ -113,7 +114,7 @@ export function StructureView({ projectId }: { projectId: string }) {
       width: 150,
       render: (s: ReconciliationStatus) =>
         s === 'NO_WORK' ? (
-          <Tag style={{ margin: 0 }}>No DPR work</Tag>
+          <AppTag style={{ margin: 0 }}>No DPR work</AppTag>
         ) : (
           <StatusCell status={s} />
         ),
@@ -199,7 +200,7 @@ export function StructureView({ projectId }: { projectId: string }) {
                   {e.label}
                 </span>
               }
-              extra={e.overCount ? <Tag color="error">{e.overCount} over</Tag> : null}
+              extra={e.overCount ? <AppTag tone="danger">{e.overCount} over</AppTag> : null}
             >
               <Table<StructureItemDto>
                 rowKey="itemId"
@@ -236,9 +237,9 @@ function PipeFlags({ flags }: { flags: PipeFlag[] }) {
     <Space size={4} wrap>
       {flags.map((f) => (
         <Tooltip key={f} title={PIPE_FLAG_HINTS[f]}>
-          <Tag color="error" style={{ margin: 0 }}>
+          <AppTag tone="danger" style={{ margin: 0 }}>
             {PIPE_FLAG_LABELS[f]}
-          </Tag>
+          </AppTag>
         </Tooltip>
       ))}
     </Space>
@@ -454,9 +455,9 @@ export function KitsView({ projectId }: { projectId: string }) {
       dataIndex: 'status',
       width: 170,
       render: (s: KitStatus) => (
-        <Tag color={KIT_COLOR[s]} style={{ margin: 0 }}>
+        <AppTag color={KIT_COLOR[s]} style={{ margin: 0 }}>
           {KIT_STATUS_LABELS[s]}
-        </Tag>
+        </AppTag>
       ),
     },
   ];
@@ -487,7 +488,7 @@ export function KitsView({ projectId }: { projectId: string }) {
                     </span>{' '}
                     {k.unit} done
                   </Typography.Text>
-                  {k.kitsShort ? <Tag color="error">{`${k.kitsShort} kit${k.kitsShort === 1 ? '' : 's'} short`}</Tag> : null}
+                  {k.kitsShort ? <AppTag tone="danger">{`${k.kitsShort} kit${k.kitsShort === 1 ? '' : 's'} short`}</AppTag> : null}
                 </Space>
               }
             >
@@ -541,9 +542,9 @@ export function ExceptionsView({ projectId }: { projectId: string }) {
       dataIndex: 'kind',
       width: 190,
       render: (k: ReconExceptionKind) => (
-        <Tag color={EXCEPTION_COLOR[k]} style={{ margin: 0 }}>
+        <AppTag color={EXCEPTION_COLOR[k]} style={{ margin: 0 }}>
           {RECON_EXCEPTION_LABELS[k]}
-        </Tag>
+        </AppTag>
       ),
     },
     { title: 'Detail', dataIndex: 'text', render: (v: string) => <span>{v}</span> },

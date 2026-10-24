@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tag } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { RfiAge, RfiPriority, RfiStatus } from '@erp/shared';
 import { RFI_STATUS_LABELS } from '@erp/shared';
 
@@ -11,22 +11,22 @@ const STATUS_COLOR: Record<RfiStatus, string> = { OPEN: 'blue', ANSWERED: 'gold'
 export function RfiStatusTag({ status, age }: { status: RfiStatus; age?: RfiAge }) {
   if (status === 'OPEN' && age?.overdue)
     return (
-      <Tag color="error" style={{ margin: 0 }}>
+      <AppTag tone="danger" style={{ margin: 0 }}>
         {age.daysOverdue === 1 ? '1 day overdue' : `${age.daysOverdue} days overdue`}
-      </Tag>
+      </AppTag>
     );
   return (
-    <Tag color={STATUS_COLOR[status]} style={{ margin: 0 }}>
+    <AppTag color={STATUS_COLOR[status]} style={{ margin: 0 }}>
       {RFI_STATUS_LABELS[status]}
-    </Tag>
+    </AppTag>
   );
 }
 
 export function UrgentTag({ priority }: { priority: RfiPriority }) {
   return priority === 'URGENT' ? (
-    <Tag color="volcano" style={{ margin: 0 }}>
+    <AppTag tone="pending" style={{ margin: 0 }}>
       Urgent
-    </Tag>
+    </AppTag>
   ) : null;
 }
 

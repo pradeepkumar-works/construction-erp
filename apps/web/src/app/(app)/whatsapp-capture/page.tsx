@@ -3,7 +3,8 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Card, Descriptions, Empty, Flex, Image, Pagination, Result, Segmented, Select, Switch, Tag, Typography, theme } from 'antd';
+import { App, Button, Card, Descriptions, Empty, Flex, Image, Pagination, Result, Segmented, Select, Switch, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 import {
   AI_DRAFT_LABELS,
@@ -244,8 +245,8 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
     <Card size="small" data-message-id={m.id} style={picked ? { borderColor: token.colorPrimary } : undefined}>
       <Flex vertical gap={token.marginXS}>
         <Flex wrap gap={token.marginXS} align="center">
-          <Tag>{INBOUND_TYPE_LABELS[m.type]}</Tag>
-          <Tag color={STATE_COLOR[m.state]}>{m.outcome ? CAPTURE_OUTCOME_LABELS[m.outcome] : INBOUND_STATE_LABELS[m.state]}</Tag>
+          <AppTag>{INBOUND_TYPE_LABELS[m.type]}</AppTag>
+          <AppTag color={STATE_COLOR[m.state]}>{m.outcome ? CAPTURE_OUTCOME_LABELS[m.outcome] : INBOUND_STATE_LABELS[m.state]}</AppTag>
           <Typography.Text type="secondary">
             {formatDateTime(m.createdAt)}
             {showSender && m.userName ? <span translate="no">{` · ${m.userName}`}</span> : null}
@@ -254,7 +255,7 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
         {m.text && <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>{m.text}</Typography.Paragraph>}
         {m.transcript && (
           <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
-            <Tag color="orange">Check this</Tag>
+            <AppTag tone="pending">Check this</AppTag>
             Heard: {m.transcript}
           </Typography.Paragraph>
         )}

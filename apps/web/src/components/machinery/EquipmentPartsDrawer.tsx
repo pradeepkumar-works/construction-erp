@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, DatePicker, Drawer, Empty, Form, Input, Select, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Drawer, Empty, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -96,7 +97,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
         <div>
           <Space size={4} wrap>
             <span>{p.position ?? EQUIPMENT_PART_KIND_LABELS[p.kind]}</span>
-            {p.removedOn ? <Tag style={{ margin: 0 }}>Came off</Tag> : <Tag color="green" style={{ margin: 0 }}>On now</Tag>}
+            {p.removedOn ? <AppTag style={{ margin: 0 }}>Came off</AppTag> : <AppTag tone="success" style={{ margin: 0 }}>On now</AppTag>}
           </Space>
           <div className="text-muted" style={small}>
             {[p.position ? EQUIPMENT_PART_KIND_LABELS[p.kind] : null, p.make, p.serialNo].filter(Boolean).join(' · ') || ' '}

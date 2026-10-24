@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import { Tag } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { StockEntryType } from '@erp/shared';
 import { STOCK_ENTRY_TYPE_LABELS } from '@erp/shared';
 import { STOCK_ENTRY_COLORS } from '@/lib/format';
 
 export const StockTypeTag = ({ type }: { type: StockEntryType }) => (
-  <Tag color={STOCK_ENTRY_COLORS[type]} style={{ margin: 0 }}>
+  <AppTag color={STOCK_ENTRY_COLORS[type]} style={{ margin: 0 }}>
     {STOCK_ENTRY_TYPE_LABELS[type]}
-  </Tag>
+  </AppTag>
 );
 
 /** One line of what an entry was about: supplier and request for a GRN, who took it for an issue, where a transfer went, the reason for an adjustment. */

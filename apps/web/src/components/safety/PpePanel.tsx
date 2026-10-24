@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, Button, Col, Empty, Row, Segmented, Skeleton, Space, Statistic, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Col, Empty, Row, Segmented, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { EditOutlined, PlusOutlined, SafetyOutlined } from '@ant-design/icons';
 import type { PpeIssueDto, PpeKind, PpeWorkerDto } from '@erp/shared';
@@ -118,18 +119,18 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
     const h = w.holding.find((x) => x.kind === k);
     if (!h)
       return (
-        <Tag color="error" style={{ margin: 0 }}>
+        <AppTag tone="danger" style={{ margin: 0 }}>
           Missing
-        </Tag>
+        </AppTag>
       );
     return (
       <span className="mono" translate="no">
         {formatDate(h.issuedOn)}
         {h.due ? (
           <Tooltip title={`Due for replacement since ${formatDate(h.replaceBy)}`}>
-            <Tag color="warning" style={{ marginLeft: 6 }}>
+            <AppTag tone="pending" style={{ marginLeft: 6 }}>
               Due
-            </Tag>
+            </AppTag>
           </Tooltip>
         ) : null}
       </span>
@@ -168,10 +169,10 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
         return extra.length ? (
           <Space size={4} wrap>
             {extra.map((h) => (
-              <Tag key={h.kind} color={h.due ? 'warning' : undefined} style={{ margin: 0 }}>
+              <AppTag key={h.kind} color={h.due ? 'warning' : undefined} style={{ margin: 0 }}>
                 {PPE_KIND_LABELS[h.kind]}
                 {h.due ? ' · due' : ''}
-              </Tag>
+              </AppTag>
             ))}
           </Space>
         ) : (
@@ -220,19 +221,19 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
       width: 200,
       render: (s: PpeIssueDto['status'], r) => (
         <Space size={4} wrap>
-          <Tag color={STATUS_COLOR[s]} style={{ margin: 0 }}>
+          <AppTag color={STATUS_COLOR[s]} style={{ margin: 0 }}>
             {PPE_ISSUE_STATUS_LABELS[s]}
             {r.closedOn ? ` ${formatDate(r.closedOn)}` : ''}
-          </Tag>
+          </AppTag>
           {r.dueForReplacement ? (
-            <Tag color="warning" style={{ margin: 0 }}>
+            <AppTag tone="pending" style={{ margin: 0 }}>
               Due
-            </Tag>
+            </AppTag>
           ) : null}
           {r.recoverable ? (
-            <Tag color="error" style={{ margin: 0 }}>
+            <AppTag tone="danger" style={{ margin: 0 }}>
               Recover
-            </Tag>
+            </AppTag>
           ) : null}
         </Space>
       ),
@@ -324,9 +325,9 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
             <Typography.Text type="secondary">Required kit:</Typography.Text>
             {reg.required.length ? (
               reg.required.map((k) => (
-                <Tag key={k} style={{ margin: 0 }}>
+                <AppTag key={k} style={{ margin: 0 }}>
                   {PPE_KIND_LABELS[k]}
-                </Tag>
+                </AppTag>
               ))
             ) : (
               <Typography.Text type="secondary">none set</Typography.Text>

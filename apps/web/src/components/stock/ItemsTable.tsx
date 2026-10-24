@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, Tag, Typography } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField, PipeMaterial } from '@erp/shared';
@@ -100,15 +101,15 @@ export function ItemsTable() {
             <span>
               {v}
               {r.isFuel ? (
-                <Tag color="volcano" style={{ marginLeft: 6 }}>
+                <AppTag tone="pending" style={{ marginLeft: 6 }}>
                   Fuel
-                </Tag>
+                </AppTag>
               ) : null}
             </span>
           ),
         },
         { title: 'Unit', dataIndex: 'unit', width: 100, ...sort('unit') },
-        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <Tag style={{ margin: 0 }}>{v}</Tag> : <Typography.Text type="secondary">-</Typography.Text>) },
+        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">-</Typography.Text>) },
         {
           key: 'rate',
           title: 'Rate (₹)',

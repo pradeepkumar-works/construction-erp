@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Progress, Space, Table, Tag } from 'antd';
+import { Button, Progress, Space, Table } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons';
 import type { ActivityDto, ProjectDetail, ProjectMemberDto } from '@erp/shared';
@@ -48,9 +49,9 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
         <div style={r.parentActivityId ? { paddingInlineStart: 20 } : undefined}>
           {r.parentActivityId ? <>{v}</> : <strong>{v}</strong>}{' '}
           {r.isDelayed && (
-            <Tag color="red" icon={<WarningOutlined />} style={{ marginLeft: 4 }}>
+            <AppTag tone="danger" icon={<WarningOutlined />} style={{ marginLeft: 4 }}>
               Delayed
-            </Tag>
+            </AppTag>
           )}
           {r.isDelayed && (
             <AskButton
@@ -62,9 +63,9 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
             />
           )}
           {r.holdPoint && (
-            <Tag color="orange" style={{ marginLeft: 4 }}>
+            <AppTag tone="pending" style={{ marginLeft: 4 }}>
               Hold point
-            </Tag>
+            </AppTag>
           )}
           {(r.boqItemNo || r.checklistName || (r.workElementName && !r.parentActivityId) || r.isSummary || r.weightPct) && (
             <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>

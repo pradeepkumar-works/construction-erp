@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Select, Tag } from 'antd';
+import { Select } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { MixDesignStatus, RmcBatchStatus, RmcInvoiceStatus, RmcOrderStatus } from '@erp/shared';
 import { MIX_DESIGN_STATUS_LABELS, RMC_BATCH_STATUS_LABELS, RMC_INVOICE_STATUS_LABELS, RMC_ORDER_STATUS_LABELS } from '@erp/shared';
 import { useRmcPlants } from '@/lib/queries';
@@ -12,10 +13,10 @@ const ORDER_COLOR: Record<RmcOrderStatus, string> = { QUOTED: 'default', CONFIRM
 const BATCH_COLOR: Record<RmcBatchStatus, string> = { DISPATCHED: 'processing', DELIVERED: 'success', REJECTED: 'error' };
 const DESIGN_COLOR: Record<MixDesignStatus, string> = { DRAFT: 'warning', APPROVED: 'success', RETIRED: 'default' };
 
-export const OrderStatusTag = ({ status }: { status: RmcOrderStatus }) => <Tag color={ORDER_COLOR[status]}>{RMC_ORDER_STATUS_LABELS[status]}</Tag>;
-export const BatchStatusTag = ({ status }: { status: RmcBatchStatus }) => <Tag color={BATCH_COLOR[status]}>{RMC_BATCH_STATUS_LABELS[status]}</Tag>;
-export const DesignStatusTag = ({ status }: { status: MixDesignStatus }) => <Tag color={DESIGN_COLOR[status]}>{MIX_DESIGN_STATUS_LABELS[status]}</Tag>;
-export const InvoiceStatusTag = ({ status }: { status: RmcInvoiceStatus }) => <Tag color={status === 'ISSUED' ? 'blue' : 'default'}>{RMC_INVOICE_STATUS_LABELS[status]}</Tag>;
+export const OrderStatusTag = ({ status }: { status: RmcOrderStatus }) => <AppTag color={ORDER_COLOR[status]}>{RMC_ORDER_STATUS_LABELS[status]}</AppTag>;
+export const BatchStatusTag = ({ status }: { status: RmcBatchStatus }) => <AppTag color={BATCH_COLOR[status]}>{RMC_BATCH_STATUS_LABELS[status]}</AppTag>;
+export const DesignStatusTag = ({ status }: { status: MixDesignStatus }) => <AppTag color={DESIGN_COLOR[status]}>{MIX_DESIGN_STATUS_LABELS[status]}</AppTag>;
+export const InvoiceStatusTag = ({ status }: { status: RmcInvoiceStatus }) => <AppTag color={status === 'ISSUED' ? 'blue' : 'default'}>{RMC_INVOICE_STATUS_LABELS[status]}</AppTag>;
 
 /** Cubic metres, as people say them: "6 m³", "16.5 m³". */
 export const m3 = (v: string | number | null | undefined) => `${formatQty(v)} m³`;

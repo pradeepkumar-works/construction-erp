@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Checkbox, Dropdown, Form, Input, Modal, Segmented, Space, Statistic, Table, Tag } from 'antd';
+import { Alert, App, Button, Checkbox, Dropdown, Form, Input, Modal, Segmented, Space, Statistic, Table } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { CheckOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FlagOutlined, LockOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import type { GanttActivityDto, MilestoneDto, MilestoneState, ScheduleFileFormat } from '@erp/shared';
@@ -84,7 +85,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
     { title: 'Due on', dataIndex: 'dueDate', width: 120, render: (v) => formatDate(v) },
     ...(data.baselineAt ? [{ title: 'Baseline', dataIndex: 'baselineDate', width: 120, render: (v: string | null) => (v ? formatDate(v) : <span className="text-muted">not in baseline</span>) }, { title: 'Moved', dataIndex: 'slipDays', width: 130, render: (v: number | null) => moved(v) }] : []),
     { title: 'Achieved on', dataIndex: 'achievedOn', width: 120, render: (v) => (v ? formatDate(v) : <span className="text-muted">-</span>) },
-    { title: 'State', dataIndex: 'state', width: 120, render: (v: MilestoneState) => <Tag color={MILESTONE_COLORS[v]}>{MILESTONE_STATE_LABELS[v]}</Tag> },
+    { title: 'State', dataIndex: 'state', width: 120, render: (v: MilestoneState) => <AppTag color={MILESTONE_COLORS[v]}>{MILESTONE_STATE_LABELS[v]}</AppTag> },
     ...(editor
       ? [
           {

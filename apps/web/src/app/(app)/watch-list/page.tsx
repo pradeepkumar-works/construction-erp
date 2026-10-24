@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Result, Segmented, Tag, Tooltip, Typography, theme } from 'antd';
+import { Alert, App, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Result, Segmented, Tooltip, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { DownOutlined, EyeInvisibleOutlined, PlayCircleOutlined, UndoOutlined, UpOutlined } from '@ant-design/icons';
 import {
@@ -110,11 +111,11 @@ export default function Page() {
         <Flex justify="space-between" align="flex-start" gap={token.margin} wrap>
           <div style={{ flex: '1 1 320px', minWidth: 0 }}>
             <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXS }}>
-              <Tag color={KIND_COLOR[w.kind]}>{WARNING_KIND_LABELS[w.kind]}</Tag>
+              <AppTag color={KIND_COLOR[w.kind]}>{WARNING_KIND_LABELS[w.kind]}</AppTag>
               <Tooltip title={WARNING_CONFIDENCE_HELP[w.confidence]}>
-                <Tag color={CONFIDENCE_COLOR[w.confidence]} variant="outlined">
+                <AppTag color={CONFIDENCE_COLOR[w.confidence]} variant="outlined" dot={false}>
                   {WARNING_CONFIDENCE_LABELS[w.confidence]}
-                </Tag>
+                </AppTag>
               </Tooltip>
               {w.projectName ? (
                 <Typography.Text type="secondary" translate="no">
@@ -128,9 +129,9 @@ export default function Page() {
             <Flex gap={token.marginXS} wrap align="baseline" style={{ marginBottom: token.marginXS }}>
               <Typography.Text strong>{w.action}</Typography.Text>
               {w.impact ? (
-                <Tag color={w.impact.inr ? 'red' : 'default'} translate="no">
+                <AppTag color={w.impact.inr ? 'red' : 'default'} translate="no">
                   {w.impact.text}
-                </Tag>
+                </AppTag>
               ) : null}
             </Flex>
             <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginXS }}>
@@ -201,7 +202,7 @@ export default function Page() {
         <div style={{ flex: '1 1 320px', minWidth: 0 }}>
           <Flex gap={token.marginXS} wrap align="center">
             <Typography.Text strong>{WARNING_KIND_LABELS[r.kind]}</Typography.Text>
-            {r.paused ? <Tag color="red">Paused</Tag> : null}
+            {r.paused ? <AppTag tone="danger">Paused</AppTag> : null}
           </Flex>
           <Typography.Text type="secondary">
             {r.paused

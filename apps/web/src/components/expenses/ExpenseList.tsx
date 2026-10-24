@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Checkbox, Select, Space, Statistic, Tag, Tooltip } from 'antd';
+import { Button, Checkbox, Select, Space, Statistic, Tooltip } from 'antd';
+import { CheckableTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@ant-design/icons';
 import type { AiDraftDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, LIST_SORT_FIELDS, PAYMENT_MODES, PAYMENT_MODE_LABELS, canSubmitExpense } from '@erp/shared';
@@ -121,9 +122,9 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
           <Space size={[4, 4]} wrap style={{ flex: 1, minWidth: 240 }}>
             {summary.byCategory.slice(0, 6).map((c) => (
               <Tooltip key={c.category} title={`${c.count} expense(s)`}>
-                <Tag.CheckableTag checked={category === c.category} onChange={(on) => page.setFilter('category', on ? c.category : undefined)}>
+                <CheckableTag checked={category === c.category} onChange={(on) => page.setFilter('category', on ? c.category : undefined)}>
                   {EXPENSE_CATEGORY_LABELS[c.category]}: {formatINR(c.totalAmount)}
-                </Tag.CheckableTag>
+                </CheckableTag>
               </Tooltip>
             ))}
           </Space>

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tag } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import type { LeaveRequestDto, LeaveStatus, OvertimeStatus, StaffAttendanceDto, StaffAttendanceStatus } from '@erp/shared';
 import { LEAVE_STATUS_LABELS, OVERTIME_STATUS_LABELS, STAFF_ATTENDANCE_LABELS } from '@erp/shared';
@@ -10,8 +10,8 @@ import { formatDate } from '@/lib/format';
 export const LEAVE_STATUS_COLORS: Record<LeaveStatus, string> = { PENDING: 'orange', APPROVED: 'green', REJECTED: 'red', CANCELLED: 'default' };
 export const ATTENDANCE_COLORS: Record<StaffAttendanceStatus, string> = { PRESENT: 'green', HALF_DAY: 'gold', ABSENT: 'red' };
 
-export const LeaveStatusTag = ({ status }: { status: LeaveStatus }) => <Tag color={LEAVE_STATUS_COLORS[status]}>{LEAVE_STATUS_LABELS[status]}</Tag>;
-export const AttendanceTag = ({ status }: { status: StaffAttendanceStatus }) => <Tag color={ATTENDANCE_COLORS[status]}>{STAFF_ATTENDANCE_LABELS[status]}</Tag>;
+export const LeaveStatusTag = ({ status }: { status: LeaveStatus }) => <AppTag color={LEAVE_STATUS_COLORS[status]}>{LEAVE_STATUS_LABELS[status]}</AppTag>;
+export const AttendanceTag = ({ status }: { status: StaffAttendanceStatus }) => <AppTag color={ATTENDANCE_COLORS[status]}>{STAFF_ATTENDANCE_LABELS[status]}</AppTag>;
 
 /** "21 Oct 2026" or "21 Oct to 23 Oct 2026", with "(half day)". */
 export function leaveSpan(l: Pick<LeaveRequestDto, 'fromDate' | 'toDate' | 'halfDay'>) {
@@ -31,16 +31,16 @@ export const metres = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixe
 /** Where a check-in was (v5 item 97): at the site, outside it, or a position with no site location to measure from. */
 export function CheckInPlaceTag({ place }: { place: StaffAttendanceDto['checkInPlace'] }) {
   if (!place) return null;
-  if (place.inside === null) return <Tag>Location recorded</Tag>;
+  if (place.inside === null) return <AppTag>Location recorded</AppTag>;
   return place.inside ? (
-    <Tag color="green">At the site{place.distanceM !== null ? ` (${metres(place.distanceM)})` : ''}</Tag>
+    <AppTag tone="success">At the site{place.distanceM !== null ? ` (${metres(place.distanceM)})` : ''}</AppTag>
   ) : (
-    <Tag color="orange">Outside the site{place.distanceM !== null ? `, ${metres(place.distanceM)} away` : ''}</Tag>
+    <AppTag tone="pending">Outside the site{place.distanceM !== null ? `, ${metres(place.distanceM)} away` : ''}</AppTag>
   );
 }
 
 export const OVERTIME_COLORS: Record<OvertimeStatus, string> = { PENDING: 'orange', APPROVED: 'green', REJECTED: 'red' };
-export const OvertimeTag = ({ status }: { status: OvertimeStatus }) => <Tag color={OVERTIME_COLORS[status]}>{OVERTIME_STATUS_LABELS[status]}</Tag>;
+export const OvertimeTag = ({ status }: { status: OvertimeStatus }) => <AppTag color={OVERTIME_COLORS[status]}>{OVERTIME_STATUS_LABELS[status]}</AppTag>;
 
 /**
  * The browser's position for a check-in, or null when it is refused, unavailable or slow (the server decides whether

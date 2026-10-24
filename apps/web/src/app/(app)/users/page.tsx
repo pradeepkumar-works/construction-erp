@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Card, Result, Select, Space, Switch, Tag, Tooltip, theme } from 'antd';
+import { Alert, Button, Card, Result, Select, Space, Switch, Tooltip, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { useSearchParams } from 'next/navigation';
 import { EditOutlined, LinkOutlined, PlusOutlined } from '@ant-design/icons';
 import type { PasswordLinkDto, RoleKey, UserSortField, UserSummary } from '@erp/shared';
@@ -76,16 +77,16 @@ export default function UsersPage() {
             <div>
               <strong>{v}</strong>
               {r.invitePending ? (
-                <Tag color="gold" style={{ marginLeft: 8 }}>
+                <AppTag tone="pending" style={{ marginLeft: 8 }}>
                   Invited
-                </Tag>
+                </AppTag>
               ) : null}
               <Sub>{r.email}</Sub>
             </div>
           ),
         },
         { key: 'phone', title: 'Phone', dataIndex: 'phone', width: 140, render: (v) => v ?? '-' },
-        { title: 'Role', dataIndex: 'roleName', width: 220, render: (v) => <Tag style={{ margin: 0 }}>{v}</Tag>, ...sort('role') },
+        { title: 'Role', dataIndex: 'roleName', width: 220, render: (v) => <AppTag style={{ margin: 0 }}>{v}</AppTag>, ...sort('role') },
         { title: 'Created', dataIndex: 'createdAt', width: 130, render: (v) => formatDate(v), ...sort('createdAt') },
         {
           title: 'Active',

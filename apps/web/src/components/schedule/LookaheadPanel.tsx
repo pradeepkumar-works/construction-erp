@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Flex, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Flex, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { LOOKAHEAD_READINESS_LABELS, type LookaheadActivityDto, type LookaheadReadiness } from '@erp/shared';
 import { useLookahead } from '@/lib/queries';
@@ -81,8 +82,8 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
             {r.responsibleName ? <span translate="no">{` · ${r.responsibleName}`}</span> : null}
           </div>
           <Flex gap={4} wrap style={{ marginTop: 2 }}>
-            {r.critical ? <Tag color="error">Critical</Tag> : null}
-            {r.overdue ? <Tag color="error">{`Due ${formatDayMonth(r.plannedEnd)}`}</Tag> : null}
+            {r.critical ? <AppTag tone="danger">Critical</AppTag> : null}
+            {r.overdue ? <AppTag tone="danger">{`Due ${formatDayMonth(r.plannedEnd)}`}</AppTag> : null}
           </Flex>
         </div>
       ),
@@ -93,7 +94,7 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
       width: 220,
       render: (_, r) => (
         <div>
-          <Tag color={READINESS_COLORS[r.readiness]}>{r.readiness === 'IN_PROGRESS' ? `Under way, ${formatPct(r.progressPct)}` : LOOKAHEAD_READINESS_LABELS[r.readiness]}</Tag>
+          <AppTag color={READINESS_COLORS[r.readiness]}>{r.readiness === 'IN_PROGRESS' ? `Under way, ${formatPct(r.progressPct)}` : LOOKAHEAD_READINESS_LABELS[r.readiness]}</AppTag>
           {r.readiness === 'WAITING' ? (
             <div style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 2 }}>
               {`On ${r.waitingOn.join(', ')}`}

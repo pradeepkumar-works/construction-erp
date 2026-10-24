@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Alert, DatePicker, Form, Input, InputNumber, Radio, Select, Table, Tag, Typography, theme } from 'antd';
+import { Alert, DatePicker, Form, Input, InputNumber, Radio, Select, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
 import { GST_RATES, SC_ENQUIRY_STATUS_LABELS, rankLabel, type ScEnquiryDetailDto, type ScEnquiryStatus, type ScQuoteDto } from '@erp/shared';
@@ -20,7 +21,7 @@ const SUB_KINDS = 'SUBCONTRACTOR,LABOUR_CONTRACTOR';
 
 const STATUS_COLORS: Record<ScEnquiryStatus, string | undefined> = { OPEN: 'processing', AWARDED: 'success', CANCELLED: undefined };
 export function ScEnquiryStatusTag({ status }: { status: ScEnquiryStatus }) {
-  return <Tag color={STATUS_COLORS[status]}>{SC_ENQUIRY_STATUS_LABELS[status]}</Tag>;
+  return <AppTag color={STATUS_COLORS[status]}>{SC_ENQUIRY_STATUS_LABELS[status]}</AppTag>;
 }
 
 /** The subcontractors on the vendor master, for asking to quote. */

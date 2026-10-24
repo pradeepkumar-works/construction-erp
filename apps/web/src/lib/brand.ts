@@ -136,6 +136,20 @@ export const BRAND = {
     nightRing: 'rgba(110, 168, 255, 0.30)',
     nightScrim: 'rgba(2, 6, 12, 0.66)',
     nightShadowFloat: '0 10px 28px -6px rgba(0, 0, 0, 0.55), 0 2px 8px -2px rgba(0, 0, 0, 0.4)',
+    /** The fifth tag tone (changes requested, completed, money going out): a violet no other state uses, and its fill. */
+    violet: '#6D28D9',
+    violetBg: '#F1EBFD',
+    nightViolet: '#B794F4',
+    /** Dark mode tag fills: each tone's colour at 16% on the night surface, and the neutral tone's text. */
+    nightNeutralText: '#B4BFCD',
+    nightNeutralBg: 'rgba(160, 174, 192, 0.16)',
+    nightToneInfoBg: 'rgba(110, 168, 255, 0.16)',
+    nightTonePendingBg: 'rgba(246, 173, 85, 0.16)',
+    nightToneSuccessBg: 'rgba(95, 208, 138, 0.16)',
+    nightToneDangerBg: 'rgba(242, 109, 111, 0.16)',
+    nightToneVioletBg: 'rgba(183, 148, 244, 0.16)',
+    /** The neutral tag tone's fill in the light theme (its text is `muted`). */
+    neutralBg: '#EDF0F4',
     /** The focus ring around a field in the light theme: Nirmaan blue at 18%. */
     ring: 'rgba(30, 99, 214, 0.18)',
     /** Skeleton shimmer, from and to: navy (or night text) at 6% and 12%. */

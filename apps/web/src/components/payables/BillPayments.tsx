@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Divider, Space, Table, Tag, Typography } from 'antd';
+import { Button, Divider, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorPaymentDto } from '@erp/shared';
 import { RECEIPT_MODE_LABELS, canRecordPayment, canViewPayables } from '@erp/shared';
@@ -17,9 +18,9 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 /** Tag for how much of an approved bill is paid. */
 export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; outstanding: string; paidDate: string | null } }) {
   if (bill.status !== 'APPROVED') return null;
-  if (bill.paidDate) return <Tag color="green" style={{ margin: 0 }}>Paid</Tag>;
-  if (toNumber(bill.paidAmount) > 0) return <Tag color="gold" style={{ margin: 0 }}>Part paid</Tag>;
-  return <Tag style={{ margin: 0 }}>Unpaid</Tag>;
+  if (bill.paidDate) return <AppTag tone="success" style={{ margin: 0 }}>Paid</AppTag>;
+  if (toNumber(bill.paidAmount) > 0) return <AppTag tone="pending" style={{ margin: 0 }}>Part paid</AppTag>;
+  return <AppTag style={{ margin: 0 }}>Unpaid</AppTag>;
 }
 
 /**

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, Button, Dropdown, Flex, Progress, Space, Statistic, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Dropdown, Flex, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, FileExcelOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -232,7 +233,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
           <Statistic title="Components" value={data.elements.filter((e) => e.level === 'COMPONENT').length} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           <div>
             <div className="text-muted">Contract</div>
-            <Tag style={{ marginTop: 6 }}>{CONTRACT_MODEL_LABELS[data.contractModel]}</Tag>
+            <AppTag style={{ marginTop: 6 }}>{CONTRACT_MODEL_LABELS[data.contractModel]}</AppTag>
           </div>
         </Space>
         <Space wrap>
