@@ -33,6 +33,7 @@ import {
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useEpc, usePurchaseOrders, useStructure } from '@/lib/queries';
+import { useUrlTab } from '@/lib/url-state';
 import { formatDate, formatMoney, formatPct, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -42,7 +43,8 @@ import { VendorSelect } from '@/components/common/SearchSelect';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
-type View = 'engineering' | 'packages' | 'inputs';
+const VIEWS = ['engineering', 'packages', 'inputs'] as const;
+type View = (typeof VIEWS)[number];
 const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
 const STATUS_COLORS: Record<DeliverableStatus, string> = { NOT_STARTED: 'default', SUBMITTED: 'blue', COMMENTS: 'orange', APPROVED: 'green' };
 const day = (v: string | null) => (v ? <span translate="no">{formatDate(v)}</span> : '-');
@@ -53,10 +55,11 @@ const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
  * Engineering and packages tab of an EPC project (item 130, ARCHITECTURE "EPC"): the design deliverables by discipline
  * with where each stands with the client, the equipment packages from order to commissioning against the day site needs
  * them, and the inputs the client owes, which become delays when late. Payment stages read deliverables and packages.
+ * The open view is `?sub=` in the URL.
  */
 export function EpcPanel({ project }: { project: ProjectDetail }) {
   const { data, isLoading, error, refetch } = useEpc(project.id);
-  const [view, setView] = useState<View>('engineering');
+  const [view, setView] = useUrlTab<View>(VIEWS, 'engineering');
   const [deliverable, setDeliverable] = useState<DeliverableDto | 'new' | null>(null);
   const [pkg, setPkg] = useState<PackageDto | 'new' | null>(null);
   const [input, setInput] = useState<ClientInputDto | 'new' | null>(null);

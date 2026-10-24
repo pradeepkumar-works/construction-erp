@@ -649,7 +649,7 @@ export class WarningsService {
           { label: 'Expected at site', value: day(f.forecastOnSite) },
           { label: 'Needed on site', value: day(needed) },
         ],
-        links: [{ label: 'Engineering and packages', href: `/projects/${p.id}?tab=epc` }],
+        links: [{ label: 'Engineering and packages', href: `/projects/${p.id}?tab=epc&sub=packages` }],
         projectId: p.id,
         projectName: p.name,
       });
