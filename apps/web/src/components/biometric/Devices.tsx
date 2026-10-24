@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { BiometricDeviceDto, BiometricProtocol } from '@erp/shared';
@@ -152,7 +153,7 @@ export function Devices() {
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
     { title: 'Last heard', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null, d) => (d.protocol === 'FILE' ? '-' : ago(v)) },
     { title: 'Punches today', dataIndex: 'punchesToday', width: 120, align: 'right' },
-    { title: 'State', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <Tag color="green">On</Tag> : <Tag>Off</Tag>) },
+    { title: 'State', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag tone="success">On</AppTag> : <AppTag>Off</AppTag>) },
     {
       title: '',
       key: 'x',

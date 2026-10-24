@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Tag, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { RiskDto, RiskLevel, RiskStatus } from '@erp/shared';
 import { RISK_KIND_LABELS, RISK_LEVEL_LABELS, RISK_RATING_LABELS, RISK_STATUS_LABELS, riskLevel } from '@erp/shared';
 import { themeColor } from '@/lib/theme';
@@ -16,21 +17,21 @@ export function ScoreTag({ r }: { r: Pick<RiskDto, 'score' | 'probability' | 'im
   const level = riskLevel(r.score);
   return (
     <Tooltip title={`Probability ${r.probability} × impact ${r.impact} · ${RISK_LEVEL_LABELS[level]}`}>
-      <Tag color={LEVEL_TAG[level]} style={{ margin: 0, minWidth: 34, textAlign: 'center' }}>
+      <AppTag color={LEVEL_TAG[level]} style={{ margin: 0, minWidth: 34, textAlign: 'center' }}>
         {r.score}
-      </Tag>
+      </AppTag>
     </Tooltip>
   );
 }
 
 export const RiskStatusTag = ({ status }: { status: RiskStatus }) => (
-  <Tag color={STATUS_TAG[status]} style={{ margin: 0 }}>
+  <AppTag color={STATUS_TAG[status]} style={{ margin: 0 }}>
     {RISK_STATUS_LABELS[status]}
-  </Tag>
+  </AppTag>
 );
 
 export const KindTag = ({ kind }: { kind: RiskDto['kind'] }) => (
-  <Tag color={kind === 'DELAY' ? 'volcano' : 'geekblue'} style={{ margin: 0 }}>
+  <AppTag color={kind === 'DELAY' ? 'volcano' : 'geekblue'} style={{ margin: 0 }}>
     {RISK_KIND_LABELS[kind]}
-  </Tag>
+  </AppTag>
 );

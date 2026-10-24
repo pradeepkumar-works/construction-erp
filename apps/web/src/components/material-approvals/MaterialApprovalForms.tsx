@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { DatePicker, Form, Input, Segmented, Select, Tag, Typography } from 'antd';
+import { DatePicker, Form, Input, Segmented, Select, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import {
   MATERIAL_APPROVAL_KIND_LABELS,
@@ -36,13 +37,13 @@ const STATUS_COLORS: Record<MaterialApprovalStatus, string | undefined> = {
   WITHDRAWN: undefined,
 };
 export function MaterialApprovalStatusTag({ status, overdue }: { status: MaterialApprovalStatus; overdue?: boolean }) {
-  if (status === 'UNDER_REVIEW' && overdue) return <Tag color="error">Reply overdue</Tag>;
-  return <Tag color={STATUS_COLORS[status]}>{MATERIAL_APPROVAL_STATUS_LABELS[status]}</Tag>;
+  if (status === 'UNDER_REVIEW' && overdue) return <AppTag tone="danger">Reply overdue</AppTag>;
+  return <AppTag color={STATUS_COLORS[status]}>{MATERIAL_APPROVAL_STATUS_LABELS[status]}</AppTag>;
 }
 
 const OUTCOME_COLORS: Record<MaterialReviewOutcome, string> = { APPROVED: 'success', APPROVED_AS_NOTED: 'success', REVISE_RESUBMIT: 'warning', REJECTED: 'error' };
 export function OutcomeTag({ outcome }: { outcome: MaterialReviewOutcome }) {
-  return <Tag color={OUTCOME_COLORS[outcome]}>{MATERIAL_REVIEW_OUTCOME_LABELS[outcome]}</Tag>;
+  return <AppTag color={OUTCOME_COLORS[outcome]}>{MATERIAL_REVIEW_OUTCOME_LABELS[outcome]}</AppTag>;
 }
 
 interface ApprovalValues {

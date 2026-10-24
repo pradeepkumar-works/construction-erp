@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, Tag, Typography, theme } from 'antd';
+import { Button, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { AuthUser, RiskDto, RiskSortField } from '@erp/shared';
 import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, canEditRisk } from '@erp/shared';
 import { formatDate } from '@/lib/format';
@@ -59,9 +60,9 @@ export function riskColumns({
           <div>
             <strong>{r.daysLost ?? 0}</strong>
             {!r.delayEnd && r.status !== 'CLOSED' ? (
-              <Tag color="red" style={{ marginLeft: 6 }}>
+              <AppTag tone="danger" style={{ marginLeft: 6 }}>
                 ongoing
-              </Tag>
+              </AppTag>
             ) : null}
             <Sub>{[r.responsibleParty ? DELAY_PARTY_LABELS[r.responsibleParty] : null, r.eotClaimed ? 'EOT claimed' : null].filter(Boolean).join(' · ')}</Sub>
           </div>

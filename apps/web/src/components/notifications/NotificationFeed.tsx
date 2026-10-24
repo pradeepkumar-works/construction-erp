@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Badge, Flex, Listy, Tag, Typography, theme } from 'antd';
+import { Badge, Flex, Listy, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { NotificationDto } from '@erp/shared';
 import { NOTIFICATION_TYPE_LABELS } from '@erp/shared';
 import { NOTIFICATION_COLORS, dayLabel, formatDateTime, timeAgo } from '@/lib/format';
@@ -52,9 +53,9 @@ export function NotificationFeed({ items, onOpen, compact }: { items: Notificati
                     <span style={{ display: 'flex', gap: token.marginXS, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: n.readAt ? 500 : 700 }}>{n.title}</span>
                       {compact ? null : (
-                        <Tag color={NOTIFICATION_COLORS[n.type]} style={{ margin: 0 }}>
+                        <AppTag color={NOTIFICATION_COLORS[n.type]} style={{ margin: 0 }}>
                           {NOTIFICATION_TYPE_LABELS[n.type]}
-                        </Tag>
+                        </AppTag>
                       )}
                     </span>
                   }

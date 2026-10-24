@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
 import { DeleteOutlined, EditOutlined, MoreOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -114,7 +115,7 @@ export default function MachineLoanPage() {
         crumbs={[{ title: 'Machine loans', href: '/machine-loans' }, { title: loan.loanNo }]}
         subtitle={
           <span>
-            <Tag color={running ? 'processing' : undefined}>{running ? EQUIPMENT_LOAN_STATUS_LABELS.ACTIVE : `${EQUIPMENT_LOAN_STATUS_LABELS.CLOSED} ${formatDate(loan.closedOn)}`}</Tag>
+            <AppTag color={running ? 'processing' : undefined}>{running ? EQUIPMENT_LOAN_STATUS_LABELS.ACTIVE : `${EQUIPMENT_LOAN_STATUS_LABELS.CLOSED} ${formatDate(loan.closedOn)}`}</AppTag>
             <span translate="no">{`${loan.equipmentCode} ${loan.equipmentName}`}</span>
             {loan.projectName ? <span>{` at ${loan.projectName}`}</span> : null}
           </span>

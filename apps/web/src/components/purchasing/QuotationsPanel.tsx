@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Empty, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { Button, Empty, Space, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -142,9 +143,9 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                   </div>
                   {q.fromSupplier && (
                     <Tooltip title="Typed by the supplier on the enquiry link">
-                      <Tag color="blue" style={{ margin: 0, fontWeight: 400 }}>
+                      <AppTag tone="info" style={{ margin: 0, fontWeight: 400 }}>
                         From supplier
-                      </Tag>
+                      </AppTag>
                     </Tooltip>
                   )}
                 </div>
@@ -211,7 +212,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
       ) : quotes.length === 0 && !buyer ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No quotations or purchase orders yet" />
       ) : null}
-      {!remaining && <Tag color="green" style={{ marginTop: 8 }}>Everything on this request is ordered or received</Tag>}
+      {!remaining && <AppTag tone="success" style={{ marginTop: 8 }}>Everything on this request is ordered or received</AppTag>}
       <EnquiryFormModal open={enquiring} request={request} onClose={() => setEnquiring(false)} onSent={setSent} />
       <EnquirySentModal enquiry={sent} onClose={() => setSent(null)} />
       <QuotationFormModal open={!!quoting} request={request} quotation={quoting === 'new' ? null : quoting} onClose={() => setQuoting(null)} />

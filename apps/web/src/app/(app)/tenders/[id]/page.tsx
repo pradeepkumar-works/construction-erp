@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { App, Button, Card, Col, Descriptions, Dropdown, Flex, InputNumber, Row, Space, Statistic, Table, Tag, Typography, theme } from "antd";
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, InputNumber, Row, Space, Statistic, Table, Typography, theme } from "antd";
+import { AppTag } from "@/components/common/AppTag";
 import { AppTabs } from "@/components/common/AppTabs";
 import type { MenuProps } from "antd";
 import {
@@ -721,7 +722,7 @@ function BoqTab({
                         .join(" · ")}
                     </Typography.Text>
                     {i.unpriced ? (
-                      <Tag color="warning">{`${i.unpriced} line${i.unpriced === 1 ? "" : "s"} without a rate`}</Tag>
+                      <AppTag tone="pending">{`${i.unpriced} line${i.unpriced === 1 ? "" : "s"} without a rate`}</AppTag>
                     ) : null}
                   </div>
                 ),
@@ -855,9 +856,9 @@ function BidsTab({
             title: "Rank",
             width: 80,
             render: (_, b) => (
-              <Tag color={b.rank === 1 ? "success" : undefined}>
+              <AppTag color={b.rank === 1 ? "success" : undefined}>
                 {rankLabel(b.rank)}
-              </Tag>
+              </AppTag>
             ),
           },
           {
@@ -866,7 +867,7 @@ function BidsTab({
             render: (_, b) => (
               <span translate="no">
                 {b.bidderName}
-                {b.us ? <Tag style={{ marginLeft: 8 }}>Us</Tag> : null}
+                {b.us ? <AppTag style={{ marginLeft: 8 }}>Us</AppTag> : null}
               </span>
             ),
           },

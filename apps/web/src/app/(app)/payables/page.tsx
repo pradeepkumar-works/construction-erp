@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Col, Row, Space, Statistic, Tag, Typography } from 'antd';
+import { Button, Card, Col, Row, Space, Statistic, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -289,9 +290,9 @@ export default function PayablesPage() {
         <div>
           {r.vendorName}
           {isSmall(r.vendorMsme) && (
-            <Tag color={r.msmeFlag ? 'red' : 'orange'} style={{ marginLeft: 6 }}>
+            <AppTag color={r.msmeFlag ? 'red' : 'orange'} style={{ marginLeft: 6 }}>
               {MSME_CATEGORY_LABELS[r.vendorMsme!]}
-            </Tag>
+            </AppTag>
           )}
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.projectCode} · {r.projectName}
@@ -388,9 +389,9 @@ export default function PayablesPage() {
         <span>
           {v}
           {isSmall(r.vendorMsme) && (
-            <Tag color="orange" style={{ marginLeft: 6 }}>
+            <AppTag tone="pending" style={{ marginLeft: 6 }}>
               {MSME_CATEGORY_LABELS[r.vendorMsme!]}
-            </Tag>
+            </AppTag>
           )}
         </span>
       ),

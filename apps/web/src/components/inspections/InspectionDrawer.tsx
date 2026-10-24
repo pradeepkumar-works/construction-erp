@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, ConfigProvider, Input, Modal, Segmented, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, ConfigProvider, Input, Modal, Segmented, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, InspectionDto, InspectionResult, ReviewDecision } from '@erp/shared';
@@ -27,9 +28,9 @@ const RESULT_COLORS: Record<InspectionResult, string> = { PASS: 'green', FAIL: '
 export function ResultTag({ result }: { result: InspectionResult | null }) {
   if (!result) return <span className="text-muted">-</span>;
   return (
-    <Tag color={RESULT_COLORS[result]} style={{ margin: 0 }}>
+    <AppTag color={RESULT_COLORS[result]} style={{ margin: 0 }}>
       {INSPECTION_RESULT_LABELS[result]}
-    </Tag>
+    </AppTag>
   );
 }
 
@@ -199,7 +200,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
           title: `Inspection · ${data.inspectionNo}`,
           tags: <StatusTag status={data.status} labels={INSPECTION_STATUS_LABELS} />,
           facts: [
-            { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <Tag color="orange" style={{ marginLeft: 8 }}>Hold point</Tag>}</span> },
+            { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <AppTag tone="pending" style={{ marginLeft: 8 }}>Hold point</AppTag>}</span> },
             { key: 'loc', label: 'Location', children: data.location },
             { key: 'date', label: 'Ready on', children: formatDate(data.date) },
             { key: 'checklist', label: 'Checklist', children: data.checklistName ?? (data.checklist.length ? 'Own points' : 'None') },

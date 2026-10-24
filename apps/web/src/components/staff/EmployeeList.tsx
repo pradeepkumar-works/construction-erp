@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Checkbox, Tag, theme } from 'antd';
+import { Button, Checkbox, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@ant-design/icons';
 import type { EmployeeDto, EmployeeSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canManageStaff } from '@erp/shared';
@@ -47,7 +48,7 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
               <RecordLink onOpen={() => onOpen(r.id)} strong>
                 {r.fullName}
               </RecordLink>
-              {!r.isActive && <Tag style={{ marginLeft: 6 }}>Left</Tag>}
+              {!r.isActive && <AppTag style={{ marginLeft: 6 }}>Left</AppTag>}
               <Sub>{r.designation}</Sub>
             </div>
           ),

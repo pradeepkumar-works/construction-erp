@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Checkbox, InputNumber, Popover, Space, Tag, Tooltip, Typography } from 'antd';
+import { App, Button, Checkbox, InputNumber, Popover, Space, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, WarningOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockBalanceSortField } from '@erp/shared';
@@ -123,7 +124,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
           render: (v, r) => (
             <Space size={6} wrap>
               <RecordLink onOpen={() => setLedger(r)}>{v}</RecordLink>
-              {r.category ? <Tag style={{ margin: 0 }}>{r.category}</Tag> : null}
+              {r.category ? <AppTag style={{ margin: 0 }}>{r.category}</AppTag> : null}
             </Space>
           ),
         },

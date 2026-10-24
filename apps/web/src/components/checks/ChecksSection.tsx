@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { themeFontSize } from '@/lib/theme';
 import Link from 'next/link';
-import { Alert, App, Button, Flex, Form, Input, Skeleton, Spin, Tag, Typography, theme } from 'antd';
+import { Alert, App, Button, Flex, Form, Input, Skeleton, Spin, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleFilled, CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import type { BillCheckDto, CheckKind } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
@@ -143,9 +144,9 @@ export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?:
       {passed.length ? (
         <Flex gap={6} wrap style={{ marginTop: flags.length ? 10 : 0 }} role="list" aria-label="Checks passed">
           {passed.map((c) => (
-            <Tag key={c.key} color="green" icon={<CheckOutlined />} role="listitem" style={{ margin: 0 }}>
+            <AppTag key={c.key} tone="success" icon={<CheckOutlined />} role="listitem" style={{ margin: 0 }}>
               {c.title}
-            </Tag>
+            </AppTag>
           ))}
         </Flex>
       ) : null}

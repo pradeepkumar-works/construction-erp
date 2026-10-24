@@ -2,23 +2,8 @@
 
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  Button,
-  Card,
-  Col,
-  Dropdown,
-  Empty,
-  Flex,
-  Form,
-  Input,
-  Row,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  theme,
-} from "antd";
+import { Button, Card, Col, Dropdown, Empty, Flex, Form, Input, Row, Select, Space, Table, Typography, theme } from "antd";
+import { AppTag } from "@/components/common/AppTag";
 import type { MenuProps } from "antd";
 import {
   DeleteOutlined,
@@ -310,7 +295,7 @@ function ScheduleOfRatesPage() {
                           {i.description}
                           {i.chapter ? (
                             <div>
-                              <Tag style={{ marginTop: 2 }}>{i.chapter}</Tag>
+                              <AppTag style={{ marginTop: 2 }}>{i.chapter}</AppTag>
                             </div>
                           ) : null}
                         </div>

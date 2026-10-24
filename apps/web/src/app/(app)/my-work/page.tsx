@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Card, Col, Empty, Flex, Grid, Progress, Row, Skeleton, Statistic, Table, Tag, Typography } from 'antd';
+import { Card, Col, Empty, Flex, Grid, Progress, Row, Skeleton, Statistic, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import {
   AlertOutlined,
@@ -144,9 +145,9 @@ export default function MyWorkPage() {
                       <Col key={pt.type} xs={24} sm={12} lg={8}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
                           <span>{PROJECT_TYPE_LABELS[pt.type] ?? pt.type}</span>
-                          <Tag style={{ margin: 0 }}>
+                          <AppTag style={{ margin: 0 }}>
                             {pt.count} project{pt.count === 1 ? '' : 's'}
-                          </Tag>
+                          </AppTag>
                         </div>
                         <Progress percent={data.totalProjects ? (pt.count / data.totalProjects) * 100 : 0} size="small" showInfo={false} strokeColor={BRAND.colors.primary} aria-label={`${PROJECT_TYPE_LABELS[pt.type] ?? pt.type}: ${formatPct(data.totalProjects ? (pt.count / data.totalProjects) * 100 : 0)} of projects`} />
                       </Col>

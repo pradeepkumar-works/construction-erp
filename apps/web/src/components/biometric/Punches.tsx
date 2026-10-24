@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, DatePicker, Form, Select, Space, Table, Tag, Typography, Upload } from 'antd';
+import { Alert, App, Button, DatePicker, Form, Select, Space, Table, Typography, Upload } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps, UploadProps } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -92,7 +93,7 @@ export function Punches() {
     { title: 'User number', dataIndex: 'pin', width: 120, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Who', key: 'who', ellipsis: true, render: (_, p) => (p.personName ? <span translate="no">{`${p.personName} (${p.personCode})`}</span> : <Typography.Text type="secondary">Not matched</Typography.Text>) },
     { title: 'Device', dataIndex: 'deviceName', width: 180, ellipsis: true },
-    { title: 'Attendance', dataIndex: 'result', width: 140, render: (v: BiometricPunchResult) => <Tag color={RESULT_COLOR[v]}>{BIOMETRIC_PUNCH_RESULT_LABELS[v]}</Tag> },
+    { title: 'Attendance', dataIndex: 'result', width: 140, render: (v: BiometricPunchResult) => <AppTag color={RESULT_COLOR[v]}>{BIOMETRIC_PUNCH_RESULT_LABELS[v]}</AppTag> },
     { title: 'Why', dataIndex: 'note', ellipsis: true, render: (v: string | null) => v ?? '' },
   ];
 

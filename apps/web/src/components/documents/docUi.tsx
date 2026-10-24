@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Space, Tag } from 'antd';
+import { Space } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { FileImageOutlined, FileOutlined, FilePdfOutlined, HighlightOutlined } from '@ant-design/icons';
 import type { AttachmentDto, RevisionStatus } from '@erp/shared';
 import { REVISION_STATUS_LABELS, canViewDrawingFile, drawingFileKind } from '@erp/shared';
@@ -20,9 +21,9 @@ const STATUS_TAG: Record<RevisionStatus, string> = {
 };
 
 export const RevisionStatusTag = ({ status }: { status: RevisionStatus }) => (
-  <Tag color={STATUS_TAG[status]} style={{ margin: 0 }}>
+  <AppTag color={STATUS_TAG[status]} style={{ margin: 0 }}>
     {REVISION_STATUS_LABELS[status]}
-  </Tag>
+  </AppTag>
 );
 
 /** The files of a revision as links that open in a new tab. */

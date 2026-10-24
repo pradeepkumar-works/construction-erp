@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Tag, Tooltip, theme } from 'antd';
+import { Tooltip, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { WarningOutlined } from '@ant-design/icons';
 import type { ExpenseDto, ExpenseSortField } from '@erp/shared';
 import { EXPENSE_CATEGORY_LABELS, PAYMENT_MODE_LABELS } from '@erp/shared';
@@ -52,7 +53,7 @@ export function expenseColumns({
         </div>
       ),
     },
-    { defaultFrom: 1400, card: 'meta', title: 'Category', dataIndex: 'category', width: 170, ...sort('category'), render: (c) => <Tag style={{ margin: 0 }}>{EXPENSE_CATEGORY_LABELS[c as ExpenseDto['category']]}</Tag> },
+    { defaultFrom: 1400, card: 'meta', title: 'Category', dataIndex: 'category', width: 170, ...sort('category'), render: (c) => <AppTag style={{ margin: 0 }}>{EXPENSE_CATEGORY_LABELS[c as ExpenseDto['category']]}</AppTag> },
     {
       card: 'amount',
       cardText: (r) => formatINR(r.totalAmount, true),
@@ -81,9 +82,9 @@ export function expenseColumns({
           <PhotoThumbs attachments={a} />
         ) : (
           <Tooltip title="No bill photo attached">
-            <Tag color="warning" icon={<WarningOutlined />} style={{ margin: 0 }}>
+            <AppTag tone="pending" icon={<WarningOutlined />} style={{ margin: 0 }}>
               None
-            </Tag>
+            </AppTag>
           </Tooltip>
         ),
     },

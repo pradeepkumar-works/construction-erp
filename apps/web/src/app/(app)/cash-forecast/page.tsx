@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Card, Collapse, Empty, Flex, Result, Segmented, Skeleton, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Card, Collapse, Empty, Flex, Result, Segmented, Skeleton, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CASH_FLOW_KIND_LABELS, canSeeCashForecast, type CashFlowItemDto, type CashForecastDto, type CashWeekDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCashForecast } from '@/lib/queries';
@@ -222,10 +223,10 @@ function Forecast({ data }: { data: CashForecastDto }) {
                       <span translate="no">{i.label}</span>
                     )}
                     <div>
-                      <Tag>{CASH_FLOW_KIND_LABELS[i.kind]}</Tag>
-                      {i.msme ? <Tag color="gold">MSME</Tag> : null}
-                      {i.overdue ? <Tag color="red">Overdue</Tag> : null}
-                      {i.uncertain ? <Tag>Not in the low case</Tag> : null}
+                      <AppTag>{CASH_FLOW_KIND_LABELS[i.kind]}</AppTag>
+                      {i.msme ? <AppTag tone="pending">MSME</AppTag> : null}
+                      {i.overdue ? <AppTag tone="danger">Overdue</AppTag> : null}
+                      {i.uncertain ? <AppTag>Not in the low case</AppTag> : null}
                     </div>
                   </>
                 ),

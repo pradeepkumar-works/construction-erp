@@ -3,7 +3,8 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, DatePicker, Empty, Flex, Result, Segmented, Statistic, Tag, Typography, theme } from 'antd';
+import { Button, Card, DatePicker, Empty, Flex, Result, Segmented, Statistic, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { LEAKAGE_SECTION_LABELS, canSeeLeakage, type LeakageFlagDto, type LeakageSection } from '@erp/shared';
@@ -86,7 +87,7 @@ function Leakage() {
     return (
       <Card key={f.key} data-flag-key={f.key} size="small">
         <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXS }}>
-          <Tag color={SECTION_COLOR[f.section]}>{LEAKAGE_SECTION_LABELS[f.section]}</Tag>
+          <AppTag color={SECTION_COLOR[f.section]}>{LEAKAGE_SECTION_LABELS[f.section]}</AppTag>
           {f.projectName ? (
             <Typography.Text type="secondary" translate="no">
               {f.projectName}
@@ -100,9 +101,9 @@ function Leakage() {
           <Typography.Text strong>At risk:</Typography.Text>
           <Typography.Text translate="no">{f.quantity}</Typography.Text>
           {f.valueInr !== null ? (
-            <Tag color="red" translate="no">
+            <AppTag tone="danger" translate="no">
               {formatINR(f.valueInr)}
-            </Tag>
+            </AppTag>
           ) : null}
         </Flex>
         <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginXS }}>

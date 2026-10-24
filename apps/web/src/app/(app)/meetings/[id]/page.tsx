@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Tag, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
 import { DeleteOutlined, EditOutlined, MoreOutlined, PrinterOutlined, RollbackOutlined, SendOutlined, WhatsAppOutlined } from '@ant-design/icons';
 import { MEETING_KIND_LABELS, type MeetingActionDto, type MeetingDetailDto, type MeetingIssueResultDto } from '@erp/shared';
@@ -173,7 +174,7 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
                 <ol style={{ margin: 0, paddingLeft: 20 }}>
                   {m.points.map((p) => (
                     <li key={p.id} style={{ marginBottom: token.marginXS }}>
-                      {p.kind === 'DECISION' ? <Tag color="blue">Decided</Tag> : null}
+                      {p.kind === 'DECISION' ? <AppTag tone="info">Decided</AppTag> : null}
                       <span style={{ whiteSpace: 'pre-wrap' }}>{p.text}</span>
                     </li>
                   ))}
@@ -202,7 +203,7 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
                           {[a.organisation ?? 'Our staff', a.phone].filter(Boolean).join(' · ')}
                         </Typography.Text>
                       </div>
-                      {a.present ? null : <Tag>Absent</Tag>}
+                      {a.present ? null : <AppTag>Absent</AppTag>}
                     </Flex>
                   ))}
                 </Flex>

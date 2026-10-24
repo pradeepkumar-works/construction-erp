@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, Tag, theme } from 'antd';
+import { Button, Select, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@ant-design/icons';
 import type { InspectionDto, InspectionSortField, SubmissionStatus } from '@erp/shared';
 import { INSPECTION_STATUS_LABELS, LIST_SORT_FIELDS, canRequestInspection, checklistCounts } from '@erp/shared';
@@ -46,9 +47,9 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
         <div>
           <RecordLink href={`/inspections/${r.id}`} onOpen={() => onOpen(r.id)}>{r.activityName}</RecordLink>
           {r.holdPoint && (
-            <Tag color="orange" style={{ marginLeft: 6 }}>
+            <AppTag tone="pending" style={{ marginLeft: 6 }}>
               Hold point
-            </Tag>
+            </AppTag>
           )}
           <Sub>{r.location}</Sub>
         </div>

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Empty, Flex, Row, Statistic, Tag, Typography, theme } from 'antd';
+import { Button, Card, Col, Empty, Flex, Row, Statistic, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@ant-design/icons';
 import { canEditProjects, type StoreSummaryDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -80,9 +81,9 @@ function StoreCard({ store: s }: { store: StoreSummaryDto }) {
         </Col>
       </Row>
       <Flex gap={8} wrap style={{ marginTop: token.marginSM }}>
-        {s.low ? <Tag color="error">{`${s.low} item${s.low === 1 ? '' : 's'} below minimum`}</Tag> : null}
-        {s.outInTransit ? <Tag color="processing">{`${s.outInTransit} transfer${s.outInTransit === 1 ? '' : 's'} on the road to sites`}</Tag> : null}
-        {s.inInTransit ? <Tag color="warning">{`${s.inInTransit} coming in to receive`}</Tag> : null}
+        {s.low ? <AppTag tone="danger">{`${s.low} item${s.low === 1 ? '' : 's'} below minimum`}</AppTag> : null}
+        {s.outInTransit ? <AppTag tone="info">{`${s.outInTransit} transfer${s.outInTransit === 1 ? '' : 's'} on the road to sites`}</AppTag> : null}
+        {s.inInTransit ? <AppTag tone="pending">{`${s.inInTransit} coming in to receive`}</AppTag> : null}
       </Flex>
       <LinkButton href={`/stores/${s.id}`} style={{ marginTop: token.marginMD }} aria-label={`Open store: ${s.name}`}>
         Open store

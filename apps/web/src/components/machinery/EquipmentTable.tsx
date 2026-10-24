@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Space, Tag, theme } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Space, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ToolOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -186,13 +187,13 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               ) : (
                 r.name
               )}{' '}
-              {r.isActive ? null : <Tag style={{ marginLeft: 4 }}>Inactive</Tag>}
+              {r.isActive ? null : <AppTag style={{ marginLeft: 4 }}>Inactive</AppTag>}
               {r.loan ? (
-                <Tag style={{ marginLeft: 4 }}>
+                <AppTag style={{ marginLeft: 4 }}>
                   <RecordLink href={`/machine-loans/${r.loan.id}`} onOpen={() => router.push(`/machine-loans/${r.loan!.id}`)}>
                     {`Loan · ${r.loan.lenderName}`}
                   </RecordLink>
-                </Tag>
+                </AppTag>
               ) : null}
               <Sub>{[r.registrationNo, r.supplier, r.fuelNorm && r.fuelNormUnit ? `Norm ${fuelNormText(r.fuelNorm, r.fuelNormUnit)}` : null].filter(Boolean).join(' · ') || ' '}</Sub>
             </div>

@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
+import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tooltip, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
 import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
@@ -274,9 +275,9 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                 <BrandMark size={28} />
                 {approver && pendingCount > 0 && (
                   <Link href="/approvals">
-                    <Tag color="orange" style={{ margin: 0 }}>
+                    <AppTag tone="pending" style={{ margin: 0 }}>
                       {pendingCount} pending
-                    </Tag>
+                    </AppTag>
                   </Link>
                 )}
               </>

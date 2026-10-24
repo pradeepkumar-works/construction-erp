@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { App, Table, Tag, Typography } from 'antd';
+import { App, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
 import { WEATHER_LABELS, canReviewHindrances, linesSummary } from '@erp/shared';
 import { useDpr } from '@/lib/queries';
@@ -68,7 +69,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
           print,
           facts: [
             { key: 'date', label: 'Date', children: formatDate(data.date) },
-            { key: 'weather', label: 'Weather', children: data.weather ? <Tag style={{ margin: 0 }}>{WEATHER_LABELS[data.weather]}</Tag> : '-' },
+            { key: 'weather', label: 'Weather', children: data.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[data.weather]}</AppTag> : '-' },
             { key: 'cond', label: 'Site condition', children: data.siteCondition ?? '-' },
             { key: 'mp', label: 'Total manpower', children: data.totalManpower },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),

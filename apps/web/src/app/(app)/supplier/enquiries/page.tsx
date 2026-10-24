@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, Table, Tag } from 'antd';
+import { Button, Table } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { SupplierEnquiryDto } from '@erp/shared';
 import { useSupplierEnquiries } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -10,7 +11,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { QuoteForm } from '@/components/supplier/SupplierForms';
 
-const stateOf = (e: SupplierEnquiryDto) => (e.respondedAt ? <Tag color="success">Quoted {formatDateTime(e.respondedAt)}</Tag> : e.open ? <Tag color="processing">Open</Tag> : <Tag>Closed</Tag>);
+const stateOf = (e: SupplierEnquiryDto) => (e.respondedAt ? <AppTag tone="success">Quoted {formatDateTime(e.respondedAt)}</AppTag> : e.open ? <AppTag tone="info">Open</AppTag> : <AppTag>Closed</AppTag>);
 
 /** Enquiries sent to the supplier: quote on the open ones, once each. */
 export default function SupplierEnquiriesPage() {

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Input, InputNumber, Progress, Radio, Select, Space, Spin, Switch, Table, Tag, Typography, theme } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Input, InputNumber, Progress, Radio, Select, Space, Spin, Switch, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DownloadOutlined } from '@ant-design/icons';
 import XMarkdown from '@ant-design/x-markdown';
 import dayjs from 'dayjs';
@@ -309,7 +310,7 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
               ),
             },
             { key: 'questions', title: 'Questions', dataIndex: 'questions', align: 'right' },
-            { key: 'notHelpful', title: 'Not helpful', dataIndex: 'notHelpful', align: 'right', render: (n: number) => (n ? <Tag color="warning">{n}</Tag> : 0) },
+            { key: 'notHelpful', title: 'Not helpful', dataIndex: 'notHelpful', align: 'right', render: (n: number) => (n ? <AppTag tone="pending">{n}</AppTag> : 0) },
             { key: 'spent', title: 'Used', dataIndex: 'spentInr', align: 'right', render: (v: number) => formatINR(v) },
           ]}
         />
@@ -358,11 +359,11 @@ function ConversationDrawer({ id, onClose }: { id: string | null; onClose: () =>
               )}
               {m.role === 'assistant' && (m.tools.length || m.feedback || m.unverified.length) ? (
                 <Flex gap={token.marginXXS} wrap>
-                  {m.feedback === 1 && <Tag color="success">Helpful</Tag>}
-                  {m.feedback === -1 && <Tag color="warning">Not helpful</Tag>}
-                  {m.unverified.length ? <Tag color="warning">Figures not found in records: {m.unverified.join(', ')}</Tag> : null}
+                  {m.feedback === 1 && <AppTag tone="success">Helpful</AppTag>}
+                  {m.feedback === -1 && <AppTag tone="pending">Not helpful</AppTag>}
+                  {m.unverified.length ? <AppTag tone="pending">Figures not found in records: {m.unverified.join(', ')}</AppTag> : null}
                   {m.tools.map((t) => (
-                    <Tag key={t}>{t}</Tag>
+                    <AppTag key={t}>{t}</AppTag>
                   ))}
                 </Flex>
               ) : null}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { App, Button, Checkbox, Descriptions, Drawer, Dropdown, Empty, Form, Grid, Select, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { App, Button, Checkbox, Descriptions, Drawer, Dropdown, Empty, Form, Grid, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps, TableProps } from 'antd';
 import { CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import type { EstimateItemDto, EstimateLineDto, MaterialNormDto } from '@erp/shared';
@@ -159,7 +160,7 @@ export function RateAnalysisDrawer({ projectId, boqItemId, open, onClose }: { pr
     ...(edit ? [{ title: '', key: 'actions', width: 84, render: (_: unknown, l: EstimateLineDto) => lineActions(l) }] : []),
   ];
   const otherColumns: TableProps<EstimateLineDto>['columns'] = [
-    { title: 'Kind', dataIndex: 'kind', width: 90, render: (k: 'LABOUR' | 'EQUIPMENT') => <Tag style={{ margin: 0 }}>{BOQ_RESOURCE_KIND_LABELS[k]}</Tag> },
+    { title: 'Kind', dataIndex: 'kind', width: 90, render: (k: 'LABOUR' | 'EQUIPMENT') => <AppTag style={{ margin: 0 }}>{BOQ_RESOURCE_KIND_LABELS[k]}</AppTag> },
     {
       title: 'Trade or machine',
       dataIndex: 'name',

@@ -1,6 +1,6 @@
-import type { StepsProps } from 'antd';
 import type { SubmissionBase } from '@erp/shared';
 import { formatDate, formatDateTime } from '@/lib/format';
+import type { Stage, StageBarProps } from './StageBar';
 
 /** A stage after approval (sent, certified, paid; received), done or still to come. */
 export interface LaterStage {
@@ -10,10 +10,11 @@ export interface LaterStage {
   content?: string;
 }
 
+/** The stage bar's props (`StageBar`): where the entry is, how that stage stands, and the stages. */
 export interface Lifecycle {
   current: number;
-  status: NonNullable<StepsProps['status']>;
-  items: NonNullable<StepsProps['items']>;
+  status: NonNullable<StageBarProps['status']>;
+  items: Stage[];
 }
 
 const who = (name: string | null, at: string | null) => [name, at ? formatDateTime(at) : null].filter(Boolean).join(', ');

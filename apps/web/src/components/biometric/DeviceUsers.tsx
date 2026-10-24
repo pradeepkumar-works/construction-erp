@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Segmented, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Form, Input, Segmented, Select, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { BiometricUserDto } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
@@ -84,7 +85,7 @@ export function DeviceUsers() {
         ) : u.workerName ? (
           <span translate="no">{`${u.workerName} (${u.workerNo}, worker)`}</span>
         ) : (
-          <Tag color="orange">Not matched</Tag>
+          <AppTag tone="pending">Not matched</AppTag>
         ),
     },
     { title: 'Punches, 30 days', dataIndex: 'punches', width: 140, align: 'right' },

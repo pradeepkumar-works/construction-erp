@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-01-tags-stages',
+    date: '2027-01-22',
+    title: 'Clearer statuses and stages',
+    points: [
+      'Statuses are soft pills with a dot in Nirmaan’s colours: orange waits on someone, green is approved or done, red is rejected or overdue, violet is sent back, grey is a draft.',
+      'An entry’s page shows where it stands as a row of stages on a line: blue up to where it is, red where it was rejected or sent back, with who did each step and when.',
+      'A form opened in a drawer names its module above the title, so you can see where you are.',
+    ],
+  },
+  {
     id: '2027-01-brand-look',
     date: '2027-01-21',
     title: 'Nirmaan’s own look',

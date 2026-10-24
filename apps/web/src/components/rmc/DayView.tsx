@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Col, DatePicker, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { Button, Card, Col, DatePicker, Row, Space, Statistic, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { RmcBatchDto, RmcOrderDto } from '@erp/shared';
@@ -61,7 +62,7 @@ export function DayView() {
           {data.byGrade.length > 0 && (
             <Space wrap style={{ marginBottom: 16 }}>
               {data.byGrade.map((g) => (
-                <Tag key={g.grade} translate="no">{`${g.grade}: ${m3(g.m3)} in ${g.trucks} ${g.trucks === 1 ? 'truck' : 'trucks'}`}</Tag>
+                <AppTag key={g.grade} translate="no">{`${g.grade}: ${m3(g.m3)} in ${g.trucks} ${g.trucks === 1 ? 'truck' : 'trucks'}`}</AppTag>
               ))}
             </Space>
           )}
@@ -137,7 +138,7 @@ export function DayView() {
               { title: 'Material', dataIndex: 'itemName' },
               { title: 'Needed', key: 'n', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.needed)} ${m.unit}`}</span> },
               { title: 'In the store', key: 'i', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.inStock)} ${m.unit}`}</span> },
-              { title: '', dataIndex: 'short', width: 110, render: (s: boolean) => (s ? <Tag color="error">Short</Tag> : <Tag color="success">Enough</Tag>) },
+              { title: '', dataIndex: 'short', width: 110, render: (s: boolean) => (s ? <AppTag tone="danger">Short</AppTag> : <AppTag tone="success">Enough</AppTag>) },
             ]}
           />
         </>

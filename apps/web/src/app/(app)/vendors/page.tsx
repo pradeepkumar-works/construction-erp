@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, Flex, Select, Space, Table, Tag, Tooltip, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -84,12 +85,12 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         sortOrder: sortOrderFor('name'),
         render: (_, v) => (
           <div>
-            <Typography.Text strong>{v.name}</Typography.Text> {!v.isActive && <Tag>Inactive</Tag>}
+            <Typography.Text strong>{v.name}</Typography.Text> {!v.isActive && <AppTag>Inactive</AppTag>}
             <Flex gap={4} wrap style={{ marginTop: 2 }}>
               {v.kinds.map((k) => (
-                <Tag key={k} style={{ margin: 0 }}>
+                <AppTag key={k} style={{ margin: 0 }}>
                   {VENDOR_KIND_LABELS[k]}
-                </Tag>
+                </AppTag>
               ))}
             </Flex>
           </div>
@@ -113,9 +114,9 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         width: 120,
         render: (_, v) =>
           v.msmeCategory ? (
-            <Tag color={v.msmeCategory === 'MEDIUM' ? 'default' : 'orange'} title={v.udyamNo ?? undefined} style={{ margin: 0 }}>
+            <AppTag color={v.msmeCategory === 'MEDIUM' ? 'default' : 'orange'} title={v.udyamNo ?? undefined} style={{ margin: 0 }}>
               {MSME_CATEGORY_LABELS[v.msmeCategory]}
-            </Tag>
+            </AppTag>
           ) : (
             <Sub>-</Sub>
           ),

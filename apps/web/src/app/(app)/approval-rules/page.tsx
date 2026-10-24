@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Card, Checkbox, Flex, InputNumber, Popconfirm, Select, Skeleton, Space, Switch, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Flex, InputNumber, Popconfirm, Select, Skeleton, Space, Switch, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ApprovalEscalationDto, ApprovalMatrixDto, ApprovalRuleDto, RoleKey, SubmissionType } from '@erp/shared';
@@ -246,7 +247,7 @@ export default function ApprovalRulesPage() {
             scroll={{ x: 190 + 170 * SUBMISSION_TYPES.length }}
             footer={() => (
               <Typography.Text type="secondary">
-                <Tag style={{ marginRight: 8 }}>Admin</Tag>approves everything with no limit and is always notified. Approvers still only see projects they have access to.
+                <AppTag style={{ marginRight: 8 }}>Admin</AppTag>approves everything with no limit and is always notified. Approvers still only see projects they have access to.
               </Typography.Text>
             )}
           />

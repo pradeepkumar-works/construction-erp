@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Descriptions, Drawer, Flex, Table, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Drawer, Flex, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import type { SupplierDispatchDto, SupplierOrderDto } from '@erp/shared';
 import { useSupplierAction, useSupplierDispatches, useSupplierOrders } from '@/lib/queries';
@@ -70,7 +71,7 @@ export default function SupplierOrdersPage() {
                     { title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
                     { title: 'Due by', dataIndex: 'dueBy', width: 110, render: (v: string | null) => formatDate(v) },
                     { title: 'Value', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
-                    { title: 'State', key: 'state', width: 120, render: (_, o) => (o.closed ? <Tag>Closed</Tag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
+                    { title: 'State', key: 'state', width: 120, render: (_, o) => (o.closed ? <AppTag>Closed</AppTag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
                     {
                       title: 'Action',
                       key: 'action',

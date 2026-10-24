@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Descriptions, Divider, Drawer, Skeleton, Space, Tag } from 'antd';
+import { Button, Descriptions, Divider, Drawer, Skeleton, Space } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LetterRefDto } from '@erp/shared';
@@ -20,9 +21,9 @@ import { themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 export const DirectionTag = ({ direction }: { direction: LetterRefDto['direction'] }) => (
-  <Tag color={direction === 'IN' ? 'blue' : 'purple'} style={{ margin: 0 }}>
+  <AppTag color={direction === 'IN' ? 'blue' : 'purple'} style={{ margin: 0 }}>
     {LETTER_DIRECTION_LABELS[direction]}
-  </Tag>
+  </AppTag>
 );
 
 /** A letter with what it answers and its replies; "Reply" records the answer linked to it (and to the same delay). */

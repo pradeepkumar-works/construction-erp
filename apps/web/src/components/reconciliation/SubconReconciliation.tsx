@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Empty, Form, Input, Skeleton, Table, Tag, Tooltip, Typography } from 'antd';
+import { App, Button, Empty, Form, Input, Skeleton, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { ExcessRecoveryDto, ReconciliationStatus, SubconMaterialDto, SubconMaterialLineDto, SubconReconciliationDto } from '@erp/shared';
@@ -146,7 +147,7 @@ function WorkOrderBlock({
             <Link href={`/subcontract-bills/${r.billId}`} className="mono" translate="no">
               {r.billLabel}
             </Link>{' '}
-            {r.billStatus ? <Tag style={{ marginLeft: 4 }}>{SUBMISSION_STATUS_LABELS[r.billStatus as keyof typeof SUBMISSION_STATUS_LABELS] ?? r.billStatus}</Tag> : null}
+            {r.billStatus ? <AppTag style={{ marginLeft: 4 }}>{SUBMISSION_STATUS_LABELS[r.billStatus as keyof typeof SUBMISSION_STATUS_LABELS] ?? r.billStatus}</AppTag> : null}
           </>
         ) : (
           <span className="text-muted">Their next bill</span>

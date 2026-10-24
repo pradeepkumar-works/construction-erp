@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Progress, Segmented, Select, Space, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Progress, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -37,13 +38,13 @@ type StatusFilter = 'PENDING' | 'OPEN' | 'FIXED' | 'CLOSED' | 'ALL';
 export function DefectStatusTag({ d }: { d: Pick<DefectDto, 'status' | 'overdue'> }) {
   return (
     <Space size={4}>
-      <Tag color={STATUS_COLORS[d.status]} style={{ margin: 0 }}>
+      <AppTag color={STATUS_COLORS[d.status]} style={{ margin: 0 }}>
         {DEFECT_STATUS_LABELS[d.status]}
-      </Tag>
+      </AppTag>
       {d.overdue ? (
-        <Tag color="red" style={{ margin: 0 }}>
+        <AppTag tone="danger" style={{ margin: 0 }}>
           Overdue
-        </Tag>
+        </AppTag>
       ) : null}
     </Space>
   );
@@ -51,8 +52,8 @@ export function DefectStatusTag({ d }: { d: Pick<DefectDto, 'status' | 'overdue'
 
 /** Where the defect liability period stands. */
 function DlpTag({ daysLeft }: { daysLeft: number }) {
-  if (daysLeft <= 0) return <Tag color="green">DLP over</Tag>;
-  return <Tag color={daysLeft <= DLP_ALERT_DAYS ? 'gold' : 'blue'}>{daysLeft} days of DLP left</Tag>;
+  if (daysLeft <= 0) return <AppTag tone="success">DLP over</AppTag>;
+  return <AppTag color={daysLeft <= DLP_ALERT_DAYS ? 'gold' : 'blue'}>{daysLeft} days of DLP left</AppTag>;
 }
 
 /**
@@ -141,9 +142,9 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
       dataIndex: 'priority',
       width: 100,
       render: (p: DefectPriority) => (
-        <Tag color={PRIORITY_COLORS[p]} style={{ margin: 0 }}>
+        <AppTag color={PRIORITY_COLORS[p]} style={{ margin: 0 }}>
           {DEFECT_PRIORITY_LABELS[p]}
-        </Tag>
+        </AppTag>
       ),
     },
     { title: 'With', key: 'with', width: 180, render: (_, d) => d.contractor ?? d.assignedToName ?? <Typography.Text type="secondary">-</Typography.Text> },
@@ -334,10 +335,10 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
         ) : d ? (
           <Flex vertical gap={16}>
             <Space wrap>
-              <Tag style={{ margin: 0 }}>{DEFECT_PHASE_LABELS[d.phase]}</Tag>
-              <Tag color={PRIORITY_COLORS[d.priority]} style={{ margin: 0 }}>
+              <AppTag style={{ margin: 0 }}>{DEFECT_PHASE_LABELS[d.phase]}</AppTag>
+              <AppTag color={PRIORITY_COLORS[d.priority]} style={{ margin: 0 }}>
                 {DEFECT_PRIORITY_LABELS[d.priority]} priority
-              </Tag>
+              </AppTag>
               <DefectStatusTag d={d} />
             </Space>
             <Descriptions column={1} size="small" bordered>

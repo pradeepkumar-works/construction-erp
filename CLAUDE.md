@@ -160,6 +160,10 @@ and the pre-delivery checklist.
   a page's Card (in line with its padding, sticky under the header on a wider screen), the default `section` anywhere else;
   a count is the item's `count` + `countLabel` (said after the count by a screen reader; `attention` for what waits on
   someone), never "Label (3)" or a `Badge` in the label.
+- Tags and stages: a tag is `AppTag` (`components/common/AppTag.tsx`) with a `tone` (`neutral`, `info`, `pending`, `success`,
+  `danger`, `violet`; a status gets a dot), never antd `Tag`; the colour maps in `format.ts` still pass antd colour names,
+  which `toneOf` reads. Where an entry or a wizard stands is `StageBar` (`components/record/StageBar.tsx`), never antd
+  `Steps`. ESLint refuses both imports. A form drawer's title carries its module as an `.eyebrow` (FormShell, from the page).
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.

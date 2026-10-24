@@ -4,7 +4,8 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { Alert, Button, Card, DatePicker, Empty, Flex, Form, Input, Switch, Tag, Typography, theme } from 'antd';
+import { Alert, Button, Card, DatePicker, Empty, Flex, Form, Input, Switch, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import {
   ACCESS_REQUEST_STATUS_LABELS,
   LAUNCHER_FLAG_NODES,
@@ -110,7 +111,7 @@ function RequestRow({ r, highlighted, onDecide }: { r: AccessRequestDto; highlig
             </Button>
           </Flex>
         ) : (
-          <Tag color={r.status === 'GRANTED' ? 'green' : undefined}>{ACCESS_REQUEST_STATUS_LABELS[r.status]}</Tag>
+          <AppTag color={r.status === 'GRANTED' ? 'green' : undefined}>{ACCESS_REQUEST_STATUS_LABELS[r.status]}</AppTag>
         )}
       </Flex>
     </li>

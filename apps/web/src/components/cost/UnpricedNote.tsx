@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Tag, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { WarningOutlined } from '@ant-design/icons';
 import type { UnpricedDto } from '@erp/shared';
 
@@ -18,9 +19,9 @@ export function UnpricedNote({ unpriced }: { unpriced: UnpricedDto }) {
   if (!lines.length) return null;
   return (
     <Tooltip title={lines.join('; ')}>
-      <Tag color="warning" icon={<WarningOutlined />} style={{ margin: 0 }}>
+      <AppTag tone="pending" icon={<WarningOutlined />} style={{ margin: 0 }}>
         Rates missing
-      </Tag>
+      </AppTag>
     </Tooltip>
   );
 }

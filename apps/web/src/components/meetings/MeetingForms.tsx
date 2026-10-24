@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { App, Button, Checkbox, Dropdown, Space, DatePicker, Form, Input, Select, Tag, TimePicker, Typography, theme } from 'antd';
+import { App, Button, Checkbox, Dropdown, Space, DatePicker, Form, Input, Select, TimePicker, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import {
   MEETING_ACTION_STATUS_LABELS,
@@ -33,15 +34,15 @@ const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
 
 const STATUS_COLORS: Record<MeetingStatus, string | undefined> = { DRAFT: undefined, ISSUED: 'success' };
 export function MeetingStatusTag({ status }: { status: MeetingStatus }) {
-  return <Tag color={STATUS_COLORS[status]}>{MEETING_STATUS_LABELS[status]}</Tag>;
+  return <AppTag color={STATUS_COLORS[status]}>{MEETING_STATUS_LABELS[status]}</AppTag>;
 }
 
 const ACTION_COLORS: Record<MeetingActionStatus, string | undefined> = { OPEN: 'processing', DONE: 'success', DROPPED: undefined };
 /** An action's state: open (late or due today in words), done or dropped. */
 export function ActionStatusTag({ a }: { a: MeetingActionDto }) {
-  if (a.status === 'OPEN' && a.daysOverdue) return <Tag color="error">{`${a.daysOverdue} day${a.daysOverdue === 1 ? '' : 's'} late`}</Tag>;
-  if (a.status === 'OPEN' && a.daysOverdue === 0) return <Tag color="warning">Due today</Tag>;
-  return <Tag color={ACTION_COLORS[a.status]}>{MEETING_ACTION_STATUS_LABELS[a.status]}</Tag>;
+  if (a.status === 'OPEN' && a.daysOverdue) return <AppTag tone="danger">{`${a.daysOverdue} day${a.daysOverdue === 1 ? '' : 's'} late`}</AppTag>;
+  if (a.status === 'OPEN' && a.daysOverdue === 0) return <AppTag tone="pending">Due today</AppTag>;
+  return <AppTag color={ACTION_COLORS[a.status]}>{MEETING_ACTION_STATUS_LABELS[a.status]}</AppTag>;
 }
 
 /** Where an action's due date stands, in words: "Due 4 Nov", "3 days late", "Done 2 Nov". */

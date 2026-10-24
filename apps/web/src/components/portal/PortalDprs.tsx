@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Descriptions, Divider, Drawer, Table, Tag, Typography } from 'antd';
+import { Card, Descriptions, Divider, Drawer, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { PortalDprDto } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
 import { usePortalDprs } from '@/lib/queries';
@@ -61,7 +62,7 @@ export function PortalDprs({ projectId }: { projectId: string }) {
               bordered
               style={{ marginBottom: 16 }}
               items={[
-                { key: 'w', label: 'Weather', children: open.weather ? <Tag style={{ margin: 0 }}>{WEATHER_LABELS[open.weather]}</Tag> : '-' },
+                { key: 'w', label: 'Weather', children: open.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[open.weather]}</AppTag> : '-' },
                 { key: 'c', label: 'Site condition', children: open.siteCondition ?? '-' },
                 { key: 'm', label: 'Total manpower', children: open.totalManpower },
                 { key: 'by', label: 'Reported by', children: open.submittedByName },

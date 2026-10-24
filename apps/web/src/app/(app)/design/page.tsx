@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Card, Col, ConfigProvider, DatePicker, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Space, Statistic, Steps, Table, Tag, Typography, theme } from 'antd';
+import { Alert, Button, Card, Col, ConfigProvider, DatePicker, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
+import { StageBar } from '@/components/record/StageBar';
+import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleFilled, CheckOutlined, CloseCircleFilled, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { SUBMISSION_STATUSES } from '@erp/shared';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -311,8 +313,8 @@ export default function DesignPage() {
             {SUBMISSION_STATUSES.map((s) => (
               <StatusTag key={s} status={s} />
             ))}
-            <Tag color="blue">Building</Tag>
-            <Tag color="geekblue">Road / Infrastructure</Tag>
+            <AppTag tone="info">Building</AppTag>
+            <AppTag tone="info">Road / Infrastructure</AppTag>
           </Flex>
         </Card>
 
@@ -368,8 +370,7 @@ export default function DesignPage() {
         <Row gutter={[token.margin, token.margin]}>
           <Col xs={24} md={12}>
             <Card title="Record" size="small">
-              <Steps
-                size="small"
+              <StageBar
                 current={2}
                 items={[{ title: 'Draft' }, { title: 'Submitted' }, { title: 'Approved' }, { title: 'Certified' }, { title: 'Paid' }]}
                 style={{ marginBottom: token.margin }}

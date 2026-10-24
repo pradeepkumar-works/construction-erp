@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, Form, Input, Modal, Skeleton, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Skeleton, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { canSetLabourRates } from '@erp/shared';
@@ -59,7 +60,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
                     {t}
                   </Button>
                 ) : (
-                  <Tag key={t}>{t}</Tag>
+                  <AppTag key={t}>{t}</AppTag>
                 )
               ))}
             </span>

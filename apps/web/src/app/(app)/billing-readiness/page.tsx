@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { App, Button, Card, Empty, Flex, Result, Statistic, Tag, Typography, theme } from 'antd';
+import { App, Button, Card, Empty, Flex, Result, Statistic, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { MailOutlined } from '@ant-design/icons';
 import { canViewContract, canViewLetters, type BillingReadinessRowDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -105,7 +106,7 @@ export default function Page() {
                     <Link href={`/bills/${b.billId}`} className="text-link">
                       {b.label}
                     </Link>, <span translate="no">{formatINR(b.outstanding)}</span> unpaid, sent {formatDate(b.sentDate)}: {b.daysOutstanding} of the {b.expectedDays} days the client takes{' '}
-                    {b.late ? <Tag color="red">Late</Tag> : null}
+                    {b.late ? <AppTag tone="danger">Late</AppTag> : null}
                   </p>
                   {letters ? (
                     <Button size="small" icon={<MailOutlined />} loading={reminder.isPending && reminder.variables === b.billId} onClick={() => void draft(b.billId)}>

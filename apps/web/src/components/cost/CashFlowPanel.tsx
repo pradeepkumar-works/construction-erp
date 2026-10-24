@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, Segmented, Select, Statistic, Table, Tag, Typography } from 'antd';
+import { Alert, Segmented, Select, Statistic, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { CashFlowGranularity, CashFlowPeriodDto } from '@erp/shared';
 import { DEFAULT_CLIENT_PAYMENT_DAYS } from '@erp/shared';
@@ -47,9 +48,9 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
           {periodLabel(p, granularity)}
           {i === 0 && overdue ? (
             <div>
-              <Tag color="orange" style={{ marginTop: 2 }}>
+              <AppTag tone="pending" style={{ marginTop: 2 }}>
                 includes overdue
-              </Tag>
+              </AppTag>
             </div>
           ) : null}
         </div>

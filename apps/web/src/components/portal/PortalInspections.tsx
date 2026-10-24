@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Input, Table, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Input, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { EyeOutlined } from '@ant-design/icons';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { InspectionResult, PortalInspectionDto } from '@erp/shared';
@@ -41,9 +42,9 @@ export function PortalInspections({ inspections, openId, onOpen }: { inspections
               <span>
                 {v}
                 {r.holdPoint && (
-                  <Tag color="orange" style={{ marginLeft: 8 }}>
+                  <AppTag tone="pending" style={{ marginLeft: 8 }}>
                     Hold point
-                  </Tag>
+                  </AppTag>
                 )}
               </span>
             ),

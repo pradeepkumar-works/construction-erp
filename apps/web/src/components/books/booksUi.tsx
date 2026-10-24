@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tag } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { BookSource, BookVoucherStatus, BookVoucherType } from '@erp/shared';
 import { BOOK_SOURCE_LABELS, BOOK_VOUCHER_STATUS_LABELS, BOOK_VOUCHER_TYPE_LABELS } from '@erp/shared';
 import { formatINR } from '@/lib/format';
@@ -18,8 +18,8 @@ const TYPE_COLOR: Record<BookVoucherType, string> = {
   CREDIT_NOTE: 'geekblue',
 };
 
-export const VoucherStatusTag = ({ status }: { status: BookVoucherStatus }) => <Tag color={STATUS_COLOR[status]}>{BOOK_VOUCHER_STATUS_LABELS[status]}</Tag>;
-export const VoucherTypeTag = ({ type }: { type: BookVoucherType }) => <Tag color={TYPE_COLOR[type]}>{BOOK_VOUCHER_TYPE_LABELS[type]}</Tag>;
+export const VoucherStatusTag = ({ status }: { status: BookVoucherStatus }) => <AppTag color={STATUS_COLOR[status]}>{BOOK_VOUCHER_STATUS_LABELS[status]}</AppTag>;
+export const VoucherTypeTag = ({ type }: { type: BookVoucherType }) => <AppTag color={TYPE_COLOR[type]}>{BOOK_VOUCHER_TYPE_LABELS[type]}</AppTag>;
 
 /** Rupees in a table cell, kept out of translation; empty when there is none. */
 export const Amount = ({ value }: { value: string | number | null | undefined }) => (value === null || value === undefined ? null : <span translate="no">{formatINR(value, true)}</span>);

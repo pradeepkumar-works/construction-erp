@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Select, Statistic, Tag, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
@@ -177,7 +178,7 @@ function MaterialApprovalsPage() {
       render: (_, m) =>
         m.approvalId ? (
           <div>
-            <Tag color="success">{APPROVED_MAKE_SOURCE_LABELS[m.source]}</Tag>
+            <AppTag tone="success">{APPROVED_MAKE_SOURCE_LABELS[m.source]}</AppTag>
             {sub(
               <RecordLink href={`/material-approvals/${m.approvalId}`} onOpen={() => open(m.approvalId!)}>
                 <span translate="no">{m.marNo}</span>
@@ -185,7 +186,7 @@ function MaterialApprovalsPage() {
             )}
           </div>
         ) : (
-          <Tag>{APPROVED_MAKE_SOURCE_LABELS[m.source]}</Tag>
+          <AppTag>{APPROVED_MAKE_SOURCE_LABELS[m.source]}</AppTag>
         ),
     },
     { key: 'note', title: 'Note', width: 280, card: false, render: (_, m) => m.note ?? '' },

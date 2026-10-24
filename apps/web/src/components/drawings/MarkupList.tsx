@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Button, Empty, Flex, Form, Input, Segmented, Space, Tag, Typography, theme } from 'antd';
+import { App, Button, Empty, Flex, Form, Input, Segmented, Space, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, DeleteOutlined, QuestionCircleOutlined, UndoOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import type { DrawingMarkupDto, MarkupKind } from '@erp/shared';
@@ -96,12 +97,12 @@ export function MarkupList({
                       M{m.markupNo}
                     </Typography.Text>
                     <Typography.Text type="secondary">{MARKUP_KIND_LABELS[m.kind]}</Typography.Text>
-                    {m.status === 'RESOLVED' ? <Tag color="green">Resolved</Tag> : null}
+                    {m.status === 'RESOLVED' ? <AppTag tone="success">Resolved</AppTag> : null}
                     {carriedIds.has(m.id) || scope === 'all' ? (
-                      <Tag translate="no" style={{ margin: 0 }}>
+                      <AppTag translate="no" style={{ margin: 0 }}>
                         Rev {m.revision}
                         {m.page > 1 ? `, p ${m.page}` : ''}
-                      </Tag>
+                      </AppTag>
                     ) : null}
                   </Space>
                   {m.note ? <div style={{ marginTop: 4, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{m.note}</div> : null}

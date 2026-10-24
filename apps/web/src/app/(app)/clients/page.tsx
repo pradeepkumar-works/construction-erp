@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, Space, Tag, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Space, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientDto } from '@erp/shared';
@@ -61,7 +62,7 @@ export default function ClientsPage() {
         sortOrder: sortOrderFor('name'),
         render: (_, c) => (
           <div>
-            <Typography.Text strong>{c.name}</Typography.Text> {!c.isActive && <Tag>Inactive</Tag>}
+            <Typography.Text strong>{c.name}</Typography.Text> {!c.isActive && <AppTag>Inactive</AppTag>}
             {c.department && <Sub>{c.department}</Sub>}
           </div>
         ),

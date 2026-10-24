@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Space, Tag, Typography } from 'antd';
+import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Space, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import type { ProjectDetail, UserSummary } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
@@ -108,7 +109,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
                 }
                 title={
                   <span style={{ fontSize: themeFontSize('fontSize') }}>
-                    {m.fullName} {m.isPm && <Tag color="gold" style={{ marginLeft: 4 }}>PM</Tag>}
+                    {m.fullName} {m.isPm && <AppTag tone="pending" style={{ marginLeft: 4 }}>PM</AppTag>}
                   </span>
                 }
                 description={<Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.roleName}</Typography.Text>}

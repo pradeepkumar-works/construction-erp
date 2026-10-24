@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tag } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { NcrSeverity, NcrStatus, QualityTestDto, TestResult } from '@erp/shared';
 import { NCR_SEVERITY_LABELS, NCR_STATUS_LABELS, TEST_RESULT_LABELS } from '@erp/shared';
 import { formatDate } from '@/lib/format';
@@ -12,21 +12,21 @@ const SEVERITY_TAG: Record<NcrSeverity, string> = { MINOR: 'gold', MAJOR: 'orang
 const STATUS_TAG: Record<NcrStatus, string> = { OPEN: 'red', ACTION_TAKEN: 'blue', CLOSED: 'default' };
 
 export const TestResultTag = ({ result }: { result: TestResult }) => (
-  <Tag color={RESULT_TAG[result]} style={{ margin: 0 }}>
+  <AppTag color={RESULT_TAG[result]} style={{ margin: 0 }}>
     {TEST_RESULT_LABELS[result]}
-  </Tag>
+  </AppTag>
 );
 
 export const SeverityTag = ({ severity }: { severity: NcrSeverity }) => (
-  <Tag color={SEVERITY_TAG[severity]} style={{ margin: 0 }}>
+  <AppTag color={SEVERITY_TAG[severity]} style={{ margin: 0 }}>
     {NCR_SEVERITY_LABELS[severity]}
-  </Tag>
+  </AppTag>
 );
 
 export const NcrStatusTag = ({ status }: { status: NcrStatus }) => (
-  <Tag color={STATUS_TAG[status]} style={{ margin: 0 }}>
+  <AppTag color={STATUS_TAG[status]} style={{ margin: 0 }}>
     {NCR_STATUS_LABELS[status]}
-  </Tag>
+  </AppTag>
 );
 
 /** "7 days 18.9 · 28 days due 11 Nov": each reading's value, or when it is due. */

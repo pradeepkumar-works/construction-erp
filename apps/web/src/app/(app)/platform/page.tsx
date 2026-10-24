@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Flex, Input, Modal, Select, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Flex, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { CheckCircleOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons';
 import type { ModuleTier, PlatformCompanyDto, PlatformUserDto } from '@erp/shared';
@@ -20,15 +21,15 @@ const supportOpen = (c: Pick<PlatformCompanyDto, 'supportAccessUntil'>) => !!c.s
 function StatusTags({ c }: { c: PlatformCompanyDto }) {
   return (
     <Space size={4} wrap>
-      {c.suspendedAt ? <Tag color="red">Suspended</Tag> : <Tag color="green">Active</Tag>}
-      {c.deletionScheduledFor && <Tag color="volcano">Deleting {formatDate(c.deletionScheduledFor)}</Tag>}
-      {supportOpen(c) && <Tag color="blue">Support allowed</Tag>}
+      {c.suspendedAt ? <AppTag tone="danger">Suspended</AppTag> : <AppTag tone="success">Active</AppTag>}
+      {c.deletionScheduledFor && <AppTag tone="pending">Deleting {formatDate(c.deletionScheduledFor)}</AppTag>}
+      {supportOpen(c) && <AppTag tone="info">Support allowed</AppTag>}
       {c.billing && (
-        <Tag color={c.billing.status === 'READ_ONLY' ? 'red' : c.billing.status === 'ACTIVE' ? 'green' : 'default'}>
+        <AppTag color={c.billing.status === 'READ_ONLY' ? 'red' : c.billing.status === 'ACTIVE' ? 'green' : 'default'}>
           {BILLING_STATUS_LABELS[c.billing.status]}
           {c.billing.status === 'ACTIVE' && c.billing.paidUntil ? ` to ${formatDate(c.billing.paidUntil)}` : ''}
           {c.billing.status === 'TRIAL' && c.billing.trialEndsAt ? ` to ${formatDate(c.billing.trialEndsAt)}` : ''}
-        </Tag>
+        </AppTag>
       )}
     </Space>
   );
@@ -255,7 +256,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
                 dataIndex: 'fullName',
                 render: (v: string, u) => (
                   <div>
-                    {v} {!u.isActive && <Tag>Inactive</Tag>}
+                    {v} {!u.isActive && <AppTag>Inactive</AppTag>}
                     <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {u.email}
                     </div>

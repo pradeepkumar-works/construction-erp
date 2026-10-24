@@ -1,22 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import {
-  Alert,
-  App,
-  Button,
-  DatePicker,
-  Descriptions,
-  Form,
-  Modal,
-  Segmented,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  Upload,
-} from "antd";
+import { Alert, App, Button, DatePicker, Descriptions, Form, Modal, Segmented, Select, Space, Table, Typography, Upload } from "antd";
+import { AppTag } from "@/components/common/AppTag";
 import type { UploadProps } from "antd";
 import { SyncOutlined, UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -562,11 +548,11 @@ export function BankReconciliation() {
                   render: (_, s) =>
                     s.bookLineId ? (
                       <Space size={4} wrap>
-                        <Tag color={s.matchedBy === "HAND" ? "blue" : "green"}>
+                        <AppTag color={s.matchedBy === "HAND" ? "blue" : "green"}>
                           {s.matchedBy === "HAND"
                             ? "Matched by hand"
                             : "Matched"}
-                        </Tag>
+                        </AppTag>
                         <span translate="no">{`${s.voucherNo} · ${formatDate(s.voucherDate)}`}</span>
                         <Button
                           size="small"
@@ -674,7 +660,7 @@ export function BankReconciliation() {
                   dataIndex: "statementDate",
                   width: 130,
                   render: (d: string | null) =>
-                    d ? formatDate(d) : <Tag color="warning">Not yet</Tag>,
+                    d ? formatDate(d) : <AppTag tone="pending">Not yet</AppTag>,
                 },
               ]}
             />

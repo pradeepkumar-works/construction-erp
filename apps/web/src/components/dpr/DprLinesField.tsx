@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Button, Form, Input, InputNumber, Modal, Select, Tag, Typography } from 'antd';
+import { Button, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { FormInstance, FormListFieldData } from 'antd';
 import {
   MANPOWER_CATEGORIES,
@@ -165,9 +166,9 @@ export function DprLinesField({ options, headCount }: { options: DprWorkOptionsD
                   <Typography.Text type="secondary" style={{ display: 'block', marginTop: 2 }}>
                     <span translate="no">{componentLabel(a)}</span> · <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${a.unit}`}</span> done
                     {a.holdPoint ? (
-                      <Tag color="orange" style={{ marginInlineStart: 6 }}>
+                      <AppTag tone="pending" style={{ marginInlineStart: 6 }}>
                         Hold point
-                      </Tag>
+                      </AppTag>
                     ) : null}
                   </Typography.Text>
                 ) : null}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, Input, InputNumber, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Input, InputNumber, Popconfirm, Space, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -116,7 +117,7 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <Typography.Text type="secondary">
-          {template.isDefault ? <Tag color="blue">Standard list</Tag> : <Tag color="green">Your list</Tag>}
+          {template.isDefault ? <AppTag tone="info">Standard list</AppTag> : <AppTag tone="success">Your list</AppTag>}
           {rows.length} activities for a {inSentence(PROJECT_TYPE_LABELS[template.projectType])} project. When a project has start and end dates the schedule is stretched or squeezed to fit them.
         </Typography.Text>
         {editable ? (

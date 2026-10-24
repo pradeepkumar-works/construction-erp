@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, Button, Form, Modal, Select, Space, Steps, Table, Typography, Upload } from 'antd';
+import { Alert, Button, Form, Modal, Select, Space, Table, Typography, Upload } from 'antd';
+import { StageBar } from '@/components/record/StageBar';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
 import { loadXlsx } from '@/lib/exportExcel';
@@ -169,7 +170,7 @@ export function ExcelImportModal({
         </Space>
       }
     >
-      <Steps size="small" current={step} items={[{ title: 'Choose the file' }, { title: 'Match the columns' }, { title: 'Check and import' }]} style={{ marginBottom: 16 }} />
+      <StageBar current={step} label="Import steps" items={[{ title: 'Choose the file' }, { title: 'Match the columns' }, { title: 'Check and import' }]} style={{ marginBottom: 16 }} />
       {parseError && <Alert type="error" showIcon title={parseError} style={{ marginBottom: 12 }} />}
       {raw.length === 0 ? (
         <Upload.Dragger accept=".xlsx,.xls,.csv" beforeUpload={beforeUpload} showUploadList={false} maxCount={1}>

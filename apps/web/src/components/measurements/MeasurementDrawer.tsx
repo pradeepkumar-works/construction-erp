@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Table, Tag, Typography } from 'antd';
+import { Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { MeasurementSheetDto } from '@erp/shared';
 import { sectorLocation } from '@erp/shared';
 import { useMeasurement } from '@/lib/queries';
@@ -67,7 +68,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
                   dataSource={data.lines}
                   scroll={{ x: 640 }}
                   columns={[
-                    { title: 'Description', dataIndex: 'description', render: (v, l) => (l.deduct ? <span>{v} <Tag color="red">Deduct</Tag></span> : v) },
+                    { title: 'Description', dataIndex: 'description', render: (v, l) => (l.deduct ? <span>{v} <AppTag tone="danger">Deduct</AppTag></span> : v) },
                     { title: 'Nos', dataIndex: 'nos', width: 70, align: 'right', render: dim },
                     { title: 'L', dataIndex: 'length', width: 80, align: 'right', render: dim },
                     { title: 'B', dataIndex: 'breadth', width: 80, align: 'right', render: dim },

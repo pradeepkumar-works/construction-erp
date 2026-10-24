@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Descriptions, Drawer, Popconfirm, Progress, Segmented, Space, Table, Tag, Tooltip } from 'antd';
+import { App, Button, Descriptions, Drawer, Popconfirm, Progress, Segmented, Space, Table, Tooltip } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -87,7 +88,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       render: (_, i) =>
         i.openRequest ? (
           <Space wrap size={4}>
-            <Tag color="orange">{rs(i.openRequest.amount)} asked {formatDate(i.openRequest.date)}</Tag>
+            <AppTag tone="pending">{rs(i.openRequest.amount)} asked {formatDate(i.openRequest.date)}</AppTag>
             {admin ? (
               <>
                 <Button size="small" type="primary" onClick={(e) => (e.stopPropagation(), setAction({ kind: 'pay', imprest: i }))}>
@@ -112,7 +113,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectFilter} onChange={setProjectFilter} /> : null}
         <Segmented value={active ? 'open' : 'closed'} onChange={(v) => setActive(v === 'open')} options={[{ value: 'open', label: 'Open' }, { value: 'closed', label: 'Closed' }]} />
-        {waiting ? <Tag color="orange">{waiting} top-up{waiting === 1 ? '' : 's'} waiting</Tag> : null}
+        {waiting ? <AppTag tone="pending">{waiting} top-up{waiting === 1 ? '' : 's'} waiting</AppTag> : null}
         <div style={{ flex: 1 }} />
         {admin ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAction({ kind: 'open', projectId })}>
@@ -166,9 +167,9 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {l.ref}
             {l.status ? (
-              <Tag color={STATUS_COLORS[l.status]} style={{ marginLeft: 6 }}>
+              <AppTag color={STATUS_COLORS[l.status]} style={{ marginLeft: 6 }}>
                 {SUBMISSION_STATUS_LABELS[l.status]}
-              </Tag>
+              </AppTag>
             ) : null}
           </div>
         </div>
@@ -182,7 +183,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
     { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
     { title: 'Kind', dataIndex: 'kind', width: 130, render: (v: ImprestEntryDto['kind']) => IMPREST_ENTRY_KIND_LABELS[v] },
     { title: 'Amount', dataIndex: 'amount', width: 120, align: 'right', render: (v) => rs(v) },
-    { title: 'Status', dataIndex: 'status', width: 140, render: (v: ImprestEntryDto['status']) => <Tag color={ENTRY_COLORS[v]}>{IMPREST_ENTRY_STATUS_LABELS[v]}</Tag> },
+    { title: 'Status', dataIndex: 'status', width: 140, render: (v: ImprestEntryDto['status']) => <AppTag color={ENTRY_COLORS[v]}>{IMPREST_ENTRY_STATUS_LABELS[v]}</AppTag> },
     {
       title: 'Detail',
       key: 'd',

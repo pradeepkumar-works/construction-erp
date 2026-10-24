@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Checkbox, Segmented, Select, Space, Statistic, Tag, Tooltip, Typography } from 'antd';
+import { Alert, App, Button, Checkbox, Segmented, Select, Space, Statistic, Tooltip, Typography } from 'antd';
+import { CheckableTag } from '@/components/common/AppTag';
 import { PlusOutlined, PrinterOutlined } from '@ant-design/icons';
 import type { RiskCategory, RiskDto, RiskKind, RiskSortField, RiskStatus } from '@erp/shared';
 import { LIST_SORT_FIELDS, RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, canRaiseRisk, canReviewHindrances, canViewContract, canViewLetters } from '@erp/shared';
@@ -213,9 +214,9 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
               <Space size={[4, 4]} wrap>
                 {summary.byCategory.map((c) => (
                   <Tooltip key={c.category} title={`${c.total} in all${c.daysLost ? `, ${c.daysLost} day(s) lost` : ''}`}>
-                    <Tag.CheckableTag checked={category === c.category} onChange={(on) => page.setFilter('category', on ? c.category : undefined)}>
+                    <CheckableTag checked={category === c.category} onChange={(on) => page.setFilter('category', on ? c.category : undefined)}>
                       {RISK_CATEGORY_LABELS[c.category]}: {c.open} open
-                    </Tag.CheckableTag>
+                    </CheckableTag>
                   </Tooltip>
                 ))}
                 {!summary.byCategory.length ? <Typography.Text type="secondary">Nothing raised yet.</Typography.Text> : null}

@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Select, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Table, Typography, theme } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@ant-design/icons';
 import { EQUIPMENT_LOAN_STATUS_LABELS, canManageMachineLoans, type EquipmentLoanDto, type EquipmentLoanStatus, type LenderOutstandingDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -82,7 +83,7 @@ function MachineLoansPage() {
       width: 190,
       render: (_, r) =>
         r.status === 'CLOSED' ? (
-          <Tag>{`${EQUIPMENT_LOAN_STATUS_LABELS.CLOSED} ${formatDate(r.closedOn)}`}</Tag>
+          <AppTag>{`${EQUIPMENT_LOAN_STATUS_LABELS.CLOSED} ${formatDate(r.closedOn)}`}</AppTag>
         ) : r.nextDue ? (
           <div>
             <span translate="no">{formatDate(r.nextDue.dueDate)}</span> <EmiStageTag stage={r.nextDue.stage} />

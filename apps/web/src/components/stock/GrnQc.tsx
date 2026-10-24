@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, Segmented, Table, Tag, Typography } from 'antd';
+import { App, Form, Input, Segmented, Table, Typography } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { GrnQcStatus, StockEntryDto, StockLineDto } from '@erp/shared';
 import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS } from '@erp/shared';
@@ -17,14 +18,14 @@ const COLORS: Record<GrnQcStatus, string> = { ACCEPTED: 'green', PARTLY_ACCEPTED
 export function GrnQcTag({ status }: { status: GrnQcStatus | null | undefined }) {
   if (!status)
     return (
-      <Tag color="default" style={{ margin: 0 }}>
+      <AppTag style={{ margin: 0 }}>
         Awaiting QA/QC
-      </Tag>
+      </AppTag>
     );
   return (
-    <Tag color={COLORS[status]} style={{ margin: 0 }}>
+    <AppTag color={COLORS[status]} style={{ margin: 0 }}>
       QA/QC: {GRN_QC_STATUS_LABELS[status]}
-    </Tag>
+    </AppTag>
   );
 }
 

@@ -1,16 +1,17 @@
 'use client';
 
 import React from 'react';
-import { Tag, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
+import { AppTag } from '@/components/common/AppTag';
 import type { EquipmentOwnership, MachineryLogDto } from '@erp/shared';
 import { EQUIPMENT_OWNERSHIP_LABELS } from '@erp/shared';
 import { formatQty, toNumber } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
 export const OwnershipTag = ({ ownership }: { ownership: EquipmentOwnership }) => (
-  <Tag color={ownership === 'HIRED' ? 'orange' : 'geekblue'} style={{ margin: 0 }}>
+  <AppTag color={ownership === 'HIRED' ? 'orange' : 'geekblue'} style={{ margin: 0 }}>
     {EQUIPMENT_OWNERSHIP_LABELS[ownership]}
-  </Tag>
+  </AppTag>
 );
 
 /** "7.5 h" plus idle / breakdown when there are any. */
