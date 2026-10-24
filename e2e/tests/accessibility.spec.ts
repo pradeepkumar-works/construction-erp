@@ -21,6 +21,8 @@ for (const mode of ['light', 'dark'] as const) {
     test.setTimeout(180_000);
     await setAppearance(page, mode);
     await signIn(page, 'pm@demo.com');
+    // The pointer stays where Sign in was clicked; off the page's content, it opens no tooltip for axe to measure.
+    await page.mouse.move(0, 0);
     const found: string[] = [];
     for (const path of PAGES) {
       await page.goto(path);
