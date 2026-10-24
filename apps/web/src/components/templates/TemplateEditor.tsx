@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Input, InputNumber, Popconfirm, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ActivityTemplateDto, ActivityTemplateItem } from '@erp/shared';

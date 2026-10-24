@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Col, Row, Select, Statistic, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { VariationDto, VariationStatus } from '@erp/shared';
 import { VARIATION_CAUSE_LABELS, VARIATION_STATUSES, VARIATION_STATUS_LABELS, canManageVariations } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

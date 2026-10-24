@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Alert, App, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Result, Segmented, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
-import { DownOutlined, EyeInvisibleOutlined, PlayCircleOutlined, UndoOutlined, UpOutlined } from '@ant-design/icons';
+import { DownOutlined, EyeInvisibleOutlined, PlayCircleOutlined, UndoOutlined, UpOutlined } from '@/components/common/icons';
 import {
   WARNING_CONFIDENCE_HELP,
   WARNING_CONFIDENCE_LABELS,
@@ -31,6 +31,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const KIND_COLOR: Record<WarningKind, string> = { SCHEDULE: 'orange', CASH: 'red', VENDOR: 'purple', STOCK: 'gold', MACHINE: 'blue', DPR: 'cyan', MATERIAL_OVERUSE: 'magenta', FUEL_NORM: 'volcano', LOAN_EMI: 'geekblue', RATE_ABOVE: 'purple', FUEL_NO_LOG: 'volcano', IDLE_HIRE: 'blue', NOTICE_DUE: 'red', MANDAYS_ABOVE: 'volcano', PACKAGE_LATE: 'orange', OM_SERVICE: 'cyan' };
 const CONFIDENCE_COLOR: Record<WarningConfidence, string> = { CHECKED: 'green', LIKELY: 'blue', CHECK_THIS: 'orange' };
@@ -63,7 +64,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title="Watch list" />
-        <Result status="403" title="The watch list is for managers, stores, purchase and accounts" />
+        <Result icon={<ResultMark kind="no-access" />} title="The watch list is for managers, stores, purchase and accounts" />
       </div>
     );
   if (isLoading || !user) return <PageSkeleton shape="list" />;

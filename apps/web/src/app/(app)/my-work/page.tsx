@@ -18,7 +18,7 @@ import {
   ShoppingCartOutlined,
   WalletOutlined,
   BankOutlined,
-} from '@ant-design/icons';
+} from '@/components/common/icons';
 import type { CompanyDashboard, HomeTrendsDto, ProjectSummary } from '@erp/shared';
 import { PROJECT_TYPE_LABELS, isCompanyWide } from '@erp/shared';
 import { useCompanyDashboard, useHomeTrends, useMyWork } from '@/lib/queries';

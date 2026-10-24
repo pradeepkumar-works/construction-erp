@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Badge, Button, Empty, Flex, Popover, Skeleton, Typography, theme } from 'antd';
-import { HistoryOutlined } from '@ant-design/icons';
+import { HistoryOutlined } from '@/components/common/icons';
 import type { ReviewedItemDto } from '@erp/shared';
 import { useReviewedToday } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';

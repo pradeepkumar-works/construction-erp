@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Select } from 'antd';
-import { ProjectOutlined } from '@ant-design/icons';
+import { ProjectOutlined } from '@/components/common/icons';
 import { useProjects } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 

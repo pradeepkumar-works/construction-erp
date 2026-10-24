@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button, Select, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { BillSortField, BillStage, RaBillDto } from '@erp/shared';
 import { BILL_STAGES, BILL_STAGE_LABELS, LIST_SORT_FIELDS, canPrepareBill } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';

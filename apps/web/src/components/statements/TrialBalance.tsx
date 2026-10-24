@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button, Segmented, Space, Table, Typography } from "antd";
 import type { TableColumnsType } from "antd";
-import { DownloadOutlined } from "@ant-design/icons";
+import { DownloadOutlined } from "@/components/common/icons";
 import type {
   AccountGroup,
   TrialBalanceByProjectDto,

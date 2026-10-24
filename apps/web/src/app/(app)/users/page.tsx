@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, Button, Card, Result, Select, Space, Switch, Tooltip, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useSearchParams } from 'next/navigation';
-import { EditOutlined, LinkOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, LinkOutlined, PlusOutlined } from '@/components/common/icons';
 import type { PasswordLinkDto, RoleKey, UserSortField, UserSummary } from '@erp/shared';
 import { LIST_SORT_FIELDS, ROLE_KEYS, ROLE_LABELS, canManageUsers } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,6 +25,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const KEYS = ['roleKey', 'active'] as const;
 
@@ -138,7 +139,7 @@ export default function UsersPage() {
   if (user && !canManageUsers(user.roleKey)) {
     return (
       <div className="page-container">
-        <Result status="403" title="Admins only" subTitle="User management is restricted to administrators." />
+        <Result icon={<ResultMark kind="no-access" />} title="Admins only" subTitle="User management is restricted to administrators." />
       </div>
     );
   }

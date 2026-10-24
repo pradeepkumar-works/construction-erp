@@ -70,8 +70,12 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_', ignoreRestSiblings: true }],
 
       // The brand look (UI roadmap, Nirmaan's own look): a tag is `AppTag` (a tone, not an antd colour) and an entry's stages
-      // are `StageBar`; AppTag.tsx, which wraps antd's tag, is the one file that imports it.
-      'no-restricted-imports': ['error', { paths: [{ name: 'antd', importNames: ['Tag', 'Steps'], message: 'Use AppTag (components/common/AppTag) or StageBar (components/record/StageBar).' }] }],
+      // are `StageBar`; AppTag.tsx, which wraps antd's tag, is the one file that imports it. Icons are Lucide, from
+      // `components/common/icons`, never `@ant-design/icons`.
+      'no-restricted-imports': ['error', { paths: [
+        { name: 'antd', importNames: ['Tag', 'Steps'], message: 'Use AppTag (components/common/AppTag) or StageBar (components/record/StageBar).' },
+        { name: '@ant-design/icons', message: 'Use the Lucide icons in components/common/icons (same names); add one there if it is missing.' },
+      ] }],
 
       // Still warnings, with findings left after this pass:
       // 51 effects that set state as they start (a value read from this browser after hydration, a form reset when it

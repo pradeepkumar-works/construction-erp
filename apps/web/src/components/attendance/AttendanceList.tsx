@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Tooltip, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { LockOutlined, PlusOutlined } from '@ant-design/icons';
+import { LockOutlined, PlusOutlined } from '@/components/common/icons';
 import type { AttendanceSheetDto, AttendanceSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canRecordAttendance } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField, PipeMaterial } from '@erp/shared';
 import { LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, pipeSizeLabel, pipeSizeOf } from '@erp/shared';

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, Select, Space, Statistic, Tooltip } from 'antd';
 import { CheckableTag } from '@/components/common/AppTag';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { AiDraftDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, LIST_SORT_FIELDS, PAYMENT_MODES, PAYMENT_MODE_LABELS, canSubmitExpense } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';

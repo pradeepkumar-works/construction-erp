@@ -4,7 +4,7 @@ import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Row, Segmented, Select, Statistic, Typography, theme } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { MEETING_KIND_LABELS, canRecordMeetings, type MeetingActionDto, type MeetingDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useMeetingActions, useMeetings } from '@/lib/queries';

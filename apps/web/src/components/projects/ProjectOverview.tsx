@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import { Col, Descriptions, Flex, Progress, Row, Statistic, Table, Typography, theme } from 'antd';
-import { CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ExclamationCircleOutlined } from '@/components/common/icons';
 import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
 import { canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

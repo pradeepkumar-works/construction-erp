@@ -13,6 +13,7 @@ import { Orders } from '@/components/rmc/Orders';
 import { Batches } from '@/components/rmc/Batches';
 import { MixDesigns } from '@/components/rmc/MixDesigns';
 import { Bills } from '@/components/rmc/Bills';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const TABS = ['day', 'orders', 'batches', 'designs', 'bills'] as const;
 
@@ -30,7 +31,7 @@ function RmcPage() {
     <div className="page-container">
       <PageHeader title="RMC plant" subtitle="Ready-mix concrete: the plant's day, quotes and orders, trucks and their challans, mix designs approved by quality, and bills with GST." />
       {!allowed ? (
-        <Result status="403" title="Your role does not see RMC" />
+        <Result icon={<ResultMark kind="no-access" />} title="Your role does not see RMC" />
       ) : !isLoading && !plants?.length ? (
         <Result status="info" title="No RMC plant yet" subTitle="Add a project of type RMC plant (Projects, New project); its store, materials and staff work as at any site. You see the plants you are a member of." />
       ) : (

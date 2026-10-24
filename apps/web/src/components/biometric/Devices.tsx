@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { BiometricDeviceDto, BiometricProtocol } from '@erp/shared';
 import { BIOMETRIC_PROTOCOLS, BIOMETRIC_PROTOCOL_LABELS } from '@erp/shared';
 import { API_ORIGIN, API_URL, errorMessage } from '@/lib/api';

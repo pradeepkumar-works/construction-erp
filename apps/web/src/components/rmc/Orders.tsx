@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Input, Segmented, Space, Table } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { RmcOrderDto, RmcOrderStatus } from '@erp/shared';
 import { canSellRmc } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { App, Button, DatePicker, Form, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { PayrollRunDetailDto, PayrollRunDto } from '@erp/shared';
 import { canRunPayroll } from '@erp/shared';

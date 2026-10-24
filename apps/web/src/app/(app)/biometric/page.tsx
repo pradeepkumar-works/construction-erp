@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { Punches } from '@/components/biometric/Punches';
 import { DeviceUsers } from '@/components/biometric/DeviceUsers';
 import { Devices } from '@/components/biometric/Devices';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const TABS = ['punches', 'users', 'devices'] as const;
 
@@ -24,7 +25,7 @@ function BiometricPage() {
     return (
       <div className="page-container">
         <PageHeader title="Biometric devices" />
-        <Result status="403" title="Only HR, management or an admin manage the biometric devices" />
+        <Result icon={<ResultMark kind="no-access" />} title="Only HR, management or an admin manage the biometric devices" />
       </div>
     );
   return (

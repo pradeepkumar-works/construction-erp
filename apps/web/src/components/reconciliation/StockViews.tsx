@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { FileExcelOutlined } from '@ant-design/icons';
+import { FileExcelOutlined } from '@/components/common/icons';
 import type {
   KitComponentDto,
   KitStatus,

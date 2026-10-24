@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Select, Statistic, Table, Typography, theme } from 'antd';
-import { PlusOutlined, ToolOutlined } from '@ant-design/icons';
+import { PlusOutlined, ToolOutlined } from '@/components/common/icons';
 import type { TableProps } from 'antd';
 import type { MaintenanceJobDto, MaintenanceKind, MaintenanceStatus, ServiceStatusDto } from '@erp/shared';
 import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUSES, MAINTENANCE_STATUS_LABELS, canLogMachinery, canManageMaintenance } from '@erp/shared';

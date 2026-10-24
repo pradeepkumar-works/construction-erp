@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Checkbox, Descriptions, Drawer, Dropdown, Empty, Form, Grid, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps, TableProps } from 'antd';
-import { CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import type { EstimateItemDto, EstimateLineDto, MaterialNormDto } from '@erp/shared';
 import { BOQ_RESOURCE_KIND_LABELS, RATE_LIBRARY, suggestRateLibrary } from '@erp/shared';
 import { useCopyRateAnalysis, useProjectEstimate, useProjects, useRemoveBoqResource, useRemoveMaterialNorm } from '@/lib/queries';

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
-import { EditOutlined, UploadOutlined } from '@ant-design/icons';
+import { EditOutlined, UploadOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   PIPE_MATERIALS,

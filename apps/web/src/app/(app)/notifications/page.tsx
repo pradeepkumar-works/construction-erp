@@ -4,7 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Flex, Pagination, Segmented, Space, Spin } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
-import { CheckOutlined, MessageOutlined } from '@ant-design/icons';
+import { CheckOutlined, MessageOutlined } from '@/components/common/icons';
 import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shared';
 import { canViewMessageLog, NOTIFICATION_TABS, NOTIFICATION_TAB_LABELS, SUBMISSION_TYPES } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

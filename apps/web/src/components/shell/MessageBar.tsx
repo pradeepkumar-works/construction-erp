@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, Flex, theme } from 'antd';
-import { CustomerServiceOutlined, DisconnectOutlined } from '@ant-design/icons';
+import { CustomerServiceOutlined, DisconnectOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
 import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyData } from '@erp/shared';
 import { useCompanyDeletion } from '@/lib/queries';

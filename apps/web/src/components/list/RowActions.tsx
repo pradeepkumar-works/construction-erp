@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { CheckOutlined, CloseOutlined, EditOutlined, EllipsisOutlined, ExpandOutlined, ExportOutlined, RollbackOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, EditOutlined, EllipsisOutlined, ExpandOutlined, ExportOutlined, RollbackOutlined } from '@/components/common/icons';
 import type { ReviewDecision, SubmissionBase } from '@erp/shared';
 import { canEditSubmission, canResubmit } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

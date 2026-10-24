@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Select } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { MeasurementSheetDto } from '@erp/shared';
 import { LIST_SORT_FIELDS, canMeasure } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

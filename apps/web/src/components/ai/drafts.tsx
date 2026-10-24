@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Flex, Typography, theme } from 'antd';
 import type { FormItemProps } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AiDraftKind } from '@erp/shared';
 import { AI_DRAFT_LABELS, draftValueAt } from '@erp/shared';

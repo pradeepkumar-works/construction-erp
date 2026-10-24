@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, DatePicker, Empty, Flex, Result, Segmented, Statistic, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DownOutlined, UpOutlined } from '@ant-design/icons';
+import { DownOutlined, UpOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { LEAKAGE_SECTION_LABELS, canSeeLeakage, type LeakageFlagDto, type LeakageSection } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -14,6 +14,7 @@ import { formatDate, formatINR, formatINRCompact } from '@/lib/format';
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const SECTION_COLOR: Record<LeakageSection, string> = { material: 'magenta', rates: 'purple', fuel: 'volcano', idle: 'blue' };
 const SECTION_HELP: Record<LeakageSection, string> = {
@@ -53,7 +54,7 @@ function Leakage() {
     return (
       <div className="page-container">
         <PageHeader title="Leakage checks" />
-        <Result status="403" title="Leakage checks are for the store, the QS, purchasers, whoever runs the machines, approvers and accounts" />
+        <Result icon={<ResultMark kind="no-access" />} title="Leakage checks are for the store, the QS, purchasers, whoever runs the machines, approvers and accounts" />
       </div>
     );
   if (!user || (isLoading && !data)) return <PageSkeleton shape="list" />;

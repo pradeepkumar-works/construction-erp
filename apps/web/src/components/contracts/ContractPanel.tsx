@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Descriptions, Skeleton, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@/components/common/icons';
 import type { ContractExtensionDto } from '@erp/shared';
 import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract, isForeign } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

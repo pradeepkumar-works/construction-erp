@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Col, Empty, Row, Skeleton, Statistic, Table, Typography } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
-import { TeamOutlined } from '@ant-design/icons';
+import { TeamOutlined } from '@/components/common/icons';
 import type { ProjectCostDto } from '@erp/shared';
 import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
 import { useProjectCost } from '@/lib/queries';

@@ -3,7 +3,7 @@
 import React from 'react';
 import { Tooltip } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { WarningOutlined } from '@ant-design/icons';
+import { WarningOutlined } from '@/components/common/icons';
 import type { UnpricedDto } from '@erp/shared';
 
 export const unpricedText = (u: UnpricedDto) =>

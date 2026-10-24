@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { App, Upload } from 'antd';
 import type { UploadFile, UploadProps } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { AttachmentDto } from '@erp/shared';
 import { errorMessage, fileUrl } from '@/lib/api';
 import { uploadFile } from '@/lib/queries';

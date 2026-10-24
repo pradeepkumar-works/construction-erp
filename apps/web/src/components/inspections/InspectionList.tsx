@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Select, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { InspectionDto, InspectionSortField, SubmissionStatus } from '@erp/shared';
 import { INSPECTION_STATUS_LABELS, LIST_SORT_FIELDS, canRequestInspection, checklistCounts } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

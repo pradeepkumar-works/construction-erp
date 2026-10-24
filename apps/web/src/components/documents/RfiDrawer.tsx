@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Alert, Button, DatePicker, Descriptions, Divider, Drawer, Dropdown, Form, Input, Skeleton, Space, Typography } from 'antd';
-import { CheckOutlined, DeleteOutlined, EditOutlined, MessageOutlined, MoreOutlined } from '@ant-design/icons';
+import { CheckOutlined, DeleteOutlined, EditOutlined, MessageOutlined, MoreOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { RfiDto } from '@erp/shared';
 import { canApprove, canManageVariations, canRaiseRfi, canRaiseRisk } from '@erp/shared';

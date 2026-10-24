@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button, Checkbox, Select, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { LeaveRequestDto, LeaveSortField, LeaveStatus, LeaveType } from '@erp/shared';
 import { LEAVE_STATUSES, LEAVE_STATUS_LABELS, LEAVE_TYPES, LEAVE_TYPE_LABELS, LIST_SORT_FIELDS, canManageStaff } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

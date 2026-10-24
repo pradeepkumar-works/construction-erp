@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button, Tooltip } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@/components/common/icons';
 import type { SubmissionBase } from '@erp/shared';
 import { canEditSubmission, canResubmit } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

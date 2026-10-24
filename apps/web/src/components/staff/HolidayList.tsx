@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { HolidayDto } from '@erp/shared';
 import { canManageStaff } from '@erp/shared';

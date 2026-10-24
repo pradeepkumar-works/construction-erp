@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button, DatePicker, Select, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { PrinterOutlined } from '@ant-design/icons';
+import { PrinterOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { EmployeeEventDto, EmployeeEventType } from '@erp/shared';
 import { EMPLOYEE_EVENT_LABELS, EMPLOYEE_EVENT_LETTERS, EMPLOYEE_EVENT_TYPES, isExitEvent } from '@erp/shared';

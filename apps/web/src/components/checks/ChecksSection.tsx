@@ -5,7 +5,7 @@ import { themeFontSize } from '@/lib/theme';
 import Link from 'next/link';
 import { Alert, App, Button, Flex, Form, Input, Skeleton, Spin, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CheckCircleFilled, CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { CheckCircleFilled, CheckOutlined, ExclamationCircleFilled } from '@/components/common/icons';
 import type { BillCheckDto, CheckKind } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useAcceptCheck, useBillCheckSummary, useBillChecks } from '@/lib/queries';

@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { App, Button, Empty, Flex, Form, Input, Segmented, Space, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CheckOutlined, DeleteOutlined, QuestionCircleOutlined, UndoOutlined } from '@ant-design/icons';
+import { CheckOutlined, DeleteOutlined, QuestionCircleOutlined, UndoOutlined } from '@/components/common/icons';
 import Link from 'next/link';
 import type { DrawingMarkupDto, MarkupKind } from '@erp/shared';
 import { MARKUP_KIND_LABELS, MARKUP_NOTE_MAX, canEditMarkup } from '@erp/shared';

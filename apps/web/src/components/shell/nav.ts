@@ -4,7 +4,7 @@
  * the header's breadcrumb and quick-jump search all read from here, so a new page is one node in the tree.
  */
 import type React from 'react';
-import { AppstoreOutlined, AuditOutlined, ContactsOutlined, ContainerOutlined, FileTextOutlined, ProjectOutlined, QuestionCircleOutlined, WalletOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, AuditOutlined, ContactsOutlined, ContainerOutlined, FileTextOutlined, ProjectOutlined, QuestionCircleOutlined, WalletOutlined } from '@/components/common/icons';
 import type { AuthUser, ModuleKey, NavNode, NavSidebarLink } from '@erp/shared';
 import { isGuest, isModuleKey, isSupplier, navSidebar } from '@erp/shared';
 import { navIcon } from './nav-icons';

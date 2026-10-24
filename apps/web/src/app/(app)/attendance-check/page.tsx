@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, DatePicker, Empty, Flex, Result, Segmented, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DownOutlined, UpOutlined } from '@ant-design/icons';
+import { DownOutlined, UpOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import {
   ATTENDANCE_FLAG_LABELS,
@@ -22,6 +22,7 @@ import { formatDate, formatINR, formatINRCompact, formatQty } from '@/lib/format
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const KIND_COLOR: Record<AttendanceFlagKind, string> = { BILL_ABOVE: 'red', NO_PUNCH: 'volcano', HEADCOUNT_ABOVE: 'orange', DPR_GAP: 'blue' };
 type BillRow = AttendanceBillLineDto & { bill: AttendanceBillDto; first: boolean };
@@ -56,7 +57,7 @@ function AttendanceCheck() {
     return (
       <div className="page-container">
         <PageHeader title="Attendance cross-check" />
-        <Result status="403" title="The attendance cross-check is for HR and those who approve site work" />
+        <Result icon={<ResultMark kind="no-access" />} title="The attendance cross-check is for HR and those who approve site work" />
       </div>
     );
   if (!user || (isLoading && !data)) return <PageSkeleton shape="list" />;

@@ -17,7 +17,7 @@ import {
   SearchOutlined,
   ShopOutlined,
   UserOutlined,
-} from '@ant-design/icons';
+} from '@/components/common/icons';
 import type { AuthUser, SearchHitDto, SearchKind, SubmissionStatus } from '@erp/shared';
 import { PRODUCT_NAME, SEARCH_KINDS, SEARCH_KIND_LABELS, SEARCH_MIN_LENGTH, SUBMISSION_STATUSES } from '@erp/shared';
 import { confirmLeave } from '@/lib/leave-guard';

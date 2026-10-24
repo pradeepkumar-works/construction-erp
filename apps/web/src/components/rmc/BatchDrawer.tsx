@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Drawer, Space, Table, Typography } from 'antd';
-import { CheckOutlined, ExperimentOutlined, PrinterOutlined, RollbackOutlined } from '@ant-design/icons';
+import { CheckOutlined, ExperimentOutlined, PrinterOutlined, RollbackOutlined } from '@/components/common/icons';
 import type { RmcBatchDto, RmcBatchLineDto } from '@erp/shared';
 import { useRmcAction, useRmcBatch } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';

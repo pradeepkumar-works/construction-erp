@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Drawer, Flex, Select, theme } from 'antd';
-import { FilterOutlined } from '@ant-design/icons';
+import { FilterOutlined } from '@/components/common/icons';
 import type { SubmissionStatus } from '@erp/shared';
 import { SUBMISSION_STATUSES, SUBMISSION_STATUS_LABELS } from '@erp/shared';
 import { useIsPhone } from '@/lib/screen';

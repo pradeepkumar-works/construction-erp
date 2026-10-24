@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Alert, Button, Descriptions, Drawer, Form, Input, Modal, Space, Table, Typography } from 'antd';
-import { CheckOutlined, DeleteOutlined, EditOutlined, RollbackOutlined, SendOutlined, StopOutlined } from '@ant-design/icons';
+import { CheckOutlined, DeleteOutlined, EditOutlined, RollbackOutlined, SendOutlined, StopOutlined } from '@/components/common/icons';
 import type { BookLineDto, BookVoucherDto } from '@erp/shared';
 import { useBookVoucher, useBooksAction } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';

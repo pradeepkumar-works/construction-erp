@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { App, Button, DatePicker, Drawer, Empty, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { EquipmentDto, EquipmentPartDto, EquipmentPartKind } from '@erp/shared';
 import { EQUIPMENT_PART_KINDS, EQUIPMENT_PART_KIND_LABELS } from '@erp/shared';

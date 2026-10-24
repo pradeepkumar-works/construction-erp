@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, Card, Col, Row, Space, Statistic, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, SUBMISSION_STATUS_LABELS, canRecordPayment, canRequestPayment } from '@erp/shared';

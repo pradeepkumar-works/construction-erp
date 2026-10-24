@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button, ConfigProvider, Descriptions, Divider, Flex, Space, Typography, theme } from 'antd';
-import { CheckOutlined, CloseOutlined, EditOutlined, FileSearchOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, EditOutlined, FileSearchOutlined } from '@/components/common/icons';
 import type { PendingApprovalDto, ReviewDecision } from '@erp/shared';
 import { approvalTypeParam } from '@/lib/queries';
 import { approveTheme, themeFontSize } from '@/lib/theme';

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { App, Button, ConfigProvider, Input, Modal, Segmented, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, InspectionDto, InspectionResult, ReviewDecision } from '@erp/shared';
 import { INSPECTION_RESULT_LABELS, INSPECTION_STATUS_LABELS, canRaiseNcr, checklistCounts, mayApproveType } from '@erp/shared';

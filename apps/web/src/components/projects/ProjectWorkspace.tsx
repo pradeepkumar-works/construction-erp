@@ -2,7 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Flex, Segmented, Tabs, Typography, theme } from 'antd';
-import { AppstoreOutlined, CheckSquareOutlined, InboxOutlined, ScheduleOutlined, ToolOutlined, WalletOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, CheckSquareOutlined, InboxOutlined, ScheduleOutlined, ToolOutlined, WalletOutlined } from '@/components/common/icons';
 import { readPref, writePref } from '@/lib/prefs';
 import { APP_HEADER_HEIGHT, StickyTopContext } from '@/lib/sticky';
 

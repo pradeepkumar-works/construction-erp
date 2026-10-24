@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-01-icons',
+    date: '2027-01-29',
+    title: 'One set of icons',
+    points: [
+      'Every icon in the app now comes from one family, drawn with the same line as the menu’s, so buttons, menus and pages match.',
+      'Empty lists and the pictures behind them follow the dark theme, and a page you cannot open or that is not found shows Nirmaan’s own mark.',
+    ],
+  },
+  {
     id: '2027-01-tags-stages',
     date: '2027-01-22',
     title: 'Clearer statuses and stages',

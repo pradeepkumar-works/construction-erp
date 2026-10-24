@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Progress, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { CheckCircleOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CloseoutCategory, CloseoutItemDto, DefectDto, DefectPhase, DefectPriority, DefectStatus, HandoverSummaryDto, ProjectMemberDto } from '@erp/shared';
 import {

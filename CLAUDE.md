@@ -164,6 +164,10 @@ and the pre-delivery checklist.
   `danger`, `violet`; a status gets a dot), never antd `Tag`; the colour maps in `format.ts` still pass antd colour names,
   which `toneOf` reads. Where an entry or a wizard stands is `StageBar` (`components/record/StageBar.tsx`), never antd
   `Steps`. ESLint refuses both imports. A form drawer's title carries its module as an `.eyebrow` (FormShell, from the page).
+- Icons: Lucide from `components/common/icons.tsx` under the antd names (`PlusOutlined`…), never `@ant-design/icons` (ESLint
+  refuses it); a missing one is a line there, an icon of our own drawing goes through `ownIcon`. A full-page 403/404/500 is
+  `Result` with `icon={<ResultMark kind=… />}` (no `status`, which draws antd's pictures); an empty list or picker the page gave
+  no words falls back to `renderEmpty` (both root `ConfigProvider`s), and `EmptyArt` picks its `-night` art in the dark theme.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Alert, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import { CheckCircleOutlined, DeleteOutlined, EditOutlined, MoreOutlined, RedoOutlined, SendOutlined, StopOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, DeleteOutlined, EditOutlined, MoreOutlined, RedoOutlined, SendOutlined, StopOutlined } from '@/components/common/icons';
 import { MATERIAL_APPROVAL_KIND_LABELS, revisionLabel, type MaterialApprovalDetailDto } from '@erp/shared';
 import { useMaterialApproval, useMaterialApprovalAction } from '@/lib/queries';
 import { formatDate } from '@/lib/format';

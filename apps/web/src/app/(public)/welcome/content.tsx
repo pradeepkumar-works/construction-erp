@@ -24,7 +24,7 @@ import {
   SolutionOutlined,
   ToolOutlined,
   WalletOutlined,
-} from '@ant-design/icons';
+} from '@/components/common/icons';
 
 /** Copy for the product page (/welcome). Every claim here is something the app does today; check docs/ROADMAP.md before adding one. */
 

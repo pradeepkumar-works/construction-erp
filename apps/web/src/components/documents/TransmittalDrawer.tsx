@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Skeleton, Space, Table } from 'antd';
-import { DeleteOutlined, EditOutlined, PrinterOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PrinterOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TransmittalDto, TransmittalItemDto } from '@erp/shared';

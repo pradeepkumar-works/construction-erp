@@ -5,6 +5,7 @@ import { Button, Flex, Result, Space } from 'antd';
 import { BrandMark } from '@/components/shell/BrandMark';
 import { LinkButton } from '@/components/common/LinkButton';
 import { usePageTitle } from '@/lib/page-title';
+import { ResultMark } from '@/components/common/ResultMark';
 
 /** Any address the app does not have (UI roadmap item 64). */
 export default function NotFound() {
@@ -13,7 +14,7 @@ export default function NotFound() {
     <Flex vertical align="center" justify="center" style={{ minHeight: '100vh', padding: 24 }}>
       <BrandMark />
       <Result
-        status="404"
+        icon={<ResultMark kind="not-found" />}
         title={<h1 className="heading-plain">This page doesn&apos;t exist</h1>}
         subTitle="The link may be out of date, or the page has moved. Search from the top of any page with Ctrl K."
         extra={

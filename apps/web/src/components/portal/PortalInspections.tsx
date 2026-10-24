@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Input, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { EyeOutlined } from '@ant-design/icons';
+import { EyeOutlined } from '@/components/common/icons';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { InspectionResult, PortalInspectionDto } from '@erp/shared';
 import { INSPECTION_STATUS_LABELS, checklistCounts, isGuest } from '@erp/shared';

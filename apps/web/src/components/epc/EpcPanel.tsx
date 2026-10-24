@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, DatePicker, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

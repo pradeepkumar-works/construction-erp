@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Descriptions, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
-import { PrinterOutlined } from '@ant-design/icons';
+import { PrinterOutlined } from '@/components/common/icons';
 import type { ManualPayslipCode, PayslipDto, PayslipLineDto } from '@erp/shared';
 import { MANUAL_PAYSLIP_CODES, PAYSLIP_CODES } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

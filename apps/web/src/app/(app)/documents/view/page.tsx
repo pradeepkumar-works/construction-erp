@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button, Card, Collapse, Flex, Typography, theme } from 'antd';
-import { ExportOutlined, FileTextOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { ExportOutlined, FileTextOutlined, LeftOutlined, RightOutlined } from '@/components/common/icons';
 import { fileUrl } from '@/lib/api';
 import { useDocumentPage } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';

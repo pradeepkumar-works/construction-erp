@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { App, Button, Descriptions, Drawer, Popconfirm, Progress, Segmented, Space, Table, Tooltip } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDto, ImprestEntryDto, ImprestLedgerLine } from '@erp/shared';
 import { IMPREST_ENTRY_KIND_LABELS, IMPREST_ENTRY_STATUS_LABELS, PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, canManageImprest } from '@erp/shared';

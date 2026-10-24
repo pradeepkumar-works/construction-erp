@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Select, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { DocumentDiscipline, DocumentDto, DocumentKind, DocumentSortField, RevisionStatus } from '@erp/shared';
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, LIST_SORT_FIELDS, REVISION_STATUSES, REVISION_STATUS_LABELS, canManageDocuments, canViewDrawingFile } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button, Segmented, Space, Table, Typography } from "antd";
 import type { TableColumnsType } from "antd";
-import { DownloadOutlined } from "@ant-design/icons";
+import { DownloadOutlined } from "@/components/common/icons";
 import type { ProfitLossDto, StatementLineDto } from "@erp/shared";
 import { STATEMENT_LINE_LABELS } from "@erp/shared";
 import { useProfitLoss } from "@/lib/queries";

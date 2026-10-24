@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Button, Checkbox, Flex, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { CaretDownOutlined, CaretRightOutlined } from '@/components/common/icons';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
 import { formatDateTime, formatINR, timeAgo } from '@/lib/format';
 import { decidedInPlace, queueKey, TYPE_COLORS, type QueueGroup } from './queue';

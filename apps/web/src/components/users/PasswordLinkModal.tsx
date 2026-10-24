@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Alert, App, Button, Input, Modal, Space, Typography } from 'antd';
-import { CopyOutlined } from '@ant-design/icons';
+import { CopyOutlined } from '@/components/common/icons';
 import type { PasswordLinkDto } from '@erp/shared';
 import { MESSAGE_CHANNEL_LABELS } from '@erp/shared';
 import { formatDateTime } from '@/lib/format';

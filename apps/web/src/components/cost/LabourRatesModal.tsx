@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { Alert, App, Button, Form, Input, Modal, Skeleton, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { canSetLabourRates } from '@erp/shared';
 import { api } from '@/lib/api';

@@ -8,6 +8,7 @@ import { AuthProvider } from '@/lib/auth';
 import { FeedbackHost, mutationFailed } from '@/lib/notify';
 import { A11yPatches } from '@/lib/a11y-patches';
 import { appTheme, componentConfig, themeCssVariables } from '@/lib/theme';
+import { renderEmpty } from '@/components/common/renderEmpty';
 
 const isClientError = (err: unknown) => {
   const status = errorStatus(err);
@@ -32,7 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ConfigProvider theme={appTheme} {...componentConfig}>
+    <ConfigProvider theme={appTheme} {...componentConfig} renderEmpty={renderEmpty}>
       <style>{themeCssVariables}</style>
       <AntApp>
         <QueryClientProvider client={queryClient}>

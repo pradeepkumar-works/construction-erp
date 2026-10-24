@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Button, Card, Col, Row, Statistic, theme } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@/components/common/icons';
 import { canEditProjects } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject, useStores } from '@/lib/queries';

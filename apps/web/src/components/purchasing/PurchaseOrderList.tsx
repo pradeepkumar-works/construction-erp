@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button, Checkbox, Progress, Space, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { PurchaseOrderDto, PurchaseOrderSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPurchase } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';

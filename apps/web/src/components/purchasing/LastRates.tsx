@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button, Popover, Table, Typography, theme } from 'antd';
-import { HistoryOutlined, WarningOutlined } from '@ant-design/icons';
+import { HistoryOutlined, WarningOutlined } from '@/components/common/icons';
 import { LAST_RATES_COUNT, rateAboveOthers, type LastRateDto, type RateQuote } from '@erp/shared';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';

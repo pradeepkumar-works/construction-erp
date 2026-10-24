@@ -3,7 +3,7 @@
 import React, { useCallback, useState } from 'react';
 import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Space, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@/components/common/icons';
 import type { ProjectDetail, UserSummary } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

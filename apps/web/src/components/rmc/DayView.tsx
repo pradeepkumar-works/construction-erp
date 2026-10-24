@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Card, Col, DatePicker, Row, Space, Statistic, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CarOutlined } from '@ant-design/icons';
+import { CarOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { RmcBatchDto, RmcOrderDto } from '@erp/shared';
 import { useRmcDay } from '@/lib/queries';

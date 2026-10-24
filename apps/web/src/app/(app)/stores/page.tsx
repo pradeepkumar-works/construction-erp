@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Empty, Flex, Row, Statistic, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { canEditProjects, type StoreSummaryDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useStores } from '@/lib/queries';

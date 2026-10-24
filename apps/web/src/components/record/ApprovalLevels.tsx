@@ -3,7 +3,7 @@
 import React from 'react';
 import { Flex, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CheckOutlined, ClockCircleOutlined, RiseOutlined } from '@ant-design/icons';
+import { CheckOutlined, ClockCircleOutlined, RiseOutlined } from '@/components/common/icons';
 import { formatDateTime } from '@/lib/format';
 import { useApprovalStage, type ApprovalTypeParam } from '@/lib/queries';
 

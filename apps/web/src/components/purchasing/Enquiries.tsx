@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { Alert, App, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CopyOutlined } from '@ant-design/icons';
+import { CopyOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { ENQUIRY_DEFAULT_DAYS, ENQUIRY_VENDOR_STATE_LABELS, MAX_PAGE_SIZE, type EnquiryDto, type EnquiryVendorDto, type EnquiryVendorState, type MaterialRequestDto } from '@erp/shared';
 import { useEnquiries, useSendEnquiry, useVendorsPage } from '@/lib/queries';

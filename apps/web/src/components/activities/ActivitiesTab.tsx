@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button, Progress, Space, Table } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, WarningOutlined } from '@/components/common/icons';
 import type { ActivityDto, ProjectDetail, ProjectMemberDto } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

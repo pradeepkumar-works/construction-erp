@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button, Card, Checkbox, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
-import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, UnlistedVendorDto, VendorDto, VendorKind, VendorSortField } from '@erp/shared';
 import { GST_STATES, LIST_SORT_FIELDS, MSME_CATEGORIES, MSME_CATEGORY_LABELS, VENDOR_KINDS, VENDOR_KIND_LABELS, canEditVendors, canManageSupplierLogins, canSeeVendorBank } from '@erp/shared';

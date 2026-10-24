@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip, Typography } from 'antd';
-import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, EditOutlined } from '@/components/common/icons';
 import type { ReviewDecision, SubmissionStatus, SubmissionType } from '@erp/shared';
 import { mayApproveType, mayApproveTypeAtAll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

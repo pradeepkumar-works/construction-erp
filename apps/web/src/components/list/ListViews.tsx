@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { App, Button, Checkbox, Dropdown, Flex, Form, Input, Modal, Select, Tabs, Tooltip, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import { DeleteOutlined, EditOutlined, EllipsisOutlined, SaveOutlined, TeamOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, EllipsisOutlined, SaveOutlined, TeamOutlined } from '@/components/common/icons';
 import type { SavedViewDto, SavedViewList } from '@erp/shared';
 import { canManageSharedViews } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

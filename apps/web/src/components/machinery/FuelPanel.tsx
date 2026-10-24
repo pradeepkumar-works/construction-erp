@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, DatePicker, Empty, Skeleton, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
+import { FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { FuelIssueDto, FuelPositionRowDto } from '@erp/shared';
 import { useFuelPosition } from '@/lib/queries';

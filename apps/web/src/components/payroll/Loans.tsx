@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { App, Button, DatePicker, Form, Input, Popconfirm, Select, Switch, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { StaffLoanDto, StaffLoanKind } from '@erp/shared';
 import { STAFF_LOAN_KINDS, STAFF_LOAN_KIND_LABELS, canRunPayroll } from '@erp/shared';

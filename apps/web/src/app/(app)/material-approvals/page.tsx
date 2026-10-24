@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import {
   APPROVED_MAKE_SOURCE_LABELS,
   MATERIAL_APPROVAL_KIND_LABELS,

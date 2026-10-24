@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
-import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
+import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, UserOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
 import { PRODUCT_NAME, canUseAi, isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

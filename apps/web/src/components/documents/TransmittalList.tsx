@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button, Checkbox, Typography } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { TransmittalDto, TransmittalSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, TRANSMITTAL_PURPOSE_LABELS, canManageDocuments } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Descriptions, Form, Modal, Select, Space, Upload } from 'antd';
 import type { UploadProps } from 'antd';
-import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
+import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   parseEpanetInp,

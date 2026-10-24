@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, App, Button } from 'antd';
-import { MailOutlined } from '@ant-design/icons';
+import { MailOutlined } from '@/components/common/icons';
 import { canDraftNotice, needsNotice, type RiskDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useNoticeClock, useNoticeDraft } from '@/lib/queries';

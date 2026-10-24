@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { Alert, App, Button, DatePicker, Descriptions, Form, Modal, Segmented, Select, Space, Table, Typography, Upload } from "antd";
 import { AppTag } from "@/components/common/AppTag";
 import type { UploadProps } from "antd";
-import { SyncOutlined, UploadOutlined } from "@ant-design/icons";
+import { SyncOutlined, UploadOutlined } from "@/components/common/icons";
 import dayjs from "dayjs";
 import type {
   BankBookLineDto,

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { App, Button, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockCountResultDto } from '@erp/shared';

@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { App, Button, Card, DatePicker, Empty, Segmented, Skeleton, Space, theme } from 'antd';
 import { formatDayMonth, formatDate } from '@/lib/format';
-import { PrinterOutlined } from '@ant-design/icons';
+import { PrinterOutlined } from '@/components/common/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { QueryError } from '@/components/common/QueryState';
 import { usePortalReport, useProgressReport } from '@/lib/queries';

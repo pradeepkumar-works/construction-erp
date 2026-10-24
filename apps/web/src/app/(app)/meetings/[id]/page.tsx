@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
-import { DeleteOutlined, EditOutlined, MoreOutlined, PrinterOutlined, RollbackOutlined, SendOutlined, WhatsAppOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, MoreOutlined, PrinterOutlined, RollbackOutlined, SendOutlined, WhatsAppOutlined } from '@/components/common/icons';
 import { MEETING_KIND_LABELS, type MeetingActionDto, type MeetingDetailDto, type MeetingIssueResultDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useNotify } from '@/lib/notify';

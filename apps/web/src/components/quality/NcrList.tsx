@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Checkbox, Select, Typography, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { NcrDto, NcrSeverity, NcrSortField, NcrStatus } from '@erp/shared';
 import { LIST_SORT_FIELDS, NCR_SEVERITIES, NCR_SEVERITY_LABELS, NCR_STATUSES, NCR_STATUS_LABELS, canRaiseNcr } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

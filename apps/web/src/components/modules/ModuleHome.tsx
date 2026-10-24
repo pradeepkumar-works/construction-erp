@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Flex, Grid, Result, Row, Statistic, Typography, theme } from 'antd';
-import { CheckSquareOutlined, HourglassOutlined, RollbackOutlined } from '@ant-design/icons';
+import { CheckSquareOutlined, HourglassOutlined, RollbackOutlined } from '@/components/common/icons';
 import type { ModuleFigureDto, ModuleHomeDto, ModuleKey } from '@erp/shared';
 import { MODULE_INTROS, MODULE_LABELS, MODULE_SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -19,6 +19,7 @@ import { newEntriesFor } from '@/components/shell/NewMenu';
 import { HrDashboard } from '@/components/staff/HrDashboard';
 import { TileGrid, tileEntries } from '@/components/launcher/TileGrid';
 import { usePins } from '@/components/launcher/pins';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const days = (n: number) => (n === 0 ? 'today' : `${n} day${n === 1 ? '' : 's'}`);
 
@@ -118,7 +119,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
     return (
       <div className="page-container">
         <PageHeader title="Module" docTitle="Module not found" />
-        <Result status="404" title="This module is not in your menu" subTitle="Your role does not use it. Choose a page from the menu on the left." />
+        <Result icon={<ResultMark kind="not-found" />} title="This module is not in your menu" subTitle="Your role does not use it. Choose a page from the menu on the left." />
       </div>
     );
   const key: ModuleKey = moduleKey;

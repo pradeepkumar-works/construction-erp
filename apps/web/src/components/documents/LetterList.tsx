@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button, Checkbox, Select, Typography, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { LetterDirection, LetterDto, LetterSortField } from '@erp/shared';
 import { LETTER_DIRECTIONS, LETTER_DIRECTION_LABELS, LIST_SORT_FIELDS } from '@erp/shared';
 import { useLetters } from '@/lib/queries';

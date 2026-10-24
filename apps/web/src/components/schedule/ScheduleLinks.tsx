@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Descriptions, Drawer, Flex, Form, InputNumber, Segmented, Select, Space, Table, Typography, Upload, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from '@/components/common/icons';
 import {
   ACTIVITY_LINK_TYPE_LABELS,
   ACTIVITY_LINK_TYPES,

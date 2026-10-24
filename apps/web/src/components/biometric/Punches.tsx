@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, App, Button, DatePicker, Form, Select, Space, Table, Typography, Upload } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps, UploadProps } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { BiometricIngestResultDto, BiometricPunchDto, BiometricPunchResult } from '@erp/shared';
 import { BIOMETRIC_PUNCH_RESULTS, BIOMETRIC_PUNCH_RESULT_LABELS } from '@erp/shared';
