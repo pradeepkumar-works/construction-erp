@@ -63,6 +63,9 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
     colorInfo: c.primary,
     borderRadius: 6,
     fontFamily: "var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
+    // The page behind a drawer or dialog dims to navy, and floating layers cast a navy-tinted shadow (brand look, phase 1).
+    colorBgMask: dark ? c.nightScrim : c.scrim,
+    boxShadowSecondary: dark ? c.nightShadowFloat : c.shadowFloat,
     ...(dark
       ? // A slightly navy night rather than antd's black, so dark mode still reads as Nirmaan.
         {
@@ -87,6 +90,9 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
           colorLink: c.link,
           colorLinkHover: c.pending,
           colorBgLayout: c.canvas,
+          // Outlines and hairlines lean to the blueprint navy rather than antd's neutral greys.
+          colorBorder: c.borderStrong,
+          colorBorderSecondary: c.hairline,
           // Typography type="danger" / "success" and figures coloured from the token read these.
           colorErrorText: c.danger,
           colorSuccessText: c.success,
@@ -105,6 +111,12 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
   // The header is a card-coloured bar in either mode.
   const base = theme.getDesignToken({ algorithm, token });
   const surface = base.colorBgContainer;
+  // The edge and ring of a chosen field, the pale blue under the pointer and behind what is chosen.
+  const focusEdge = dark ? c.nightLink : c.accent;
+  const ring = dark ? c.nightRing : c.ring;
+  const soft = dark ? c.nightAccentSoft : c.accentSoft;
+  const chosen = dark ? c.nightAccentChosen : c.accentChosen;
+  const header = dark ? c.nightElevated : c.canvas;
   return {
     // Every token is set here, so nothing carries over from the light theme above the signed-in app.
     inherit: false,
@@ -120,6 +132,13 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
         primaryColor: c.onAccent,
         primaryShadow: 'none',
         fontWeight: 600,
+        // Default buttons: text colour on the outline, the pale blue and the link blue under the pointer.
+        defaultHoverBg: soft,
+        defaultHoverColor: dark ? c.nightLink : c.link,
+        defaultHoverBorderColor: focusEdge,
+        defaultActiveBg: chosen,
+        defaultActiveColor: dark ? c.nightLink : c.accentDeep,
+        defaultActiveBorderColor: dark ? c.nightLink : c.accentDeep,
         // Reject and Delete stay readable on the night surfaces (WCAG AA).
         ...(dark ? { colorError: c.nightDanger, dangerColor: c.nightLayout } : {}),
       },
@@ -159,6 +178,54 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
         horizontalMargin: `0 0 ${base.marginSM}px 0`,
         titleFontSizeSM: TYPE_SCALE[1],
       },
+      // Fields: a chosen field has the brand blue edge and a soft 3 px ring (the lighter blue at night), and a chosen
+      // option sits on the pale blue in bold. Hover keeps antd's lighter blue.
+      Input: { activeBorderColor: focusEdge, activeShadow: `0 0 0 3px ${ring}` },
+      InputNumber: { activeBorderColor: focusEdge, activeShadow: `0 0 0 3px ${ring}` },
+      Mentions: { activeBorderColor: focusEdge, activeShadow: `0 0 0 3px ${ring}` },
+      DatePicker: { activeBorderColor: focusEdge, activeShadow: `0 0 0 3px ${ring}`, cellActiveWithRangeBg: soft },
+      Select: { activeBorderColor: focusEdge, activeOutlineColor: ring, optionSelectedBg: chosen, optionSelectedFontWeight: 600, optionSelectedColor: base.colorText },
+      // Tables: a canvas header with quiet labels and no dividers between them, pale blue under the pointer and a chosen row.
+      Table: {
+        headerBg: header,
+        headerColor: base.colorTextSecondary,
+        headerSplitColor: 'transparent',
+        // A sorted column keeps the header's fill (its arrow says it is sorted); the pointer still lights a column.
+        headerSortActiveBg: header,
+        headerSortHoverBg: dark ? c.nightBorderSoft : c.hairline,
+        fixedHeaderSortActiveBg: header,
+        bodySortBg: 'transparent',
+        rowHoverBg: soft,
+        rowSelectedBg: chosen,
+        rowSelectedHoverBg: chosen,
+        footerBg: header,
+      },
+      // Cards: flat on a hairline, with a tighter header.
+      Card: { headerHeight: 52, headerHeightSM: 40 },
+      // Notices: no outline, a soft fill of their tone, and the icon in the tone (the pending orange for warnings).
+      Alert: {
+        defaultPadding: `${base.paddingSM - 2}px ${base.paddingSM + 2}px`,
+        withDescriptionPadding: `${base.paddingSM + 2}px ${base.padding}px`,
+        colorInfo: dark ? c.nightLink : c.accent,
+        colorInfoBg: dark ? c.nightInfoBg : c.accentSoft,
+        colorInfoBorder: 'transparent',
+        colorWarning: dark ? c.nightPending : c.pending,
+        colorWarningBg: dark ? c.nightPendingBg : c.pendingBg,
+        colorWarningBorder: 'transparent',
+        colorSuccess: dark ? c.nightSuccess : c.success,
+        colorSuccessBg: dark ? c.nightSuccessBg : c.successBg,
+        colorSuccessBorder: 'transparent',
+        colorError: dark ? c.nightDanger : c.danger,
+        colorErrorBg: dark ? c.nightDangerBg : c.dangerBg,
+        colorErrorBorder: 'transparent',
+      },
+      // A record's facts: quiet labels, on the canvas when the block is bordered.
+      Descriptions: { labelColor: base.colorTextSecondary, labelBg: dark ? c.nightElevated : c.canvas },
+      // Tooltips are blueprint navy (a lighter navy at night, so they stand off the night surfaces).
+      Tooltip: { colorBgSpotlight: dark ? c.primaryDeep : c.ink },
+      // Progress is a flat blue datum line on a hairline track; done is the brand green.
+      Progress: { remainingColor: dark ? c.nightBorder : c.border, lineBorderRadius: 2, colorSuccess: dark ? c.nightSuccess : c.success },
+      Skeleton: { gradientFromColor: dark ? c.nightSkeletonFrom : c.skeletonFrom, gradientToColor: dark ? c.nightSkeletonTo : c.skeletonTo },
       // A record's stage bar names a sent-back or rejected step in red, which needs the lighter red to read at night.
       ...(dark ? { Badge: { colorError: c.danger }, Steps: { colorError: c.nightDanger } } : {}),
     },
@@ -177,16 +244,6 @@ export const approveTheme: ThemeConfig = {
 /** Figures line up in tables and statistics. */
 const tabularNums = { fontVariantNumeric: 'tabular-nums' } as const;
 
-/** Defaults for every instance of a component, passed to the root ConfigProvider with the theme. */
-export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 'form' | 'tabs'> = {
-  // A field left empty says which one, so the error reads on its own (and in the form's summary).
-  form: { validateMessages: { required: '${label} is required', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } } },
-  table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap' } } } },
-  statistic: { styles: { content: tabularNums } },
-  // The chosen tab's bar has rounded ends on top, so it reads as a tab's edge rather than an underline.
-  tabs: { styles: { indicator: { borderRadius: '3px 3px 0 0' } } },
-};
-
 /** Colour tokens: the semantic ones (`colorErrorText`) and antd's preset palettes (`orange7`). */
 const COLOR_TOKEN = /^(color[A-Z]|(blue|purple|cyan|green|magenta|pink|red|orange|yellow|volcano|geekblue|gold|lime)\d+$)/;
 
@@ -204,6 +261,29 @@ type FontSizeKey = (typeof FONT_SIZE_KEYS)[number];
  * CSS variable, so it follows the theme like `token.fontSizeSM` would: `fontSize: themeFontSize('fontSizeSM')`.
  */
 export const themeFontSize = (key: FontSizeKey) => `var(${token2CSSVar(key, 'ant')})`;
+
+/**
+ * The brand's display face (Archivo, condensed) for titles and big figures, as the brand guide sets it: headings at 88%
+ * width, figures at 85% and ExtraBold. Page headings get it from globals.css; components get it from `componentConfig`.
+ */
+export const DISPLAY_FONT = "var(--font-display), 'Arial Narrow', Arial, sans-serif";
+const displayTitle = { fontFamily: DISPLAY_FONT, fontStretch: '88%', fontWeight: 700, letterSpacing: '-0.005em' } as const;
+const displayFigure = { fontFamily: DISPLAY_FONT, fontStretch: '85%', fontWeight: 800, letterSpacing: '-0.01em' } as const;
+
+/** Defaults for every instance of a component, passed to the root ConfigProvider with the theme. */
+export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 'form' | 'tabs' | 'card' | 'modal' | 'drawer'> = {
+  // A field left empty says which one, so the error reads on its own (and in the form's summary).
+  form: { validateMessages: { required: '${label} is required', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } } },
+  // Column titles are quiet small labels over the canvas header (Table tokens), so the figures below lead.
+  table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap', fontSize: themeFontSize('fontSizeSM'), fontWeight: 600 } } } },
+  statistic: { styles: { content: { ...tabularNums, ...displayFigure } } },
+  card: { styles: { title: displayTitle } },
+  modal: { styles: { title: displayTitle } },
+  // A drawer's buttons sit on the canvas, so they read as the form's foot.
+  drawer: { styles: { title: displayTitle, footer: { background: themeColor('colorBgLayout') } } },
+  // The chosen tab's bar has rounded ends on top, so it reads as a tab's edge rather than an underline.
+  tabs: { styles: { indicator: { borderRadius: '3px 3px 0 0' } } },
+};
 
 const SPACING_KEYS = ['paddingXXS', 'paddingXS', 'paddingSM', 'padding', 'paddingLG', 'marginXXS', 'marginXS', 'marginSM', 'margin', 'marginLG', 'lineWidth', 'borderRadius', 'borderRadiusLG'] as const;
 

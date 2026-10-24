@@ -53,7 +53,9 @@ and the pre-delivery checklist.
   A module (`parent: null`, no route) has a screen at `/modules/<key>` (a key in `MODULE_KEYS`, figures in `ModuleHomeService`).
   `apps/web/scripts/nav-check.ts` (CI) checks routes, icons, access keys and the Concord items. The product name (Nirmaan) is `PRODUCT_NAME` in
   `packages/shared/src/brand.ts`; web brand colours live only in `src/lib/brand.ts` (plus `BrandMark` and
-  `app/icon.svg`), mobile ones in `src/theme.ts`. Use `BRAND.colors` instead of hex literals.
+  `app/icon.svg`), mobile ones in `src/theme.ts`. Use `BRAND.colors` instead of hex literals. A component's look is its
+  tokens in `makeTheme` and `componentConfig` (`src/lib/theme.ts`, both modes), never CSS of a page's own: titles and big
+  figures are the display face (`DISPLAY_FONT`), fields have the blue ring, tables the canvas header.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
 - antd reference: the `antd` MCP server in `.mcp.json` (`@ant-design/cli mcp`: component docs, props, tokens for the
   installed version), and https://ant.design/llms.txt (index) or https://ant.design/llms-full.txt (every component with
