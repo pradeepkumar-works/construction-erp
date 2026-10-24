@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Alert, App, Button, Drawer, Flex, Form, Grid, Modal, Typography, theme } from 'antd';
 import type { FormInstance } from 'antd';
 import { isAxiosError } from 'axios';
@@ -132,6 +132,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
   const pathname = usePathname();
   const here = navNodeAt(pathname);
   const moduleLabel = here ? ((here.parent ? navNode(here.parent)?.label : null) ?? here.label) : null;
+  const titleId = useId();
   const [scopedProject] = useProjectScope();
   const { data: projects } = useProjects(open && projectDefault);
   // The latest project to start on and close handler, for the timers and listeners below (set after each render).
@@ -486,13 +487,14 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     </div>
   );
 
-  // The drawer's title carries the module it belongs to above it (brand look: an eyebrow), from the page it opened on.
+  // The drawer's title carries the module it belongs to above it (brand look: an eyebrow), from the page it opened on. The
+  // drawer is named by the title alone (`aria-labelledby` below), so the module is never read as part of its name.
   const heading = moduleLabel ? (
     <span style={{ display: 'grid', gap: 2 }}>
       <span aria-hidden className="eyebrow">
         {moduleLabel}
       </span>
-      <span>{title}</span>
+      <span id={titleId}>{title}</span>
     </span>
   ) : (
     title
@@ -506,7 +508,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     );
   }
   return (
-    <Drawer open={open} title={heading} onClose={requestClose} footer={footer} size={screens.md ? (width ?? 760) : '100%'} destroyOnHidden styles={{ footer: { padding: `${token.paddingSM}px ${token.paddingLG}px` } }}>
+    <Drawer open={open} title={heading} aria-labelledby={moduleLabel ? titleId : undefined} onClose={requestClose} footer={footer} size={screens.md ? (width ?? 760) : '100%'} destroyOnHidden styles={{ footer: { padding: `${token.paddingSM}px ${token.paddingLG}px` } }}>
       {body}
     </Drawer>
   );
