@@ -5,6 +5,7 @@ import { Tabs, theme } from 'antd';
 import type { TabsProps } from 'antd';
 import { StickyTopContext, useStickyTop } from '@/lib/sticky';
 import { useIsPhone } from '@/lib/screen';
+import { BRAND } from '@/lib/brand';
 
 type AntTab = NonNullable<TabsProps['items']>[number];
 
@@ -38,8 +39,9 @@ const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1,
 
 function TabCount({ n, label, attention, active }: { n: number; label?: string; attention?: boolean; active: boolean }) {
   const { token } = theme.useToken();
+  // The red is the badge red in either theme (as `Badge` in lib/theme.ts): antd's night red carries white at only 4.2:1.
   const tone = attention
-    ? { background: token.colorError, color: token.colorTextLightSolid }
+    ? { background: BRAND.colors.danger, color: BRAND.colors.onAccent }
     : active
       ? { background: token.colorPrimaryBg, color: token.colorPrimaryText }
       : { background: token.colorFillSecondary, color: token.colorTextSecondary };
