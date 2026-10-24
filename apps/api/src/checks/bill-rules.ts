@@ -339,13 +339,20 @@ export interface RaBillFacts {
     /** On the approved measurement sheets of this bill and the earlier ones. */
     measuredToDate: number;
   }[];
+  /** A lump-sum bill's payment stages (item 129), what they add to the work value. */
+  stageAmount: number;
   grossAmount: number;
   pvAmount: number;
   gstRate: number;
   gstAmount: number;
-  /** The percentage deductions (retention, security deposit, TDS…); advance recovery may stop short of its percentage. */
-  deductions: { label: string; pct: number; amount: number; capped?: boolean }[];
+  /**
+   * The percentage deductions (retention, security deposit, TDS…); advance recovery may stop short of its percentage, or
+   * follow a recovery window (`expected`, item 129).
+   */
+  deductions: { label: string; pct: number; amount: number; capped?: boolean; expected?: number }[];
   otherDeduction: number;
+  /** Withheld for milestone slippage (item 129), negative when the bill releases it. */
+  slippageWithheld: number;
   totalDeductions: number;
   netPayable: number;
 }
@@ -378,10 +385,10 @@ export function raBillChecks(f: RaBillFacts): Check[] {
   const base = Math.max(f.grossAmount + f.pvAmount, 0);
   const totals = totalsRule('totals', 'GST, deductions and net payable add up', 'Totals do not add up', [
     ...f.items.map((i) => ({ label: `Item ${i.itemNo} amount`, expected: Math.round((i.certifiedQty ?? i.thisQty) * i.rate * 100) / 100, actual: i.amount })),
-    { label: 'Gross', expected: f.items.reduce((s, i) => s + i.amount, 0), actual: f.grossAmount },
+    { label: 'Gross', expected: f.items.reduce((s, i) => s + i.amount, f.stageAmount), actual: f.grossAmount },
     { label: 'GST', expected: pctOf(base, f.gstRate), actual: f.gstAmount },
-    ...f.deductions.map((d) => ({ label: d.label, expected: d.capped ? Math.min(pctOf(base, d.pct), d.amount) : pctOf(base, d.pct), actual: d.amount })),
-    { label: 'Deductions', expected: f.deductions.reduce((s, d) => s + d.amount, 0) + f.otherDeduction, actual: f.totalDeductions },
+    ...f.deductions.map((d) => ({ label: d.label, expected: d.expected ?? (d.capped ? Math.min(pctOf(base, d.pct), d.amount) : pctOf(base, d.pct)), actual: d.amount })),
+    { label: 'Deductions', expected: f.deductions.reduce((s, d) => s + d.amount, 0) + f.otherDeduction + f.slippageWithheld, actual: f.totalDeductions },
     { label: 'Net payable', expected: f.grossAmount + f.pvAmount + f.gstAmount - f.totalDeductions, actual: f.netPayable },
   ]);
 

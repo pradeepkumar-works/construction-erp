@@ -46,6 +46,12 @@ export type PipeScope = (typeof PIPE_SCOPES)[number];
 export const PIPE_STAGES = ['TRENCH', 'BEDDING', 'LAY_JOINT', 'VALVES', 'BACKFILL', 'TEST', 'RESTORATION', 'COMMISSIONING'] as const;
 export type PipeStage = (typeof PIPE_STAGES)[number];
 
+/** Stage billing (item 129): how a billing component is paid, and what moves a payment stage. */
+export const BILLING_BASES = ['STAGES', 'UNIT_RATE'] as const;
+export type BillingBasis = (typeof BILLING_BASES)[number];
+export const STAGE_TRIGGERS = ['EVENT', 'PROGRESS', 'SUPPLY', 'TEST'] as const;
+export type StageTrigger = (typeof STAGE_TRIGGERS)[number];
+
 export const PROJECT_STATUSES = ['PLANNED', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 

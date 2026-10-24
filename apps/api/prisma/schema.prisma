@@ -30,6 +30,22 @@ enum ContractModel {
   EPC
 }
 
+/// How a billing component is paid (item 129): stages of its share of the lump sum, or measured quantities at the unit
+/// rates × the tender factor
+enum BillingBasis {
+  STAGES
+  UNIT_RATE
+}
+
+/// What moves a payment stage (item 129): a dated certificate, the physical % of activities, pipe or equipment
+/// received against its scope, or pipe tested against its length
+enum StageTrigger {
+  EVENT
+  PROGRESS
+  SUPPLY
+  TEST
+}
+
 /// A component (an intake well, a treatment plant, a tank) or a sub-component inside one (a WTP unit, a pipe zone)
 enum WorkElementLevel {
   COMPONENT
@@ -605,6 +621,10 @@ model Organization {
   progressMaterials    ProgressMaterial[]
   pipeNodes            PipeNode[]
   pipeSegments         PipeSegment[]
+  billingComponents    BillingComponent[]
+  billingStages        BillingStage[]
+  milestoneTargets     MilestoneTarget[]
+  slippageTiers        SlippageTier[]
   pipeTestSegments     PipeTestSegment[]
   milestones           Milestone[]
   activityLinks        ActivityLink[]
@@ -1027,91 +1047,99 @@ model User {
 // ---------- Projects ----------
 
 model Project {
-  id                    String         @id @default(uuid())
-  organizationId        String
-  organization          Organization   @relation(fields: [organizationId], references: [id])
-  aiBriefs              AiBrief[]
-  documentPages         DocumentPage[]
-  photoChecks           PhotoCheck[]
+  id                     String         @id @default(uuid())
+  organizationId         String
+  organization           Organization   @relation(fields: [organizationId], references: [id])
+  aiBriefs               AiBrief[]
+  documentPages          DocumentPage[]
+  photoChecks            PhotoCheck[]
   /// Site photo checks (AI item 76): the safety officer switched the photo flags off for this project; captions still show
-  photoFlagsOff         Boolean        @default(false)
+  photoFlagsOff          Boolean        @default(false)
   /// Kit every worker at the project must have (PPE register); new projects start with the standard three
-  ppeRequired           PpeKind[]      @default([HELMET, SAFETY_SHOES, REFLECTIVE_JACKET])
-  code                  String
-  name                  String
-  type                  ProjectType
-  status                ProjectStatus  @default(PLANNED)
+  ppeRequired            PpeKind[]      @default([HELMET, SAFETY_SHOES, REFLECTIVE_JACKET])
+  code                   String
+  name                   String
+  type                   ProjectType
+  status                 ProjectStatus  @default(PLANNED)
   /// Item rate, lump sum or EPC (item 125): lump sum and EPC projects weigh their components by billing share
-  contractModel         ContractModel  @default(ITEM_RATE)
-  clientName            String?
-  consultantName        String?
-  location              String?
+  contractModel          ContractModel  @default(ITEM_RATE)
+  clientName             String?
+  consultantName         String?
+  location               String?
   /// Road or pipeline length the sector view draws, in metres from the start (chainage 0+000 = 0)
-  chainageStart         Int?
-  chainageEnd           Int?
+  chainageStart          Int?
+  chainageEnd            Int?
   /// Building floors in order, bottom up; progress and measurements pick one
-  floors                String[]       @default([])
+  floors                 String[]       @default([])
   /// Water supply: villages / habitations served; progress and measurements pick one
-  villages              String[]       @default([])
-  workOrderNo           String?
-  description           String?
-  startDate             DateTime?      @db.Date
-  endDate               DateTime?      @db.Date
-  contractValue         Decimal?       @db.Decimal(18, 2)
-  projectManagerId      String?
-  projectManager        User?          @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  villages               String[]       @default([])
+  workOrderNo            String?
+  description            String?
+  startDate              DateTime?      @db.Date
+  endDate                DateTime?      @db.Date
+  contractValue          Decimal?       @db.Decimal(18, 2)
+  projectManagerId       String?
+  projectManager         User?          @relation("ProjectManager", fields: [projectManagerId], references: [id])
   /// Client from the client master; `clientName` keeps a copy of its name (and stays free text without one)
-  clientId              String?
-  client                Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId               String?
+  client                 Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
   // ----- Contract terms (what RA bills are built on) -----
-  agreementNo           String?
-  agreementDate         DateTime?      @db.Date
+  agreementNo            String?
+  agreementDate          DateTime?      @db.Date
   /// Retention money deducted from each bill, % of the work value; released after the defect liability period
-  retentionPct          Decimal        @default(0) @db.Decimal(5, 2)
+  retentionPct           Decimal        @default(0) @db.Decimal(5, 2)
   /// Security deposit deducted from each bill, % of the work value
-  securityDepositPct    Decimal        @default(0) @db.Decimal(5, 2)
+  securityDepositPct     Decimal        @default(0) @db.Decimal(5, 2)
   /// Mobilisation advance paid by the client, recovered from bills
-  mobilisationAdvance   Decimal        @default(0) @db.Decimal(18, 2)
+  mobilisationAdvance    Decimal        @default(0) @db.Decimal(18, 2)
   /// Advance recovered from each bill, % of the work value, until all of it is recovered
-  advanceRecoveryPct    Decimal        @default(0) @db.Decimal(5, 2)
-  defectLiabilityMonths Int?
+  advanceRecoveryPct     Decimal        @default(0) @db.Decimal(5, 2)
+  defectLiabilityMonths  Int?
   /// The contract has a price variation (escalation) clause
-  priceVariation        Boolean        @default(false)
+  priceVariation         Boolean        @default(false)
   /// Price variation: the date the base indices are taken at (usually the month before the bid was due)
-  pvBaseDate            DateTime?      @db.Date
+  pvBaseDate             DateTime?      @db.Date
   /// Liquidated damages for late completion: % of the contract value per day, week or month past the revised completion date
-  ldRatePct             Decimal        @default(0) @db.Decimal(6, 3)
-  ldPeriod              LdPeriod       @default(WEEK)
+  ldRatePct              Decimal        @default(0) @db.Decimal(6, 3)
+  ldPeriod               LdPeriod       @default(WEEK)
   /// Liquidated damages are capped at this % of the contract value
-  ldCapPct              Decimal        @default(10) @db.Decimal(5, 2)
+  ldCapPct               Decimal        @default(10) @db.Decimal(5, 2)
+  /// Stage billing (item 129): the lump sum the billing components share; null takes the contract value
+  lumpSumValue           Decimal?       @db.Decimal(18, 2)
+  /// Lump sum ÷ the estimate: unit-rate lines are paid at the BOQ rate × this; null is 1
+  tenderFactor           Decimal?       @db.Decimal(9, 6)
+  /// The mobilisation advance is recovered between these % of the contract value executed (both set), instead of at
+  /// advanceRecoveryPct on each bill
+  advanceRecoveryFromPct Decimal?       @db.Decimal(5, 2)
+  advanceRecoveryToPct   Decimal?       @db.Decimal(5, 2)
   /// GST charged on bills, % of the work value
-  gstRate               Decimal        @default(18) @db.Decimal(5, 2)
+  gstRate                Decimal        @default(18) @db.Decimal(5, 2)
   /// Income-tax TDS the client deducts (section 194C), % of the work value
-  tdsPct                Decimal        @default(0) @db.Decimal(5, 2)
+  tdsPct                 Decimal        @default(0) @db.Decimal(5, 2)
   /// GST TDS a government client deducts, % of the work value
-  gstTdsPct             Decimal        @default(0) @db.Decimal(5, 2)
+  gstTdsPct              Decimal        @default(0) @db.Decimal(5, 2)
   /// Building and other construction workers' welfare cess, % of the work value
-  labourCessPct         Decimal        @default(0) @db.Decimal(5, 2)
+  labourCessPct          Decimal        @default(0) @db.Decimal(5, 2)
   /// Days the client takes to pay a bill once it is sent; the cash-flow forecast assumes 30 when not set
-  clientPaymentDays     Int?
+  clientPaymentDays      Int?
   /// Days the contract allows to give notice of a hindrance; the notice clock assumes 14 when not set (AI item 123)
-  noticeDays            Int?
+  noticeDays             Int?
   /// When the schedule baseline was last frozen (activity planned dates and milestone due dates copied to their baseline)
-  baselineAt            DateTime?
-  baselineById          String?
-  baselineBy            User?          @relation("ProjectBaselineBy", fields: [baselineById], references: [id])
-  baselineNote          String?
+  baselineAt             DateTime?
+  baselineById           String?
+  baselineBy             User?          @relation("ProjectBaselineBy", fields: [baselineById], references: [id])
+  baselineNote           String?
   /// Estimate (v5 item 92): overheads and profit added to the cost of each BOQ item's resources for its built-up rate, %
-  estimateOverheadPct   Decimal        @default(5) @db.Decimal(5, 2)
-  estimateProfitPct     Decimal        @default(10) @db.Decimal(5, 2)
+  estimateOverheadPct    Decimal        @default(5) @db.Decimal(5, 2)
+  estimateProfitPct      Decimal        @default(10) @db.Decimal(5, 2)
   /// Attendance extras (v5 item 97): where the site is, for GPS check-in; a check-in further than the radius is flagged
-  siteLat               Decimal?       @db.Decimal(9, 6)
-  siteLng               Decimal?       @db.Decimal(9, 6)
-  siteRadiusM           Int?
+  siteLat                Decimal?       @db.Decimal(9, 6)
+  siteLng                Decimal?       @db.Decimal(9, 6)
+  siteRadiusM            Int?
   /// Refuse a check-in from outside the radius (or without a position) instead of only flagging it
-  siteCheckInStrict     Boolean        @default(false)
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  siteCheckInStrict      Boolean        @default(false)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 
   members            ProjectMember[]
   boqItems           BoqItem[]
@@ -1119,6 +1147,10 @@ model Project {
   workElements       WorkElement[]
   pipeNodes          PipeNode[]
   pipeSegments       PipeSegment[]
+  billingComponents  BillingComponent[]
+  billingStages      BillingStage[]
+  milestoneTargets   MilestoneTarget[]
+  slippageTiers      SlippageTier[]
   milestones         Milestone[]
   activityLinks      ActivityLink[]
   workers            Worker[]
@@ -1919,12 +1951,13 @@ model WorkElement {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  children     WorkElement[] @relation("WorkElementTree")
-  activities   Activity[]
-  boqItems     BoqItem[]
-  pipeNodes    PipeNode[]
-  pipeSegments PipeSegment[]
-  stockEntries StockEntry[]
+  children          WorkElement[]      @relation("WorkElementTree")
+  activities        Activity[]
+  boqItems          BoqItem[]
+  pipeNodes         PipeNode[]
+  pipeSegments      PipeSegment[]
+  stockEntries      StockEntry[]
+  billingComponents BillingComponent[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -3066,6 +3099,10 @@ model RaBill {
   labourCessAmount      Decimal          @db.Decimal(18, 2)
   otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
   otherDeductionNote    String?
+  /// Milestone slippage (item 129): withheld on this bill (negative when caught-up work releases what earlier bills held),
+  /// and the components behind it (SlippageLineDto[])
+  slippageWithheld      Decimal          @default(0) @db.Decimal(18, 2)
+  slippageLines         Json?
   totalDeductions       Decimal          @db.Decimal(18, 2)
   /// gross + GST - deductions
   netPayable            Decimal          @db.Decimal(18, 2)
@@ -3099,6 +3136,7 @@ model RaBill {
 
   items        RaBillItem[]
   pvLines      RaBillPvLine[]
+  stageLines   RaBillStageLine[]
   measurements MeasurementSheet[]
   attachments  Attachment[]
   receipts     Receipt[]
@@ -3168,6 +3206,136 @@ model RaBillPvLine {
   sortOrder    Int     @default(0)
 
   @@index([billId])
+}
+
+/// A line of a lump-sum contract's billing break-up (item 129): a component with its share of the lump sum, or a
+/// sub-component with its share of its parent (three tanks splitting the tanks' share by capacity). A stages component
+/// is paid by its stages; a unit-rate one by its BOQ items measured in the MB at rate × the tender factor.
+model BillingComponent {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentId       String?
+  parent         BillingComponent? @relation("BillingComponentTree", fields: [parentId], references: [id], onDelete: Cascade)
+  /// As printed in the client's price breakup, e.g. 8 or 8.1
+  code           String
+  name           String
+  /// Share of the lump sum (a component) or of its parent (a sub-component), %; null on a unit-rate component
+  sharePct       Decimal?          @db.Decimal(7, 4)
+  basis          BillingBasis      @default(STAGES)
+  /// The component or sub-component of the work breakdown whose progress, pipes and BOQ items it reads
+  workElementId  String?
+  workElement    WorkElement?      @relation(fields: [workElementId], references: [id], onDelete: SetNull)
+  sortOrder      Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  children BillingComponent[] @relation("BillingComponentTree")
+  stages   BillingStage[]
+  targets  MilestoneTarget[]
+
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@index([organizationId])
+  @@index([parentId])
+  @@index([workElementId])
+}
+
+/// A payment stage of a billing component (item 129): its % of the component and what moves it.
+model BillingStage {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  componentId    String
+  component      BillingComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  name           String
+  /// % of the component this stage pays; a component's stages make 100
+  pct            Decimal          @db.Decimal(5, 2)
+  trigger        StageTrigger
+  /// PROGRESS (and TEST where the component has no pipe network): the activities it reads; none reads the whole component
+  activityIds    String[]         @default([])
+  /// SUPPLY: the store items received against it, and the scope in their unit (metres for pipe)
+  itemIds        String[]         @default([])
+  scopeQty       Decimal?         @db.Decimal(18, 3)
+  /// EVENT: the day it happened, and the certificate or letter that says so
+  achievedOn     DateTime?        @db.Date
+  evidence       String?
+  sortOrder      Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  billLines RaBillStageLine[]
+
+  @@index([componentId])
+  @@index([projectId])
+  @@index([organizationId])
+}
+
+/// One payment stage on an RA bill (item 129): % up to the previous bill, this bill and up to date, at the stage's value.
+model RaBillStageLine {
+  id            String       @id @default(uuid())
+  billId        String
+  bill          RaBill       @relation(fields: [billId], references: [id], onDelete: Cascade)
+  stageId       String
+  stage         BillingStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  /// Lump sum × the component's share × the stage's %, when the bill was prepared
+  stageValue    Decimal      @db.Decimal(18, 2)
+  prevPct       Decimal      @db.Decimal(7, 3)
+  /// What the evidence gives up to the bill's date, less the previous bills
+  suggestedPct  Decimal      @db.Decimal(7, 3)
+  thisPct       Decimal      @db.Decimal(7, 3)
+  /// Set by hand (less than suggested, or more with a note); otherwise it follows the suggestion
+  claimedByHand Boolean      @default(false)
+  note          String?
+  /// This bill's % as the client certified it (null until certified)
+  certifiedPct  Decimal?     @db.Decimal(7, 3)
+  amount        Decimal      @db.Decimal(18, 2)
+  /// What the evidence read, e.g. "Staging: 64% of its activities done"
+  evidenceText  String
+  sortOrder     Int          @default(0)
+
+  @@unique([billId, stageId])
+  @@index([stageId])
+}
+
+/// The contract's milestone grid (item 129): a component's cumulative financial target, % of its value, by the end of a month.
+model MilestoneTarget {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  componentId    String
+  component      BillingComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  /// First day of the month
+  month          DateTime         @db.Date
+  cumulativePct  Decimal          @db.Decimal(5, 2)
+
+  @@unique([componentId, month])
+  @@index([projectId])
+  @@index([organizationId])
+}
+
+/// A tier of withholding for milestone slippage (item 129): a component this far behind its target has this % of the
+/// value of the work not done withheld, released once it catches up.
+model SlippageTier {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Behind the target by at least this % of it, and under `toPct` (null: no upper end)
+  fromPct        Decimal      @db.Decimal(5, 2)
+  toPct          Decimal?     @db.Decimal(5, 2)
+  withheldPct    Decimal      @db.Decimal(5, 2)
+  sortOrder      Int          @default(0)
+
+  @@index([projectId])
+  @@index([organizationId])
 }
 
 /// What a receipt is for: a bill, or the release of retention or security deposit the client held

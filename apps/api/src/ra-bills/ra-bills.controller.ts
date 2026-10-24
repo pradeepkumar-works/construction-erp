@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { RaBillsService } from './ra-bills.service';
 import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
+import { ClaimStageDto } from '../stage-billing/stage-billing.dto';
 
 @ApiTags('ra-bills')
 @ApiBearerAuth()
@@ -26,7 +27,9 @@ export class RaBillsController {
     summary: 'Prepare the next RA bill of a project',
     description:
       'Takes the approved measurements dated up to `measuredUpTo` that no earlier bill took, priced at the BOQ rates, with GST and the ' +
-      'contract deductions. Refused while another bill of the project is not approved. Saved as a draft unless `submit: true`.',
+      'contract deductions. On a lump-sum project with a billing break-up (item 129) it takes each stage\'s % from its evidence at that date, ' +
+      'measures only the unit-rate items (at rate × the tender factor) and withholds for milestone slippage. Refused while another bill of the ' +
+      'project is not approved. Saved as a draft unless `submit: true`.',
   })
   @Post()
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateRaBillDto) {
@@ -48,6 +51,17 @@ export class RaBillsController {
   @Put(':id/price-variation')
   setPriceVariation(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: BillPriceVariationDto) {
     return this.bills.setPriceVariation(user, id, dto);
+  }
+
+  @ApiOperation({
+    summary: "Claim a stage of a lump-sum bill by hand",
+    description:
+      'Item 129. While the bill is not approved: this bill\'s % of the stage, less than its evidence gives, or more with a `note` saying why. An empty `pct` ' +
+      'goes back to the evidence. The bill is re-priced.',
+  })
+  @Put(':id/stages/:stageId')
+  claimStage(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('stageId', ParseUUIDPipe) stageId: string, @Body() dto: ClaimStageDto) {
+    return this.bills.claimStage(user, id, stageId, dto);
   }
 
   @ApiOperation({ summary: 'Submit or resubmit a bill for approval', description: 'Measurements approved since the bill was prepared are taken in first.' })

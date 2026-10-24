@@ -236,6 +236,7 @@ test('subcontract bill: invoice already billed', () => {
 
 const ra: RaBillFacts = {
   items: [{ id: 'r1', itemNo: '4.2', unit: 'Cum', boqQty: 1200, rate: 2500, boqRate: 2500, prevQty: 800, thisQty: 300, uptoQty: 1100, certifiedQty: null, amount: 750000, earlierBilled: 800, measuredToDate: 1100 }],
+  stageAmount: 0,
   grossAmount: 750000,
   pvAmount: 0,
   gstRate: 18,
@@ -246,6 +247,7 @@ const ra: RaBillFacts = {
     { label: 'TDS', pct: 2, amount: 15000 },
   ],
   otherDeduction: 0,
+  slippageWithheld: 0,
   totalDeductions: 102500,
   netPayable: 782500,
 };
@@ -277,6 +279,22 @@ test('RA bill: a certified quantity prices the item', () => {
   const f = clone(ra);
   f.items[0].certifiedQty = 290;
   assert.match(flagged(raBillChecks(f), 'totals')[0].detail!, /Item 4.2 amount is ₹7,50,000, should be ₹7,25,000/);
+});
+test('RA bill: stages, a recovery window and slippage add up on a lump-sum bill', () => {
+  const f = clone(ra);
+  f.stageAmount = 250000;
+  f.grossAmount = 1000000;
+  f.gstAmount = 180000;
+  f.deductions = [
+    { label: 'Retention', pct: 5, amount: 50000 },
+    { label: 'Advance recovery', pct: 3.21, amount: 32123.45, capped: true, expected: 32123.45 },
+  ];
+  f.slippageWithheld = 20000;
+  f.totalDeductions = 102123.45;
+  f.netPayable = 1077876.55;
+  assert.deepEqual(flags(raBillChecks(f)), []);
+  f.slippageWithheld = 0;
+  assert.match(flagged(raBillChecks(f), 'totals')[0].detail!, /Deductions/);
 });
 test('RA bill: net payable wrong', () => {
   const f = clone(ra);

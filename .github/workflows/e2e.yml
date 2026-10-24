@@ -114,6 +114,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/reconciliation-test.js
+      - name: Stage billing shares the lump sum, reads each stage's evidence, bills it pro rata and withholds for milestone slippage
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/stage-billing-test.js
       - name: Work breakdown rolls progress up from sub-activities to components to the project, and its templates add up
         if: matrix.suite == 'flows'
         working-directory: apps/api

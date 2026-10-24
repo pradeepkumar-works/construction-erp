@@ -622,8 +622,6 @@ kbd {
 @media (pointer: coarse) {
   :root .ant-btn {
     min-height: 44px;
-  }
-  :root .ant-btn-icon-only {
     min-width: 44px;
   }
   :root .ant-select {

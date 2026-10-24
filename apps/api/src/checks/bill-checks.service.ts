@@ -15,6 +15,8 @@ import { SubcontractBillsService } from '../subcontracts/subcontract-bills.servi
 import { AttendanceCheckService } from '../attendance-check/attendance-check.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { RaBillsService } from '../ra-bills/ra-bills.service';
+import { boqBasis } from '../stage-billing/stage-plan';
+import { windowRecovery } from '../stage-billing/stage-billing-rules';
 import { type Check, type Link, expenseChecks, otherVendorBillChecks, qty, raBillChecks, rulesSummary, subcontractBillChecks, vendorBillChecks } from './bill-rules';
 
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -426,10 +428,31 @@ export class BillChecksService {
     const dto = await this.raBills.get(user, id);
     const bill = await this.prisma.raBill.findFirstOrThrow({ where: { id, organizationId: user.organizationId }, include: { items: { include: { boqItem: true }, orderBy: { sortOrder: 'asc' } } } });
     const earlier = { projectId: bill.projectId, billNo: { lt: bill.billNo } };
-    const [billed, measured] = await Promise.all([
+    const [billed, measured, project, stages, recovered] = await Promise.all([
       this.prisma.raBillItem.findMany({ where: { bill: earlier }, select: { boqItemId: true, thisQty: true, certifiedQty: true } }),
       this.prisma.measurementSheet.groupBy({ by: ['boqItemId'], where: { OR: [{ raBillId: id }, { raBill: earlier }] }, _sum: { totalQty: true } }),
+      this.prisma.project.findUniqueOrThrow({
+        where: { id: bill.projectId },
+        select: { contractModel: true, tenderFactor: true, mobilisationAdvance: true, contractValue: true, advanceRecoveryFromPct: true, advanceRecoveryToPct: true },
+      }),
+      this.prisma.raBillStageLine.aggregate({ where: { billId: id }, _sum: { amount: true } }),
+      this.prisma.raBill.aggregate({ where: earlier, _sum: { advanceRecoveryAmount: true } }),
     ]);
+    // A recovery window (item 129) recovers the advance by the contract executed, not a % of the bill.
+    const windowed =
+      project.advanceRecoveryFromPct && project.advanceRecoveryToPct && project.contractValue
+        ? windowRecovery({
+            advance: project.mobilisationAdvance,
+            contractValue: project.contractValue,
+            executedUpto: bill.grossUpto,
+            fromPct: project.advanceRecoveryFromPct,
+            toPct: project.advanceRecoveryToPct,
+            recoveredBefore: recovered._sum.advanceRecoveryAmount ?? new Prisma.Decimal(0),
+          })
+        : null;
+    // A lump-sum contract's unit-rate items are paid at the BOQ rate × the tender factor (item 129).
+    const unitRate = project.contractModel === 'LUMP_SUM' ? (await boqBasis(this.prisma, bill.projectId)).unitRateBoqItemIds : new Set<string>();
+    const factor = project.tenderFactor ?? new Prisma.Decimal(1);
     const prev = new Map<string, number>();
     for (const b of billed) prev.set(b.boqItemId, (prev.get(b.boqItemId) ?? 0) + n(b.certifiedQty ?? b.thisQty));
     const checks = raBillChecks({
@@ -439,7 +462,7 @@ export class BillChecksService {
         unit: i.boqItem.unit,
         boqQty: n(i.boqItem.revisedQty ?? i.boqItem.originalQty),
         rate: n(i.rate),
-        boqRate: n(i.boqItem.rate),
+        boqRate: n(unitRate.has(i.boqItemId) ? i.boqItem.rate.mul(factor).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP) : i.boqItem.rate),
         prevQty: n(i.prevQty),
         thisQty: n(i.thisQty),
         uptoQty: n(i.uptoQty),
@@ -448,6 +471,7 @@ export class BillChecksService {
         earlierBilled: prev.get(i.boqItemId) ?? 0,
         measuredToDate: n(measured.find((m) => m.boqItemId === i.boqItemId)?._sum.totalQty),
       })),
+      stageAmount: n(stages._sum.amount),
       grossAmount: n(bill.grossAmount),
       pvAmount: n(bill.pvAmount),
       gstRate: n(bill.gstRate),
@@ -455,12 +479,13 @@ export class BillChecksService {
       deductions: [
         { label: 'Retention', pct: n(bill.retentionPct), amount: n(bill.retentionAmount) },
         { label: 'Security deposit', pct: n(bill.securityDepositPct), amount: n(bill.securityDepositAmount) },
-        { label: 'Advance recovery', pct: n(bill.advanceRecoveryPct), amount: n(bill.advanceRecoveryAmount), capped: true },
+        { label: 'Advance recovery', pct: n(bill.advanceRecoveryPct), amount: n(bill.advanceRecoveryAmount), capped: true, ...(windowed ? { expected: n(windowed) } : {}) },
         { label: 'TDS', pct: n(bill.tdsPct), amount: n(bill.tdsAmount) },
         { label: 'GST TDS', pct: n(bill.gstTdsPct), amount: n(bill.gstTdsAmount) },
         { label: 'Labour cess', pct: n(bill.labourCessPct), amount: n(bill.labourCessAmount) },
       ],
       otherDeduction: n(bill.otherDeduction),
+      slippageWithheld: n(bill.slippageWithheld),
       totalDeductions: n(bill.totalDeductions),
       netPayable: n(bill.netPayable),
     });

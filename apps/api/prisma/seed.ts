@@ -9,6 +9,7 @@ import { addMonths, schedule as loanSchedule } from '../src/machine-loans/loan-r
 import { seedTownDprs, seedWorkBreakdown } from './seed-structure';
 import { seedTownNetwork } from './seed-pipes';
 import { seedTownStock } from './seed-stock';
+import { seedTownBilling } from './seed-billing';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, type MarkupPoint, type PpeKind, type TakeoffKind } from '@erp/shared';
 
@@ -202,6 +203,7 @@ async function main() {
     await seedTownDprs(prisma, org.id);
     await seedTownNetwork(prisma, org.id);
     await seedTownStock(prisma, org.id);
+    await seedTownBilling(prisma, org.id);
     await seedComments(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
@@ -411,6 +413,7 @@ async function main() {
   await seedTownDprs(prisma, org.id);
   await seedTownNetwork(prisma, org.id);
   await seedTownStock(prisma, org.id);
+  await seedTownBilling(prisma, org.id);
   await seedComments(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');

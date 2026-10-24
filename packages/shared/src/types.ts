@@ -1,4 +1,5 @@
 import type { DprLineDto } from './dpr-lines';
+import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
 import type { EmployeePrivateDto, EmploymentType } from './hr';
 import type { NotificationTab } from './notifications';
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
@@ -1515,7 +1516,7 @@ export interface RaBillItemDto {
   extraItem: boolean;
 }
 
-export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'other';
+export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'other';
 
 export interface RaBillDeductionDto {
   key: BillDeductionKey;
@@ -1581,6 +1582,12 @@ export interface RaBillDto extends SubmissionBase {
   pvIndexMonth: string | null;
   pvNote: string | null;
   pvLines: RaBillPvLineDto[];
+  /** Lump-sum projects billing by stages (item 129): one line per payment stage, the milestone slippage withheld (negative
+   * when released) and the components behind it, and the tender factor the unit-rate items are priced with */
+  stageLines: RaBillStageLineDto[];
+  slippageWithheld: string;
+  slippageLines: SlippageLineDto[];
+  tenderFactor: string | null;
   gstRate: string;
   gstAmount: string;
   /** Retention, security deposit, advance recovery, TDS, GST TDS, labour cess and any other deduction, in that order (zero ones left out) */

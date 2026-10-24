@@ -44,6 +44,11 @@ export class CertifiedItemDto {
   @ApiProperty({ example: '120.5', description: 'Quantity of this bill the client passed' }) @num() @IsNumberString() certifiedQty: string;
 }
 
+export class CertifiedStageDto {
+  @ApiProperty() @IsUUID() stageId: string;
+  @ApiProperty({ example: '12.5', description: "This bill's % of the stage the client passed" }) @num() @IsNumberString() certifiedPct: string;
+}
+
 export class PvIndexDto {
   @ApiProperty({ description: "A component of the contract's price variation formula" }) @IsUUID() componentId!: string;
   @ApiProperty({ example: '151.2', description: "The component's index for this bill" })
@@ -68,6 +73,13 @@ export class CertifyBillDto extends BillDateDto {
   @ValidateNested({ each: true })
   @Type(() => CertifiedItemDto)
   items?: CertifiedItemDto[];
+  @ApiPropertyOptional({ type: [CertifiedStageDto], description: 'Stages the client cut (item 129); stages left out are certified as claimed' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(1000)
+  @ValidateNested({ each: true })
+  @Type(() => CertifiedStageDto)
+  stages?: CertifiedStageDto[];
 }
 
 /** `q` matches the project, its client, the certificate number and remarks. */

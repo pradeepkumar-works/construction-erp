@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, DatePicker, Divider, Form, Input, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { RaBillDto, RaBillItemDto, ReceiptDto } from '@erp/shared';
+import type { RaBillDto, RaBillItemDto, RaBillStageLineDto, ReceiptDto } from '@erp/shared';
 import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -22,6 +22,7 @@ import { openBillPrint } from './billPrint';
 import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
+import { BillStages, SlippageNotes } from './BillStages';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
@@ -33,6 +34,7 @@ import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type StageAction = 'send' | 'certify';
+type CertifyValues = { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null>; stagePct?: Record<string, number | null> };
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
 
 const money = (v: string) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
@@ -60,7 +62,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const qc = useQueryClient();
   const { data, isLoading, error, refetch, dataUpdatedAt } = useBill(id ?? undefined);
   const [action, setAction] = useState<StageAction | null>(null);
-  const [form] = Form.useForm<{ date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }>();
+  const [form] = Form.useForm<CertifyValues>();
   const preparer = !!user && canPrepareBill(user.roleKey);
   const accounts = !!user && canRecordReceipt(user.roleKey);
   const [paying, setPaying] = useState(false);
@@ -99,22 +101,27 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
       date: dayjs(),
       certificateNo: b.certificateNo ?? undefined,
       qty: Object.fromEntries(b.items.map((i) => [i.boqItemId, toNumber(i.certifiedQty ?? i.thisQty)])),
+      stagePct: Object.fromEntries(b.stageLines.map((l) => [l.stageId, toNumber(l.certifiedPct ?? l.thisPct)])),
     });
     setAction(act);
   };
-  const confirmAction = async (v: { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }) => {
+  const confirmAction = async (v: CertifyValues) => {
     if (!action || !data) return;
     const date = v.date.format('YYYY-MM-DD');
     if (action !== 'certify') return stage.mutateAsync({ act: action, body: { date } });
     const items = data.items
       .filter((i) => v.qty?.[i.boqItemId] !== undefined && v.qty[i.boqItemId] !== null && v.qty[i.boqItemId] !== toNumber(i.thisQty))
       .map((i) => ({ boqItemId: i.boqItemId, certifiedQty: String(v.qty[i.boqItemId]) }));
-    return stage.mutateAsync({ act: 'certify', body: { date, certificateNo: v.certificateNo?.trim() || null, items } });
+    const stages = data.stageLines
+      .filter((l) => v.stagePct?.[l.stageId] !== undefined && v.stagePct[l.stageId] !== null && v.stagePct[l.stageId] !== toNumber(l.thisPct))
+      .map((l) => ({ stageId: l.stageId, certifiedPct: String(v.stagePct![l.stageId]) }));
+    return stage.mutateAsync({ act: 'certify', body: { date, certificateNo: v.certificateNo?.trim() || null, items, stages } });
   };
 
   const editable = !!data && !!user && preparer && canEditSubmission(user, data);
   const approved = data?.status === 'APPROVED';
   const certified = !!data?.items.some((i) => i.certifiedQty !== null);
+  const stageClaims = data?.stageLines.filter((l) => toNumber(l.thisPct) > 0) ?? [];
   const stageAt = data ? (['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const).indexOf(data.stage) : 0;
 
   const dateItem = (
@@ -199,9 +206,15 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           ]),
           sections: [
             checksSection('ra-bill', data.id, dataUpdatedAt),
+            ...(data.stageLines.length
+              ? [{ key: 'stages', title: 'Payment stages', count: data.stageLines.filter((l) => toNumber(l.thisPct) > 0).length, children: <BillStages bill={data} editable={editable} /> }]
+              : []),
+            ...(data.slippageLines.length || toNumber(data.slippageWithheld) !== 0
+              ? [{ key: 'slippage', title: 'Milestone slippage', children: <SlippageNotes lines={data.slippageLines} withheld={data.slippageWithheld} /> }]
+              : []),
             {
               key: 'abstract',
-              title: 'Abstract of cost',
+              title: data.stageLines.length ? 'Measured items' : 'Abstract of cost',
               count: data.items.length,
               children: (
                 <>
@@ -388,7 +401,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           )}
           {action === 'certify' && data && (
             <>
-              <Typography.Paragraph type="secondary">Change only the quantities the client cut. The bill is re-priced on what it passed and the claim is kept for reference.</Typography.Paragraph>
+              <Typography.Paragraph type="secondary">Change only the quantities and stages the client cut. The bill is re-priced on what it passed and the claim is kept for reference.</Typography.Paragraph>
               <Table<RaBillItemDto>
                 rowKey="boqItemId"
                 size="small"
@@ -409,6 +422,28 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   },
                 ]}
               />
+              {stageClaims.length ? (
+                <Table<RaBillStageLineDto>
+                  rowKey="stageId"
+                  size="small"
+                  pagination={false}
+                  style={{ marginTop: 12 }}
+                  dataSource={stageClaims}
+                  columns={[
+                    { title: 'Stage', render: (_, l) => <span><span className="mono" translate="no">{l.componentCode}</span> {l.stageName}</span> },
+                    { title: 'Claimed', dataIndex: 'thisPct', width: 120, align: 'right', render: (v) => <span className="mono" translate="no">{formatPct(v, { digits: 2 })}</span> },
+                    {
+                      title: 'Passed (%)',
+                      width: 150,
+                      render: (_, l) => (
+                        <Form.Item name={['stagePct', l.stageId]} noStyle rules={[{ required: true, message: 'Enter the % passed' }]}>
+                          <InputNumber min={0} max={toNumber(l.thisPct)} style={{ width: '100%' }} aria-label={`% of ${l.componentCode} ${l.stageName} passed`} />
+                        </Form.Item>
+                      ),
+                    },
+                  ]}
+                />
+              ) : null}
             </>
           )}
         </Form>
