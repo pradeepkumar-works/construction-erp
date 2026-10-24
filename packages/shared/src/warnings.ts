@@ -1,11 +1,11 @@
 import type { RoleKey } from './enums';
-import { canApprove, canManageMachineLoans, canManagePackages, canManageMaintenance, canManageStore, canPurchase, canRaiseRisk, canSetMaterialNorms, canViewCost } from './permissions';
+import { canApprove, canManageMachineLoans, canManagePackages, canManageMaintenance, canManageOm, canManageStore, canPurchase, canRaiseRisk, canSetMaterialNorms, canViewCost } from './permissions';
 
 /**
  * Early warnings (AI roadmap item 73): plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
-export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE'] as const;
+export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE'] as const;
 export type WarningKind = (typeof WARNING_KINDS)[number];
 
 export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
@@ -24,6 +24,7 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
   NOTICE_DUE: 'Hindrance notice due',
   MANDAYS_ABOVE: 'Man-days billed above attendance',
   PACKAGE_LATE: 'Equipment late for site',
+  OM_SERVICE: 'O&M service levels missed',
 };
 
 /** The warning kinds a role sees: each is the business of the role that can act on it. */
@@ -47,6 +48,8 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   if (canApprove(role)) out.push('MANDAYS_ABOVE');
   // EPC packages (item 130): procurement and the project's managers chase them.
   if (canManagePackages(role)) out.push('PACKAGE_LATE');
+  // O&M (item 131): the managers who run the scheme and sign its bills.
+  if (canManageOm(role)) out.push('OM_SERVICE');
   return out;
 }
 
@@ -86,6 +89,7 @@ export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
   NOTICE_DUE: 'CHECKED',
   MANDAYS_ABOVE: 'CHECKED',
   PACKAGE_LATE: 'LIKELY',
+  OM_SERVICE: 'CHECKED',
 };
 
 /**

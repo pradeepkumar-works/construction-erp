@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateNested, Max, Min } from 'class-validator';
 import { BILL_STAGES, LIST_SORT_FIELDS, SUBMISSION_STATUSES, type BillSortField, type BillStage, type SubmissionStatus } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -17,6 +17,13 @@ export class CreateRaBillDto {
   @IsDateString()
   measuredUpTo?: string;
   @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() isFinal?: boolean;
+  @ApiPropertyOptional({ example: 2, description: 'An O&M bill (item 131): the O&M year, with omInstalment; it bills that period, so measuredUpTo is ignored' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  omYear?: number;
+  @ApiPropertyOptional({ example: 3, description: 'The instalment of the O&M year (1 to the instalments a year)' }) @IsOptional() @IsInt() @Min(1) @Max(12) omInstalment?: number;
   @ApiPropertyOptional({ example: '0', description: 'Any other deduction the client makes (₹)' }) @IsOptional() @num() @IsNumberString() otherDeduction?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(200) otherDeductionNote?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;

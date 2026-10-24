@@ -37,7 +37,7 @@ const TOLERANCE = D(1);
 
 const include = {
   project: { select: { code: true, name: true, clientName: true, currency: true, exchangeRate: true, client: { select: { name: true } } } },
-  bill: { select: { billNo: true, isFinal: true } },
+  bill: { select: { billNo: true, isFinal: true, omYear: true } },
   createdBy: { select: { fullName: true } },
 } satisfies Prisma.ReceiptInclude;
 type Row = Prisma.ReceiptGetPayload<{ include: typeof include }>;
@@ -126,7 +126,7 @@ export class ReceivablesService {
       projectName: r.project.name,
       clientName: r.project.client?.name ?? r.project.clientName,
       billId: r.billId,
-      billLabel: r.bill ? billLabel(r.bill.billNo, r.bill.isFinal) : null,
+      billLabel: r.bill ? billLabel(r.bill.billNo, r.bill.isFinal, r.bill.omYear !== null) : null,
       receiptDate: dateOnly(r.receiptDate)!,
       amount: money(r.amount)!,
       currency: r.project.currency,
@@ -405,7 +405,7 @@ export class ReceivablesService {
     const [bills, receipts] = await Promise.all([
       this.prisma.raBill.findMany({
         where: { projectId: { in: ids }, status: 'APPROVED' },
-        select: { id: true, projectId: true, billNo: true, isFinal: true, stage: true, billDate: true, sentDate: true, certifiedDate: true, grossAmount: true, pvAmount: true, gstAmount: true, receipts: { select: RECEIPT_SUMS } },
+        select: { id: true, projectId: true, billNo: true, isFinal: true, omYear: true, stage: true, billDate: true, sentDate: true, certifiedDate: true, grossAmount: true, pvAmount: true, gstAmount: true, receipts: { select: RECEIPT_SUMS } },
         orderBy: [{ projectId: 'asc' }, { billNo: 'asc' }],
       }),
       this.prisma.receipt.findMany({ where: { projectId: { in: ids } }, select: { projectId: true, kind: true, ...RECEIPT_SUMS } }),
@@ -433,7 +433,7 @@ export class ReceivablesService {
         const p = project.get(b.projectId)!;
         openBills.push({
           billId: b.id,
-          billLabel: billLabel(b.billNo, b.isFinal),
+          billLabel: billLabel(b.billNo, b.isFinal, b.omYear !== null),
           projectId: p.id,
           projectCode: p.code,
           projectName: p.name,

@@ -201,6 +201,10 @@ and the pre-delivery checklist.
   `AttendanceCheckService`, which the bill's checks (`mandays` in `bill-rules.ts`), the page and the watch list's
   MANDAYS_ABOVE share; the arithmetic is pure in `attendance-check-rules.ts`. Workers are named only for
   `canSeeAttendanceNames` (HR and the PM), never on a bill. Keep `src/scripts/attendance-check-test.ts` passing (6 in 10).
+- O&M (item 131, `apps/api/src/om`, ARCHITECTURE "Operation and maintenance"): an O&M bill is an `RaBill` with `omYear` and
+  `omInstalment`, priced only through `om-bill.ts` (`omPricing`, instalment less staff short, penalties as `omPenalty`);
+  periods, service level failures, staff short and chemicals are pure in `om-rules.ts`. A day or staff month in a billed
+  period never changes. Keep `src/scripts/om-test.ts` passing.
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.

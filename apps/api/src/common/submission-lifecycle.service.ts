@@ -366,7 +366,7 @@ export class SubmissionLifecycleService {
         id: b.id,
         projectId: b.projectId,
         projectName: b.project.name,
-        title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2)),
+        title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2), b.omYear !== null),
         submittedByName: b.submittedBy.fullName,
         submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
         amount: amt(b.grossAmount),

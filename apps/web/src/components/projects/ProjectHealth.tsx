@@ -57,8 +57,10 @@ export function scheduleStatus(project: ProjectDetail, dash: ProjectDashboard, o
   const planned = dash.plannedProgressPct ?? null;
   const elapsed = timeElapsedPct(project.startDate, project.endDate, on);
   const mark = planned ?? elapsed;
-  const overrun = !!project.endDate && project.endDate < on && done < 100;
-  const behind = overrun || (mark !== null && done <= mark - BEHIND_BY);
+  // A completed project (handed over, perhaps in O&M) is behind nothing.
+  const finished = project.status === 'COMPLETED';
+  const overrun = !finished && !!project.endDate && project.endDate < on && done < 100;
+  const behind = overrun || (!finished && mark !== null && done <= mark - BEHIND_BY);
   const late = dash.activitiesDelayed;
   const level: Level = late > 0 && behind ? 'error' : late > 0 || behind ? 'warning' : 'success';
   return { level, behind, done, planned, elapsed, late, overrun };

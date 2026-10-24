@@ -24,9 +24,9 @@ export const expenseTitle = (expenseNo: string, total: string, description: stri
 export const measurementTitle = (mbNo: string, itemNo: string, qty: string, unit: string, location: string) =>
   `${mbNo}: item ${itemNo}, ${Number(qty)} ${unit} at ${location}`;
 
-/** "RA bill 3: ₹48,25,000.00 of work" (the final bill says so). */
-export const billTitle = (billNo: number, isFinal: boolean, gross: string) =>
-  `RA bill ${billNo}${isFinal ? ' (final)' : ''}: ₹${Number(gross).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} of work`;
+/** "RA bill 3: ₹48,25,000.00 of work" (the final bill says so); "O&M bill 6: ₹17,39,000.00 of O&M" (item 131). */
+export const billTitle = (billNo: number, isFinal: boolean, gross: string, om = false) =>
+  `${om ? 'O&M' : 'RA'} bill ${billNo}${isFinal ? ' (final)' : ''}: ₹${Number(gross).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} of ${om ? 'O&M' : 'work'}`;
 
 const inr = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 

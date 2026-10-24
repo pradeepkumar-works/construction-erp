@@ -1,5 +1,6 @@
 import type { DprLineDto } from './dpr-lines';
 import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
+import type { OmBillDto } from './om';
 import type { EmployeePrivateDto, EmploymentType } from './hr';
 import type { NotificationTab } from './notifications';
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
@@ -190,6 +191,8 @@ export interface ProjectDetail extends ProjectSummary {
   siteRadiusM: number | null;
   /** Refuse a check-in from outside the radius, or without a position */
   siteCheckInStrict: boolean;
+  /** The completion date on the handover certificate (item 131's O&M starts after it); null before handover */
+  handedOverOn: string | null;
   members: ProjectMemberDto[];
   createdAt: string;
   updatedAt: string;
@@ -1519,7 +1522,7 @@ export interface RaBillItemDto {
   extraItem: boolean;
 }
 
-export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'other';
+export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'omPenalty' | 'other';
 
 export interface RaBillDeductionDto {
   key: BillDeductionKey;
@@ -1593,6 +1596,8 @@ export interface RaBillDto extends SubmissionBase {
   stageLines: RaBillStageLineDto[];
   slippageWithheld: string;
   slippageLines: SlippageLineDto[];
+  /** An O&M bill (item 131): the period, the instalment and what was taken off it; null on a works bill */
+  om: OmBillDto | null;
   tenderFactor: string | null;
   gstRate: string;
   gstAmount: string;

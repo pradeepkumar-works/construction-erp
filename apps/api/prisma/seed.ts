@@ -11,6 +11,7 @@ import { seedTownNetwork } from './seed-pipes';
 import { seedTownStock } from './seed-stock';
 import { seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
+import { seedOm } from './seed-om';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, type MarkupPoint, type PpeKind, type TakeoffKind } from '@erp/shared';
 
@@ -206,6 +207,7 @@ async function main() {
     await seedTownStock(prisma, org.id);
     await seedTownBilling(prisma, org.id);
     await seedEpc(prisma, org.id);
+    await seedOm(prisma, org.id);
     await seedComments(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
@@ -417,6 +419,7 @@ async function main() {
   await seedTownStock(prisma, org.id);
   await seedTownBilling(prisma, org.id);
   await seedEpc(prisma, org.id);
+  await seedOm(prisma, org.id);
   await seedComments(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
@@ -1414,7 +1417,8 @@ const CONTRACTORS: Record<string, [string, string]> = {
  */
 async function seedAttendance(organizationId: string) {
   const projects = await prisma.project.findMany({
-    where: { organizationId },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
+    where: { organizationId, status: { not: 'COMPLETED' } },
     include: { members: { include: { user: { include: { role: true } } } } },
     orderBy: { code: 'asc' },
   });
@@ -1473,7 +1477,8 @@ async function seedStock(organizationId: string) {
     (await prisma.item.findFirst({ where: { organizationId, name, unit } })) ?? prisma.item.create({ data: { organizationId, name, unit, category } });
 
   const projects = await prisma.project.findMany({
-    where: { organizationId },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
+    where: { organizationId, status: { not: 'COMPLETED' } },
     include: { members: { include: { user: { include: { role: true } } } }, activities: { orderBy: { sortOrder: 'asc' } } },
     orderBy: { code: 'asc' },
   });
@@ -1648,7 +1653,8 @@ const FLEET: Record<string, Machine[]> = {
  */
 async function seedMachinery(organizationId: string) {
   const projects = await prisma.project.findMany({
-    where: { organizationId },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
+    where: { organizationId, status: { not: 'COMPLETED' } },
     include: { members: { include: { user: { include: { role: true } } } }, activities: { orderBy: { sortOrder: 'asc' } } },
     orderBy: { code: 'asc' },
   });
@@ -1773,7 +1779,8 @@ const EXPENSES: Record<string, DemoExpense[]> = {
  */
 async function seedExpenses(organizationId: string) {
   const projects = await prisma.project.findMany({
-    where: { organizationId },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
+    where: { organizationId, status: { not: 'COMPLETED' } },
     include: { members: { include: { user: { include: { role: true } } } } },
     orderBy: { code: 'asc' },
   });
@@ -1841,7 +1848,8 @@ const MEASUREMENTS: Record<string, DemoSheet[]> = {
 
 async function seedMeasurements(organizationId: string) {
   const projects = await prisma.project.findMany({
-    where: { organizationId },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
+    where: { organizationId, status: { not: 'COMPLETED' } },
     include: { members: { include: { user: { include: { role: true } } } }, boqItems: true },
     orderBy: { code: 'asc' },
   });
@@ -1946,7 +1954,8 @@ const RISKS: Record<string, SeedRisk[]> = {
 /** Delay and risk register: a few entries per project, one notification to the PM for each open delay. */
 async function seedRisks(organizationId: string) {
   const projects = await prisma.project.findMany({
-    where: { organizationId },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
+    where: { organizationId, status: { not: 'COMPLETED' } },
     include: { members: { include: { user: { include: { role: true } } } }, activities: true },
     orderBy: { code: 'asc' },
   });

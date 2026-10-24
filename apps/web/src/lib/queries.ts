@@ -122,6 +122,7 @@ import type {
   ProjectContractDto,
   BillingBreakupDto,
   EpcDto,
+  OmDto,
   GettingStartedDto,
   EquipmentDto,
   EquipmentPartsDto,
@@ -2249,6 +2250,15 @@ export const useEpc = (projectId: string | undefined, enabled = true) =>
     queryKey: ['epc', projectId],
     queryFn: async () => (await api.get<EpcDto>(`/projects/${projectId}/epc`)).data,
     enabled: !!projectId && enabled,
+  });
+
+/** A handed-over project's O&M contract, its periods and bills, and a month of service levels (item 131). */
+export const useOm = (projectId: string | undefined, month?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['om', projectId, month ?? null],
+    queryFn: async () => (await api.get<OmDto>(`/projects/${projectId}/om`, { params: month ? { month } : {} })).data,
+    enabled: !!projectId && enabled,
+    placeholderData: keepPreviousData,
   });
 
 /** Cost period; both ends optional. */

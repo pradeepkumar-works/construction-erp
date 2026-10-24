@@ -20,6 +20,9 @@ import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivabl
 import { ReceivablesService } from '../receivables/receivables.service';
 import { assertNotExported } from '../tally/exported';
 import { NotificationsService } from '../notifications/notifications.service';
+import { omBillDto, omPercentages, omPricing, storedOmPricing } from '../om/om-bill';
+import { loadOm } from '../om/om-load';
+import { billProblem } from '../om/om-rules';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -109,6 +112,10 @@ export class RaBillsService {
       const key: BillDeductionKey = 'slippage';
       deductions.push({ key, label: r.slippageWithheld.gt(0) ? BILL_DEDUCTION_LABELS.slippage : 'Milestone slippage released', pct: null, amount: money(r.slippageWithheld)! });
     }
+    if (!r.omPenalty.isZero()) {
+      const key: BillDeductionKey = 'omPenalty';
+      deductions.push({ key, label: BILL_DEDUCTION_LABELS.omPenalty, pct: null, amount: money(r.omPenalty)! });
+    }
     if (!r.otherDeduction.isZero()) {
       const key: BillDeductionKey = 'other';
       deductions.push({ key, label: r.otherDeductionNote || BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction)! });
@@ -122,7 +129,7 @@ export class RaBillsService {
       currency: p.currency,
       exchangeRate: fxRate(p.exchangeRate),
       billNo: r.billNo,
-      billLabel: billLabel(r.billNo, r.isFinal),
+      billLabel: billLabel(r.billNo, r.isFinal, r.omYear !== null),
       isFinal: r.isFinal,
       billDate: dateOnly(r.billDate)!,
       measuredUpTo: dateOnly(r.measuredUpTo)!,
@@ -163,6 +170,7 @@ export class RaBillsService {
       }),
       slippageWithheld: money(r.slippageWithheld)!,
       slippageLines: (r.slippageLines as SlippageLineDto[] | null) ?? [],
+      om: omBillDto(r),
       tenderFactor: r.stageLines.length && r.project.tenderFactor ? r.project.tenderFactor.toFixed(6).replace(/\.?0+$/, '') : null,
       pvLines: r.pvLines.map((l) => ({ id: l.id, name: l.name, sharePct: pctStr(l.sharePct), baseIndex: idx(l.baseIndex), currentIndex: idx(l.currentIndex), amount: money(l.amount)! })),
       gstRate: pctStr(r.gstRate),
@@ -311,6 +319,15 @@ export class RaBillsService {
    */
   private async recompute(tx: Prisma.TransactionClient, id: string, strict = true) {
     const bill = await tx.raBill.findUniqueOrThrow({ where: { id }, include: { project: { select: BILL_TERMS_SELECT } } });
+    // An O&M bill (item 131) bills its period's instalment, less staff short and the service level penalties.
+    if (bill.omYear !== null && bill.omInstalment !== null) {
+      const { pricing, detail } = await omPricing(tx, { ...bill, omYear: bill.omYear, omInstalment: bill.omInstalment });
+      const { amounts, data } = await billTotals(tx, bill, [], omPercentages(bill.project), bill.project, null, pricing);
+      if (strict && data.grossAmount.lte(0)) throw new BadRequestException('Nothing to bill: the pay of the staff short this period takes the whole instalment');
+      await writeBill(tx, id, [], amounts, data, null);
+      await tx.raBill.update({ where: { id }, data: { omDetail: detail as unknown as Prisma.InputJsonValue } });
+      return;
+    }
     // A lump-sum project with a billing break-up (item 129) bills its stages, and measures only its unit-rate items.
     const plan = await this.stageBilling.planFor(tx, bill);
     const lines = await measuredLines(tx, bill, plan);
@@ -340,20 +357,33 @@ export class RaBillsService {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.assertCanPrepare(user, dto.projectId);
-    const measuredUpTo = dto.measuredUpTo ?? dto.billDate;
-    this.checkDates(dto.billDate, measuredUpTo);
+    const om = dto.omYear !== undefined || dto.omInstalment !== undefined;
+    if (om && (dto.omYear === undefined || dto.omInstalment === undefined)) throw new BadRequestException('Give both the O&M year and the instalment the bill is for');
+    if (om && dto.isFinal) throw new BadRequestException('An O&M bill cannot be the final bill');
+    let measuredUpTo = dto.measuredUpTo ?? dto.billDate;
+    this.checkDates(dto.billDate, om ? dto.billDate : measuredUpTo);
     const otherDeduction = D(dto.otherDeduction ?? 0);
     if (otherDeduction.lt(0)) throw new BadRequestException('The other deduction cannot be negative');
     let id: string;
     try {
       id = await this.prisma.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`RA:${dto.projectId}`}))`;
-        const bills = await tx.raBill.findMany({ where: { projectId: dto.projectId }, select: { billNo: true, isFinal: true, status: true }, orderBy: { billNo: 'desc' } });
+        const bills = await tx.raBill.findMany({ where: { projectId: dto.projectId }, select: { billNo: true, isFinal: true, status: true, omYear: true, omInstalment: true }, orderBy: { billNo: 'desc' } });
         const open = bills.find((b) => b.status !== 'APPROVED');
-        if (open) throw new ConflictException(`${billLabel(open.billNo, open.isFinal)} is not approved yet. Finish or delete it before preparing the next bill.`);
-        if (bills.some((b) => b.isFinal)) throw new ConflictException('The final bill of this project has already been made');
+        if (open) throw new ConflictException(`${billLabel(open.billNo, open.isFinal, open.omYear !== null)} is not approved yet. Finish or delete it before preparing the next bill.`);
         const last = bills[0];
-        if (last) {
+        if (om) {
+          // An O&M bill follows the works' final bill; its period decides what it covers.
+          const contract = await loadOm(tx, dto.projectId);
+          if (!contract) throw new BadRequestException('This project has no O&M contract: set it up on its O&M tab first');
+          const period = contract.periods.find((p) => p.year === dto.omYear && p.instalment === dto.omInstalment) ?? null;
+          const billed = bills.filter((b) => b.omYear !== null).map((b) => ({ year: b.omYear!, instalment: b.omInstalment! }));
+          const problem = billProblem(period, dto.billDate, billed, contract.periods);
+          if (problem) throw new BadRequestException(problem);
+          measuredUpTo = period!.to;
+        } else if (bills.some((b) => b.isFinal)) {
+          throw new ConflictException('The final bill of this project has already been made');
+        } else if (last) {
           const lastDate = await tx.raBill.findFirstOrThrow({ where: { projectId: dto.projectId, billNo: last.billNo }, select: { measuredUpTo: true } });
           if (dateOnly(lastDate.measuredUpTo)! > measuredUpTo) throw new BadRequestException(`RA bill ${last.billNo} already took measurements up to ${dateOnly(lastDate.measuredUpTo)}`);
         }
@@ -364,6 +394,8 @@ export class RaBillsService {
             projectId: dto.projectId,
             billNo: (last?.billNo ?? 0) + 1,
             isFinal: !!dto.isFinal,
+            omYear: dto.omYear ?? null,
+            omInstalment: dto.omInstalment ?? null,
             billDate: parseDate(dto.billDate),
             measuredUpTo: parseDate(measuredUpTo),
             remarks: dto.remarks || null,
@@ -397,7 +429,8 @@ export class RaBillsService {
     const row = await this.lifecycle.load(user, 'BILL', id);
     await this.assertCanPrepare(user, row.projectId);
     await this.lifecycle.assertEditable(user, row);
-    const cur = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, select: { billDate: true, measuredUpTo: true, billNo: true, projectId: true } });
+    const cur = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, select: { billDate: true, measuredUpTo: true, billNo: true, projectId: true, omYear: true } });
+    if (cur.omYear !== null && (dto.measuredUpTo !== undefined || dto.isFinal)) throw new BadRequestException('An O&M bill covers its period: only its date, deductions and remarks can change');
     const billDate = dto.billDate ?? dateOnly(cur.billDate)!;
     const measuredUpTo = dto.measuredUpTo ?? dateOnly(cur.measuredUpTo)!;
     this.checkDates(billDate, measuredUpTo);
@@ -615,7 +648,7 @@ export class RaBillsService {
     await this.prisma.$transaction(async (tx) => {
       const plan = bill.stageLines.length ? await this.stageBilling.planFor(tx, bill, { certified: passed }) : null;
       if (plan) for (const l of plan.lines) await tx.raBillStageLine.update({ where: { billId_stageId: { billId: id, stageId: l.stageId } }, data: { certifiedPct: l.certifiedPct, amount: l.amount } });
-      const { amounts, data } = await billTotals(tx, bill, lines, bill, bill.project, plan);
+      const { amounts, data } = await billTotals(tx, bill, lines, bill, bill.project, plan, bill.omYear !== null ? storedOmPricing(bill) : null);
       for (const [i, l] of lines.entries()) await tx.raBillItem.update({ where: { id: bill.items[i].id }, data: { certifiedQty: l.certifiedQty, amount: amounts[i] } });
       await tx.raBill.update({
         where: { id },

@@ -365,7 +365,6 @@ export const canManageTemplates = (role: RoleKey) => TEMPLATE_ADMIN_ROLES.includ
 export const VARIATION_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
 export const canManageVariations = (role: RoleKey) => VARIATION_ROLES.includes(role);
 export const canViewVariations = (role: RoleKey) => BILLING_ROLES.includes(role);
-/** Record measurements (MB). */
 /**
  * EPC (item 130): engineering deliverables are kept by document control; equipment packages by procurement and the
  * project's managers. Everyone else on the project reads both, without the packages' values unless they see orders.
@@ -373,6 +372,17 @@ export const canViewVariations = (role: RoleKey) => BILLING_ROLES.includes(role)
 export const canManageDeliverables = (role: RoleKey) => DOCUMENT_CONTROL_ROLES.includes(role);
 export const canManagePackages = (role: RoleKey) => PURCHASE_ROLES.includes(role);
 export const canViewEpc = (role: RoleKey) => !isGuest(role);
+
+/**
+ * O&M (item 131): the contract's terms by the project's managers; the daily service levels by the site and the lab; staff
+ * deployed by HR and the managers; the O&M bills by whoever prepares RA bills. Everyone but guests reads.
+ */
+export const canViewOm = (role: RoleKey) => !isGuest(role);
+export const canManageOm = (role: RoleKey) => APPROVER_ROLES.includes(role);
+export const OM_LOG_ROLES: RoleKey[] = [...DPR_SUBMITTER_ROLES, 'QA_QC_ENGINEER', ...APPROVER_ROLES];
+export const canLogServiceLevels = (role: RoleKey) => OM_LOG_ROLES.includes(role);
+export const canRecordOmStaff = (role: RoleKey) => role === 'HR_MANAGER' || APPROVER_ROLES.includes(role);
+/** Record measurements (MB). */
 export const canMeasure = (role: RoleKey) => MEASUREMENT_ROLES.includes(role);
 
 /**

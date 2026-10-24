@@ -134,6 +134,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/epc-test.js
+      - name: O&M periods, service level penalties, staff short, the O&M bill and chemicals against their norms
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/om-test.js
       - name: PPE replace-by dates and what each worker lacks
         if: matrix.suite == 'flows'
         working-directory: apps/api

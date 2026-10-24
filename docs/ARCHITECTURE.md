@@ -1525,6 +1525,59 @@ another currency.
 - **Waits.** A phone view of packages, purchase orders in another currency with landed cost, deliverable revisions
   read from the document register, and the client approving deliverables in the portal.
 
+### Operation and maintenance (item 131)
+
+A water scheme is often let with years of running after it is built: the contractor operates the plant and network,
+is paid each O&M year a % of the contract value in instalments, and loses money for staff short of the minimum and
+for service levels missed. A project with a handover (`ProjectHandover.completedOn`, shown as `ProjectDetail.handedOverOn`)
+gets Handover › O&M (`canViewOm`: everyone but guests).
+
+- **Contract.** `OmContract` (one per project): `startOn` (a first of the month after completion), `years`, `yearPcts`
+  (one % per year), `instalmentsPerYear` (1, 2, 3, 4, 6 or 12, so each covers whole months), `extensionYears`,
+  `population`, `benchmarks` (JSON of `OmBenchmarkSetting`: limit, failures a month allows, penalty each beyond) with
+  `OmStaffNorm` (role, minimum, monthly pay) and `OmChemicalNorm` (item, quantity per ML treated). Set by `canManageOm`
+  (the approvers); `termsProblem` checks it. Once a period is billed, the start, instalments, years and the billed
+  years' % are fixed.
+- **Periods.** `omPeriods` splits each year into its instalments ("Year 2, quarter 3"), each worth contract value ×
+  the year's % ÷ instalments. A period is FUTURE, RUNNING, DUE (over, not billed) or BILLED.
+- **Service levels.** `ServiceLevelDay`, one per day (`canLogServiceLevels`: DPR submitters, QA/QC, approvers): water
+  produced and supplied (kl), residual chlorine and pressure at the tail end, complaints received and closed within
+  48 hours, pump efficiency, a note. `OM_BENCHMARKS`: supply per person (lpcd = supplied × 1000 ÷ population), chlorine
+  and pressure are judged each day (`dayFailures`; a reading not taken misses nothing); water not accounted for,
+  complaints closed and pump efficiency once a month on the month's own figure (`monthValue`), only once the month is
+  over. A day's reading is due from the day after (today is not over); days with none are listed, never penalised.
+- **Months.** `monthFigures` gives each benchmark's failures, those beyond the allowance and their penalty, and the
+  staff short (`OmStaffMonth`, recorded by `canRecordOmStaff`: HR or the approvers) at the role's monthly pay; a month
+  not recorded deducts nothing and says so.
+- **The O&M bill.** An `RaBill` with `omYear` and `omInstalment` (unique per project), so receipts, receivables,
+  posting, Tally, GST, the portal and the cash forecast take it unchanged. It shares the bill numbers ("O&M bill 6"),
+  is never final and needs no works' final bill; `billProblem` bills a period once, after it ends, in order. Priced
+  only in `om-bill.ts` (`omPricing`, as of the day after the period): gross = instalment − staff short; the penalties
+  are a deduction (`omPenalty`, "Service level penalties"); no retention, security deposit, labour cess or advance
+  recovery (`omPercentages`). `omDetail` keeps the figures behind it (staff lines, penalties, days missing, months with
+  no staff). A day or staff month in a billed period is locked. The receipt form fills the penalty as an other deduction.
+- **Chemicals.** Each norm × the ML produced in the month against what was issued less returned
+  (`ReconciliationService.forPeriod`), over or under beyond `OM_CHEMICAL_TOLERANCE_PCT` (10) (`chemicalRow`).
+- **Watch list.** OM_SERVICE for `canManageOm`: the running period losing money to penalties or staff short, three
+  days or more with no reading, or a day benchmark at this month's allowance (`omSlip` in `warning-rules.ts`); the key
+  carries the figures.
+- **API.** `GET /projects/:id/om?month=YYYY-MM` (the terms, every period with its bill or what it deducts so far, the
+  month's days with their failures and lock, the months of its period, the chemicals, the can flags), `PUT .../om/contract`,
+  `PUT .../om/days`, `DELETE .../om/days/:dayId`, `PUT .../om/staff`; each answers with the tab. An O&M bill is
+  `POST /ra-bills` with `omYear` and `omInstalment`.
+- **Web.** The tab (`components/om/OmPanel.tsx`): figures, then Service levels (month by month: benchmarks with
+  failures and penalty, the daily log, Record a day), Periods and bills (Prepare bill on the first period due), Staff,
+  Chemicals and Terms (the drawer with years, benchmarks, staff and chemicals). The bill's record and print show the
+  O&M section (`OmBillSection`) instead of the abstract.
+- **Tests.** The rules in `src/scripts/om-test.ts` (CI), OM_SERVICE in `warnings-test.ts`; `e2e/tests/om.spec.ts`.
+- **Demo** (`prisma/seed-om.ts`): WS-2025-05, a completed town water scheme of ₹21.6 crore in year 2 of five O&M
+  years (3% to 4% a year, quarterly, 38,500 people): a reading every day since O&M began but two, pressure short twice
+  in September and twice this month and chlorine once last December, staff recorded monthly (a pump operator short in
+  August), alum, lime and bleaching powder issued weekly (bleaching powder over the norm this month), and six O&M bills
+  priced by the same functions: five paid, the last quarter a draft. Its dates count back from this month.
+- **Waits.** Entering the day's readings on the phone, complaints as their own register with closing times, SCADA or
+  meter feeds, energy and power factor, the escalation of the O&M rate, and the client certifying O&M bills in the portal.
+
 ### Rate analysis and the estimate (v5 item 92)
 
 - **Tables.** `BoqResource` (per BOQ item: `kind` LABOUR with a trade and man-days per unit, or EQUIPMENT with an

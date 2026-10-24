@@ -40,6 +40,12 @@ interface Loaded {
  * should agree with, flags an approver may accept with a note, and one line on top that the model writes when Ask
  * Nirmaan is on (cached per set of open flags), else the rules do.
  */
+/** What an O&M bill's period claims: the instalment less the pay of staff short. */
+const omWorkValue = (detail: Prisma.JsonValue) => {
+  const d = detail as { instalment?: number; staffDeduction?: number } | null;
+  return d && typeof d.instalment === 'number' ? Math.max(Math.round((d.instalment - (d.staffDeduction ?? 0)) * 100) / 100, 0) : 0;
+};
+
 @Injectable()
 export class BillChecksService {
   constructor(
@@ -440,7 +446,7 @@ export class BillChecksService {
     ]);
     // A recovery window (item 129) recovers the advance by the contract executed, not a % of the bill.
     const windowed =
-      project.advanceRecoveryFromPct && project.advanceRecoveryToPct && project.contractValue
+      bill.omYear === null && project.advanceRecoveryFromPct && project.advanceRecoveryToPct && project.contractValue
         ? windowRecovery({
             advance: project.mobilisationAdvance,
             contractValue: project.contractValue,
@@ -471,7 +477,8 @@ export class BillChecksService {
         earlierBilled: prev.get(i.boqItemId) ?? 0,
         measuredToDate: n(measured.find((m) => m.boqItemId === i.boqItemId)?._sum.totalQty),
       })),
-      stageAmount: n(stages._sum.amount),
+      // An O&M bill (item 131) bills its instalment less the staff short, from no item.
+      stageAmount: n(stages._sum.amount) + omWorkValue(bill.omDetail),
       grossAmount: n(bill.grossAmount),
       pvAmount: n(bill.pvAmount),
       gstRate: n(bill.gstRate),
@@ -486,6 +493,7 @@ export class BillChecksService {
       ],
       otherDeduction: n(bill.otherDeduction),
       slippageWithheld: n(bill.slippageWithheld),
+      omPenalty: n(bill.omPenalty),
       totalDeductions: n(bill.totalDeductions),
       netPayable: n(bill.netPayable),
     });
