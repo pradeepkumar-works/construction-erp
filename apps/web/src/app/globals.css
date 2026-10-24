@@ -338,7 +338,10 @@ a {
   }
 }
 
-/* Headings and the wordmark use the condensed display face (antd has no heading font token). */
+/*
+ * Headings and the wordmark use the condensed display face (antd has no heading font token): ExtraBold for the page and
+ * section titles, Bold for the smaller ones, tracked slightly tight (brand guide, type).
+ */
 h1.ant-typography,
 h2.ant-typography,
 h3.ant-typography,
@@ -346,6 +349,45 @@ h4.ant-typography,
 .wordmark {
   font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
   font-stretch: 88%;
+}
+
+:root :is(h1, h2).ant-typography {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+:root :is(h3, h4).ant-typography {
+  font-weight: 700;
+}
+
+/* A page's title (PageHeader): the top of the type scale on a wider screen, a step down on a phone. */
+:root h1.ant-typography.page-title {
+  font-size: var(--ant-font-size-heading-1);
+  line-height: 1.1;
+}
+
+@media (max-width: 768px) {
+  :root h1.ant-typography.page-title {
+    font-size: var(--ant-font-size-heading-2);
+  }
+}
+
+/* Field labels are semibold, so a long form scans by its labels (brand guide: Semibold for emphasis). Sign-in sets its own. */
+.ant-form-item-label > label {
+  font-weight: 600;
+}
+
+/* Today in a date picker is underlined with the datum line rather than boxed (white on the chosen day). */
+:root .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+  inset: auto 25% 3px;
+  height: 2px;
+  border: 0;
+  border-radius: 1px;
+  background: var(--ant-color-primary);
+}
+
+:root .ant-picker-cell-in-view.ant-picker-cell-today.ant-picker-cell-selected .ant-picker-cell-inner::before {
+  background: var(--ant-color-text-light-solid);
 }
 
 .wordmark {

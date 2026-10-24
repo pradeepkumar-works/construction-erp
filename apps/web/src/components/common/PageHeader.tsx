@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Breadcrumb, Space, Typography, theme } from 'antd';
+import { Breadcrumb, Space, Typography } from 'antd';
 import Link from 'next/link';
 import { textOf, usePageTitle } from '@/lib/page-title';
 import { usePageTrailTail } from '@/components/shell/page-trail';
@@ -12,8 +12,8 @@ export interface Crumb {
 }
 
 /**
- * A page's heading: its one `<h1>` (sized as before), the browser tab's title, the page's actions, and its breadcrumb where
- * the header does not already show one (UX item 81).
+ * A page's heading: its one `<h1>` (the brand's display face at the top of the type scale, `.page-title` in globals.css),
+ * the browser tab's title, the page's actions, and its breadcrumb where the header does not already show one (UX item 81).
  */
 export function PageHeader({
   title,
@@ -29,7 +29,6 @@ export function PageHeader({
   extra?: React.ReactNode;
   crumbs?: Crumb[];
 }) {
-  const { token } = theme.useToken();
   usePageTitle(docTitle ?? textOf(title));
   const last = crumbs?.[crumbs.length - 1];
   const inHeader = usePageTrailTail(last ? textOf(last.title) : null, !!crumbs?.length);
@@ -43,7 +42,7 @@ export function PageHeader({
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
-          <Typography.Title level={1} id="page-title" tabIndex={-1} style={{ margin: 0, fontSize: token.fontSizeHeading2, lineHeight: token.lineHeightHeading2 }}>
+          <Typography.Title level={1} id="page-title" className="page-title" tabIndex={-1} style={{ margin: 0 }}>
             {title}
           </Typography.Title>
           {subtitle && (

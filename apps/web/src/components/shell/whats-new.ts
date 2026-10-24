@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-01-brand-look',
+    date: '2027-01-21',
+    title: 'Nirmaan’s own look',
+    points: [
+      'Page titles, drawer titles and the big figures on every page are set in Nirmaan’s condensed heading type, so totals and counts stand out.',
+      'Tables have a quieter header and a pale blue row under the pointer; a field you are typing in has a soft blue ring, and today is underlined in the date picker.',
+      'Notices are softer, with no outline, and tooltips and the dimmed page behind a drawer are Nirmaan navy.',
+    ],
+  },
+  {
     id: '2027-01-tabs',
     date: '2027-01-20',
     title: 'Clearer tabs on every page',

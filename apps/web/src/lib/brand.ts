@@ -37,6 +37,17 @@ export const BRAND = {
     danger: '#CF1322',
     canvas: '#F3F6FA',
     border: '#DCE3ED',
+    /** Field, button and tick box outlines: the brand border a step darker, so a control's edge still shows on white. */
+    borderStrong: '#C5CFDC',
+    /** Hairlines between table rows, inside cards and under drawer headers. */
+    hairline: '#E6EBF2',
+    /** Notice fills behind dark text (Alert): the pending orange, the danger red. Info uses `accentSoft`, success `successBg`. */
+    pendingBg: '#FDF0E6',
+    dangerBg: '#FDECEC',
+    /** The dimmed page behind a drawer or dialog: blueprint navy rather than black. */
+    scrim: 'rgba(11, 31, 58, 0.45)',
+    /** Floating layers (menus, pickers, popovers): a navy-tinted shadow, so depth always means "on top". */
+    shadowFloat: '0 8px 24px -6px rgba(11, 31, 58, 0.18), 0 2px 6px -2px rgba(11, 31, 58, 0.10)',
     /** Secondary text on white (subtitles), and quieter captions and footers. */
     muted: '#5B6779',
     /** The quietest text on white that still meets WCAG AA (4.5:1): captions, footers. */
@@ -48,6 +59,8 @@ export const BRAND = {
     inkCaption: 'rgba(255, 255, 255, 0.6)',
     /** A pale blue fill behind a selected chip. */
     accentSoft: '#EEF4FD',
+    /** A chosen table row or option: a step deeper than `accentSoft`, so it still shows under the pointer's hover. */
+    accentChosen: '#E2ECFB',
     /** Series colours in charts, beside the primary blue (cost heads: expenses, machinery, labour, subcontract). */
     chartViolet: '#7C3AED',
     chartAmber: '#D97706',
@@ -109,6 +122,27 @@ export const BRAND = {
     nightTextPlaceholder: 'rgba(227, 234, 244, 0.58)',
     /** Dark mode danger buttons: a red that reads on the night surfaces as text, with night-ink text when it is the fill. */
     nightDanger: '#F26D6F',
+    /** Dark mode notice icons and their fills (the icon colour at 12% on the night surface). */
+    nightPending: '#F6AD55',
+    nightSuccess: '#5FD08A',
+    nightInfoBg: 'rgba(110, 168, 255, 0.12)',
+    nightPendingBg: 'rgba(246, 173, 85, 0.12)',
+    nightSuccessBg: 'rgba(95, 208, 138, 0.12)',
+    nightDangerBg: 'rgba(242, 109, 111, 0.12)',
+    /** Dark mode table header, chosen and hovered rows, and the soft blue behind a chosen option. */
+    nightAccentSoft: 'rgba(110, 168, 255, 0.10)',
+    nightAccentChosen: 'rgba(110, 168, 255, 0.16)',
+    /** Dark mode focus ring and the scrim behind a drawer or dialog. */
+    nightRing: 'rgba(110, 168, 255, 0.30)',
+    nightScrim: 'rgba(2, 6, 12, 0.66)',
+    nightShadowFloat: '0 10px 28px -6px rgba(0, 0, 0, 0.55), 0 2px 8px -2px rgba(0, 0, 0, 0.4)',
+    /** The focus ring around a field in the light theme: Nirmaan blue at 18%. */
+    ring: 'rgba(30, 99, 214, 0.18)',
+    /** Skeleton shimmer, from and to: navy (or night text) at 6% and 12%. */
+    skeletonFrom: 'rgba(11, 31, 58, 0.06)',
+    skeletonTo: 'rgba(11, 31, 58, 0.12)',
+    nightSkeletonFrom: 'rgba(227, 234, 244, 0.06)',
+    nightSkeletonTo: 'rgba(227, 234, 244, 0.12)',
   },
 } as const;
 
