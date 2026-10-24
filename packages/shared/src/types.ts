@@ -1853,6 +1853,12 @@ export interface PurchaseOrderDto extends SubmissionBase {
   supplierAcceptedAt: string | null;
   supplierAcceptedBy: string | null;
   supplierNote: string | null;
+  /** Why the order goes to this vendor when a complete quotation on its request was lower */
+  selectionReason: string | null;
+  /** The order emailed to the vendor on approval or again by hand: when it last went, the address, why the last try failed */
+  supplierEmailedAt: string | null;
+  supplierEmailTo: string | null;
+  supplierEmailError: string | null;
   /** Approved, not closed, and something still to receive */
   open: boolean;
   /** Share of the order value received, 0 to 100 */

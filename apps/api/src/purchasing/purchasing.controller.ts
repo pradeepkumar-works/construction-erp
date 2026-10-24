@@ -123,6 +123,12 @@ export class PurchasingController {
     return this.orders.submit(user, id);
   }
 
+  @ApiOperation({ summary: 'Email an approved purchase order to the vendor again', description: 'It is emailed on approval; this sends it again, to the email in the vendor master now. 400 says why it could not be sent.' })
+  @Post('purchase-orders/:id/email')
+  emailOrder(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.orders.resendToSupplier(user, id);
+  }
+
   @ApiOperation({ summary: 'Close an approved purchase order short', description: 'No more GRNs against it; the balance is free to order again. Received material can still be billed.' })
   @Post('purchase-orders/:id/close')
   closeOrder(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ClosePurchaseOrderDto) {

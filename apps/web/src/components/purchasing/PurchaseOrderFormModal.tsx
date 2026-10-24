@@ -8,7 +8,7 @@ import type { AttachmentDto, MakeWarningDto, PurchaseOrderDto } from '@erp/share
 import { GST_RATES, MSME_CATEGORY_LABELS, lastRateKey } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useLastRates, useMakeCheck, useProjects, useRateCheck } from '@/lib/queries';
+import { useComparative, useLastRates, useMakeCheck, useProjects, useRateCheck } from '@/lib/queries';
 import { useDebounced } from '@/lib/debounce';
 import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
@@ -55,9 +55,13 @@ interface FormValues {
   paymentDays?: number | null;
   freight?: number | null;
   remarks?: string;
+  selectionReason?: string;
   lines: PoLineValue[];
   docs?: AttachmentDto[];
 }
+
+/** As the API asks (`SELECTION_REASON_MIN` in po-supplier-rules): a sentence, not a word. */
+const REASON_MIN = 10;
 
 const lineAmount = (l: PoLineValue | undefined) => Math.round(toNumber(l?.quantity) * toNumber(l?.rate) * 100) / 100;
 const lineGst = (l: PoLineValue | undefined) => Math.round(lineAmount(l) * toNumber(l?.gstRate)) / 100;
@@ -97,6 +101,12 @@ export function PurchaseOrderFormModal({
   const vendor = useVendor(open ? vendorId : undefined);
   const msme = vendor?.msmeCategory === 'MICRO' || vendor?.msmeCategory === 'SMALL';
   const fromRequest = order ? order.requestNo : start?.requestNo;
+  // An order not from the lowest quotation that prices every line says why before it goes for approval.
+  const requestId = order ? (order.materialRequestId ?? undefined) : start?.materialRequestId;
+  const comparative = useComparative(requestId, open && !!requestId);
+  const lowest = comparative.data?.quotations.find((q) => q.id === comparative.data?.lowestQuotationId);
+  const chosenQuotationId = order ? (vendorId === order.vendorId ? order.quotationId : null) : vendorId === start?.vendorId ? (start?.quotationId ?? null) : null;
+  const needsReason = !!lowest && chosenQuotationId !== lowest.id;
 
   useEffect(() => {
     if (!open) return;
@@ -112,6 +122,7 @@ export function PurchaseOrderFormModal({
         paymentDays: order.paymentDays,
         freight: toNumber(order.freight),
         remarks: order.remarks ?? undefined,
+        selectionReason: order.selectionReason ?? undefined,
         docs: order.attachments,
         lines: order.lines.map((l) => ({
           materialRequestItemId: l.materialRequestItemId,
@@ -153,6 +164,7 @@ export function PurchaseOrderFormModal({
         paymentDays: v.paymentDays ?? null,
         freight: String(v.freight ?? 0),
         remarks: v.remarks?.trim() || null,
+        selectionReason: needsReason ? v.selectionReason?.trim() || null : null,
         attachmentIds: (v.docs ?? []).map((d) => d.id),
         submit,
         lines: v.lines.map((l) =>
@@ -234,6 +246,26 @@ export function PurchaseOrderFormModal({
             </Form.Item>
           </FormGrid>
         </FormSection>
+
+        {needsReason && lowest ? (
+          <FormSection title="Why this vendor">
+            <Form.Item
+              name="selectionReason"
+              label={
+                <span>
+                  <span translate="no">{lowest.vendorName}</span> quoted lowest (<span translate="no">{formatINR(lowest.total, true)}</span>). Why does this order go to another vendor?
+                </span>
+              }
+              extra="The approver sees this on the order."
+              rules={[
+                { required: true, whitespace: true, message: 'Say why the lowest quotation is not taken' },
+                { min: REASON_MIN, message: 'Say it in a sentence: delivery, quality, credit or stock' },
+              ]}
+            >
+              <Input.TextArea rows={2} maxLength={500} placeholder="The lowest vendor cannot deliver before the 30th; the slab is cast on the 26th." />
+            </Form.Item>
+          </FormSection>
+        ) : null}
 
         <FormSection title="Items">
           {makeWarnings.length ? (

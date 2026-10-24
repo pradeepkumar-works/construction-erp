@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Divider, Form, Input, Progress, Table, Tag, Typography } from 'antd';
-import { ImportOutlined } from '@ant-design/icons';
+import { ImportOutlined, MailOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
@@ -80,6 +80,12 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
     onSuccess: (o) => done(`${o.poNo} closed`),
     meta: FAIL_NOTICE,
   });
+  const emailAgain = useMutation({
+    mutationFn: async () => (await api.post<PurchaseOrderDto>(`/purchase-orders/${id}/email`)).data,
+    onSuccess: (o) => done(`${o.poNo} emailed to ${o.supplierEmailTo}`),
+    onError: () => qc.invalidateQueries({ queryKey: ['purchase-orders'] }),
+    meta: FAIL_NOTICE,
+  });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/purchase-orders/${id}`)).data,
     onSuccess: () => {
@@ -118,7 +124,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
           },
           notices: (
             <>
-              {data.status === 'DRAFT' && <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Draft: check the items and rates, then submit it for approval. Print it for the vendor once it is approved." />}
+              {data.status === 'DRAFT' && <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Draft: check the items and rates, then submit it for approval. Once approved, it is emailed to the vendor." />}
               {data.closedAt && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`Closed on ${formatDateTime(data.closedAt)}`} description={data.closeNote ?? undefined} />}
             </>
           ),
@@ -159,6 +165,22 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
             { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? '-' },
             { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : '-') },
             ...(approved ? [{ key: 'recv', label: 'Received', children: <Progress percent={data.receivedPct} size="small" style={{ maxWidth: 240, margin: 0 }} format={() => formatPct(data.receivedPct)} aria-label={`${formatPct(data.receivedPct)} received`} /> }] : []),
+            ...(data.selectionReason ? [{ key: 'why', label: 'Why this vendor', span: 2, children: data.selectionReason }] : []),
+            ...(approved && (data.supplierEmailedAt || data.supplierEmailError)
+              ? [
+                  {
+                    key: 'emailed',
+                    label: 'Sent to vendor',
+                    children: data.supplierEmailError ? (
+                      <Typography.Text type="warning">Not emailed: {data.supplierEmailError}</Typography.Text>
+                    ) : (
+                      <span>
+                        Emailed to <span translate="no">{data.supplierEmailTo}</span> on {formatDateTime(data.supplierEmailedAt!)}
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
             ...(data.supplierAcceptedAt
               ? [{ key: 'accepted', label: 'Supplier accepted', children: `${formatDateTime(data.supplierAcceptedAt)}${data.supplierAcceptedBy ? ` by ${data.supplierAcceptedBy}` : ''}${data.supplierNote ? `: ${data.supplierNote}` : ''}` }]
               : []),
@@ -373,6 +395,11 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               {approved && user && canRecordVendorBill(user.roleKey) ? (
                 <Button size={size} onClick={() => setBilling(true)}>
                   Record vendor bill
+                </Button>
+              ) : null}
+              {approved && !data.closedAt && buyer ? (
+                <Button size={size} icon={<MailOutlined />} loading={emailAgain.isPending} onClick={() => emailAgain.mutate()}>
+                  {data.supplierEmailedAt ? 'Email vendor again' : 'Email to vendor'}
                 </Button>
               ) : null}
               {data.open && buyer ? (

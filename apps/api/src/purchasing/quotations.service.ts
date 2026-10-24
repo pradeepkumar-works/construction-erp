@@ -229,8 +229,17 @@ export class QuotationsService {
         lowestQuotationId: best?.id ?? null,
       };
     });
-    const complete = quotations.filter((q) => q.missingLines === 0);
-    const lowest = complete.reduce<QuotationDto | null>((b, q) => (!b || D(q.total).lt(b.total) ? q : b), null);
-    return { materialRequestId: mr.id, requestNo: mr.requestNo, projectId: mr.projectId, projectName: mr.project.name, quotations, lines, lowestQuotationId: lowest?.id ?? null };
+    return { materialRequestId: mr.id, requestNo: mr.requestNo, projectId: mr.projectId, projectName: mr.project.name, quotations, lines, lowestQuotationId: lowestOf(quotations)?.id ?? null };
   }
+
+  /** The lowest quotation on a request that prices every line (as the comparative statement marks it), for an order's reason check. */
+  async lowestFor(organizationId: string, materialRequestId: string): Promise<QuotationDto | null> {
+    const rows = await this.prisma.quotation.findMany({ where: { organizationId, materialRequestId }, include, orderBy: [{ quoteDate: 'asc' }, { createdAt: 'asc' }] });
+    return lowestOf(rows.map((r) => this.toDto(r)));
+  }
+}
+
+/** The cheapest quotation that prices every line, by total with GST and freight; the earlier one on a tie. */
+function lowestOf(quotations: QuotationDto[]): QuotationDto | null {
+  return quotations.filter((q) => q.missingLines === 0).reduce<QuotationDto | null>((b, q) => (!b || D(q.total).lt(b.total) ? q : b), null);
 }

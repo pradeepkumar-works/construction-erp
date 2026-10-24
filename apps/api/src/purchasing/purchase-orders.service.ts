@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   SUBMISSION_STATUS_LABELS,
@@ -34,6 +34,10 @@ import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/pa
 import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, LastRatesQuery, ListPurchaseOrdersQuery, RateCheckQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
 import { todayIn } from '../notifications/time';
 import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
+import { QuotationsService } from './quotations.service';
+import { poEmail, selectionProblem } from './po-supplier-rules';
+import { EmailService } from '../notifications/email.service';
+import { configuredWebUrl } from '../common/web-url';
 
 type Tx = Prisma.TransactionClient;
 
@@ -96,14 +100,22 @@ interface LineData {
  */
 @Injectable()
 export class PurchaseOrdersService {
+  private readonly log = new Logger(PurchaseOrdersService.name);
+
   constructor(
     private prisma: PrismaService,
     private access: ProjectAccessService,
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
+    private quotations: QuotationsService,
+    private email: EmailService,
   ) {
-    lifecycle.onApproved('PURCHASE_ORDER', (user, id) => this.updateItemRates(user, id));
+    lifecycle.onApproved('PURCHASE_ORDER', async (user, id) => {
+      await this.updateItemRates(user, id);
+      // The order is approved by now; a failed email is kept on the order and sent again from there.
+      await this.mailOrder(user, id).catch((e) => this.log.warn(`Emailing purchase order ${id} failed: ${(e as Error).message}`));
+    });
   }
 
   toDto(r: Row): PurchaseOrderDto {
@@ -151,6 +163,10 @@ export class PurchaseOrdersService {
       supplierAcceptedAt: iso(r.supplierAcceptedAt),
       supplierAcceptedBy: r.supplierAcceptedBy?.fullName ?? null,
       supplierNote: r.supplierNote,
+      selectionReason: r.selectionReason,
+      supplierEmailedAt: iso(r.supplierEmailedAt),
+      supplierEmailTo: r.supplierEmailTo,
+      supplierEmailError: r.supplierEmailError,
       closedAt: iso(r.closedAt),
       closeNote: r.closeNote,
       open: r.status === 'APPROVED' && !r.closedAt && pending,
@@ -582,6 +598,7 @@ export class PurchaseOrdersService {
             freight,
             ...totals(lines, freight),
             remarks: dto.remarks || null,
+            selectionReason: dto.selectionReason?.trim() || null,
             submittedById: user.id,
             status: 'DRAFT',
             lines: { create: lines },
@@ -600,7 +617,7 @@ export class PurchaseOrdersService {
     if (!id) return this.get(user, dto.id!);
     await this.attachments.link(user, 'purchaseOrderId', id, dto.attachmentIds);
     await this.audit.log(user, 'PURCHASE_ORDER', id, 'CREATED');
-    if (dto.submit) await this.lifecycle.submit(user, 'PURCHASE_ORDER', id);
+    if (dto.submit) await this.submitOrder(user, id);
     return this.get(user, id);
   }
 
@@ -619,6 +636,7 @@ export class PurchaseOrdersService {
     if (dto.paymentTerms !== undefined) data.paymentTerms = dto.paymentTerms || null;
     data.paymentDays = this.paymentDays(dto.paymentDays !== undefined ? dto.paymentDays : current.paymentDays, vendor);
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
+    if (dto.selectionReason !== undefined) data.selectionReason = dto.selectionReason?.trim() || null;
     const freight = dto.freight !== undefined ? parseFreight(dto.freight) : current.freight;
     data.freight = freight;
     await this.prisma.$transaction(async (tx) => {
@@ -632,12 +650,89 @@ export class PurchaseOrdersService {
     });
     await this.attachments.sync(user, 'purchaseOrderId', id, dto.attachmentIds);
     await this.audit.log(user, 'PURCHASE_ORDER', id, 'UPDATED');
-    if (dto.submit) await this.lifecycle.submit(user, 'PURCHASE_ORDER', id);
+    if (dto.submit) await this.submitOrder(user, id);
     return this.get(user, id);
   }
 
   async submit(user: RequestUser, id: string) {
+    await this.submitOrder(user, id);
+    return this.get(user, id);
+  }
+
+  /** Every way an order goes for approval: one not from the lowest complete quotation on its request says why first. */
+  private async submitOrder(user: RequestUser, id: string) {
+    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, vendor: { select: { name: true } } } });
+    if (po.materialRequestId) {
+      const lowest = await this.quotations.lowestFor(user.organizationId, po.materialRequestId);
+      const problem = selectionProblem(lowest && { id: lowest.id, vendorName: lowest.vendorName, total: lowest.total }, { quotationId: po.quotationId, vendorName: po.vendor.name }, po.selectionReason);
+      if (problem) throw new BadRequestException(problem);
+    }
     await this.lifecycle.submit(user, 'PURCHASE_ORDER', id);
+  }
+
+  /**
+   * Email the approved order to the vendor (on approval, and again from the order by a buyer): the order itself in the
+   * email, with the portal's orders page when the vendor has a login there. What happened is kept on the order; a
+   * vendor with no email, or email not set up, is recorded rather than refused, since approval has already happened.
+   */
+  private async mailOrder(user: RequestUser, id: string): Promise<string | null> {
+    const po = await this.prisma.purchaseOrder.findFirstOrThrow({
+      where: { id, organizationId: user.organizationId },
+      include: {
+        organization: { select: { name: true } },
+        project: { select: { name: true } },
+        vendor: { select: { id: true, name: true, email: true, contactPerson: true, portalLogins: { where: { isActive: true }, select: { id: true }, take: 1 } } },
+        materialRequest: { select: { requestNo: true } },
+        submittedBy: { select: { fullName: true, email: true, phone: true } },
+        lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+      },
+    });
+    const to = po.vendor.email?.trim() || null;
+    const base = configuredWebUrl();
+    let error: string | null = null;
+    if (po.status !== 'APPROVED') error = 'Only an approved order is emailed';
+    else if (!to) error = `${po.vendor.name} has no email in the vendor master`;
+    else if (!this.email.enabled || this.email.provider === 'log') error = 'Email is not set up';
+    else {
+      const mail = poEmail({
+        orgName: po.organization.name,
+        poNo: po.poNo,
+        poDate: dateOnly(po.poDate)!,
+        vendorName: po.vendor.name,
+        contactPerson: po.vendor.contactPerson,
+        projectName: po.project.name,
+        requestNo: po.materialRequest?.requestNo ?? null,
+        deliveryBy: dateOnly(po.deliveryBy),
+        deliveryAddress: po.deliveryAddress,
+        paymentTerms: po.paymentTerms,
+        paymentDays: po.paymentDays,
+        remarks: po.remarks,
+        subtotal: money(po.subtotal)!,
+        gstAmount: money(po.gstAmount)!,
+        freight: money(po.freight)!,
+        total: money(po.total)!,
+        lines: po.lines.map((l) => ({ itemName: l.itemName, specification: l.specification, make: l.make, unit: l.unit, quantity: dec(l.quantity)!, rate: money(l.rate)!, gstRate: l.gstRate.toString(), amount: money(l.amount)! })),
+        buyer: { name: po.submittedBy.fullName, email: po.submittedBy.email, phone: po.submittedBy.phone },
+        portalUrl: base && po.vendor.portalLogins.length ? `${base}/supplier/orders` : null,
+      });
+      const sent = await this.email.deliver({ to: to!, ...mail });
+      if (!sent.ok) error = sent.error ?? 'Not sent';
+    }
+    await this.prisma.purchaseOrder.update({
+      where: { id },
+      data: error ? { supplierEmailError: error, supplierEmailTo: to } : { supplierEmailedAt: new Date(), supplierEmailTo: to, supplierEmailError: null },
+    });
+    if (!error) await this.audit.log(user, 'PURCHASE_ORDER', id, 'EMAILED', `To ${to}`);
+    return error;
+  }
+
+  /** A buyer sends the approved order to the vendor again (after fixing their email in the vendor master, say). */
+  async resendToSupplier(user: RequestUser, id: string) {
+    const row = await this.lifecycle.load(user, 'PURCHASE_ORDER', id);
+    await this.assertCanPurchase(user, row.projectId);
+    if (row.status !== 'APPROVED') throw new BadRequestException('Only an approved order is emailed to the vendor');
+    const error = await this.mailOrder(user, id);
+    if (error) throw new BadRequestException(`The order was not emailed: ${error}`);
     return this.get(user, id);
   }
 
