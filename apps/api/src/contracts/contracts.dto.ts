@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { LD_PERIODS, type LdPeriod } from '@erp/shared';
+import { CURRENCY_CODES, LD_PERIODS, type LdPeriod } from '@erp/shared';
 import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 
 const blankNull = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
@@ -44,6 +44,16 @@ export class UpdateContractDto {
   ldRatePct?: string;
   @ApiPropertyOptional({ enum: LD_PERIODS, example: 'WEEK' }) @IsOptional() @IsIn(LD_PERIODS) ldPeriod?: LdPeriod;
   @ApiPropertyOptional({ example: '10', description: 'Liquidated damages cap, % of the contract value (0 to 100)' }) @IsOptional() @num() @IsNumberString() ldCapPct?: string;
+  @ApiPropertyOptional({ enum: CURRENCY_CODES, example: 'USD', description: "The contract's currency (item 130); amounts stay in rupees at the contract rate" })
+  @IsOptional()
+  @IsIn(CURRENCY_CODES)
+  currency?: string;
+  @ApiPropertyOptional({ example: '83.25', description: 'Rupees to one unit of the contract currency, the rate its figures are kept at; empty in rupees' })
+  @IsOptional()
+  @num()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  exchangeRate?: string | null;
 }
 
 export class PvComponentDto {

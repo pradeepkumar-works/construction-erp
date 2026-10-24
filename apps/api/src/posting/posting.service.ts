@@ -19,6 +19,7 @@ import {
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { dateOnly } from '../common/serialize';
+import { bankCredit } from '../epc/epc-rules';
 import { Lines, balanced, credits, debits, gstLines, isInterState, moneyLedger, type LedgerName, type Voucher } from '../tally/vouchers';
 
 type Tx = Prisma.TransactionClient | PrismaService;
@@ -53,7 +54,7 @@ export interface PostingOptions {
   range?: { upTo: Date; from: Date | null };
 }
 
-const projectSelect = { id: true, code: true, name: true, clientId: true, clientName: true, client: { select: { name: true } } } satisfies Prisma.ProjectSelect;
+const projectSelect = { id: true, code: true, name: true, clientId: true, clientName: true, exchangeRate: true, client: { select: { name: true } } } satisfies Prisma.ProjectSelect;
 type ProjectRow = Prisma.ProjectGetPayload<{ select: typeof projectSelect }>;
 /** The client ledger of a project: its client in the master, else the client name typed on the project. */
 const clientOf = (p: ProjectRow) => (p.clientId ? { key: tallyClientKey(p.clientId), name: p.client!.name } : { key: `CLIENT_NAME:${p.clientName ?? p.name}`, name: p.clientName ?? p.name });
@@ -168,6 +169,8 @@ export class PostingService {
     }
 
     // Receipts: Dr bank or cash, Dr what the client deducted; Cr the client (or retention / deposit held, for releases).
+    // A client in another currency (item 130) is credited at the contract rate; the bank takes what it credited at the
+    // day's rate, and the difference is an exchange gain (Cr) or loss (Dr).
     for (const r of receipts) {
       const client = clientOf(r.project);
       const number = `RCPT/${shortId(r.id)}`;
@@ -177,8 +180,11 @@ export class PostingService {
         continue;
       }
       const settled = [r.amount, r.tdsAmount, r.gstTdsAmount, r.retentionAmount, r.securityDepositAmount, r.advanceRecoveryAmount, r.labourCessAmount, r.otherDeduction].reduce((s, v) => s.add(v), D(0));
+      const bank = bankCredit(r.amount, r.project.exchangeRate, r.exchangeRate);
+      const exchange = bank.sub(r.amount);
       const l = new Lines(name)
-        .dr(moneyLedger(r.mode), r.amount)
+        .dr(moneyLedger(r.mode), bank)
+        .dr('EXCHANGE_DIFFERENCE', exchange.lt(0) ? exchange.neg() : D(0), cc)
         .dr('TDS_RECEIVABLE', r.tdsAmount)
         .dr('GST_TDS_RECEIVABLE', r.gstTdsAmount)
         .dr('RETENTION_RECEIVABLE', r.retentionAmount)
@@ -189,6 +195,7 @@ export class PostingService {
       const releaseKey = DEFAULT_RECEIPT_LEDGER[r.kind];
       if (releaseKey) l.cr(releaseKey, settled);
       else l.cr(client.key, settled, { fallback: client.name, party: true });
+      if (exchange.gt(0)) l.cr('EXCHANGE_DIFFERENCE', exchange, cc);
       add({
         kind: 'RECEIPT',
         sourceId: r.id,

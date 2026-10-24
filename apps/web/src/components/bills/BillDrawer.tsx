@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { RaBillDto, RaBillItemDto, RaBillStageLineDto, ReceiptDto } from '@erp/shared';
-import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit } from '@erp/shared';
+import type { ContractCurrency, RaBillDto, RaBillItemDto, RaBillStageLineDto, ReceiptDto } from '@erp/shared';
+import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useBill } from '@/lib/queries';
-import { formatDate, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatMoney, formatPct, formatQty, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -37,13 +37,13 @@ type StageAction = 'send' | 'certify';
 type CertifyValues = { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null>; stagePct?: Record<string, number | null> };
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
 
-const money = (v: string) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
+const money = (v: string, c: ContractCurrency) => <span className="mono" translate="no">{formatMoney(v, c, true)}</span>;
 
-function Row({ label, value, strong, muted }: { label: React.ReactNode; value: string; strong?: boolean; muted?: boolean }) {
+function Row({ label, value, strong, muted, c }: { label: React.ReactNode; value: string; strong?: boolean; muted?: boolean; c: ContractCurrency }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '3px 0', fontWeight: strong ? 600 : undefined, color: muted ? themeColor('colorTextDescription') : undefined }}>
       <span>{label}</span>
-      {money(value)}
+      {money(value, c)}
     </div>
   );
 }
@@ -76,7 +76,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const stage = useMutation({
     mutationFn: async ({ act, body }: { act: StageAction; body: object }) => (await api.post<RaBillDto>(`/ra-bills/${id}/${act}`, body)).data,
     onSuccess: (b, { act }) => {
-      done(act === 'send' ? `${b.billLabel} recorded as sent` : `${b.billLabel} certified for ${formatINR(b.netPayable, true)} net`);
+      done(act === 'send' ? `${b.billLabel} recorded as sent` : `${b.billLabel} certified for ${formatMoney(b.netPayable, b, true)} net`);
     },
     meta: FAIL_NOTICE,
   });
@@ -176,7 +176,8 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
             </>
           ),
           facts: [
-            { key: 'net', label: 'Net payable', children: <strong>{money(data.netPayable)}</strong> },
+            { key: 'net', label: 'Net payable', children: <strong>{money(data.netPayable, data)}</strong> },
+            ...(isForeign(data) ? [{ key: 'fx', label: 'Contract rate', children: <span className="mono" translate="no">{`₹ ${data.exchangeRate} to 1 ${data.currency}; ${formatINR(data.netPayable, true)} net`}</span> }] : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}?tab=bills`}>{data.projectName}</Link>, span: 2 },
             { key: 'billDate', label: 'Bill date', children: formatDate(data.billDate) },
             {
@@ -202,7 +203,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           lifecycle: submissionLifecycle(data, [
             { title: 'Sent', done: stageAt >= 1, content: data.sentDate ? formatDate(data.sentDate) : undefined },
             { title: 'Certified', done: stageAt >= 2, content: data.certifiedDate ? `${formatDate(data.certifiedDate)}${data.certificateNo ? `, ${data.certificateNo}` : ''}` : undefined },
-            { title: 'Paid', done: stageAt >= 3, content: data.paidDate ? formatDate(data.paidDate) : approved && stageAt >= 1 ? `${formatINR(data.outstanding, true)} outstanding` : undefined },
+            { title: 'Paid', done: stageAt >= 3, content: data.paidDate ? formatDate(data.paidDate) : approved && stageAt >= 1 ? `${formatMoney(data.outstanding, data, true)} outstanding` : undefined },
           ]),
           sections: [
             checksSection('ra-bill', data.id, dataUpdatedAt),
@@ -210,7 +211,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               ? [{ key: 'stages', title: 'Payment stages', count: data.stageLines.filter((l) => toNumber(l.thisPct) > 0).length, children: <BillStages bill={data} editable={editable} /> }]
               : []),
             ...(data.slippageLines.length || toNumber(data.slippageWithheld) !== 0
-              ? [{ key: 'slippage', title: 'Milestone slippage', children: <SlippageNotes lines={data.slippageLines} withheld={data.slippageWithheld} /> }]
+              ? [{ key: 'slippage', title: 'Milestone slippage', children: <SlippageNotes lines={data.slippageLines} withheld={data.slippageWithheld} c={data} /> }]
               : []),
             {
               key: 'abstract',
@@ -235,14 +236,14 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         ),
                       },
                       { title: 'BOQ qty', dataIndex: 'boqQty', width: 100, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
-                      { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+                      { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatMoney(v, data, true)}</span> },
                       { title: 'Previous', dataIndex: 'prevQty', width: 90, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
                       { title: 'This bill', dataIndex: 'thisQty', width: 90, align: 'right', render: (v) => <strong className="mono" translate="no">{formatQty(v)}</strong> },
                       ...(certified
                         ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" translate="no" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{formatQty(v)}</span> }]
                         : []),
                       { title: 'Up to date', dataIndex: 'uptoQty', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
-                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatMoney(v, data, true)}</strong> },
                     ]}
                   />
                   <BillPriceVariation bill={data} editable={editable} />
@@ -255,38 +256,38 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               children: (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
                   <Section title="Bill amount">
-                    <Row label="Work up to the previous bill" value={data.grossPrevious} muted />
-                    <Row label="Work in this bill" value={data.grossAmount} strong />
-                    <Row label="Work up to date" value={data.grossUpto} muted />
-                    {data.pvLines.length ? <Row label="Price variation" value={data.pvAmount} strong /> : null}
+                    <Row c={data} label="Work up to the previous bill" value={data.grossPrevious} muted />
+                    <Row c={data} label="Work in this bill" value={data.grossAmount} strong />
+                    <Row c={data} label="Work up to date" value={data.grossUpto} muted />
+                    {data.pvLines.length ? <Row c={data} label="Price variation" value={data.pvAmount} strong /> : null}
                     <Divider style={{ margin: '6px 0' }} />
-                    <Row label={`GST @ ${formatPct(data.gstRate)}`} value={data.gstAmount} />
-                    <Row label="Less deductions" value={data.totalDeductions} />
+                    <Row c={data} label={`GST @ ${formatPct(data.gstRate)}`} value={data.gstAmount} />
+                    <Row c={data} label="Less deductions" value={data.totalDeductions} />
                     <Divider style={{ margin: '6px 0' }} />
-                    <Row label={<span style={{ fontSize: themeFontSize('fontSizeLG') }}>Net payable</span>} value={data.netPayable} strong />
+                    <Row c={data} label={<span style={{ fontSize: themeFontSize('fontSizeLG') }}>Net payable</span>} value={data.netPayable} strong />
                     {approved && data.stage !== 'NOT_SENT' && (
                       <>
                         <Divider style={{ margin: '6px 0' }} />
-                        <Row label="Received in the bank" value={data.receivedAmount} />
-                        <Row label="Settled (received + deducted)" value={data.settledAmount} muted />
-                        <Row label="Outstanding" value={data.outstanding} strong />
+                        <Row c={data} label="Received in the bank" value={data.receivedAmount} />
+                        <Row c={data} label="Settled (received + deducted)" value={data.settledAmount} muted />
+                        <Row c={data} label="Outstanding" value={data.outstanding} strong />
                       </>
                     )}
                     {data.claimedNet !== null && (
                       <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                        Claimed {formatINR(data.claimedGross, true)} of work, {formatINR(data.claimedNet, true)} net. The client passed {formatINR(toNumber(data.claimedNet) - toNumber(data.netPayable), true)} less; the quantities it cut come back in the next bill.
+                        Claimed {formatMoney(data.claimedGross, data, true)} of work, {formatMoney(data.claimedNet, data, true)} net. The client passed {formatMoney(toNumber(data.claimedNet) - toNumber(data.netPayable), data, true)} less; the quantities it cut come back in the next bill.
                       </Typography.Text>
                     )}
                   </Section>
                   <Section title="Deductions">
                     {data.deductions.length === 0 && <Typography.Text type="secondary">None</Typography.Text>}
                     {data.deductions.map((d) => (
-                      <Row key={d.key} label={d.pct !== null ? `${d.label} @ ${formatPct(d.pct)}` : d.label} value={d.amount} />
+                      <Row c={data} key={d.key} label={d.pct !== null ? `${d.label} @ ${formatPct(d.pct)}` : d.label} value={d.amount} />
                     ))}
                     {data.deductions.length > 0 && (
                       <>
                         <Divider style={{ margin: '6px 0' }} />
-                        <Row label="Total" value={data.totalDeductions} strong />
+                        <Row c={data} label="Total" value={data.totalDeductions} strong />
                       </>
                     )}
                   </Section>
@@ -310,8 +311,8 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                           { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
                           { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
                           { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
-                          { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
-                          { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+                          { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatMoney(v, data, true)}</strong> },
+                          { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono" translate="no">{formatMoney(v, data, true)}</span> },
                           { title: 'By', dataIndex: 'createdByName', width: 140 },
                           ...(accounts
                             ? [{ title: '', key: 'edit', width: 70, render: (_: unknown, r: ReceiptDto) => (r.exportedToTally ? <InTallyTag /> : <Button size="small" type="link" onClick={() => setCorrecting(r)}>Edit</Button>) }]

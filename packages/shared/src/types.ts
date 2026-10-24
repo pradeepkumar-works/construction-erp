@@ -1448,6 +1448,9 @@ export interface ProjectContractDto {
   ldCapPct: string;
   /** Exposure to liquidated damages; null without a contract value and completion date */
   ld: LdExposureDto | null;
+  /** The contract currency (item 130): amounts here are rupees, kept at `exchangeRate` rupees to one unit */
+  currency: string;
+  exchangeRate: string | null;
   updatedAt: string;
 }
 
@@ -1550,6 +1553,9 @@ export interface RaBillPvLineDto {
 
 export interface RaBillDto extends SubmissionBase {
   billNo: number;
+  /** The contract currency (item 130): the bill's amounts are rupees, kept at `exchangeRate` rupees to one unit */
+  currency: string;
+  exchangeRate: string | null;
   /**
    * Single bill, not approved yet: extra items measured up to the bill's date that it leaves out because they have no
    * BOQ quantity until the client approves a variation for them.
@@ -1638,8 +1644,14 @@ export interface ReceiptDto {
   /** "RA bill 3" for a bill payment */
   billLabel: string | null;
   receiptDate: string;
-  /** Credited to the bank */
+  /** Credited to the bank; on a project in another currency, the client's payment at the contract rate */
   amount: string;
+  /** The project's contract currency and rate, and this receipt's rate on the day (item 130) */
+  currency: string;
+  contractRate: string | null;
+  exchangeRate: string | null;
+  /** Rupees the bank credited: the amount itself in rupees, else the payment at the day's rate */
+  bankCredit: string;
   mode: PaymentMode;
   reference: string | null;
   tdsAmount: string;

@@ -22,7 +22,7 @@ const day = (offset: number) => {
   return d;
 };
 
-interface ElementSeed {
+export interface ElementSeed {
   code: string;
   name: string;
   type: WorkElementType;
@@ -117,30 +117,33 @@ function fractionDone(lines: ElementActivityLine[], line: ElementActivityLine, d
   return Math.min(1, Math.max(0, base + lag));
 }
 
-export async function seedWorkBreakdown(prisma: PrismaClient, organizationId: string) {
-  if (await prisma.project.count({ where: { organizationId, code: 'WS-2026-04' } })) return;
-  const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } }))?.id;
-  const [pm, engineer, engineer2, tl, store, qs] = await Promise.all(['pm@demo.com', 'engineer@demo.com', 'engineer2@demo.com', 'tl@demo.com', 'store@demo.com', 'qs@demo.com'].map(user));
-  if (!pm || !engineer || !engineer2 || !tl || !store || !qs) return;
+export interface ElementTreeSeed {
+  organizationId: string;
+  projectId: string;
+  /** The contract value the price breakup's lump-sum lines share */
+  value: number;
+  tree: ElementSeed[];
+  pm: string;
+  engineer: string;
+  engineer2: string;
+  /** Components the second engineer is responsible for */
+  secondEngineer: (code: string) => boolean;
+  /** Components whose progress names its place (pipe zones) */
+  located: (code: string) => boolean;
+}
 
-  const value = 384_000_000;
-  const project = await prisma.project.create({
-    data: {
-      organizationId, code: 'WS-2026-04', name: 'Devgarh Town Water Supply Scheme, 3.8 MLD', type: 'WATER_SUPPLY', status: 'ACTIVE', contractModel: 'LUMP_SUM',
-      clientName: 'State Urban Water Mission', consultantName: 'Hydroplan Consultants', location: 'Devgarh', workOrderNo: 'WO/SUWM/2025/0311',
-      startDate: day(-270), endDate: day(270), contractValue: D(value), projectManagerId: pm, villages: ['Zone 1', 'Zone 2', 'Zone 3'],
-      description: 'Turnkey scheme: river intake, 3.8 MLD treatment plant, three overhead tanks, 27.5 km of HDPE distribution and 1,450 house connections, paid by stages against the price breakup',
-      members: { create: [engineer, engineer2, tl, store, qs].map((userId) => ({ userId })) },
-    },
-  });
-
+/**
+ * A project's work breakdown from a tree: each component, a price breakup line per leaf (its share of the contract),
+ * its template's activities in its planned window and approved progress up to how far along it is.
+ */
+export async function seedElementTree(prisma: PrismaClient, { organizationId, projectId, value, tree, pm, engineer, engineer2, secondEngineer, located }: ElementTreeSeed) {
   let actSort = 0;
   let boqSort = 0;
   const entries: Prisma.ProgressEntryCreateManyInput[] = [];
   const create = async (e: ElementSeed, parentId: string | null, parentWeightShare: number) => {
     const element = await prisma.workElement.create({
       data: {
-        organizationId, projectId: project.id, parentId, level: parentId ? 'SUB_COMPONENT' : 'COMPONENT', code: e.code, name: e.name, elementType: e.type,
+        organizationId, projectId: projectId, parentId, level: parentId ? 'SUB_COMPONENT' : 'COMPONENT', code: e.code, name: e.name, elementType: e.type,
         specs: e.specs ?? Prisma.DbNull, weightPct: e.weight === null ? null : D(e.weight), sortOrder: Number(e.code.split('.').pop()),
       },
     });
@@ -148,7 +151,7 @@ export async function seedWorkBreakdown(prisma: PrismaClient, organizationId: st
     const share = parentId ? parentWeightShare * ((e.weight ?? 0) / 100) : (e.weight ?? 0) / 100;
     if (!e.subs) {
       await prisma.boqItem.create({
-        data: { organizationId, projectId: project.id, itemNo: `PB-${e.code}`, description: e.name, unit: 'LS', rate: D((value * share).toFixed(2)), originalQty: D(1), section: 'Price breakup', workElementId: element.id, sortOrder: boqSort++ },
+        data: { organizationId, projectId: projectId, itemNo: `PB-${e.code}`, description: e.name, unit: 'LS', rate: D((value * share).toFixed(2)), originalQty: D(1), section: 'Price breakup', workElementId: element.id, sortOrder: boqSort++ },
       });
     }
     for (const s of e.subs ?? []) await create(s, element.id, share);
@@ -172,8 +175,8 @@ export async function seedWorkBreakdown(prisma: PrismaClient, organizationId: st
       const hasParts = !line.parentKey && lines.some((l) => l.parentKey === line.key);
       const row = await prisma.activity.create({
         data: {
-          organizationId, projectId: project.id, workElementId: element.id, parentActivityId: line.parentKey ? idOf.get(line.parentKey)! : null, name: line.name, unit: line.unit,
-          plannedQty: D(planned), weightPct: D(line.weightPct), plannedStart: day(from), plannedEnd: day(to), responsibleId: e.code.startsWith('9') || e.code.startsWith('11') ? engineer2 : engineer,
+          organizationId, projectId: projectId, workElementId: element.id, parentActivityId: line.parentKey ? idOf.get(line.parentKey)! : null, name: line.name, unit: line.unit,
+          plannedQty: D(planned), weightPct: D(line.weightPct), plannedStart: day(from), plannedEnd: day(to), responsibleId: secondEngineer(e.code) ? engineer2 : engineer,
           sortOrder: actSort++,
         },
       });
@@ -190,14 +193,34 @@ export async function seedWorkBreakdown(prisma: PrismaClient, organizationId: st
         left = Math.round((left - q) * 1000) / 1000;
         const date = day(Math.min(-1, from + Math.round(((i + 1) * (to - from)) / (parts + 1))));
         entries.push({
-          organizationId, projectId: project.id, activityId: row.id, date, quantity: D(q), status: 'APPROVED', submittedById: engineer, submittedAt: date, reviewedById: pm, reviewedAt: date,
-          reviewNote: 'Checked at site', remarks: `${e.name}: ${line.name}`, location: e.code.startsWith('9') ? e.name.split(',')[0] : null, village: e.code.startsWith('9') ? e.name.split(',')[0] : null, manpowerCount: 8 + i * 2,
+          organizationId, projectId: projectId, activityId: row.id, date, quantity: D(q), status: 'APPROVED', submittedById: engineer, submittedAt: date, reviewedById: pm, reviewedAt: date,
+          reviewNote: 'Checked at site', remarks: `${e.name}: ${line.name}`, location: located(e.code) ? e.name.split(',')[0] : null, village: located(e.code) ? e.name.split(',')[0] : null, manpowerCount: 8 + i * 2,
         });
       }
     }
   };
-  for (const e of TOWN) await create(e, null, 1);
+  for (const e of tree) await create(e, null, 1);
   await prisma.progressEntry.createMany({ data: entries });
+}
+
+export async function seedWorkBreakdown(prisma: PrismaClient, organizationId: string) {
+  if (await prisma.project.count({ where: { organizationId, code: 'WS-2026-04' } })) return;
+  const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } }))?.id;
+  const [pm, engineer, engineer2, tl, store, qs] = await Promise.all(['pm@demo.com', 'engineer@demo.com', 'engineer2@demo.com', 'tl@demo.com', 'store@demo.com', 'qs@demo.com'].map(user));
+  if (!pm || !engineer || !engineer2 || !tl || !store || !qs) return;
+
+  const value = 384_000_000;
+  const project = await prisma.project.create({
+    data: {
+      organizationId, code: 'WS-2026-04', name: 'Devgarh Town Water Supply Scheme, 3.8 MLD', type: 'WATER_SUPPLY', status: 'ACTIVE', contractModel: 'LUMP_SUM',
+      clientName: 'State Urban Water Mission', consultantName: 'Hydroplan Consultants', location: 'Devgarh', workOrderNo: 'WO/SUWM/2025/0311',
+      startDate: day(-270), endDate: day(270), contractValue: D(value), projectManagerId: pm, villages: ['Zone 1', 'Zone 2', 'Zone 3'],
+      description: 'Turnkey scheme: river intake, 3.8 MLD treatment plant, three overhead tanks, 27.5 km of HDPE distribution and 1,450 house connections, paid by stages against the price breakup',
+      members: { create: [engineer, engineer2, tl, store, qs].map((userId) => ({ userId })) },
+    },
+  });
+
+  await seedElementTree(prisma, { organizationId, projectId: project.id, value, tree: TOWN, pm, engineer, engineer2, secondEngineer: (c) => c.startsWith('9') || c.startsWith('11'), located: (c) => c.startsWith('9') });
 
   // Today's work waiting for approval: the 650 KL tank's container wall.
   const waiting = await prisma.activity.findFirst({ where: { projectId: project.id, name: 'Container wall: shuttering', workElement: { code: '8.1' } } });

@@ -720,7 +720,12 @@ reconciliation: design". One pull request each, in this order.
      unit-rate items at rate × tender factor, the milestone grid with slippage withheld and released, and the advance
      recovered in a window. Interest on advances, portal stage certification and the unit-rate total moving the
      contract value wait. ARCHITECTURE "Stage billing".
-130. **EPC packages, deliverables and currency** (L).
+130. ~~**EPC packages, deliverables and currency** (L).~~ Done: engineering deliverables by discipline with the client's
+     codes and lateness, equipment packages from order to commissioning with the shipment and a forecast on site
+     against the day needed (watch list PACKAGE_LATE), client inputs that become delays, payment stages released by
+     deliverables and packages, and a contract currency kept in rupees at the contract rate with the day's rate on
+     receipts and the exchange difference in the books. A phone view, foreign purchase orders and portal approvals wait.
+     ARCHITECTURE "EPC".
 131. **Operation and maintenance** (M): a completed scheme's running, complaints and contract payments.
 
 ## Definition of done for every item

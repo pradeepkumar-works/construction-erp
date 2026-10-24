@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { CONTRACT_PERCENT_FIELDS, LD_PERIOD_DAYS, MAX_GST_RATE, canEditContract, canViewContract, delayDays, revisedCompletion, type DelayParty, type LdExposureDto, type ProjectContractDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,7 +6,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { ClientsService } from '../clients/clients.service';
-import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { dateOnly, fxRate, iso, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { PriceVariationDto, UpdateContractDto } from './contracts.dto';
 
@@ -91,6 +91,8 @@ export class ContractsService {
       ldPeriod: p.ldPeriod,
       ldCapPct: pctStr(p.ldCapPct),
       ld: ld ? ContractsService.ldExposure(p, approvedVariations, extensionDays, ld) : null,
+      currency: p.currency,
+      exchangeRate: fxRate(p.exchangeRate),
       updatedAt: iso(p.updatedAt)!,
     };
   }
@@ -232,6 +234,7 @@ export class ContractsService {
       data[k] = n;
     }
     if (dto.ldPeriod !== undefined) data.ldPeriod = dto.ldPeriod;
+    if (dto.currency !== undefined || dto.exchangeRate !== undefined) Object.assign(data, await this.currencyChange(projectId, dto));
     const start = dto.startDate !== undefined ? dto.startDate : undefined;
     const end = dto.endDate !== undefined ? dto.endDate : undefined;
     if (start !== undefined || end !== undefined) {
@@ -243,6 +246,23 @@ export class ContractsService {
     await this.prisma.project.update({ where: { id: projectId }, data });
     await this.audit.log(user, 'PROJECT', projectId, 'CONTRACT_UPDATED');
     return this.get(user, projectId);
+  }
+
+  /**
+   * The contract currency (item 130): a project in another currency keeps its figures in rupees at the contract rate, so
+   * the rate is needed and cannot move once a bill or receipt has been kept at it.
+   */
+  private async currencyChange(projectId: string, dto: UpdateContractDto): Promise<Prisma.ProjectUncheckedUpdateInput> {
+    const cur = await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { currency: true, exchangeRate: true } });
+    const currency = dto.currency ?? cur.currency;
+    const rate = currency === 'INR' ? null : dto.exchangeRate !== undefined ? dto.exchangeRate : cur.exchangeRate?.toString() ?? null;
+    if (currency !== 'INR' && (!rate || Number(rate) <= 0)) throw new BadRequestException(`Give the rupees to one ${currency}, the rate the contract's figures are kept at`);
+    const changed = currency !== cur.currency || (rate === null ? cur.exchangeRate !== null : !cur.exchangeRate || !cur.exchangeRate.eq(rate));
+    if (changed) {
+      const [bills, receipts] = await Promise.all([this.prisma.raBill.count({ where: { projectId } }), this.prisma.receipt.count({ where: { projectId } })]);
+      if (bills || receipts) throw new ConflictException('Bills and receipts of this project are kept at its contract rate, so the currency and rate can no longer change');
+    }
+    return { currency, exchangeRate: rate === null ? null : new Prisma.Decimal(rate) };
   }
 
   /**

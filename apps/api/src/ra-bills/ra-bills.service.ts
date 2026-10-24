@@ -9,7 +9,7 @@ import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { UNAPPROVED_EXTRA_ITEM } from '../variations/variations.service';
-import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
+import { dateOnly, dec, fxRate, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
@@ -37,6 +37,8 @@ const include = {
       agreementDate: true,
       clientName: true,
       tenderFactor: true,
+      currency: true,
+      exchangeRate: true,
       client: { select: { name: true, department: true, gstin: true, billingAddress: true, stateCode: true } },
     },
   },
@@ -117,6 +119,8 @@ export class RaBillsService {
       projectId: r.projectId,
       projectName: p.name,
       projectCode: p.code,
+      currency: p.currency,
+      exchangeRate: fxRate(p.exchangeRate),
       billNo: r.billNo,
       billLabel: billLabel(r.billNo, r.isFinal),
       isFinal: r.isFinal,

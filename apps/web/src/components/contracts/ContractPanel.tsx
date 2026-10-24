@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { Alert, Button, Descriptions, Skeleton, Table, Tag, Typography } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import type { ContractExtensionDto } from '@erp/shared';
-import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract, isForeign } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useContract } from '@/lib/queries';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatMoney, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ContractFormModal } from './ContractFormModal';
 import { LdExposureCard } from './LdExposure';
@@ -63,12 +63,19 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           </Descriptions.Item>
           <Descriptions.Item label="Work order">{c.workOrderNo ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="Agreement">{c.agreementNo ? `${c.agreementNo}${c.agreementDate ? `, ${formatDate(c.agreementDate)}` : ''}` : '-'}</Descriptions.Item>
-          <Descriptions.Item label="Contract value">{c.contractValue ? formatINR(c.contractValue) : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Contract value">
+            {c.contractValue ? <span translate="no">{formatMoney(c.contractValue, c)}</span> : '-'}
+            {isForeign(c) && (
+              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }} translate="no">
+                {formatINR(c.contractValue)} at ₹&nbsp;{c.exchangeRate} to 1 {c.currency}
+              </div>
+            )}
+          </Descriptions.Item>
           <Descriptions.Item label="Revised contract value">
-            {c.revisedContractValue ? formatINR(c.revisedContractValue) : '-'}
+            {c.revisedContractValue ? <span translate="no">{formatMoney(c.revisedContractValue, c)}</span> : '-'}
             {toNumber(c.approvedVariations) !== 0 && (
               <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                <Link href={`/projects/${c.projectId}?tab=variations`}>{formatINR(c.approvedVariations)} in approved variations</Link>
+                <Link href={`/projects/${c.projectId}?tab=variations`}>{formatMoney(c.approvedVariations, c)} in approved variations</Link>
               </div>
             )}
           </Descriptions.Item>
@@ -82,7 +89,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Client pays within">{c.clientPaymentDays !== null ? `${c.clientPaymentDays} days` : 'Not set (30 days assumed)'}</Descriptions.Item>
           <Descriptions.Item label="Hindrance notice within">{c.noticeDays !== null ? `${c.noticeDays} days` : 'Not set (14 days assumed)'}</Descriptions.Item>
           <Descriptions.Item label="Price variation">{c.priceVariation ? 'Yes' : 'No'}</Descriptions.Item>
-          <Descriptions.Item label="Mobilisation advance">{Number(c.mobilisationAdvance) > 0 ? formatINR(c.mobilisationAdvance) : 'None'}</Descriptions.Item>
+          <Descriptions.Item label="Mobilisation advance">{Number(c.mobilisationAdvance) > 0 ? <span translate="no">{formatMoney(c.mobilisationAdvance, c)}</span> : 'None'}</Descriptions.Item>
         </Descriptions>
       </Section>
       <Section title="On each bill (% of the work value)">

@@ -366,6 +366,13 @@ export const VARIATION_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAG
 export const canManageVariations = (role: RoleKey) => VARIATION_ROLES.includes(role);
 export const canViewVariations = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Record measurements (MB). */
+/**
+ * EPC (item 130): engineering deliverables are kept by document control; equipment packages by procurement and the
+ * project's managers. Everyone else on the project reads both, without the packages' values unless they see orders.
+ */
+export const canManageDeliverables = (role: RoleKey) => DOCUMENT_CONTROL_ROLES.includes(role);
+export const canManagePackages = (role: RoleKey) => PURCHASE_ROLES.includes(role);
+export const canViewEpc = (role: RoleKey) => !isGuest(role);
 export const canMeasure = (role: RoleKey) => MEASUREMENT_ROLES.includes(role);
 
 /**

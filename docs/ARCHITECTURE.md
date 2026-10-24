@@ -1426,7 +1426,8 @@ What the store issued, set against what the approved DPR lines (item 127) say wa
 ### Stage billing (item 129)
 
 A lump-sum contract is paid by stages of its components' shares, not by measured items. Turned on per project: it is
-`LUMP_SUM` and has a billing break-up (`BillingBreakupDto.stageBilling`); every other project bills as before.
+`LUMP_SUM` or `EPC` (`billsByStages`) and has a billing break-up (`BillingBreakupDto.stageBilling`); every other project
+bills as before.
 
 - **Break-up.** `BillingComponent` (code, name, parent for a part, `sharePct` of the lump sum or of its parent, `basis`
   STAGES or UNIT_RATE, the `WorkElement` it reads) and `BillingStage` (name, `pct` of its component, `trigger`, the
@@ -1470,6 +1471,59 @@ A lump-sum contract is paid by stages of its components' shares, not by measured
   client, 1 to 3 paid). Bill 5 is the QS's to prepare.
 - **Waits.** Interest on advances, stage certification in the client portal, and the unit-rate items' total moving the
   contract value.
+
+### EPC (item 130)
+
+An EPC contract's design, its equipment and what the client owes run the job as much as the site does. A project with
+`contractModel` EPC gets Plan › Engineering and packages (`canViewEpc`: everyone but guests), and any project can be in
+another currency.
+
+- **Deliverables.** `EngineeringDeliverable` (discipline of `ENGINEERING_DISCIPLINES`, code unique per project, title,
+  the component it designs, the register document its revisions are filed under, planned submission and approval, the
+  latest submission, revision, the client's code A/B/C/D and the approval day). A and B approve (`approvalCodeApproves`),
+  C and D send it back (`deliverableStatus`: not submitted, with the client, comments to answer, approved). Late is past
+  the planned submission while not submitted, else past the planned approval while not approved (`deliverableLate`).
+  Changed by `canManageDeliverables` (document control). One a payment stage reads cannot be removed.
+- **Equipment packages.** `ProcurementPackage` (code, name, discipline, component, vendor and its purchase order on the
+  project, scope, value in rupees, the day site needs it, vessel, bill of lading, ETA, days from the port to site) and
+  `PackageStageDate` (planned and actual per `PACKAGE_STAGES`, enquiry to commissioning; shipped and customs only by
+  sea or air). `packageStatus`: the stages with a date, in order; the current stage is the last done, the next the first
+  after it not done (overdue once its plan has passed); on site on its delivery day, else the ETA plus the days to site
+  (10 when empty), else the planned delivery moved by the slip so far, never before today; late by the days after the
+  day needed; actual dates out of order or in the future are problems. Changed by `canManagePackages` (purchase);
+  values only for `canViewPurchaseOrders`.
+- **Client inputs.** A `Milestone` with `byClient` (land, consents, power for testing). Overdue from the day after it
+  was due (`clientInputOverdue`). Record delay makes a DELAY risk through `RisksService.create` (category and party
+  CLIENT, from the day after it was due) kept in `Milestone.delayId`; giving the input later ends the delay.
+- **Payments.** A stage of the billing break-up (item 129) can read them: EVENT with `deliverableIds` is done on the day
+  the last of them was approved, once all are (`deliverablesEvidence`); SUPPLY with `packageIds` takes the share of
+  their value (a count when one has none) that reached `packageStage` (default delivered, `reachedOn` counts a later
+  stage done) by the day (`packagesEvidence`). `loadStageEvidence` loads both.
+- **Currency.** `Project.currency` (ISO, INR by default, `CURRENCIES`) and `exchangeRate` (rupees to one unit, the
+  contract rate). Every amount stays in rupees at that rate, so totals across projects, the cost reports and the books
+  are right; forms and records show and take the contract currency (`formatMoney`, `inContract`/`outOfContract`,
+  `fromRupees`/`toRupees`), and the bill's print says the amount in words in it. The currency and rate cannot change once
+  a bill or receipt exists. `Receipt.exchangeRate` is the day's rate: the bank credited `bankCredit` (amount ÷ contract
+  rate × day's rate), and posting books the difference to `EXCHANGE_DIFFERENCE` (Indirect Incomes), a gain to the credit
+  and a loss to the debit. Purchase orders stay in rupees: a foreign order needs landed costing first.
+- **Watch list.** PACKAGE_LATE for `canManagePackages`: a package not yet on site whose forecast falls more than
+  `PACKAGE_GRACE_DAYS` (3) after the day needed; the key carries the forecast, so a new ETA warns again.
+- **API.** `GET /projects/:id/epc` (summary by discipline, deliverables with the stages they release, packages with
+  their status, client inputs), `PUT`/`DELETE .../epc/deliverables`, `.../epc/packages`, `.../epc/client-inputs`, and
+  `POST .../epc/client-inputs/:inputId/delay`. Each answers with the whole tab.
+- **Web.** The tab (`components/epc/EpcPanel.tsx`): figures, then Engineering (by discipline, the deliverables with
+  filters), Equipment packages (stage, needed, on site and how late, each package's stage dates when opened) and
+  Client inputs (Record delay); the stage form's deliverable and package pickers; currency on the contract form and
+  panel, the bill, its print and the receipt form (with the day's rate).
+- **Tests.** The rules in `src/scripts/epc-test.ts` (CI); `e2e/tests/epc.spec.ts`.
+- **Demo** (`prisma/seed-epc.ts`): WW-2026-07, an island sewerage scheme let for US$ 6.2 million at ₹ 83.25: a 6 MLD
+  SBR plant, its equipment, four phases of sewers, three pumping stations and the outfall; 24 deliverables (two sent
+  back, one late), ten packages (the air blowers at sea and late for erection, the centrifuge's inspection overdue),
+  five client inputs (the pumping station land a month late and recorded as a delay, the 11 kV supply overdue), the
+  break-up with design stages on deliverables and equipment on delivery and erection of its packages, and three
+  milestone bills, two paid at the day's rate.
+- **Waits.** A phone view of packages, purchase orders in another currency with landed cost, deliverable revisions
+  read from the document register, and the client approving deliverables in the portal.
 
 ### Rate analysis and the estimate (v5 item 92)
 

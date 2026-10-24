@@ -148,6 +148,10 @@ and the pre-delivery checklist.
   only through `ra-bill-pricing.ts` (`measuredLines`, `billTotals`), which the demo seed runs too. A new kind of stage evidence is
   a `StageTrigger` (schema + shared + label) and a branch in `loadStageEvidence`; the arithmetic is pure in
   `stage-billing-rules.ts`. Keep `src/scripts/stage-billing-test.ts` passing.
+- EPC (item 130, `apps/api/src/epc`, ARCHITECTURE "EPC"): deliverable, package and client input arithmetic is pure in
+  `epc-rules.ts` (`packageStatus` is shared by the tab, the payment stages and the watch list's PACKAGE_LATE). Money on a
+  project in another currency stays in rupees at `Project.exchangeRate`; screens convert with `formatMoney`, `inContract`
+  and `outOfContract` (`src/lib/format.ts`), never a rate of their own. Keep `src/scripts/epc-test.ts` passing.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.

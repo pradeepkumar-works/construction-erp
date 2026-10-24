@@ -536,5 +536,14 @@ DROP POLICY IF EXISTS tenant_isolation ON "MilestoneTarget";
 ALTER TABLE "SlippageTier" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "SlippageTier" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "SlippageTier";
+ALTER TABLE "EngineeringDeliverable" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "EngineeringDeliverable" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "EngineeringDeliverable";
+ALTER TABLE "ProcurementPackage" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ProcurementPackage" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ProcurementPackage";
+ALTER TABLE "PackageStageDate" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "PackageStageDate" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "PackageStageDate";
 
 DROP FUNCTION IF EXISTS app_current_org();

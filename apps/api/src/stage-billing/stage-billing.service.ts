@@ -1,11 +1,11 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { DEFAULT_SLIPPAGE_TIERS, canEditContract, canPrepareBill, canViewContract, type BillingBreakupDto, type BillingComponentDto, type MilestoneRowDto } from '@erp/shared';
+import { DEFAULT_SLIPPAGE_TIERS, billsByStages, canEditContract, canPrepareBill, canViewContract, type BillingBreakupDto, type BillingComponentDto, type MilestoneRowDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import type { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { dateOnly, money, parseDate } from '../common/serialize';
+import { dateOnly, fxRate, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { loadStageEvidence } from './stage-evidence';
 import { breakupProblems, componentShares, monthEnd, monthsBetween, round3, stageLine, stageValue } from './stage-billing-rules';
@@ -67,13 +67,17 @@ export class StageBillingService {
     ]);
     components.sort(compareCodes);
     const stages = components.flatMap((c) => c.stages.map((s) => ({ ...s, component: { workElementId: c.workElementId } })));
-    const [evidence, activityRows, itemRows] = await Promise.all([
+    const [evidence, activityRows, itemRows, deliverableRows, packageRows] = await Promise.all([
       loadStageEvidence(this.prisma, projectId, today, stages),
       this.prisma.activity.findMany({ where: { id: { in: stages.flatMap((s) => s.activityIds) } }, select: { id: true, name: true } }),
       this.prisma.item.findMany({ where: { id: { in: stages.flatMap((s) => s.itemIds) } }, select: { id: true, name: true } }),
+      this.prisma.engineeringDeliverable.findMany({ where: { id: { in: stages.flatMap((s) => s.deliverableIds) } }, select: { id: true, code: true, title: true } }),
+      this.prisma.procurementPackage.findMany({ where: { id: { in: stages.flatMap((s) => s.packageIds) } }, select: { id: true, code: true, name: true } }),
     ]);
     const activityName = new Map(activityRows.map((a) => [a.id, a.name]));
     const itemName = new Map(itemRows.map((i) => [i.id, i.name]));
+    const deliverableName = new Map(deliverableRows.map((d) => [d.id, `${d.code} ${d.title}`]));
+    const packageName = new Map(packageRows.map((p) => [p.id, `${p.code} ${p.name}`]));
     const lumpSum = project.lumpSumValue ?? project.contractValue ?? ZERO;
     const shares = componentShares(lumpSum, components);
     const billedOf = new Map<string, number>();
@@ -96,6 +100,11 @@ export class StageBillingService {
           scopeQty: s.scopeQty ? s.scopeQty.toFixed(3).replace(/\.?0+$/, '') : null,
           achievedOn: dateOnly(s.achievedOn),
           evidence: s.evidence,
+          deliverableIds: s.deliverableIds,
+          deliverableNames: s.deliverableIds.map((id) => deliverableName.get(id) ?? 'A deliverable since removed'),
+          packageIds: s.packageIds,
+          packageNames: s.packageIds.map((id) => packageName.get(id) ?? 'A package since removed'),
+          packageStage: s.packageStage,
           value: money(share ? stageValue(share.value, s.pct) : ZERO)!,
           evidencePct: ev.pct,
           evidenceText: ev.text,
@@ -141,8 +150,10 @@ export class StageBillingService {
 
     return {
       projectId,
-      stageBilling: project.contractModel === 'LUMP_SUM' && components.length > 0,
+      stageBilling: billsByStages(project.contractModel) && components.length > 0,
       contractModel: project.contractModel,
+      currency: project.currency,
+      exchangeRate: fxRate(project.exchangeRate),
       lumpSum: money(lumpSum),
       lumpSumSet: project.lumpSumValue !== null,
       tenderFactor: (project.tenderFactor ?? D(1)).toFixed(6).replace(/\.?0+$/, ''),
@@ -267,14 +278,31 @@ export class StageBillingService {
       const found = await this.prisma.activity.count({ where: { id: { in: activityIds }, projectId } });
       if (found !== activityIds.length) throw new BadRequestException('Choose activities of this project');
     }
-    const itemIds = dto.trigger === 'SUPPLY' ? [...new Set(dto.itemIds ?? [])] : [];
+    // EPC (item 130): an event can be the approval of deliverables, supply the packages that reach a stage.
+    const deliverableIds = dto.trigger === 'EVENT' ? [...new Set(dto.deliverableIds ?? [])] : [];
+    if (deliverableIds.length && (await this.prisma.engineeringDeliverable.count({ where: { id: { in: deliverableIds }, projectId } })) !== deliverableIds.length) throw new BadRequestException('Choose deliverables of this project');
+    const packageIds = dto.trigger === 'SUPPLY' ? [...new Set(dto.packageIds ?? [])] : [];
+    if (packageIds.length && (await this.prisma.procurementPackage.count({ where: { id: { in: packageIds }, projectId } })) !== packageIds.length) throw new BadRequestException('Choose equipment packages of this project');
+    const itemIds = dto.trigger === 'SUPPLY' && !packageIds.length ? [...new Set(dto.itemIds ?? [])] : [];
     if (itemIds.length && (await this.prisma.item.count({ where: { id: { in: itemIds }, organizationId: user.organizationId } })) !== itemIds.length) throw new BadRequestException('Choose items from the item master');
-    const scopeQty = dto.trigger === 'SUPPLY' && dto.scopeQty ? D(dto.scopeQty) : null;
-    if (dto.trigger === 'SUPPLY' && (!itemIds.length || !scopeQty || scopeQty.lte(0))) throw new BadRequestException('A supply stage needs the items it is supplied against and the scope to supply');
-    const achievedOn = dto.trigger === 'EVENT' && dto.achievedOn ? dto.achievedOn : null;
+    const scopeQty = dto.trigger === 'SUPPLY' && !packageIds.length && dto.scopeQty ? D(dto.scopeQty) : null;
+    if (dto.trigger === 'SUPPLY' && !packageIds.length && (!itemIds.length || !scopeQty || scopeQty.lte(0))) throw new BadRequestException('A supply stage needs the items it is supplied against and the scope to supply, or the equipment packages it is paid by');
+    const achievedOn = dto.trigger === 'EVENT' && !deliverableIds.length && dto.achievedOn ? dto.achievedOn : null;
     if (achievedOn && achievedOn > todayIn()) throw new BadRequestException('An event cannot be recorded for a day still to come');
     if (current && current.trigger !== dto.trigger) await this.assertNotBilled(projectId, [current.id], 'This stage');
-    const data = { name: dto.name, pct, trigger: dto.trigger, activityIds, itemIds, scopeQty, achievedOn: achievedOn ? parseDate(achievedOn) : null, evidence: dto.trigger === 'EVENT' ? (dto.evidence ?? null) : null };
+    const data = {
+      name: dto.name,
+      pct,
+      trigger: dto.trigger,
+      activityIds,
+      itemIds,
+      scopeQty,
+      achievedOn: achievedOn ? parseDate(achievedOn) : null,
+      evidence: dto.trigger === 'EVENT' && !deliverableIds.length ? (dto.evidence ?? null) : null,
+      deliverableIds,
+      packageIds,
+      packageStage: packageIds.length ? (dto.packageStage ?? null) : null,
+    };
     if (current) await this.prisma.billingStage.update({ where: { id: current.id }, data });
     else {
       const sortOrder = await this.prisma.billingStage.count({ where: { componentId: component.id } });

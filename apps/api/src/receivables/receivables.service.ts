@@ -20,7 +20,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { dateOnly, fxRate, iso, money, parseDate } from '../common/serialize';
+import { bankCredit } from '../epc/epc-rules';
 import { todayIn } from '../notifications/time';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -35,7 +36,7 @@ const DAY = 24 * 3600 * 1000;
 const TOLERANCE = D(1);
 
 const include = {
-  project: { select: { code: true, name: true, clientName: true, client: { select: { name: true } } } },
+  project: { select: { code: true, name: true, clientName: true, currency: true, exchangeRate: true, client: { select: { name: true } } } },
   bill: { select: { billNo: true, isFinal: true } },
   createdBy: { select: { fullName: true } },
 } satisfies Prisma.ReceiptInclude;
@@ -128,6 +129,10 @@ export class ReceivablesService {
       billLabel: r.bill ? billLabel(r.bill.billNo, r.bill.isFinal) : null,
       receiptDate: dateOnly(r.receiptDate)!,
       amount: money(r.amount)!,
+      currency: r.project.currency,
+      contractRate: fxRate(r.project.exchangeRate),
+      exchangeRate: fxRate(r.exchangeRate),
+      bankCredit: money(bankCredit(r.amount, r.project.exchangeRate, r.exchangeRate))!,
       mode: r.mode,
       reference: r.reference,
       tdsAmount: money(r.tdsAmount)!,
@@ -282,6 +287,7 @@ export class ReceivablesService {
             reference: dto.reference ?? null,
             otherDeductionNote: dto.otherDeductionNote ?? null,
             remarks: dto.remarks ?? null,
+            exchangeRate: await this.dayRate(tx, projectId, dto.exchangeRate),
             createdById: user.id,
             ...a,
           },
@@ -334,6 +340,7 @@ export class ReceivablesService {
           ...(dto.reference !== undefined ? { reference: dto.reference } : {}),
           ...(dto.otherDeductionNote !== undefined ? { otherDeductionNote: dto.otherDeductionNote } : {}),
           ...(dto.remarks !== undefined ? { remarks: dto.remarks } : {}),
+          ...(dto.exchangeRate !== undefined ? { exchangeRate: await this.dayRate(tx, row.projectId, dto.exchangeRate) } : {}),
         },
       });
       if (row.billId) {
@@ -343,6 +350,18 @@ export class ReceivablesService {
     });
     await this.audit.log(user, 'RECEIPT', id, 'UPDATED');
     return this.get(user, id);
+  }
+
+  /**
+   * The day's rate of a receipt on a project in another currency (item 130); none in rupees. Its amounts are kept at the
+   * contract rate like the bills they settle, and what the bank credited is at the day's rate.
+   */
+  private async dayRate(tx: Prisma.TransactionClient, projectId: string, rate: string | null | undefined) {
+    const project = await tx.project.findUniqueOrThrow({ where: { id: projectId }, select: { currency: true } });
+    if (project.currency === 'INR' || !rate) return null;
+    const r = new Prisma.Decimal(rate);
+    if (r.lte(0)) throw new BadRequestException(`Give the rupees to one ${project.currency} on the day, or leave it empty for the contract rate`);
+    return r;
   }
 
   /** Take a receipt off (entered by mistake); its bill goes back to unpaid if it no longer settles. */

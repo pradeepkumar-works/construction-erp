@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-01-epc',
+    date: '2027-01-12',
+    title: 'EPC projects: engineering, equipment and the contract currency',
+    points: [
+      "An EPC project has Plan › Engineering and packages: the design deliverables by discipline with the client's code (A to D) and how late each is, the equipment packages from order to commissioning with when each reaches site against the day it is needed, and what the client owes.",
+      'A payment stage can now be paid on the approval of its deliverables, or on the delivery or erection of its packages. A late client input becomes a delay against the client in one click.',
+      "A contract can be in another currency at its contract rate. Bills, the print, the break-up and the receipt form show it; a receipt takes the day's rate, and the books post the exchange difference.",
+    ],
+  },
+  {
     id: '2027-01-stage-billing',
     date: '2027-01-08',
     title: 'Stage billing for lump-sum contracts',

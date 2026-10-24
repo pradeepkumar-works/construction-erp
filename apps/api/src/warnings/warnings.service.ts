@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import type { WarningDto, WarningKind, WarningOutcome, WarningRecordDto, WatchListDto } from '@erp/shared';
 import {
   DEFAULT_CLIENT_PAYMENT_DAYS,
+  DEFAULT_PORT_TO_SITE_DAYS,
+  PACKAGE_STAGE_LABELS,
   DEFAULT_NOTICE_DAYS,
   DELAY_PARTY_LABELS,
   NOTICE_PARTIES,
@@ -37,6 +39,7 @@ import { AttendanceCheckService } from '../attendance-check/attendance-check.ser
 import { monthSpan } from '../leakage/leakage-rules';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
 import { noticeClock } from '../hindrance/hindrance-rules';
+import { packageStatus } from '../epc/epc-rules';
 import {
   type Delivery,
   type MachineDay,
@@ -49,11 +52,13 @@ import {
   MACHINE_WINDOW_DAYS,
   MIN_BREAKDOWN_HOURS,
   REJECT_SHARE,
+  PACKAGE_GRACE_DAYS,
   SLIP_GRACE_DAYS,
   VENDOR_WINDOW_DAYS,
   activityForecast,
   addDays,
   daysBetween,
+  packageLate,
   pauseState,
   trackRecord,
   cashGap,
@@ -250,6 +255,7 @@ export class WarningsService {
         if (k in LEAK_SECTION) return leaks.then((ws) => ws.filter((w) => w.kind === k));
         if (k === 'NOTICE_DUE') return this.notices(active, today);
         if (k === 'MANDAYS_ABOVE') return today === todayIn() ? this.manDays(user) : Promise.resolve([]);
+        if (k === 'PACKAGE_LATE') return this.packages(active, today);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -594,6 +600,56 @@ export class WarningsService {
           { label: 'Days lost so far', value: String(lost) },
         ],
         links: [{ label: d.riskNo, href: `/risks?id=${d.id}` }],
+        projectId: p.id,
+        projectName: p.name,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * EPC equipment packages that will reach site after the day site needs them (item 130): at sea by the ship's ETA,
+   * else by the plan moved by the slip so far (`packageStatus`). The key moves with the forecast.
+   */
+  private async packages(projects: Project[], today: string): Promise<Draft[]> {
+    if (!projects.length) return [];
+    const rows = await this.prisma.procurementPackage.findMany({
+      where: { projectId: { in: projects.map((p) => p.id) }, neededOn: { not: null } },
+      include: { stages: true, vendor: { select: { name: true } } },
+      orderBy: [{ projectId: 'asc' }, { sortOrder: 'asc' }],
+    });
+    const byId = new Map(projects.map((p) => [p.id, p]));
+    const out: Draft[] = [];
+    for (const r of rows) {
+      const needed = dateOnly(r.neededOn)!;
+      const f = packageStatus({ stages: r.stages.map((s) => ({ stage: s.stage, plannedOn: dateOnly(s.plannedOn), actualOn: dateOnly(s.actualOn) })), neededOn: needed, vessel: r.vessel, billOfLading: r.billOfLading, eta: dateOnly(r.eta), portToSiteDays: r.portToSiteDays }, today);
+      const late = packageLate(f);
+      if (late === null || !f.forecastOnSite) continue;
+      const p = byId.get(r.projectId)!;
+      const port = r.portToSiteDays ?? DEFAULT_PORT_TO_SITE_DAYS;
+      const how =
+        f.forecastFrom === 'ETA'
+          ? `${r.vessel ? `${r.vessel} is` : 'The ship is'} due at the port on ${day(dateOnly(r.eta)!)}, and customs and the road take ${plural(port, 'day')}`
+          : f.nextStage && f.nextOverdueDays
+            ? `${PACKAGE_STAGE_LABELS[f.nextStage]} was planned for ${day(f.nextPlannedOn!)} and is ${plural(f.nextOverdueDays, 'day')} overdue`
+            : 'The stages done so far ran late against the plan';
+      out.push({
+        key: `package:${r.id}:${f.forecastOnSite}`,
+        kind: 'PACKAGE_LATE',
+        title: `${r.code} ${r.name} will reach site ${plural(late, 'day')} after it is needed`,
+        detail: `${how}, so it reaches ${p.name} about ${day(f.forecastOnSite)}; site needs it on ${day(needed)}.`,
+        action: f.forecastFrom === 'ETA' ? `Line up customs clearance and transport before the ship docks, and re-plan the work that waits on it` : `Chase ${r.vendor?.name ?? 'the vendor'} for a firm date, and re-plan the work that waits on it`,
+        impact: { text: `${plural(late, 'day')} late for site`, inr: null, days: late },
+        working: [
+          ...(f.currentStage ? [`Last stage done: ${PACKAGE_STAGE_LABELS[f.currentStage].toLowerCase()}`] : ['No stage done yet']),
+          f.forecastFrom === 'ETA' ? `ETA ${day(dateOnly(r.eta)!)} + ${plural(port, 'day')} port to site = ${day(f.forecastOnSite)}` : `Planned delivery moved by the delay so far = ${day(f.forecastOnSite)}`,
+          `Needed on site ${day(needed)}; warns once more than ${plural(PACKAGE_GRACE_DAYS, 'day')} late`,
+        ],
+        facts: [
+          { label: 'Expected at site', value: day(f.forecastOnSite) },
+          { label: 'Needed on site', value: day(needed) },
+        ],
+        links: [{ label: 'Engineering and packages', href: `/projects/${p.id}?tab=epc&sub=packages` }],
         projectId: p.id,
         projectName: p.name,
       });

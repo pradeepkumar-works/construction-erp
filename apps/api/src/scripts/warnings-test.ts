@@ -10,6 +10,8 @@
 import assert from 'node:assert/strict';
 import type { RoleKey } from '@erp/shared';
 import { PAUSE_MIN_OUTCOMES, PAUSE_WINDOW_DAYS, PAUSE_WRONG_SHARE, WARNING_KINDS, trackRecordText, watchListKinds } from '@erp/shared';
+import { packageLate } from '../warnings/warning-rules';
+import { packageStatus } from '../epc/epc-rules';
 import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
 const cases: [string, () => void][] = [];
@@ -201,6 +203,19 @@ test('fuel: a vehicle short of its km a litre is thirsty; far over it warns the 
 // ---------------------------------------------------------------------------------------------------------------------
 // Machine loan EMIs (v6 item 108)
 
+test('package: at sea past the day site needs it warns; a few days, or delivered, does not', () => {
+  const stages = [
+    { stage: 'ORDERED' as const, plannedOn: '2026-03-01', actualOn: '2026-03-04' },
+    { stage: 'SHIPPED' as const, plannedOn: '2026-08-01', actualOn: '2026-08-20' },
+    { stage: 'DELIVERED' as const, plannedOn: '2026-08-25', actualOn: null },
+  ];
+  const atSea = packageStatus({ stages, neededOn: '2026-09-01', eta: '2026-09-12', portToSiteDays: 10 }, '2026-09-05');
+  assert.equal(atSea.forecastOnSite, '2026-09-22');
+  assert.equal(packageLate(atSea), 21);
+  assert.equal(packageLate(packageStatus({ stages, neededOn: '2026-09-20', eta: '2026-09-12', portToSiteDays: 10 }, '2026-09-05')), null, 'two days is inside the grace');
+  const landed = packageStatus({ stages: stages.map((s) => (s.stage === 'DELIVERED' ? { ...s, actualOn: '2026-09-21' } : s)), neededOn: '2026-09-01', eta: '2026-09-12', portToSiteDays: 10 }, '2026-09-25');
+  assert.equal(packageLate(landed), null, 'delivered late is history, not a warning');
+});
 test('emi: an EMI more than two days late warns, with the oldest, the count and the amount', () => {
   const emis = [
     { no: 5, dueDate: '2026-09-05', emi: 94968, paidOn: '2026-09-05' },
@@ -219,11 +234,11 @@ test('emi: an EMI more than two days late warns, with the oldest, the count and 
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE']);
   assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE']);
   assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH', 'LOAN_EMI']);
-  assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR', 'RATE_ABOVE']);
+  assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR', 'RATE_ABOVE', 'PACKAGE_LATE']);
   assert.deepEqual(watchListKinds('SITE_ENGINEER'), []);
 });
 

@@ -17,6 +17,18 @@ const median = (xs: number[]) => {
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
+// EPC packages (item 130): when a package reaches site is `packageStatus` in `epc/epc-rules.ts`.
+
+/** A package forecast to reach site within this many days after site needs it is noise, not a warning. */
+export const PACKAGE_GRACE_DAYS = 3;
+
+/** Days a package will be late for site, when that is past the grace; null otherwise or once it has been delivered. */
+export function packageLate(f: { lateDays: number | null; forecastFrom: 'DELIVERED' | 'ETA' | 'PLAN' | null }): number | null {
+  if (f.forecastFrom === 'DELIVERED' || f.lateDays === null || f.lateDays <= PACKAGE_GRACE_DAYS) return null;
+  return f.lateDays;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Schedule: an activity's current rate puts its finish past the baseline.
 
 /** The rate is the work done over this many days, so a burst long ago does not hide a stall now. */

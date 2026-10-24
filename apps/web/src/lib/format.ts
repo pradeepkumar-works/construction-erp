@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
-import type { SubmissionStatus, MaterialPriority, NotificationType, ProjectStatus, StockEntryType } from '@erp/shared';
+import type { ContractCurrency, SubmissionStatus, MaterialPriority, NotificationType, ProjectStatus, StockEntryType } from '@erp/shared';
+import { currencySymbol, fromRupees, isForeign, toRupees } from '@erp/shared';
 
 const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 const inr2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,6 +28,38 @@ export function formatINRCompact(value: string | number | null | undefined): str
   if (abs >= 1e7) return `${RUPEE}${(n / 1e7).toFixed(2)}\u00A0Cr`;
   if (abs >= 1e5) return `${RUPEE}${(n / 1e5).toFixed(2)}\u00A0L`;
   return `${RUPEE}${inr.format(n)}`;
+}
+
+const intl2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const intl0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
+/**
+ * Money a project keeps in rupees, in its contract currency (item 130): "US$ 74,850.00" on a foreign contract at the
+ * contract rate, else formatINR. International digit grouping abroad, Indian at home.
+ */
+export function formatMoney(rupees: string | number | null | undefined, c: ContractCurrency | null | undefined, decimals = false): string {
+  if (!isForeign(c)) return formatINR(rupees, decimals);
+  const v = fromRupees(toNumber(rupees), c.exchangeRate);
+  return `${currencySymbol(c.currency)}\u00A0${decimals ? intl2.format(v) : intl0.format(v)}`;
+}
+
+/** A form's money field on a foreign contract: rupees kept to the amount in the currency, and back (identity at home). */
+export const inContract = (rupees: number | null | undefined, c: ContractCurrency | null | undefined) =>
+  rupees === null || rupees === undefined ? rupees : isForeign(c) ? fromRupees(rupees, c.exchangeRate) : rupees;
+export const outOfContract = (amount: number | null | undefined, c: ContractCurrency | null | undefined) =>
+  amount === null || amount === undefined ? amount : isForeign(c) ? toRupees(amount, c.exchangeRate) : amount;
+/** The prefix of a money field in the contract currency. */
+export const moneyPrefix = (c: ContractCurrency | null | undefined) => (isForeign(c) ? currencySymbol(c.currency) : '₹');
+
+/** Compact money in the contract currency for KPIs: US$ 6.20 M, or formatINRCompact at home. */
+export function formatMoneyCompact(rupees: string | number | null | undefined, c: ContractCurrency | null | undefined): string {
+  if (!isForeign(c)) return formatINRCompact(rupees);
+  const v = fromRupees(toNumber(rupees), c.exchangeRate);
+  const abs = Math.abs(v);
+  const sym = `${currencySymbol(c.currency)}\u00A0`;
+  if (abs >= 1e6) return `${sym}${(v / 1e6).toFixed(2)}\u00A0M`;
+  if (abs >= 1e3) return `${sym}${(v / 1e3).toFixed(1)}\u00A0K`;
+  return `${sym}${intl0.format(v)}`;
 }
 
 export function formatQty(value: string | number | null | undefined): string {
