@@ -7,6 +7,9 @@ export const dec = (v: Prisma.Decimal | number | null | undefined): string | nul
 export const money = (v: Prisma.Decimal | number | null | undefined): string | null =>
   v === null || v === undefined ? null : new Prisma.Decimal(v).toFixed(2);
 
+/** An exchange rate (item 130), to six places without trailing zeros. */
+export const fxRate = (v: Prisma.Decimal | null | undefined): string | null => (v ? v.toFixed(6).replace(/\.?0+$/, '') : null);
+
 export const dateOnly = (d: Date | null | undefined): string | null => (d ? d.toISOString().slice(0, 10) : null);
 
 export const iso = (d: Date | null | undefined): string | null => (d ? d.toISOString() : null);

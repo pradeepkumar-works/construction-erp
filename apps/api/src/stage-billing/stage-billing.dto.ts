@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateNested } from 'class-validator';
-import { BILLING_BASES, STAGE_TRIGGERS, type BillingBasis, type StageTrigger } from '@erp/shared';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
+import { BILLING_BASES, PACKAGE_STAGES, STAGE_TRIGGERS, type BillingBasis, type PackageStage, type StageTrigger } from '@erp/shared';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() || null : value));
@@ -30,6 +30,23 @@ export class SaveBillingStageDto {
   @ApiPropertyOptional({ type: [String], description: 'SUPPLY: the store items received against it' }) @IsOptional() @IsArray() @ArrayMaxSize(50) @IsUUID('4', { each: true }) itemIds?: string[];
   @ApiPropertyOptional({ example: '10100', description: 'SUPPLY: the scope in the items\' unit (metres for pipe)' }) @IsOptional() @num() @IsNumberString() scopeQty?: string | null;
   @ApiPropertyOptional({ example: '2026-02-12', description: 'EVENT: the day it happened' }) @IsOptional() @IsDateString() achievedOn?: string | null;
+  @ApiPropertyOptional({ type: [String], description: 'EVENT (item 130): engineering deliverables whose approval is the event, in place of a date' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsUUID('4', { each: true })
+  deliverableIds?: string[];
+  @ApiPropertyOptional({ type: [String], description: 'SUPPLY (item 130): equipment packages it is paid by, in place of items and a scope' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('4', { each: true })
+  packageIds?: string[];
+  @ApiPropertyOptional({ enum: PACKAGE_STAGES, description: 'SUPPLY with packages: the stage they must reach; delivered when empty' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsIn(PACKAGE_STAGES as unknown as string[])
+  packageStage?: PackageStage | null;
   @ApiPropertyOptional({ example: 'EE letter SUWM/DES/114' }) @IsOptional() @trim() @IsString() @MaxLength(300) evidence?: string | null;
 }
 

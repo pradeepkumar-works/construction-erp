@@ -92,6 +92,7 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'RMC_SALES', use: 'Concrete and pumping on RMC bills', name: 'Sales of Ready-Mix Concrete', group: 'Sales Accounts' },
   { key: 'MACHINERY', use: 'Machines bought on a loan the lender paid to the dealer', name: 'Plant and Machinery', group: 'Fixed Assets' },
   { key: 'LOAN_INTEREST', use: 'Interest in the EMIs of machine loans', name: 'Interest on Machinery Loans', group: 'Indirect Expenses' },
+  { key: 'EXCHANGE_DIFFERENCE', use: 'A client in another currency paying at a rate other than the contract rate', name: 'Exchange Difference', group: 'Indirect Incomes' },
 ];
 
 /** Ledger keys for the parties and categories: `CLIENT:<id>`, `VENDOR:<id>`, `EXPENSE:<category>`. */

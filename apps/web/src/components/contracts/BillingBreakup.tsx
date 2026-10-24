@@ -5,12 +5,12 @@ import { Alert, App, Button, DatePicker, Descriptions, Empty, Flex, Form, Input,
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { BillingBreakupDto, BillingComponentDto, BillingStageDto, MilestoneRowDto, StageTrigger } from '@erp/shared';
-import { BILLING_BASIS_LABELS, STAGE_TRIGGERS, STAGE_TRIGGER_HINTS, STAGE_TRIGGER_LABELS } from '@erp/shared';
+import type { ContractCurrency, BillingBreakupDto, BillingComponentDto, BillingStageDto, MilestoneRowDto, PackageStage, StageTrigger } from '@erp/shared';
+import { BILLING_BASIS_LABELS, PACKAGE_STAGES, PACKAGE_STAGE_LABELS, STAGE_TRIGGERS, billsByStages, STAGE_TRIGGER_HINTS, STAGE_TRIGGER_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useActivities, useBillingBreakup, useStockItems } from '@/lib/queries';
-import { formatINR, formatMonthShort, formatPct, toNumber } from '@/lib/format';
+import { useActivities, useBillingBreakup, useEpc, useStockItems } from '@/lib/queries';
+import { formatMoney, formatMonthShort, formatPct, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
@@ -18,7 +18,7 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
-const money = (v: string | null) => (v ? <span className="mono" translate="no">{formatINR(v)}</span> : '-');
+const moneyOf = (c: ContractCurrency | undefined) => (v: string | null) => (v ? <span className="mono" translate="no">{formatMoney(v, c)}</span> : '-');
 const TRIGGER_COLORS: Record<StageTrigger, string> = { EVENT: 'purple', PROGRESS: 'blue', SUPPLY: 'cyan', TEST: 'geekblue' };
 const VISUALLY_HIDDEN: React.CSSProperties = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
 const numOrNull = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
@@ -44,6 +44,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useBillingBreakup(projectId);
+  const money = moneyOf(data);
   const [component, setComponent] = useState<BillingComponentDto | 'new' | null>(null);
   const [stage, setStage] = useState<{ component: BillingComponentDto; stage: BillingStageDto | null } | null>(null);
   const [terms, setTerms] = useState(false);
@@ -73,7 +74,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
 
   if (isLoading) return <Section title="Billing break-up" loading />;
   if (error || !data) return <QueryError error={error ?? new Error('Billing break-up not found')} onRetry={() => refetch()} />;
-  if (data.contractModel !== 'LUMP_SUM') return null;
+  if (!billsByStages(data.contractModel)) return null;
 
   const hasParts = (c: BillingComponentDto) => data.components.some((k) => k.parentId === c.id);
   const stageColumns = (c: BillingComponentDto) => [
@@ -322,7 +323,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
         </>
       ) : null}
       {data.canEdit ? <ComponentModal data={data} component={component} onClose={() => setComponent(null)} onSaved={saved} /> : null}
-      {data.canEdit ? <StageModal projectId={projectId} target={stage} onClose={() => setStage(null)} onSaved={saved} /> : null}
+      {data.canEdit ? <StageModal projectId={projectId} epc={data.contractModel === 'EPC'} target={stage} onClose={() => setStage(null)} onSaved={saved} /> : null}
       {data.canEditTerms ? <TermsModal data={data} open={terms} onClose={() => setTerms(false)} onSaved={saved} /> : null}
       {data.canEditTerms ? <GridModal data={data} open={grid} onClose={() => setGrid(false)} onSaved={saved} /> : null}
       {data.canEditTerms ? <TiersModal data={data} open={tiers} onClose={() => setTiers(false)} onSaved={saved} /> : null}
@@ -461,23 +462,31 @@ interface StageValues {
   scopeQty?: number | null;
   achievedOn?: dayjs.Dayjs | null;
   evidence?: string | null;
+  deliverableIds?: string[];
+  packageIds?: string[];
+  packageStage?: PackageStage | null;
 }
 
-function StageModal({ projectId, target, onClose, onSaved }: { projectId: string; target: { component: BillingComponentDto; stage: BillingStageDto | null } | null; onClose: () => void; onSaved: (d: BillingBreakupDto) => void }) {
+function StageModal({ projectId, epc, target, onClose, onSaved }: { projectId: string; epc: boolean; target: { component: BillingComponentDto; stage: BillingStageDto | null } | null; onClose: () => void; onSaved: (d: BillingBreakupDto) => void }) {
   const [form] = Form.useForm<StageValues>();
   const { message } = App.useApp();
   const trigger = Form.useWatch('trigger', form);
+  const deliverableIds = Form.useWatch('deliverableIds', form);
+  const packageIds = Form.useWatch('packageIds', form);
+  const byDeliverables = trigger === 'EVENT' && !!deliverableIds?.length;
+  const byPackages = trigger === 'SUPPLY' && !!packageIds?.length;
   const [itemQ, setItemQ] = useState('');
   const activities = useActivities(target ? projectId : undefined);
-  const items = useStockItems(target && trigger === 'SUPPLY' ? { pageSize: 50, q: itemQ || undefined } : undefined);
+  const epcData = useEpc(projectId, !!target && epc);
+  const items = useStockItems(target && trigger === 'SUPPLY' && !byPackages ? { pageSize: 50, q: itemQ || undefined } : undefined);
   const s = target?.stage ?? null;
   useEffect(() => {
     if (!target) return;
     form.resetFields();
     form.setFieldsValue(
       s
-        ? { name: s.name, pct: Number(s.pct), trigger: s.trigger, activityIds: s.activityIds, itemIds: s.itemIds, scopeQty: s.scopeQty === null ? null : Number(s.scopeQty), achievedOn: s.achievedOn ? dayjs(s.achievedOn) : null, evidence: s.evidence }
-        : { trigger: 'PROGRESS' },
+        ? { name: s.name, pct: Number(s.pct), trigger: s.trigger, activityIds: s.activityIds, itemIds: s.itemIds, scopeQty: s.scopeQty === null ? null : Number(s.scopeQty), achievedOn: s.achievedOn ? dayjs(s.achievedOn) : null, evidence: s.evidence, deliverableIds: s.deliverableIds, packageIds: s.packageIds, packageStage: s.packageStage ?? 'DELIVERED' }
+        : { trigger: 'PROGRESS', packageStage: 'DELIVERED' },
     );
   }, [target, s, form]);
   const elementId = target?.component.workElementId;
@@ -490,6 +499,16 @@ function StageModal({ projectId, target, onClose, onSaved }: { projectId: string
     for (const i of items.data?.items ?? []) named.set(i.id, `${i.name} (${i.unit})`);
     return [...named].map(([value, label]) => ({ value, label }));
   }, [items.data, s]);
+  const deliverableOptions = useMemo(() => {
+    const named = new Map((s?.deliverableIds ?? []).map((id, i) => [id, s?.deliverableNames[i] ?? id]));
+    for (const d of epcData.data?.deliverables ?? []) named.set(d.id, `${d.code} ${d.title}`);
+    return [...named].map(([value, label]) => ({ value, label }));
+  }, [epcData.data, s]);
+  const packageOptions = useMemo(() => {
+    const named = new Map((s?.packageIds ?? []).map((id, i) => [id, s?.packageNames[i] ?? id]));
+    for (const p of epcData.data?.packages ?? []) named.set(p.id, `${p.code} ${p.name}`);
+    return [...named].map(([value, label]) => ({ value, label }));
+  }, [epcData.data, s]);
   const save = useMutation({
     mutationFn: async (v: StageValues) =>
       (
@@ -500,10 +519,13 @@ function StageModal({ projectId, target, onClose, onSaved }: { projectId: string
           pct: String(v.pct),
           trigger: v.trigger,
           activityIds: v.trigger === 'PROGRESS' || v.trigger === 'TEST' ? (v.activityIds ?? []) : [],
-          itemIds: v.trigger === 'SUPPLY' ? (v.itemIds ?? []) : [],
-          scopeQty: v.trigger === 'SUPPLY' ? numOrNull(v.scopeQty) : null,
-          achievedOn: v.trigger === 'EVENT' && v.achievedOn ? v.achievedOn.format('YYYY-MM-DD') : null,
-          evidence: v.trigger === 'EVENT' ? v.evidence?.trim() || null : null,
+          itemIds: v.trigger === 'SUPPLY' && !v.packageIds?.length ? (v.itemIds ?? []) : [],
+          scopeQty: v.trigger === 'SUPPLY' && !v.packageIds?.length ? numOrNull(v.scopeQty) : null,
+          achievedOn: v.trigger === 'EVENT' && !v.deliverableIds?.length && v.achievedOn ? v.achievedOn.format('YYYY-MM-DD') : null,
+          evidence: v.trigger === 'EVENT' && !v.deliverableIds?.length ? v.evidence?.trim() || null : null,
+          deliverableIds: v.trigger === 'EVENT' ? (v.deliverableIds ?? []) : [],
+          packageIds: v.trigger === 'SUPPLY' ? (v.packageIds ?? []) : [],
+          packageStage: v.trigger === 'SUPPLY' && v.packageIds?.length ? (v.packageStage ?? 'DELIVERED') : null,
         })
       ).data,
     onSuccess: (d, v) => {
@@ -540,7 +562,19 @@ function StageModal({ projectId, target, onClose, onSaved }: { projectId: string
             <Select mode="multiple" allowClear loading={activities.isLoading} options={activityOptions} showSearch={{ optionFilterProp: 'label' }} placeholder="The whole component" />
           </Form.Item>
         ) : null}
-        {trigger === 'SUPPLY' ? (
+        {trigger === 'SUPPLY' && epc ? (
+          <FormGrid cols={2}>
+            <Form.Item name="packageIds" label="Equipment packages" extra="Paid by the share of their value that has reached the stage">
+              <Select mode="multiple" allowClear loading={epcData.isLoading} options={packageOptions} showSearch={{ optionFilterProp: 'label' }} placeholder="None: read items received" />
+            </Form.Item>
+            {byPackages ? (
+              <Form.Item name="packageStage" label="Once they are">
+                <Select options={PACKAGE_STAGES.map((st) => ({ value: st, label: PACKAGE_STAGE_LABELS[st] }))} />
+              </Form.Item>
+            ) : null}
+          </FormGrid>
+        ) : null}
+        {trigger === 'SUPPLY' && !byPackages ? (
           <FormGrid cols={2}>
             <Form.Item name="itemIds" label="Items received against it" rules={[{ required: true, message: 'Choose the pipe or equipment' }]}>
               <Select mode="multiple" options={itemOptions} loading={items.isFetching} showSearch={{ filterOption: false, onSearch: setItemQ }} placeholder="Search the item master" />
@@ -550,7 +584,12 @@ function StageModal({ projectId, target, onClose, onSaved }: { projectId: string
             </Form.Item>
           </FormGrid>
         ) : null}
-        {trigger === 'EVENT' ? (
+        {trigger === 'EVENT' && epc ? (
+          <Form.Item name="deliverableIds" label="Engineering deliverables" extra="Done on the day the last of them is approved">
+            <Select mode="multiple" allowClear loading={epcData.isLoading} options={deliverableOptions} showSearch={{ optionFilterProp: 'label' }} placeholder="None: give the day it happened" />
+          </Form.Item>
+        ) : null}
+        {trigger === 'EVENT' && !byDeliverables ? (
           <FormGrid cols={2}>
             <Form.Item name="achievedOn" label="Happened on" extra="Empty until it does">
               <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
@@ -579,7 +618,7 @@ function TermsModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
     if (!open) return;
     form.resetFields();
     form.setFieldsValue({
-      lumpSumValue: data.lumpSumSet ? toNumber(data.lumpSum) : null,
+      lumpSumValue: data.lumpSumSet ? inContract(toNumber(data.lumpSum), data) : null,
       tenderFactor: Number(data.tenderFactor),
       advanceRecoveryFromPct: data.advanceRecoveryFromPct === null ? null : Number(data.advanceRecoveryFromPct),
       advanceRecoveryToPct: data.advanceRecoveryToPct === null ? null : Number(data.advanceRecoveryToPct),
@@ -589,7 +628,7 @@ function TermsModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
     mutationFn: async (v: TermsValues) =>
       (
         await api.put<BillingBreakupDto>(`/projects/${data.projectId}/billing-breakup/terms`, {
-          lumpSumValue: numOrNull(v.lumpSumValue),
+          lumpSumValue: numOrNull(outOfContract(v.lumpSumValue, data)),
           tenderFactor: numOrNull(v.tenderFactor),
           advanceRecoveryFromPct: numOrNull(v.advanceRecoveryFromPct),
           advanceRecoveryToPct: numOrNull(v.advanceRecoveryToPct),
@@ -605,7 +644,7 @@ function TermsModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Billing terms" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical" requiredMark="optional">
         <Form.Item name="lumpSumValue" label="Lump sum the components share" extra="Empty takes the contract value. Leave out what unit-rate items are paid for.">
-          <MoneyInput />
+          <MoneyInput prefix={moneyPrefix(data)} />
         </Form.Item>
         <Form.Item name="tenderFactor" label="Tender factor" extra="Lump sum ÷ the estimate; unit-rate items are paid at their rate × this">
           <InputNumber min={0.5} max={2} step={0.0001} style={{ width: '100%' }} />

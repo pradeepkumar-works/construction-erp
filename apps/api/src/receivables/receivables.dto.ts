@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
 import { LIST_SORT_FIELDS, RECEIPT_KINDS, RECEIPT_MODES, type PaymentMode, type ReceiptKind, type ReceiptSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -21,6 +21,12 @@ export class ReceiptFieldsDto {
   @ApiPropertyOptional() @IsOptional() @num() @IsNumberString() otherDeduction?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(200) otherDeductionNote?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
+  @ApiPropertyOptional({ example: '83.9', description: 'A project in another currency (item 130): rupees to one unit on the day the bank credited it; the contract rate when empty' })
+  @IsOptional()
+  @num()
+  @ValidateIf((_, v) => v !== null && v !== '')
+  @IsNumberString()
+  exchangeRate?: string | null;
 }
 
 export class CreateReceiptDto extends ReceiptFieldsDto {

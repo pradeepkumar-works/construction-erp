@@ -53,6 +53,7 @@ export * from './photo-checks';
 export * from './reconciliation';
 export * from './stock-against-dpr';
 export * from './stage-billing';
+export * from './epc';
 export * from './fleet';
 export * from './ppe';
 export * from './rfi';

@@ -3,16 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, InputNumber, Table, Tag, Tooltip, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { RaBillDto, RaBillStageLineDto, SlippageLineDto } from '@erp/shared';
+import type { ContractCurrency, RaBillDto, RaBillStageLineDto, SlippageLineDto } from '@erp/shared';
 import { STAGE_TRIGGER_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { formatDate, formatINR, formatPct, toNumber } from '@/lib/format';
+import { formatDate, formatMoney, formatPct, toNumber } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 
 const pct = (v: string | number | null) => (v === null ? '-' : <span className="mono" translate="no">{formatPct(v, { digits: toNumber(v) % 1 ? 2 : 0 })}</span>);
-const money = (v: string) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
+const money = (v: string, c: ContractCurrency) => <span className="mono" translate="no">{formatMoney(v, c, true)}</span>;
 
 /**
  * A lump-sum bill's payment stages (item 129): what each stage's evidence gave at the measurements date, what earlier
@@ -57,7 +57,7 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
               </div>
             ),
           },
-          { title: 'Value', dataIndex: 'stageValue', width: 130, align: 'right', render: money },
+          { title: 'Value', dataIndex: 'stageValue', width: 130, align: 'right', render: (v: string) => money(v, bill) },
           { title: 'Previous', dataIndex: 'prevPct', width: 90, align: 'right', render: pct },
           {
             title: 'This bill',
@@ -94,7 +94,7 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
               ]
             : []),
           { title: 'Up to date', dataIndex: 'uptoPct', width: 100, align: 'right', render: pct },
-          { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v: string) => <strong>{money(v)}</strong> },
+          { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v: string) => <strong>{money(v, bill)}</strong> },
           ...(editable
             ? [
                 {
@@ -125,7 +125,7 @@ function ClaimModal({ bill, line, onClose }: { bill: RaBillDto; line: RaBillStag
     onSuccess: (b) => {
       qc.setQueryData(['bills', 'detail', b.id], b);
       qc.invalidateQueries({ queryKey: ['bills'] });
-      message.success(`${b.billLabel} re-priced: ${formatINR(b.grossAmount, true)} of work`);
+      message.success(`${b.billLabel} re-priced: ${formatMoney(b.grossAmount, b, true)} of work`);
     },
     meta: FAIL_NOTICE,
   });
@@ -177,15 +177,15 @@ function ClaimModal({ bill, line, onClose }: { bill: RaBillDto; line: RaBillStag
 }
 
 /** Why a bill withholds (or releases) for milestone slippage: each component behind its target and its tier. */
-export function SlippageNotes({ lines, withheld }: { lines: SlippageLineDto[]; withheld: string }) {
+export function SlippageNotes({ lines, withheld, c }: { lines: SlippageLineDto[]; withheld: string; c: ContractCurrency }) {
   const net = toNumber(withheld);
   return (
     <>
       <Typography.Paragraph type="secondary">
         {lines.length
-          ? `Behind the milestone grid at the measurements date. This bill ${net < 0 ? `releases ${formatINR(-net, true)}` : `withholds ${formatINR(net, true)}`}: the total below less what earlier bills withheld.`
+          ? `Behind the milestone grid at the measurements date. This bill ${net < 0 ? `releases ${formatMoney(-net, c, true)}` : `withholds ${formatMoney(net, c, true)}`}: the total below less what earlier bills withheld.`
           : net < 0
-            ? `Every component is on its target, so this bill releases the ${formatINR(-net, true)} earlier bills withheld.`
+            ? `Every component is on its target, so this bill releases the ${formatMoney(-net, c, true)} earlier bills withheld.`
             : 'Every component is on its target.'}
       </Typography.Paragraph>
       {lines.length ? (
@@ -201,7 +201,7 @@ export function SlippageNotes({ lines, withheld }: { lines: SlippageLineDto[]; w
             { title: 'Billed', dataIndex: 'actualPct', align: 'right', render: (v: number) => pct(v) },
             { title: 'Behind by', dataIndex: 'behindPct', align: 'right', render: (v: number) => `${formatPct(v)} of the target` },
             { title: 'Tier', dataIndex: 'tierPct', align: 'right', render: (v: number) => pct(v) },
-            { title: 'Withheld to date', dataIndex: 'withheld', align: 'right', render: (v: string) => <strong>{money(v)}</strong> },
+            { title: 'Withheld to date', dataIndex: 'withheld', align: 'right', render: (v: string) => <strong>{money(v, c)}</strong> },
           ]}
         />
       ) : null}

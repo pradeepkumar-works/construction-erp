@@ -26,6 +26,7 @@ import { CostModule } from './cost/cost.module';
 import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { ReportsModule } from './reports/reports.module';
 import { RisksModule } from './risks/risks.module';
+import { EpcModule } from './epc/epc.module';
 import { SearchModule } from './search/search.module';
 import { AiModule } from './ai/ai.module';
 import { BillChecksModule } from './checks/bill-checks.module';
@@ -146,6 +147,7 @@ import { VitalsController } from './vitals.controller';
     ReconciliationModule,
     ReportsModule,
     RisksModule,
+    EpcModule,
     SearchModule,
     AiModule,
     BillChecksModule,

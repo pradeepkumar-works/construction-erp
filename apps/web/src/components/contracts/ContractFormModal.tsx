@@ -6,7 +6,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractPercentField, LdPeriod, ProjectContractDto } from '@erp/shared';
-import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, CURRENCIES, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE } from '@erp/shared';
+import { inContract, moneyPrefix, outOfContract } from '@/lib/format';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useNoticePeriod } from '@/lib/queries';
@@ -21,6 +22,8 @@ type FormValues = {
   agreementNo?: string;
   agreementDate?: dayjs.Dayjs | null;
   contractValue?: number | null;
+  currency?: string;
+  exchangeRate?: number | null;
   dates?: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null;
   mobilisationAdvance?: number | null;
   defectLiabilityMonths?: number | null;
@@ -49,6 +52,10 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
   const qc = useQueryClient();
   const [newClient, setNewClient] = useState(false);
   const found = useNoticePeriod(contract.projectId, open).data?.found ?? null;
+  const currency = Form.useWatch('currency', form) ?? 'INR';
+  const rate = Form.useWatch('exchangeRate', form);
+  // Amounts are typed in the contract currency and kept in rupees at the contract rate (item 130).
+  const typed = { currency, exchangeRate: rate ? String(rate) : null };
 
   useEffect(() => {
     if (!open) return;
@@ -58,9 +65,11 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       workOrderNo: contract.workOrderNo ?? undefined,
       agreementNo: contract.agreementNo ?? undefined,
       agreementDate: contract.agreementDate ? dayjs(contract.agreementDate) : null,
-      contractValue: contract.contractValue ? Number(contract.contractValue) : null,
+      contractValue: contract.contractValue ? inContract(Number(contract.contractValue), contract) : null,
+      currency: contract.currency,
+      exchangeRate: contract.exchangeRate ? Number(contract.exchangeRate) : null,
       dates: [contract.startDate ? dayjs(contract.startDate) : null, contract.endDate ? dayjs(contract.endDate) : null],
-      mobilisationAdvance: Number(contract.mobilisationAdvance),
+      mobilisationAdvance: inContract(Number(contract.mobilisationAdvance), contract),
       defectLiabilityMonths: contract.defectLiabilityMonths,
       clientPaymentDays: contract.clientPaymentDays,
       noticeDays: contract.noticeDays,
@@ -74,15 +83,18 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
 
   const save = useMutation({
     mutationFn: async (v: FormValues) => {
+      const c = { currency: v.currency ?? 'INR', exchangeRate: v.exchangeRate ? String(v.exchangeRate) : null };
       const body = {
         clientId: v.clientId ?? null,
         workOrderNo: v.workOrderNo?.trim() || null,
         agreementNo: v.agreementNo?.trim() || null,
         agreementDate: v.agreementDate ? v.agreementDate.format('YYYY-MM-DD') : null,
-        contractValue: v.contractValue === null || v.contractValue === undefined ? null : String(v.contractValue),
+        contractValue: v.contractValue === null || v.contractValue === undefined ? null : String(outOfContract(v.contractValue, c)),
+        currency: c.currency,
+        exchangeRate: c.currency === 'INR' ? null : c.exchangeRate,
         startDate: v.dates?.[0] ? v.dates[0].format('YYYY-MM-DD') : null,
         endDate: v.dates?.[1] ? v.dates[1].format('YYYY-MM-DD') : null,
-        mobilisationAdvance: String(v.mobilisationAdvance ?? 0),
+        mobilisationAdvance: String(outOfContract(v.mobilisationAdvance ?? 0, c)),
         defectLiabilityMonths: v.defectLiabilityMonths ?? null,
         clientPaymentDays: v.clientPaymentDays ?? null,
         noticeDays: v.noticeDays ?? null,
@@ -137,8 +149,23 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               </Form.Item>
             </FormGrid>
             <FormGrid cols={2}>
+              <Form.Item name="currency" label="Contract currency" extra="Bills, receipts and the break-up show in it; the books stay in rupees">
+                <Select showSearch={{ optionFilterProp: 'label' }} options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))} />
+              </Form.Item>
+              {currency !== 'INR' ? (
+                <Form.Item
+                  name="exchangeRate"
+                  label={`Contract rate (₹ to 1 ${currency})`}
+                  extra="The rate the contract is kept at. Receipts record the day's rate; the difference goes to exchange difference."
+                  rules={[{ required: true, message: `Enter the rupees to 1 ${currency}, e.g. 83.25` }]}
+                >
+                  <InputNumber<number> style={{ width: '100%' }} min={0.000001} precision={6} controls={false} inputMode="decimal" />
+                </Form.Item>
+              ) : null}
+            </FormGrid>
+            <FormGrid cols={2}>
               <Form.Item name="contractValue" label="Contract value">
-                <MoneyInput />
+                <MoneyInput prefix={moneyPrefix(typed)} />
               </Form.Item>
               <Form.Item name="dates" label="Start / completion date (as agreed)" extra="Extensions of time come from the delay register.">
                 <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
@@ -155,7 +182,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
             </FormGrid>
             <FormGrid cols={3}>
               <Form.Item name="mobilisationAdvance" label="Mobilisation advance" tooltip="Advance received from the client; recovered from bills at the advance recovery %">
-                <MoneyInput />
+                <MoneyInput prefix={moneyPrefix(typed)} />
               </Form.Item>
               <Form.Item name="defectLiabilityMonths" label="Defect liability (months)">
                 <InputNumber<number> style={{ width: '100%' }} min={0} max={120} precision={0} inputMode="numeric" />

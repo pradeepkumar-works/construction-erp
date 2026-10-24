@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { DEFAULT_SLIPPAGE_TIERS, STAGE_TEMPLATES, UNIT_RATE_ELEMENT_TYPES, pipeSizeOf, type SlippageLineDto } from '@erp/shared';
+import { DEFAULT_SLIPPAGE_TIERS, STAGE_TEMPLATES, billsByStages, UNIT_RATE_ELEMENT_TYPES, pipeSizeOf, type SlippageLineDto } from '@erp/shared';
 import { dateOnly, money } from '../common/serialize';
 import { progressRollup } from '../common/progress';
 import { EVIDENCE_STAGE_SELECT, loadStageEvidence } from './stage-evidence';
@@ -37,6 +37,8 @@ export const compareCodes = (a: { code: string }, b: { code: string }) => a.code
 export const PROJECT_SELECT = {
   id: true,
   contractModel: true,
+  currency: true,
+  exchangeRate: true,
   contractValue: true,
   lumpSumValue: true,
   tenderFactor: true,
@@ -180,7 +182,7 @@ export async function proposedGrid(db: Db, projectId: string): Promise<{ months:
  */
 export async function stagePlan(tx: Db, bill: { id: string; projectId: string; billNo: number; measuredUpTo: Date }, opts: { certified?: Map<string, D> } = {}): Promise<BillStagePlan | null> {
   const project = await tx.project.findUniqueOrThrow({ where: { id: bill.projectId }, select: PROJECT_SELECT });
-  if (project.contractModel !== 'LUMP_SUM') return null;
+  if (!billsByStages(project.contractModel)) return null;
   const components = await tx.billingComponent.findMany({ where: { projectId: bill.projectId }, include: { stages: { select: { ...EVIDENCE_STAGE_SELECT, pct: true, sortOrder: true, componentId: true }, orderBy: { sortOrder: 'asc' } } } });
   if (!components.length) return null;
   components.sort(compareCodes);

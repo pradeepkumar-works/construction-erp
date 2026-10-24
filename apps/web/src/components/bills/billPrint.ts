@@ -1,9 +1,9 @@
 import dayjs from 'dayjs';
 import type { RaBillDto } from '@erp/shared';
-import { BILL_STAGE_LABELS, GST_STATES } from '@erp/shared';
+import { BILL_STAGE_LABELS, CURRENCIES, GST_STATES, currencySymbol, fromRupees, isForeign, type ContractCurrency } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber, RUPEE } from '@/lib/format';
+import { formatDate, formatDateTime, formatMoney, formatQty, toNumber } from '@/lib/format';
 
 const esc = (v: unknown) =>
   String(v ?? '')
@@ -11,7 +11,8 @@ const esc = (v: unknown) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-const inr = (v: string | null | undefined) => esc(formatINR(v, true).replace(RUPEE, ''));
+/** An amount in the bill's currency without its symbol (the column heads carry it). */
+const amountIn = (c: ContractCurrency) => (v: string | null | undefined) => esc(formatMoney(v, c, true).replace(/^\S+\u00A0/, ''));
 const qty = (v: string | null | undefined) => esc(v === null || v === undefined ? '' : formatQty(v));
 
 /** Rupees in words, Indian style: "Rupees Twelve Lakh Thirty Four Thousand ... and Fifty Paise Only". */
@@ -38,8 +39,30 @@ export function rupeesInWords(value: string): string {
   return `${toNumber(value) < 0 ? 'Minus ' : ''}Rupees ${words}${paise ? ` and ${two(paise)} Paise` : ''} Only`;
 }
 
+/** A foreign amount in words, international style: "US dollar Seventy Four Thousand Eight Hundred Fifty and 25/100 Only". */
+export function amountInWords(value: number, currency: string): string {
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  const two = (n: number) => (n < 20 ? ones[n] : `${tens[Math.floor(n / 10)]}${n % 10 ? ` ${ones[n % 10]}` : ''}`);
+  const three = (n: number) => [n >= 100 ? `${ones[Math.floor(n / 100)]} Hundred` : '', two(n % 100)].filter(Boolean).join(' ');
+  const n = Math.abs(value);
+  let whole = Math.floor(n);
+  const cents = Math.round((n - whole) * 100);
+  const parts: string[] = [];
+  for (const [size, word] of [[1e9, 'Billion'], [1e6, 'Million'], [1e3, 'Thousand']] as const) {
+    const k = Math.floor(whole / size);
+    whole %= size;
+    if (k) parts.push(`${three(k)} ${word}`);
+  }
+  if (whole) parts.push(three(whole));
+  const name = CURRENCIES.find((c) => c.code === currency)?.name ?? currency;
+  return `${value < 0 ? 'Minus ' : ''}${name} ${parts.join(' ') || 'Zero'}${cents ? ` and ${String(cents).padStart(2, '0')}/100` : ''} Only`;
+}
+
 /** The bill as the client receives it: header, abstract of cost, deductions, measurement annex and signatures. */
 export function buildBillPrintHtml(b: RaBillDto, orgName: string): string {
+  const inr = amountIn(b);
+  const sym = esc(currencySymbol(isForeign(b) ? b.currency : 'INR'));
   const certified = b.items.some((i) => i.certifiedQty !== null);
   const rows = b.items
     .map(
@@ -147,8 +170,8 @@ ${
   <h2>Payment stages</h2>
   <table>
     <thead>
-      <tr><th rowspan="2">Comp.</th><th rowspan="2">Stage</th><th rowspan="2" class="num">% of comp.</th><th rowspan="2" class="num">Value (₹)</th>
-        <th colspan="3" style="text-align:center">% of the stage</th><th colspan="3" style="text-align:center">Amount (₹)</th></tr>
+      <tr><th rowspan="2">Comp.</th><th rowspan="2">Stage</th><th rowspan="2" class="num">% of comp.</th><th rowspan="2" class="num">Value (${sym})</th>
+        <th colspan="3" style="text-align:center">% of the stage</th><th colspan="3" style="text-align:center">Amount (${sym})</th></tr>
       <tr><th class="num">Previous</th><th class="num">This bill</th><th class="num">Up to date</th><th class="num">Previous</th><th class="num">This bill</th><th class="num">Up to date</th></tr>
     </thead>
     <tbody>
@@ -161,8 +184,8 @@ ${
   <h2>${staged ? `Unit-rate items (rate × tender factor ${esc(b.tenderFactor ?? '1')})` : 'Abstract of cost'}</h2>
   <table>
     <thead>
-      <tr><th rowspan="2" class="c">#</th><th rowspan="2">Item</th><th rowspan="2">Description</th><th rowspan="2">Unit</th><th rowspan="2" class="num">BOQ qty</th><th rowspan="2" class="num">Rate (₹)</th>
-        <th colspan="${certified ? 4 : 3}" style="text-align:center">Quantity</th><th colspan="3" style="text-align:center">Amount (₹)</th></tr>
+      <tr><th rowspan="2" class="c">#</th><th rowspan="2">Item</th><th rowspan="2">Description</th><th rowspan="2">Unit</th><th rowspan="2" class="num">BOQ qty</th><th rowspan="2" class="num">Rate (${sym})</th>
+        <th colspan="${certified ? 4 : 3}" style="text-align:center">Quantity</th><th colspan="3" style="text-align:center">Amount (${sym})</th></tr>
       <tr><th class="num">Previous</th><th class="num">This bill</th>${certified ? '<th class="num">Certified</th>' : ''}<th class="num">Up to date</th><th class="num">Previous</th><th class="num">This bill</th><th class="num">Up to date</th></tr>
     </thead>
     <tbody>
@@ -176,10 +199,10 @@ ${
     ? `
   <h2>Price variation</h2>
   <table>
-    <thead><tr><th>Component</th><th class="num">Share (%)</th><th class="num">Base index</th><th class="num">Current index</th><th class="num">Amount (₹)</th></tr></thead>
+    <thead><tr><th>Component</th><th class="num">Share (%)</th><th class="num">Base index</th><th class="num">Current index</th><th class="num">Amount (${sym})</th></tr></thead>
     <tbody>
       ${b.pvLines.map((l) => `<tr><td>${esc(l.name)}</td><td class="num">${esc(l.sharePct)}</td><td class="num">${esc(l.baseIndex)}</td><td class="num">${esc(l.currentIndex)}</td><td class="num">${inr(l.amount)}</td></tr>`).join('')}
-      <tr class="total"><td colspan="4">On work of ₹ ${inr(b.grossAmount)}${b.pvNote ? ` (${esc(b.pvNote)})` : ''}</td><td class="num">${inr(b.pvAmount)}</td></tr>
+      <tr class="total"><td colspan="4">On work of ${sym} ${inr(b.grossAmount)}${b.pvNote ? ` (${esc(b.pvNote)})` : ''}</td><td class="num">${inr(b.pvAmount)}</td></tr>
     </tbody>
   </table>`
     : ''
@@ -196,8 +219,8 @@ ${
         <tr><td>Less deductions</td><td class="num">${inr(b.totalDeductions)}</td></tr>
         <tr class="total"><td>Net payable</td><td class="num">${inr(b.netPayable)}</td></tr>
       </table>
-      <div class="words">${esc(rupeesInWords(b.netPayable))}</div>
-      ${b.claimedNet !== null ? `<div class="muted" style="margin-top:4px">As claimed: work ₹ ${inr(b.claimedGross)}, net ₹ ${inr(b.claimedNet)}</div>` : ''}
+      <div class="words">${esc(isForeign(b) ? amountInWords(fromRupees(b.netPayable, b.exchangeRate), b.currency) : rupeesInWords(b.netPayable))}${isForeign(b) ? `<div class="muted">At the contract rate of ₹ ${esc(b.exchangeRate)} to 1 ${esc(b.currency)}</div>` : ''}</div>
+      ${b.claimedNet !== null ? `<div class="muted" style="margin-top:4px">As claimed: work ${sym} ${inr(b.claimedGross)}, net ${sym} ${inr(b.claimedNet)}</div>` : ''}
     </div>
     <div>
       <h2>Deductions</h2>

@@ -121,6 +121,7 @@ import type {
   VendorKind,
   ProjectContractDto,
   BillingBreakupDto,
+  EpcDto,
   GettingStartedDto,
   EquipmentDto,
   EquipmentPartsDto,
@@ -2239,6 +2240,14 @@ export const useBillingBreakup = (projectId: string | undefined, enabled = true)
   useQuery({
     queryKey: ['contract', projectId, 'billing-breakup'],
     queryFn: async () => (await api.get<BillingBreakupDto>(`/projects/${projectId}/billing-breakup`)).data,
+    enabled: !!projectId && enabled,
+  });
+
+/** An EPC project's engineering deliverables, equipment packages and client inputs (item 130). */
+export const useEpc = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['epc', projectId],
+    queryFn: async () => (await api.get<EpcDto>(`/projects/${projectId}/epc`)).data,
     enabled: !!projectId && enabled,
   });
 

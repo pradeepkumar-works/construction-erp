@@ -130,6 +130,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/pipe-network-test.js
+      - name: EPC deliverables, equipment packages to site, payment stages from them, client inputs and the contract currency
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/epc-test.js
       - name: PPE replace-by dates and what each worker lacks
         if: matrix.suite == 'flows'
         working-directory: apps/api

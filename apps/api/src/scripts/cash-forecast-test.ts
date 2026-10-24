@@ -320,7 +320,7 @@ async function demo(): Promise<number> {
         const bl = ready.rows.find((r) => r.projectCode === 'BL-2026-02');
         const late = bl?.unpaid.find((b) => b.billId === waiting.id);
         check('billing readiness: a bill sent 40 days ago is unpaid and late', !!late && late.late && late.daysOutstanding === 40 && late.expectedDays === 30, JSON.stringify(late));
-        check('billing readiness: only projects the PM may see', ready.rows.every((r) => r.projectCode === 'BL-2026-02' || r.projectCode === 'WS-2026-03'), ready.rows.map((r) => r.projectCode).join(', '));
+        check('billing readiness: only projects the PM may see', ready.rows.every((r) => ['BL-2026-02', 'WS-2026-03', 'EPC-2026-07'].includes(r.projectCode)), ready.rows.map((r) => r.projectCode).join(', '));
 
         // 5. The reminder quotes the contract's payment clause and saves nothing.
         if (late) {

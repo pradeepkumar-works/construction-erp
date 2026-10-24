@@ -3,7 +3,11 @@
  * their share of the lump sum, each paid in stages), the built-in stages per kind of component, the milestone grid and
  * its slippage tiers, and what an RA bill shows for each stage.
  */
-import type { BillingBasis, StageTrigger, WorkElementType } from './enums';
+import type { BillingBasis, ContractModel, PackageStage, StageTrigger, WorkElementType } from './enums';
+import type { ContractCurrency } from './epc';
+
+/** Lump-sum contracts bill by stages of the break-up (item 129), and so do EPC contracts, by their milestones (item 130). */
+export const billsByStages = (model: ContractModel) => model === 'LUMP_SUM' || model === 'EPC';
 
 export const BILLING_BASIS_LABELS: Record<BillingBasis, string> = {
   STAGES: 'Stages of its share',
@@ -18,9 +22,9 @@ export const STAGE_TRIGGER_LABELS: Record<StageTrigger, string> = {
 };
 
 export const STAGE_TRIGGER_HINTS: Record<StageTrigger, string> = {
-  EVENT: 'Paid in full once the event is recorded with its date and the certificate or letter that says so',
+  EVENT: 'Paid in full once the event is recorded with its date and the certificate or letter that says so, or once its engineering deliverables are all approved',
   PROGRESS: 'The approved physical % of the activities it names (of the whole component when it names none)',
-  SUPPLY: 'Pipe or equipment received at site against the scope; pipe bought by weight is turned into metres',
+  SUPPLY: 'Pipe or equipment received at site against the scope (pipe bought by weight in metres), or equipment packages by their value',
   TEST: 'Pipe tested against its length on the pipe network; without a network, the progress of its test activities',
 };
 
@@ -157,6 +161,13 @@ export interface BillingStageDto {
   scopeQty: string | null;
   achievedOn: string | null;
   evidence: string | null;
+  /** EVENT (item 130): the engineering deliverables whose approval is the event */
+  deliverableIds: string[];
+  deliverableNames: string[];
+  /** SUPPLY (item 130): the equipment packages it is paid by, and the stage they must reach (delivered when null) */
+  packageIds: string[];
+  packageNames: string[];
+  packageStage: PackageStage | null;
   /** Lump sum × the component's share × the stage's % */
   value: string;
   /** What the evidence gives today, % of the stage, and what it read */
@@ -200,7 +211,7 @@ export interface MilestoneRowDto {
   actual: (number | null)[];
 }
 
-export interface BillingBreakupDto {
+export interface BillingBreakupDto extends ContractCurrency {
   projectId: string;
   /** Lump-sum projects bill by stages once their break-up has components */
   stageBilling: boolean;

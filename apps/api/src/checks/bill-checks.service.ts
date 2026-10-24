@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { createHash } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import type { BillCheckDto, BillChecksDto, BillCheckSummaryDto, CheckKind, DraftChecksDto, SubmissionType } from '@erp/shared';
-import { canRecordVendorBill, gstinChecksumOk } from '@erp/shared';
+import { billsByStages, canRecordVendorBill, gstinChecksumOk } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -451,7 +451,7 @@ export class BillChecksService {
           })
         : null;
     // A lump-sum contract's unit-rate items are paid at the BOQ rate × the tender factor (item 129).
-    const unitRate = project.contractModel === 'LUMP_SUM' ? (await boqBasis(this.prisma, bill.projectId)).unitRateBoqItemIds : new Set<string>();
+    const unitRate = billsByStages(project.contractModel) ? (await boqBasis(this.prisma, bill.projectId)).unitRateBoqItemIds : new Set<string>();
     const factor = project.tenderFactor ?? new Prisma.Decimal(1);
     const prev = new Map<string, number>();
     for (const b of billed) prev.set(b.boqItemId, (prev.get(b.boqItemId) ?? 0) + n(b.certifiedQty ?? b.thisQty));

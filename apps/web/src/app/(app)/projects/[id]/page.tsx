@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
 import type { ProjectDetail } from '@erp/shared';
-import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders } from '@erp/shared';
+import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { readPref, writePref } from '@/lib/prefs';
@@ -19,6 +19,7 @@ import { CompactTitle, ProjectWorkspace, type WorkspaceTab } from '@/components/
 import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
 import { StructurePanel } from '@/components/structure/StructurePanel';
 import { PipeNetworkPanel } from '@/components/pipes/PipeNetworkPanel';
+import { EpcPanel } from '@/components/epc/EpcPanel';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { GanttPanel } from '@/components/schedule/GanttPanel';
@@ -92,6 +93,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'overview', group: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
     { key: 'structure', group: 'plan', label: 'Structure', children: <StructurePanel project={project} /> },
     can(project.type === 'WATER_SUPPLY' || project.type === 'SEWERAGE') && { key: 'pipes', group: 'plan', label: 'Pipe network', children: <PipeNetworkPanel project={project} /> },
+    can(project.contractModel === 'EPC' && !!user && canViewEpc(user.roleKey)) && { key: 'epc', group: 'plan', label: 'Engineering and packages', children: <EpcPanel project={project} /> },
     { key: 'boq', group: 'plan', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
     { key: 'activities', group: 'plan', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
     { key: 'schedule', group: 'plan', label: 'Gantt', children: <GanttPanel projectId={project.id} /> },

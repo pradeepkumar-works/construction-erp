@@ -46,6 +46,39 @@ enum StageTrigger {
   TEST
 }
 
+/// EPC (item 130): the discipline an engineering deliverable belongs to
+enum EngineeringDiscipline {
+  PROCESS
+  CIVIL
+  MECHANICAL
+  ELECTRICAL
+  INSTRUMENTATION
+}
+
+/// Where an engineering deliverable stands with the client (item 130), kept in step with its dates and approval code
+enum DeliverableStatus {
+  NOT_STARTED
+  SUBMITTED
+  COMMENTS
+  APPROVED
+}
+
+/// The stages an equipment package goes through (item 130), in order; shipped and customs only for an import
+enum PackageStage {
+  ENQUIRY
+  ORDERED
+  DRAWINGS_APPROVED
+  MANUFACTURED
+  INSPECTED
+  DISPATCH_CLEARED
+  DISPATCHED
+  SHIPPED
+  CUSTOMS_CLEARED
+  DELIVERED
+  ERECTED
+  COMMISSIONED
+}
+
 /// A component (an intake well, a treatment plant, a tank) or a sub-component inside one (a WTP unit, a pipe zone)
 enum WorkElementLevel {
   COMPONENT
@@ -625,6 +658,9 @@ model Organization {
   billingStages        BillingStage[]
   milestoneTargets     MilestoneTarget[]
   slippageTiers        SlippageTier[]
+  epcDeliverables      EngineeringDeliverable[]
+  epcPackages          ProcurementPackage[]
+  epcPackageStages     PackageStageDate[]
   pipeTestSegments     PipeTestSegment[]
   milestones           Milestone[]
   activityLinks        ActivityLink[]
@@ -1112,6 +1148,10 @@ model Project {
   /// advanceRecoveryPct on each bill
   advanceRecoveryFromPct Decimal?       @db.Decimal(5, 2)
   advanceRecoveryToPct   Decimal?       @db.Decimal(5, 2)
+  /// The contract's currency, ISO code (item 130). Every amount is kept in rupees; a project in another currency keeps
+  /// its contract figures at `exchangeRate` rupees to one unit and shows them in its currency
+  currency               String         @default("INR") @db.VarChar(3)
+  exchangeRate           Decimal?       @db.Decimal(12, 6)
   /// GST charged on bills, % of the work value
   gstRate                Decimal        @default(18) @db.Decimal(5, 2)
   /// Income-tax TDS the client deducts (section 194C), % of the work value
@@ -1152,6 +1192,8 @@ model Project {
   milestoneTargets   MilestoneTarget[]
   slippageTiers      SlippageTier[]
   milestones         Milestone[]
+  epcDeliverables    EngineeringDeliverable[]
+  epcPackages        ProcurementPackage[]
   activityLinks      ActivityLink[]
   workers            Worker[]
   workerAttendance   WorkerAttendance[]
@@ -1312,6 +1354,7 @@ model Vendor {
   changeRequests    SupplierChangeRequest[]
   equipmentLoans    EquipmentLoan[]
   materialApprovals MaterialApproval[]
+  packages          ProcurementPackage[]
 
   @@unique([organizationId, name])
 }
@@ -1421,6 +1464,7 @@ model PurchaseOrder {
   advances         VendorPayment[]
   dispatches       SupplierDispatch[]
   supplierInvoices SupplierInvoice[]
+  packages         ProcurementPackage[]
 
   @@unique([organizationId, poNo])
   @@index([organizationId, status])
@@ -1951,13 +1995,15 @@ model WorkElement {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  children          WorkElement[]      @relation("WorkElementTree")
+  children          WorkElement[]            @relation("WorkElementTree")
   activities        Activity[]
   boqItems          BoqItem[]
   pipeNodes         PipeNode[]
   pipeSegments      PipeSegment[]
   stockEntries      StockEntry[]
   billingComponents BillingComponent[]
+  deliverables      EngineeringDeliverable[]
+  packages          ProcurementPackage[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -2065,6 +2111,11 @@ model Milestone {
   baselineDate   DateTime?    @db.Date
   achievedOn     DateTime?    @db.Date
   note           String?
+  /// Owed by the client (item 130): power for testing, land, an approval. Late, it is a delay the client caused
+  byClient       Boolean      @default(false)
+  /// The delay recorded for a late client input
+  delayId        String?      @unique
+  delay          Risk?        @relation(fields: [delayId], references: [id], onDelete: SetNull)
   sortOrder      Int          @default(0)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -2984,6 +3035,7 @@ model Risk {
   letters     Letter[]
   hindrances  HindranceCheck[]
   rfis        Rfi[]
+  clientInput Milestone?
 
   @@unique([organizationId, riskNo])
   @@index([projectId, status])
@@ -3264,6 +3316,11 @@ model BillingStage {
   /// EVENT: the day it happened, and the certificate or letter that says so
   achievedOn     DateTime?        @db.Date
   evidence       String?
+  /// EVENT (item 130): engineering deliverables whose approval is the event; done when the last is approved
+  deliverableIds String[]         @default([])
+  /// SUPPLY (item 130): equipment packages, paid by the value of those that have reached `packageStage` (delivered when empty)
+  packageIds     String[]         @default([])
+  packageStage   PackageStage?
   sortOrder      Int              @default(0)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -3338,6 +3395,104 @@ model SlippageTier {
   @@index([organizationId])
 }
 
+/// An engineering deliverable of an EPC job (item 130): a design report, drawing set or datasheet the contractor owes the
+/// client, by discipline, with its planned and actual submission and approval. Its revisions are filed in the document
+/// register; its approval can be the event of a payment stage (BillingStage.deliverableIds).
+model EngineeringDeliverable {
+  id                String                @id @default(uuid())
+  organizationId    String
+  organization      Organization          @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The component or unit it designs
+  workElementId     String?
+  workElement       WorkElement?          @relation(fields: [workElementId], references: [id], onDelete: SetNull)
+  discipline        EngineeringDiscipline
+  /// e.g. PRC-003; unique within the project
+  code              String
+  title             String
+  documentId        String?
+  document          Document?             @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  plannedSubmitOn   DateTime?             @db.Date
+  plannedApprovalOn DateTime?             @db.Date
+  /// The latest submission, its revision and the code the client returned it with
+  submittedOn       DateTime?             @db.Date
+  revision          String?
+  approvalCode      String?
+  approvedOn        DateTime?             @db.Date
+  /// Kept in step with the dates and code by the service
+  status            DeliverableStatus     @default(NOT_STARTED)
+  note              String?
+  sortOrder         Int                   @default(0)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@unique([projectId, code])
+  @@index([projectId, discipline])
+  @@index([organizationId])
+}
+
+/// An equipment package of an EPC job (item 130): blowers, screens, the MCC; its vendor and order, what it covers, the
+/// day site needs it, and its planned and actual dates from enquiry to commissioning (PackageStageDate). An import
+/// carries its ship, bill of lading and ETA.
+model ProcurementPackage {
+  id              String                @id @default(uuid())
+  organizationId  String
+  organization    Organization          @relation(fields: [organizationId], references: [id])
+  projectId       String
+  project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workElementId   String?
+  workElement     WorkElement?          @relation(fields: [workElementId], references: [id], onDelete: SetNull)
+  /// e.g. PKG-04; unique within the project
+  code            String
+  name            String
+  discipline      EngineeringDiscipline
+  vendorId        String?
+  vendor          Vendor?               @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder?        @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  /// What it covers, e.g. "2 duty + 1 standby, 850 m³/h at 6 m"
+  scope           String?
+  /// Its value in rupees (at the contract rate on a foreign contract); payment stages share supply by it
+  value           Decimal?              @db.Decimal(18, 2)
+  /// The day site needs it delivered
+  neededOn        DateTime?             @db.Date
+  vessel          String?
+  billOfLading    String?
+  /// The ship's expected arrival at the port
+  eta             DateTime?             @db.Date
+  /// Days from the port to site, customs included; 10 when empty
+  portToSiteDays  Int?
+  note            String?
+  sortOrder       Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  stages PackageStageDate[]
+
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@index([organizationId])
+  @@index([vendorId])
+  @@index([purchaseOrderId])
+}
+
+/// One stage of an equipment package (item 130): when it was planned and when it happened. A stage with neither does
+/// not apply to the package.
+model PackageStageDate {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  packageId      String
+  package        ProcurementPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  stage          PackageStage
+  plannedOn      DateTime?          @db.Date
+  actualOn       DateTime?          @db.Date
+
+  @@unique([packageId, stage])
+  @@index([organizationId])
+}
+
 /// What a receipt is for: a bill, or the release of retention or security deposit the client held
 enum ReceiptKind {
   BILL
@@ -3357,8 +3512,11 @@ model Receipt {
   billId                String?
   bill                  RaBill?      @relation(fields: [billId], references: [id], onDelete: Restrict)
   receiptDate           DateTime     @db.Date
-  /// Credited to the bank
+  /// Credited to the bank; on a project in another currency, the client's payment at the contract rate
   amount                Decimal      @db.Decimal(18, 2)
+  /// Another currency (item 130): rupees to one unit on the day the bank credited it; the difference from the contract
+  /// rate is an exchange gain or loss in the books
+  exchangeRate          Decimal?     @db.Decimal(12, 6)
   mode                  PaymentMode  @default(BANK)
   /// UTR, cheque or advice number
   reference             String?
@@ -4080,11 +4238,12 @@ model Document {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
-  revisions DocumentRevision[] @relation("DocumentRevisions")
-  rfis      Rfi[]
-  markups   DrawingMarkup[]
-  scales    DrawingScale[]
-  takeoffs  DrawingTakeoff[]
+  revisions    DocumentRevision[]       @relation("DocumentRevisions")
+  rfis         Rfi[]
+  markups      DrawingMarkup[]
+  scales       DrawingScale[]
+  takeoffs     DrawingTakeoff[]
+  deliverables EngineeringDeliverable[]
 
   @@unique([projectId, docNo])
   @@index([organizationId, kind])

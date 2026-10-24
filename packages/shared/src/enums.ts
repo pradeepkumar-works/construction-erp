@@ -52,6 +52,30 @@ export type BillingBasis = (typeof BILLING_BASES)[number];
 export const STAGE_TRIGGERS = ['EVENT', 'PROGRESS', 'SUPPLY', 'TEST'] as const;
 export type StageTrigger = (typeof STAGE_TRIGGERS)[number];
 
+/**
+ * EPC (item 130): the engineering disciplines a deliverable belongs to, where a deliverable stands with the client, and
+ * the stages an equipment package goes through, in order. A domestic package leaves out shipping and customs.
+ */
+export const ENGINEERING_DISCIPLINES = ['PROCESS', 'CIVIL', 'MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION'] as const;
+export type EngineeringDiscipline = (typeof ENGINEERING_DISCIPLINES)[number];
+export const DELIVERABLE_STATUSES = ['NOT_STARTED', 'SUBMITTED', 'COMMENTS', 'APPROVED'] as const;
+export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number];
+export const PACKAGE_STAGES = [
+  'ENQUIRY',
+  'ORDERED',
+  'DRAWINGS_APPROVED',
+  'MANUFACTURED',
+  'INSPECTED',
+  'DISPATCH_CLEARED',
+  'DISPATCHED',
+  'SHIPPED',
+  'CUSTOMS_CLEARED',
+  'DELIVERED',
+  'ERECTED',
+  'COMMISSIONED',
+] as const;
+export type PackageStage = (typeof PACKAGE_STAGES)[number];
+
 export const PROJECT_STATUSES = ['PLANNED', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 

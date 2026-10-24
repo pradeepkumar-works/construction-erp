@@ -1,9 +1,10 @@
 import { Prisma } from '@prisma/client';
-import { pipeMetres, pipeSizeOf, type StageTrigger } from '@erp/shared';
+import { pipeMetres, pipeSizeOf, type PackageStage, type StageTrigger } from '@erp/shared';
 import { progressRollup } from '../common/progress';
 import { stageActivities } from '../pipe-network/pipe-network.service';
 import { dateOnly, formatDay, parseDate } from '../common/serialize';
 import { progressOfActivities, shareSupply, stageEvidence, type StageEvidence } from './stage-billing-rules';
+import { deliverablesEvidence, packagesEvidence, reachedOn } from '../epc/epc-rules';
 
 type Db = Prisma.TransactionClient;
 
@@ -16,6 +17,9 @@ export interface EvidenceStage {
   scopeQty: Prisma.Decimal | null;
   achievedOn: Date | null;
   evidence: string | null;
+  deliverableIds: string[];
+  packageIds: string[];
+  packageStage: PackageStage | null;
   component: { workElementId: string | null };
 }
 
@@ -28,6 +32,9 @@ export const EVIDENCE_STAGE_SELECT = {
   scopeQty: true,
   achievedOn: true,
   evidence: true,
+  deliverableIds: true,
+  packageIds: true,
+  packageStage: true,
   component: { select: { workElementId: true } },
 } satisfies Prisma.BillingStageSelect;
 
@@ -35,10 +42,11 @@ const listNames = (names: string[]) => (names.length <= 2 ? names.join(' and ') 
 
 /**
  * What each payment stage of a project has earned up to a day (item 129), % of the stage with the working in words:
- * - EVENT: 100 once its date has come;
+ * - EVENT: 100 once its date has come, or (item 130) once the engineering deliverables it names are all approved;
  * - PROGRESS: the approved physical % of its activities on that day (of the whole component when it names none);
  * - SUPPLY: pipe or equipment received at the project by that day against the stage's scope, an item named by several
- *   stages shared by their scope (pipe bought by weight in metres);
+ *   stages shared by their scope (pipe bought by weight in metres); or (item 130) the share of the value of the equipment
+ *   packages it names that have reached its package stage (delivered when none is set);
  * - TEST: pipe of the component's network tested by that day against its length, else the progress of its activities.
  * The service and the demo seed both read it, so a bill prepared today and the seeded history agree.
  */
@@ -97,8 +105,18 @@ export async function loadStageEvidence(db: Db, projectId: string, upTo: string,
     }
   }
 
+  // EPC (item 130): the deliverables and packages stages name.
+  const deliverableIds = [...new Set(rows.filter((s) => s.trigger === 'EVENT').flatMap((s) => s.deliverableIds))];
+  const packageIds = [...new Set(rows.filter((s) => s.trigger === 'SUPPLY').flatMap((s) => s.packageIds))];
+  const [deliverables, packages] = await Promise.all([
+    deliverableIds.length ? db.engineeringDeliverable.findMany({ where: { id: { in: deliverableIds } }, select: { id: true, approvedOn: true } }) : [],
+    packageIds.length ? db.procurementPackage.findMany({ where: { id: { in: packageIds } }, select: { id: true, value: true, stages: { select: { stage: true, plannedOn: true, actualOn: true } } } }) : [],
+  ]);
+  const approvedOf = new Map(deliverables.map((d) => [d.id, dateOnly(d.approvedOn)]));
+  const packageOf = new Map(packages.map((p) => [p.id, p]));
+
   // Supply: received at the project by the day, in metres for pipe.
-  const supplyStages = rows.filter((s) => s.trigger === 'SUPPLY');
+  const supplyStages = rows.filter((s) => s.trigger === 'SUPPLY' && !s.packageIds.length);
   const supplyItems = [...new Set(supplyStages.flatMap((s) => s.itemIds))];
   const [items, receipts] = supplyItems.length
     ? await Promise.all([
@@ -126,12 +144,20 @@ export async function loadStageEvidence(db: Db, projectId: string, upTo: string,
   for (const s of rows) {
     switch (s.trigger) {
       case 'EVENT':
-        out.set(s.id, stageEvidence({ trigger: 'EVENT', achievedOn: dateOnly(s.achievedOn), evidence: s.evidence, upTo }, formatDay));
+        if (s.deliverableIds.length) out.set(s.id, deliverablesEvidence(s.deliverableIds.map((id) => ({ approvedOn: approvedOf.get(id) ?? null })), upTo, formatDay));
+        else out.set(s.id, stageEvidence({ trigger: 'EVENT', achievedOn: dateOnly(s.achievedOn), evidence: s.evidence, upTo }, formatDay));
         break;
       case 'PROGRESS':
         out.set(s.id, stageEvidence({ trigger: 'PROGRESS', ...progressOf(s) }));
         break;
       case 'SUPPLY':
+        if (s.packageIds.length) {
+          const stage = s.packageStage ?? 'DELIVERED';
+          const linked = s.packageIds.map((id) => packageOf.get(id)).filter((p): p is (typeof packages)[number] => !!p);
+          const rows2 = linked.map((p) => ({ value: p.value ? Number(p.value) : null, reachedOn: reachedOn(p.stages.map((x) => ({ stage: x.stage, plannedOn: dateOnly(x.plannedOn), actualOn: dateOnly(x.actualOn) })), stage) }));
+          out.set(s.id, packagesEvidence(rows2, stage, upTo));
+          break;
+        }
         out.set(s.id, stageEvidence({ trigger: 'SUPPLY', received: supplied.get(s.id) ?? null, scope: s.scopeQty ? Number(s.scopeQty) : null, unit: unitOf(s) }));
         break;
       case 'TEST': {

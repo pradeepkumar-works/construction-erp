@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, DatePicker, Form, Input, Segmented, Select, Typography } from 'antd';
+import { Alert, App, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { OpenBillDto, PaymentMode, RaBillDto, ReceiptDto, ReceiptKind } from '@erp/shared';
-import { RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS } from '@erp/shared';
+import type { ContractCurrency, OpenBillDto, PaymentMode, RaBillDto, ReceiptDto, ReceiptKind } from '@erp/shared';
+import { RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS, isForeign } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useBill, useProjects, useReceivables } from '@/lib/queries';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatMoney, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
@@ -34,6 +34,7 @@ interface FormValues extends Partial<Record<DeductionField, number | null>> {
   reference?: string;
   otherDeductionNote?: string;
   remarks?: string;
+  exchangeRate?: number | null;
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -54,6 +55,11 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
   const billId = Form.useWatch('billId', form) as string | undefined;
   const { data: chosen } = useBill(open && !bill && billId ? billId : undefined);
   const target = bill ?? chosen;
+  // On a project in another currency the amounts are typed in it and kept in rupees at the contract rate (item 130).
+  const cur: ContractCurrency | null = receipt ? { currency: receipt.currency, exchangeRate: receipt.contractRate } : (target ?? null);
+  const foreign = isForeign(cur);
+  const fm = (v: string | number) => formatMoney(v, cur, true);
+  const inC = (rupees: number) => r2(inContract(rupees, cur) ?? 0);
   const values = Form.useWatch([], form) as FormValues | undefined;
   const deducted = DEDUCTIONS.reduce((s, [k]) => s + toNumber(values?.[k] ?? 0), 0);
   const settles = toNumber(values?.amount ?? 0) + deducted;
@@ -68,12 +74,13 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
         billId: receipt.billId ?? undefined,
         projectId: receipt.projectId,
         receiptDate: dayjs(receipt.receiptDate),
-        amount: toNumber(receipt.amount),
+        amount: r2(inContract(toNumber(receipt.amount), { currency: receipt.currency, exchangeRate: receipt.contractRate }) ?? 0),
+        exchangeRate: receipt.exchangeRate ? Number(receipt.exchangeRate) : null,
         mode: receipt.mode,
         reference: receipt.reference ?? undefined,
         otherDeductionNote: receipt.otherDeductionNote ?? undefined,
         remarks: receipt.remarks ?? undefined,
-        ...Object.fromEntries(DEDUCTIONS.map(([k]) => [k, toNumber(receipt[k]) || null])),
+        ...Object.fromEntries(DEDUCTIONS.map(([k]) => [k, r2(inContract(toNumber(receipt[k]), { currency: receipt.currency, exchangeRate: receipt.contractRate }) ?? 0) || null])),
       });
     } else form.setFieldsValue({ kind: 'BILL', billId: bill?.id, receiptDate: dayjs(), mode: 'BANK' });
   }, [open, bill, receipt, form]);
@@ -82,10 +89,11 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
   useEffect(() => {
     if (!open || editing || !target || kind !== 'BILL') return;
     const first = toNumber(target.settledAmount) === 0;
-    const fill: Partial<FormValues> = Object.fromEntries(DEDUCTIONS.map(([k, , key]) => [k, first ? toNumber(target.deductions.find((d) => d.key === key)?.amount ?? 0) || null : null]));
+    const fill: Partial<FormValues> = Object.fromEntries(DEDUCTIONS.map(([k, , key]) => [k, first ? inC(toNumber(target.deductions.find((d) => d.key === key)?.amount ?? 0)) || null : null]));
     if (first) fill.otherDeductionNote = target.otherDeductionNote ?? undefined;
-    fill.amount = r2(first ? toNumber(target.netPayable) : toNumber(target.outstanding));
+    fill.amount = inC(first ? toNumber(target.netPayable) : toNumber(target.outstanding));
     form.setFieldsValue(fill);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- inC reads target's currency, already a dependency
   }, [open, editing, target, kind, form]);
 
   const openBills: OpenBillDto[] = useMemo(() => receivables?.openBills ?? [], [receivables]);
@@ -94,18 +102,19 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
     mutationFn: async (v: FormValues) => {
       const body = {
         receiptDate: v.receiptDate.format('YYYY-MM-DD'),
-        amount: String(v.amount ?? 0),
+        amount: String(outOfContract(v.amount ?? 0, cur)),
+        exchangeRate: foreign && v.exchangeRate ? String(v.exchangeRate) : null,
         mode: v.mode,
         reference: v.reference?.trim() || null,
         remarks: v.remarks?.trim() || null,
         otherDeductionNote: v.otherDeductionNote?.trim() || null,
-        ...(kind === 'BILL' ? Object.fromEntries(DEDUCTIONS.map(([k]) => [k, String(v[k] ?? 0)])) : {}),
+        ...(kind === 'BILL' ? Object.fromEntries(DEDUCTIONS.map(([k]) => [k, String(outOfContract(v[k] ?? 0, cur))])) : {}),
       };
       if (receipt) return (await api.patch<ReceiptDto>(`/receipts/${receipt.id}`, body)).data;
       return (await api.post<ReceiptDto>('/receipts', { ...body, kind, ...(kind === 'BILL' ? { billId: bill?.id ?? v.billId } : { projectId: v.projectId }) })).data;
     },
     onSuccess: (r) => {
-      message.success(`${formatINR(r.amount, true)} ${editing ? 'updated' : 'recorded'}${r.billLabel ? ` against ${r.billLabel}` : ''}`);
+      message.success(`${formatMoney(r.amount, cur, true)} ${editing ? 'updated' : 'recorded'}${r.billLabel ? ` against ${r.billLabel}` : ''}`);
       qc.invalidateQueries({ queryKey: ['receipts'] });
       qc.invalidateQueries({ queryKey: ['receivables'] });
       qc.invalidateQueries({ queryKey: ['bills'] });
@@ -115,7 +124,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
     meta: FAIL_NOTICE,
   });
 
-  const over = kind === 'BILL' && target && !editing ? settles - toNumber(target.outstanding) : 0;
+  const over = kind === 'BILL' && target && !editing ? outOfContract(settles, cur)! - toNumber(target.outstanding) : 0;
 
   return (
     <FormShell
@@ -150,8 +159,8 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
           )}
           {kind === 'BILL' && target && !editing && (
             <Typography.Paragraph type="secondary">
-              {target.billLabel} of {formatDate(target.billDate)}: work + GST {formatINR(target.invoiceAmount, true)}, settled so far {formatINR(target.settledAmount, true)}, outstanding{' '}
-              <strong>{formatINR(target.outstanding, true)}</strong>.
+              {target.billLabel} of {formatDate(target.billDate)}: work + GST {fm(target.invoiceAmount)}, settled so far {fm(target.settledAmount)}, outstanding{' '}
+              <strong>{fm(target.outstanding)}</strong>.
             </Typography.Paragraph>
           )}
           <FormGrid cols={3}>
@@ -159,22 +168,31 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="amount" label="Amount received" rules={[{ required: true, message: 'Enter the amount received' }]}>
-              <MoneyInput />
+              <MoneyInput prefix={moneyPrefix(cur)} />
             </Form.Item>
             <Form.Item name="mode" label="Mode">
               <Select options={RECEIPT_MODES.map((m) => ({ value: m, label: RECEIPT_MODE_LABELS[m] }))} />
             </Form.Item>
           </FormGrid>
+          {foreign ? (
+            <Form.Item
+              name="exchangeRate"
+              label={`Day's rate (₹ to 1 ${cur!.currency})`}
+              extra={`The bank's rate on the day. The contract is kept at ₹ ${cur!.exchangeRate}; the difference is booked to exchange difference. Empty takes the contract rate.`}
+            >
+              <InputNumber<number> style={{ width: '100%' }} min={0.000001} precision={6} controls={false} inputMode="decimal" placeholder={cur!.exchangeRate ?? undefined} />
+            </Form.Item>
+          ) : null}
           <Form.Item name="reference" label="UTR / cheque / advice no.">
             <Input maxLength={100} placeholder="e.g. SBIN526291234567" />
           </Form.Item>
         </FormSection>
         {kind === 'BILL' && (
-          <FormSection title="Deducted by the client" extra={<Typography.Text strong>{formatINR(deducted, true)}</Typography.Text>}>
+          <FormSection title="Deducted by the client" extra={<Typography.Text strong>{fm(outOfContract(deducted, cur)!)}</Typography.Text>}>
             <FormGrid cols={3}>
               {DEDUCTIONS.map(([k, label]) => (
                 <Form.Item key={k} name={k} label={label}>
-                  <MoneyInput />
+                  <MoneyInput prefix={moneyPrefix(cur)} />
                 </Form.Item>
               ))}
               <Form.Item name="otherDeductionNote" label="Other deduction for">
@@ -182,9 +200,9 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
               </Form.Item>
             </FormGrid>
             <Typography.Paragraph>
-              This settles <strong>{formatINR(settles, true)}</strong> of the bill (received plus deducted).
+              This settles <strong>{fm(outOfContract(settles, cur)!)}</strong> of the bill (received plus deducted).
             </Typography.Paragraph>
-            {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${formatINR(over, true)} more than the bill has outstanding.`} />}
+            {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${fm(over)} more than the bill has outstanding.`} />}
           </FormSection>
         )}
         <Form.Item name="remarks" label="Remarks">
