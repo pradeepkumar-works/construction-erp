@@ -1,7 +1,7 @@
 /**
  * An EPC project in another currency (item 130, ARCHITECTURE "EPC"). Invented names and figures throughout.
  *
- * - EPC-2026-07, an island sewerage scheme let as one EPC contract of US$ 6.2 million, kept in rupees at the contract
+ * - WW-2026-07, an island sewerage scheme let as one EPC contract of US$ 6.2 million, kept in rupees at the contract
  *   rate of ₹ 83.25: a 6 MLD sequencing batch reactor plant with its units, the plant's mechanical and electrical
  *   equipment, a sewer network in four phases, three pumping stations and the outfall, in month 10 of 18.
  * - 24 design deliverables across the five disciplines, most approved, two sent back with comments, one late.
@@ -27,7 +27,7 @@ const day = (offset: number) => {
   d.setUTCDate(d.getUTCDate() + offset);
   return d;
 };
-const CODE = 'EPC-2026-07';
+const CODE = 'WW-2026-07';
 const RATE = 83.25;
 const VALUE_USD = 6_200_000;
 

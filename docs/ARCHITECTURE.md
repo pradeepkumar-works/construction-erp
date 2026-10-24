@@ -1516,7 +1516,7 @@ another currency.
   Client inputs (Record delay); the stage form's deliverable and package pickers; currency on the contract form and
   panel, the bill, its print and the receipt form (with the day's rate).
 - **Tests.** The rules in `src/scripts/epc-test.ts` (CI); `e2e/tests/epc.spec.ts`.
-- **Demo** (`prisma/seed-epc.ts`): EPC-2026-07, an island sewerage scheme let for US$ 6.2 million at ₹ 83.25: a 6 MLD
+- **Demo** (`prisma/seed-epc.ts`): WW-2026-07, an island sewerage scheme let for US$ 6.2 million at ₹ 83.25: a 6 MLD
   SBR plant, its equipment, four phases of sewers, three pumping stations and the outfall; 24 deliverables (two sent
   back, one late), ten packages (the air blowers at sea and late for erection, the centrifuge's inspection overdue),
   five client inputs (the pumping station land a month late and recorded as a delay, the 11 kV supply overdue), the

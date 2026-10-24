@@ -9,7 +9,7 @@ import { api, apiToken, axeViolations, signIn } from './helpers';
  */
 
 type Project = { id: string; code: string };
-const CODE = 'EPC-2026-07';
+const CODE = 'WW-2026-07';
 
 test('deliverables, packages and client inputs drive the milestone payments of an EPC contract in dollars', async ({ page }) => {
   const pm = await apiToken('pm2@demo.com');
