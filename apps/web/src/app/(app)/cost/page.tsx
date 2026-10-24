@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Card, Result, Tabs } from 'antd';
+import { Card, Result } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useUrlTab } from '@/lib/url-state';
@@ -20,8 +21,8 @@ export default function Page() {
     <div className="page-container">
       <PageHeader title="Project cost" subtitle="Cost against the value of work executed, and the cash expected in and out over the coming months." />
       <Card size="small">
-        <Tabs
-          style={{ padding: '0 12px' }}
+        <AppTabs
+          variant="page"
           activeKey={tab}
           onChange={(k) => setTab(k as (typeof TABS)[number])}
           items={[

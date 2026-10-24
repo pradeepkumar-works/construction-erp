@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Result, Segmented, Tabs, Tag, Tooltip, Typography, theme } from 'antd';
+import { Alert, App, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Result, Segmented, Tag, Tooltip, Typography, theme } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { DownOutlined, EyeInvisibleOutlined, PlayCircleOutlined, UndoOutlined, UpOutlined } from '@ant-design/icons';
 import {
   WARNING_CONFIDENCE_HELP,
@@ -235,15 +236,18 @@ export default function Page() {
           ]}
         />
       ) : null}
-      <Tabs
+      <AppTabs
         activeKey={tab}
         onChange={(k) => setTab(k as 'open' | 'dismissed' | 'record')}
         items={[
-          { key: 'open', label: `Open (${open.length})`, children: list(open, 'Nothing to watch: no rule points to trouble.') },
-          { key: 'dismissed', label: `Dismissed (${dismissed.length})`, children: list(dismissed, 'No warning has been dismissed.') },
+          { key: 'open', label: 'Open', count: open.length, countLabel: 'warnings', children: list(open, 'Nothing to watch: no rule points to trouble.') },
+          { key: 'dismissed', label: 'Dismissed', count: dismissed.length, countLabel: 'warnings', children: list(dismissed, 'No warning has been dismissed.') },
           {
             key: 'record',
-            label: paused.length ? `Track record (${paused.length} paused)` : 'Track record',
+            label: 'Track record',
+            count: paused.length,
+            countLabel: 'checks paused',
+            attention: true,
             children: (
               <>
                 <Typography.Paragraph type="secondary">

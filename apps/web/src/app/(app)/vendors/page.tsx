@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, Flex, Select, Space, Table, Tabs, Tag, Tooltip, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Flex, Select, Space, Table, Tag, Tooltip, Typography, theme } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, UnlistedVendorDto, VendorDto, VendorKind, VendorSortField } from '@erp/shared';
@@ -289,13 +290,15 @@ export default function VendorsPage() {
         extra={newButton}
       />
       <Card size="small">
-        <Tabs
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+        <AppTabs
+          variant="page"
           items={[
             { key: 'vendors', label: 'Vendor master', children: <VendorsTab editable={editable} onEdit={setEditing} onPortal={logins ? setPortal : undefined} emptyAction={newButton} /> },
             {
               key: 'unlisted',
-              label: `Not in the master${unlisted?.length ? ` (${unlisted.length})` : ''}`,
+              label: 'Not in the master',
+              count: unlisted?.length || null,
+              countLabel: 'vendors to add',
               children: (
                 <UnlistedTab
                   editable={editable}

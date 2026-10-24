@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-01-tabs',
+    date: '2027-01-20',
+    title: 'Clearer tabs on every page',
+    points: [
+      'Tabs look the same everywhere: the chosen tab is blue over a thicker bar and the others step back. A page’s own tabs stay in view under the header while you scroll a long list.',
+      'Counts sit in a small pill beside the tab’s name: red for what is waiting on someone (NCRs not closed, leave to decide), grey for how many there are. A screen reader says what the count is, such as “3 results overdue”.',
+      'On a phone, a row of tabs wider than the screen fades out at the edge, so you can see there is more to swipe to.',
+    ],
+  },
+  {
     id: '2027-01-om',
     date: '2027-01-16',
     title: 'Operation and maintenance after handover',

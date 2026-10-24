@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Badge, Tabs } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { useQualitySummary } from '@/lib/queries';
 import { InspectionList } from '@/components/inspections/InspectionList';
 import { ChecklistsPanel } from '@/components/inspections/ChecklistsPanel';
@@ -13,12 +13,8 @@ import { useUrlTab } from '@/lib/url-state';
 export const QUALITY_TABS = ['inspections', 'tests', 'ncrs', 'checklists'] as const;
 export type QualityTab = (typeof QUALITY_TABS)[number];
 
-const count = (label: string, n: number | undefined, title: string) => (
-  <span>
-    {label}
-    {n ? <Badge count={n} size="small" title={title} style={{ marginLeft: 6 }} /> : null}
-  </span>
-);
+/** A tab with what waits in it: "NCRs", 2, "not closed". */
+const count = (label: string, n: number | null | undefined, countLabel: string) => ({ label, count: n, countLabel, attention: true });
 
 /**
  * Inspections, tests and NCRs: on the Quality page (with the checklists) and as a project tab. `openId` opens a test
@@ -29,14 +25,14 @@ export function QualityTabs({ projectId, tab, onTab, openId, withChecklists }: {
   const [ncrId, setNcrId] = useState<string | null>(tab === 'ncrs' ? (openId ?? null) : null);
   return (
     <>
-      <Tabs
+      <AppTabs
         activeKey={tab}
         onChange={(k) => onTab(k as QualityTab)}
-        tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+        variant="page"
         items={[
-          { key: 'inspections', label: count('Inspections', summary?.inspectionsWaiting, 'Waiting for QA/QC'), children: <InspectionList projectId={projectId} /> },
-          { key: 'tests', label: count('Tests', summary?.testsOverdue, 'Results overdue'), children: <TestList projectId={projectId} initialOpenId={tab === 'tests' ? openId : undefined} onOpenNcr={setNcrId} /> },
-          { key: 'ncrs', label: count('NCRs', summary?.ncrsOpen, 'Not closed'), children: <NcrList projectId={projectId} onOpen={setNcrId} /> },
+          { key: 'inspections', ...count('Inspections', summary?.inspectionsWaiting, 'waiting for QA/QC'), children: <InspectionList projectId={projectId} /> },
+          { key: 'tests', ...count('Tests', summary?.testsOverdue, 'results overdue'), children: <TestList projectId={projectId} initialOpenId={tab === 'tests' ? openId : undefined} onOpenNcr={setNcrId} /> },
+          { key: 'ncrs', ...count('NCRs', summary?.ncrsOpen, 'not closed'), children: <NcrList projectId={projectId} onOpen={setNcrId} /> },
           ...(withChecklists ? [{ key: 'checklists', label: 'Checklists', children: <ChecklistsPanel /> }] : []),
         ]}
       />

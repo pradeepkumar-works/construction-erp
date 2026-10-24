@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Space, Table, Tag, Typography } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import dayjs from 'dayjs';
 import type { AttachmentDto, EmployeeDto, LeaveRequestDto, StaffAttendanceDto } from '@erp/shared';
 import { EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, LEAVE_TYPE_LABELS, canManageStaff, canViewEmployeePrivate } from '@erp/shared';
@@ -147,7 +148,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
     >
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(t) => setPicked({ id, tab: t })}
           items={[

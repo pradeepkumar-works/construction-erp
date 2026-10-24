@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Tabs } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { useMaintenanceSummary } from '@/lib/queries';
 import { MachineryList } from './MachineryList';
 import { EquipmentTable } from './EquipmentTable';
@@ -26,20 +26,23 @@ export function MachineryPanel({ projectId, initialTab, initialId }: { projectId
   const { data: s } = useMaintenanceSummary(projectId);
   const due = s ? s.documentsDue.length + s.licencesDue.length : 0;
   return (
-    <Tabs
+    <AppTabs
       activeKey={tab}
       onChange={(k) => setTab(k as MachineryTab)}
-      tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+      variant="page"
       items={[
         { key: 'logs', label: 'Daily logs', children: <MachineryList projectId={projectId} /> },
         { key: 'fuel', label: 'Fuel', children: <FuelPanel projectId={projectId} /> },
         { key: 'utilisation', label: 'Utilisation', children: <UtilisationPanel projectId={projectId} /> },
         {
           key: 'maintenance',
-          label: `Maintenance${s && s.openBreakdowns ? ` (${s.openBreakdowns} down)` : ''}`,
+          label: 'Maintenance',
+          count: s?.openBreakdowns,
+          countLabel: 'machines down',
+          attention: true,
           children: <MaintenancePanel projectId={projectId} initialOpenId={initialTab === 'maintenance' ? initialId : undefined} />,
         },
-        ...(projectId ? [] : [{ key: 'papers', label: `Papers and drivers${due ? ` (${due} due)` : ''}`, children: <PapersPanel /> }]),
+        ...(projectId ? [] : [{ key: 'papers', label: 'Papers and drivers', count: due, countLabel: 'due for renewal', attention: true, children: <PapersPanel /> }]),
         { key: 'equipment', label: projectId ? 'Equipment here' : 'Equipment', children: <EquipmentTable projectId={projectId} /> },
       ]}
     />

@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Col, Row, Space, Statistic, Tabs, Tag, Typography } from 'antd';
+import { Button, Card, Col, Row, Space, Statistic, Tag, Typography } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
@@ -470,14 +471,16 @@ export default function PayablesPage() {
       )}
       {isLoading ? null : (
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => setTab(k as PayablesTab)}
-          tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+          variant="page"
           items={[
             {
               key: 'due',
-              label: `Due list${data ? ` (${data.openBills.length})` : ''}`,
+              label: 'Due list',
+              count: data?.openBills.length,
+              countLabel: 'bills due',
               children: (
                 <>
                   <ListToolbar

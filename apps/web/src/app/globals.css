@@ -730,6 +730,26 @@ kbd {
   }
 }
 
+/* Tabs (`AppTabs`, colours and sizes in the theme's Tabs tokens). The chosen tab's label thickens without widening, so the
+   tabs beside it never shift. A bar with more tabs than fit fades out at the side that has more, in either theme (antd's
+   own edge shadow is near-black, which the night surfaces swallow), so a phone shows there is more to swipe to. */
+:root .ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  text-shadow: 0 0 0.3px currentColor;
+}
+:root .ant-tabs-top > .ant-tabs-nav .ant-tabs-nav-wrap:is(.ant-tabs-nav-wrap-ping-left, .ant-tabs-nav-wrap-ping-right)::before,
+:root .ant-tabs-top > .ant-tabs-nav .ant-tabs-nav-wrap:is(.ant-tabs-nav-wrap-ping-left, .ant-tabs-nav-wrap-ping-right)::after {
+  box-shadow: none;
+}
+:root .ant-tabs .ant-tabs-nav-wrap.ant-tabs-nav-wrap-ping-right {
+  mask-image: linear-gradient(to right, var(--ant-color-text-base) calc(100% - 40px), transparent);
+}
+:root .ant-tabs .ant-tabs-nav-wrap.ant-tabs-nav-wrap-ping-left {
+  mask-image: linear-gradient(to left, var(--ant-color-text-base) calc(100% - 40px), transparent);
+}
+:root .ant-tabs .ant-tabs-nav-wrap.ant-tabs-nav-wrap-ping-left.ant-tabs-nav-wrap-ping-right {
+  mask-image: linear-gradient(to right, transparent, var(--ant-color-text-base) 40px, var(--ant-color-text-base) calc(100% - 40px), transparent);
+}
+
 /* Keyboard focus is always visible: a two-pixel ring in the primary colour on anything focused from the keyboard. */
 :where(a, button, [role='button'], [role='tab'], [role='menuitem'], [role='option'], [tabindex]):focus-visible {
   outline: 2px solid var(--ant-color-primary);

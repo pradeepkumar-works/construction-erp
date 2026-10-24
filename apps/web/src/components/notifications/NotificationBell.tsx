@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Drawer, Flex, Grid, Segmented, Spin, Tabs, Typography, theme } from 'antd';
+import { Badge, Button, Drawer, Flex, Grid, Segmented, Spin, Typography, theme } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { BellOutlined, CheckOutlined } from '@ant-design/icons';
 import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shared';
 import { NOTIFICATION_TABS, NOTIFICATION_TAB_LABELS, SUBMISSION_TYPES } from '@erp/shared';
@@ -126,18 +127,16 @@ export function NotificationBell() {
           </Link>
         }
       >
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => setTab(k as NotificationTab)}
-          tabBarStyle={{ padding: `0 ${token.paddingSM}px`, marginBottom: 0 }}
+          variant="page"
+          sticky={false}
           items={NOTIFICATION_TABS.map((t) => ({
             key: t,
-            label: (
-              <Flex gap={token.marginXXS} align="center">
-                {NOTIFICATION_TAB_LABELS[t]}
-                {byTab?.[t] ? <Badge count={byTab[t]} size="small" color={token.colorPrimary} /> : null}
-              </Flex>
-            ),
+            label: NOTIFICATION_TAB_LABELS[t],
+            count: byTab?.[t] || null,
+            countLabel: 'unread',
             children: t === tab ? body : null,
           }))}
         />

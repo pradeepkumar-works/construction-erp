@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Descriptions, Drawer, Flex, Table, Tabs, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Drawer, Flex, Table, Tag, Typography } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import type { SupplierDispatchDto, SupplierOrderDto } from '@erp/shared';
 import { useSupplierAction, useSupplierDispatches, useSupplierOrders } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { formatDate, formatDateTime, formatQty } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { tabBarWithExtra } from '@/components/common/tabBarWithExtra';
 import { AcceptForm, DispatchForm } from '@/components/supplier/SupplierForms';
 import { AcceptedTag, DispatchStatusTag, Money } from '@/components/supplier/supplierUi';
 
@@ -48,10 +48,10 @@ export default function SupplierOrdersPage() {
       {orders.isLoading ? (
         <PageSkeleton header={false} />
       ) : (
-        <Tabs
+        <AppTabs
           activeKey={tab}
           onChange={(k) => go({ tab: k, open: null })}
-          renderTabBar={tabBarWithExtra(newDispatch)}
+          extra={newDispatch}
           items={[
             {
               key: 'orders',

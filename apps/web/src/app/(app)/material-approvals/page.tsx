@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Row, Select, Statistic, Tabs, Tag, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Tag, Typography, theme } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   APPROVED_MAKE_SOURCE_LABELS,
@@ -257,7 +258,7 @@ function MaterialApprovalsPage() {
         </Row>
       ) : null}
       <Card size="small">
-        <Tabs
+        <AppTabs
           activeKey={view}
           onChange={(k) => {
             page.setFilter('status', undefined);

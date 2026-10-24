@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Descriptions, Drawer, Flex, Segmented, Table, Tabs, Typography } from 'antd';
+import { Button, Descriptions, Drawer, Flex, Segmented, Table, Typography } from 'antd';
+import { AppTabs } from '@/components/common/AppTabs';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   SUPPLIER_INVOICE_STAGE_LABELS,
@@ -57,13 +58,13 @@ export default function SupplierInboxPage() {
   return (
     <div className="page-container">
       <PageHeader title="Supplier inbox" subtitle="Invoices suppliers sent through their portal, and changes they asked for to their details." />
-      <Tabs
+      <AppTabs
         activeKey={tab}
         onChange={(k) => setParams({ tab: k === 'invoices' ? null : k, id: null })}
         items={[
           ...(invoicesOn ? [{ key: 'invoices', label: 'Invoices', children: <Invoices openId={search.get('id')} setOpen={(id) => setParams({ id })} /> }] : []),
           ...(changesOn
-            ? [{ key: 'changes', label: `Changes to details${changes.data?.length ? ` (${changes.data.length})` : ''}`, children: <Changes list={changes} /> }]
+            ? [{ key: 'changes', label: 'Changes to details', count: changes.data?.length, countLabel: 'waiting', attention: true, children: <Changes list={changes} /> }]
             : []),
         ]}
       />
