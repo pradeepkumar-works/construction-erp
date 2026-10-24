@@ -431,7 +431,7 @@ export class CashForecastService {
     const clients = await this.clients(projects);
     const [sheets, notSent, recv] = await Promise.all([
       this.prisma.measurementSheet.findMany({ where: { projectId: { in: ids }, status: 'APPROVED', raBillId: null, workOrderId: null }, select: { projectId: true, totalQty: true, date: true, boqItem: { select: { rate: true } } } }),
-      this.prisma.raBill.findMany({ where: { projectId: { in: ids }, status: 'APPROVED', stage: 'NOT_SENT' }, orderBy: { billDate: 'asc' }, select: { id: true, projectId: true, billNo: true, isFinal: true, billDate: true, netPayable: true } }),
+      this.prisma.raBill.findMany({ where: { projectId: { in: ids }, status: 'APPROVED', stage: 'NOT_SENT' }, orderBy: { billDate: 'asc' }, select: { id: true, projectId: true, billNo: true, isFinal: true, omYear: true, billDate: true, netPayable: true } }),
       this.receivables.summary(user),
     ]);
     const rows: BillingReadinessRowDto[] = projects.map((p) => ({
@@ -453,7 +453,7 @@ export class CashForecastService {
       const d = dateOnly(s.date)!;
       if (!r.oldestUnbilled || d < r.oldestUnbilled) r.oldestUnbilled = d;
     }
-    for (const b of notSent) rowOf.get(b.projectId)!.notSent.push({ billId: b.id, label: billLabel(b.billNo, b.isFinal), billDate: dateOnly(b.billDate)!, amount: N(b.netPayable) });
+    for (const b of notSent) rowOf.get(b.projectId)!.notSent.push({ billId: b.id, label: billLabel(b.billNo, b.isFinal, b.omYear !== null), billDate: dateOnly(b.billDate)!, amount: N(b.netPayable) });
     for (const b of recv.openBills) {
       const r = rowOf.get(b.projectId);
       if (!r) continue;
@@ -484,7 +484,7 @@ export class CashForecastService {
     const bill = await this.prisma.raBill.findFirst({
       where: { id: billId, organizationId: user.organizationId, project: this.access.projectWhere(user) },
       select: {
-        id: true, billNo: true, isFinal: true, billDate: true, sentDate: true, netPayable: true, stage: true, paidDate: true,
+        id: true, billNo: true, isFinal: true, omYear: true, billDate: true, sentDate: true, netPayable: true, stage: true, paidDate: true,
         project: { select: { id: true, name: true, clientName: true, clientPaymentDays: true, agreementNo: true, client: { select: { name: true } } } },
       },
     });
@@ -492,7 +492,7 @@ export class CashForecastService {
     if (bill.stage === 'NOT_SENT' || !bill.sentDate) throw new BadRequestException('Send the bill to the client before reminding them to pay it');
     if (bill.stage === 'PAID' || bill.paidDate) throw new BadRequestException('This bill is paid');
     const today = todayIn();
-    const label = billLabel(bill.billNo, bill.isFinal);
+    const label = billLabel(bill.billNo, bill.isFinal, bill.omYear !== null);
     const sent = dateOnly(bill.sentDate);
     const party = bill.project.client?.name ?? bill.project.clientName ?? undefined;
     const open = (await this.receivables.summary(user, { projectId: bill.project.id })).openBills.find((b) => b.billId === bill.id);

@@ -94,7 +94,10 @@ export class ProjectsService {
   }
 
   async toDetail(p: ProjectRow): Promise<ProjectDetail> {
-    const [summary] = await this.summaries([p]);
+    const [[summary], handover] = await Promise.all([
+      this.summaries([p]),
+      this.prisma.projectHandover.findUnique({ where: { projectId: p.id }, select: { completedOn: true } }),
+    ]);
     return {
       ...summary,
       clientId: p.clientId,
@@ -109,6 +112,7 @@ export class ProjectsService {
       siteLng: p.siteLng?.toString() ?? null,
       siteRadiusM: p.siteRadiusM,
       siteCheckInStrict: p.siteCheckInStrict,
+      handedOverOn: dateOnly(handover?.completedOn ?? null),
       members: p.members.map((m) => ({ id: m.id, userId: m.userId, fullName: m.user.fullName, roleKey: m.user.role.key as RoleKey, roleName: m.user.role.name })),
       createdAt: iso(p.createdAt)!,
       updatedAt: iso(p.updatedAt)!,

@@ -265,7 +265,7 @@ export class HomeService {
       canViewContract(role)
         ? this.prisma.receipt.findMany({
             where: { ...inProjects, receiptDate: days2 },
-            select: { receiptDate: true, amount: true, reference: true, projectId: true, project: { select: { name: true } }, bill: { select: { id: true, billNo: true, isFinal: true } } },
+            select: { receiptDate: true, amount: true, reference: true, projectId: true, project: { select: { name: true } }, bill: { select: { id: true, billNo: true, isFinal: true, omYear: true } } },
           })
         : null,
       canViewContract(role) ? this.receivables.summary(user) : null,
@@ -317,7 +317,7 @@ export class HomeService {
           .slice(0, COMPANY_TODAY_ROWS)
           .map((r) => ({
             party: client.get(r.projectId) ?? r.project.name,
-            reference: r.bill ? billLabel(r.bill.billNo, r.bill.isFinal) : r.reference,
+            reference: r.bill ? billLabel(r.bill.billNo, r.bill.isFinal, r.bill.omYear !== null) : r.reference,
             projectName: r.project.name,
             amount: money(r.amount)!,
             href: r.bill ? `/bills/${r.bill.id}` : null,

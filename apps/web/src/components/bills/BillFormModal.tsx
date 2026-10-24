@@ -61,8 +61,8 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
     mutationFn: async ({ v, submit }: { v: FormValues; submit: boolean }) => {
       const body = {
         billDate: v.billDate.format('YYYY-MM-DD'),
-        measuredUpTo: v.measuredUpTo.format('YYYY-MM-DD'),
-        isFinal: !!v.isFinal,
+        // An O&M bill covers its period (item 131): only its date, deductions and remarks change.
+        ...(bill?.om ? {} : { measuredUpTo: v.measuredUpTo.format('YYYY-MM-DD'), isFinal: !!v.isFinal }),
         otherDeduction: String(v.otherDeduction ?? 0),
         otherDeductionNote: v.otherDeductionNote?.trim() || null,
         remarks: v.remarks?.trim() || null,
@@ -107,6 +107,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
           </Form.Item>
           <Form.Item
             name="measuredUpTo"
+            hidden={!!bill?.om}
             label="Measurements up to"
             dependencies={['billDate']}
             rules={[
@@ -130,7 +131,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
             <Input maxLength={200} placeholder="e.g. Water charges" />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="isFinal" valuePropName="checked">
+        <Form.Item name="isFinal" valuePropName="checked" hidden={!!bill?.om}>
           <Checkbox>This is the final bill of the work</Checkbox>
         </Form.Item>
         <Form.Item name="remarks" label="Remarks">

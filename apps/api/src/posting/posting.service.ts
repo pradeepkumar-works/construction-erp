@@ -162,7 +162,7 @@ export class PostingService {
         projectId: b.project.id,
         projectCode: b.project.code,
         projectName: b.project.name,
-        narration: `RA bill ${b.billNo}${b.isFinal ? ' (final)' : ''} of ${b.project.name}: work ₹${b.grossAmount.toFixed(2)}${b.pvAmount.isZero() ? '' : ` + price variation ₹${b.pvAmount.toFixed(2)}`} + GST ₹${b.gstAmount.toFixed(2)}${b.certificateNo ? `, certificate ${b.certificateNo}` : ''}`,
+        narration: `${b.omYear !== null ? `O&M bill ${b.billNo}` : `RA bill ${b.billNo}${b.isFinal ? ' (final)' : ''}`} of ${b.project.name}: ${b.omYear !== null ? 'operation and maintenance' : 'work'} ₹${b.grossAmount.toFixed(2)}${b.pvAmount.isZero() ? '' : ` + price variation ₹${b.pvAmount.toFixed(2)}`} + GST ₹${b.gstAmount.toFixed(2)}${b.certificateNo ? `, certificate ${b.certificateNo}` : ''}`,
         billRef: { name: ref, type: 'New Ref' },
         lines: l.lines,
       });

@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import type { RaBillDto } from '@erp/shared';
-import { BILL_STAGE_LABELS, CURRENCIES, GST_STATES, currencySymbol, fromRupees, isForeign, type ContractCurrency } from '@erp/shared';
+import { BILL_STAGE_LABELS, CURRENCIES, OM_BENCHMARK_INFO, GST_STATES, currencySymbol, fromRupees, isForeign, type ContractCurrency } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatDateTime, formatMoney, formatQty, toNumber } from '@/lib/format';
@@ -109,6 +109,28 @@ export function buildBillPrintHtml(b: RaBillDto, orgName: string): string {
       <tbody>${lines}<tr><th colspan="5">Total</th><th class="num">${qty(m.totalQty)}</th></tr></tbody></table></div>`;
     })
     .join('');
+  // An O&M bill (item 131) bills its period's instalment, less staff short; its penalties are among the deductions.
+  const om = b.om;
+  const omBlock = om
+    ? `
+  <h2>Operation and maintenance: ${esc(om.label)}, ${esc(formatDate(om.from))} to ${esc(formatDate(om.to))}</h2>
+  <table>
+    <thead><tr><th>Month</th><th>Particulars</th><th class="num">Amount (${sym})</th></tr></thead>
+    <tbody>
+      <tr><td></td><td>Instalment: ${esc(om.yearPct)}% of the contract for year ${esc(om.year)}, in its instalments</td><td class="num">${inr(om.instalmentAmount)}</td></tr>
+      ${om.staff.map((l) => `<tr><td>${esc(dayjs(`${l.month}-01`).format('MMM YYYY'))}</td><td>Less ${esc(l.role)}: ${esc(l.deployed)} deployed of ${esc(l.required)}</td><td class="num">-${inr(l.deduction)}</td></tr>`).join('')}
+      <tr class="total"><td colspan="2">Value of this bill</td><td class="num">${inr(b.grossAmount)}</td></tr>
+    </tbody>
+  </table>
+  <h2>Service level penalties</h2>
+  <table>
+    <thead><tr><th>Month</th><th>Benchmark</th><th class="num">Failures</th><th class="num">Allowed</th><th class="num">Penalty (${sym})</th></tr></thead>
+    <tbody>
+      ${om.penalties.map((p) => `<tr><td>${esc(dayjs(`${p.month}-01`).format('MMM YYYY'))}</td><td>${esc(OM_BENCHMARK_INFO[p.key].label)}</td><td class="num">${esc(p.failures)}</td><td class="num">${esc(p.allowed)}</td><td class="num">${inr(p.amount)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">None</td></tr>'}
+      <tr class="total"><td colspan="4">Deducted below</td><td class="num">${inr(om.penalty)}</td></tr>
+    </tbody>
+  </table>`
+    : '';
   const client = b.client;
   const status = b.status === 'APPROVED' ? BILL_STAGE_LABELS[b.stage] : b.status.replace(/_/g, ' ');
   const cols = certified ? 13 : 12;
@@ -151,15 +173,15 @@ ${PRINT_FONT_LINKS}
 <body>
   <div class="head">
     <div><div class="brand">${esc(orgName)}</div><div class="org">${esc(b.projectName)} (${esc(b.projectCode)})</div></div>
-    <div style="text-align:right"><h1>Running Account Bill No. ${esc(b.billNo)}${b.isFinal ? ' (Final)' : ''}</h1><div>${esc(formatDate(b.billDate))}</div><div style="margin-top:4px" class="status">${esc(status)}</div></div>
+    <div style="text-align:right"><h1>${om ? 'O&amp;M Bill' : 'Running Account Bill'} No. ${esc(b.billNo)}${b.isFinal ? ' (Final)' : ''}</h1><div>${esc(formatDate(b.billDate))}</div><div style="margin-top:4px" class="status">${esc(status)}</div></div>
   </div>
   <div class="meta">
     <div><b>To</b>${esc(client?.name ?? b.clientName ?? '-')}${client?.department ? `<br/>${esc(client.department)}` : ''}${client?.billingAddress ? `<br/><span class="muted">${esc(client.billingAddress)}</span>` : ''}</div>
     <div><b>Client GSTIN</b>${esc(client?.gstin ?? '-')}${client?.stateCode ? `<br/><span class="muted">${esc(GST_STATES[client.stateCode] ?? client.stateCode)}</span>` : ''}</div>
     <div><b>Agreement</b>${esc(b.agreementNo ?? '-')}${b.agreementDate ? `<br/><span class="muted">${esc(formatDate(b.agreementDate))}</span>` : ''}</div>
     <div><b>Work order</b>${esc(b.workOrderNo ?? '-')}</div>
-    <div><b>Measurements up to</b>${esc(formatDate(b.measuredUpTo))}</div>
-    <div><b>Measurement sheets</b>${esc(b.measurementCount)}</div>
+    ${om ? `<div><b>O&amp;M period</b>${esc(om.label)}</div><div><b>Period ends</b>${esc(formatDate(om.to))}</div>` : `<div><b>Measurements up to</b>${esc(formatDate(b.measuredUpTo))}</div>
+    <div><b>Measurement sheets</b>${esc(b.measurementCount)}</div>`}
     <div><b>Sent</b>${esc(b.sentDate ? formatDate(b.sentDate) : '-')}</div>
     <div><b>Certified</b>${esc(b.certifiedDate ? formatDate(b.certifiedDate) : '-')}${b.certificateNo ? ` (${esc(b.certificateNo)})` : ''}</div>
   </div>
@@ -181,6 +203,11 @@ ${
   </table>`
     : ''
 }
+${omBlock}
+${
+  om
+    ? ''
+    : `
   <h2>${staged ? `Unit-rate items (rate × tender factor ${esc(b.tenderFactor ?? '1')})` : 'Abstract of cost'}</h2>
   <table>
     <thead>
@@ -193,7 +220,8 @@ ${
       ${staged ? `<tr class="total"><td colspan="${cols - 3}">Unit-rate items</td><td class="num">${inr(itemPrev)}</td><td class="num">${inr(itemThis)}</td><td class="num">${inr(itemUpto)}</td></tr>` : ''}
       <tr class="total"><td colspan="${cols - 3}">Value of work done${staged ? ' (stages and items)' : ''}</td><td class="num">${inr(b.grossPrevious)}</td><td class="num">${inr(b.grossAmount)}</td><td class="num">${inr(b.grossUpto)}</td></tr>
     </tbody>
-  </table>
+  </table>`
+}
 ${
   b.pvLines.length
     ? `

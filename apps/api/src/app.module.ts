@@ -27,6 +27,7 @@ import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { ReportsModule } from './reports/reports.module';
 import { RisksModule } from './risks/risks.module';
 import { EpcModule } from './epc/epc.module';
+import { OmModule } from './om/om.module';
 import { SearchModule } from './search/search.module';
 import { AiModule } from './ai/ai.module';
 import { BillChecksModule } from './checks/bill-checks.module';
@@ -148,6 +149,7 @@ import { VitalsController } from './vitals.controller';
     ReportsModule,
     RisksModule,
     EpcModule,
+    OmModule,
     SearchModule,
     AiModule,
     BillChecksModule,

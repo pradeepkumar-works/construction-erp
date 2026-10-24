@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
 import type { ProjectDetail } from '@erp/shared';
-import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc } from '@erp/shared';
+import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { readPref, writePref } from '@/lib/prefs';
@@ -20,6 +20,7 @@ import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
 import { StructurePanel } from '@/components/structure/StructurePanel';
 import { PipeNetworkPanel } from '@/components/pipes/PipeNetworkPanel';
 import { EpcPanel } from '@/components/epc/EpcPanel';
+import { OmPanel } from '@/components/om/OmPanel';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { GanttPanel } from '@/components/schedule/GanttPanel';
@@ -121,6 +122,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     can(!!user && canViewCost(user.roleKey)) && { key: 'budget', group: 'money', label: 'Budget and cash flow', children: <ProjectBudgetPanel projectId={project.id} /> },
     can(!!user && canViewCost(user.roleKey)) && { key: 'earned-value', group: 'money', label: 'Earned value', children: <EarnedValuePanel projectId={project.id} /> },
     can(!!user && !isGuest(user.roleKey)) && { key: 'handover', group: 'handover', label: 'Handover', children: <HandoverPanel projectId={project.id} members={project.members} initialDefectId={search.get('defect') ?? undefined} /> },
+    can(!!project.handedOverOn && !!user && canViewOm(user.roleKey)) && { key: 'om', group: 'handover', label: 'O&M', children: <OmPanel project={project} /> },
   ];
   const tabs = all.filter((t): t is WorkspaceTab => !!t);
 

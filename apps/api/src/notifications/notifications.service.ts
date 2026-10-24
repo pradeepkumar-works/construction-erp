@@ -210,7 +210,7 @@ export class NotificationsService {
       }
       case 'BILL': {
         const b = await this.prisma.raBill.findUnique({ where: { id }, include: { project: { select: { name: true } } } });
-        return b ? { title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2)), projectId: b.projectId, projectName: b.project.name, submittedById: b.submittedById } : null;
+        return b ? { title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2), b.omYear !== null), projectId: b.projectId, projectName: b.project.name, submittedById: b.submittedById } : null;
       }
       case 'PURCHASE_ORDER': {
         const o = await this.prisma.purchaseOrder.findUnique({ where: { id }, include: { project: { select: { name: true } }, vendor: { select: { name: true } } } });

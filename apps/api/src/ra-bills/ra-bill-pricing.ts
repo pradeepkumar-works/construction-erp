@@ -13,6 +13,16 @@ const ZERO = D(0);
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 const pctOf = (base: Prisma.Decimal, pct: Prisma.Decimal) => round2(base.mul(pct).div(100));
 
+/**
+ * An O&M bill's figures (item 131): the instalment less staff short (its work value), the O&M bills before it, and the
+ * service level penalties it deducts. `omPricing` in `src/om/om-bill.ts` works them out.
+ */
+export interface OmPricing {
+  amount: Prisma.Decimal;
+  previous: Prisma.Decimal;
+  penalty: Prisma.Decimal;
+}
+
 /** Deduction percentages of a bill, in the order the bill shows them. */
 export const PCT_DEDUCTIONS = [
   ['retention', 'retentionPct', 'retentionAmount'],
@@ -92,11 +102,20 @@ export async function measuredLines(tx: Prisma.TransactionClient, bill: { id: st
  * quantities, with the stages' amounts and the slippage withheld (item 129). GST and the deductions are on work value +
  * price variation.
  */
-export async function billTotals(tx: Prisma.TransactionClient, bill: { id: string; projectId: string; billNo: number; otherDeduction: Prisma.Decimal }, lines: Line[], pcts: Percentages, terms: Terms, plan: BillStagePlan | null) {
-  const advance = terms.mobilisationAdvance;
+export async function billTotals(
+  tx: Prisma.TransactionClient,
+  bill: { id: string; projectId: string; billNo: number; otherDeduction: Prisma.Decimal },
+  lines: Line[],
+  pcts: Percentages,
+  terms: Terms,
+  plan: BillStagePlan | null,
+  om: OmPricing | null = null,
+) {
+  // An O&M bill (item 131) recovers no mobilisation advance: that belonged to the works.
+  const advance = om ? ZERO : terms.mobilisationAdvance;
   const amounts = lines.map((l) => round2((l.certifiedQty ?? l.thisQty).mul(l.rate)));
-  const grossAmount = amounts.reduce((s, a) => s.add(a), plan?.stageAmount ?? ZERO);
-  const grossPrevious = lines.reduce((s, l) => s.add(round2(l.prevQty.mul(l.rate))), plan?.stagePrevious ?? ZERO);
+  const grossAmount = amounts.reduce((s, a) => s.add(a), plan?.stageAmount ?? om?.amount ?? ZERO);
+  const grossPrevious = lines.reduce((s, l) => s.add(round2(l.prevQty.mul(l.rate))), plan?.stagePrevious ?? om?.previous ?? ZERO);
   const [recovered, pvLines] = await Promise.all([
     tx.raBill.aggregate({ where: { projectId: bill.projectId, billNo: { lt: bill.billNo } }, _sum: { advanceRecoveryAmount: true } }),
     tx.raBillPvLine.findMany({ where: { billId: bill.id }, select: { id: true, sharePct: true, baseIndex: true, currentIndex: true } }),
@@ -108,7 +127,7 @@ export async function billTotals(tx: Prisma.TransactionClient, bill: { id: strin
   const base = Prisma.Decimal.max(grossAmount.add(pvAmount), ZERO);
   // A recovery window (item 129) recovers the advance between two % of the contract executed, else a % of each bill.
   const windowed =
-    terms.advanceRecoveryFromPct && terms.advanceRecoveryToPct && terms.contractValue
+    !om && terms.advanceRecoveryFromPct && terms.advanceRecoveryToPct && terms.contractValue
       ? windowRecovery({ advance, contractValue: terms.contractValue, executedUpto: grossPrevious.add(grossAmount), fromPct: terms.advanceRecoveryFromPct, toPct: terms.advanceRecoveryToPct, recoveredBefore: recovered._sum.advanceRecoveryAmount ?? ZERO })
       : null;
   const slippageWithheld = plan?.slippageWithheld ?? ZERO;
@@ -132,9 +151,10 @@ export async function billTotals(tx: Prisma.TransactionClient, bill: { id: strin
     gstTdsAmount: pctOf(base, pcts.gstTdsPct),
     labourCessAmount: pctOf(base, pcts.labourCessPct),
   };
-  const totalDeductions = PCT_DEDUCTIONS.reduce((s, [, , k]) => s.add(data[k]), ZERO).add(bill.otherDeduction).add(slippageWithheld);
+  const omPenalty = om?.penalty ?? ZERO;
+  const totalDeductions = PCT_DEDUCTIONS.reduce((s, [, , k]) => s.add(data[k]), ZERO).add(bill.otherDeduction).add(slippageWithheld).add(omPenalty);
   const slippageLines = (plan?.slippageLines ?? []) as unknown as Prisma.InputJsonValue;
-  return { amounts, data: { ...data, slippageWithheld, slippageLines, totalDeductions, netPayable: grossAmount.add(pvAmount).add(data.gstAmount).sub(totalDeductions) } };
+  return { amounts, data: { ...data, slippageWithheld, slippageLines, omPenalty, totalDeductions, netPayable: grossAmount.add(pvAmount).add(data.gstAmount).sub(totalDeductions) } };
 }
 
 /** Write a priced bill: its lines, its stage lines and its totals. */

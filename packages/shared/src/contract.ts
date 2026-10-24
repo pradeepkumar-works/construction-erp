@@ -45,7 +45,8 @@ export function revisedCompletion(endDate: string | null, extensionDays: number)
 }
 
 /** "RA bill 3", or "RA bill 7 (final)". */
-export const billLabel = (billNo: number, isFinal: boolean): string => `RA bill ${billNo}${isFinal ? ' (final)' : ''}`;
+/** "RA bill 3", "RA bill 7 (final)", or "O&M bill 9" for an instalment of the O&M contract (item 131). */
+export const billLabel = (billNo: number, isFinal: boolean, om = false): string => (om ? `O&M bill ${billNo}` : `RA bill ${billNo}${isFinal ? ' (final)' : ''}`);
 
 /** The deductions on an RA bill, in the order the bill shows them. */
 export const BILL_DEDUCTION_LABELS = {
@@ -56,5 +57,6 @@ export const BILL_DEDUCTION_LABELS = {
   gstTds: 'GST TDS',
   labourCess: 'Labour welfare cess',
   slippage: 'Milestone slippage withheld',
+  omPenalty: 'Service level penalties',
   other: 'Other deduction',
 } as const;

@@ -89,8 +89,11 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
   useEffect(() => {
     if (!open || editing || !target || kind !== 'BILL') return;
     const first = toNumber(target.settledAmount) === 0;
-    const fill: Partial<FormValues> = Object.fromEntries(DEDUCTIONS.map(([k, , key]) => [k, first ? inC(toNumber(target.deductions.find((d) => d.key === key)?.amount ?? 0)) || null : null]));
-    if (first) fill.otherDeductionNote = target.otherDeductionNote ?? undefined;
+    const of = (key: string) => toNumber(target.deductions.find((d) => d.key === key)?.amount ?? 0);
+    // An O&M bill's service level penalties (item 131) are taken by the client as an other deduction.
+    const penalty = of('omPenalty');
+    const fill: Partial<FormValues> = Object.fromEntries(DEDUCTIONS.map(([k, , key]) => [k, first ? inC(of(key) + (key === 'other' ? penalty : 0)) || null : null]));
+    if (first) fill.otherDeductionNote = target.otherDeductionNote ?? (penalty ? 'Service level penalties' : undefined);
     fill.amount = inC(first ? toNumber(target.netPayable) : toNumber(target.outstanding));
     form.setFieldsValue(fill);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- inC reads target's currency, already a dependency

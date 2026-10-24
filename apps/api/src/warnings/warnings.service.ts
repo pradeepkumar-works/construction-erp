@@ -5,6 +5,7 @@ import {
   DEFAULT_CLIENT_PAYMENT_DAYS,
   DEFAULT_PORT_TO_SITE_DAYS,
   PACKAGE_STAGE_LABELS,
+  OM_BENCHMARK_INFO,
   DEFAULT_NOTICE_DAYS,
   DELAY_PARTY_LABELS,
   NOTICE_PARTIES,
@@ -40,6 +41,8 @@ import { monthSpan } from '../leakage/leakage-rules';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
 import { noticeClock } from '../hindrance/hindrance-rules';
 import { packageStatus } from '../epc/epc-rules';
+import { loadMonths, loadOm } from '../om/om-load';
+import { periodOf } from '../om/om-rules';
 import {
   type Delivery,
   type MachineDay,
@@ -59,6 +62,7 @@ import {
   addDays,
   daysBetween,
   packageLate,
+  omSlip,
   pauseState,
   trackRecord,
   cashGap,
@@ -256,6 +260,8 @@ export class WarningsService {
         if (k === 'NOTICE_DUE') return this.notices(active, today);
         if (k === 'MANDAYS_ABOVE') return today === todayIn() ? this.manDays(user) : Promise.resolve([]);
         if (k === 'PACKAGE_LATE') return this.packages(active, today);
+        // A scheme in O&M is a completed project (item 131).
+        if (k === 'OM_SERVICE') return this.omService(projects, today);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -650,6 +656,60 @@ export class WarningsService {
           { label: 'Needed on site', value: day(needed) },
         ],
         links: [{ label: 'Engineering and packages', href: `/projects/${p.id}?tab=epc&sub=packages` }],
+        projectId: p.id,
+        projectName: p.name,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * A scheme in O&M whose running period is losing money to service levels or staff short, has days with no reading, or
+   * has a benchmark at this month's allowance (item 131, `omSlip`). The key moves with the figures.
+   */
+  private async omService(projects: Project[], today: string): Promise<Draft[]> {
+    if (!projects.length) return [];
+    const contracts = await this.prisma.omContract.findMany({ where: { projectId: { in: projects.map((p) => p.id) } }, select: { projectId: true } });
+    const byId = new Map(projects.map((p) => [p.id, p]));
+    const out: Draft[] = [];
+    for (const c of contracts) {
+      const om = await loadOm(this.prisma, c.projectId);
+      const period = om && periodOf(om.periods, today);
+      if (!om || !period) continue;
+      const months = await loadMonths(this.prisma, om, c.projectId, period.from, today, today);
+      const w = omSlip(months);
+      if (!w) continue;
+      const p = byId.get(c.projectId)!;
+      const lost = w.penalty + w.staffDeduction;
+      const near = w.atAllowance.map((k) => OM_BENCHMARK_INFO[k as keyof typeof OM_BENCHMARK_INFO].label.toLowerCase());
+      const parts = [
+        w.penalty ? `${rupees(w.penalty)} in service level penalties` : null,
+        w.staffDeduction ? `${rupees(w.staffDeduction)} for staff short of the minimum` : null,
+      ].filter(Boolean);
+      out.push({
+        key: `om:${c.projectId}:${period.year}-${period.instalment}:${w.penalty}:${w.staffDeduction}:${w.missingDays.length}:${w.atAllowance.join(',')}`,
+        kind: 'OM_SERVICE',
+        title: lost ? `${p.name} has lost ${rupees(lost)} of ${period.label} so far` : near.length ? `${p.name}: one more ${near[0]} failure this month costs a penalty` : `${p.name} has ${plural(w.missingDays.length, 'day')} with no service level reading`,
+        detail: [
+          parts.length ? `${period.label} (${day(period.from)} to ${day(period.to)}) will be billed less ${parts.join(' and ')}.` : `${period.label} runs ${day(period.from)} to ${day(period.to)}.`,
+          near.length ? `This month has used up the failures allowed for ${near.join(', ')}.` : null,
+          w.missingDays.length ? `${plural(w.missingDays.length, 'day')} of the period ${w.missingDays.length === 1 ? 'has' : 'have'} no reading, which the client will ask for.` : null,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        action: w.penalty || near.length ? 'Find why the readings miss (pressure zones, chlorine dosing, leaks) and fix it before the next reading' : w.staffDeduction ? 'Deploy the minimum staff, or record the month’s staff if they were there' : 'Log the missing days from the plant register',
+        impact: { text: lost ? `${rupees(lost)} off the bill` : near.length ? 'At the allowance' : `${plural(w.missingDays.length, 'day')} not logged`, inr: lost || null, days: null },
+        working: [
+          `Instalment ${rupees(period.amount)} for ${period.label}`,
+          ...months.flatMap((m) => m.benchmarks.filter((b) => b.penalised > 0).map((b) => `${m.month}: ${OM_BENCHMARK_INFO[b.key].label}, ${b.failures} failures with ${b.allowed} allowed = ${rupees(b.penalty)}`)),
+          ...months.flatMap((m) => m.staff.filter((l) => l.short > 0).map((l) => `${m.month}: ${l.role} ${l.deployed} of ${l.required} = ${rupees(l.deduction)}`)),
+        ],
+        facts: [
+          { label: 'Penalties so far', value: rupees(w.penalty) },
+          { label: 'Staff short so far', value: rupees(w.staffDeduction) },
+          { label: 'Days not logged', value: String(w.missingDays.length) },
+        ],
+        links: [{ label: 'O&M', href: `/projects/${p.id}?tab=om` }],
         projectId: p.id,
         projectName: p.name,
       });

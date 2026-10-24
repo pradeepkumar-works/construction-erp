@@ -28,6 +28,33 @@ export function packageLate(f: { lateDays: number | null; forecastFrom: 'DELIVER
   return f.lateDays;
 }
 
+// O&M (item 131): a month's failures, penalties and staff short are `monthFigures` in `om/om-rules.ts`.
+
+/** Days of the running period with no service level reading before the gap is worth a warning on its own. */
+export const OM_MISSING_DAYS = 3;
+
+interface OmMonthFacts {
+  month: string;
+  penalty: number;
+  staffDeduction: number;
+  missingDays: string[];
+  benchmarks: { key: string; failures: number; allowed: number; penalised: number }[];
+}
+
+/**
+ * What the running O&M period is losing so far: penalties and staff short, the days with no reading, and the DAY
+ * benchmarks of this month already at their allowance (the next failure costs). Null when there is nothing to say.
+ */
+export function omSlip(months: OmMonthFacts[]): { penalty: number; staffDeduction: number; missingDays: string[]; atAllowance: string[] } | null {
+  const penalty = Math.round(months.reduce((s, m) => s + m.penalty, 0) * 100) / 100;
+  const staffDeduction = Math.round(months.reduce((s, m) => s + m.staffDeduction, 0) * 100) / 100;
+  const missingDays = months.flatMap((m) => m.missingDays);
+  const last = months[months.length - 1];
+  const atAllowance = last ? last.benchmarks.filter((b) => b.allowed > 0 && b.failures === b.allowed).map((b) => b.key) : [];
+  if (!penalty && !staffDeduction && missingDays.length < OM_MISSING_DAYS && !atAllowance.length) return null;
+  return { penalty, staffDeduction, missingDays, atAllowance };
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Schedule: an activity's current rate puts its finish past the baseline.
 

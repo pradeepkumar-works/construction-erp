@@ -31,6 +31,7 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { Section } from '@/components/common/Section';
+import { OmBillSection } from '@/components/om/OmBillSection';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type StageAction = 'send' | 'certify';
@@ -161,7 +162,11 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   type="info"
                   showIcon
                   style={{ marginBottom: 12 }}
-                  title="Draft: check the abstract, then submit it for approval. Measurements approved in the meantime are added when it is submitted."
+                  title={
+                    data.om
+                      ? 'Draft: check the period’s staff and penalties, then submit it for approval.'
+                      : 'Draft: check the abstract, then submit it for approval. Measurements approved in the meantime are added when it is submitted.'
+                  }
                 />
               )}
               {data.heldExtraItems?.length ? (
@@ -193,10 +198,12 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 data.clientName ?? '-'
               ),
             },
-            { key: 'upto', label: 'Measurements up to', children: formatDate(data.measuredUpTo) },
+            data.om
+              ? { key: 'upto', label: 'O&M period', children: `${data.om.label}, to ${formatDate(data.om.to)}` }
+              : { key: 'upto', label: 'Measurements up to', children: formatDate(data.measuredUpTo) },
             { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : '-' },
             { key: 'wo', label: 'Work order', children: data.workOrderNo ?? '-' },
-            { key: 'sheets', label: 'Measurement sheets', children: data.measurementCount },
+            ...(data.om ? [] : [{ key: 'sheets', label: 'Measurement sheets', children: data.measurementCount }]),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 3 }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
@@ -207,6 +214,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           ]),
           sections: [
             checksSection('ra-bill', data.id, dataUpdatedAt),
+            ...(data.om ? [{ key: 'om', title: 'Operation and maintenance', children: <OmBillSection om={data.om} /> }] : []),
             ...(data.stageLines.length
               ? [{ key: 'stages', title: 'Payment stages', count: data.stageLines.filter((l) => toNumber(l.thisPct) > 0).length, children: <BillStages bill={data} editable={editable} /> }]
               : []),
@@ -344,7 +352,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               ),
             },
             { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
-          ],
+          ].filter((s) => !data.om || (s.key !== 'abstract' && s.key !== 'measurements')),
           activity: { type: 'bill', id: data.id, submission: data },
           actions: (size) => (
             <>

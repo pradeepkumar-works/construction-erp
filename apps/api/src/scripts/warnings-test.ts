@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict';
 import type { RoleKey } from '@erp/shared';
 import { PAUSE_MIN_OUTCOMES, PAUSE_WINDOW_DAYS, PAUSE_WRONG_SHARE, WARNING_KINDS, trackRecordText, watchListKinds } from '@erp/shared';
-import { packageLate } from '../warnings/warning-rules';
+import { OM_MISSING_DAYS, omSlip, packageLate } from '../warnings/warning-rules';
 import { packageStatus } from '../epc/epc-rules';
 import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
@@ -216,6 +216,19 @@ test('package: at sea past the day site needs it warns; a few days, or delivered
   const landed = packageStatus({ stages: stages.map((s) => (s.stage === 'DELIVERED' ? { ...s, actualOn: '2026-09-21' } : s)), neededOn: '2026-09-01', eta: '2026-09-12', portToSiteDays: 10 }, '2026-09-25');
   assert.equal(packageLate(landed), null, 'delivered late is history, not a warning');
 });
+test('o&m: penalties, staff short, days missing or a benchmark at its allowance warn; a clean period does not', () => {
+  const clean = { month: '2026-10', penalty: 0, staffDeduction: 0, missingDays: [] as string[], benchmarks: [{ key: 'PRESSURE', failures: 0, allowed: 1, penalised: 0 }] };
+  assert.equal(omSlip([clean]), null);
+  assert.equal(omSlip([{ ...clean, missingDays: ['2026-10-03', '2026-10-04'] }]), null, `fewer than ${OM_MISSING_DAYS} days missing is not yet a warning`);
+  assert.deepEqual(omSlip([{ ...clean, benchmarks: [{ key: 'PRESSURE', failures: 1, allowed: 1, penalised: 0 }] }])?.atAllowance, ['PRESSURE']);
+  const w = omSlip([
+    { ...clean, month: '2026-09', penalty: 5000, staffDeduction: 18000 },
+    { ...clean, penalty: 10000 },
+  ])!;
+  assert.equal(w.penalty, 15000);
+  assert.equal(w.staffDeduction, 18000);
+  assert.deepEqual(w.atAllowance, []);
+});
 test('emi: an EMI more than two days late warns, with the oldest, the count and the amount', () => {
   const emis = [
     { no: 5, dueDate: '2026-09-05', emi: 94968, paidOn: '2026-09-05' },
@@ -234,7 +247,7 @@ test('emi: an EMI more than two days late warns, with the oldest, the count and 
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE']);
   assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE']);
   assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH', 'LOAN_EMI']);

@@ -661,6 +661,11 @@ model Organization {
   epcDeliverables      EngineeringDeliverable[]
   epcPackages          ProcurementPackage[]
   epcPackageStages     PackageStageDate[]
+  omContracts          OmContract[]
+  omStaffNorms         OmStaffNorm[]
+  omStaffMonths        OmStaffMonth[]
+  omChemicalNorms      OmChemicalNorm[]
+  serviceLevelDays     ServiceLevelDay[]
   pipeTestSegments     PipeTestSegment[]
   milestones           Milestone[]
   activityLinks        ActivityLink[]
@@ -1035,6 +1040,8 @@ model User {
   imprestDecisions      ImprestEntry[]             @relation("ImprestDecider")
   complianceDocs        ComplianceDoc[]
   handoversRecorded     ProjectHandover[]
+  omStaffRecorded       OmStaffMonth[]
+  serviceLevelEntered   ServiceLevelDay[]
   defectsReported       Defect[]                   @relation("DefectReporter")
   defectsAssigned       Defect[]                   @relation("DefectAssignee")
   defectsFixed          Defect[]                   @relation("DefectFixer")
@@ -1194,6 +1201,9 @@ model Project {
   milestones         Milestone[]
   epcDeliverables    EngineeringDeliverable[]
   epcPackages        ProcurementPackage[]
+  omContract         OmContract?
+  omStaffMonths      OmStaffMonth[]
+  serviceLevelDays   ServiceLevelDay[]
   activityLinks      ActivityLink[]
   workers            Worker[]
   workerAttendance   WorkerAttendance[]
@@ -2574,6 +2584,7 @@ model Item {
   approvedMakes     ApprovedMake[]
   progressUses      ProgressMaterial[]
   activityNorms     ActivityMaterialNorm[]
+  omChemicalNorms   OmChemicalNorm[]
 
   @@unique([organizationId, name, unit])
 }
@@ -3155,6 +3166,12 @@ model RaBill {
   /// and the components behind it (SlippageLineDto[])
   slippageWithheld      Decimal          @default(0) @db.Decimal(18, 2)
   slippageLines         Json?
+  /// O&M bills (item 131): the O&M year and the instalment of it this bill is for (null on a works bill), the
+  /// penalty for service levels missed in the period (a deduction) and the figures behind it (OmBillDetail)
+  omYear                Int?
+  omInstalment          Int?
+  omPenalty             Decimal          @default(0) @db.Decimal(18, 2)
+  omDetail              Json?
   totalDeductions       Decimal          @db.Decimal(18, 2)
   /// gross + GST - deductions
   netPayable            Decimal          @db.Decimal(18, 2)
@@ -3194,6 +3211,7 @@ model RaBill {
   receipts     Receipt[]
 
   @@unique([projectId, billNo])
+  @@unique([projectId, omYear, omInstalment])
   @@index([organizationId, status])
   @@index([projectId, status])
   @@index([tallyExportId])
@@ -3490,6 +3508,124 @@ model PackageStageDate {
   actualOn       DateTime?          @db.Date
 
   @@unique([packageId, stage])
+  @@index([organizationId])
+}
+
+/// O&M contract (item 131, ARCHITECTURE "Operation and maintenance"): the years of running a scheme after its handover.
+/// Each year is paid as a % of the contract value in equal instalments (usually quarterly), each instalment an O&M bill
+/// (an RA bill with `omYear`), less the pay of staff not deployed against the minimum and the penalties for service
+/// levels missed beyond what a month allows.
+model OmContract {
+  id                 String       @id @default(uuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  projectId          String       @unique
+  project            Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The first day of O&M year 1, normally the day after the completion the handover certificate states
+  startOn            DateTime     @db.Date
+  years              Int
+  /// % of the contract value paid for each O&M year, year 1 first (one per year, extension years included)
+  yearPcts           Decimal[]    @db.Decimal(6, 3)
+  instalmentsPerYear Int          @default(4)
+  /// Years the client may extend by at the same terms, beyond `years`
+  extensionYears     Int          @default(0)
+  /// People the scheme serves: water supplied per person (lpcd) is supplied ÷ population
+  population         Int
+  /// The service level benchmarks: limit, failures a month allows and penalty per failure beyond (OmBenchmarkSetting[])
+  benchmarks         Json
+  note               String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  staffNorms    OmStaffNorm[]
+  chemicalNorms OmChemicalNorm[]
+
+  @@index([organizationId])
+}
+
+/// The minimum staff an O&M contract asks for, by role, and the monthly pay a short month is deducted at.
+model OmStaffNorm {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  contractId     String
+  contract       OmContract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  /// e.g. Plant operator, Valve man
+  role           String
+  required       Int
+  monthlyPay     Decimal      @db.Decimal(18, 2)
+  sortOrder      Int          @default(0)
+
+  @@unique([contractId, role])
+  @@index([organizationId])
+}
+
+/// Staff deployed on the scheme in a month, by the roles of the contract's minimum.
+model OmStaffMonth {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The first day of the month
+  month          DateTime     @db.Date
+  role           String
+  deployed       Int
+  recordedById   String
+  recordedBy     User         @relation(fields: [recordedById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([projectId, month, role])
+  @@index([organizationId])
+}
+
+/// A day of running the scheme (item 131): water produced and supplied, the tail-end readings, complaints and pump
+/// efficiency. One per project and day; the benchmarks are checked against it.
+model ServiceLevelDay {
+  id                  String       @id @default(uuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  projectId           String
+  project             Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date                DateTime     @db.Date
+  /// Treated water out of the plant, kilolitres
+  producedKl          Decimal      @db.Decimal(18, 3)
+  /// Water that reached consumers (metered at the tanks' outlets), kilolitres
+  suppliedKl          Decimal      @db.Decimal(18, 3)
+  /// Residual chlorine at the tail end, mg/l
+  residualChlorine    Decimal?     @db.Decimal(6, 2)
+  /// Pressure at the tail end, metres of water
+  tailPressureM       Decimal?     @db.Decimal(6, 2)
+  complaintsReceived  Int          @default(0)
+  /// Of the complaints received that day, those closed within 48 hours
+  complaintsClosed48h Int          @default(0)
+  /// Pump set efficiency measured that day, %
+  pumpEfficiencyPct   Decimal?     @db.Decimal(5, 2)
+  note                String?
+  enteredById         String
+  enteredBy           User         @relation(fields: [enteredById], references: [id])
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@unique([projectId, date])
+  @@index([organizationId])
+}
+
+/// A treatment chemical's norm per million litres treated (alum, lime, bleaching powder): its issues are checked
+/// against the water produced.
+model OmChemicalNorm {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  contractId     String
+  contract       OmContract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [itemId], references: [id])
+  /// Quantity in the item's unit per ML treated
+  perMl          Decimal      @db.Decimal(18, 3)
+
+  @@unique([contractId, itemId])
   @@index([organizationId])
 }
 

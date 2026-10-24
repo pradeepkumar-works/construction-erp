@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-01-om',
+    date: '2027-01-16',
+    title: 'Operation and maintenance after handover',
+    points: [
+      'A handed-over project has Handover › O&M: set the O&M years, the % of the contract each year, the instalments, the service level benchmarks with their penalties, the minimum staff and the chemical norms.',
+      'Site engineers record each day’s water produced and supplied, chlorine and pressure at the tail end, complaints and pump readings. The month shows each benchmark’s failures against what it allows and the penalty, and the days with no reading.',
+      'Each period is billed as an O&M bill: the instalment less the pay of staff short of the minimum, with the penalties among the deductions. Chemicals are checked against their norm per ML, and the watch list says what the running quarter is losing.',
+    ],
+  },
+  {
     id: '2027-01-epc',
     date: '2027-01-12',
     title: 'EPC projects: engineering, equipment and the contract currency',

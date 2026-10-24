@@ -726,7 +726,12 @@ reconciliation: design". One pull request each, in this order.
      deliverables and packages, and a contract currency kept in rupees at the contract rate with the day's rate on
      receipts and the exchange difference in the books. A phone view, foreign purchase orders and portal approvals wait.
      ARCHITECTURE "EPC".
-131. **Operation and maintenance** (M): a completed scheme's running, complaints and contract payments.
+131. ~~**Operation and maintenance** (M): a completed scheme's running, complaints and contract payments.~~ Done: the
+     O&M contract after handover (years and % of the contract, instalments, benchmarks, minimum staff, chemical norms),
+     the daily service level log with failures against the benchmarks, staff recorded monthly, chemicals against their
+     norm per ML, and each period's O&M bill as an RA bill (instalment less staff short, penalties as a deduction), with
+     the watch list's OM_SERVICE and the demo scheme in year 2. The phone's daily entry, a complaints register and meter
+     feeds wait. ARCHITECTURE "Operation and maintenance".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
