@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractPercentField, LdPeriod, ProjectContractDto } from '@erp/shared';

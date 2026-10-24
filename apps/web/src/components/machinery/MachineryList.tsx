@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Checkbox } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { MachineryLogDto } from '@erp/shared';
 import { LIST_SORT_FIELDS, canLogMachinery } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

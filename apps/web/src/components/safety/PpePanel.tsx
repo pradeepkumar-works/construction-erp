@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Button, Col, Empty, Row, Segmented, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { EditOutlined, PlusOutlined, SafetyOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined, SafetyOutlined } from '@/components/common/icons';
 import type { PpeIssueDto, PpeKind, PpeWorkerDto } from '@erp/shared';
 import { PPE_ISSUE_STATUS_LABELS, PPE_KIND_LABELS, canEditSafetyRecord } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

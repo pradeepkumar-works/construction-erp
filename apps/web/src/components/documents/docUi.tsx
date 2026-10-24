@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Space } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { FileImageOutlined, FileOutlined, FilePdfOutlined, HighlightOutlined } from '@ant-design/icons';
+import { FileImageOutlined, FileOutlined, FilePdfOutlined, HighlightOutlined } from '@/components/common/icons';
 import type { AttachmentDto, RevisionStatus } from '@erp/shared';
 import { REVISION_STATUS_LABELS, canViewDrawingFile, drawingFileKind } from '@erp/shared';
 import { fileUrl } from '@/lib/api';

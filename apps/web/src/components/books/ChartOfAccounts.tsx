@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { App, Button, DatePicker, Form, Input, Segmented, Select, Space, Switch, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { AccountGroup, AccountNature, LedgerAccountDto, StatementLine } from '@erp/shared';
 import { ACCOUNT_GROUPS, ACCOUNT_GROUP_LABELS, ACCOUNT_GROUP_NATURE, ACCOUNT_NATURE_LABELS, STATEMENT_LINES, STATEMENT_LINE_LABELS, statementLineFits, statementLineOf } from '@erp/shared';

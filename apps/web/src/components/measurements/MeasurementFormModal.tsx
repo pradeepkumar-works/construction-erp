@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Alert, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { AttachmentDto, MeasurementSheetDto } from '@erp/shared';
 import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Alert, Button, Card, Col, DatePicker, Row, Statistic, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from '@/components/common/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { GstInwardRowDto, GstOutwardRowDto } from '@erp/shared';
 import { canViewGstRegisters } from '@erp/shared';

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { App } from 'antd';
-import { CheckOutlined, DownloadOutlined } from '@ant-design/icons';
+import { CheckOutlined, DownloadOutlined } from '@/components/common/icons';
 import type { SubmissionStatus, SubmissionType } from '@erp/shared';
 import { mayApproveType, mayApproveTypeAtAll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

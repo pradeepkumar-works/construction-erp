@@ -4,7 +4,7 @@ import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Row, Select, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { EQUIPMENT_LOAN_STATUS_LABELS, canManageMachineLoans, type EquipmentLoanDto, type EquipmentLoanStatus, type LenderOutstandingDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useMachineLoans } from '@/lib/queries';

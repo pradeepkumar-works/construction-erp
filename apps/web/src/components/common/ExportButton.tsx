@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button } from 'antd';
-import { FileExcelOutlined } from '@ant-design/icons';
+import { FileExcelOutlined } from '@/components/common/icons';
 import { errorMessage } from '@/lib/api';
 
 /** "Export to Excel" button; `onExport` fetches every matching row (not just the page on screen) and downloads it. */

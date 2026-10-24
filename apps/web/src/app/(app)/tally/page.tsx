@@ -10,7 +10,7 @@ import { useIsPhone } from '@/lib/screen';
 import { useUrlTab } from '@/lib/url-state';
 import { LocalDataTable } from '@/components/list/LocalDataTable';
 import type { ListColumn } from '@/components/list/DataTable';
-import { DownloadOutlined, ExportOutlined } from '@ant-design/icons';
+import { DownloadOutlined, ExportOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TallyExportDto, TallyLedgerKind, TallyLedgerRowDto, TallySettingsDto, TallyVoucherDto, TallyVoucherKind } from '@erp/shared';

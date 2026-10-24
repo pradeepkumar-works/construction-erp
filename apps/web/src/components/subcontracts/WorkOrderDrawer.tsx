@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Form, Input, Progress, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { FileAddOutlined } from '@ant-design/icons';
+import { FileAddOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canIssueWorkOrder, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests } from '@erp/shared';

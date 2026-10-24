@@ -12,6 +12,7 @@ import { ProfitLoss } from '@/components/statements/ProfitLoss';
 import { BalanceSheet } from '@/components/statements/BalanceSheet';
 import { BankReconciliation } from '@/components/statements/BankReconciliation';
 import { YearClose } from '@/components/statements/YearClose';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const TABS = ['trial', 'pl', 'bs', 'bank', 'year'] as const;
 
@@ -27,7 +28,7 @@ function StatementsPage() {
     <div className="page-container">
       <PageHeader title="Financial statements" subtitle="The trial balance, profit and loss and balance sheet in Schedule III order from the books, the bank reconciliation, opening balances and the year's close." />
       {!allowed ? (
-        <Result status="403" title="Only admin, management and accounts see the statements" />
+        <Result icon={<ResultMark kind="no-access" />} title="Only admin, management and accounts see the statements" />
       ) : (
         <Card size="small">
           <AppTabs

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Typography } from 'antd';
-import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { EditOutlined, FilePdfOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
 import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

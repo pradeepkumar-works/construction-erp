@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
-import { AimOutlined } from '@ant-design/icons';
+import { AimOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { ContractModel, ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
 import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';

@@ -17,7 +17,7 @@ import {
   SafetyCertificateOutlined,
   TruckOutlined,
   WalletOutlined,
-} from '@ant-design/icons';
+} from '@/components/common/icons';
 import type { MyWorkCard, MyWorkDto } from '@erp/shared';
 import { formatINRCompact } from '@/lib/format';
 import { QUEUE_TYPE_LABELS } from '@/components/approvals/queue';

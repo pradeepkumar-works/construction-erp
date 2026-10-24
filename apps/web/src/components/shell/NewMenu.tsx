@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, CommentOutlined, ContainerOutlined, FileDoneOutlined, FileSearchOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, SafetyCertificateOutlined, ShoppingCartOutlined, TrophyOutlined, WalletOutlined } from '@ant-design/icons';
+import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, CommentOutlined, ContainerOutlined, FileDoneOutlined, FileSearchOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, SafetyCertificateOutlined, ShoppingCartOutlined, TrophyOutlined, WalletOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
 import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canViewLetters, canViewPayables, isGuest, pathIsOff } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';

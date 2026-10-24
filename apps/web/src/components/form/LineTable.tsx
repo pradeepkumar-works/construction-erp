@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 import { Button, Form, Table, Typography, theme } from 'antd';
 import type { FormListFieldData, FormListOperation, TableColumnType } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 
 export interface LineColumn {
   key: string;

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Grid, Row, Space, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps, TableColumnType } from 'antd';
-import { DeleteOutlined, EditOutlined, MoreOutlined, PlusOutlined, RollbackOutlined, StopOutlined, TrophyOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, MoreOutlined, PlusOutlined, RollbackOutlined, StopOutlined, TrophyOutlined } from '@/components/common/icons';
 import { type ScEnquiryDetailDto, type ScEnquiryItemDto, type ScQuoteDto } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useScEnquiry, useScEnquiryAction } from '@/lib/queries';

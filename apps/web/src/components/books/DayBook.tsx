@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, App, Button, DatePicker, Input, Select, Space, Table, Typography } from 'antd';
-import { SyncOutlined } from '@ant-design/icons';
+import { SyncOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { BookSource, BookVoucherDto, BookVoucherType, BooksPostResultDto } from '@erp/shared';
 import { BOOK_SOURCES, BOOK_SOURCE_LABELS, BOOK_VOUCHER_TYPES, BOOK_VOUCHER_TYPE_LABELS } from '@erp/shared';

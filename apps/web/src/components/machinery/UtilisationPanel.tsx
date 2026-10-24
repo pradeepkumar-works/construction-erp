@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Col, Empty, Progress, Row, Skeleton, Space, Statistic, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { FileExcelOutlined } from '@ant-design/icons';
+import { FileExcelOutlined } from '@/components/common/icons';
 import type { UtilisationGroupDto, UtilisationRowDto } from '@erp/shared';
 import { useFleetUtilisation } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';

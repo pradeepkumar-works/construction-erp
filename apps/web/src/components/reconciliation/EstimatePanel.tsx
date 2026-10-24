@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Col, Empty, Form, InputNumber, Row, Segmented, Skeleton, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { CalculatorOutlined, EditOutlined, FileExcelOutlined, UploadOutlined } from '@ant-design/icons';
+import { CalculatorOutlined, EditOutlined, FileExcelOutlined, UploadOutlined } from '@/components/common/icons';
 import type { EstimateItemDto, ProjectEstimateDto } from '@erp/shared';
 import { BOQ_RESOURCE_KIND_LABELS } from '@erp/shared';
 import { useProjectEstimate, useSetEstimateTerms } from '@/lib/queries';

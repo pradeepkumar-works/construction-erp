@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { HistoryOutlined, ProjectOutlined } from '@ant-design/icons';
+import { HistoryOutlined, ProjectOutlined } from '@/components/common/icons';
 import type { AuthUser, NavPinKind, NavVisitKind } from '@erp/shared';
 import { LAUNCHER_VISIT_GAP_MS, canSeeNav, isGuest, navNode, navNodeAt } from '@erp/shared';
 import { API_URL, getToken } from '@/lib/api';

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Skeleton, Space, Timeline, Typography } from 'antd';
-import { CheckOutlined, DeleteOutlined, EditOutlined, RedoOutlined } from '@ant-design/icons';
+import { CheckOutlined, DeleteOutlined, EditOutlined, RedoOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, NcrDto } from '@erp/shared';
 import { canActOnNcr, canApprove, canRaiseNcr } from '@erp/shared';

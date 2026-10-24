@@ -4,7 +4,7 @@ import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { canRunSubcontractEnquiries, type ScEnquiryDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useScEnquiries } from '@/lib/queries';

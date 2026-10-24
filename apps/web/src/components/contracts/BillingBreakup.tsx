@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, DatePicker, Descriptions, Empty, Flex, Form, Input, InputNumber, Popconfirm, Progress, Segmented, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, BillingBreakupDto, BillingComponentDto, BillingStageDto, MilestoneRowDto, PackageStage, StageTrigger } from '@erp/shared';

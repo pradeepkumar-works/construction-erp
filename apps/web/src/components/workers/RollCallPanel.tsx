@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, DatePicker, Input, InputNumber, Radio, Select, Space, Table, Tooltip } from 'antd';
 import type { TableProps } from 'antd';
-import { CheckOutlined, SaveOutlined } from '@ant-design/icons';
+import { CheckOutlined, SaveOutlined } from '@/components/common/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RollCallDto, RollCallRowDto, StaffAttendanceStatus } from '@erp/shared';

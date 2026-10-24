@@ -2,9 +2,10 @@
 
 import React, { useEffect } from 'react';
 import { Button, Result, Space, Typography } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@/components/common/icons';
 import { LinkButton } from '@/components/common/LinkButton';
 import { usePageTitle } from '@/lib/page-title';
+import { ResultMark } from '@/components/common/ResultMark';
 
 /** A page that crashed while drawing: the shell stays, and the page can be tried again (UI roadmap item 64). */
 export default function PageError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
@@ -15,7 +16,7 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
   return (
     <div className="page-container">
       <Result
-        status="500"
+        icon={<ResultMark kind="error" />}
         title={<h1 className="heading-plain">This page ran into a problem</h1>}
         subTitle={
           <>

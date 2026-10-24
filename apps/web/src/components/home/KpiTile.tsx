@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Card, Typography, theme } from 'antd';
-import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { formatMonthName, formatPct } from '@/lib/format';
 

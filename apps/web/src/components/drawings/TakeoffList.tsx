@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Checkbox, Empty, Flex, Form, Input, Radio, Segmented, Select, Space, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { BookOutlined, ColumnWidthOutlined, DeleteOutlined, EditOutlined, TableOutlined } from '@ant-design/icons';
+import { BookOutlined, ColumnWidthOutlined, DeleteOutlined, EditOutlined, TableOutlined } from '@/components/common/icons';
 import type { BoqItemDto, DrawingScaleDto, DrawingTakeoffDto, TakeoffBoqField, TakeoffKind } from '@erp/shared';
 import { DRAWING_UNIT_METRES, TAKEOFF_KINDS, TAKEOFF_KIND_LABELS, TAKEOFF_LABEL_MAX, TAKEOFF_UNITS, canEditMarkup, takeoffBoqQty, takeoffTotal, type DrawingUnit } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { App, Button, Checkbox, Divider, Form, Input, Select } from 'antd';
-import { ContactsOutlined } from '@ant-design/icons';
+import { ContactsOutlined } from '@/components/common/icons';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

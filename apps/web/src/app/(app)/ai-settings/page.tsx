@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Card, Checkbox, Descriptions, Drawer, Flex, Input, InputNumber, Progress, Radio, Select, Space, Spin, Switch, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from '@/components/common/icons';
 import XMarkdown from '@ant-design/x-markdown';
 import dayjs from 'dayjs';
 import type { AiConversationDto, AiConversationExportRowDto, AiFeature, AiSettingsDto, AiUserUsageDto, RoleKey } from '@erp/shared';

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Timeline, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, SendOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, SendOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DocumentRevisionDto } from '@erp/shared';
 import { DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KIND_LABELS, canManageDocuments, isBuildable } from '@erp/shared';

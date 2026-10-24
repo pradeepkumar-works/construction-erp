@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Checkbox, Select, Typography, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { QualityTestDto, QualityTestSortField, TestKind, TestResult } from '@erp/shared';
 import { LIST_SORT_FIELDS, TEST_KINDS, TEST_KIND_LABELS, TEST_RESULTS, TEST_RESULT_LABELS, canRecordTest, specRange } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

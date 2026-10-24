@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Segmented, Space, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkerDto } from '@erp/shared';
 import { WORKER_ID_TYPE_LABELS, WORKER_SKILL_LABELS, canManageWorkers } from '@erp/shared';

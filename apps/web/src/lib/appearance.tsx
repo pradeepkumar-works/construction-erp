@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { App as AntApp, ConfigProvider } from 'antd';
 import { componentConfig, cssVariablesFor, makeTheme } from './theme';
+import { renderEmpty } from '@/components/common/renderEmpty';
 import { BRAND } from './brand';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -114,7 +115,7 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <Ctx.Provider value={value}>
-      <ConfigProvider theme={config} {...componentConfig}>
+      <ConfigProvider theme={config} {...componentConfig} renderEmpty={renderEmpty}>
         <style>{css}</style>
         <AntApp>{children}</AntApp>
       </ConfigProvider>

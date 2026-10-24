@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { App, Button, Empty, Form, Input, Skeleton, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@/components/common/icons';
 import type { ExcessRecoveryDto, ReconciliationStatus, SubconMaterialDto, SubconMaterialLineDto, SubconReconciliationDto } from '@erp/shared';
 import { SUBMISSION_STATUS_LABELS } from '@erp/shared';
 import { useCancelRecovery, useRecoverExcess, useSubconReconciliation } from '@/lib/queries';

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Alert, App, Button, Checkbox, Segmented, Select, Space, Statistic, Tooltip, Typography } from 'antd';
 import { CheckableTag } from '@/components/common/AppTag';
-import { PlusOutlined, PrinterOutlined } from '@ant-design/icons';
+import { PlusOutlined, PrinterOutlined } from '@/components/common/icons';
 import type { RiskCategory, RiskDto, RiskKind, RiskSortField, RiskStatus } from '@erp/shared';
 import { LIST_SORT_FIELDS, RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, canRaiseRisk, canReviewHindrances, canViewContract, canViewLetters } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';

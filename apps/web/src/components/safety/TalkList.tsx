@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Flex, Space, Typography, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ToolboxTalkDto } from '@erp/shared';
 import { canEditSafetyRecord, canReportSafety } from '@erp/shared';

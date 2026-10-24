@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRightOutlined } from '@ant-design/icons';
+import { ArrowRightOutlined } from '@/components/common/icons';
 import { BILLING_GST_PCT } from '@erp/shared';
 import { formatINR } from '@/lib/format';
 import { useAuthOptions } from '@/lib/queries';

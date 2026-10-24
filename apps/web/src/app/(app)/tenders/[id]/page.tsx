@@ -16,7 +16,7 @@ import {
   StopOutlined,
   ThunderboltOutlined,
   UploadOutlined,
-} from "@ant-design/icons";
+} from "@/components/common/icons";
 import {
   COMPLIANCE_DOC_STATUS_LABELS,
   TENDER_BID_TYPE_LABELS,

@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Button, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from '@/components/common/icons';
 import type { ContractorMonthRowDto } from '@erp/shared';
 import { useContractorMonth } from '@/lib/queries';
 import { downloadXlsx, type ExportColumn } from '@/lib/exportExcel';

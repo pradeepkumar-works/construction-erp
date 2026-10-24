@@ -3,7 +3,7 @@
 import React, { useCallback, useId, useRef, useState } from 'react';
 import { Alert, Flex, Modal, Popconfirm, Typography, theme } from 'antd';
 import type { PopconfirmProps } from 'antd';
-import { ExclamationCircleFilled } from '@ant-design/icons';
+import { ExclamationCircleFilled } from '@/components/common/icons';
 import { errorMessage } from '@/lib/api';
 import { handledInPlace, undoOf, useNotify } from '@/lib/notify';
 

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, App, Button, ConfigProvider, Empty, Flex, Grid, Input, Segmented, Select, Skeleton, Splitter, Typography, theme } from 'antd';
-import { CheckOutlined } from '@ant-design/icons';
+import { CheckOutlined } from '@/components/common/icons';
 import type { PendingApprovalDto, ReviewDecision, SubmissionType } from '@erp/shared';
 import { APPROVAL_AMOUNT_BASIS, SUBMISSION_TYPE_LABELS, approvalRightsOf, mayApprove } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';

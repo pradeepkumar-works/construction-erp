@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Checkbox, Descriptions, Form, Input, InputNumber, Select, Typography } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@/components/common/icons';
 import type { PaidDaysBasis, PayrollSettingsDto } from '@erp/shared';
 import { GST_STATES, PAID_DAYS_BASES, PAID_DAYS_BASIS_LABELS, PT_RULES, canRunPayroll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

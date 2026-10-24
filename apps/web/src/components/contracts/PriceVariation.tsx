@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, DatePicker, Empty, Form, Input, InputNumber, Space, Table, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PriceVariationComponentDto, ProjectContractDto } from '@erp/shared';

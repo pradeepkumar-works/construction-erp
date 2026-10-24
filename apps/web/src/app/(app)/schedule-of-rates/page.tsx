@@ -11,7 +11,7 @@ import {
   MoreOutlined,
   PlusOutlined,
   UploadOutlined,
-} from "@ant-design/icons";
+} from "@/components/common/icons";
 import {
   SOR_BOOK_KINDS,
   SOR_BOOK_KIND_LABELS,

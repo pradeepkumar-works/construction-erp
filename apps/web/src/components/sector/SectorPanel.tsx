@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, Button, Empty } from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
 import { formatChainage } from '@erp/shared';
 import { useSectorProgress } from '@/lib/queries';

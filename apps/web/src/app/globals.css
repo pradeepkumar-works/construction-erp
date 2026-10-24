@@ -296,6 +296,17 @@ a {
   color: var(--brand-ink);
 }
 
+/* A loading icon (`LoadingOutlined`, or any icon from components/common/icons with `spin`) turns on its own. */
+.app-icon-spin > svg {
+  animation: app-icon-spin 1s linear infinite;
+}
+
+@keyframes app-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes auth-rise {
   from {
     opacity: 0;

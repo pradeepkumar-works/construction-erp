@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
-import { CheckOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { CheckOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import type { MixDesignDto } from '@erp/shared';
 import { canApproveMixDesign, canRunRmcPlant } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

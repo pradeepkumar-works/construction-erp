@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Input, Progress, Segmented, Select, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { CalculatorOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
+import { CalculatorOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
 import type { BoqItemDto } from '@erp/shared';
 import { canEditProjects, canSetRateAnalysis, canViewReconciliation } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

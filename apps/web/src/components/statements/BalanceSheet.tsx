@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Alert, Button, DatePicker, Space, Table, Typography } from "antd";
-import { DownloadOutlined } from "@ant-design/icons";
+import { DownloadOutlined } from "@/components/common/icons";
 import dayjs from "dayjs";
 import type { BalanceSheetDto } from "@erp/shared";
 import { useBalanceSheet } from "@/lib/queries";

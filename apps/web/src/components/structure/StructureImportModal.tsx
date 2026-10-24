@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, App, Button, Modal, Space, Table, Typography, Upload } from 'antd';
 import type { UploadProps } from 'antd';
-import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
+import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { WORK_ELEMENT_TYPES, WORK_ELEMENT_TYPE_LABELS, compareCodes, type WorkElementType } from '@erp/shared';
 import { api } from '@/lib/api';

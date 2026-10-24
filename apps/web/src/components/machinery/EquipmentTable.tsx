@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Space, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
-import { DeleteOutlined, EditOutlined, PlusOutlined, ToolOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ToolOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField, FuelNormUnit, HireFuelBy } from '@erp/shared';
 import {

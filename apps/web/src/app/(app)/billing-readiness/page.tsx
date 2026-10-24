@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { App, Button, Card, Empty, Flex, Result, Statistic, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { MailOutlined } from '@ant-design/icons';
+import { MailOutlined } from '@/components/common/icons';
 import { canViewContract, canViewLetters, type BillingReadinessRowDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useBillingReadiness, usePaymentReminder } from '@/lib/queries';
@@ -16,6 +16,7 @@ import { errorMessage } from '@/lib/api';
 import { DRAFT_PAGES } from '@/components/ai/drafts';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
+import { ResultMark } from '@/components/common/ResultMark';
 
 /**
  * Billing readiness (AI item 122): per project, money earned and not yet asked for (approved measurements in no RA bill,
@@ -36,7 +37,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title="Billing readiness" />
-        <Result status="403" title="Billing readiness is for project managers, the QS, accounts and management" />
+        <Result icon={<ResultMark kind="no-access" />} title="Billing readiness is for project managers, the QS, accounts and management" />
       </div>
     );
   if (!user || (isLoading && !data)) return <PageSkeleton shape="list" />;

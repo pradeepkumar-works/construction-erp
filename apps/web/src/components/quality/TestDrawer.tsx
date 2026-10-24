@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, InputNumber, Skeleton, Space, Table, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, WarningOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { QualityTestDto, QualityTestReadingDto } from '@erp/shared';
 import { TEST_KIND_LABELS, canEditTest, canRaiseNcr, canRecordTest, specRange } from '@erp/shared';

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { App, Flex, Image, Spin, Switch, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { ExclamationCircleFilled } from '@ant-design/icons';
+import { ExclamationCircleFilled } from '@/components/common/icons';
 import { PHOTO_FLAG_INFO, type AttachmentDto, type PhotoCheckKind } from '@erp/shared';
 import { errorMessage, fileUrl } from '@/lib/api';
 import { themeFontSize } from '@/lib/theme';

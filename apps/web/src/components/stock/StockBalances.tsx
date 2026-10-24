@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Checkbox, InputNumber, Popover, Space, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { EditOutlined, WarningOutlined } from '@ant-design/icons';
+import { EditOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockBalanceSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';

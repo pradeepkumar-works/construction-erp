@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Alert, Button, Col, Empty, Progress, Row, Skeleton, Statistic, Table, Typography } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@/components/common/icons';
 import type { BudgetBoqItemDto, BudgetHeadDto } from '@erp/shared';
 import { COST_HEAD_LABELS, canSetBudget } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, App, Button, Card, Input, Modal, Progress, Skeleton, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CustomerServiceOutlined, DeleteOutlined, DownloadOutlined, StopOutlined, UndoOutlined } from '@ant-design/icons';
+import { CustomerServiceOutlined, DeleteOutlined, DownloadOutlined, StopOutlined, UndoOutlined } from '@/components/common/icons';
 import type { CompanyLogEntryDto } from '@erp/shared';
 import { DELETION_GRACE_DAYS, PRODUCT_NAME, SUPPORT_ACCESS_DAYS, canManageCompanyData } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Tooltip, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { WarningOutlined } from '@ant-design/icons';
+import { WarningOutlined } from '@/components/common/icons';
 import type { ExpenseDto, ExpenseSortField } from '@erp/shared';
 import { EXPENSE_CATEGORY_LABELS, PAYMENT_MODE_LABELS } from '@erp/shared';
 import { formatDate, formatINR, toNumber } from '@/lib/format';

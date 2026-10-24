@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Form, Input, Space, Switch, Table, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UnitDto } from '@erp/shared';
 import { canManageStore } from '@erp/shared';

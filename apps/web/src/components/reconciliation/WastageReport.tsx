@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { FileExcelOutlined } from '@ant-design/icons';
+import { FileExcelOutlined } from '@/components/common/icons';
 import type { StockAdjustmentReason, WastageRowDto } from '@erp/shared';
 import { STOCK_ADJUSTMENT_REASON_LABELS } from '@erp/shared';
 import { useWastageReport } from '@/lib/queries';

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
-import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@/components/common/icons';
 import { useComments, type ApprovalTypeParam } from '@/lib/queries';
 import type { CommentKind } from '@erp/shared';
 import { CommentsSection } from '@/components/comments/CommentsSection';

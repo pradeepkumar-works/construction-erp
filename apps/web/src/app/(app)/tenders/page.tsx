@@ -12,7 +12,7 @@ import {
   Typography,
   theme,
 } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@/components/common/icons";
 import {
   TENDER_STATUS_LABELS,
   canManageTenders,

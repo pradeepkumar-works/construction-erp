@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { App, Button, Card, Col, Descriptions, Dropdown, Flex, Row, Space, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
-import { DeleteOutlined, EditOutlined, MoreOutlined, RollbackOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, MoreOutlined, RollbackOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { EQUIPMENT_LOAN_STATUS_LABELS, LOAN_DISBURSAL_LABELS, PAYMENT_MODE_LABELS, type LoanEmiDto } from '@erp/shared';
 import { api } from '@/lib/api';

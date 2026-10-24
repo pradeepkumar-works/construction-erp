@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { App, Button, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { TransmittalDto, TransmittalPurpose } from '@erp/shared';
 import { TRANSMITTAL_PURPOSES, TRANSMITTAL_PURPOSE_LABELS } from '@erp/shared';

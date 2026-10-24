@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Button, Form, Modal, Select, Space, Table, Typography, Upload } from 'antd';
 import { StageBar } from '@/components/record/StageBar';
 import type { UploadProps } from 'antd';
-import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
+import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { loadXlsx } from '@/lib/exportExcel';
 
 export interface ImportField {

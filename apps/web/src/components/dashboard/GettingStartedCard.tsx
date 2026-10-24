@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Card, Progress, Typography, theme } from 'antd';
-import { CheckCircleFilled, CloseOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, CloseOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { GettingStartedStep } from '@erp/shared';
 import { seesGettingStarted } from '@erp/shared';

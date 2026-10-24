@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Empty, Space, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ComparativeStatementDto, EnquiryDto, MaterialRequestDto, QuotationDto } from '@erp/shared';

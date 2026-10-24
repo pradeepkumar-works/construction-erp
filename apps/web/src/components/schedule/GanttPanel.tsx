@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, App, Button, Checkbox, Dropdown, Form, Input, Modal, Segmented, Space, Statistic, Table } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { CheckOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FlagOutlined, LockOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import { CheckOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FlagOutlined, LockOutlined, PlusOutlined, UploadOutlined } from '@/components/common/icons';
 import type { GanttActivityDto, MilestoneDto, MilestoneState, ScheduleFileFormat } from '@erp/shared';
 import { MILESTONE_STATE_LABELS, SCHEDULE_FILE_FORMAT_LABELS, SCHEDULE_FILE_FORMATS, canEditProjects, canFreezeBaseline } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined } from '@/components/common/icons';
 import { formatDate } from '@/lib/format';
 import type { ListFilters } from '@/lib/listPage';
 

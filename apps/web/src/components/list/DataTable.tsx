@@ -18,7 +18,7 @@ import {
   CloseOutlined,
   ColumnWidthOutlined,
   LineHeightOutlined,
-} from "@ant-design/icons";
+} from "@/components/common/icons";
 import { readPref, writePref } from "@/lib/prefs";
 import { useStickyTop } from "@/lib/sticky";
 import { useSingleKeys } from "@/lib/shortcuts";

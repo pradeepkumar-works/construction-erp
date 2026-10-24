@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Drawer, Input, Popconfirm, Segmented, Space, Table, Typography } from 'antd';
-import { FileDoneOutlined, PayCircleOutlined } from '@ant-design/icons';
+import { FileDoneOutlined, PayCircleOutlined } from '@/components/common/icons';
 import type { RmcInvoiceDto, RmcReceiptDto } from '@erp/shared';
 import { PAYMENT_MODE_LABELS, canBillRmc, type PaymentMode } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, Button, Drawer, Dropdown, Flex, Modal, Switch, Timeline, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import { CompassOutlined, CustomerServiceOutlined, GiftOutlined, QuestionCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { CompassOutlined, CustomerServiceOutlined, GiftOutlined, QuestionCircleOutlined, ThunderboltOutlined } from '@/components/common/icons';
 import { PRODUCT_NAME } from '@erp/shared';
 import { formatDate } from '@/lib/format';
 import { readPref, writePref } from '@/lib/prefs';

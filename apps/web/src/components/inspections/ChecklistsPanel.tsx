@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Form, Input, Space, Table, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ChecklistTemplateDto } from '@erp/shared';
 import { canManageChecklists } from '@erp/shared';

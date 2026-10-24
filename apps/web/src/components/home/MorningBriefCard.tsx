@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Card, Flex, Typography, theme } from 'antd';
-import { CloseOutlined, CoffeeOutlined } from '@ant-design/icons';
+import { CloseOutlined, CoffeeOutlined } from '@/components/common/icons';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';

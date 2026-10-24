@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button, Checkbox, Select, Space, Typography, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { RfiDto, RfiSortField, RfiStatus } from '@erp/shared';
 import { LIST_SORT_FIELDS, RFI_STATUSES, RFI_STATUS_LABELS, canRaiseRfi } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

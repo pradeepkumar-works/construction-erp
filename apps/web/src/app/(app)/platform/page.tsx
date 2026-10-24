@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Flex, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
-import { CheckCircleOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, EyeOutlined, StopOutlined } from '@/components/common/icons';
 import type { ModuleTier, PlatformCompanyDto, PlatformUserDto } from '@erp/shared';
 import { BILLING_STATUS_LABELS, PRODUCT_NAME, SUPPORT_SESSION_HOURS, MODULE_TIERS, MODULE_TIER_LABELS, SWITCHABLE_MODULE_INFO } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

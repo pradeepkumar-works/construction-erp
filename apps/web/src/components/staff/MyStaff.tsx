@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Alert, App, Button, Col, Empty, Flex, Listy, Popconfirm, Row, Space, Statistic, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { LoginOutlined, LogoutOutlined, PlusOutlined } from '@ant-design/icons';
+import { LoginOutlined, LogoutOutlined, PlusOutlined } from '@/components/common/icons';
 import type { LeaveRequestDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

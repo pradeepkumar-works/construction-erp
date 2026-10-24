@@ -11,6 +11,7 @@ import { DayBook } from '@/components/books/DayBook';
 import { Ledgers } from '@/components/books/Ledgers';
 import { Vouchers } from '@/components/books/Vouchers';
 import { ChartOfAccounts } from '@/components/books/ChartOfAccounts';
+import { ResultMark } from '@/components/common/ResultMark';
 
 const TABS = ['day', 'cash', 'ledgers', 'vouchers', 'accounts'] as const;
 
@@ -26,7 +27,7 @@ function BooksPage() {
     <div className="page-container">
       <PageHeader title="Books" subtitle="The day book, cash and bank books and ledgers, kept from the modules' bills, receipts, payments, expenses and salaries, with vouchers accounts make by hand." />
       {!allowed ? (
-        <Result status="403" title="Only admin, management and accounts see the books" />
+        <Result icon={<ResultMark kind="no-access" />} title="Only admin, management and accounts see the books" />
       ) : (
         <Card size="small">
           <AppTabs

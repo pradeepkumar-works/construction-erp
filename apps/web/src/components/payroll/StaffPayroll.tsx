@@ -3,7 +3,7 @@
 import React from 'react';
 import { Alert, Button, Table, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from '@/components/common/icons';
 import type { LeaveType, PayrollRowDto } from '@erp/shared';
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS } from '@erp/shared';
 import { usePayroll } from '@/lib/queries';

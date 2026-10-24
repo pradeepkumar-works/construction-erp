@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { AutoComplete, Button, Form, Input, InputNumber, Select, Space, Typography, theme } from 'antd';
-import { ThunderboltOutlined } from '@ant-design/icons';
+import { ThunderboltOutlined } from '@/components/common/icons';
 import type { ItemDto, SorItemDto, TenderDetailDto, TenderItemDto, TenderLineKind } from '@erp/shared';
 import { TENDER_LINE_KINDS, TENDER_LINE_KIND_LABELS, sorPctLabel } from '@erp/shared';
 import { useNotify } from '@/lib/notify';

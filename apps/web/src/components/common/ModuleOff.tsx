@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Result, Space } from 'antd';
-import { AppstoreAddOutlined } from '@ant-design/icons';
+import { AppstoreAddOutlined } from '@/components/common/icons';
+import { ResultMark } from '@/components/common/ResultMark';
 import { SWITCHABLE_MODULE_INFO, canManageModules, type AuthUser, type SwitchableModule } from '@erp/shared';
 import { LinkButton } from '@/components/common/LinkButton';
 import { usePageTitle } from '@/lib/page-title';
@@ -18,7 +19,7 @@ export function ModuleOff({ module, user }: { module: SwitchableModule; user: Au
   return (
     <div className="page-container">
       <Result
-        icon={<AppstoreAddOutlined aria-hidden />}
+        icon={<ResultMark icon={<AppstoreAddOutlined />} />}
         title={<h1 className="heading-plain">{label} is turned off</h1>}
         subTitle={
           admin

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Drawer, Popconfirm, Space, Table, Typography } from 'antd';
-import { CarOutlined, CheckOutlined, EditOutlined, FileDoneOutlined, StopOutlined } from '@ant-design/icons';
+import { CarOutlined, CheckOutlined, EditOutlined, FileDoneOutlined, StopOutlined } from '@/components/common/icons';
 import type { RmcBatchDto, RmcOrderDto } from '@erp/shared';
 import { canBillRmc } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

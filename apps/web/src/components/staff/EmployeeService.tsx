@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { PlusOutlined, PrinterOutlined } from '@ant-design/icons';
+import { PlusOutlined, PrinterOutlined } from '@/components/common/icons';
 import type { EmployeeDto, EmployeeEventDto, EmployeeLetterDto } from '@erp/shared';
 import { EMPLOYEE_EVENT_LABELS, EMPLOYEE_EVENT_LETTERS, canManageStaff, isExitEvent } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';

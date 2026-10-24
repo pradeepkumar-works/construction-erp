@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { App, Avatar, Button, Card, Dropdown, Flex, Mentions, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { GetRef } from 'antd';
-import { CheckCircleOutlined, EllipsisOutlined, MessageOutlined, UndoOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, EllipsisOutlined, MessageOutlined, UndoOutlined } from '@/components/common/icons';
 import { commentSegments, COMMENT_MAX_LENGTH, type CommentDto, type CommentKind, type CommentThreadDto } from '@erp/shared';
 import { useCommentAction, useComments, useMentionable } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';

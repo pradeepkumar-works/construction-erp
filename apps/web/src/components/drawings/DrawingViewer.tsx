@@ -23,7 +23,7 @@ import {
   UnorderedListOutlined,
   ZoomInOutlined,
   ZoomOutOutlined,
-} from '@ant-design/icons';
+} from '@/components/common/icons';
 import type { DocumentRevisionDto, DrawingMarkupDto, DrawingTakeoffDto, MarkupColor, MarkupKind, MarkupPoint, TakeoffKind } from '@erp/shared';
 import {
   MARKUP_COLORS,

@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Button, Dropdown, Flex, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { DeleteOutlined, EditOutlined, FileExcelOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, FileExcelOutlined, MoreOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CONTRACT_MODEL_LABELS,

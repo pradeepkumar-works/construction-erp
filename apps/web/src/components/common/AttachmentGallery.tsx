@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Image, Space, Typography } from 'antd';
-import { PaperClipOutlined } from '@ant-design/icons';
+import { PaperClipOutlined } from '@/components/common/icons';
 import type { AttachmentDto } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { themeColor } from '@/lib/theme';

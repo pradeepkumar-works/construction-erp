@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Drawer, Flex, Grid, Segmented, Spin, Typography, theme } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
-import { BellOutlined, CheckOutlined } from '@ant-design/icons';
+import { BellOutlined, CheckOutlined } from '@/components/common/icons';
 import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shared';
 import { NOTIFICATION_TABS, NOTIFICATION_TAB_LABELS, SUBMISSION_TYPES } from '@erp/shared';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/queries';

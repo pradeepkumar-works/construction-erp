@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Select, Space } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import type { PaymentRequestDto, PaymentRequestKind, PaymentRequestSortField, SubmissionStatus } from '@erp/shared';
 import { FUND_PURPOSE_LABELS, LIST_SORT_FIELDS, PAYMENT_REQUEST_KINDS, PAYMENT_REQUEST_KIND_LABELS, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

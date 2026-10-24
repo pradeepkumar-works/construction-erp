@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button, Descriptions, Drawer, Segmented, Select, Space, Statistic, Table } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ComplianceDocDto, ComplianceDocKind, ComplianceDocStatus } from '@erp/shared';
 import {

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, Empty, Flex, Result, Skeleton, theme } from 'antd';
-import { DisconnectOutlined, FileSearchOutlined, LockOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DisconnectOutlined, ReloadOutlined } from '@/components/common/icons';
+import { ResultMark } from '@/components/common/ResultMark';
 import { PRODUCT_NAME } from '@erp/shared';
 import { errorMessage, errorStatus } from '@/lib/api';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -27,7 +28,6 @@ function useOnline() {
  * anything else is an error with Retry.
  */
 export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  const { token } = theme.useToken();
   const online = useOnline();
   const status = errorStatus(error);
   const retry = onRetry ? (
@@ -36,15 +36,14 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
     </Button>
   ) : null;
   const home = <LinkButton href="/">Go to home</LinkButton>;
-  const icon = (node: React.ReactNode) => <span style={{ fontSize: 48, color: token.colorTextTertiary }}>{node}</span>;
 
   if (status === 403)
-    return <Result icon={icon(<LockOutlined />)} title="You don't have access to this" subTitle={`${errorMessage(error)}. Ask your admin if you need it.`} extra={home} />;
-  if (status === 404) return <Result icon={icon(<FileSearchOutlined />)} title="Not found" subTitle="It may have been deleted, or the link is out of date." extra={home} />;
+    return <Result icon={<ResultMark kind="no-access" />} title="You don't have access to this" subTitle={`${errorMessage(error)}. Ask your admin if you need it.`} extra={home} />;
+  if (status === 404) return <Result icon={<ResultMark kind="not-found" />} title="Not found" subTitle="It may have been deleted, or the link is out of date." extra={home} />;
   if (status === 0)
     return (
       <Result
-        icon={icon(<DisconnectOutlined />)}
+        icon={<ResultMark icon={<DisconnectOutlined />} />}
         title={online ? `Can't reach ${PRODUCT_NAME}` : "You're offline"}
         subTitle={online ? 'The server did not answer. It may be restarting; try again in a moment.' : 'Check your connection. This page loads again when you are back online.'}
         extra={retry}

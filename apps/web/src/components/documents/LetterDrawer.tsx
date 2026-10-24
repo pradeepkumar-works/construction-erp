@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Descriptions, Divider, Drawer, Skeleton, Space } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, RollbackOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, RollbackOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LetterRefDto } from '@erp/shared';
 import { LETTER_DIRECTION_LABELS, canApprove } from '@erp/shared';

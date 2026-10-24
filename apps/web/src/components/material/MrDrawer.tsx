@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Popover, Table, Typography } from 'antd';
-import { ImportOutlined, InboxOutlined } from '@ant-design/icons';
+import { ImportOutlined, InboxOutlined } from '@/components/common/icons';
 import type { MaterialRequestDto, MaterialRequestItemDto, RequestLineStockDto } from '@erp/shared';
 import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';

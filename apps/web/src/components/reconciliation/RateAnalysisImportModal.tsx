@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Alert, App, Button, Modal, Space, Table, Typography, Upload } from 'antd';
 import type { UploadProps } from 'antd';
-import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
+import { DownloadOutlined, InboxOutlined } from '@/components/common/icons';
 import { useImportRateAnalysis, type RateImportRow } from '@/lib/queries';
 import { loadXlsx } from '@/lib/exportExcel';
 import { themeColor, themeFontSize } from '@/lib/theme';

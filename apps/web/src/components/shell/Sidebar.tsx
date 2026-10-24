@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Popover, Tooltip } from 'antd';
-import { DownOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { DownOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { readPref, writePref } from '@/lib/prefs';

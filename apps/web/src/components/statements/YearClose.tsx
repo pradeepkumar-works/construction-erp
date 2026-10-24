@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, App, Button, Card, DatePicker, Form, Select, Space, Table, Typography } from "antd";
 import { AppTag } from "@/components/common/AppTag";
 import type { FormInstance } from "antd";
-import { LockOutlined } from "@ant-design/icons";
+import { LockOutlined } from "@/components/common/icons";
 import dayjs from "dayjs";
 import type {
   BooksYearDto,

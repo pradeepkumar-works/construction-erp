@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, Space, Statistic, Table, Typography } from 'antd';
-import { TeamOutlined } from '@ant-design/icons';
+import { TeamOutlined } from '@/components/common/icons';
 import type { TableProps } from 'antd';
 import type { ProjectCostSummaryDto } from '@erp/shared';
 import { PROJECT_TYPE_LABELS } from '@erp/shared';

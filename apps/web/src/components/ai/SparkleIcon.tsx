@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import Icon from '@ant-design/icons';
-import type { GetProps } from 'antd';
+import { ownIcon } from '@/components/common/icons';
+import type { AppIconProps } from '@/components/common/icons';
 
 const SparkleSvg = () => (
   <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden focusable="false">
@@ -11,7 +11,9 @@ const SparkleSvg = () => (
   </svg>
 );
 
+const Sparkle = ownIcon('sparkle', SparkleSvg);
+
 /** Ask Nirmaan's mark: the header button, the panel's title and Ctrl K's entry. Decorative: the words beside it name it. */
-export function SparkleIcon(props: Partial<GetProps<typeof Icon>>) {
-  return <Icon component={SparkleSvg} aria-hidden {...props} />;
+export function SparkleIcon(props: AppIconProps) {
+  return <Sparkle aria-hidden {...props} />;
 }

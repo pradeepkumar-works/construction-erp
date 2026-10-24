@@ -8,7 +8,7 @@ import {
   ExportOutlined,
   ImportOutlined,
   SlidersOutlined,
-} from "@ant-design/icons";
+} from "@/components/common/icons";
 import {
   canAdjustStock,
   canKeepStock,
