@@ -377,6 +377,13 @@ h4.ant-typography,
   line-height: 1.1;
 }
 
+/* After moving to another page, focus is put on its title for screen readers (AppShell); the title is not a control, so it
+   draws no ring. */
+:root #page-title:focus,
+:root #page-title:focus-visible {
+  outline: none;
+}
+
 @media (max-width: 768px) {
   :root h1.ant-typography.page-title {
     font-size: var(--ant-font-size-heading-2);

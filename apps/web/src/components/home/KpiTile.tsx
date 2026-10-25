@@ -100,7 +100,7 @@ export function isBadTrend(t: Trend): boolean {
 }
 
 /**
- * One KPI card: the figure keeps the card's full width and the tile's icon sits in a tinted square in the top right
+ * One KPI card: the figure keeps the card's full width and the tile's icon sits, plain and grey, in the top right
  * corner. With a trend it shows this month against last and a six-month sparkline (UI roadmap item 59). The page lays
  * the tiles out in even rows (see `kpiColumns`), and every card stretches to the tallest so a row reads as one band.
  */
@@ -113,23 +113,7 @@ export function KpiTile({ href, icon, trend, children }: { href?: string; icon?:
   const card = (
     <Card className="kpi-card" hoverable={!!href} style={{ height: '100%', position: 'relative' }}>
       {icon ? (
-        <span
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: token.paddingLG,
-            right: token.paddingLG,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: token.controlHeight,
-            height: token.controlHeight,
-            borderRadius: token.borderRadiusLG,
-            background: token.colorPrimaryBg,
-            color: token.colorPrimary,
-            fontSize: token.fontSizeLG,
-          }}
-        >
+        <span aria-hidden style={{ position: 'absolute', top: token.paddingLG, right: token.paddingLG, display: 'inline-flex', color: token.colorTextTertiary, fontSize: token.fontSizeLG }}>
           {icon}
         </span>
       ) : null}

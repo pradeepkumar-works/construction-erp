@@ -1,34 +1,6 @@
-import React from 'react';
-import {
-  AccountBookOutlined,
-  AlertOutlined,
-  AuditOutlined,
-  BankOutlined,
-  CalculatorOutlined,
-  CheckSquareOutlined,
-  ContainerOutlined,
-  ExperimentOutlined,
-  ExportOutlined,
-  FileDoneOutlined,
-  FilePdfOutlined,
-  FileProtectOutlined,
-  FileTextOutlined,
-  FundOutlined,
-  InboxOutlined,
-  IssuesCloseOutlined,
-  PayCircleOutlined,
-  PercentageOutlined,
-  ReconciliationOutlined,
-  SafetyOutlined,
-  ShopOutlined,
-  SolutionOutlined,
-  ToolOutlined,
-  WalletOutlined,
-} from '@/components/common/icons';
-
 /** Copy for the product page (/welcome). Every claim here is something the app does today; check docs/ROADMAP.md before adding one. */
 
-export type Feature = { icon: React.ReactNode; title: string; text: string };
+export type Feature = { title: string; text: string };
 
 export type Module = {
   key: string;
@@ -47,12 +19,12 @@ export const MODULES: Module[] = [
     lead: 'The site engineer enters the day on the phone. The project manager approves it, and only then does it count.',
     shot: { src: '/landing/web-approvals.webp', alt: 'The approvals queue with progress, machinery and measurement entries waiting for review' },
     features: [
-      { icon: <FileTextOutlined />, title: 'DPR and progress', text: 'Quantities against BOQ activities, manpower from attendance, photos and the day\'s issues.' },
-      { icon: <CalculatorOutlined />, title: 'Measurement book', text: 'Nos × L × B × D by BOQ item and location, with executed and measured quantity side by side.' },
-      { icon: <InboxOutlined />, title: 'Material and stock', text: 'Requests, receipts, issue to site, and an alert when an item falls below its minimum.' },
-      { icon: <ToolOutlined />, title: 'Machinery log', text: 'Hours worked, idle and breakdown, diesel and hire rates for owned and hired equipment.' },
-      { icon: <WalletOutlined />, title: 'Site expenses with GST', text: 'Bill photo, vendor GSTIN, taxable value and GST, approved before it counts as cost.' },
-      { icon: <AlertOutlined />, title: 'Delays and risks', text: 'Hindrances with days lost and who caused them, extensions granted, and a 5 × 5 risk register.' },
+      { title: 'DPR and progress', text: 'Quantities against BOQ activities, manpower from attendance, photos and the day\'s issues.' },
+      { title: 'Measurement book', text: 'Nos × L × B × D by BOQ item and location, with executed and measured quantity side by side.' },
+      { title: 'Material and stock', text: 'Requests, receipts, issue to site, and an alert when an item falls below its minimum.' },
+      { title: 'Machinery log', text: 'Hours worked, idle and breakdown, diesel and hire rates for owned and hired equipment.' },
+      { title: 'Site expenses with GST', text: 'Bill photo, vendor GSTIN, taxable value and GST, approved before it counts as cost.' },
+      { title: 'Delays and risks', text: 'Hindrances with days lost and who caused them, extensions granted, and a 5 × 5 risk register.' },
     ],
   },
   {
@@ -60,12 +32,12 @@ export const MODULES: Module[] = [
     tab: 'Get paid',
     title: 'RA bills straight from the measurement book',
     lead: 'What site measured and the project manager approved becomes the next running bill, with the contract\'s deductions already applied.',
-    shot: { src: '/landing/web-ra-bill.webp', alt: 'An RA bill with the abstract of cost, GST and the retention, advance recovery, TDS and labour cess deductions' },
+    shot: { src: '/landing/web-ra-bill.webp', alt: 'An RA bill from approval to payment, with its checks passed: quantities within the BOQ, rates as in the BOQ, deductions that add up' },
     features: [
-      { icon: <BankOutlined />, title: 'Clients and contracts', text: 'Client GSTIN and billing address; per project the agreement, value, dates, retention, security deposit, advance and TDS rates.' },
-      { icon: <FileDoneOutlined />, title: 'RA bills', text: 'Previous, this bill and up to date per BOQ item, extra items flagged, GST and deductions, printed with the measurement annex.' },
-      { icon: <AuditOutlined />, title: 'Client certification', text: 'Enter the quantity the client certified; cuts re-price the bill and come back in the next one.' },
-      { icon: <AccountBookOutlined />, title: 'Receivables', text: 'Part payments with what the client actually deducted, ageing by client and project, retention held and when it is due back.' },
+      { title: 'Clients and contracts', text: 'Client GSTIN and billing address; per project the agreement, value, dates, retention, security deposit, advance and TDS rates.' },
+      { title: 'RA bills', text: 'Previous, this bill and up to date per BOQ item, extra items flagged, GST and deductions, printed with the measurement annex.' },
+      { title: 'Client certification', text: 'Enter the quantity the client certified; cuts re-price the bill and come back in the next one.' },
+      { title: 'Receivables', text: 'Part payments with what the client actually deducted, ageing by client and project, retention held and when it is due back.' },
     ],
   },
   {
@@ -73,13 +45,13 @@ export const MODULES: Module[] = [
     tab: 'Buy and pay',
     title: 'From material request to vendor payment',
     lead: 'Quotes, purchase orders, receipts at site and the vendor\'s bill are checked against each other before anyone pays.',
-    shot: { src: '/landing/web-po.webp', alt: 'A purchase order with items, GST, the share received at site and its GRN' },
+    shot: { src: '/landing/web-po.webp', alt: 'A purchase order through its stages, with the share received at site, its GRNs and vendor bills' },
     features: [
-      { icon: <ShopOutlined />, title: 'Vendor master', text: 'Suppliers, hire agencies and subcontractors with GSTIN, PAN, bank details and MSME number.' },
-      { icon: <ContainerOutlined />, title: 'Quotes and purchase orders', text: 'A comparative with the lowest landed rate marked, and a PO approved within each role\'s limit.' },
-      { icon: <ReconciliationOutlined />, title: 'Three-way match', text: 'GRN at site against the PO lines, and the vendor\'s bill checked against what was received and the PO rate.' },
-      { icon: <SolutionOutlined />, title: 'Subcontractors', text: 'Work orders at agreed rates; their bills from the measurement book recover retention, advance, material issued and TDS.' },
-      { icon: <PayCircleOutlined />, title: 'Payables', text: 'A due list by days past due, part payments with TDS, and micro and small enterprise bills flagged before 45 days.' },
+      { title: 'Vendor master', text: 'Suppliers, hire agencies and subcontractors with GSTIN, PAN, bank details and MSME number.' },
+      { title: 'Quotes and purchase orders', text: 'A comparative with the lowest landed rate marked, and a PO approved within each role\'s limit.' },
+      { title: 'Three-way match', text: 'GRN at site against the PO lines, and the vendor\'s bill checked against what was received and the PO rate.' },
+      { title: 'Subcontractors', text: 'Work orders at agreed rates; their bills from the measurement book recover retention, advance, material issued and TDS.' },
+      { title: 'Payables', text: 'A due list by days past due, part payments with TDS, and micro and small enterprise bills flagged before 45 days.' },
     ],
   },
   {
@@ -89,10 +61,10 @@ export const MODULES: Module[] = [
     lead: 'Site asks for an inspection from the phone, QA/QC passes or fails it against a checklist, and failed work is tracked to closure.',
     shot: { src: '/landing/web-quality.webp', alt: 'The quality register with inspections requested, passed and sent for re-inspection' },
     features: [
-      { icon: <SafetyOutlined />, title: 'Inspections from site', text: 'An activity at a location, with photos; each checklist point marked OK, not OK or not applicable.' },
-      { icon: <CheckSquareOutlined />, title: 'Hold points', text: 'Progress on a hold-point activity is approved only after a passed inspection at that location.' },
-      { icon: <ExperimentOutlined />, title: 'Tests against specification', text: 'Concrete cubes with 7 and 28-day reminders, compaction and other tests, passed or failed on the result.' },
-      { icon: <IssuesCloseOutlined />, title: 'NCRs to closure', text: 'Raised from a failed test or inspection, cause and corrective action from site, closed by QA/QC.' },
+      { title: 'Inspections from site', text: 'An activity at a location, with photos; each checklist point marked OK, not OK or not applicable.' },
+      { title: 'Hold points', text: 'Progress on a hold-point activity is approved only after a passed inspection at that location.' },
+      { title: 'Tests against specification', text: 'Concrete cubes with 7 and 28-day reminders, compaction and other tests, passed or failed on the result.' },
+      { title: 'NCRs to closure', text: 'Raised from a failed test or inspection, cause and corrective action from site, closed by QA/QC.' },
     ],
   },
   {
@@ -100,13 +72,13 @@ export const MODULES: Module[] = [
     tab: 'Accounts',
     title: 'Cost, cash and the books, project by project',
     lead: 'Management sees what each project has done, what it cost, what was billed and what came in, without waiting for month end.',
-    shot: { src: '/landing/web-cost.webp', alt: 'Project cost against executed value, with billed value, cash in and cash out' },
+    shot: { src: '/landing/web-cost.webp', alt: 'Project cost against the value executed, with margin, billed value, cash in and cash out for each project' },
     features: [
-      { icon: <FundOutlined />, title: 'Cost against work done', text: 'Expenses, material, machinery, labour and subcontractors against BOQ value executed, with billed value and cash in and out.' },
-      { icon: <ExportOutlined />, title: 'Tally export', text: 'TallyPrime vouchers for bills, receipts, payments and expenses, projects as cost centres, each voucher sent once.' },
-      { icon: <PercentageOutlined />, title: 'GST registers', text: 'Outward supplies in the GSTR-1 layout and input tax in the GSTR-2B layout, in one Excel workbook.' },
-      { icon: <FileProtectOutlined />, title: 'Approval rules', text: 'Who approves what, with rupee limits per role for each kind of entry, bill and order.' },
-      { icon: <FilePdfOutlined />, title: 'Progress reports', text: 'Weekly and monthly reports built from approved data, ready to print or save as PDF for the client.' },
+      { title: 'Cost against work done', text: 'Expenses, material, machinery, labour and subcontractors against BOQ value executed, with billed value and cash in and out.' },
+      { title: 'Tally export', text: 'TallyPrime vouchers for bills, receipts, payments and expenses, projects as cost centres, each voucher sent once.' },
+      { title: 'GST registers', text: 'Outward supplies in the GSTR-1 layout and input tax in the GSTR-2B layout, in one Excel workbook.' },
+      { title: 'Approval rules', text: 'Who approves what, with rupee limits per role for each kind of entry, bill and order.' },
+      { title: 'Progress reports', text: 'Weekly and monthly reports built from approved data, ready to print or save as PDF for the client.' },
     ],
   },
 ];
@@ -118,16 +90,49 @@ export const FLOWS: { name: string; steps: string[] }[] = [
   { name: 'Pay subcontractors', steps: ['Work order', 'Their measurements', 'Subcontractor bill', 'Payment'] },
 ];
 
-/** The Indian contract and tax details the app handles without a spreadsheet on the side. */
-export const LOCAL: string[] = [
-  'GST on bills and purchases, with GSTR-1 and GSTR-2B registers',
-  'Income tax TDS, GST TDS and labour welfare cess on RA bills',
-  'Retention and security deposit held, with the date they are due back',
-  'Mobilisation advance recovered bill by bill, never beyond what is outstanding',
-  'Micro and small enterprise bills flagged before the 45-day limit',
-  'TDS on subcontractor bills from the PAN (1% or 2%)',
-  'Amounts in lakh and crore, the way your clients read them',
-  'Extension of time backed by the hindrance register',
+/** The Indian contract and tax details the app handles without a spreadsheet on the side: what, and where it shows. */
+export const LOCAL: { what: string; where: string }[] = [
+  { what: 'GST on bills and purchases', where: 'GSTR-1 and GSTR-2B registers' },
+  { what: 'Income tax TDS, GST TDS and labour cess', where: 'Every RA bill' },
+  { what: 'Retention and security deposit', where: 'Held, with the date due back' },
+  { what: 'Mobilisation advance', where: 'Recovered bill by bill, never beyond what is owed' },
+  { what: 'Micro and small enterprise bills', where: 'Flagged before 45 days' },
+  { what: 'TDS on subcontractor bills', where: '1% or 2%, from the PAN' },
+  { what: 'Amounts in lakh and crore', where: 'Everywhere, as clients read them' },
+  { what: 'Extension of time', where: 'Backed by the hindrance register' },
+];
+
+/**
+ * The demo highway contract's terms (apps/api/prisma/seed.ts, CONTRACTS.ROAD), as the RA bill applies them to the value of
+ * work measured: GST is added, each deduction is a share of the same value (ra-bill-pricing.ts `billTotals`).
+ */
+export const DEMO_TERMS = {
+  gstPct: 18,
+  deductions: [
+    { label: 'Retention', pct: 5 },
+    { label: 'Mobilisation advance recovered', pct: 10 },
+    { label: 'Income tax TDS', pct: 2 },
+    { label: 'GST TDS', pct: 2 },
+    { label: 'Labour welfare cess', pct: 1 },
+  ],
+};
+
+/** Values of work to try in the bill, from the demo's own entries (the approvals queue). */
+export const BILL_EXAMPLES: { value: number; label: string }[] = [
+  { value: 636400, label: 'WMM laying, 296 cum' },
+  { value: 646800, label: 'GSB laying, 392 cum' },
+  { value: 2500000, label: 'A month on the highway' },
+];
+
+/** What the demo company already holds, said as one sentence (each part lights in turn). */
+export const DEMO_HOLDS: string[] = [
+  'a highway widening',
+  'a hospital block',
+  'a rural water scheme',
+  'their RA bills',
+  'purchase orders',
+  'cube tests',
+  'and the Tally vouchers they ended as',
 ];
 
 export const ROLES: { who: string; what: string }[] = [
@@ -144,6 +149,7 @@ export const ROLES: { who: string; what: string }[] = [
 
 /** One working day in the demo company, as the product records it. Places, items and figures follow the demo data (seed.ts) and the screenshots. */
 export const DAY: { time: string; what: string; where: string; detail: string }[] = [
+  // The stages bar sizes each moment by the time until the next one, so keep these in order.
   { time: '07:50', what: 'Attendance marked', where: 'Jajpur water supply scheme', detail: 'Masons, helpers and fitters by labour contractor, from the site in-charge\'s phone.' },
   { time: '11:30', what: 'Cube test due', where: 'District Hospital Block B, Cuttack', detail: 'The 28-day result for the M25 ground floor slab is due, and QA/QC has already been reminded.' },
   { time: '17:45', what: 'Progress sent without signal', where: 'Ch. 14+300, Bhubaneswar to Puri highway', detail: 'WMM laying, 296 cum, with photos. It waits on the phone and sends itself when the network is back.' },
