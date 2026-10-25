@@ -57,6 +57,11 @@ and the pre-delivery checklist.
   tokens in `makeTheme` and `componentConfig` (`src/lib/theme.ts`, both modes), never CSS of a page's own: titles and big
   figures are the display face (`DISPLAY_FONT`), fields have the blue ring, tables the canvas header.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
+- Taste: `.claude/skills/design-taste-frontend` (tasteskill, from leonxlnx/taste-skill) is the design guideline for the website
+  (`/welcome`, the page run) and app screens (`references/app-screens.md`); its inspector checks the website
+  (`node .claude/skills/design-taste-frontend/scripts/inspect.mjs http://localhost:3000/welcome`, 0 FAIL). The rules in this
+  file win where they differ (the navy sidebar, the canvas table header, the Nirmaan blue primary, the launcher's tiles).
+  On the website: no eyebrows, index numbers, rules, boxes, shadows or gradients; screens shown as they are, no browser frame.
 - antd reference: the `antd` MCP server in `.mcp.json` (`@ant-design/cli mcp`: component docs, props, tokens for the
   installed version), and https://ant.design/llms.txt (index) or https://ant.design/llms-full.txt (every component with
   examples). Use antd components and theme tokens before custom CSS, and the antd 6 props (Select
