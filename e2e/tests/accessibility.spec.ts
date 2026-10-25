@@ -16,6 +16,17 @@ test('the sign-in page passes axe', async ({ page }) => {
   expect(await axeViolations(page)).toEqual([]);
 });
 
+test('the product page passes axe, at desktop and phone width', async ({ page }) => {
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/welcome');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // Every section's parts in place before axe looks (they rise in as they scroll into view).
+    await page.evaluate(() => document.querySelectorAll('.rv').forEach((e) => e.classList.add('in')));
+    expect(await axeViolations(page)).toEqual([]);
+  }
+});
+
 for (const mode of ['light', 'dark'] as const) {
   test(`the main pages pass axe in the ${mode} theme`, async ({ page }) => {
     test.setTimeout(180_000);

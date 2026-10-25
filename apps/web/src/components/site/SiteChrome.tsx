@@ -3,10 +3,13 @@ import Link from 'next/link';
 import { BRAND } from '@/lib/brand';
 import { BrandMark, Wordmark } from '@/components/shell/BrandMark';
 
-/** Top bar of the public pages (product page, privacy): the logo, section links and whatever actions the page passes in. */
-export function SiteHeader({ links, children }: { links?: { href: string; label: string }[]; children?: React.ReactNode }) {
+/**
+ * Top bar of the public pages (product page, privacy): the logo, section links and whatever actions the page passes in.
+ * `onField` sets it on the page's first field of colour (the product page's hero) instead of a bar of its own.
+ */
+export function SiteHeader({ links, onField, children }: { links?: { href: string; label: string }[]; onField?: boolean; children?: React.ReactNode }) {
   return (
-    <header className="lp-nav">
+    <header className={onField ? 'lp-nav lp-nav-field' : 'lp-nav'}>
       <div className="lp-nav-inner">
         <Link href="/welcome" className="lp-brand" aria-label={BRAND.name}>
           <BrandMark size={32} />
@@ -33,16 +36,15 @@ export function SiteFooter({ signup }: { signup?: boolean }) {
   return (
     <footer className="lp-foot">
       <div className="lp-wrap">
+        <p className="lp-foot-name" aria-hidden translate="no">
+          {BRAND.wordmark}
+        </p>
         <div className="lp-foot-top">
           <div className="lp-foot-brand">
-            <span className="lp-brand">
-              <BrandMark size={28} />
-              <Wordmark color={BRAND.colors.onAccent} size={17} />
-            </span>
             <p>{BRAND.description}.</p>
           </div>
           <nav className="lp-foot-col" aria-label="Product">
-            <h3>Product</h3>
+            <h2>Product</h2>
             <Link href="/welcome#modules">What it does</Link>
             <Link href="/welcome#money">Billing and Tally</Link>
             <Link href="/welcome#site-app">Site app</Link>
@@ -50,7 +52,7 @@ export function SiteFooter({ signup }: { signup?: boolean }) {
             <Link href="/welcome#faq">Questions</Link>
           </nav>
           <nav className="lp-foot-col" aria-label="Get started">
-            <h3>Get started</h3>
+            <h2>Get started</h2>
             <Link href="/login">Try the demo</Link>
             {signup ? <Link href="/signup">Create your company</Link> : null}
             <Link href="/login">Sign in</Link>

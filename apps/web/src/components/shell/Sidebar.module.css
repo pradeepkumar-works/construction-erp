@@ -130,27 +130,17 @@
   text-overflow: ellipsis;
 }
 
-/* The page you are on: a quiet blue wash, a bar at the edge and a blue icon. */
+/* The page you are on: one brightness step on the navy (a lighter pill, white label and icon), no colour on the chrome. */
 .active,
 .active:hover {
-  background: color-mix(in srgb, var(--brand-accent) 32%, transparent);
+  background: color-mix(in srgb, var(--ant-color-white) 14%, transparent);
   color: var(--brand-on-accent);
-}
-
-.active::before {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 7px;
-  bottom: 7px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--brand-accent-light);
+  font-weight: 600;
 }
 
 .active .icon,
 .active:hover .icon {
-  color: var(--brand-accent-light);
+  color: var(--brand-on-accent);
 }
 
 .count {
@@ -258,10 +248,6 @@
   display: none;
 }
 
-.rail .active::before {
-  left: -12px;
-}
-
 .rail .count {
   position: absolute;
   top: 3px;
@@ -295,10 +281,6 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.flyout .active::before {
-  display: none;
 }
 
 /* Footer */

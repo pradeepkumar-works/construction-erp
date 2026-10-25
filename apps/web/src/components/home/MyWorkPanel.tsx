@@ -125,11 +125,9 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
 
 function Frame({ title, icon, href, count, tone, children, amount, overdue }: { title: string; icon: React.ReactNode; href: string | null; count: number; tone: 'warning' | 'error' | 'info'; amount?: string | null; overdue?: boolean; children: React.ReactNode }) {
   const { token } = theme.useToken();
-  const color = count === 0 ? token.colorSuccess : tone === 'error' ? token.colorError : tone === 'warning' ? token.colorWarning : token.colorPrimary;
   // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade (UX item
   // 82), and only while something in it is actually overdue (UX item 85): payments due later this week stay neutral.
   const figure = tone === 'error' && overdue !== false ? token.colorErrorText : token.colorText;
-  const bg = count === 0 ? token.colorSuccessBg : tone === 'error' ? token.colorErrorBg : tone === 'warning' ? token.colorWarningBg : token.colorPrimaryBg;
   return (
     <section
       aria-label={title}
@@ -137,10 +135,8 @@ function Frame({ title, icon, href, count, tone, children, amount, overdue }: { 
       style={{ height: '100%', paddingTop: token.paddingSM, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}
     >
       <Flex align="center" gap={token.marginSM} style={{ marginBottom: token.marginXS }}>
-        <span
-          aria-hidden
-          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: token.controlHeight, height: token.controlHeight, borderRadius: token.borderRadius, background: bg, color, fontSize: token.fontSizeLG }}
-        >
+        {/* A plain grey glyph rather than a tinted square: the colour is kept for the figure, where it says something. */}
+        <span aria-hidden style={{ display: 'inline-flex', color: count === 0 ? token.colorSuccessText : token.colorTextTertiary, fontSize: token.fontSizeLG }}>
           {count === 0 ? <CheckCircleOutlined /> : icon}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
