@@ -13,7 +13,6 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useActivities, useRollCall } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -231,7 +230,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
       ) : (
         <>
           {data?.locked ? (
-            <Alert type="info" showIcon style={{ margin: 12 }} title={`The DPR for ${formatDate(dateStr)} is approved, so this roll call can no longer change.`} />
+            <Alert type="info" showIcon style={{ margin: 12 }} title={`Payroll for ${dayjs(dateStr).format('MMMM YYYY')} is approved (${data.lockedByRun}), so this roll call can no longer change.`} />
           ) : null}
           {data ? (
             <div className="roll-call-summary text-muted" style={{ padding: '8px 12px', fontSize: themeFontSize('fontSizeSM') }}>

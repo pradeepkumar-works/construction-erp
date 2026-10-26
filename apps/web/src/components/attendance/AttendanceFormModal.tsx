@@ -41,7 +41,8 @@ const toLines = (v: LineValue[] | undefined) =>
 
 /**
  * Record a day's attendance (head count by contractor and trade), or open an existing sheet to correct it.
- * Read-only for roles that cannot record attendance and once the day's DPR is approved.
+ * Read-only for roles that cannot record attendance and once payroll for the day's month is approved (attendance first:
+ * an approved DPR no longer shuts it, finding 7 of the October review).
  */
 export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }: { open: boolean; onClose: () => void; projectId?: string; sheet?: AttendanceSheetDto | null }) {
   const [form] = Form.useForm<FormValues>();
@@ -131,9 +132,9 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
   const body = (
     <Form form={form} layout="vertical" disabled={readOnly} style={{ marginTop: 8 }}>
       {editing && sheet.locked ? (
-        <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Locked: the DPR for this day is approved." />
+        <Alert type="info" showIcon style={{ marginBottom: 12 }} title={`Locked: payroll for this month is approved (${sheet.lockedByRun}).`} />
       ) : !editing && locked ? (
-        <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="The DPR for this day is already approved, so attendance can no longer be recorded for it." />
+        <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`Payroll for this month is approved (${day.data?.lockedByRun}), so attendance can no longer be recorded for this day.`} />
       ) : null}
       {existingForDay ? (
         <Alert
@@ -164,19 +165,19 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
               <div style={{ display: 'flex', gap: 6, color: themeColor('colorTextDescription'), fontSize: themeFontSize('fontSizeSM') }}>
                 <span style={{ flex: 3 }}>Contractor</span>
                 <span style={{ flex: 2 }}>Trade</span>
-                <span style={{ width: 90 }}>Workers</span>
+                <span style={{ width: 72 }}>Workers</span>
                 <span style={{ width: 32 }} />
               </div>
               {fields.map((f, i) => (
                 <div key={f.key} style={{ display: 'flex', gap: 6 }} data-line-label={`Workers on site, line ${i + 1}`}>
                   <Form.Item name={[f.name, 'contractor']} noStyle rules={[{ required: true, whitespace: true, message: '' }]}>
-                    <AutoComplete style={{ flex: 3 }} options={contractorOptions} placeholder="Contractor" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
+                    <AutoComplete style={{ flex: 3, minWidth: 0 }} options={contractorOptions} placeholder="Contractor" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
                   </Form.Item>
                   <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, whitespace: true, message: '' }]}>
-                    <AutoComplete style={{ flex: 2 }} options={categoryOptions} placeholder="Trade" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
+                    <AutoComplete style={{ flex: 2, minWidth: 0 }} options={categoryOptions} placeholder="Trade" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
                   </Form.Item>
                   <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
-                    <InputNumber min={0} precision={0} inputMode="numeric" placeholder="Nos" style={{ width: 90 }} />
+                    <InputNumber min={0} precision={0} inputMode="numeric" placeholder="Nos" style={{ width: 72 }} />
                   </Form.Item>
                   <Button icon={<DeleteOutlined />} onClick={() => removeLine(f.name)} aria-label="Remove row" />
                 </div>

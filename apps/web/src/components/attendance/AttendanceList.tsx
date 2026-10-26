@@ -80,7 +80,7 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
             <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
               {r.dprStatus ? <StatusTag status={r.dprStatus} /> : <Sub>Not filed</Sub>}
               {r.locked ? (
-                <Tooltip title="The DPR for this day is approved, so the sheet is locked">
+                <Tooltip title={`Payroll for this month is approved (${r.lockedByRun}), so the sheet is locked`}>
                   <LockOutlined aria-label="Locked" />
                 </Tooltip>
               ) : null}
