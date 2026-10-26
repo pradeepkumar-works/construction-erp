@@ -157,13 +157,18 @@ export class ContractsService {
 
   /** Delays and the last planned finish per project, for liquidated damages. */
   private async ldInputs(projectIds: string[]): Promise<Map<string, LdInputs>> {
-    const [delays, finishes] = await Promise.all([
+    const [delays, finishes, milestones] = await Promise.all([
       this.prisma.risk.findMany({ where: { projectId: { in: projectIds }, kind: 'DELAY' }, select: { projectId: true, daysLost: true, delayStart: true, delayEnd: true, responsibleParty: true } }),
       this.prisma.activity.groupBy({ by: ['projectId'], where: { projectId: { in: projectIds } }, _max: { plannedEnd: true } }),
+      this.prisma.milestone.groupBy({ by: ['projectId'], where: { projectId: { in: projectIds } }, _max: { dueDate: true } }),
     ]);
     const out = new Map<string, LdInputs>(projectIds.map((id) => [id, { delays: [], scheduleFinish: null }]));
     for (const d of delays) out.get(d.projectId)!.delays.push(d);
-    for (const f of finishes) out.get(f.projectId)!.scheduleFinish = dateOnly(f._max.plannedEnd);
+    // The Gantt's planned finish: the latest activity end or milestone due date, so the header and the LD agree.
+    for (const f of [...finishes.map((f) => ({ projectId: f.projectId, d: dateOnly(f._max.plannedEnd) })), ...milestones.map((m) => ({ projectId: m.projectId, d: dateOnly(m._max.dueDate) }))]) {
+      const i = out.get(f.projectId)!;
+      if (f.d && (!i.scheduleFinish || f.d > i.scheduleFinish)) i.scheduleFinish = f.d;
+    }
     return out;
   }
 

@@ -525,7 +525,7 @@ export interface ProjectDashboard {
   plannedProgressPct?: number | null;
   /** Activities with both planned dates */
   activitiesScheduled?: number;
-  /** The latest planned finish of the activities: where the plan now ends */
+  /** The latest planned finish of the activities and milestones (the Gantt's planned finish): where the plan now ends */
   plannedFinish?: string | null;
   /** Contract completion date after the extensions of time granted */
   completionDate?: string | null;

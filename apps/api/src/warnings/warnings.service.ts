@@ -356,11 +356,18 @@ export class WarningsService {
     const dated = projects.filter((p) => p.endDate);
     if (!dated.length) return [];
     const ids = dated.map((p) => p.id);
-    const [finishes, eots] = await Promise.all([
+    const [finishes, milestones, eots] = await Promise.all([
       this.prisma.activity.groupBy({ by: ['projectId'], where: { projectId: { in: ids } }, _max: { plannedEnd: true } }),
+      this.prisma.milestone.groupBy({ by: ['projectId'], where: { projectId: { in: ids } }, _max: { dueDate: true } }),
       this.prisma.risk.groupBy({ by: ['projectId'], where: { projectId: { in: ids }, kind: 'DELAY' }, _sum: { eotGrantedDays: true } }),
     ]);
-    const finishOf = new Map(finishes.map((f) => [f.projectId, dateOnly(f._max.plannedEnd)]));
+    // The Gantt's planned finish: the latest activity end or milestone due date.
+    const finishOf = new Map<string, string | null>(finishes.map((f) => [f.projectId, dateOnly(f._max.plannedEnd)]));
+    for (const m of milestones) {
+      const due = dateOnly(m._max.dueDate);
+      const was = finishOf.get(m.projectId) ?? null;
+      if (due && (!was || due > was)) finishOf.set(m.projectId, due);
+    }
     const eotOf = new Map(eots.map((e) => [e.projectId, e._sum.eotGrantedDays ?? 0]));
     const out: (Draft & { slip: number })[] = [];
     for (const p of dated) {
@@ -374,11 +381,11 @@ export class WarningsService {
         key: `schedule-finish:${p.id}:${completion}:${Math.floor(late / 14)}`,
         kind: 'SCHEDULE',
         title: `${p.code}'s plan ends ${plural(late, 'day')} after the completion date`,
-        detail: `The activities' planned dates run to ${dayYear(finish!)}, against the completion date of ${dayYear(completion!)}${eot ? ` (with ${plural(eot, 'day')} of extensions granted)` : ''}.`,
+        detail: `The schedule's planned dates run to ${dayYear(finish!)}, against the completion date of ${dayYear(completion!)}${eot ? ` (with ${plural(eot, 'day')} of extensions granted)` : ''}.`,
         action: 'Re-plan the critical activities to finish in time, or claim an extension of time for the delays that excuse it',
         impact: { text: `${plural(late, 'day')} late`, inr: null, days: late },
         working: [
-          `Latest planned finish of the activities: ${dayYear(finish!)}`,
+          `Latest planned finish of the activities and milestones: ${dayYear(finish!)}`,
           `Completion date: ${dayYear(dateOnly(p.endDate)!)}${eot ? ` + ${plural(eot, 'day')} of extensions = ${dayYear(completion!)}` : ''}`,
           `${dayYear(finish!)} − ${dayYear(completion!)} = ${plural(late, 'day')}`,
         ],

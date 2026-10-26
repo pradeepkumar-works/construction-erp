@@ -157,7 +157,7 @@ export class DashboardService {
   async project(user: RequestUser, projectId: string): Promise<ProjectDashboard> {
     const project = (await this.projects.listAll(user)).find((p) => p.id === projectId);
     if (!project) throw new NotFoundException('Project not found');
-    const [boq, activities, recentProgress, recentDprs, openMaterialRequests, lastDpr, eot] = await Promise.all([
+    const [boq, activities, recentProgress, recentDprs, openMaterialRequests, lastDpr, eot, lastMilestone] = await Promise.all([
       this.planning.listBoq(user, projectId),
       this.planning.listActivities(user, projectId),
       this.progress.list(user, { projectId, pageSize: 10 }).then((p) => p.items),
@@ -165,9 +165,11 @@ export class DashboardService {
       this.prisma.materialRequest.count({ where: { projectId, status: { in: ['SUBMITTED', 'APPROVED'] } } }),
       this.prisma.dailyReport.findFirst({ where: { projectId }, orderBy: { date: 'desc' }, select: { date: true } }),
       this.prisma.risk.aggregate({ where: { projectId, kind: 'DELAY' }, _sum: { eotGrantedDays: true } }),
+      this.prisma.milestone.aggregate({ where: { projectId }, _max: { dueDate: true } }),
     ]);
     const scheduled = activities.filter((a) => a.plannedStart && a.plannedEnd);
-    const plannedFinish = scheduled.reduce<string | null>((m, a) => (!m || a.plannedEnd! > m ? a.plannedEnd : m), null);
+    // The Gantt's planned finish: the latest of the activities' ends and the milestones' due dates.
+    const plannedFinish = [...scheduled.map((a) => a.plannedEnd!), dateOnly(lastMilestone._max.dueDate)].reduce<string | null>((m, d) => (d && (!m || d > m) ? d : m), null);
     const boqTotal = boq.reduce((s, i) => s.add(i.amount), new Prisma.Decimal(0));
     const boqExecuted = boq.reduce((s, i) => s.add(new Prisma.Decimal(i.rate).mul(i.executedQty)), new Prisma.Decimal(0));
     const rates = new Map(boq.map((i) => [i.id, new Prisma.Decimal(i.rate)]));
