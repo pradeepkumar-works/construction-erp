@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { ActivityLinkDto, GanttActivityDto, GanttDto, LookaheadActivityDto, LookaheadDto, MilestoneDto, ScheduleFileFormat, ScheduleImportResultDto } from '@erp/shared';
-import { linkLabel } from '@erp/shared';
+import { linkLabel, revisedCompletion } from '@erp/shared';
 import { expectedPct, milestoneState, scheduleState, slipDays } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -53,7 +53,7 @@ export class ScheduleService {
     await this.access.assertCanAccessProject(user, projectId);
     const today = todayIn();
     const [project, activities, milestones] = await Promise.all([
-      this.prisma.project.findFirst({ where: { id: projectId }, select: { startDate: true, endDate: true, baselineAt: true, baselineNote: true, baselineBy: { select: { fullName: true } } } }),
+      this.prisma.project.findFirst({ where: { id: projectId }, select: { startDate: true, endDate: true, baselineAt: true, baselineNote: true, baselineBy: { select: { fullName: true } }, risks: { where: { kind: 'DELAY' }, select: { eotGrantedDays: true } } } }),
       this.prisma.activity.findMany({
         where: { projectId },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
@@ -134,6 +134,7 @@ export class ScheduleService {
       projectId,
       projectStart: dateOnly(project.startDate),
       projectEnd: dateOnly(project.endDate),
+      completionDate: revisedCompletion(dateOnly(project.endDate), project.risks.reduce((t, r) => t + (r.eotGrantedDays ?? 0), 0)),
       today,
       baselineAt: iso(project.baselineAt),
       baselineByName: project.baselineBy?.fullName ?? null,

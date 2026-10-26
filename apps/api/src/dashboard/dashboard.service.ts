@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canViewContract, canViewCost, canViewPayables, seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
+import { canViewContract, canViewCost, canViewPayables, revisedCompletion, seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -157,14 +157,17 @@ export class DashboardService {
   async project(user: RequestUser, projectId: string): Promise<ProjectDashboard> {
     const project = (await this.projects.listAll(user)).find((p) => p.id === projectId);
     if (!project) throw new NotFoundException('Project not found');
-    const [boq, activities, recentProgress, recentDprs, openMaterialRequests, lastDpr] = await Promise.all([
+    const [boq, activities, recentProgress, recentDprs, openMaterialRequests, lastDpr, eot] = await Promise.all([
       this.planning.listBoq(user, projectId),
       this.planning.listActivities(user, projectId),
       this.progress.list(user, { projectId, pageSize: 10 }).then((p) => p.items),
       this.dpr.list(user, { projectId, pageSize: 5 }).then((p) => p.items),
       this.prisma.materialRequest.count({ where: { projectId, status: { in: ['SUBMITTED', 'APPROVED'] } } }),
       this.prisma.dailyReport.findFirst({ where: { projectId }, orderBy: { date: 'desc' }, select: { date: true } }),
+      this.prisma.risk.aggregate({ where: { projectId, kind: 'DELAY' }, _sum: { eotGrantedDays: true } }),
     ]);
+    const scheduled = activities.filter((a) => a.plannedStart && a.plannedEnd);
+    const plannedFinish = scheduled.reduce<string | null>((m, a) => (!m || a.plannedEnd! > m ? a.plannedEnd : m), null);
     const boqTotal = boq.reduce((s, i) => s.add(i.amount), new Prisma.Decimal(0));
     const boqExecuted = boq.reduce((s, i) => s.add(new Prisma.Decimal(i.rate).mul(i.executedQty)), new Prisma.Decimal(0));
     const rates = new Map(boq.map((i) => [i.id, new Prisma.Decimal(i.rate)]));
@@ -172,6 +175,9 @@ export class DashboardService {
       project,
       physicalProgressPct: project.physicalProgressPct,
       plannedProgressPct: plannedProgress(activities, rates, todayIn()),
+      activitiesScheduled: scheduled.length,
+      plannedFinish,
+      completionDate: revisedCompletion(project.endDate, eot._sum.eotGrantedDays ?? 0),
       boqTotalAmount: money(boqTotal)!,
       boqExecutedAmount: money(boqExecuted)!,
       activitiesTotal: activities.length,

@@ -133,6 +133,8 @@ export interface GanttDto {
   projectId: string;
   projectStart: string | null;
   projectEnd: string | null;
+  /** The completion date after the extensions of time granted: where the plan must end */
+  completionDate: string | null;
   today: string;
   baselineAt: string | null;
   baselineByName: string | null;
@@ -211,4 +213,61 @@ export interface ScheduleImportResultDto {
   links: number;
   /** What was left out, in words: summary rows, milestones, links to rows not in the file */
   skipped: string[];
+}
+
+/** Points of progress a project may trail its plan (or the time gone) by before it counts as behind. */
+export const PROJECT_BEHIND_BY = 10;
+
+export type ProjectScheduleState = 'NO_PLAN' | 'ON_TRACK' | 'BEHIND' | 'FINISH_LATE' | 'OVERRUN' | 'COMPLETED' | 'ON_HOLD';
+
+export interface ProjectScheduleFacts {
+  status: string;
+  /** Physical progress, 0 to 100 */
+  done: number;
+  /** % planned by today from the activities' dates, else null */
+  planned: number | null;
+  /** % of the time between the project's start and end gone by, else null */
+  elapsed: number | null;
+  /** Activities past their planned finish and not done */
+  late: number;
+  /** Activities with both planned dates */
+  scheduled: number;
+  /** Contract completion after the extensions of time granted */
+  completionDate: string | null;
+  /** The latest planned finish of the activities (where the plan now ends) */
+  plannedFinish: string | null;
+  today: string;
+}
+
+export interface ProjectScheduleStatus {
+  state: ProjectScheduleState;
+  level: 'success' | 'warning' | 'error' | 'default';
+  /** Behind its plan by 10 points or more, planned to finish after the completion date, or past it unfinished */
+  behind: boolean;
+  /** Past its completion date and not finished */
+  overrun: boolean;
+  /** Days the plan's finish lands after the completion date; null when on or before it, or either date is missing */
+  finishLateDays: number | null;
+  late: number;
+}
+
+/**
+ * Where a project stands against its schedule, the one rule behind the header's chip, the overview's lead line, the
+ * watch list and the morning brief (e2e review, fix 1). A plan that ends after the contract's completion date (with its
+ * extensions) is late however well today's progress keeps to it; a project with no dated activities has no plan to be
+ * on track with.
+ */
+export function projectScheduleStatus(f: ProjectScheduleFacts): ProjectScheduleStatus {
+  const finishLateDays = f.plannedFinish && f.completionDate && f.plannedFinish > f.completionDate ? daysBetween(f.completionDate, f.plannedFinish) : null;
+  const base = { finishLateDays, late: f.late };
+  if (f.status === 'COMPLETED' || f.status === 'CLOSED') return { ...base, state: 'COMPLETED', level: 'success', behind: false, overrun: false };
+  if (f.status === 'ON_HOLD') return { ...base, state: 'ON_HOLD', level: 'default', behind: false, overrun: false };
+  const overrun = !!f.completionDate && f.completionDate < f.today && f.done < 100;
+  const mark = f.planned ?? f.elapsed;
+  const trailing = mark !== null && f.done <= mark - PROJECT_BEHIND_BY;
+  if (overrun) return { ...base, state: 'OVERRUN', level: 'error', behind: true, overrun };
+  if (finishLateDays !== null) return { ...base, state: 'FINISH_LATE', level: 'error', behind: true, overrun };
+  if (trailing) return { ...base, state: 'BEHIND', level: f.late > 0 ? 'error' : 'warning', behind: true, overrun };
+  if (f.scheduled === 0) return { ...base, state: 'NO_PLAN', level: 'default', behind: false, overrun };
+  return { ...base, state: 'ON_TRACK', level: f.late > 0 ? 'warning' : 'success', behind: false, overrun };
 }

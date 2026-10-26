@@ -12,7 +12,7 @@ import type { RoleKey } from '@erp/shared';
 import { PAUSE_MIN_OUTCOMES, PAUSE_WINDOW_DAYS, PAUSE_WRONG_SHARE, WARNING_KINDS, trackRecordText, watchListKinds } from '@erp/shared';
 import { OM_MISSING_DAYS, omSlip, packageLate } from '../warnings/warning-rules';
 import { packageStatus } from '../epc/epc-rules';
-import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
+import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, planFinishLate, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -37,6 +37,13 @@ test('schedule: a slowed rate puts the finish past the baseline and warns', () =
   assert.equal(f.rate, 0.5);
   assert.equal(f.forecastFinish, addDays(T, 92));
   assert.ok(scheduleWarns(f));
+});
+test('schedule: a plan ending after the completion date is late by the days between', () => {
+  assert.equal(planFinishLate('2028-12-31', '2028-04-30'), 245);
+  assert.equal(planFinishLate('2028-04-30', '2028-04-30'), null, 'finishing on the day is in time');
+  assert.equal(planFinishLate('2028-03-01', '2028-04-30'), null);
+  assert.equal(planFinishLate(null, '2028-04-30'), null);
+  assert.equal(planFinishLate('2028-12-31', null), null);
 });
 test('schedule: a few days past the baseline is inside the grace', () => {
   const entries = Array.from({ length: 28 }, (_, i) => ({ date: addDays(T, -27 + i), qty: 1 }));

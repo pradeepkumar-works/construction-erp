@@ -37,11 +37,14 @@ export interface PortalActivityDto {
   plannedQty: string;
   doneQty: string;
   pct: number;
+  /** The agreed programme: the dates frozen in the project's baseline, never the contractor's working re-plan; null without a baseline */
   plannedStart: string | null;
   plannedEnd: string | null;
 }
 
 export interface PortalProjectDetailDto extends PortalProjectDto {
+  /** Where the activities' dates come from: the frozen baseline, or none until the PM freezes one */
+  programme: 'BASELINE' | 'NONE';
   activities: PortalActivityDto[];
 }
 

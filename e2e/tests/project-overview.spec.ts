@@ -16,7 +16,7 @@ test('the overview leads with on track or behind, and figures against plan', asy
   await signIn(page, 'pm@demo.com');
   await page.goto(`/projects/${road.id}?tab=overview`);
   const status = page.getByTestId('project-status');
-  await expect(status).toContainText(/^(On track|Behind plan|Past its end date|On track overall, \d+ activit(y|ies) late)/);
+  await expect(status).toContainText(/^(On track|Behind plan|Past its completion date|Plan ends \d+ days? after the completion date|No dated plan yet|On track overall, \d+ activit(y|ies) late)/);
   await expect(status).toContainText(/\d+(\.\d)?% done, \d+(\.\d)?% planned by today\./);
   const panel = page.getByRole('tabpanel', { name: 'Overview' }).last();
   await expect(panel.getByText('Progress', { exact: true }).first()).toBeVisible();

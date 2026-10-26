@@ -118,6 +118,16 @@ export function scheduleWarns(f: ActivityForecast | null): boolean {
   return f.stalled || (f.slipDays !== null && f.slipDays > SLIP_GRACE_DAYS);
 }
 
+/**
+ * The project's plan ends after its completion date (e2e review, fix 1): the latest planned finish of its activities
+ * against the contract completion with the extensions granted. Days late, or null when the plan ends in time (or a
+ * date is missing). Every day counts: a plan past the contract date is a claim for time or liquidated damages.
+ */
+export function planFinishLate(plannedFinish: string | null, completionDate: string | null): number | null {
+  if (!plannedFinish || !completionDate || plannedFinish <= completionDate) return null;
+  return daysBetween(completionDate, plannedFinish);
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Cash: bills due against expected receipts over the next eight weeks.
 

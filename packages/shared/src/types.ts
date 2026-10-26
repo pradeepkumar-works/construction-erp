@@ -523,6 +523,12 @@ export interface ProjectDashboard {
    * with planned dates; null when none has dates.
    */
   plannedProgressPct?: number | null;
+  /** Activities with both planned dates */
+  activitiesScheduled?: number;
+  /** The latest planned finish of the activities: where the plan now ends */
+  plannedFinish?: string | null;
+  /** Contract completion date after the extensions of time granted */
+  completionDate?: string | null;
   boqTotalAmount: string;
   boqExecutedAmount: string;
   activitiesTotal: number;

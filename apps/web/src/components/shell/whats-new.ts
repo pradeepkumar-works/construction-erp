@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-schedule-status',
+    date: '2027-02-01',
+    title: 'Schedule status you can trust',
+    points: [
+      'A project whose plan ends after its completion date (with the extensions granted) no longer shows “on track”: the header, Overview and Schedule tab say how many days late it ends, and the watch list and morning brief carry it.',
+      'A project with no dated activities says “No plan yet” instead of “on track”.',
+      'The client portal shows the agreed programme, the baseline you froze, never your working re-plan.',
+    ],
+  },
+  {
     id: '2027-01-icons',
     date: '2027-01-29',
     title: 'One set of icons',

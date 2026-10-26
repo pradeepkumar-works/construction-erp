@@ -32,8 +32,10 @@ function timeLeft(end: string | null): string | null {
 function headline(project: ProjectDetail, s: ScheduleStatus): string {
   if (project.status === 'COMPLETED' || project.status === 'CLOSED') return 'Completed';
   if (project.status === 'ON_HOLD') return 'On hold';
-  if (s.overrun) return 'Past its end date';
+  if (s.state === 'OVERRUN') return 'Past its completion date';
+  if (s.state === 'FINISH_LATE') return `Plan ends ${plural(s.finishLateDays!, 'day')} after the completion date`;
   if (s.behind) return 'Behind plan';
+  if (s.state === 'NO_PLAN') return 'No dated plan yet';
   if (s.late > 0) return `On track overall, ${plural(s.late, 'activity', 'activities')} late`;
   return 'On track';
 }
@@ -46,7 +48,9 @@ function StatusLead({ project, dash }: { project: ProjectDetail; dash: ProjectDa
   const facts = [
     `${formatPct(s.done)} done${against ? `, ${against}` : ''}.`,
     dash.activitiesTotal ? `${s.late} of ${plural(dash.activitiesTotal, 'activity', 'activities')} past their finish.` : null,
-    project.endDate ? `Ends ${formatDate(project.endDate)}${left ? `, ${left}` : ''}.` : null,
+    s.completionDate ? `Completion ${formatDate(s.completionDate)}${s.completionDate === project.endDate && left ? `, ${left}` : ''}.` : null,
+    s.plannedFinish && s.finishLateDays !== null ? `The plan ends ${formatDate(s.plannedFinish)}.` : null,
+    s.state === 'NO_PLAN' ? 'Give the activities dates, or import the schedule, on the Schedule tab.' : null,
   ].filter(Boolean);
   // Colour marks the exception only (UX item 82): behind is in the error text shade; on track stays neutral.
   const bad = s.behind;
