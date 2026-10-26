@@ -51,6 +51,6 @@ export class AiConversationsQueryDto extends PageQuery {
 }
 
 export class ReadDocumentDto {
-  @ApiProperty({ enum: DOC_READ_KINDS, description: 'invoice fills a vendor bill, challan a GRN, drawing a document register entry' }) @IsIn(DOC_READ_KINDS as unknown as string[]) kind!: DocReadKind;
+  @ApiProperty({ enum: DOC_READ_KINDS, description: 'invoice fills a vendor bill, challan a GRN, drawing a document register entry, workOrder a new project, boq the BOQ import (three pages a call)' }) @IsIn(DOC_READ_KINDS as unknown as string[]) kind!: DocReadKind;
   @ApiPropertyOptional({ description: 'Invoices: the order the form is already on, to match the lines against' }) @IsOptional() @IsUUID() purchaseOrderId?: string;
 }

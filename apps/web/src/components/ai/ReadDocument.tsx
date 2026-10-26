@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { themeFontSize } from '@/lib/theme';
-import { App, Button, Flex, Segmented, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Flex, Pagination, Segmented, Tooltip, Typography, theme } from 'antd';
 import type { FormItemProps } from 'antd';
 import type { DocReadField, DocReadKind, DocReadResultDto } from '@erp/shared';
+import { DOC_READ_MAX_PAGES, DOC_READ_PAGES_OF } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useAsk } from '@/lib/ask';
 import { pagesOf, type PageImage } from '@/lib/doc-pages';
@@ -18,14 +19,29 @@ export interface ReadState {
   file: File;
 }
 
-const NOUN: Record<DocReadKind, string> = { invoice: 'invoice', challan: 'challan', drawing: 'drawing' };
+const NOUN: Record<DocReadKind, string> = { invoice: 'invoice', challan: 'challan', drawing: 'drawing', workOrder: 'work order', boq: 'BOQ' };
 
 const FIELD_LABELS: Record<string, string> = {
   vendorName: 'Vendor', supplierName: 'Supplier', gstin: 'GSTIN', invoiceNo: 'Invoice no.', invoiceDate: 'Invoice date', poNo: 'PO no.', subtotal: 'Taxable value',
   cgst: 'CGST', sgst: 'SGST', igst: 'IGST', freight: 'Freight', total: 'Invoice total', challanNo: 'Challan no.', date: 'Date', vehicleNo: 'Vehicle no.',
   drawingNo: 'Drawing no.', revision: 'Revision', title: 'Title', scale: 'Scale', issuedBy: 'Issued by', discipline: 'Discipline',
   description: 'Item', hsn: 'HSN', quantity: 'Quantity', unit: 'Unit', rate: 'Rate', gstRate: 'GST', amount: 'Amount',
+  nameOfWork: 'Name of work', clientName: 'Client', workOrderNo: 'Work order no.', workOrderDate: 'Work order date', agreementNo: 'Agreement no.', agreementDate: 'Agreement date',
+  contractValue: 'Contract value', startDate: 'Start date', completionDate: 'Completion date', durationMonths: 'Time allowed', location: 'Location', itemNo: 'Item no.', section: 'Section',
 };
+
+/**
+ * The reads of a long file's pages, three at a time, as one: each field from the first read that has it (a total from the
+ * last), the lines in order with their pages counted across the whole file.
+ */
+function mergeReads(parts: DocReadResultDto[]): DocReadResultDto {
+  if (parts.length === 1) return parts[0];
+  const fields = { ...parts[0].fields };
+  for (const p of parts.slice(1))
+    for (const [k, f] of Object.entries(p.fields)) if (f.value !== null && (fields[k]?.value === null || fields[k] === undefined || k === 'total')) fields[k] = { ...f, page: f.page && f.page + parts.indexOf(p) * DOC_READ_MAX_PAGES };
+  const lines = parts.flatMap((p, i) => p.lines.map((l) => Object.fromEntries(Object.entries(l).map(([k, f]) => [k, { ...f, page: f.page && f.page + i * DOC_READ_MAX_PAGES }]))));
+  return { ...parts[0], fields, lines, costInr: parts.reduce((s, p) => s + p.costInr, 0) };
+}
 
 /** Every read value with a box, keyed as forms refer to them: `invoiceNo`, or `line-0-rate` for a line's. */
 export function readBoxes(result: DocReadResultDto): { key: string; label: string; field: DocReadField }[] {
@@ -43,6 +59,8 @@ export function ReadDocumentButton({ kind, purchaseOrderId, label, onRead, disab
   const { message } = App.useApp();
   const read = useReadDocument();
   const [preparing, setPreparing] = useState(false);
+  // A long file is read three pages a call: which pages are being read, of how many.
+  const [progress, setProgress] = useState<{ from: number; to: number; of: number } | null>(null);
   if (!available) return null;
 
   const pick = async (file: File | undefined) => {
@@ -50,20 +68,31 @@ export function ReadDocumentButton({ kind, purchaseOrderId, label, onRead, disab
     setPreparing(true);
     let pages: PageImage[];
     try {
-      pages = await pagesOf(file);
+      pages = await pagesOf(file, DOC_READ_PAGES_OF[kind]);
     } catch (e) {
       message.error(e instanceof Error ? e.message : 'That file could not be opened');
       return;
     } finally {
       setPreparing(false);
     }
-    read.mutate(
-      { kind, pages: pages.map((p) => p.blob), purchaseOrderId },
-      {
-        onSuccess: (result) => onRead({ result, pages, file }),
-        onError: (e) => message.error(errorMessage(e, `The ${NOUN[kind]} could not be read`)),
-      },
-    );
+    const parts: DocReadResultDto[] = [];
+    try {
+      for (let from = 0; from < pages.length; from += DOC_READ_MAX_PAGES) {
+        const chunk = pages.slice(from, from + DOC_READ_MAX_PAGES);
+        if (pages.length > DOC_READ_MAX_PAGES) setProgress({ from: from + 1, to: from + chunk.length, of: pages.length });
+        parts.push(await read.mutateAsync({ kind, pages: chunk.map((p) => p.blob), purchaseOrderId }));
+      }
+    } catch (e) {
+      // Pages already read are kept: a long BOQ that fails on page 10 still fills the first nine.
+      if (!parts.length) {
+        message.error(errorMessage(e, `The ${NOUN[kind]} could not be read`));
+        return;
+      }
+      message.warning(`Pages after ${parts.length * DOC_READ_MAX_PAGES} could not be read: ${errorMessage(e)}`);
+    } finally {
+      setProgress(null);
+    }
+    onRead({ result: mergeReads(parts), pages: pages.slice(0, parts.length * DOC_READ_MAX_PAGES), file });
   };
 
   // The file input is made on each click, outside the form, so the form's own upload fields stay its only file inputs.
@@ -83,8 +112,8 @@ export function ReadDocumentButton({ kind, purchaseOrderId, label, onRead, disab
 
   return (
     <Tooltip title={`Photo or PDF of the ${NOUN[kind]}; the form fills in and nothing is saved until you save it`}>
-      <Button icon={<SparkleIcon />} onClick={choose} loading={preparing || read.isPending} disabled={disabled}>
-        {preparing ? 'Preparing pages…' : read.isPending ? `Reading the ${NOUN[kind]}…` : label}
+      <Button icon={<SparkleIcon />} onClick={choose} loading={preparing || read.isPending || !!progress} disabled={disabled}>
+        {preparing ? 'Preparing pages…' : progress ? `Reading pages ${progress.from} to ${progress.to} of ${progress.of}…` : read.isPending ? `Reading the ${NOUN[kind]}…` : label}
       </Button>
     </Tooltip>
   );
@@ -92,9 +121,9 @@ export function ReadDocumentButton({ kind, purchaseOrderId, label, onRead, disab
 
 /**
  * The pages read, with a box around each value that filled the form: amber where it needs checking, blue for the one
- * a field's "From the invoice" tag points at.
+ * a field's "From the invoice" tag points at. With `pagesHidden` only the summary and its children show.
  */
-export function ReadPreview({ state, active, onClear, children }: { state: ReadState; active: string | null; onClear: () => void; children?: React.ReactNode }) {
+export function ReadPreview({ state, active, onClear, pagesHidden, children }: { state: ReadState; active: string | null; onClear: () => void; pagesHidden?: boolean; children?: React.ReactNode }) {
   const { token } = theme.useToken();
   const boxes = readBoxes(state.result);
   const activeBox = boxes.find((b) => b.key === active);
@@ -111,55 +140,64 @@ export function ReadPreview({ state, active, onClear, children }: { state: ReadS
           <Typography.Text strong>
             <SparkleIcon /> Filled from {state.file.name}
           </Typography.Text>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-            {toCheck.length
-              ? `${toCheck.length} value${toCheck.length === 1 ? '' : 's'} to check, marked in amber: ${toCheck.map((b) => b.label.toLowerCase()).join(', ')}.`
-              : `Check the values against the ${noun} before saving.`}{' '}
-            Point at a field&apos;s &ldquo;From the {noun}&rdquo; to see where it was read. Nothing is saved until you save.
-          </div>
+          {/* A BOQ's rows are checked in the import's table, which says what each needs; a form's fields say it here. */}
+          {state.result.kind === 'boq' ? null : (
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              {toCheck.length
+                ? `${toCheck.length} value${toCheck.length === 1 ? '' : 's'} to check, marked in amber: ${toCheck.map((b) => b.label.toLowerCase()).join(', ')}.`
+                : `Check the values against the ${noun} before saving.`}{' '}
+              Point at a field&apos;s &ldquo;From the {noun}&rdquo; to see where it was read. Nothing is saved until you save.
+            </div>
+          )}
           {children}
         </div>
         <Flex gap={8} align="center">
-          {state.pages.length > 1 ? (
+          {pagesHidden ? null : state.pages.length > 4 ? (
+            <Pagination simple size="small" current={shown} total={state.pages.length} pageSize={1} onChange={setPageNo} aria-label="Page" />
+          ) : state.pages.length > 1 ? (
             <Segmented size="small" value={shown} onChange={(v) => setPageNo(Number(v))} options={state.pages.map((_, i) => ({ value: i + 1, label: `Page ${i + 1}` }))} aria-label="Page" />
           ) : null}
-          <Button size="small" type="link" onClick={onClear}>
-            Hide
-          </Button>
+          {pagesHidden ? null : (
+            <Button size="small" type="link" onClick={onClear}>
+              Hide
+            </Button>
+          )}
         </Flex>
       </Flex>
-      <div style={{ maxHeight: 420, overflow: 'auto', marginTop: 8, background: token.colorFillQuaternary, borderRadius: token.borderRadius }}>
-        <div style={{ position: 'relative', width: '100%' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- a local object URL */}
-          <img src={page.url} alt={`Page ${shown} of the ${noun}`} style={{ width: '100%', display: 'block' }} />
-          {boxes
-            .filter((b) => b.field.page === shown)
-            .map((b) => {
-              const [l, t, r, btm] = b.field.box!;
-              const on = b.key === active;
-              const color = on ? token.colorPrimary : b.field.confidence === 'low' ? token.colorWarning : token.colorSuccess;
-              return (
-                <div
-                  key={b.key}
-                  aria-hidden
-                  title={b.label}
-                  data-read-box={b.key}
-                  style={{
-                    position: 'absolute',
-                    left: `${l / 10}%`,
-                    top: `${t / 10}%`,
-                    width: `${(r - l) / 10}%`,
-                    height: `${(btm - t) / 10}%`,
-                    border: `${on ? 3 : 1.5}px solid ${color}`,
-                    background: on ? `${token.colorPrimary}22` : undefined,
-                    borderRadius: 2,
-                    pointerEvents: 'none',
-                  }}
-                />
-              );
-            })}
+      {pagesHidden ? null : (
+        <div style={{ maxHeight: 420, overflow: 'auto', marginTop: 8, background: token.colorFillQuaternary, borderRadius: token.borderRadius }}>
+          <div style={{ position: 'relative', width: '100%' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- a local object URL */}
+            <img src={page.url} alt={`Page ${shown} of the ${noun}`} style={{ width: '100%', display: 'block' }} />
+            {boxes
+              .filter((b) => b.field.page === shown)
+              .map((b) => {
+                const [l, t, r, btm] = b.field.box!;
+                const on = b.key === active;
+                const color = on ? token.colorPrimary : b.field.confidence === 'low' ? token.colorWarning : token.colorSuccess;
+                return (
+                  <div
+                    key={b.key}
+                    aria-hidden
+                    title={b.label}
+                    data-read-box={b.key}
+                    style={{
+                      position: 'absolute',
+                      left: `${l / 10}%`,
+                      top: `${t / 10}%`,
+                      width: `${(r - l) / 10}%`,
+                      height: `${(btm - t) / 10}%`,
+                      border: `${on ? 3 : 1.5}px solid ${color}`,
+                      background: on ? `${token.colorPrimary}22` : undefined,
+                      borderRadius: 2,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                );
+              })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

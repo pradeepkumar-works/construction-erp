@@ -246,7 +246,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
           {editor && (
             <>
               <Button icon={<FileExcelOutlined />} onClick={() => setImportOpen(true)}>
-                Import from Excel
+                Import BOQ
               </Button>
               <Button
                 type="primary"

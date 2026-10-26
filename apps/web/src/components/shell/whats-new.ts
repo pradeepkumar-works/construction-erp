@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-read-work-order',
+    date: '2027-02-09',
+    title: 'Read the work order and the BOQ',
+    points: [
+      'New project › Fill from work order reads a work order or LoA: name of work, client, numbers, contract value and dates. Values to check are marked in amber.',
+      'Import BOQ › Read a BOQ PDF or scan reads up to 30 pages into the import, with each row to check explained. Untick a row to leave it out.',
+    ],
+  },
+  {
     id: '2027-02-my-work-queues',
     date: '2027-02-08',
     title: 'A queue for each desk',

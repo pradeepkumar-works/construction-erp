@@ -34,8 +34,11 @@ interface FormValues {
 
 const asNumber = (v: string | null) => (v === null ? null : Number(v));
 
-/** Add or edit a client in the client master. `onSaved` gets the saved client (e.g. to pick it in a form). */
-export function ClientFormModal({ open, client, onClose, onSaved }: { open: boolean; client?: ClientDto | null; onClose: () => void; onSaved?: (c: ClientDto) => void }) {
+/**
+ * Add or edit a client in the client master. `onSaved` gets the saved client (e.g. to pick it in a form); `initialName`
+ * starts a new one with a name already read, e.g. off a work order.
+ */
+export function ClientFormModal({ open, client, initialName, onClose, onSaved }: { open: boolean; client?: ClientDto | null; initialName?: string; onClose: () => void; onSaved?: (c: ClientDto) => void }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -45,6 +48,7 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
   useEffect(() => {
     if (!open) return;
     form.resetFields();
+    if (!client && initialName) form.setFieldsValue({ name: initialName });
     if (client)
       form.setFieldsValue({
         name: client.name,
@@ -61,7 +65,7 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
         defectLiabilityMonths: client.defectLiabilityMonths,
         clientPaymentDays: client.clientPaymentDays,
       });
-  }, [open, client, form]);
+  }, [open, client, initialName, form]);
 
   useEffect(() => {
     if (fromGstin) form.setFieldValue('stateCode', fromGstin);
@@ -98,7 +102,8 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
 
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={client ? `Edit ${client.name}` : 'New client'} okText={client ? 'Save changes' : 'Save client'} onSubmit={(v) => save.mutateAsync(v)}>
-      <Form form={form} layout="vertical">
+      {/* Named, so its ids stay its own when it opens over another form (New project's Add client). */}
+      <Form form={form} name="client" layout="vertical">
         <FormSection title="Client">
           <Form.Item name="name" label="Client name" rules={[{ required: true, whitespace: true, message: 'Enter the client name' }]}>
             <Input placeholder="Odisha Works Department" />
