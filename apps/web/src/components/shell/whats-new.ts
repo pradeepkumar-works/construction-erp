@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-management',
+    date: '2027-02-02',
+    title: 'Management dashboard and reports',
+    points: [
+      'Reports › Management dashboard shows every project on one page: on course, watch or act now with the reasons, progress against plan, and money from contract to work done, billed, certified and paid, with cost, what clients owe, approvals waiting and cash.',
+      'Open a project from it to see why it stands where it does: cost by head against budget, month by month, and the client bills, approvals, risks and orders still open.',
+      'Nine reports print on A4 and download to Excel: Monthly MIS, project profit and loss, work in progress, receivables and payables ageing, procurement spend, labour and attendance, stock position and approvals waiting.',
+    ],
+  },
+  {
     id: '2027-01-icons',
     date: '2027-01-29',
     title: 'One set of icons',

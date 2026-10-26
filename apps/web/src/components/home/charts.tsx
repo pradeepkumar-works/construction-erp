@@ -14,7 +14,7 @@ import { COST_HEADS, monthLabel } from './chartData';
  * animating when the system asks for less motion; the summary and the table view are `ChartCard`'s (UX item 81).
  */
 
-function useChartTheme() {
+export function useChartTheme() {
   const { token } = theme.useToken();
   const { dark } = useAppearance();
   const reduced = useReducedMotion();

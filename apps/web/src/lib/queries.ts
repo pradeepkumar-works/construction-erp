@@ -2,6 +2,10 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  ManagementReportDto,
+  ManagementReportKey,
+  PortfolioDto,
+  PortfolioProjectDetailDto,
   DprWorkOptionsDto,
   CommentKind,
   ModuleSwitchesDto,
@@ -3708,3 +3712,19 @@ export function useDecideAccess() {
   });
 }
 
+/** Management dashboard: every contract project the caller sees, with its money from work done to cash and its health. */
+export const useManagementPortfolio = (enabled = true) =>
+  useQuery({ queryKey: ['management', 'portfolio'], queryFn: async () => (await api.get<PortfolioDto>('/management/portfolio')).data, enabled });
+
+/** One project's drill-down on the management dashboard. */
+export const useManagementProject = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['management', 'project', projectId], queryFn: async () => (await api.get<PortfolioProjectDetailDto>(`/management/projects/${projectId}`)).data, enabled: !!projectId });
+
+/** A management report for its period (`month`, or `from` and `to`) and, optionally, one project. */
+export const useManagementReport = (key: ManagementReportKey | undefined, params: { month?: string; from?: string; to?: string; projectId?: string }) =>
+  useQuery({
+    queryKey: ['management', 'report', key, params],
+    queryFn: async () => (await api.get<ManagementReportDto>(`/management/reports/${key}`, { params })).data,
+    enabled: !!key,
+    placeholderData: keepPreviousData,
+  });
