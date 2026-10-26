@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-handoffs',
+    date: '2027-02-02',
+    title: 'The next person is told',
+    points: [
+      'When a step is done, whoever acts next hears of it under “Your turn”, in the app and by email: purchase when a material request is approved, the store when a PO is approved, the requester, quality and accounts when goods arrive, accounts when the client certifies a bill, and the project manager and management when the client pays.',
+      'A DPR whose remarks read as a hindrance caused by the client or a third party tells the project manager the day the notice is due.',
+      'You hear when you are added to a project, and an entry sent back to you comes by email with the reason. An approval waiting past its hours is emailed too.',
+      'Approval requests go to the approvers on the project; management and admin are asked only for what is above the project manager’s limit, and see the rest in the daily digest.',
+      'Switch email off or on from Notifications › Alerts.',
+    ],
+  },
+  {
     id: '2027-02-schedule-status',
     date: '2027-02-01',
     title: 'Schedule status you can trust',

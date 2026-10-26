@@ -1,15 +1,19 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { COMPANY_WIDE_ROLES, PAYMENT_ROLES, subBillLabel, LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
+import { COMPANY_WIDE_ROLES, DEFAULT_NOTICE_DAYS, DELAY_PARTY_LABELS, PAYMENT_ROLES, needsNotice, subBillLabel, type RoleKey, LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, inr, titleDate } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 import { MessagingService, type OutgoingMessage } from '../messaging/messaging.service';
+import { EmailService, escapeHtml } from './email.service';
+import { emailButton, emailLayout } from './email-layout';
+import { classifyRemark, noticeClock } from '../hindrance/hindrance-rules';
+import { todayIn } from './time';
 
 export interface NotifyInput {
   organizationId: string;
@@ -24,6 +28,29 @@ export interface NotifyInput {
   dedupeKey?: string;
   /** Also sent on WhatsApp / SMS to the users who switched those on */
   message?: OutgoingMessage;
+  /**
+   * Also emailed to the users who keep email alerts on (the default): an action that waits on them, with a button
+   * to the page that does it (e2e review, fix 2). `href` is a path in the web app.
+   */
+  email?: { href: string; cta: string };
+}
+
+/** A hand-off to the next role in the chain (e2e review, fix 2): who, and what they are told. */
+export interface HandoffInput {
+  organizationId: string;
+  projectId: string;
+  /** The roles that act next; on the project first, company-wide holders only when nobody on it has the role */
+  roles: RoleKey[];
+  /** People told whatever their role (the requester of the material, say) */
+  alsoUserIds?: (string | null | undefined)[];
+  /** Never told: the person who did the step, who knows already */
+  exceptUserIds?: (string | null | undefined)[];
+  title: string;
+  body: string;
+  entityType?: NotificationDto['entityType'];
+  entityId?: string | null;
+  dedupeKey?: string;
+  email?: { href: string; cta: string };
 }
 
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
@@ -40,7 +67,14 @@ const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress e
 export class NotificationsService {
   private readonly log = new Logger(NotificationsService.name);
 
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private push: ExpoPushService, private rights: ApprovalRightsService, private messaging: MessagingService) {}
+  constructor(
+    private prisma: PrismaService,
+    private access: ProjectAccessService,
+    private push: ExpoPushService,
+    private rights: ApprovalRightsService,
+    private messaging: MessagingService,
+    private mail: EmailService,
+  ) {}
 
   /* ---------- reading ---------- */
 
@@ -147,7 +181,76 @@ export class NotificationsService {
     const rows = await this.prisma.notification.createManyAndReturn({ data, skipDuplicates: true });
     const pushed = await this.deliverPush(rows);
     const messaged = input.message ? await this.messaging.forNotifications(rows, input.message) : 0;
+    if (input.email) await this.deliverEmail(input, rows.map((r) => r.userId));
     return { created: rows.length, pushed, skipped: skipped + (userIds.length - rows.length), messaged };
+  }
+
+  /** The notice as an email to those of `userIds` who keep email alerts on. Failures are logged, never thrown. */
+  private async deliverEmail(input: NotifyInput, userIds: string[]) {
+    try {
+      if (!userIds.length || !input.email || !this.mail.enabled) return;
+      const [users, org] = await Promise.all([
+        this.prisma.user.findMany({ where: { id: { in: userIds }, isActive: true, emailAlerts: true }, select: { email: true, fullName: true } }),
+        this.prisma.organization.findUnique({ where: { id: input.organizationId }, select: { name: true } }),
+      ]);
+      const href = this.messaging.webUrl(input.email.href);
+      for (const u of users) {
+        if (!u.email) continue;
+        const body = `<p style="margin:0 0 8px">Hello ${escapeHtml(u.fullName.split(' ')[0])},</p>
+          <p style="margin:0 0 4px;font-weight:700">${escapeHtml(input.title)}</p>
+          <p style="margin:0">${escapeHtml(input.body)}</p>
+          ${href.startsWith('http') ? emailButton(href, input.email.cta) : ''}`;
+        await this.mail.send({
+          to: u.email,
+          subject: input.title,
+          html: emailLayout({ preheader: input.body, body, orgName: org?.name, footnote: 'You get this because it waits on you. Switch email alerts off from Notifications, Alerts.' }),
+          text: `${input.title}\n\n${input.body}${href.startsWith('http') ? `\n\n${input.email.cta}: ${href}` : ''}`,
+        });
+      }
+    } catch (e) {
+      this.log.warn(`Email delivery failed: ${(e as Error).message}`);
+    }
+  }
+
+  /**
+   * Of the users given, those on the project (its manager or a member); all of them when none is. Approval asks and
+   * hand-offs go to the people on the project, so company-wide roles (the MD, admin) hear only of what nobody on the
+   * project can do, such as an entry above the PM's limit; the rest reaches them in the daily digest.
+   */
+  async onProjectFirst<T extends { id: string }>(users: T[], projectId: string): Promise<T[]> {
+    if (users.length < 2) return users;
+    const on = await this.prisma.user.findMany({
+      where: { id: { in: users.map((u) => u.id) }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
+      select: { id: true },
+    });
+    if (!on.length) return users;
+    const ids = new Set(on.map((u) => u.id));
+    return users.filter((u) => ids.has(u.id));
+  }
+
+  /** Tell the next role in the chain that a step waits on them (e2e review, fix 2), in the app and by email. */
+  async handoff(h: HandoffInput) {
+    try {
+      const holders = h.roles.length ? await this.onProjectFirst(await this.access.usersWithRoles(h.organizationId, h.projectId, h.roles), h.projectId) : [];
+      const except = new Set(h.exceptUserIds?.filter(Boolean));
+      const userIds = [...holders.map((u) => u.id), ...(h.alsoUserIds ?? []).filter((u): u is string => !!u)].filter((u) => !except.has(u));
+      if (!userIds.length) return { created: 0, pushed: 0, skipped: 0, messaged: 0 };
+      return await this.notify({
+        organizationId: h.organizationId,
+        userIds,
+        type: 'HANDOFF',
+        title: h.title,
+        body: h.body,
+        projectId: h.projectId,
+        entityType: h.entityType ?? null,
+        entityId: h.entityId ?? null,
+        dedupeKey: h.dedupeKey,
+        email: h.email,
+      });
+    } catch (e) {
+      this.log.warn(`handoff(${h.title}) failed: ${(e as Error).message}`);
+      return { created: 0, pushed: 0, skipped: 0, messaged: 0 };
+    }
   }
 
   private async deliverPush(rows: { id: string; userId: string; title: string; body: string; type: NotificationType; projectId: string | null; entityType: string | null; entityId: string | null }[]): Promise<number> {
@@ -278,10 +381,13 @@ export class NotificationsService {
     try {
       const s = await this.describeSubmission(type, id);
       if (!s) return;
-      const approvers = await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id));
+      const approvers = await this.onProjectFirst(
+        (await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id))).filter((a) => a.id !== actor.id),
+        s.projectId,
+      );
       await this.notify({
         organizationId: actor.organizationId,
-        userIds: approvers.map((a) => a.id).filter((uid) => uid !== actor.id),
+        userIds: approvers.map((a) => a.id),
         type: 'SUBMISSION_SUBMITTED',
         title: type === 'INSPECTION' ? 'Inspection requested' : `${SUBMISSION_LABEL[type]} awaiting your approval`,
         body: `${actor.fullName} ${type === 'INSPECTION' ? 'requested' : 'submitted'} ${s.title} on ${s.projectName}.`,
@@ -304,6 +410,7 @@ export class NotificationsService {
             entityId: id,
           });
       }
+      if (type === 'DPR') await this.onDprHindrance(actor, id);
     } catch (e) {
       this.log.warn(`onSubmitted(${type}, ${id}) failed: ${(e as Error).message}`);
     }
@@ -314,10 +421,13 @@ export class NotificationsService {
     try {
       const s = await this.describeSubmission(type, id);
       if (!s) return;
-      const approvers = await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id), nextLevel);
+      const approvers = await this.onProjectFirst(
+        (await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id), nextLevel)).filter((a) => a.id !== actor.id),
+        s.projectId,
+      );
       await this.notify({
         organizationId: actor.organizationId,
-        userIds: approvers.map((a) => a.id).filter((uid) => uid !== actor.id),
+        userIds: approvers.map((a) => a.id),
         type: 'SUBMISSION_SUBMITTED',
         title: `${SUBMISSION_LABEL[type]} awaiting your approval (level ${nextLevel} of ${levels})`,
         body: `${actor.fullName} approved ${s.title} on ${s.projectName} at level ${nextLevel - 1}; it needs your approval next.`,
@@ -352,6 +462,8 @@ export class NotificationsService {
         projectId: s.projectId,
         entityType: type,
         entityId: id,
+        // An entry that has waited past its level's hours is worth an email (e2e review, fix 2), not just the bell.
+        email: { href: `/notifications?type=${type}&id=${id}`, cta: 'Decide it' },
         message: { template: 'APPROVAL_REQUEST', params: [this.subject(type, s.title), s.projectName, by?.fullName ?? '-', this.messaging.webUrl(`/notifications?type=${type}&id=${id}`)] },
       });
     } catch (e) {
@@ -387,6 +499,8 @@ export class NotificationsService {
       const s = await this.describeSubmission(type, id);
       if (s && type === 'PAYMENT_REQUEST' && status === 'APPROVED') await this.onPaymentApproved(actor, id, s);
       if (s && status === 'APPROVED' && (type === 'PURCHASE_ORDER' || type === 'WORK_ORDER')) await this.onOrderApproved(actor, type, id, s.projectName);
+      if (s && status === 'APPROVED' && type === 'MATERIAL_REQUEST') await this.onRequestApproved(actor, id, s);
+      if (s && status === 'APPROVED' && type === 'PURCHASE_ORDER') await this.onPoApprovedForStore(actor, id, s);
       if (!s || s.submittedById === actor.id) return;
       const map: Record<typeof status, { type: NotificationType; verb: string }> = {
         APPROVED: { type: 'SUBMISSION_APPROVED', verb: 'approved' },
@@ -405,7 +519,8 @@ export class NotificationsService {
         projectId: s.projectId,
         entityType: type,
         entityId: id,
-        // Send-backs go out on WhatsApp / SMS too; approvals stay in-app and push.
+        // Send-backs go out by email, WhatsApp and SMS too, with the reason; approvals stay in-app and push.
+        email: status === 'APPROVED' ? undefined : { href: `/notifications?type=${type}&id=${id}`, cta: status === 'REJECTED' ? 'Open it' : 'Make the changes' },
         message:
           status === 'APPROVED'
             ? undefined
@@ -424,5 +539,183 @@ export class NotificationsService {
     } catch (e) {
       this.log.warn(`onReviewed(${type}, ${id}) failed: ${(e as Error).message}`);
     }
+  }
+
+  /* ---------- hand-offs to the next role (e2e review, fix 2) ---------- */
+
+  /** An approved material request is purchase's to order: the procurement managers on the project, else the company's. */
+  private async onRequestApproved(actor: RequestUser, id: string, s: { title: string; projectId: string; projectName: string; submittedById: string }) {
+    const mr = await this.prisma.materialRequest.findUnique({ where: { id }, select: { requestNo: true, requiredDate: true, items: { select: { itemName: true, quantity: true, unit: true } } } });
+    if (!mr) return;
+    const items = mr.items.slice(0, 3).map((i) => `${i.itemName} ${i.quantity.toString()} ${i.unit}`).join(', ') + (mr.items.length > 3 ? ` and ${mr.items.length - 3} more` : '');
+    await this.handoff({
+      organizationId: actor.organizationId,
+      projectId: s.projectId,
+      roles: ['PROCUREMENT_MANAGER'],
+      exceptUserIds: [actor.id],
+      title: `To order: ${mr.requestNo}`,
+      body: `${actor.fullName} approved ${mr.requestNo} on ${s.projectName}: ${items}, needed by ${titleDate(mr.requiredDate)}. Send enquiries or raise the order.`,
+      entityType: 'MATERIAL_REQUEST',
+      entityId: id,
+      dedupeKey: `HANDOFF_TO_ORDER:${id}`,
+      email: { href: `/material-requests/${id}`, cta: 'Open the request' },
+    });
+  }
+
+  /** An approved PO is a delivery for the project's store to expect. */
+  private async onPoApprovedForStore(actor: RequestUser, id: string, s: { title: string; projectId: string; projectName: string }) {
+    const po = await this.prisma.purchaseOrder.findUnique({ where: { id }, select: { poNo: true, deliveryBy: true, vendor: { select: { name: true } }, lines: { select: { itemName: true } } } });
+    if (!po) return;
+    const what = po.lines.slice(0, 3).map((l) => l.itemName).join(', ') + (po.lines.length > 3 ? ` and ${po.lines.length - 3} more` : '');
+    await this.handoff({
+      organizationId: actor.organizationId,
+      projectId: s.projectId,
+      roles: ['STORE_MANAGER'],
+      exceptUserIds: [actor.id],
+      title: `Delivery to expect: ${po.poNo}`,
+      body: `${po.vendor.name} is to deliver ${what} to ${s.projectName}${po.deliveryBy ? ` by ${titleDate(po.deliveryBy)}` : ''}. Receive it against ${po.poNo} when it arrives.`,
+      entityType: 'PURCHASE_ORDER',
+      entityId: id,
+      dedupeKey: `HANDOFF_DELIVERY:${id}`,
+      email: { href: `/purchase-orders/${id}`, cta: 'Open the order' },
+    });
+  }
+
+  /**
+   * Goods received (a GRN): the person who asked for them, quality to test the lot, accounts to match the supplier's
+   * bill. Called by StockService after the receipt is saved.
+   */
+  async onGoodsReceived(actor: RequestUser, entryId: string) {
+    try {
+      const e = await this.prisma.stockEntry.findUnique({
+        where: { id: entryId },
+        select: {
+          entryNo: true,
+          projectId: true,
+          supplier: true,
+          project: { select: { name: true } },
+          materialRequest: { select: { requestNo: true, submittedById: true } },
+          purchaseOrder: { select: { poNo: true, materialRequest: { select: { submittedById: true } } } },
+          lines: { select: { quantity: true, item: { select: { name: true, unit: true } } } },
+        },
+      });
+      if (!e) return;
+      const what = e.lines.slice(0, 3).map((t) => `${t.item.name} ${t.quantity.toString()} ${t.item.unit}`).join(', ') + (e.lines.length > 3 ? ` and ${e.lines.length - 3} more` : '');
+      const against = e.purchaseOrder?.poNo ?? e.materialRequest?.requestNo;
+      const requesters = [e.materialRequest?.submittedById, e.purchaseOrder?.materialRequest?.submittedById];
+      const base = { organizationId: actor.organizationId, projectId: e.projectId, exceptUserIds: [actor.id], entityType: 'GRN' as const, entityId: entryId };
+      const line = `${e.entryNo}${against ? ` against ${against}` : ''} on ${e.project.name}: ${what}${e.supplier ? ` from ${e.supplier}` : ''}.`;
+      await this.handoff({ ...base, roles: [], alsoUserIds: requesters, title: `Your material arrived: ${e.entryNo}`, body: `${actor.fullName} received ${line}`, dedupeKey: `HANDOFF_GRN_REQ:${entryId}` });
+      await this.handoff({
+        ...base,
+        roles: ['QA_QC_ENGINEER'],
+        exceptUserIds: [actor.id, ...requesters],
+        title: `Material to test: ${e.entryNo}`,
+        body: `${actor.fullName} received ${line} Test the lot before it goes into the work.`,
+        dedupeKey: `HANDOFF_GRN_QA:${entryId}`,
+        email: { href: `/inspections?tab=tests`, cta: 'Record the test' },
+      });
+      if (e.purchaseOrder)
+        await this.handoff({
+          ...base,
+          roles: ['ACCOUNTS_MANAGER'],
+          exceptUserIds: [actor.id, ...requesters],
+          title: `Ready to match: ${e.entryNo}`,
+          body: `${actor.fullName} received ${line} Match the supplier's bill against ${e.purchaseOrder.poNo} and this receipt.`,
+          dedupeKey: `HANDOFF_GRN_AC:${entryId}`,
+        });
+    } catch (err) {
+      this.log.warn(`onGoodsReceived(${entryId}) failed: ${(err as Error).message}`);
+    }
+  }
+
+  /** The client certified an RA bill: accounts expect the money by the contract's payment days. */
+  async onBillCertified(actor: RequestUser, billId: string, label: string) {
+    const b = await this.prisma.raBill.findUnique({ where: { id: billId }, select: { projectId: true, netPayable: true, certifiedDate: true, project: { select: { name: true, clientPaymentDays: true } } } });
+    if (!b) return;
+    const due = b.certifiedDate && b.project.clientPaymentDays ? new Date(b.certifiedDate.getTime() + b.project.clientPaymentDays * 86_400_000) : null;
+    await this.handoff({
+      organizationId: actor.organizationId,
+      projectId: b.projectId,
+      roles: ['ACCOUNTS_MANAGER'],
+      exceptUserIds: [actor.id],
+      title: `${label} certified: money to collect`,
+      body: `The client certified ${label} on ${b.project.name}, net ${inr(b.netPayable.toFixed(2))}${due ? `, due by ${titleDate(due)}` : ''}. Record the receipt when it comes in.`,
+      entityType: 'BILL',
+      entityId: billId,
+      dedupeKey: `HANDOFF_CERTIFIED:${billId}`,
+      email: { href: `/receivables`, cta: 'Open receivables' },
+    });
+  }
+
+  /** Money in from the client: the project's manager and management hear of it. */
+  async onClientReceipt(actor: RequestUser, receiptId: string) {
+    try {
+      const r = await this.prisma.receipt.findUnique({ where: { id: receiptId }, select: { projectId: true, amount: true, receiptDate: true, project: { select: { name: true, projectManagerId: true } }, bill: { select: { billNo: true } } } });
+      if (!r) return;
+      await this.handoff({
+        organizationId: actor.organizationId,
+        projectId: r.projectId,
+        roles: ['MANAGEMENT'],
+        alsoUserIds: [r.project.projectManagerId],
+        exceptUserIds: [actor.id],
+        title: `Received ${inr(r.amount.toFixed(2))} from the client`,
+        body: `${actor.fullName} recorded ${inr(r.amount.toFixed(2))} received on ${titleDate(r.receiptDate)} for ${r.project.name}${r.bill ? ` against RA bill ${r.bill.billNo}` : ''}.`,
+        dedupeKey: `HANDOFF_RECEIPT:${receiptId}`,
+      });
+    } catch (e) {
+      this.log.warn(`onClientReceipt(${receiptId}) failed: ${(e as Error).message}`);
+    }
+  }
+
+  /** Someone was added to a project's team: they hear of it with the link. */
+  async onAddedToProject(actor: RequestUser, projectId: string, userId: string) {
+    try {
+      if (userId === actor.id) return;
+      const p = await this.prisma.project.findUnique({ where: { id: projectId }, select: { code: true, name: true } });
+      if (!p) return;
+      await this.notify({
+        organizationId: actor.organizationId,
+        userIds: [userId],
+        type: 'HANDOFF',
+        title: `You were added to ${p.code}`,
+        body: `${actor.fullName} added you to the team of ${p.name}. It now shows in your projects and in the header's project switcher.`,
+        projectId,
+        entityType: 'PROJECT',
+        entityId: projectId,
+        dedupeKey: `HANDOFF_ADDED:${projectId}`,
+        email: { href: `/projects/${projectId}`, cta: 'Open the project' },
+      });
+    } catch (e) {
+      this.log.warn(`onAddedToProject(${projectId}) failed: ${(e as Error).message}`);
+    }
+  }
+
+  /**
+   * A DPR whose remarks read as a hindrance the client or a third party causes (the pure `classifyRemark`): the
+   * project manager is told with the notice deadline, so the contract's notice is not missed waiting on the Risks tab.
+   */
+  private async onDprHindrance(actor: RequestUser, dprId: string) {
+    const d = await this.prisma.dailyReport.findUnique({ where: { id: dprId }, select: { date: true, issues: true, projectId: true, project: { select: { name: true, noticeDays: true, projectManagerId: true } } } });
+    if (!d?.issues || !d.project.projectManagerId) return;
+    const date = dateOnly(d.date)!;
+    const reading = classifyRemark(d.issues, date);
+    if (reading.verdict === 'NONE' || !needsNotice(reading.party)) return;
+    const start = new Date(d.date.getTime() - reading.startOffset * 86_400_000);
+    const clock = noticeClock(dateOnly(start)!, d.project.noticeDays ?? DEFAULT_NOTICE_DAYS, todayIn());
+    const due = titleDate(new Date(`${clock.due}T00:00:00Z`));
+    await this.handoff({
+      organizationId: actor.organizationId,
+      projectId: d.projectId,
+      roles: [],
+      alsoUserIds: [d.project.projectManagerId],
+      exceptUserIds: [actor.id],
+      title: `Hindrance in the DPR: notice due by ${due}`,
+      body: `${actor.fullName}'s DPR for ${titleDate(d.date)} on ${d.project.name} reads as ${reading.title ? reading.title.charAt(0).toLowerCase() + reading.title.slice(1) : 'a hindrance'} (${DELAY_PARTY_LABELS[reading.party!].toLowerCase()}). Record it as a delay and send the notice by ${due}.`,
+      entityType: 'DPR',
+      entityId: dprId,
+      dedupeKey: `HANDOFF_HINDRANCE:${dprId}`,
+      email: { href: `/projects/${d.projectId}?tab=risks`, cta: 'Record the delay' },
+    });
   }
 }

@@ -288,6 +288,8 @@ enum NotificationType {
   SUPPLIER
   COMMENT
   ACCESS_REQUEST
+  /// A step handed to the next role in the chain (e2e review, fix 2): to order, delivery to expect, goods received, money to collect
+  HANDOFF
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -911,6 +913,8 @@ model User {
   /// The user's own opt-in for alerts on WhatsApp and by SMS (WhatsApp first, SMS as the fallback).
   whatsappAlerts Boolean      @default(false)
   smsAlerts      Boolean      @default(false)
+  /// Email for what waits on the user (hand-offs and send-backs, e2e review fix 2); on unless they switch it off
+  emailAlerts    Boolean      @default(true)
   /// The user's own opt-in for a three-line morning brief from Ask Nirmaan (AI item 74).
   morningBrief   Boolean      @default(false)
   /// WhatsApp entries (AI item 120): the user's number, normalised (919876543210), while they have them switched on.

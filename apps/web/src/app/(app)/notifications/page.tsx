@@ -106,7 +106,7 @@ function NotificationsPageInner() {
         extra={
           <Space wrap>
             <Button icon={<MessageOutlined />} onClick={() => setSettings(true)}>
-              WhatsApp and SMS
+              Alerts
             </Button>
             <Button icon={<CheckOutlined />} disabled={unread === 0} loading={markAll.isPending} onClick={() => markAll.mutate(kind === 'ALL' ? undefined : kind)}>
               Mark all as read

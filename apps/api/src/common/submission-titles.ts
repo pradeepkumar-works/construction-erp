@@ -28,7 +28,7 @@ export const measurementTitle = (mbNo: string, itemNo: string, qty: string, unit
 export const billTitle = (billNo: number, isFinal: boolean, gross: string, om = false) =>
   `${om ? 'O&M' : 'RA'} bill ${billNo}${isFinal ? ' (final)' : ''}: ₹${Number(gross).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} of ${om ? 'O&M' : 'work'}`;
 
-const inr = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export const inr = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** "PO-2026-0004: ₹2,45,000.00 to Utkal Cement Traders". */
 export const poTitle = (poNo: string, total: string, vendor: string) => `${poNo}: ${inr(total)} to ${vendor}`;

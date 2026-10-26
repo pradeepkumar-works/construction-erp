@@ -1,3 +1,4 @@
+import { NotificationsService } from '../notifications/notifications.service';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Paginated, ProjectDetail, ProjectSortField, ProjectSummary, RoleKey, SortOrder } from '@erp/shared';
@@ -36,7 +37,13 @@ const DESC_DEFAULT = new Set<string>(['startDate', 'endDate', 'contractValue', '
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private templates: TemplatesService) {}
+  constructor(
+    private prisma: PrismaService,
+    private access: ProjectAccessService,
+    private audit: AuditService,
+    private templates: TemplatesService,
+    private notifications: NotificationsService,
+  ) {}
 
   /**
    * The list's figures for a page of projects in a fixed number of queries, however many projects: physical progress
@@ -235,6 +242,7 @@ export class ProjectsService {
     if (!member) throw new NotFoundException('User not found');
     await this.prisma.projectMember.upsert({ where: { projectId_userId: { projectId: id, userId: dto.userId } }, create: { projectId: id, userId: dto.userId }, update: {} });
     await this.audit.log(user, 'PROJECT', id, 'MEMBER_ADDED', member.fullName);
+    await this.notifications.onAddedToProject(user, id, member.id);
     return this.get(user, id);
   }
 
