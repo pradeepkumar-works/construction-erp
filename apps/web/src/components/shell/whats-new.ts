@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-award-lowest',
+    date: '2027-02-11',
+    title: 'Award the lowest rate per item',
+    points: [
+      'On the comparative statement, Award lowest per item splits the request between the vendors who quoted lowest for each item and raises a draft order for each, with what the split saves against buying the lot from one vendor.',
+      'An enquiry link can now go straight to the supplier on WhatsApp, to their number from the vendor master.',
+      'A project has a delivery address. A purchase order with none of its own is delivered there, so the store is not left guessing.',
+    ],
+  },
+  {
     id: '2027-02-boq-links',
     date: '2027-02-10',
     title: 'Activities and the BOQ, joined up',

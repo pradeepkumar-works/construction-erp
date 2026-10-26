@@ -21,6 +21,7 @@ export class CreateProjectDto {
   @ApiPropertyOptional({ description: 'Free-text client name, used when no clientId is given' }) @IsOptional() @IsString() clientName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() consultantName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() location?: string;
+  @ApiPropertyOptional({ description: 'Where deliveries go; a purchase order with no address of its own takes it (finding 12)' }) @IsOptional() @IsString() @MaxLength(500) siteAddress?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() workOrderNo?: string;
   @ApiPropertyOptional({ description: 'The agreement number, when the work order says one (finding 10: read from the work order)' }) @IsOptional() @IsString() @MaxLength(100) agreementNo?: string;
   @ApiPropertyOptional({ example: '2026-11-05' }) @IsOptional() @IsDateString() agreementDate?: string;

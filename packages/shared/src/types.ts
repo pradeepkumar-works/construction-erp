@@ -162,6 +162,8 @@ export interface ProjectSummary {
   contractModel: ContractModel;
   clientName: string | null;
   location: string | null;
+  /** Where deliveries go: the site store's address, which an order with none of its own takes */
+  siteAddress: string | null;
   startDate: string | null;
   endDate: string | null;
   contractValue: string | null;
