@@ -84,3 +84,4 @@ export * from './attendance-check';
 export * from './dpr-lines';
 export * from './pipe-network';
 export * from './om';
+export * from './management';
