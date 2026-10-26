@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-scan-kept',
+    date: '2027-02-12',
+    title: 'The scan stays with the entry',
+    points: [
+      'The challan, invoice or drawing you read is kept on the entry, so there is no need to upload the same file again.',
+      'The date printed on a challan or invoice now fills the entry. One that is still to come, or over a year old, is left for you to type and marked in amber.',
+    ],
+  },
+  {
     id: '2027-02-award-lowest',
     date: '2027-02-11',
     title: 'Award the lowest rate per item',

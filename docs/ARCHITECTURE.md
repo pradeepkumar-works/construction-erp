@@ -2603,6 +2603,12 @@ export; the client portal and the phone app show the amount.
   The vendor bill form runs the bill checks on the draft (`POST /checks/vendor-bill/preview`) before it is saved.
 - **Nothing is saved by reading.** The read fills the form and attaches the scan as an upload; the user saves. Each read
   is an `AiDocumentRead` row (cost, time, success) counted in the monthly allowance; the page images are not kept there.
+- **One upload, and dates that can be right** (finding 13 of the October review). `useKeepReadFile` uploads the file
+  the model read and adds it to the form's own attachment field (the GRN's challan photo, the bill's documents, the
+  drawing revision's files), and the read's summary says so, so nobody picks the same file twice. A date is never filled
+  in blind: `readDateProblem` (shared, pure) refuses one that is still to come, one over `READ_DATE_MAX_AGE_DAYS` old or
+  one that is not a date, the form keeps its own, and `readFieldProps` marks the field amber with the reason
+  (`readDateReason` words it). A date that passes fills the field, so a GRN is dated the day the challan says.
 - **Work orders and BOQs** (finding 10 of the October review). New project › Fill from work order reads a work order,
   LoA or agreement (`workOrder`: name of work, issuing office, work order and agreement numbers and dates, contract value,
   start, completion or months allowed, place) and fills the form; the end date is `workOrderEnd` (the printed one, else the
