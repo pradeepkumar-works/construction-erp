@@ -278,6 +278,16 @@ export class UpdateItemDto {
   @ApiPropertyOptional({ example: '42.5', description: 'Pipe bought by weight: kg per metre, to turn issues into metres' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() kgPerMetre?: string | null;
 }
 
+/** Merge items into one (finding 3 of the October review). */
+export class MergeItemsDto {
+  @ApiProperty({ type: [String], description: 'Items to fold into this one; they must be in the same unit' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @IsUUID('all', { each: true })
+  fromIds: string[];
+}
+
 export class SetMinLevelDto {
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty() @IsUUID() itemId: string;

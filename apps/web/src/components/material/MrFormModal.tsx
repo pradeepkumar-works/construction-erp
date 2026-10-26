@@ -13,6 +13,7 @@ import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
+import { ItemPicker } from '@/components/form/ItemPicker';
 import { QuantityInput } from '@/components/form/inputs';
 import { aiFlagInput, aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { recordPage } from '@/components/approvals/queue';
@@ -115,7 +116,14 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
                 title: 'Item',
                 render: (f) => (
                   <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Enter the item' }]}>
-                    <Input placeholder="Cement OPC 53" aria-label={`Item of line ${f.name + 1}`} style={{ minWidth: 160 }} {...aiFlagInput(draft, `items.${f.name}.itemName`, lines?.[f.name]?.itemName)} />
+                    <ItemPicker
+                      placeholder="Cement OPC 53"
+                      aria-label={`Item of line ${f.name + 1}`}
+                      style={{ minWidth: 160 }}
+                      unit={lines?.[f.name]?.unit}
+                      onPick={(item) => form.setFieldValue(['items', f.name, 'unit'], item.unit)}
+                      {...aiFlagInput(draft, `items.${f.name}.itemName`, lines?.[f.name]?.itemName)}
+                    />
                   </Form.Item>
                 ),
               },

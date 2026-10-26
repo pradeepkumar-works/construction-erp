@@ -1,0 +1,1 @@
+ALTER TABLE "Item" ADD COLUMN "aliases" TEXT[] DEFAULT ARRAY[]::TEXT[];
