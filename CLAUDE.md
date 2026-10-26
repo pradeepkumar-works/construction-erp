@@ -112,7 +112,9 @@ and the pre-delivery checklist.
   `pointer: coarse` block of `globals.css`. Running text with links is a `<p>`; a row that opens something is 44 px high.
 - Records: a submission's drawer and its own page (`/dpr/[id]`, `/bills/[id]`, …) are one `XRecord` component on
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
-  export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`.
+  export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`. Only the deciding buttons
+  go in `actions`; a delete or anything else that cannot be taken back is a `RecordMenuAction` in `more` (the ⋯ menu,
+  through `useConfirmDelete`), never a tap from Approve.
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
   decision bar). Every submission type has a page; a new type adds one line in `RECORD_PAGES` and one in `ApprovalPane`
   (`components/approvals/`), or the pane falls back to a summary with Open details.

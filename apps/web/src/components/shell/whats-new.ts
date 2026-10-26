@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-order-decision',
+    date: '2027-02-14',
+    title: 'Decide a purchase order without the paperwork',
+    points: [
+      'A purchase order now shows the quotations on its request, with the lowest marked and the one it accepts, so an approver can see who else was asked.',
+      'It also shows the project’s material budget, what has been spent and where this order takes it.',
+      'Delete has moved from the row of buttons into the ⋯ menu on every record, so it is no longer a tap away from Approve.',
+    ],
+  },
+  {
     id: '2027-02-measure-from-progress',
     date: '2027-02-13',
     title: 'Measure from the approved progress',
