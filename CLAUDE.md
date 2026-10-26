@@ -139,6 +139,11 @@ and the pre-delivery checklist.
   `physicalProgress` in `src/common/progress.ts`), never a sum of its own; an activity with sub-activities takes no
   progress. A new kind of component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in
   `element-templates.ts`; keep `src/scripts/wbs-rollup-test.ts` passing.
+- Activities and the BOQ (ARCHITECTURE "Linking activities to BOQ items"): which BOQ item an activity is offered is
+  `boqLinkSuggestions` over `nameMatch` (`@erp/shared/boq-links.ts`), never a match of a screen's own; the user keeps the
+  offers and `PlanningService.linkBoq` sets `boqItemId` (taking the item's unit and quantity only where the activity has
+  none). Activities created with no dates are placed by `spreadUndated` (`@erp/shared/templates.ts`) when a start date
+  first arrives, through `TemplatesService.spreadUndated`. Keep `src/scripts/boq-links-test.ts` passing.
 - Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line

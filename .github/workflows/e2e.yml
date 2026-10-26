@@ -110,6 +110,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/doc-read-test.js
+      - name: BOQ sections offer their activities' links, and dates arriving spread the undated activities
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/boq-links-test.js
       - name: Material reconciliation adds up theoretical, allowed and consumed quantities and flags each item
         if: matrix.suite == 'flows'
         working-directory: apps/api

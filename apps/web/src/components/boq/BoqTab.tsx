@@ -15,6 +15,7 @@ import { formatINR, formatINRCompact, formatQty, toNumber, RUPEE } from '@/lib/f
 import { QueryError } from '@/components/common/QueryState';
 import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
+import { LinkBoqModal } from '@/components/activities/LinkBoqModal';
 import { BRAND } from '@/lib/brand';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
@@ -35,6 +36,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<BoqItemDto | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const editor = !!user && canEditProjects(user.roleKey);
   // Rate analysis (v5 item 92): what one unit of each item takes, for the reconciliation and the estimate.
   const analyst = !!user && canViewReconciliation(user.roleKey);
@@ -345,7 +347,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
       />
       )}
       <BoqFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} item={editing} sections={sections} />
-      <BoqImportModal open={importOpen} onClose={() => setImportOpen(false)} projectId={projectId} />
+      <BoqImportModal open={importOpen} onClose={() => setImportOpen(false)} projectId={projectId} onImported={() => setLinkOpen(true)} />
+      <LinkBoqModal open={linkOpen} onClose={() => setLinkOpen(false)} projectId={projectId} />
       {analyst ? <RateAnalysisDrawer projectId={projectId} boqItemId={analysis} open={!!analysis} onClose={() => setAnalysis(null)} /> : null}
       {rateSetter ? <RateAnalysisImportModal open={importRates} onClose={() => setImportRates(false)} projectId={projectId} /> : null}
     </div>

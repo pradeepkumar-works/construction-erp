@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-boq-links',
+    date: '2027-02-10',
+    title: 'Activities and the BOQ, joined up',
+    points: [
+      'After a BOQ import, Nirmaan offers each activity the BOQ section or item that matches its name. Keep the ones that are right and it fills in the unit and quantity.',
+      'The Activities tab has Link to BOQ for whatever is still unlinked.',
+      'A project planned before its dates were known now gets them: when the start and end arrive, the activities without dates are spread over the work.',
+    ],
+  },
+  {
     id: '2027-02-read-work-order',
     date: '2027-02-09',
     title: 'Read the work order and the BOQ',

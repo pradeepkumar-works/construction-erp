@@ -19,6 +19,7 @@ import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
 import { ACTIVITY_EXPORT } from '@/lib/exportColumns';
 import { ActivityFormModal } from './ActivityFormModal';
 import { ApplyTemplateModal } from '@/components/templates/ApplyTemplateModal';
+import { LinkBoqModal } from './LinkBoqModal';
 import { AskButton } from '@/components/ai/AskButton';
 import { themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -30,7 +31,10 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ActivityDto | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const editor = !!user && canEditProjects(user.roleKey);
+  // Activities with no BOQ item: what the link offer is for (finding 11 of the October review).
+  const unlinked = (data ?? []).filter((a) => !a.boqItemId && !a.isSummary).length;
 
   const del = useMutation({
     mutationFn: async (id: string) => api.delete(`/projects/${projectId}/activities/${id}`),
@@ -149,6 +153,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
           }}
         />
         {editor && project ? <Button onClick={() => setTemplateOpen(true)}>Add from template</Button> : null}
+        {editor && unlinked > 0 ? <Button onClick={() => setLinkOpen(true)}>Link to BOQ ({unlinked})</Button> : null}
         {editor && (
           <Button
             type="primary"
@@ -166,6 +171,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Table<ActivityDto> rowKey="id" loading={isLoading} columns={columns} dataSource={data ?? []} size="middle" pagination={{ pageSize: 25, hideOnSinglePage: true }} scroll={{ x: 1100 }} />
       {project ? <ApplyTemplateModal open={templateOpen} onClose={() => setTemplateOpen(false)} project={project} existing={(data ?? []).map((a) => a.name)} /> : null}
+      {editor ? <LinkBoqModal open={linkOpen} onClose={() => setLinkOpen(false)} projectId={projectId} /> : null}
       <ActivityFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} activity={editing} members={members} />
     </div>
   );

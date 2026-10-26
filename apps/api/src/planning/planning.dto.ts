@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsInt, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsInt, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 
 export class CreateBoqItemDto {
   @ApiProperty({ example: '1.01' }) @IsString() @MinLength(1) itemNo: string;
@@ -23,6 +23,21 @@ export class BulkBoqDto {
   @ValidateNested({ each: true })
   @Type(() => CreateBoqItemDto)
   items: CreateBoqItemDto[];
+}
+
+/** One activity and the BOQ item to link it to (finding 11 of the October review). */
+export class BoqLinkDto {
+  @ApiProperty() @IsUUID() activityId: string;
+  @ApiProperty() @IsUUID() boqItemId: string;
+}
+
+export class LinkBoqDto {
+  @ApiProperty({ type: [BoqLinkDto] })
+  @IsArray()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => BoqLinkDto)
+  links: BoqLinkDto[];
 }
 
 export class CreateActivityDto {

@@ -1,13 +1,14 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { ActivityDto, BoqItemDto } from '@erp/shared';
+import type { ActivityDto, BoqItemDto, BoqLinkSuggestion } from '@erp/shared';
+import { boqLinkSuggestions, canEditProjects } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, dec, money, parseDate, pct } from '../common/serialize';
 import { progressRollup } from '../common/progress';
-import { BulkBoqDto, CreateActivityDto, CreateBoqItemDto, UpdateActivityDto, UpdateBoqItemDto } from './planning.dto';
+import { BulkBoqDto, CreateActivityDto, CreateBoqItemDto, LinkBoqDto, UpdateActivityDto, UpdateBoqItemDto } from './planning.dto';
 
 const D = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v);
 
@@ -223,6 +224,54 @@ export class PlanningService {
     for (const r of rows) if (r.parentActivityId && ids.has(r.parentActivityId)) subsOf.set(r.parentActivityId, [...(subsOf.get(r.parentActivityId) ?? []), r]);
     const ordered = rows.filter((r) => !r.parentActivityId || !ids.has(r.parentActivityId)).flatMap((r) => [r, ...(subsOf.get(r.id) ?? [])]);
     return ordered.map((r) => this.toActivityDto(r, rolled));
+  }
+
+  /**
+   * BOQ items to link the project's unlinked activities to (finding 11 of the October review), offered by the name of
+   * the BOQ's sections and item descriptions. Nothing is changed until the planner confirms with `linkBoq`.
+   */
+  async boqLinkSuggestions(user: RequestUser, projectId: string): Promise<BoqLinkSuggestion[]> {
+    await this.access.assertCanAccessProject(user, projectId);
+    const [activities, items] = await Promise.all([
+      this.prisma.activity.findMany({ where: { projectId }, select: { id: true, name: true, unit: true, plannedQty: true, boqItemId: true }, orderBy: { sortOrder: 'asc' } }),
+      this.prisma.boqItem.findMany({ where: { projectId }, select: { id: true, itemNo: true, description: true, section: true, unit: true, originalQty: true, revisedQty: true, _count: { select: { activities: true } } }, orderBy: { sortOrder: 'asc' } }),
+    ]);
+    return boqLinkSuggestions(
+      activities.map((a) => ({ id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty)!, boqItemId: a.boqItemId })),
+      items.map((i) => ({ id: i.id, itemNo: i.itemNo, description: i.description, section: i.section, unit: i.unit, quantity: dec(i.revisedQty ?? i.originalQty)!, linked: i._count.activities })),
+    );
+  }
+
+  /**
+   * Links the activities the planner confirmed to their BOQ items, and gives an activity with no quantity of its own
+   * the item's unit and quantity. An activity or an item already linked is left alone.
+   */
+  async linkBoq(user: RequestUser, projectId: string, dto: LinkBoqDto): Promise<ActivityDto[]> {
+    if (!canEditProjects(user.roleKey)) throw new ForbiddenException('Your role cannot change the activities');
+    await this.access.assertCanAccessProject(user, projectId);
+    const [activities, items] = await Promise.all([
+      this.prisma.activity.findMany({ where: { projectId, id: { in: dto.links.map((l) => l.activityId) } }, select: { id: true, name: true, plannedQty: true, boqItemId: true } }),
+      this.prisma.boqItem.findMany({ where: { projectId, id: { in: dto.links.map((l) => l.boqItemId) } }, select: { id: true, itemNo: true, unit: true, originalQty: true, revisedQty: true, _count: { select: { activities: true } } } }),
+    ]);
+    const byId = new Map(activities.map((a) => [a.id, a]));
+    const itemById = new Map(items.map((i) => [i.id, i]));
+    let linked = 0;
+    for (const l of dto.links) {
+      const a = byId.get(l.activityId);
+      const i = itemById.get(l.boqItemId);
+      if (!a || !i || a.boqItemId || i._count.activities) continue;
+      const data: Prisma.ActivityUncheckedUpdateInput = { boqItemId: i.id };
+      // An activity straight from a template has no quantity: the item's is the one to plan against.
+      if (a.plannedQty.isZero()) {
+        data.plannedQty = i.revisedQty ?? i.originalQty;
+        data.unit = i.unit;
+      }
+      await this.prisma.activity.update({ where: { id: a.id }, data });
+      await this.audit.log(user, 'ACTIVITY', a.id, 'UPDATED', `Linked to BOQ item ${i.itemNo}`);
+      linked += 1;
+    }
+    if (!linked) throw new ConflictException('Those activities or BOQ items are already linked. Reopen the list to see the links as they are now.');
+    return this.listActivities(user, projectId);
   }
 
   private async getActivity(user: RequestUser, projectId: string, id: string): Promise<ActivityDto> {
