@@ -910,6 +910,8 @@ export class StaffService {
         projectId: l.projectId,
         entityId: l.id,
         dedupeKey: `LEAVE_APPLIED:${l.id}`,
+        // Leave waits on whoever decides it, and the days may already have started (finding 18 of the October review).
+        email: { href: `/staff?tab=leave&leave=${l.id}`, cta: 'Decide it' },
       });
     } catch (e) {
       this.log.warn(`Leave notification failed: ${(e as Error).message}`);

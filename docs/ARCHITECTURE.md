@@ -107,9 +107,29 @@ project may decide the entry, such as one above the PM's limit, and see the rest
 done, `NotificationsService.handoff` tells the role that acts next (`HANDOFF`, "Your turn"): an approved material request
 to procurement, an approved PO to the project's store, a GRN to the requester, QA/QC and (against a PO) accounts, a
 client certificate to accounts, a client receipt to the PM and management, a DPR remark that `classifyRemark` reads as an
-excusable hindrance to the PM with the notice date, and a new team member. Hand-offs, send-backs and approvals waiting
-past their hours are also emailed (`NotifyInput.email`) to users with `emailAlerts` on (the default; Notifications ›
-Alerts).
+excusable hindrance to the PM with the notice date, a supplier's bill that misses its order to purchase and the PM
+(`onVendorBillExceptions`, with the mismatch in the notice), and a new team member. Hand-offs, send-backs, leave to
+decide and approvals waiting past their hours are also emailed (`NotifyInput.email`) to users with `emailAlerts` on (the
+default; Notifications › Alerts).
+
+### An email for every action that waits on someone (finding 18 of the October review)
+
+A notice that only rings the bell is missed by whoever is not in the app that day, so each action that waits on someone
+carries an email with the button that does it. Two of them are the thing itself rather than a link, because the reader
+may have no login:
+
+- **The RA bill in the client engineer's inbox.** "Mark sent" (`RaBillsService.send`) mails the bill to the project's
+  guests (`projectGuests`, their `emailAlerts` on) through the pure `billEmail` (`ra-bill-email.ts`): the same items,
+  quantities, rates, deductions and net as the printed bill, so it prints to a PDF from any mail app, with the portal
+  button to certify it and the QS to reply to when there is no login. Beyond `BILL_EMAIL_ITEMS` items it names the rest
+  and leaves them to the portal. Same shape as `poEmail` for the vendor's order.
+- **Last week's money in.** `NotificationJobsService.receiptsWeekly` runs on Mondays with the digest: the week's client
+  receipts per project to management and to each project's manager, once per person per week
+  (`dedupeKey RECEIPTS_WEEKLY:<Monday>`), in the app and by email. Each receipt is told as it is recorded too
+  (`onClientReceipt`); this is the week read at once. The arithmetic and the wording are pure in `receipt-week.ts`
+  (`receiptWeek`, null for a week with no money in, so an empty week sends nothing).
+
+Both are tested without a database in `src/scripts/action-email-test.ts` (CI runs it).
 
 ### Navigation tree and module screens (v6 item 98, launcher phase 1)
 

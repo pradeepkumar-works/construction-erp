@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { BILL_DEDUCTION_LABELS, billLabel, canPrepareBill, isGuest, type BillDeductionKey, type BillSortField, type Paginated, type RaBillDeductionDto, type RaBillDto, type SlippageLineDto, type SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,6 +20,9 @@ import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivabl
 import { ReceivablesService } from '../receivables/receivables.service';
 import { assertNotExported } from '../tally/exported';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EmailService } from '../notifications/email.service';
+import { configuredWebUrl } from '../common/web-url';
+import { billEmail } from './ra-bill-email';
 import { omBillDto, omPercentages, omPricing, storedOmPricing } from '../om/om-bill';
 import { loadOm } from '../om/om-load';
 import { billProblem } from '../om/om-rules';
@@ -98,7 +101,10 @@ export class RaBillsService {
     private receivables: ReceivablesService,
     private notifications: NotificationsService,
     private stageBilling: StageBillingService,
+    private email: EmailService,
   ) {}
+
+  private readonly log = new Logger(RaBillsService.name);
 
   toDto(r: Row, sheets?: SheetRow[], receipts?: RaBillDto['receipts']): RaBillDto {
     const { received, settled } = settlement(r.receipts);
@@ -547,10 +553,10 @@ export class RaBillsService {
     await this.prisma.raBill.update({ where: { id }, data: { stage: 'SENT', sentDate: parseDate(dto.date) } });
     await this.audit.log(user, 'BILL', id, 'SENT', `Sent to the client on ${dto.date}`);
     const out = await this.get(user, id);
-    // The client's engineer and consultant on the project get it in their portal.
+    // The client's engineer and consultant on the project get it in their portal, and the bill itself by email.
     if (bill.stage === 'NOT_SENT') {
       const guests = await this.access.projectGuests(user.organizationId, bill.projectId);
-      if (guests.length)
+      if (guests.length) {
         await this.notifications.notify({
           organizationId: user.organizationId,
           userIds: guests.map((g) => g.id),
@@ -559,11 +565,58 @@ export class RaBillsService {
           body: `${out.projectName}: work value ₹${out.grossAmount}, net payable ₹${out.netPayable}. Check the quantities and certify it in the client portal.`,
           projectId: bill.projectId,
           entityId: id,
-          // "Mark sent" also emails the client's engineer the link to the bill (e2e review, fix 2).
-          email: { href: `/portal/${bill.projectId}?open=${id}`, cta: 'Open the bill' },
         });
+        await this.mailBill(user, out, guests.map((g) => g.id));
+      }
     }
     return out;
+  }
+
+  /**
+   * The bill itself to the client's engineer and consultant (finding 18 of the October review). The bell's notice
+   * carries a link; this carries the items, the quantities, the deductions and the net, so they can read it and print
+   * it from their mail app without logging in, and the button takes them to the portal to certify it. Failures are
+   * logged, never thrown: the bill has already been marked sent.
+   */
+  private async mailBill(user: RequestUser, out: RaBillDto, guestIds: string[]) {
+    try {
+      if (!this.email.enabled || this.email.provider === 'log') return;
+      const [readers, org, project, preparedBy] = await Promise.all([
+        this.prisma.user.findMany({ where: { id: { in: guestIds }, isActive: true, emailAlerts: true }, select: { fullName: true, email: true } }),
+        this.prisma.organization.findUnique({ where: { id: user.organizationId }, select: { name: true } }),
+        this.prisma.project.findUnique({ where: { id: out.projectId }, select: { clientPaymentDays: true } }),
+        this.prisma.user.findUnique({ where: { id: out.submittedById }, select: { fullName: true, email: true, phone: true } }),
+      ]);
+      const base = configuredWebUrl();
+      for (const r of readers) {
+        if (!r.email) continue;
+        const mail = billEmail({
+          orgName: org?.name ?? '',
+          billLabel: out.billLabel,
+          billDate: out.billDate,
+          measuredUpTo: out.measuredUpTo,
+          projectCode: out.projectCode,
+          projectName: out.projectName,
+          clientName: out.client?.name ?? out.clientName,
+          contactPerson: r.fullName,
+          agreementNo: out.agreementNo,
+          grossAmount: out.grossAmount,
+          pvAmount: out.pvAmount,
+          gstRate: out.gstRate,
+          gstAmount: out.gstAmount,
+          grossUpto: out.grossUpto,
+          deductions: out.deductions.map((d) => ({ label: d.label, amount: d.amount })),
+          netPayable: out.netPayable,
+          items: out.items.map((i) => ({ itemNo: i.itemNo, description: i.description, unit: i.unit, thisQty: i.thisQty, rate: i.rate, amount: i.amount })),
+          paymentDays: project?.clientPaymentDays ?? null,
+          portalUrl: base ? `${base}/portal/${out.projectId}?open=${out.id}` : null,
+          preparedBy: { name: preparedBy?.fullName ?? out.submittedByName, email: preparedBy?.email ?? null, phone: preparedBy?.phone ?? null },
+        });
+        await this.email.send({ to: r.email, ...mail });
+      }
+    } catch (e) {
+      this.log.warn(`mailBill(${out.id}) failed: ${(e as Error).message}`);
+    }
   }
 
   /**

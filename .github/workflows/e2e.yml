@@ -130,6 +130,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/small-fixes-test.js
+      - name: The RA bill email carries the bill, and the weekly summary adds up the money in
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/action-email-test.js
       - name: Material reconciliation adds up theoretical, allowed and consumed quantities and flags each item
         if: matrix.suite == 'flows'
         working-directory: apps/api
