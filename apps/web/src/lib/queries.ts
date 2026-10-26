@@ -260,6 +260,7 @@ import type {
   FinalSettlementDto,
   ModuleHomeDto,
   HomeTrendsDto,
+  NextProjectCodeDto,
   ProgressEntryDto,
   ProjectDashboard,
   ProjectDetail,
@@ -1132,6 +1133,14 @@ export const useApprovalMatrix = (enabled = true) =>
 
 export const useActivityTemplates = (enabled = true) =>
   useQuery({ queryKey: ['activity-templates'], queryFn: async () => (await api.get<ActivityTemplateDto[]>('/activity-templates')).data, enabled });
+
+/** The code to offer a new project of this type (finding 17 of the October review). */
+export const useNextProjectCode = (type: ProjectType | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['next-project-code', type],
+    queryFn: async () => (await api.get<NextProjectCodeDto>('/projects/next-code', { params: { type } })).data,
+    enabled: enabled && !!type,
+  });
 
 export const useRisks = (filters?: RiskFilters, enabled = true) =>
   useQuery({

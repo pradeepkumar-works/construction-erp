@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { CreateUserDto, ListUsersQuery, UpdateUserDto } from './users.dto';
 import { PasswordLinksService } from '../auth/password-links.service';
+import { ProjectsService } from '../projects/projects.service';
 import { withoutTenant } from '../prisma/tenant-context';
 
 const ORDER: Record<UserSortField, (o: SortOrder) => Prisma.UserOrderByWithRelationInput[]> = {
@@ -32,7 +33,11 @@ const USER_FIELDS = {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService, private links: PasswordLinksService) {}
+  constructor(
+    private prisma: PrismaService,
+    private links: PasswordLinksService,
+    private projects: ProjectsService,
+  ) {}
 
   private toDto(u: { id: string; email: string; fullName: string; phone: string | null; isActive: boolean; invitedAt: Date | null; createdAt: Date; role: { key: string; name: string } }): UserSummary {
     return { id: u.id, email: u.email, fullName: u.fullName, phone: u.phone, isActive: u.isActive, roleKey: u.role.key as RoleKey, roleName: u.role.name, createdAt: u.createdAt.toISOString(), invitePending: u.invitedAt !== null };
@@ -86,6 +91,8 @@ export class UsersService {
       },
       include: { role: true },
     });
+    // The projects they were given on the form, so they do not have to be added from each project in turn.
+    if (dto.projectIds?.length) await this.projects.addToProjects(req, user.id, dto.projectIds);
     return { ...this.toDto(user), invite: invite ? await this.links.create(user.id, 'INVITE', origin) : null };
   }
 

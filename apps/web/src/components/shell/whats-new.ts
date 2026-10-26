@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-less-typing',
+    date: '2027-02-16',
+    title: 'Less to type, and a list that fits',
+    points: [
+      'New project offers the next code in your series, and changing the kind of work changes the code with it until you type your own.',
+      'A GSTIN now fills the PAN on a vendor or client, as it already filled the state.',
+      'New user asks which projects the person works on, so you no longer go round each project’s team afterwards.',
+      'Vendor bills fits the screen at 1440: the match with the order is no longer hidden under the status column.',
+    ],
+  },
+  {
     id: '2027-02-standard-norms',
     date: '2027-02-15',
     title: 'Standard norms to start from',

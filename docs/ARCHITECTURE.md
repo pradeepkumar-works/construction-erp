@@ -855,6 +855,14 @@ tabs. Export fetches every matching row page by page with the current filters (n
 page) and writes `.xlsx` in the browser with SheetJS; column layouts live in `src/lib/exportColumns.ts`.
 Material requests export one row per item so quantities can be summed.
 
+A column's `defaultFrom` (`ListColumn`, `components/list/DataTable.tsx`) is the window width that turns it on by
+default, so the columns a list leads with fit without scrolling sideways; the column chooser still turns any of them on
+at any width. They are a budget, not a wish: the vendor bills list showed the invoice date from 1400 and what the bill
+was against from 1600, which at both widths left the table wider than the page, and the fixed Status column lay over
+Match (finding 17 of the October review). Each now waits for the next width up. On a phone, a list card's title is what
+opens the record and the whole card takes the tap; the title's own box is 44 px tall around the same text, so it
+measures as the target it is (`.list-card-open` in the `pointer: coarse` block of `globals.css`).
+
 ## Attendance
 
 The site supervisor records who worked each day: `AttendanceSheet` (one per project per day, unique on
@@ -1380,6 +1388,24 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   the BOQ. It holds the checklist's BOQ step open, shows on the BOQ tab, and is the watch list's `BOQ_OFF_CONTRACT`
   (managers who see cost and edit projects), so it reaches the morning brief. Lump sum and EPC are priced by stages and
   left out. Tested in `src/scripts/project-setup-test.ts`.
+
+### What a form already knows (finding 17 of the October review)
+
+- **The project code.** `nextProjectCode` (`packages/shared/src/project-code.ts`, pure) reads the company's codes as
+  `<prefix>-<year>-<serial>`, where the prefix is the kind of work (`PROJECT_CODE_PREFIXES`) and the serial runs on
+  across the company, and offers the next one; `GET /projects/next-code?type=` counts every project of the
+  organisation, including those the caller does not work on, so the suggestion never clashes. A company whose codes are
+  its own shape gets no suggestion, and a code typed by hand is never written over: the New project form only replaces
+  a box it filled itself, so changing the type moves its own suggestion along.
+- **The PAN inside a GSTIN.** `panFromGstin` (`@erp/shared/contract.ts`) returns characters 3 to 12 of a well-formed
+  GSTIN. The vendor and client forms fill an empty PAN from it, as they already filled the state code, and leave a PAN
+  that was typed alone.
+- **A new user's projects.** `POST /users` takes `projectIds`: `UsersService.create` hands them to
+  `ProjectsService.addToProjects`, which checks the caller sees each project and adds the person through the usual
+  `joinTeam` (audit, and the person is told). The New user form shows the picker only for a role that sees projects one
+  by one, since a company-wide role already sees them all.
+- **Tests.** `src/scripts/small-fixes-test.ts` (CI runs it) for the two pure rules, `e2e/tests/small-fixes.spec.ts` for
+  the three forms.
 
 ## RA bills
 

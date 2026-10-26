@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
-import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, ProjectSetupHiddenDto, UpdateProjectDto } from './projects.dto';
+import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, NextProjectCodeQuery, ProjectSetupHiddenDto, UpdateProjectDto } from './projects.dto';
 import { ProjectSetupService } from './project-setup.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Roles } from '../common/decorators';
@@ -20,6 +20,13 @@ export class ProjectsController {
   @Get()
   list(@CurrentUser() user: RequestUser, @Query() q: ListProjectsQuery) {
     return this.projects.list(user, q);
+  }
+
+  /** The next code in the company's series, offered on the New project form (finding 17 of the October review). */
+  @Get('next-code')
+  @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
+  nextCode(@CurrentUser() user: RequestUser, @Query() q: NextProjectCodeQuery) {
+    return this.projects.nextCode(user, q.type);
   }
 
   @Get(':id')

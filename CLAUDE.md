@@ -160,6 +160,11 @@ and the pre-delivery checklist.
   (`@erp/shared/measurement.ts`: the measured quantity walked off the approved entries oldest first); only activities in
   the item's own unit count. A sheet starts from them through `MeasurementPrefill`, never a second set of rules. Keep
   `src/scripts/measure-from-progress-test.ts` passing.
+- What a form already knows (ARCHITECTURE "What a form already knows"): a new project's code comes from
+  `nextProjectCode` (`@erp/shared/project-code.ts`) through `GET /projects/next-code`, a PAN from `panFromGstin`
+  (`@erp/shared/contract.ts`), and a new user's teams from `POST /users { projectIds }`, which joins them only through
+  `ProjectsService.addToProjects`. A form fills a box it filled itself, never one someone typed. Keep
+  `src/scripts/small-fixes-test.ts` passing.
 - Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line
