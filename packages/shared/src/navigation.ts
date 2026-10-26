@@ -9,6 +9,7 @@ import { canUseWhatsappCapture } from './whatsapp';
 import { canSeeLeakage } from './leakage';
 import { canSeeCashForecast } from './cash-forecast';
 import { canSeeAttendanceCheck } from './attendance-check';
+import { canSeeManagement } from './management';
 import { canManageModules, pathIsOff } from './module-switches';
 
 /**
@@ -143,6 +144,7 @@ export const NAV_ACCESS = {
   leakage: (u: NavUser) => canSeeLeakage(u.roleKey),
   cashForecast: (u: NavUser) => canSeeCashForecast(u.roleKey),
   attendanceCheck: (u: NavUser) => canSeeAttendanceCheck(u.roleKey),
+  management: (u: NavUser) => canSeeManagement(u.roleKey),
   subscription: (u: NavUser) => !!u.billing && P.canManageBilling(u.roleKey),
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
@@ -179,7 +181,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'payroll', parent: null, label: 'Payroll', icon: 'banknote', family: 'people', access: 'internal', status: 'live', description: 'Salary runs, payslips, PF, ESI, PT and TDS, loans.', keywords: 'salary wages', concord: ['p4-payroll'] },
   { id: 'tenders', parent: null, label: 'Tenders', icon: 'gavel', family: 'business', access: 'tenders', status: 'live', newUntil: '2027-03-31', description: 'Tenders being priced and bid, and the schedules of rates they are priced from.', keywords: 'bid boq sor', concord: ['p3-tender', 'p4-tendering'] },
   { id: 'rmc', parent: null, label: 'RMC plant', icon: 'factory', family: 'business', access: 'rmc', status: 'live', newUntil: '2027-03-31', description: 'Ready-mix concrete: quotes and orders, the plant\'s day, trucks and challans, cubes and bills.', keywords: 'ready mix batching plant concrete', concord: ['p4-plantperf'] },
-  { id: 'reports', parent: null, label: 'Reports', icon: 'chart-column', family: 'insight', access: 'internal', status: 'live', description: 'Progress reports, project cost, cash flow and more.', keywords: 'mis dashboard', concord: ['p7-finrep'] },
+  { id: 'reports', parent: null, label: 'Reports', icon: 'chart-column', family: 'insight', access: 'internal', status: 'live', description: 'The management dashboard, MIS, profit and loss, progress reports and more.', keywords: 'mis dashboard', concord: ['p7-finrep'] },
   { id: 'watch', parent: null, label: 'Watch list', icon: 'eye', route: '/watch-list', family: 'insight', access: 'watchList', status: 'live', badge: 'watchOpen', description: 'Early warnings: slipping work, cash gaps, stock running out.', keywords: 'early warnings alerts forecast risk slipping cash gap running out' },
   { id: 'admin', parent: null, label: 'Admin', icon: 'settings', family: 'admin', access: 'internal', status: 'live', description: 'Users, approval rules, modules and the subscription.', keywords: 'settings' },
 
@@ -319,6 +321,16 @@ export const NAV_TREE: NavNode[] = [
   { id: 'rmc.sales', parent: 'rmc', label: 'Bills and money received', icon: 'receipt-indian-rupee', route: '/rmc?tab=bills', access: 'rmcBills', status: 'live', description: 'Concrete bills with GST and the money received.', keywords: 'sales invoice receipt gst' },
 
   // ── Reports ───────────────────────────────────────────────────────────────────────────────────────────────────
+  { id: 'reports.management', parent: 'reports', label: 'Management dashboard', icon: 'layout-dashboard', route: '/management', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Every project\'s schedule, money from work done to cash, cost, and what needs action.', keywords: 'md portfolio kpi bi health overview executive unbilled margin' },
+  { id: 'reports.mis', parent: 'reports', label: 'Monthly MIS', icon: 'file-spreadsheet', route: '/management/reports/mis', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'The month and the year so far for every project, with what needs action.', keywords: 'mis monthly management information report board' },
+  { id: 'reports.profitLoss', parent: 'reports', label: 'Project profit and loss', icon: 'trending-up', route: '/management/reports/profit-loss', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Billed against cost by head, and the margin forecast at completion.', keywords: 'p&l pnl margin profitability' },
+  { id: 'reports.wip', parent: 'reports', label: 'Work in progress', icon: 'hourglass', route: '/management/reports/wip', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Work done and not billed, billed and not certified, certified and not paid.', keywords: 'wip unbilled work billing lag certification' },
+  { id: 'reports.receivablesAgeing', parent: 'reports', label: 'Receivables ageing', icon: 'hand-coins', route: '/management/reports/receivables', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'What clients owe by age, client by client and bill by bill.', keywords: 'debtors outstanding collection retention' },
+  { id: 'reports.payablesAgeing', parent: 'reports', label: 'Payables ageing', icon: 'wallet', route: '/management/reports/payables', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'What is owed to vendors and subcontractors by how far past due.', keywords: 'creditors overdue msme' },
+  { id: 'reports.procurementSpend', parent: 'reports', label: 'Procurement spend', icon: 'shopping-cart', route: '/management/reports/procurement', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Orders by vendor, material and project, rates paid, and how long orders take.', keywords: 'purchase spend vendor rates cycle time on time delivery' },
+  { id: 'reports.labour', parent: 'reports', label: 'Labour and attendance', icon: 'users', route: '/management/reports/labour', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Man-days by project, trade and contractor, and labour cost.', keywords: 'manpower man days muster headcount' },
+  { id: 'reports.stockPosition', parent: 'reports', label: 'Stock position', icon: 'boxes', route: '/management/reports/stock', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Stock value by project and store, items below minimum, stock lying idle.', keywords: 'inventory value closing stock' },
+  { id: 'reports.approvalsWaiting', parent: 'reports', label: 'Approvals waiting', icon: 'clock', route: '/management/reports/approvals', access: 'management', status: 'live', newUntil: '2027-01-31', description: 'Entries waiting for a decision by type and project, the oldest first.', keywords: 'pending approvals ageing bottleneck' },
   { id: 'reports.progress', parent: 'reports', label: 'Progress reports', icon: 'file-text', route: '/reports', access: 'reports', status: 'live', description: 'Monthly and weekly progress reports as PDF.', keywords: 'pdf mis monthly weekly', concord: ['p9-status', 'p11-projdash'] },
   { id: 'reports.cost', parent: 'reports', label: 'Project cost', icon: 'chart-pie', route: '/cost', access: 'cost', status: 'live', description: 'Budget against actual by cost head, margin per BOQ item.', keywords: 'budget cash flow margin job cost', concord: ['p9-budget', 'p9-jobcost', 'p9-cumbudget', 'p9-clientsub'] },
   { id: 'reports.cashflow', parent: 'reports', label: 'Cash flow', icon: 'chart-line', route: '/cost?tab=cash-flow', access: 'cost', status: 'live', description: 'Money in and out by month, planned and actual.' },
