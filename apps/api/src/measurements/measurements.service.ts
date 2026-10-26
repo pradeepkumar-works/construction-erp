@@ -1,6 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { hasDimensions, MEASURE_TOLERANCE_PCT, measureOverBoq, measurementLineQty, type MeasurementSheetDto, type MeasurementSortField, type Paginated, type SortOrder } from '@erp/shared';
+import {
+  hasDimensions,
+  MEASURE_TOLERANCE_PCT,
+  measureOverBoq,
+  measurementLineQty,
+  unmeasuredEntries,
+  type MeasurementSheetDto,
+  type MeasurementSortField,
+  type Paginated,
+  type ProgressForMeasure,
+  type SortOrder,
+  type ToMeasureItemDto,
+} from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { SECTOR_SELECT, locationOr, resolveSector } from '../common/sector';
@@ -137,6 +149,72 @@ export class MeasurementsService {
       this.prisma.measurementSheet.count({ where }),
     ]);
     return paginated(rows.map((r) => this.toDto(r)), total, args);
+  }
+
+  /**
+   * What is still to measure on a project (finding 14 of the October review): the QS used to read the approved DPRs
+   * and type the quantities into a sheet again. Each BOQ item's approved progress, less what its sheets already hold,
+   * with the days that make up the remainder (`unmeasuredEntries`) so a sheet can start from them. Only activities
+   * recording the item's own unit count; the rest are named, not converted.
+   */
+  async toMeasure(user: RequestUser, projectId: string): Promise<ToMeasureItemDto[]> {
+    await this.access.assertCanAccessProject(user, projectId);
+    const items = await this.prisma.boqItem.findMany({
+      where: { projectId, organizationId: user.organizationId, activities: { some: { progressEntries: { some: { status: 'APPROVED' } } } } },
+      orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }],
+      select: {
+        id: true,
+        itemNo: true,
+        description: true,
+        unit: true,
+        rate: true,
+        activities: {
+          select: {
+            name: true,
+            unit: true,
+            progressEntries: {
+              where: { status: 'APPROVED' },
+              select: { id: true, date: true, quantity: true, location: true, dailyReportId: true },
+            },
+          },
+        },
+        measurements: { where: { status: { not: 'REJECTED' } }, select: { totalQty: true } },
+      },
+    });
+    const out: ToMeasureItemDto[] = [];
+    for (const item of items) {
+      const sameUnit = (u: string) => u.trim().toLowerCase() === item.unit.trim().toLowerCase();
+      const entries: ProgressForMeasure[] = [];
+      const otherUnitActivities: string[] = [];
+      for (const a of item.activities) {
+        if (!a.progressEntries.length) continue;
+        if (!sameUnit(a.unit)) {
+          if (!otherUnitActivities.includes(a.name)) otherUnitActivities.push(a.name);
+          continue;
+        }
+        for (const e of a.progressEntries)
+          entries.push({ id: e.id, date: dateOnly(e.date)!, quantity: Number(e.quantity), location: e.location, activityName: a.name, fromDpr: !!e.dailyReportId });
+      }
+      const executed = entries.reduce((s, e) => s + e.quantity, 0);
+      const measured = item.measurements.reduce((s, m) => s + Number(m.totalQty), 0);
+      const left = unmeasuredEntries(entries, measured);
+      const toMeasureQty = left.reduce((s, e) => s + e.quantity, 0);
+      if (toMeasureQty <= 0) continue;
+      out.push({
+        boqItemId: item.id,
+        itemNo: item.itemNo,
+        description: item.description,
+        unit: item.unit,
+        rate: money(item.rate)!,
+        executedQty: dec(executed)!,
+        measuredQty: dec(measured)!,
+        toMeasureQty: dec(toMeasureQty)!,
+        toMeasureAmount: money(new Prisma.Decimal(toMeasureQty).mul(item.rate))!,
+        entries: left.map((e) => ({ id: e.id, date: e.date, quantity: dec(e.quantity)!, location: e.location, activityName: e.activityName, fromDpr: e.fromDpr })),
+        otherUnitActivities,
+      });
+    }
+    return out;
   }
 
   async get(user: RequestUser, id: string): Promise<MeasurementSheetDto> {

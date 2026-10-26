@@ -149,6 +149,11 @@ and the pre-delivery checklist.
   offers and `PlanningService.linkBoq` sets `boqItemId` (taking the item's unit and quantity only where the activity has
   none). Activities created with no dates are placed by `spreadUndated` (`@erp/shared/templates.ts`) when a start date
   first arrives, through `TemplatesService.spreadUndated`. Keep `src/scripts/boq-links-test.ts` passing.
+- Measure from progress (ARCHITECTURE "Measurement book"): what a BOQ item still has to measure comes from
+  `MeasurementsService.toMeasure` (`GET /measurements/to-measure`), whose choice of days is pure in `unmeasuredEntries`
+  (`@erp/shared/measurement.ts`: the measured quantity walked off the approved entries oldest first); only activities in
+  the item's own unit count. A sheet starts from them through `MeasurementPrefill`, never a second set of rules. Keep
+  `src/scripts/measure-from-progress-test.ts` passing.
 - Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line
