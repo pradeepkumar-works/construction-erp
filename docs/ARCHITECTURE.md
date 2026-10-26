@@ -2543,7 +2543,7 @@ export; the client portal and the phone app show the amount.
   every seeded anomaly (`seedCheckAnomalies`) is flagged and every other demo bill and expense shows no flag. CI runs it
   after the seed. A new rule is a function in `bill-rules.ts` plus its tests there.
 
-## Reading invoices, challans and drawings
+## Reading invoices, challans, drawings, work orders and BOQs
 
 - **What it is.** AI item 70: Fill from invoice on a new vendor bill, Fill from challan on a GRN and Fill from title
   block on a new register entry (`components/ai/ReadDocument.tsx`). The browser turns a photo or the first three pages
@@ -2557,8 +2557,19 @@ export; the client portal and the phone app show the amount.
   The vendor bill form runs the bill checks on the draft (`POST /checks/vendor-bill/preview`) before it is saved.
 - **Nothing is saved by reading.** The read fills the form and attaches the scan as an upload; the user saves. Each read
   is an `AiDocumentRead` row (cost, time, success) counted in the monthly allowance; the page images are not kept there.
+- **Work orders and BOQs** (finding 10 of the October review). New project › Fill from work order reads a work order,
+  LoA or agreement (`workOrder`: name of work, issuing office, work order and agreement numbers and dates, contract value,
+  start, completion or months allowed, place) and fills the form; the end date is `workOrderEnd` (the printed one, else the
+  start plus the months), the client is the master's when exactly one has the office's name (`AiReadService.matchClient`),
+  else Add client opens the client form with that name. The agreement number and date go to the project on create
+  (later the Contract tab's). Import BOQ › Read a BOQ PDF or scan (`boq`) draws up to 30 pages (`DOC_READ_PAGES_OF`) and
+  reads them three to a call, merged in the browser; `boqRowsFromRead` turns the lines into import rows (headings carried
+  down as the section, run-on descriptions joined, a missing rate from the amount, each with what to check), shown in the
+  import's table with the amber ones explained and a tick to leave a row out. A BOQ's amounts may be rounded by half a per
+  cent before quantity × rate is flagged. Work orders need `canApprove` (the roles that create projects), BOQs
+  `canEditProjects` (the BOQ's editors).
 - **Tests.** `src/scripts/doc-read-test.ts` (CI) covers parsing, the checks and matching; `e2e/tests/doc-read.spec.ts`
-  runs the three forms with the stand-in model. `scripts/doc-read-pack.ts` renders 31 synthetic invoices, challans and
+  runs the three forms with the stand-in model, `e2e/tests/read-work-order.spec.ts` New project and the BOQ import. `scripts/doc-read-pack.ts` renders 31 synthetic invoices, challans and
   drawings (printed, photographed, handwritten, Hindi) and `scripts/doc-read-eval.ts` grades a deployed API on them; it
   calls the real model, so it is run by hand.
 

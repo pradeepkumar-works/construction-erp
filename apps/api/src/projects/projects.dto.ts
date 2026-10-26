@@ -22,6 +22,8 @@ export class CreateProjectDto {
   @ApiPropertyOptional() @IsOptional() @IsString() consultantName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() location?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() workOrderNo?: string;
+  @ApiPropertyOptional({ description: 'The agreement number, when the work order says one (finding 10: read from the work order)' }) @IsOptional() @IsString() @MaxLength(100) agreementNo?: string;
+  @ApiPropertyOptional({ example: '2026-11-05' }) @IsOptional() @IsDateString() agreementDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional({ example: '2026-01-01' }) @IsOptional() @IsDateString() startDate?: string;
   @ApiPropertyOptional({ example: '2027-06-30' }) @IsOptional() @IsDateString() endDate?: string;

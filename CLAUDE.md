@@ -194,6 +194,10 @@ and the pre-delivery checklist.
   `DocumentTextService`, searched with Postgres full-text search); a new kind of filed PDF is a branch in its `pendingWhere`
   and search join. `search_documents` never reads files itself. Sample contracts and their questions are
   `src/documents/demo-contracts.ts`; keep `src/scripts/contract-search-test.ts` passing when changing search words.
+- Reading documents (item 70; work orders and BOQs, finding 10 of the October review; ARCHITECTURE "Reading invoices,
+  challans, drawings, work orders and BOQs"): a new kind is a key in `DOC_READ_KINDS` with its fields (`@erp/shared/doc-read.ts`),
+  a guide in `docReadPrompt`, a stand-in reading in `FAKE_READS` (`src/ai/model.ts`) and the form's own right in
+  `AiReadService.assertMayRead`; the checks are code in `normalise`. Keep `src/scripts/doc-read-test.ts` passing.
 - Site photo checks (item 76, `apps/api/src/photo-checks`, ARCHITECTURE "Site photo checks"): a record's photos go to the model
   through `PhotoChecksService`, which loads the record with its own service; flags are advice and never gate a submission.
   A record with photos shows them with `photosSection(kind, id, attachments)` / `PhotosWithChecks`; a new flag is a key in
