@@ -486,6 +486,16 @@ export interface MyWorkDto {
   lowStock?: MyWorkCard;
   /** The caller's open actions from meeting minutes (v6 item 112), overdue first */
   meetingActions?: MyWorkCard;
+  /** Purchase: approved material requests with something left to order, by the day they are needed (finding 8 of the October review) */
+  toOrder?: MyWorkCard;
+  /** Store and purchase: open orders due in the next 7 days, soonest first */
+  dueThisWeek?: MyWorkCard;
+  /** HR and site managers: leave and overtime waiting on the caller */
+  staffToDecide?: MyWorkCard;
+  /** Accounts: client bills certified and not fully received, longest certified first */
+  certifiedToReceive?: MyWorkCard;
+  /** Accounts: goods received against an order in the last 90 days that no supplier bill matches yet, oldest first */
+  toMatch?: MyWorkCard;
 }
 
 /** Month by month, oldest first, for the home page's KPI trends and charts (UI roadmap item 59). */

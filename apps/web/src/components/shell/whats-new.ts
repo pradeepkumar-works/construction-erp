@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-my-work-queues',
+    date: '2027-02-08',
+    title: 'A queue for each desk',
+    points: [
+      'Home opens with what is waiting for you: the three most pressing of your My work lists, each one click away.',
+      'My work has new lists: requests to order for purchase, deliveries due this week for the store, leave and overtime to decide for HR, and certified bills and goods received with no bill yet for accounts.',
+    ],
+  },
+  {
     id: '2027-02-attendance-first',
     date: '2027-02-07',
     title: 'Attendance after the DPR',
