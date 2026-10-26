@@ -20,6 +20,8 @@ import {
   WARNING_KINDS,
   WARNING_KIND_LABELS,
   WARNING_OUTCOME_LABELS,
+  BOQ_GAP_PCT,
+  boqContractGap,
   canResumeWarningKind,
   canSeeCashForecast,
   fuelNormText,
@@ -267,6 +269,7 @@ export class WarningsService {
         if (k === 'PACKAGE_LATE') return this.packages(active, today);
         // A scheme in O&M is a completed project (item 131).
         if (k === 'OM_SERVICE') return this.omService(projects, today);
+        if (k === 'BOQ_OFF_CONTRACT') return this.boqGaps(projects.filter((p) => p.status === 'ACTIVE' || p.status === 'PLANNED'));
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -771,6 +774,53 @@ export class WarningsService {
           { label: 'Days not logged', value: String(w.missingDays.length) },
         ],
         links: [{ label: 'O&M', href: `/projects/${p.id}?tab=om` }],
+        projectId: p.id,
+        projectName: p.name,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * An item-rate project whose BOQ adds up to far from its contract value (finding 6 of the October review,
+   * `boqContractGap`): work done, earned value and the budget are built on the BOQ, so all of them are off. The key moves
+   * with the gap's whole %.
+   */
+  private async boqGaps(projects: Project[]): Promise<Draft[]> {
+    if (!projects.length) return [];
+    const terms = await this.prisma.project.findMany({
+      where: { id: { in: projects.map((p) => p.id) }, contractModel: 'ITEM_RATE', contractValue: { gt: 0 } },
+      select: { id: true, contractValue: true },
+    });
+    if (!terms.length) return [];
+    const items = await this.prisma.boqItem.findMany({ where: { projectId: { in: terms.map((t) => t.id) } }, select: { projectId: true, rate: true, originalQty: true, revisedQty: true } });
+    const totals = new Map<string, number>();
+    for (const i of items) totals.set(i.projectId, (totals.get(i.projectId) ?? 0) + n(i.rate) * n(i.revisedQty ?? i.originalQty));
+    const byId = new Map(projects.map((p) => [p.id, p]));
+    const out: Draft[] = [];
+    for (const t of terms) {
+      const gap = boqContractGap({ boqTotal: Math.round(totals.get(t.id) ?? 0), contractValue: n(t.contractValue), contractModel: 'ITEM_RATE' });
+      if (!gap) continue;
+      const p = byId.get(t.id)!;
+      const diff = Math.abs(gap.boqTotal - gap.contractValue);
+      const short = gap.gapPct < 0;
+      out.push({
+        key: `boqgap:${p.id}:${gap.gapPct}`,
+        kind: 'BOQ_OFF_CONTRACT',
+        title: `${p.name}: the BOQ adds up to ${rupees(gap.boqTotal)}, ${Math.abs(gap.gapPct)}% ${short ? 'below' : 'above'} the contract value`,
+        detail: `The contract value is ${rupees(gap.contractValue)}. Work done, earned value and the budget are all worked out from the BOQ, so they are off by the same share until the two agree.`,
+        action: short ? 'Import the missing BOQ items, or correct the contract value' : 'Check the BOQ quantities and rates against the agreement, or correct the contract value',
+        impact: { text: `${rupees(diff)} ${short ? 'not in the BOQ' : 'more than the contract'}`, inr: diff, days: null },
+        working: [`BOQ total ${rupees(gap.boqTotal)}`, `Contract value ${rupees(gap.contractValue)}`, `A gap over ${BOQ_GAP_PCT}% either way is flagged; usual tender premiums stay inside it`],
+        facts: [
+          { label: 'BOQ total', value: rupees(gap.boqTotal) },
+          { label: 'Contract value', value: rupees(gap.contractValue) },
+          { label: 'Difference', value: `${gap.gapPct > 0 ? '+' : ''}${gap.gapPct}%` },
+        ],
+        links: [
+          { label: 'BOQ', href: `/projects/${p.id}?tab=boq` },
+          { label: 'Contract', href: `/projects/${p.id}?tab=contract` },
+        ],
         projectId: p.id,
         projectName: p.name,
       });

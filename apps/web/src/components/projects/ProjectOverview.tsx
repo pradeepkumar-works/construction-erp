@@ -14,6 +14,7 @@ import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag'
 import { QueryError } from '@/components/common/QueryState';
 import { FigureBlock, Section } from '@/components/common/Section';
 import { MembersCard } from './MembersCard';
+import { ProjectSetup } from './ProjectSetup';
 import { scheduleStatus, type ScheduleStatus } from './ProjectHealth';
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -100,6 +101,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
     <Row gutter={[token.margin, token.margin]} style={{ padding: `0 ${token.paddingSM}px ${token.paddingSM}px` }}>
       <Col xs={24} xl={16}>
         {error && <QueryError error={error} onRetry={() => refetch()} />}
+        <ProjectSetup project={project} />
         {dash && <StatusLead project={project} dash={dash} />}
         <Row gutter={[token.marginSM, token.marginSM]}>
           <Col xs={12} md={8}>

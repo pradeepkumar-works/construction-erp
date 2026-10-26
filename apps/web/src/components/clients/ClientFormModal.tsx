@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Checkbox, Form, Input, Select } from 'antd';
+import { App, Checkbox, Form, Input, InputNumber, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ClientDto } from '@erp/shared';
-import { GST_STATES, GSTIN_PATTERN, PAN_PATTERN, gstStateCode } from '@erp/shared';
+import type { ClientDto, ClientTermPercent } from '@erp/shared';
+import { CLIENT_TERM_PERCENTS, CONTRACT_PERCENT_LABELS, GST_STATES, GSTIN_PATTERN, MAX_GST_RATE, PAN_PATTERN, STANDARD_TERMS, gstStateCode } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -21,7 +21,18 @@ interface FormValues {
   email?: string;
   phone?: string;
   isActive?: boolean;
+  /** The client's usual terms; empty takes the standard */
+  retentionPct?: number | null;
+  securityDepositPct?: number | null;
+  tdsPct?: number | null;
+  gstTdsPct?: number | null;
+  labourCessPct?: number | null;
+  gstRate?: number | null;
+  defectLiabilityMonths?: number | null;
+  clientPaymentDays?: number | null;
 }
+
+const asNumber = (v: string | null) => (v === null ? null : Number(v));
 
 /** Add or edit a client in the client master. `onSaved` gets the saved client (e.g. to pick it in a form). */
 export function ClientFormModal({ open, client, onClose, onSaved }: { open: boolean; client?: ClientDto | null; onClose: () => void; onSaved?: (c: ClientDto) => void }) {
@@ -46,6 +57,9 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
         email: client.email ?? undefined,
         phone: client.phone ?? undefined,
         isActive: client.isActive,
+        ...Object.fromEntries(CLIENT_TERM_PERCENTS.map((k) => [k, asNumber(client[k])])),
+        defectLiabilityMonths: client.defectLiabilityMonths,
+        clientPaymentDays: client.clientPaymentDays,
       });
   }, [open, client, form]);
 
@@ -66,6 +80,9 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
         email: v.email?.trim() || null,
         phone: v.phone?.trim() || null,
         ...(client ? { isActive: v.isActive ?? true } : {}),
+        ...Object.fromEntries(CLIENT_TERM_PERCENTS.map((k: ClientTermPercent) => [k, v[k] === null || v[k] === undefined ? null : String(v[k])])),
+        defectLiabilityMonths: v.defectLiabilityMonths ?? null,
+        clientPaymentDays: v.clientPaymentDays ?? null,
       };
       return client ? (await api.patch<ClientDto>(`/clients/${client.id}`, body)).data : (await api.post<ClientDto>('/clients', body)).data;
     },
@@ -122,6 +139,22 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
             </Form.Item>
             <Form.Item name="phone" label="Phone" rules={[phoneRule]}>
               <Input {...PHONE_INPUT} />
+            </Form.Item>
+          </FormGrid>
+        </FormSection>
+        <FormSection title="Usual contract terms">
+          <p style={{ margin: '0 0 12px' }}>A new project for this client starts with these. Left empty, a term takes the standard figure shown.</p>
+          <FormGrid cols={3}>
+            {CLIENT_TERM_PERCENTS.map((k) => (
+              <Form.Item key={k} name={k} label={`${CONTRACT_PERCENT_LABELS[k]} %`}>
+                <InputNumber<number> style={{ width: '100%' }} min={0} max={k === 'gstRate' ? MAX_GST_RATE : 100} placeholder={STANDARD_TERMS[k]} inputMode="decimal" />
+              </Form.Item>
+            ))}
+            <Form.Item name="defectLiabilityMonths" label="Defect liability (months)">
+              <InputNumber<number> style={{ width: '100%' }} min={0} max={120} precision={0} placeholder="Not set" inputMode="numeric" />
+            </Form.Item>
+            <Form.Item name="clientPaymentDays" label="Days to pay a bill">
+              <InputNumber<number> style={{ width: '100%' }} min={0} max={365} precision={0} placeholder="30" inputMode="numeric" />
             </Form.Item>
           </FormGrid>
         </FormSection>

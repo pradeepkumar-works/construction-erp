@@ -1382,6 +1382,15 @@ export interface ClientDto {
   email: string | null;
   phone: string | null;
   isActive: boolean;
+  /** The client's usual bill deductions and GST, %, that a new project of theirs starts with; null takes the standard */
+  retentionPct: string | null;
+  securityDepositPct: string | null;
+  tdsPct: string | null;
+  gstTdsPct: string | null;
+  labourCessPct: string | null;
+  gstRate: string | null;
+  defectLiabilityMonths: number | null;
+  clientPaymentDays: number | null;
   /** Projects of this client */
   projectCount: number;
   createdAt: string;

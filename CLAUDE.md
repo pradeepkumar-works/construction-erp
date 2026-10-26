@@ -244,6 +244,10 @@ and the pre-delivery checklist.
   and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
   filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`
   (tested in `src/scripts/supplier-test.ts`, CI runs it); web pages under `app/(app)/supplier`, the company's side at `/supplier-inbox`.
+- Project setup (ARCHITECTURE "Setting up a project"): a new project's terms come from `termsFor` / `COPIED_TERMS` in
+  `@erp/shared/project-setup.ts` (copied project, else the client's usual terms, else `STANDARD_TERMS`), never zeros; the
+  Overview checklist is `setupSteps` over `ProjectSetupService.facts`, so a new step is a key in `SETUP_STEPS`, a fact and
+  its words in `ProjectSetup.tsx`. Keep `src/scripts/project-setup-test.ts` passing.
 - Security (ARCHITECTURE "Signing in and headers"): sign-in and reset requests go through `LoginGuardService` (rules in
   `auth/login-guard-rules.ts`, keep `src/scripts/login-guard-test.ts` passing); a password change sets `User.tokensValidAfter`.
   The web's CSP is in `next.config.ts`: a page that loads from a new outside service adds it there.

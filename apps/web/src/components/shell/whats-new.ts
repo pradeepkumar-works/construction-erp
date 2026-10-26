@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-project-setup',
+    date: '2027-02-06',
+    title: 'Setting up a new project',
+    points: [
+      'A new project’s Overview has a setup checklist: team, dates, BOQ, activities and their BOQ links, schedule, baseline, contract, budget, villages or chainage, and norms. Each line opens its tab and ticks itself.',
+      'New project › Copy from project brings over another project’s team and contract terms.',
+      'Deductions no longer start at 0%: a new project takes its client’s usual terms (Clients › Edit) or 5% retention, 2% TDS, 2% GST TDS and 1% cess.',
+      'Add several people to a team at once, or copy the team of another project.',
+      'A BOQ that adds up to far from the contract value is flagged on the BOQ tab and the watch list.',
+    ],
+  },
+  {
     id: '2027-02-sign-in-safety',
     date: '2027-02-05',
     title: 'Safer sign-in',

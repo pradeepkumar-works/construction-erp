@@ -53,10 +53,24 @@ export class CreateProjectDto {
   @IsOptional()
   @IsBoolean()
   applyTemplate?: boolean;
+  @ApiPropertyOptional({ description: "Copy the team and the contract terms (deductions, GST, LD, periods) from this project; else the client's usual terms, else the standard ones" })
+  @IsOptional()
+  @IsUUID()
+  copyFromProjectId?: string;
 }
 
-export class UpdateProjectDto extends PartialType(OmitType(CreateProjectDto, ['applyTemplate'] as const)) {}
+export class UpdateProjectDto extends PartialType(OmitType(CreateProjectDto, ['applyTemplate', 'copyFromProjectId'] as const)) {}
 
+/** One person (`userId`) or several at once (`userIds`). */
 export class AddMemberDto {
-  @ApiProperty() @IsUUID() userId: string;
+  @ApiPropertyOptional() @ValidateIf((o: AddMemberDto) => !o.userIds) @IsUUID() userId?: string;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayMaxSize(100) @IsUUID('all', { each: true }) userIds?: string[];
+}
+
+export class CopyTeamDto {
+  @ApiProperty({ description: 'The project whose team joins this one' }) @IsUUID() fromProjectId: string;
+}
+
+export class ProjectSetupHiddenDto {
+  @ApiProperty() @IsBoolean() hidden: boolean;
 }

@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  ProjectSetupDto,
   DprWorkOptionsDto,
   CommentKind,
   ModuleSwitchesDto,
@@ -609,6 +610,24 @@ export const useCompanyDashboard = () =>
 
 export const useGettingStarted = (enabled: boolean) =>
   useQuery({ queryKey: ['dashboard', 'getting-started'], queryFn: async () => (await api.get<GettingStartedDto>('/dashboard/getting-started')).data, enabled });
+
+/** The new project's setup checklist (finding 6 of the October review); under the project's key, so team changes refresh it. */
+export const useProjectSetup = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['projects', id, 'setup'],
+    queryFn: async () => (await api.get<ProjectSetupDto>(`/projects/${id}/setup`)).data,
+    enabled: !!id,
+    refetchOnMount: 'always',
+  });
+
+export const useHideProjectSetup = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (hidden: boolean) => (await api.put<ProjectSetupDto>(`/projects/${id}/setup`, { hidden })).data,
+    onSuccess: (d) => qc.setQueryData(['projects', id, 'setup'], d),
+    meta: FAIL_NOTICE,
+  });
+};
 
 export const useProjectDashboard = (id: string | undefined) =>
   useQuery({
