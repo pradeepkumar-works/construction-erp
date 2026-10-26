@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, Checkbox, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { App, Checkbox, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DelayParty, RiskCategory, RiskDto, RiskKind, RiskStatus } from '@erp/shared';
 import { DELAY_PARTIES, DELAY_PARTY_LABELS, RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_LEVEL_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, delayDays, riskLevel, riskScore } from '@erp/shared';
@@ -210,7 +211,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
           <>
             <FormGrid cols={3}>
               <Form.Item name="delayStart" label="Held up since" rules={[{ required: true, message: 'Pick the day work was held up' }]}>
-                <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+                <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
               </Form.Item>
               <Form.Item
                 name="delayEnd"
@@ -218,7 +219,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
                 tooltip="Leave empty while work is still held up"
                 rules={[{ validator: async (_, v) => (!v || !delayStart || !v.isBefore(delayStart, 'day') ? undefined : Promise.reject(new Error('Pick a day on or after the start'))) }]}
               >
-                <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+                <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
               </Form.Item>
               <Form.Item name="daysLost" label="Days lost" tooltip="Leave empty to count the calendar days between the dates (to today while still held up)">
                 <InputNumber style={{ width: '100%' }} min={0} max={3650} precision={0} inputMode="numeric" placeholder={counted !== null ? `${counted} (counted)` : undefined} />
@@ -262,7 +263,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={owners} />
           </Form.Item>
           <Form.Item name="dueDate" label="Action due / next review">
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
         {editing ? (

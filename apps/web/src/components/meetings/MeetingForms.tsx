@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { App, Button, Checkbox, Dropdown, Space, DatePicker, Form, Input, Select, TimePicker, Typography, theme } from 'antd';
+import { App, Button, Checkbox, Dropdown, Space, Form, Input, Select, TimePicker, Typography, theme } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import {
@@ -229,7 +230,7 @@ export function MeetingForm({ open, meeting, onClose, onSaved }: { open: boolean
           </Form.Item>
           <FormGrid cols={4}>
             <Form.Item name="heldOn" label="Held on" rules={[{ required: true, message: 'Choose the day it was held' }]}>
-              <DatePicker format="DD MMM YYYY" disabledDate={notAfterToday} style={{ width: '100%' }} />
+              <DatePicker disabledDate={notAfterToday} style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="startTime" label="At">
               <TimePicker format="HH:mm" minuteStep={5} needConfirm={false} style={{ width: '100%' }} />
@@ -246,7 +247,7 @@ export function MeetingForm({ open, meeting, onClose, onSaved }: { open: boolean
               <Input.TextArea autoSize={{ minRows: 2, maxRows: 6 }} maxLength={4000} placeholder={'Actions from the last meeting\nProgress against the programme'} />
             </Form.Item>
             <Form.Item name="nextOn" label="Next meeting">
-              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
         </FormSection>
@@ -389,7 +390,7 @@ export function MeetingForm({ open, meeting, onClose, onSaved }: { open: boolean
                 width: 150,
                 render: (f) => (
                   <Form.Item name={[f.name, 'dueOn']} noStyle>
-                    <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} aria-label={`Due date of action ${f.name + 1}`} />
+                    <DatePicker style={{ width: '100%' }} aria-label={`Due date of action ${f.name + 1}`} />
                   </Form.Item>
                 ),
               },
@@ -456,7 +457,7 @@ export function ActionDialog({ action, move, onClose }: { action: MeetingActionD
         {move === 'DONE' ? (
           <>
             <Form.Item name="doneOn" label="Done on" rules={[{ required: true, message: 'Choose the day it was done' }]}>
-              <DatePicker format="DD MMM YYYY" disabledDate={notAfterToday} style={{ width: '100%' }} />
+              <DatePicker disabledDate={notAfterToday} style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="note" label="How">
               <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} maxLength={1000} placeholder="Estimate received, sent to the client by letter" />
@@ -468,7 +469,7 @@ export function ActionDialog({ action, move, onClose }: { action: MeetingActionD
           </Form.Item>
         ) : (
           <Form.Item name="dueOn" label="Due by">
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         )}
       </Form>

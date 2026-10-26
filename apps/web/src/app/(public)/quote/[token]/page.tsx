@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Alert, Button, Card, DatePicker, Descriptions, Flex, Form, Input, InputNumber, Result, Select, Skeleton, Typography, theme } from 'antd';
+import { Alert, Button, Card, Descriptions, Flex, Form, Input, InputNumber, Result, Select, Skeleton, Typography, theme } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { GST_RATES, type PublicEnquiryDto, type PublicQuoteInput } from '@erp/shared';
@@ -134,7 +135,7 @@ export default function QuotePage() {
                     <Input maxLength={60} />
                   </Form.Item>
                   <Form.Item name="validUntil" label="Rates valid until">
-                    <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
+                    <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
                   </Form.Item>
                 </FormGrid>
                 <Form.Item name="remarks" label="Remarks">

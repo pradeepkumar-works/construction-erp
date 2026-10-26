@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { Alert, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { AttachmentDto, MeasurementSheetDto } from '@erp/shared';
@@ -165,7 +166,7 @@ export function MeasurementFormModal({
               />
             </Form.Item>
             <Form.Item name="date" label="Measured on" rules={[{ required: true, message: 'Pick the date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
           </FormGrid>
           {woOptions.length > 0 && (

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Alert, Button, DatePicker, Space, Table, Typography } from "antd";
+import { Alert, Button, Space, Table, Typography } from "antd";
+import { DatePicker } from "@/components/common/DatePicker";
 import { DownloadOutlined } from "@/components/common/icons";
 import dayjs from "dayjs";
 import type { BalanceSheetDto } from "@erp/shared";
@@ -98,7 +99,6 @@ export function BalanceSheet() {
         <Space wrap>
           <DatePicker
             aria-label="As on"
-            format="DD MMM YYYY"
             allowClear={false}
             value={asOn}
             onChange={(d) => d && setAsOn(d)}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, DatePicker, Form, Input, Segmented, Select, Typography } from 'antd';
+import { App, Form, Input, Segmented, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import type { FormInstance } from 'antd';
 import dayjs from 'dayjs';
 import type { BookVoucherDto, ManualVoucherType } from '@erp/shared';
@@ -116,7 +117,7 @@ export function VoucherForm({
         </Form.Item>
         <FormGrid cols={3}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the voucher date' }]}>
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="reference" label="Reference" extra="Cheque, UTR or bill number">
             <Input maxLength={100} translate="no" />

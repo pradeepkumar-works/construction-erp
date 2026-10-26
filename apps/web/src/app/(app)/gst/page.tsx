@@ -3,7 +3,8 @@
 import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Alert, Button, Card, Col, DatePicker, Row, Statistic, Table, Typography } from 'antd';
+import { Alert, Button, Card, Col, Row, Statistic, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { DownloadOutlined } from '@/components/common/icons';

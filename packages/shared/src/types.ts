@@ -1444,6 +1444,8 @@ export interface ProjectContractDto {
   clientPaymentDays: number | null;
   /** Days the contract allows to give notice of a hindrance; null = not set (the notice clock assumes 14) */
   noticeDays: number | null;
+  /** How far, in %, measurement may run past a BOQ item's quantity before it needs a variation; null = 25 */
+  measureTolerancePct: number | null;
   priceVariation: boolean;
   /** Price variation: the date the base indices are taken at */
   pvBaseDate: string | null;

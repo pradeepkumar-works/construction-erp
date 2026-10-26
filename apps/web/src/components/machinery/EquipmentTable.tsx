@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Space, theme } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, theme } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ToolOutlined } from '@/components/common/icons';
@@ -399,7 +400,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 <InputNumber style={{ width: '100%' }} min={1} max={3650} precision={0} inputMode="numeric" />
               </Form.Item>
               <Form.Item name="lastServiceDate" label="Last service" tooltip="Closing a service job card updates it">
-                <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+                <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
               </Form.Item>
             </FormGrid>
             {editing && editing !== 'new' ? (

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, DatePicker, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { App, Button, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { DeleteOutlined, EditOutlined, LeftOutlined, PlusOutlined, RightOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -361,7 +362,7 @@ function DayForm({ data, target, onClose }: { data: OmDto; target: ServiceLevelD
         <FormGrid cols={3}>
           <Form.Item name="date" label="Day" rules={[{ required: true, message: 'Choose the day' }]}>
             <DatePicker
-              format="DD MMM YYYY"
+             
               style={{ width: '100%' }}
               disabled={!!d}
               disabledDate={(x) => x.isAfter(dayjs(data.today), 'day') || x.isBefore(dayjs(c.startOn), 'day') || x.isAfter(dayjs(c.endsOn), 'day')}

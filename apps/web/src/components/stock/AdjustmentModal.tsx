@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { App, Button, DatePicker, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { App, Button, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -86,7 +87,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="reason" label="Reason" rules={[{ required: true, message: 'Choose the reason, e.g. Wastage' }]}>
             <Select<StockAdjustmentReason>

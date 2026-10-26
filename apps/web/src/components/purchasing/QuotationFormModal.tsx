@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, DatePicker, Form, Input, InputNumber, Select, Table } from 'antd';
+import { App, Form, Input, InputNumber, Select, Table } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaterialRequestDto, MaterialRequestItemDto, QuotationDto } from '@erp/shared';
@@ -109,10 +110,10 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
               <Input maxLength={60} />
             </Form.Item>
             <Form.Item name="quoteDate" label="Quotation date" rules={[{ required: true, message: 'Pick the quotation date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="validUntil" label="Valid until">
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
         </FormSection>

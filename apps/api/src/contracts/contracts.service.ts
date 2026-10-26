@@ -80,6 +80,7 @@ export class ContractsService {
       defectLiabilityMonths: p.defectLiabilityMonths,
       clientPaymentDays: p.clientPaymentDays,
       noticeDays: p.noticeDays,
+      measureTolerancePct: p.measureTolerancePct,
       priceVariation: p.priceVariation,
       pvBaseDate: dateOnly(p.pvBaseDate),
       pvComponents: p.pvComponents.map((c) => ({ id: c.id, name: c.name, sharePct: pctStr(c.sharePct), baseIndex: c.baseIndex.toFixed(3).replace(/\.?0+$/, '') })),
@@ -230,6 +231,7 @@ export class ContractsService {
     if (dto.defectLiabilityMonths !== undefined) data.defectLiabilityMonths = dto.defectLiabilityMonths;
     if (dto.clientPaymentDays !== undefined) data.clientPaymentDays = dto.clientPaymentDays;
     if (dto.noticeDays !== undefined) data.noticeDays = dto.noticeDays;
+    if (dto.measureTolerancePct !== undefined) data.measureTolerancePct = dto.measureTolerancePct;
     if (dto.priceVariation !== undefined) data.priceVariation = dto.priceVariation;
     for (const k of ['ldRatePct', 'ldCapPct'] as const) {
       const v = dto[k];

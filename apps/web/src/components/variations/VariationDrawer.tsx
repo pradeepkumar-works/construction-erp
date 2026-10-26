@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, SendOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -193,7 +194,7 @@ function SendModal({ open, onClose, variation }: { open: boolean; onClose: () =>
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Send ${variation.label} to the client`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="date" label="Sent on" rules={[{ required: true, message: 'Pick the date it was sent' }]}>
-          <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+          <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         </Form.Item>
         <Form.Item name="ref" label="Our letter reference">
           <Input maxLength={100} placeholder="NIR/RD/2026/041" />
@@ -270,7 +271,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
             />
           </Form.Item>
           <Form.Item name="date" label="On" rules={[{ required: true, message: 'Pick the date of the decision' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="clientRef" label="Client's order or letter">
             <Input maxLength={100} placeholder="EE/RD/2026/233" />

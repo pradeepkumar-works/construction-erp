@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, DatePicker, Form, Input, Segmented, Select, Space, Switch, Table, Typography } from 'antd';
+import { App, Button, Form, Input, Segmented, Select, Space, Switch, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -107,7 +108,7 @@ export function ChartOfAccounts() {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <Space wrap>
           <Segmented aria-label="Which accounts" value={nature} onChange={(v) => setNature(v as AccountNature | 'ALL')} options={[{ value: 'ALL', label: 'All' }, ...NATURES.map((n) => ({ value: n, label: ACCOUNT_NATURE_LABELS[n] }))]} />
-          <DatePicker aria-label="Balances as on" format="DD MMM YYYY" allowClear={false} value={asOn} onChange={(d) => d && setAsOn(d)} />
+          <DatePicker aria-label="Balances as on" allowClear={false} value={asOn} onChange={(d) => d && setAsOn(d)} />
           <Input.Search allowClear placeholder="Account or group" aria-label="Search accounts" onSearch={(v) => setQ(v)} onChange={(e) => !e.target.value && setQ('')} style={{ width: 220 }} />
         </Space>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing(null)}>

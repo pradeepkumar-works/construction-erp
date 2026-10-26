@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { CopyOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -67,7 +68,7 @@ export function EnquiryFormModal({ open, request, onClose, onSent }: { open: boo
           />
         </Form.Item>
         <Form.Item name="closesOn" label="Quotes by" rules={[{ required: true, message: 'Pick the last day to quote' }]} extra="The links stop working after this day.">
-          <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
+          <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
         </Form.Item>
         <Form.Item name="message" label="Note to suppliers">
           <Input.TextArea rows={2} maxLength={1000} placeholder="Delivery to site, unloading, brands accepted…" />

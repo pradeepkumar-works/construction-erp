@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractPercentField, LdPeriod, ProjectContractDto } from '@erp/shared';
-import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, CURRENCIES, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, CURRENCIES, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE, MEASURE_TOLERANCE_PCT } from '@erp/shared';
 import { inContract, moneyPrefix, outOfContract } from '@/lib/format';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -29,6 +30,7 @@ type FormValues = {
   defectLiabilityMonths?: number | null;
   clientPaymentDays?: number | null;
   noticeDays?: number | null;
+  measureTolerancePct?: number | null;
   priceVariation?: boolean;
   ldRatePct?: number | null;
   ldPeriod?: LdPeriod;
@@ -73,6 +75,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       defectLiabilityMonths: contract.defectLiabilityMonths,
       clientPaymentDays: contract.clientPaymentDays,
       noticeDays: contract.noticeDays,
+      measureTolerancePct: contract.measureTolerancePct,
       priceVariation: contract.priceVariation,
       ldRatePct: Number(contract.ldRatePct),
       ldPeriod: contract.ldPeriod,
@@ -98,6 +101,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
         defectLiabilityMonths: v.defectLiabilityMonths ?? null,
         clientPaymentDays: v.clientPaymentDays ?? null,
         noticeDays: v.noticeDays ?? null,
+        measureTolerancePct: v.measureTolerancePct ?? null,
         priceVariation: !!v.priceVariation,
         ldRatePct: String(v.ldRatePct ?? 0),
         ldPeriod: v.ldPeriod ?? 'WEEK',
@@ -145,7 +149,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                 <Input placeholder="04/EE/R&B/2025-26" />
               </Form.Item>
               <Form.Item name="agreementDate" label="Agreement date">
-                <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+                <DatePicker style={{ width: '100%' }} />
               </Form.Item>
             </FormGrid>
             <FormGrid cols={2}>
@@ -168,7 +172,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                 <MoneyInput prefix={moneyPrefix(typed)} />
               </Form.Item>
               <Form.Item name="dates" label="Start / completion date (as agreed)" extra="Extensions of time come from the delay register.">
-                <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
+                <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
               </Form.Item>
             </FormGrid>
           </FormSection>
@@ -206,6 +210,13 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                 ) : undefined}
               >
                 <InputNumber<number> style={{ width: '100%' }} min={1} max={180} precision={0} inputMode="numeric" placeholder="14" />
+              </Form.Item>
+              <Form.Item
+                name="measureTolerancePct"
+                label="Measure past the BOQ by up to (%)"
+                tooltip="How far the measured quantity of a BOQ item may run past its BOQ quantity before it needs a variation. A sheet beyond it is refused. 25% is assumed when left empty."
+              >
+                <InputNumber<number> style={{ width: '100%' }} min={0} max={500} precision={0} inputMode="numeric" placeholder={String(MEASURE_TOLERANCE_PCT)} suffix="%" />
               </Form.Item>
             </FormGrid>
           </FormSection>

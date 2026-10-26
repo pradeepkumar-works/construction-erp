@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { Alert, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, MakeWarningDto, PurchaseOrderDto } from '@erp/shared';
@@ -240,10 +241,10 @@ export function PurchaseOrderFormModal({
               <VendorSelect prefer={['SUPPLIER']} />
             </Form.Item>
             <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Pick the PO date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="deliveryBy" label="Deliver by">
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
         </FormSection>

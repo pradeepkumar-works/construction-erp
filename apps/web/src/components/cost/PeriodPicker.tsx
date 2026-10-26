@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { DatePicker, Segmented, Space } from 'antd';
+import { Segmented, Space } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { formatDate } from '@/lib/format';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { CostPeriod } from '@/lib/queries';
@@ -58,7 +59,7 @@ export function PeriodPicker({ value, onChange }: { value: PeriodState; onChange
         ]}
       />
       {value.preset === 'custom' ? (
-        <DatePicker.RangePicker presets={rangePresets()} value={value.range} onChange={(r) => onChange({ preset: 'custom', range: r as [Dayjs | null, Dayjs | null] | null })} format="DD MMM YYYY" allowEmpty={[true, true]} aria-label="Dates" />
+        <DatePicker.RangePicker presets={rangePresets()} value={value.range} onChange={(r) => onChange({ preset: 'custom', range: r as [Dayjs | null, Dayjs | null] | null })} allowEmpty={[true, true]} aria-label="Dates" />
       ) : null}
     </Space>
   );

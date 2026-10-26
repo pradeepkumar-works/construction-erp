@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { hasDimensions, measurementLineQty, type MeasurementSheetDto, type MeasurementSortField, type Paginated, type SortOrder } from '@erp/shared';
+import { hasDimensions, MEASURE_TOLERANCE_PCT, measureOverBoq, measurementLineQty, type MeasurementSheetDto, type MeasurementSortField, type Paginated, type SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { SECTOR_SELECT, locationOr, resolveSector } from '../common/sector';
@@ -154,6 +154,26 @@ export class MeasurementsService {
     if (!item) throw new NotFoundException('BOQ item not found in this project');
   }
 
+  /**
+   * A sheet may not take the BOQ item's measured quantity past its BOQ quantity plus the contract's tolerance
+   * (`measureOverBoq`); beyond that the extra quantity needs a variation first. Every sheet but a rejected one counts.
+   */
+  private async assertWithinBoq(projectId: string, boqItemId: string, total: Prisma.Decimal, excludeId?: string) {
+    const [item, project, held] = await Promise.all([
+      this.prisma.boqItem.findUniqueOrThrow({ where: { id: boqItemId }, select: { itemNo: true, unit: true, originalQty: true, revisedQty: true } }),
+      this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { measureTolerancePct: true } }),
+      this.prisma.measurementSheet.aggregate({ where: { boqItemId, status: { not: 'REJECTED' }, ...(excludeId ? { id: { not: excludeId } } : {}) }, _sum: { totalQty: true } }),
+    ]);
+    const boqQty = Number(item.revisedQty ?? item.originalQty);
+    const tolerancePct = project.measureTolerancePct ?? MEASURE_TOLERANCE_PCT;
+    const over = measureOverBoq({ boqQty, before: Number(held._sum.totalQty ?? 0), sheet: Number(total), tolerancePct });
+    const n = (v: number) => v.toLocaleString('en-IN', { maximumFractionDigits: 3 });
+    if (over)
+      throw new BadRequestException(
+        `Item ${item.itemNo} would be measured to ${n(over.after)} ${item.unit}, past its BOQ quantity of ${n(boqQty)} ${item.unit} and the ${tolerancePct}% the contract allows (${n(over.cap)} ${item.unit}). Check the dimensions, or record a variation for the extra quantity first.`,
+      );
+  }
+
   /** Lines with their computed quantities, and the sheet total. */
   private lines(input: MeasurementLineInputDto[]) {
     const lines = input.map((l, i) => {
@@ -189,6 +209,7 @@ export class MeasurementsService {
     if (dto.workOrderId) await assertOpenWorkOrder(this.prisma, user.organizationId, dto.workOrderId, dto.projectId, dto.boqItemId);
     this.checkDate(dto.date);
     const { lines, total } = this.lines(dto.lines);
+    await this.assertWithinBoq(dto.projectId, dto.boqItemId, total);
     const sector = await resolveSector(this.prisma, dto.projectId, dto);
     const location = locationOr(dto.location, sector);
     if (!location) throw new BadRequestException('Say where it was measured');
@@ -257,6 +278,10 @@ export class MeasurementsService {
       data.location = location;
     }
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
+    if (dto.lines !== undefined || dto.boqItemId !== undefined) {
+      const cur = await this.prisma.measurementSheet.findUniqueOrThrow({ where: { id }, select: { boqItemId: true, totalQty: true } });
+      await this.assertWithinBoq(row.projectId, dto.boqItemId ?? cur.boqItemId, dto.lines !== undefined ? this.lines(dto.lines).total : cur.totalQty, id);
+    }
     await this.prisma.$transaction(async (tx) => {
       if (dto.lines !== undefined) {
         const { lines, total } = this.lines(dto.lines);

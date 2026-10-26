@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-input-checks',
+    date: '2027-02-04',
+    title: 'Fewer wrong entries',
+    points: [
+      'A DPR, progress entry or attendance sheet cannot be dated after today.',
+      'Quantities must be more than zero on requests, orders, receipts, issues, DPR lines and bills.',
+      'A measurement that would take a BOQ item past its quantity plus the contract’s allowance (25% unless the contract says otherwise, set in Contract › Edit) is refused with the figures; record a variation for the extra first.',
+      'Date fields read dates typed as 13/10/2026, 13-10-2026, 13.10.2026 or 13 Oct 26, and show them as 13 Oct 2026.',
+    ],
+  },
+  {
     id: '2027-02-item-master',
     date: '2027-02-03',
     title: 'One name for each material',

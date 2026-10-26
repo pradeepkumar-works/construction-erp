@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, Radio, Select, Space, Typography } from 'antd';
+import { App, Button, Checkbox, Form, Input, Radio, Select, Space, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { PpeKind, PpeRegisterDto } from '@erp/shared';
 import { PPE_KINDS, PPE_KIND_LABELS, PPE_LIFE_DAYS } from '@erp/shared';
@@ -89,7 +90,7 @@ export function IssuePpeModal({ open, onClose, register, preset }: { open: boole
         </Form.Item>
         <FormGrid>
           <Form.Item name="issuedOn" label="Issued on" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="size" label="Size" extra="When one size suits everyone in this issue, e.g. shoe size 9 or jacket L.">
             <Input maxLength={20} />
@@ -140,7 +141,7 @@ export function ClosePpeModal({ open, onClose, item }: { open: boolean; onClose:
           />
         </Form.Item>
         <Form.Item name="on" label={status === 'LOST' ? 'Found missing on' : 'Returned on'} rules={[{ required: true, message: 'Pick the date' }]}>
-          <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(item.issuedOn), 'day')} />
+          <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(item.issuedOn), 'day')} />
         </Form.Item>
         <Form.Item name="recoverable" valuePropName="checked">
           <Checkbox>Recover its cost from the labour contractor</Checkbox>

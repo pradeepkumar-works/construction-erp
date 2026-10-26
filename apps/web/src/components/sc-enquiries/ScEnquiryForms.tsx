@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Alert, DatePicker, Form, Input, InputNumber, Radio, Select, Table, Typography, theme } from 'antd';
+import { Alert, Form, Input, InputNumber, Radio, Select, Table, Typography, theme } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
@@ -124,7 +125,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
               />
             </Form.Item>
             <Form.Item name="closesOn" label="Last day to quote">
-              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
           <Form.Item name="title" label="Work" rules={[{ required: true, whitespace: true, message: 'Say what the work is' }]}>
@@ -334,13 +335,13 @@ export function QuoteDrawer({ enquiry, quote, onClose }: { enquiry: ScEnquiryDet
       <Form form={form} layout="vertical">
         <FormGrid cols={3}>
           <Form.Item name="receivedOn" label="Received on" rules={[{ required: true, message: 'Choose the day their quote came' }]}>
-            <DatePicker format="DD MMM YYYY" disabledDate={notAfterToday} style={{ width: '100%' }} />
+            <DatePicker disabledDate={notAfterToday} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="gstRate" label="GST on their bills">
             <Select options={GST_RATES.map((r) => ({ value: r, label: `${r}%` }))} />
           </Form.Item>
           <Form.Item name="validUntil" label="Valid until">
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
         <LineTable
@@ -485,10 +486,10 @@ export function AwardDialog({ enquiry, open, quoteId, onClose }: { enquiry: ScEn
         )}
         <FormGrid cols={3}>
           <Form.Item name="startDate" label="Start">
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="endDate" label="Finish">
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="retentionPct" label="Retention (%)">
             <InputNumber min={0} max={100} precision={2} style={{ width: '100%' }} />

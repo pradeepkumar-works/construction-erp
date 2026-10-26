@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Card, DatePicker, Empty, Segmented, Skeleton, Space, theme } from 'antd';
+import { App, Button, Card, Empty, Segmented, Skeleton, Space, theme } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { formatDayMonth, formatDate } from '@/lib/format';
 import { PrinterOutlined } from '@/components/common/icons';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -57,7 +58,6 @@ export function ProgressReportView({ projectId, portal = false, picker }: { proj
             <DatePicker.RangePicker
               value={custom ?? [from, to]}
               onChange={(r) => r?.[0] && r?.[1] && setCustom([r[0], r[1]])}
-              format="DD MMM YYYY"
               allowClear={false}
               disabledDate={(d, info) => !!info?.from && Math.abs(d.diff(info.from, 'day')) > 91}
               aria-label="Dates"

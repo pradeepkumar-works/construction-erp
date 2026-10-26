@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DatePicker, Input, Segmented, Space, Table } from 'antd';
+import { Input, Segmented, Space, Table } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { RmcBatchDto, RmcBatchStatus } from '@erp/shared';
 import { useRmcBatches } from '@/lib/queries';
@@ -30,7 +31,7 @@ export function Batches() {
   return (
     <div style={{ padding: 16 }}>
       <Space wrap style={{ marginBottom: 12 }}>
-        <DatePicker.RangePicker aria-label="Days" format="DD MMM YYYY" allowClear={false} value={range} onChange={(r) => r?.[0] && r[1] && (setRange([r[0], r[1]]), setPage(1))} />
+        <DatePicker.RangePicker aria-label="Days" allowClear={false} value={range} onChange={(r) => r?.[0] && r[1] && (setRange([r[0], r[1]]), setPage(1))} />
         <Segmented
           aria-label="Which trucks"
           value={status}
