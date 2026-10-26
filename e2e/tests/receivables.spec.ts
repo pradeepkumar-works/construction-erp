@@ -55,5 +55,5 @@ test('record payments against a sent RA bill until it is paid', async ({ page })
 
 test('a site engineer has no receivables', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
-  await expect(page.getByRole('link', { name: 'Receivables' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Receivables', exact: true })).toHaveCount(0);
 });

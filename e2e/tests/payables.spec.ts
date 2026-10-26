@@ -32,7 +32,7 @@ test('pay an approved vendor bill from the due list until it is paid', async ({ 
   expect(over.status).toBe(400);
 
   await signIn(page, 'accounts@demo.com');
-  await page.getByRole('link', { name: 'Payables' }).click();
+  await page.getByRole('link', { name: 'Payables', exact: true }).click();
   await expect(page.getByText('MSME at risk', { exact: true }).first()).toBeVisible();
   const row = page.locator('tr').filter({ hasText: open.billLabel });
   await row.getByRole('button', { name: 'Pay' }).click();
@@ -64,5 +64,5 @@ test('a site engineer has no payables', async ({ page }) => {
   const engineer = await apiToken('engineer@demo.com');
   expect((await fetch(`${API_URL}/payables`, { headers: { authorization: `Bearer ${engineer}` } })).status).toBe(403);
   await signIn(page, 'engineer@demo.com');
-  await expect(page.getByRole('link', { name: 'Payables' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Payables', exact: true })).toHaveCount(0);
 });
