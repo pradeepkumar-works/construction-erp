@@ -146,6 +146,7 @@ import type {
   AuthOptionsDto,
   MeasurementSheetDto,
   ToMeasureItemDto,
+  StandardNormPlanDto,
   InspectionDto,
   ChecklistTemplateDto,
   RaBillDto,
@@ -2342,6 +2343,14 @@ export const useProjectReconciliation = (projectId: string | undefined, period: 
     queryFn: async () => (await api.get<ProjectReconciliationDto>(`/reconciliation/projects/${projectId}`, { params: clean(period) })).data,
     placeholderData: keepPreviousData,
     enabled: !!projectId,
+  });
+
+/** What adopting the standard norms library would set on a project (finding 16 of the October review). */
+export const useStandardNorms = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['standard-norms', projectId],
+    queryFn: async () => (await api.get<StandardNormPlanDto>(`/reconciliation/projects/${projectId}/standard-norms`)).data,
+    enabled: enabled && !!projectId,
   });
 
 export interface SaveMaterialNormInput {

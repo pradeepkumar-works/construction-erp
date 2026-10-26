@@ -87,4 +87,5 @@ export * from './dpr-lines';
 export * from './pipe-network';
 export * from './om';
 export * from './items';
+export * from './norms-library';
 export * from './project-setup';

@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-standard-norms',
+    date: '2027-02-15',
+    title: 'Standard norms to start from',
+    points: [
+      'Add standard norms on a project’s Reconciliation reads the BOQ and offers the usual figures for concrete by grade, reinforcement, brickwork, plaster, sub-base, wet mix and bituminous work.',
+      'It shows what it would set before anything is written, adds the store items it needs, and never touches the norms you have already set.',
+    ],
+  },
+  {
     id: '2027-02-order-decision',
     date: '2027-02-14',
     title: 'Decide a purchase order without the paperwork',

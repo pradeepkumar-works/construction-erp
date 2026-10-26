@@ -1533,8 +1533,22 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   allowed, valued at the item rate for cost viewers only. Issued items with no norm are listed as unreconciled.
 - **Roles.** Seen by `RECONCILIATION_VIEW_ROLES` (QS, approvers, stores, procurement, accounts, site engineer); norms set
   by `MATERIAL_NORM_ROLES` (QS, PM, management, admin). Every change is in the project's audit log.
+- **The standard norms library (finding 16 of the October review).** A new project's reconciliation was empty, because a
+  norm had to be typed for every BOQ item before anything could be checked. `STANDARD_NORMS`
+  (`packages/shared/src/norms-library.ts`, pure data) holds the usual figures for the work a civil contractor does:
+  concrete by grade, reinforcement, brickwork, plaster, granular sub-base, wet mix and bituminous work, each in its own
+  unit with its materials, wastage and a note saying what the figures stand on. `standardNormFor` reads a BOQ item as
+  one of them by the words in its description and its unit (the most particular norm wins), so nothing is guessed at:
+  work the library does not know is left for the quantity surveyor. `GET /reconciliation/projects/:id/standard-norms`
+  is the plan — which items match, what they would get, which store items the item master lacks — and `POST` the same
+  route adopts it: missing items are added to the master (matched through `masterItemFor`, so an item written another
+  way is reused), each recognised BOQ item gets its norms, and an item that already has norms is left alone unless
+  `replace` is asked for. Audited as `MATERIAL_NORMS_ADOPTED`. On the web it is *Add standard norms* on the
+  Reconciliation view, which previews the plan (`StandardNormsModal`). The figures are a starting point and the screen
+  says so. Tests: `src/scripts/norms-library-test.ts` (CI runs it), `e2e/tests/norms-library.spec.ts`.
 - **API.** `GET /reconciliation/projects/:id?from&to`, `PUT /reconciliation/projects/:id/norms` (adds or changes by BOQ
-  item + store item), `DELETE /reconciliation/projects/:id/norms/:normId`.
+  item + store item), `DELETE /reconciliation/projects/:id/norms/:normId`, `GET`/`POST`
+  `/reconciliation/projects/:id/standard-norms` for the library.
 - **Web.** Project > Materials > Reconciliation (`components/reconciliation/`), with views under `?sub=`:
   Materials (period picker, the reconciliation with each item's BOQ lines, items without a norm, the norms with
   add/edit/remove, and an Excel export), Structure, Pipe and Kits, Exceptions (below), Subcontractors, Wastage and
