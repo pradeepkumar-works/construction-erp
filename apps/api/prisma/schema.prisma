@@ -901,33 +901,35 @@ model ApprovalEscalation {
 }
 
 model User {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  roleId         String
-  role           Role         @relation(fields: [roleId], references: [id])
-  email          String
-  passwordHash   String
-  fullName       String
-  phone          String?
+  id               String       @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  roleId           String
+  role             Role         @relation(fields: [roleId], references: [id])
+  email            String
+  passwordHash     String
+  /// Sessions signed in before this are refused (finding 5 of the October review): set when the password changes or is reset
+  tokensValidAfter DateTime?
+  fullName         String
+  phone            String?
   /// The user's own opt-in for alerts on WhatsApp and by SMS (WhatsApp first, SMS as the fallback).
-  whatsappAlerts Boolean      @default(false)
-  smsAlerts      Boolean      @default(false)
+  whatsappAlerts   Boolean      @default(false)
+  smsAlerts        Boolean      @default(false)
   /// Email for what waits on the user (hand-offs and send-backs, e2e review fix 2); on unless they switch it off
-  emailAlerts    Boolean      @default(true)
+  emailAlerts      Boolean      @default(true)
   /// The user's own opt-in for a three-line morning brief from Ask Nirmaan (AI item 74).
-  morningBrief   Boolean      @default(false)
+  morningBrief     Boolean      @default(false)
   /// WhatsApp entries (AI item 120): the user's number, normalised (919876543210), while they have them switched on.
   /// Messages from it are read as this user; one number belongs to one user across all companies.
-  captureFrom    String?      @unique
-  isActive       Boolean      @default(true)
+  captureFrom      String?      @unique
+  isActive         Boolean      @default(true)
   /// Set when invited; cleared once the user chooses a password.
-  invitedAt      DateTime?
+  invitedAt        DateTime?
   /// A supplier-portal login (role SUPPLIER, v6 item 105): the vendor it acts for. Null for everyone else.
-  vendorId       String?
-  vendor         Vendor?      @relation("VendorPortalLogins", fields: [vendorId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  vendorId         String?
+  vendor           Vendor?      @relation("VendorPortalLogins", fields: [vendorId], references: [id])
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   savedViews            SavedView[]
   navPins               NavPin[]
@@ -7640,4 +7642,21 @@ model HindranceCheck {
   @@index([organizationId, decision])
   @@index([projectId])
   @@index([riskId])
+}
+
+/// Failed sign-ins and reset-link requests (finding 5 of the October review), counted per email and per address to slow
+/// password guessing (`login-guard-rules.ts`). Not a tenant table: an attempt may name no one's account. Rows older than
+/// a day are removed as new ones come in.
+model AuthAttempt {
+  id        String   @id @default(uuid())
+  /// LOGIN_FAILED or RESET_REQUESTED (internal to the guard, never shown)
+  kind      String
+  /// As typed, lower case
+  email     String
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([email, kind, createdAt])
+  @@index([ip, kind, createdAt])
+  @@index([createdAt])
 }

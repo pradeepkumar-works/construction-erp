@@ -55,6 +55,26 @@ shapes of every API response, so web, mobile and API agree on one contract.
 - A submitter cannot approve their own entry unless they also hold an approver role.
 - `ProjectAccessService` is the single place that encodes these rules; every service calls it.
 
+### Signing in and headers (finding 5 of the October review)
+
+- **Guessing.** `LoginGuardService` counts failed sign-ins in `AuthAttempt` (a platform table, no organisation, left out
+  of company data; rows over a day old are removed as new ones come in). Five wrong passwords for an email in 15 minutes
+  lock it for 15 minutes from the fifth, whatever comes next; 30 failures from one address (first `x-forwarded-for`
+  hop) hold it off. Both answer 429 with when to try again. A good password clears the email's failures. Reset links:
+  5 an hour per email and 20 per address, past which nothing is sent and the answer is the same. Rules pure in
+  `auth/login-guard-rules.ts`, tested in `src/scripts/login-guard-test.ts`.
+- **Sessions.** `User.tokensValidAfter` is set when the password changes (own change, reset link, admin) and the JWT
+  strategy refuses a token issued before it, so a leaked session ends with the password. `POST /auth/change-password`
+  returns a fresh `accessToken` for the session that made the change. Tokens still last `JWT_EXPIRES_IN` (7 days): the
+  phone's outbox works offline for days, so a short token with refresh is left for when the phone stores a refresh
+  token securely.
+- **Headers.** The API (`common/security-headers.ts`): `nosniff`, `Referrer-Policy`, HSTS over HTTPS, and
+  `default-src 'none'; frame-ancestors 'none'` with `X-Frame-Options: DENY` on every answer but stored files (framed
+  only by `CORS_ORIGINS`, for the document viewer) and Swagger. A stored HTML, SVG or XML file opens sandboxed. The web
+  (`next.config.ts`): a CSP allowing this site, the API (`NEXT_PUBLIC_API_URL`), Razorpay checkout, Vercel Blob uploads
+  and Google Fonts for printouts, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff` and HSTS. A new outside
+  service a page loads from is a line in that CSP.
+
 ## One approval workflow
 
 `SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material

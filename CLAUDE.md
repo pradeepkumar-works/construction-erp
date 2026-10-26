@@ -249,6 +249,9 @@ and the pre-delivery checklist.
   and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
   filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`
   (tested in `src/scripts/supplier-test.ts`, CI runs it); web pages under `app/(app)/supplier`, the company's side at `/supplier-inbox`.
+- Security (ARCHITECTURE "Signing in and headers"): sign-in and reset requests go through `LoginGuardService` (rules in
+  `auth/login-guard-rules.ts`, keep `src/scripts/login-guard-test.ts` passing); a password change sets `User.tokensValidAfter`.
+  The web's CSP is in `next.config.ts`: a page that loads from a new outside service adds it there.
 - Input checks (ARCHITECTURE "Measurement book", Other input checks): a quantity field is `@IsQuantity()` (`src/common/quantity.ts`),
   a day's record calls `assertNotAfterToday`, and a web date field is `DatePicker` from `components/common/DatePicker` (it reads
   typed dates in the common formats; ESLint refuses antd's). Keep `src/scripts/validation-test.ts` passing.

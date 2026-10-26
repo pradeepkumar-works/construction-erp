@@ -10,20 +10,26 @@ import { billingConfig, billingState } from '../common/billing';
 import { todayIn } from '../notifications/time';
 import { aiConfigured } from '../ai/ai.config';
 import { PasswordLinksService } from './password-links.service';
+import { LoginGuardService } from './login-guard.service';
 import { SignupDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService, private rights: ApprovalRightsService, private links: PasswordLinksService) {}
+  constructor(private prisma: PrismaService, private jwt: JwtService, private rights: ApprovalRightsService, private links: PasswordLinksService, private guard: LoginGuardService) {}
 
-  async login(email: string, password: string): Promise<LoginResponse> {
+  /** Sign in. A locked email or an address making too many tries is refused (429) before the password is checked. */
+  async login(emailIn: string, password: string, ip: string | null = null): Promise<LoginResponse> {
+    const email = emailIn.trim().toLowerCase();
+    await this.guard.assertMayTry(email, ip);
     const user = await this.prisma.user.findFirst({
-      where: { email: email.toLowerCase(), isActive: true },
+      where: { email, isActive: true },
       include: { role: true, organization: true },
     });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      await this.guard.failed(email, ip);
       throw new UnauthorizedException('Invalid email or password');
     }
+    await this.guard.succeeded(email);
     return this.issue(user.id);
   }
 
@@ -71,9 +77,11 @@ export class AuthService {
   }
 
   /** Always succeeds, so the answer does not reveal whether an email has an account. */
-  async forgotPassword(emailIn: string): Promise<{ ok: true }> {
+  async forgotPassword(emailIn: string, ip: string | null = null): Promise<{ ok: true }> {
     const email = emailIn.trim().toLowerCase();
     if (!this.links.configuredWebUrl() || !this.links.canEmail) return { ok: true };
+    // Past the hourly limit nothing is sent, and the answer is the same, so it tells no one anything.
+    if (!(await this.guard.mayRequestReset(email, ip))) return { ok: true };
     const users = await this.prisma.user.findMany({ where: { email, isActive: true }, select: { id: true } });
     for (const u of users) {
       const recent = await this.prisma.passwordToken.findFirst({ where: { userId: u.id, purpose: 'RESET', createdAt: { gt: new Date(Date.now() - 60_000) } }, select: { id: true } });
@@ -116,8 +124,9 @@ export class AuthService {
   async changePassword(req: RequestUser, currentPassword: string, newPassword: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: req.id } });
     if (!(await bcrypt.compare(currentPassword, user.passwordHash))) throw new BadRequestException('Current password is incorrect');
-    await this.prisma.user.update({ where: { id: req.id }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } });
-    return { ok: true };
+    // Other sessions of the old password end; this one goes on with the token returned.
+    await this.prisma.user.update({ where: { id: req.id }, data: { passwordHash: await bcrypt.hash(newPassword, 10), tokensValidAfter: new Date() } });
+    return { ok: true, accessToken: await this.jwt.signAsync({ sub: user.id, org: user.organizationId }) };
   }
 
   private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; role: { key: string; name: string }; organization: BillingOrg & ModulesOrg & { name: string; aiEnabled: boolean; aiRoles: string[] } }): Promise<AuthUser> {

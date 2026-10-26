@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-sign-in-safety',
+    date: '2027-02-05',
+    title: 'Safer sign-in',
+    points: [
+      'Five wrong passwords in a row lock that email for 15 minutes; the sign-in screen says when to try again, or reset the password.',
+      'Changing or resetting a password signs that account out everywhere else.',
+      'Password-reset emails are limited to five an hour.',
+    ],
+  },
+  {
     id: '2027-02-input-checks',
     date: '2027-02-04',
     title: 'Fewer wrong entries',
