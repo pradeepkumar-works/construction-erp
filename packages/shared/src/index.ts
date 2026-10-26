@@ -12,6 +12,7 @@ export * from './contract';
 export * from './cost';
 export * from './risk';
 export * from './templates';
+export * from './boq-links';
 export * from './element-templates';
 export * from './wbs';
 export * from './approvals';

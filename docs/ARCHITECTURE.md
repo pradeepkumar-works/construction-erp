@@ -642,6 +642,31 @@ turns a list into planned dates: from the project start, scaled so the template 
 end date is set. `POST /projects` with `applyTemplate: true`, or `POST /projects/:id/activities/from-template`
 (optionally `names`), creates the activities with planned quantity 0, skipping names the project already has.
 
+A project often starts before its dates are known, so the template's activities are created without any
+(`scheduleTemplate` has nothing to scale). `spreadUndated` (shared, pure) places them once the dates arrive: an
+activity whose name is in the template takes that template's scaled slot, and anything else is given an equal
+consecutive share of what is left, the last one ending with the project. `TemplatesService.spreadUndated` runs it
+in a transaction and audits `SCHEDULED_FROM_TEMPLATE`; `ContractsService.update` calls it when a contract first
+brings a start date, and `ProjectsService.update` when the project itself gets one. An activity that already has
+dates is never moved.
+
+### Linking activities to BOQ items (v6 item 125, finding 11 of the October review)
+
+A BOQ import and a template both name the same work in their own words, so the activities and the BOQ items
+arrive unlinked. `boqLinkSuggestions` (`packages/shared/src/boq-links.ts`, pure) offers the pairs: `nameMatch`
+scores two names over a normaliser that drops "works", "item", "part", "section", "schedule" and "boq", and a
+pair is offered above `min` (0.6). An activity is matched against the BOQ's section names first (reason
+`section`, the section's largest item by amount) and then against the item descriptions (reason `description`);
+duplicate offers for the same pair merge, keeping `section`. Each activity and each item is offered once, best
+score first.
+
+`GET /projects/:projectId/activities/boq-links` returns the offers for the project's unlinked activities,
+`POST` the same route takes the ones the user kept (`canEditProjects`). Linking sets `Activity.boqItemId` and,
+where the activity's planned quantity is still zero, takes the item's unit and quantity; it audits
+`ACTIVITIES_LINKED_TO_BOQ` and refuses (409) when nothing could be linked. On the web the BOQ tab's import opens
+`LinkBoqModal` when it finishes, and the Activities tab has a "Link to BOQ (n)" button for the unlinked ones.
+`src/scripts/boq-links-test.ts` holds the rules' tests (CI runs it).
+
 ### Gantt, milestones and baseline
 
 - **Tables.** `Milestone`: project, name, `dueDate`, `baselineDate`, `achievedOn`, note (with a `tenant_isolation`
