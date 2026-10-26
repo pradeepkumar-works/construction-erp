@@ -134,6 +134,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/validation-test.js
+      - name: Wrong passwords lock an email for 15 minutes, an address trying many is held off, reset links are limited
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/login-guard-test.js
       - name: Pipe networks read from EPANET and Excel, segments held to their length, zone sheets and working fronts
         if: matrix.suite == 'flows'
         working-directory: apps/api
