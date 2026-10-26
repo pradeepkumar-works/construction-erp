@@ -88,4 +88,5 @@ export * from './pipe-network';
 export * from './om';
 export * from './management';
 export * from './items';
+export * from './norms-library';
 export * from './project-setup';

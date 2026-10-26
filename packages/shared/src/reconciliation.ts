@@ -561,3 +561,55 @@ export function pickLibraryItem<T extends { name: string; unit: string }>(m: Rat
   const fit = named.filter((i) => sameUnit(i.unit, m.unit)).sort((a, b) => score(b) - score(a) || a.name.length - b.name.length);
   return { item: fit[0] ?? null, wrongUnit: fit.length ? null : (named[0] ?? null) };
 }
+
+/* ---------- the standard norms library (finding 16 of the October review) ---------- */
+
+/** One material the library would set on a BOQ item, and the master item it lands on. */
+export interface StandardNormMaterialDto {
+  /** The store item as the library names it */
+  item: string;
+  unit: string;
+  qtyPerUnit: string;
+  wastagePct: string;
+  /** The item master's own item, or null when adopting would add it */
+  itemId: string | null;
+  itemName: string | null;
+}
+
+/** One BOQ item the library recognises, and what it would be given. */
+export interface StandardNormMatchDto {
+  boqItemId: string;
+  itemNo: string;
+  description: string;
+  unit: string;
+  normKey: string;
+  normLabel: string;
+  note: string;
+  /** It already has norms of its own, so adopting leaves it alone unless it is told to replace them */
+  hasNorms: boolean;
+  materials: StandardNormMaterialDto[];
+}
+
+/** What adopting the library would do to a project, before anything is written. */
+export interface StandardNormPlanDto {
+  projectId: string;
+  matches: StandardNormMatchDto[];
+  /** BOQ items the library does not recognise, which stay for the quantity surveyor */
+  unmatchedCount: number;
+  /** Store items adopting would add to the item master, by name */
+  newItems: { name: string; unit: string }[];
+  /** Whether this user may adopt them */
+  canAdopt: boolean;
+}
+
+/** What adopting actually did. */
+export interface StandardNormResultDto {
+  /** BOQ items given norms */
+  boqItems: number;
+  /** Norms written, new and changed together */
+  norms: number;
+  /** Store items added to the master */
+  newItems: number;
+  /** BOQ items left alone because they already had norms */
+  skipped: number;
+}

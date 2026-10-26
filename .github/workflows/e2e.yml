@@ -122,6 +122,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/measure-from-progress-test.js
+      - name: The standard norms library reads a BOQ item by its words and unit
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/norms-library-test.js
       - name: Material reconciliation adds up theoretical, allowed and consumed quantities and flags each item
         if: matrix.suite == 'flows'
         working-directory: apps/api

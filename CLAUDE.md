@@ -151,6 +151,10 @@ and the pre-delivery checklist.
   offers and `PlanningService.linkBoq` sets `boqItemId` (taking the item's unit and quantity only where the activity has
   none). Activities created with no dates are placed by `spreadUndated` (`@erp/shared/templates.ts`) when a start date
   first arrives, through `TemplatesService.spreadUndated`. Keep `src/scripts/boq-links-test.ts` passing.
+- Standard norms (ARCHITECTURE "Material reconciliation"): the starting figures a project adopts are `STANDARD_NORMS`
+  (`@erp/shared/norms-library.ts`) and a BOQ item is read as one of them only by `standardNormFor`; adopting goes through
+  `ReconciliationService.adoptStandardNorms` (never a second write path), which leaves an item that already has norms
+  alone. Keep `src/scripts/norms-library-test.ts` passing.
 - Measure from progress (ARCHITECTURE "Measurement book"): what a BOQ item still has to measure comes from
   `MeasurementsService.toMeasure` (`GET /measurements/to-measure`), whose choice of days is pure in `unmeasuredEntries`
   (`@erp/shared/measurement.ts`: the measured quantity walked off the approved entries oldest first); only activities in
