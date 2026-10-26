@@ -107,6 +107,56 @@ export function UserSelect({ roles, params, ...props }: Picker<UserSummary> & { 
   return <SearchSelect<UserSummary> source="users" params={query} toOption={userOption} placeholder="Type a name" {...props} />;
 }
 
+/**
+ * Several users at once (finding 6 of the October review: a team was added one person at a time), searching as you type
+ * like `UserSelect`; the chosen ones keep their names when the search that found them is gone.
+ */
+export function UserMultiSelect({
+  value,
+  onChange,
+  exclude,
+  roles,
+  placeholder,
+  ...props
+}: Omit<SelectProps<string[]>, 'options' | 'mode' | 'showSearch' | 'filterOption' | 'onSearch' | 'loading' | 'onChange'> & {
+  exclude?: (u: UserSummary) => boolean;
+  roles?: readonly RoleKey[];
+  onChange?: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const q = useDebounced(search, 250);
+  const roleKeys = roles?.length ? roles.join(',') : undefined;
+  const params = useMemo(() => ({ isActive: true, roleKeys }), [roleKeys]);
+  const page = usePickerPage<UserSummary>('users', q, params, open || !!q);
+  const [names, setNames] = useState<Record<string, React.ReactNode>>({});
+  const options = useMemo(() => {
+    const rows = (page.data?.items ?? []).filter((u) => !exclude?.(u)).map(userOption);
+    const kept = (value ?? []).filter((v) => !rows.some((o) => o.value === v)).map((v) => ({ value: v, label: names[v] ?? v }));
+    return [...kept, ...rows];
+  }, [page.data, exclude, value, names]);
+  return (
+    <Select<string[]>
+      {...props}
+      mode="multiple"
+      value={value}
+      onChange={(ids) => {
+        setNames((m) => ({ ...m, ...Object.fromEntries(options.filter((o) => ids.includes(o.value)).map((o) => [o.value, o.label])) }));
+        onChange?.(ids);
+      }}
+      placeholder={placeholder ?? 'Type names'}
+      options={options}
+      loading={open && page.isFetching}
+      showSearch={{ filterOption: false, onSearch: setSearch, searchValue: search }}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setSearch('');
+      }}
+      notFoundContent={open && page.isFetching ? <Spin size="small" /> : <Typography.Text type="secondary">{q ? `Nothing matches "${q}"` : 'Nothing to choose yet'}</Typography.Text>}
+    />
+  );
+}
+
 /** A vendor from the master (active ones unless `params` says otherwise): `kinds` keeps only those, `prefer` lists those first. */
 export function VendorSelect({ kinds, prefer, params, ...props }: Picker<VendorDto> & { kinds?: readonly VendorKind[]; prefer?: readonly VendorKind[] }) {
   const kindList = kinds?.length ? kinds.join(',') : undefined;

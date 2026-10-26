@@ -1,6 +1,6 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canEditContract, gstStateCode, type ClientDto, type Paginated } from '@erp/shared';
+import { canEditContract, CLIENT_TERM_PERCENTS, gstStateCode, type ClientDto, type Paginated } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -12,6 +12,7 @@ import { CreateClientDto, ListClientsQuery, UpdateClientDto } from './clients.dt
 
 const include = { _count: { select: { projects: true } } } satisfies Prisma.ClientInclude;
 type Row = Prisma.ClientGetPayload<{ include: typeof include }>;
+const pct = (d: Prisma.Decimal | null) => (d === null ? null : d.toString());
 
 /** Client master: the departments and owners the organisation builds for. Projects link to a client for billing. */
 @Injectable()
@@ -37,10 +38,32 @@ export class ClientsService {
       email: r.email,
       phone: r.phone,
       isActive: r.isActive,
+      retentionPct: pct(r.retentionPct),
+      securityDepositPct: pct(r.securityDepositPct),
+      tdsPct: pct(r.tdsPct),
+      gstTdsPct: pct(r.gstTdsPct),
+      labourCessPct: pct(r.labourCessPct),
+      gstRate: pct(r.gstRate),
+      defectLiabilityMonths: r.defectLiabilityMonths,
+      clientPaymentDays: r.clientPaymentDays,
       projectCount: r._count?.projects ?? 0,
       createdAt: iso(r.createdAt)!,
       updatedAt: iso(r.updatedAt)!,
     };
+  }
+
+  /** The usual terms sent, each 0 to 100 (GST to 28); what is not sent stays. */
+  private terms(dto: Partial<CreateClientDto>) {
+    const out: Record<string, string | number | null> = {};
+    for (const k of CLIENT_TERM_PERCENTS) {
+      const v = dto[k];
+      if (v === undefined) continue;
+      if (v !== null && (Number(v) < 0 || Number(v) > (k === 'gstRate' ? 28 : 100))) throw new BadRequestException(`${k} must be between 0 and ${k === 'gstRate' ? 28 : 100}`);
+      out[k] = v;
+    }
+    if (dto.defectLiabilityMonths !== undefined) out.defectLiabilityMonths = dto.defectLiabilityMonths;
+    if (dto.clientPaymentDays !== undefined) out.clientPaymentDays = dto.clientPaymentDays;
+    return out;
   }
 
   private assertCanEdit(user: RequestUser) {
@@ -89,6 +112,7 @@ export class ClientsService {
           contactPerson: dto.contactPerson ?? null,
           email: dto.email ?? null,
           phone: dto.phone ?? null,
+          ...this.terms(dto),
         },
       });
       await this.audit.log(user, 'CLIENT', row.id, 'CREATED');
@@ -105,6 +129,7 @@ export class ClientsService {
     if (!current) throw new NotFoundException('Client not found');
     const data: Prisma.ClientUpdateInput = {};
     for (const k of ['name', 'department', 'gstin', 'pan', 'billingAddress', 'contactPerson', 'email', 'phone', 'isActive'] as const) if (dto[k] !== undefined) (data as Record<string, unknown>)[k] = dto[k];
+    Object.assign(data, this.terms(dto));
     const gstin = dto.gstin !== undefined ? dto.gstin : current.gstin;
     if (dto.gstin !== undefined || dto.stateCode !== undefined) data.stateCode = this.stateCode(gstin, dto.stateCode !== undefined ? dto.stateCode : current.stateCode) ?? null;
     try {

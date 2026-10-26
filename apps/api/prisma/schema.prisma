@@ -1193,6 +1193,8 @@ model Project {
   siteRadiusM            Int?
   /// Refuse a check-in from outside the radius (or without a position) instead of only flagging it
   siteCheckInStrict      Boolean        @default(false)
+  /// Someone who edits the project hid its setup checklist from the Overview (finding 6 of the October review)
+  setupHiddenAt          DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
 
@@ -1297,23 +1299,33 @@ model Project {
 
 /// A client (employer) the organisation builds for: a government department or a private owner.
 model Client {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  name           String
+  id                    String       @id @default(uuid())
+  organizationId        String
+  organization          Organization @relation(fields: [organizationId], references: [id])
+  name                  String
   /// Department, division or circle that issues the work orders, e.g. "Roads Division, Khordha"
-  department     String?
-  gstin          String?
-  pan            String?
-  billingAddress String?
+  department            String?
+  gstin                 String?
+  pan                   String?
+  billingAddress        String?
   /// GST state code (first two digits of the GSTIN, or set by hand)
-  stateCode      String?
-  contactPerson  String?
-  email          String?
-  phone          String?
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  stateCode             String?
+  contactPerson         String?
+  email                 String?
+  phone                 String?
+  isActive              Boolean      @default(true)
+  /// The client's usual terms (finding 6 of the October review): what a new project of theirs starts with; null takes
+  /// STANDARD_TERMS in @erp/shared
+  retentionPct          Decimal?     @db.Decimal(5, 2)
+  securityDepositPct    Decimal?     @db.Decimal(5, 2)
+  tdsPct                Decimal?     @db.Decimal(5, 2)
+  gstTdsPct             Decimal?     @db.Decimal(5, 2)
+  labourCessPct         Decimal?     @db.Decimal(5, 2)
+  gstRate               Decimal?     @db.Decimal(5, 2)
+  defectLiabilityMonths Int?
+  clientPaymentDays     Int?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 
   projects    Project[]
   rmcOrders   RmcOrder[]

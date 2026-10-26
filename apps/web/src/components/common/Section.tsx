@@ -14,8 +14,11 @@ export function Section({
   children,
   style,
   className,
+  id,
 }: {
   className?: string;
+  /** An anchor, for links to the section (`#team`) */
+  id?: string;
   title?: React.ReactNode;
   extra?: React.ReactNode;
   loading?: boolean;
@@ -24,7 +27,7 @@ export function Section({
 }) {
   const { token } = theme.useToken();
   return (
-    <section className={className} style={{ borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, paddingTop: token.paddingSM, ...style }}>
+    <section id={id} className={className} style={{ borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, paddingTop: token.paddingSM, ...style }}>
       {title || extra ? (
         <Flex align="center" justify="space-between" gap={token.marginSM} wrap style={{ minHeight: token.controlHeight, marginBottom: token.marginXS }}>
           {title ? (

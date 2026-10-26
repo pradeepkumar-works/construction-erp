@@ -1,12 +1,21 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { GSTIN_PATTERN, PAN_PATTERN } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 const upper = () => Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() || null : value));
 const blankNull = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
+const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() || null : value));
+/** One of the client's usual terms, % of the work value; null (or empty) takes the standard */
+const term = (example: string, description: string) => (target: object, key: string) => {
+  ApiPropertyOptional({ example, nullable: true, description: `${description}, % of the work value; empty takes the standard` })(target, key);
+  IsOptional()(target, key);
+  num()(target, key);
+  ValidateIf((_, v) => v !== null)(target, key);
+  IsNumberString({}, { message: `${key} must be a number like 5 or 2.5` })(target, key);
+};
 
 export class CreateClientDto {
   @ApiProperty({ example: 'Odisha Works Department' }) @trim() @IsString() @IsNotEmpty() @MaxLength(200) name: string;
@@ -23,6 +32,14 @@ export class CreateClientDto {
   @ApiPropertyOptional() @IsOptional() @blankNull() @IsString() @MaxLength(120) contactPerson?: string | null;
   @ApiPropertyOptional() @IsOptional() @blankNull() @ValidateIf((_, v) => v !== null) @IsEmail() email?: string | null;
   @ApiPropertyOptional() @IsOptional() @blankNull() @IsString() @MaxLength(40) phone?: string | null;
+  @term('5', 'Retention held from each bill') retentionPct?: string | null;
+  @term('0', 'Security deposit deducted from each bill') securityDepositPct?: string | null;
+  @term('2', 'Income-tax TDS (194C)') tdsPct?: string | null;
+  @term('2', 'GST TDS (a government client)') gstTdsPct?: string | null;
+  @term('1', 'Labour welfare cess') labourCessPct?: string | null;
+  @term('18', 'GST charged on bills') gstRate?: string | null;
+  @ApiPropertyOptional({ example: 12, nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(120) defectLiabilityMonths?: number | null;
+  @ApiPropertyOptional({ example: 60, nullable: true, description: 'Days the client takes to pay a bill once sent' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(365) clientPaymentDays?: number | null;
 }
 
 export class UpdateClientDto extends PartialType(CreateClientDto) {

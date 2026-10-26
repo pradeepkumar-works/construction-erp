@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
-import { AddMemberDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
+import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, ProjectSetupHiddenDto, UpdateProjectDto } from './projects.dto';
+import { ProjectSetupService } from './project-setup.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Roles } from '../common/decorators';
 import { RolesGuard } from '../common/roles.guard';
@@ -11,7 +12,10 @@ import { RolesGuard } from '../common/roles.guard';
 @UseGuards(RolesGuard)
 @Controller('projects')
 export class ProjectsController {
-  constructor(private projects: ProjectsService) {}
+  constructor(
+    private projects: ProjectsService,
+    private setup: ProjectSetupService,
+  ) {}
 
   @Get()
   list(@CurrentUser() user: RequestUser, @Query() q: ListProjectsQuery) {
@@ -21,6 +25,17 @@ export class ProjectsController {
   @Get(':id')
   get(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.projects.get(user, id);
+  }
+
+  /** The new project's setup checklist and the BOQ against the contract value (finding 6 of the October review). */
+  @Get(':id/setup')
+  setupOf(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.setup.get(user, id);
+  }
+
+  @Put(':id/setup')
+  hideSetup(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: ProjectSetupHiddenDto) {
+    return this.setup.setHidden(user, id, dto.hidden);
   }
 
   @Get(':id/audit')
@@ -44,6 +59,12 @@ export class ProjectsController {
   @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
   addMember(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: AddMemberDto) {
     return this.projects.addMember(user, id, dto);
+  }
+
+  @Post(':id/members/copy')
+  @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
+  copyTeam(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: CopyTeamDto) {
+    return this.projects.copyTeam(user, id, dto);
   }
 
   @Delete(':id/members/:userId')

@@ -1,7 +1,7 @@
 import { NotificationsService } from '../notifications/notifications.service';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { Paginated, ProjectDetail, ProjectSortField, ProjectSummary, RoleKey, SortOrder } from '@erp/shared';
+import { COPIED_TERMS, termsFor, type Paginated, type ProjectDetail, type ProjectSortField, type ProjectSummary, type RoleKey, type SortOrder } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { physicalProgress } from '../common/progress';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,7 +10,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { TemplatesService } from '../templates/templates.service';
 import { dateOnly, iso, money, parseDate, pct } from '../common/serialize';
-import { AddMemberDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
+import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
 
 const projectInclude = {
   projectManager: { select: { id: true, fullName: true } },
@@ -213,10 +213,61 @@ export class ProjectsService {
     const data = this.toData(dto) as Prisma.ProjectCreateInput;
     await this.withClient(user, dto, data);
     if (dto.clientId === null) delete data.client;
-    const row = await this.prisma.project.create({ data: { ...data, organization: { connect: { id: user.organizationId } } }, include: projectInclude });
+    const terms = await this.startingTerms(user, dto);
+    const row = await this.prisma.project.create({ data: { ...data, ...terms, organization: { connect: { id: user.organizationId } } }, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'CREATED');
     if (dto.applyTemplate) await this.templates.applyUnchecked(user, row.id);
+    if (dto.copyFromProjectId) {
+      await this.joinTeam(user, row.id, await this.teamOf(dto.copyFromProjectId, row.projectManagerId));
+      return this.toDetail(await this.prisma.project.findUniqueOrThrow({ where: { id: row.id }, include: projectInclude }));
+    }
     return this.toDetail(row);
+  }
+
+  /**
+   * The contract terms a new project starts with (finding 6 of the October review): a chosen project's, else its
+   * client's usual terms, else the standard ones (`termsFor`), so no new project bills with every deduction at 0%.
+   */
+  private async startingTerms(user: RequestUser, dto: CreateProjectDto): Promise<Partial<Prisma.ProjectCreateInput>> {
+    if (dto.copyFromProjectId) {
+      await this.access.assertCanAccessProject(user, dto.copyFromProjectId);
+      const select = Object.fromEntries(COPIED_TERMS.map((k) => [k, true])) as Record<(typeof COPIED_TERMS)[number], true>;
+      return this.prisma.project.findUniqueOrThrow({ where: { id: dto.copyFromProjectId }, select });
+    }
+    const client = dto.clientId ? await this.prisma.client.findFirst({ where: { id: dto.clientId, organizationId: user.organizationId } }) : null;
+    return termsFor(
+      client && {
+        retentionPct: client.retentionPct?.toString() ?? null,
+        securityDepositPct: client.securityDepositPct?.toString() ?? null,
+        tdsPct: client.tdsPct?.toString() ?? null,
+        gstTdsPct: client.gstTdsPct?.toString() ?? null,
+        labourCessPct: client.labourCessPct?.toString() ?? null,
+        gstRate: client.gstRate?.toString() ?? null,
+        defectLiabilityMonths: client.defectLiabilityMonths,
+        clientPaymentDays: client.clientPaymentDays,
+      },
+    );
+  }
+
+  /** The people on a project, less the one who manages the new project (already its manager). */
+  private async teamOf(projectId: string, except: string | null): Promise<string[]> {
+    const rows = await this.prisma.projectMember.findMany({ where: { projectId, user: { isActive: true } }, select: { userId: true } });
+    return rows.map((r) => r.userId).filter((id) => id !== except);
+  }
+
+  /** Adds people to a project, each told once; those already on it are left as they are. */
+  private async joinTeam(user: RequestUser, projectId: string, userIds: string[]): Promise<number> {
+    const people = await this.prisma.user.findMany({ where: { id: { in: [...new Set(userIds)] }, organizationId: user.organizationId }, select: { id: true, fullName: true } });
+    if (people.length < new Set(userIds).size) throw new NotFoundException('User not found');
+    const already = new Set((await this.prisma.projectMember.findMany({ where: { projectId, userId: { in: people.map((p) => p.id) } }, select: { userId: true } })).map((m) => m.userId));
+    const added = people.filter((p) => !already.has(p.id));
+    if (!added.length) return 0;
+    await this.prisma.projectMember.createMany({ data: added.map((p) => ({ projectId, userId: p.id })), skipDuplicates: true });
+    for (const p of added) {
+      await this.audit.log(user, 'PROJECT', projectId, 'MEMBER_ADDED', p.fullName);
+      await this.notifications.onAddedToProject(user, projectId, p.id);
+    }
+    return added.length;
   }
 
   async update(user: RequestUser, id: string, dto: UpdateProjectDto): Promise<ProjectDetail> {
@@ -238,11 +289,19 @@ export class ProjectsService {
 
   async addMember(user: RequestUser, id: string, dto: AddMemberDto): Promise<ProjectDetail> {
     await this.access.assertCanAccessProject(user, id);
-    const member = await this.prisma.user.findFirst({ where: { id: dto.userId, organizationId: user.organizationId } });
-    if (!member) throw new NotFoundException('User not found');
-    await this.prisma.projectMember.upsert({ where: { projectId_userId: { projectId: id, userId: dto.userId } }, create: { projectId: id, userId: dto.userId }, update: {} });
-    await this.audit.log(user, 'PROJECT', id, 'MEMBER_ADDED', member.fullName);
-    await this.notifications.onAddedToProject(user, id, member.id);
+    const ids = dto.userIds ?? (dto.userId ? [dto.userId] : []);
+    if (!ids.length) throw new BadRequestException('Choose who to add');
+    await this.joinTeam(user, id, ids);
+    return this.get(user, id);
+  }
+
+  /** "Copy team from project": everyone on another project the caller sees joins this one. */
+  async copyTeam(user: RequestUser, id: string, dto: CopyTeamDto): Promise<ProjectDetail> {
+    if (dto.fromProjectId === id) throw new BadRequestException('Choose another project to copy the team from');
+    await this.access.assertCanAccessProject(user, id);
+    await this.access.assertCanAccessProject(user, dto.fromProjectId);
+    const target = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { projectManagerId: true } });
+    await this.joinTeam(user, id, await this.teamOf(dto.fromProjectId, target.projectManagerId));
     return this.get(user, id);
   }
 
