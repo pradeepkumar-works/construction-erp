@@ -244,6 +244,9 @@ and the pre-delivery checklist.
   and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
   filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`
   (tested in `src/scripts/supplier-test.ts`, CI runs it); web pages under `app/(app)/supplier`, the company's side at `/supplier-inbox`.
+- Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
+  lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
+  anything that writes attendance calls `assertUnlocked`.
 - Project setup (ARCHITECTURE "Setting up a project"): a new project's terms come from `termsFor` / `COPIED_TERMS` in
   `@erp/shared/project-setup.ts` (copied project, else the client's usual terms, else `STANDARD_TERMS`), never zeros; the
   Overview checklist is `setupSteps` over `ProjectSetupService.facts`, so a new step is a key in `SETUP_STEPS`, a fact and

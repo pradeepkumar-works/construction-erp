@@ -286,7 +286,7 @@ export default function AttendanceScreen() {
       <OutboxRefusal item={refused} />
       {notice ? <Notice icon="information-circle-outline" text={notice} /> : null}
       {!mayRecord ? <Notice icon="eye-outline" text={t('Your role can view attendance but not record it.')} /> : null}
-      {locked ? <Notice icon="lock-closed-outline" text={t('The DPR for this day is approved, so its attendance is locked.')} /> : null}
+      {locked ? <Notice icon="lock-closed-outline" text={t('Payroll for this month is approved, so its attendance is locked.')} /> : null}
       {offlineUnknown ? <Notice icon="cloud-offline-outline" text={t('Offline: a new sheet will wait in the outbox. If this day was already recorded, it will be refused when the phone reconnects.')} /> : null}
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />

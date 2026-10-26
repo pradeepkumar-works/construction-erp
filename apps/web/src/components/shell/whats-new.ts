@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-attendance-first',
+    date: '2027-02-07',
+    title: 'Attendance after the DPR',
+    points: [
+      'A day’s attendance and roll call can be recorded or corrected after its DPR is approved; they lock once payroll for the month is approved.',
+    ],
+  },
+  {
     id: '2027-02-project-setup',
     date: '2027-02-06',
     title: 'Setting up a new project',

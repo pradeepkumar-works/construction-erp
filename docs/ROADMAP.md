@@ -33,7 +33,7 @@ Order matters: each item builds on the previous one.
    `AttendanceLine` rows of contractor, trade and head count; web register (page + project tab, Excel
    export one row per contractor and trade) and a site-app screen that also works offline through the
    outbox. A new DPR takes its manpower from that day's sheet (filled in the forms, and on the server
-   when a DPR arrives without manpower). The sheet locks once the day's DPR is approved. It is a
+   when a DPR arrives without manpower). The sheet locks once payroll for its month is approved (it used to lock with the day's DPR). It is a
    register, not an approval submission: the DPR it feeds is what gets approved.
 
 ### B. Phase 2 modules (from the client proposal)

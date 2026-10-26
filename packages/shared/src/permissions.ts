@@ -386,10 +386,11 @@ export const canRecordOmStaff = (role: RoleKey) => role === 'HR_MANAGER' || APPR
 export const canMeasure = (role: RoleKey) => MEASUREMENT_ROLES.includes(role);
 
 /**
- * Attendance feeds the day's DPR manpower, so a sheet stays editable until that DPR is approved.
- * Pass the status of the project's DPR for the same date (null when there is none).
+ * Attendance first (finding 7 of the October review): a day's head counts and roll call stay open after its DPR is
+ * approved, since the site often records the DPR first, and lock once payroll for their month is approved. Pass the
+ * status of the payroll run for the month that covers the project (its own run, or the company's), null when there is none.
  */
-export const isAttendanceLocked = (dprStatus: SubmissionStatus | null | undefined): boolean => dprStatus === 'APPROVED';
+export const isAttendanceLocked = (payrollStatus: string | null | undefined): boolean => payrollStatus === 'APPROVED' || payrollStatus === 'PAID';
 
 /* ---------- submission editing ---------- */
 

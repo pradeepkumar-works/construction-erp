@@ -689,8 +689,8 @@ A site labour register, not HR: no PF, ESI or payslips (those stay with Payroll 
 - **Roll call.** `GET /workers/roll-call?projectId&date` lists the workers posted there that day (joined, not
   left) plus anyone already marked there. `PUT /workers/roll-call` (`canManageWorkers` = the attendance recorders,
   with project access) sets or clears marks; overtime defaults to the time past `WORKER_SHIFT_HOURS` (9) between in
-  and out. A worker marked at another site that day gives 409, a future day 400, and a day whose DPR is approved
-  409 (the same lock as the head count). In the same transaction the day's `AttendanceSheet` takes the roll call's
+  and out. A worker marked at another site that day gives 409, a future day 400, and a day whose month's payroll is
+  approved 409 (the same lock as the head count). In the same transaction the day's `AttendanceSheet` takes the roll call's
   counts (present or half day = one head) for each contractor and trade pair on the roll call; other lines stay,
   and a sheet is created when there was none (`mergeHeadCount`, `AttendanceService.applyRollCall`).
 - **Muster and output.** `GET /workers/muster?projectId&month` gives each worker's marks by day, man-days (half day
@@ -794,8 +794,11 @@ The site supervisor records who worked each day: `AttendanceSheet` (one per proj
 workers), trade and head count. `totalWorkers` is stored on the sheet so lists sort and total cheaply.
 
 - **Not an approval submission.** Attendance has no status columns and is not in the approvals queue.
-  It feeds the day's DPR, and the DPR is what the PM approves. A sheet stays editable until that DPR is
-  approved, then it locks (`isAttendanceLocked` in `packages/shared/src/permissions.ts`).
+  It feeds the day's DPR, and the DPR is what the PM approves. Attendance first (finding 7 of the October review):
+  sites often send the DPR before the head count, so a sheet stays editable after its DPR is approved and locks only
+  once payroll for its month is approved or paid, the project's own run or else the company's
+  (`isAttendanceLocked` in `packages/shared/src/permissions.ts`, `AttendanceService.lockingRuns`; `lockedByRun` names
+  it). An approved DPR keeps the manpower it was approved with.
 - **Who.** Team leaders, site engineers and approvers record and correct it (`ATTENDANCE_RECORDER_ROLES`,
   checked by `ProjectAccessService.assertCanRecordAttendance`); everyone who can see the project can
   read it. Every create, edit and delete is in `AuditLog` as entity type `ATTENDANCE`.
