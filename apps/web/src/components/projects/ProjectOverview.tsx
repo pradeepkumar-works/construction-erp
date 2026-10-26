@@ -221,6 +221,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
               { key: 'consultant', label: 'Consultant', children: project.consultantName ?? '-' },
               { key: 'wo', label: 'Work order', children: project.workOrderNo ?? '-' },
               { key: 'location', label: 'Location', children: project.location ?? '-' },
+              ...(project.siteAddress ? [{ key: 'siteAddress', label: 'Delivery address', children: project.siteAddress }] : []),
               { key: 'start', label: 'Start', children: formatDate(project.startDate) },
               { key: 'end', label: 'End', children: formatDate(project.endDate) },
               { key: 'pm', label: 'Project manager', children: project.projectManagerName ?? '-' },

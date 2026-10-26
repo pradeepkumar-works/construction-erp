@@ -59,6 +59,7 @@ export * from './fleet';
 export * from './ppe';
 export * from './rfi';
 export * from './small-purchase';
+export * from './purchase-award';
 export * from './company-today';
 export * from './markup';
 export * from './modules';

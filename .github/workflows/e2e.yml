@@ -110,6 +110,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/doc-read-test.js
+      - name: The lowest rate per item splits the request between its winners, freight and all
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/purchase-award-test.js
       - name: BOQ sections offer their activities' links, and dates arriving spread the undated activities
         if: matrix.suite == 'flows'
         working-directory: apps/api

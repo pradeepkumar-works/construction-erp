@@ -127,3 +127,12 @@ export interface OutboundMessageDto {
   error: string | null;
   createdAt: string;
 }
+
+/**
+ * A wa.me link that opens WhatsApp with the message ready to send (finding 12 of the October review): to that number
+ * when it is one we can dial, else to whoever the sender picks. It opens WhatsApp; it never sends anything itself.
+ */
+export function whatsAppShareUrl(text: string, phone?: string | null): string {
+  const to = normalisePhone(phone);
+  return `https://wa.me/${to ?? ''}?text=${encodeURIComponent(text)}`;
+}
