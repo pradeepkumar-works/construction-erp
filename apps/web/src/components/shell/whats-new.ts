@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-item-master',
+    date: '2027-02-03',
+    title: 'One name for each material',
+    points: [
+      'Material requests and purchase orders pick the item from the item master, with its unit filled in (and on an order, its standard rate).',
+      'A name that is not in the master asks first whether you meant one that is, so the same cement is not three items in stock, rates and the leakage checks.',
+      'Lines typed with other spacing or capitals are saved under the master’s name.',
+      'Stock › Item master shows possible duplicates: keep one and merge the rest, once. Old names keep working.',
+    ],
+  },
+  {
     id: '2027-02-handoffs',
     date: '2027-02-02',
     title: 'The next person is told',

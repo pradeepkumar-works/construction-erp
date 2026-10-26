@@ -126,6 +126,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/dpr-lines-test.js
+      - name: Item names are one spelling, a typed line finds its master item, and duplicates group for merging
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/items-test.js
       - name: Pipe networks read from EPANET and Excel, segments held to their length, zone sheets and working fronts
         if: matrix.suite == 'flows'
         working-directory: apps/api

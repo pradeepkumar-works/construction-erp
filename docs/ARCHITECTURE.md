@@ -398,7 +398,7 @@ under the `company-today` cache key, so the tiles show offline with the last fig
 ### Small purchase items (v5 item 95)
 
 **Stock first.** A material request's lines are free text; `StockService.requestStock` matches each to the item master
-by name and unit (ignoring case, adding nothing) and sums `StockTxn` per project over the projects the user can see:
+by name and unit (`masterItemFor`, adding nothing) and sums `StockTxn` per project over the projects the user can see:
 what the request's own site holds and what the others hold. Take from stock (`POST /material-requests/:id/cover`, store
 keepers of the sending site, approved requests only) is an `ISSUE` to whoever raised the request when it comes from the
 request's site, or a `TRANSFER_OUT` to it from another site (received there as any transfer). Each line gets a
@@ -845,6 +845,16 @@ The store register per project, fed by approved material requests:
   transfer may go to, stores first. The web has Central stores (`/stores`, `/stores/[id]` with the project's stock
   panel); a store's project page redirects there. Chosen over a separate `storeId` on stock rows so every stock
   path stays one path.
+- **One name per item (finding 3 of the October review).** Request and order lines are still text, but the web's
+  `ItemPicker` picks from the item master with its unit (and a PO line its standard rate), and a new name first offers
+  the items it may mean (`similarItems`). On save, `asMasterNames` (`stock/item-master.ts`) writes each line's name and
+  unit as the master has them when `masterItemFor` finds the item (case, dots and spacing ignored by `itemKey`, the unit
+  by `normUnit`, or a merged old name in `Item.aliases`); GRNs, stock-first, PO approval and the item form's duplicate
+  check use the same lookup, so stock, last rates and leakage stay on one item. Existing duplicates are merged once
+  from Stock › Item master › Possible duplicates (`GET /stock/items/duplicates`, `duplicateGroups`; `POST
+  /stock/items/:id/merge`, store managers and approvers): every foreign key to `Item` (read from the Prisma schema)
+  moves to the kept item, a minimum or norm both have keeps the kept one's, request and order lines take its name,
+  and the merged names become its aliases. Rules in `@erp/shared/items.ts`, tested in `src/scripts/items-test.ts`.
 - **Valuation.** `GET /stock/valuation` values stock on hand at the item master rate and ages it first in,
   first out over the inward movements (0-30, 31-90, 91-180, over 180 days). Store managers, approvers and
   anyone who sees project cost.

@@ -6,6 +6,7 @@ import {
   ArchiveIcon,
   ArrowDownIcon,
   ArrowLeftIcon,
+  MergeIcon,
   ArrowRightIcon,
   ArrowUpIcon,
   BadgeIndianRupeeIcon,
@@ -292,6 +293,7 @@ export const MailOutlined = lucide(MailIcon, 'mail');
 export const MenuFoldOutlined = lucide(PanelLeftCloseIcon, 'menu-fold');
 export const MenuOutlined = lucide(MenuIcon, 'menu');
 export const MenuUnfoldOutlined = lucide(PanelLeftOpenIcon, 'menu-unfold');
+export const MergeCellsOutlined = lucide(MergeIcon, 'merge-cells');
 export const MessageOutlined = lucide(MessageSquareIcon, 'message');
 export const MoreOutlined = lucide(EllipsisVerticalIcon, 'more');
 export const NumberOutlined = lucide(HashIcon, 'number');

@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, StockEntryType } from '@prisma/client';
+import { findMasterItem, masterCandidates } from './item-master';
 import {
   LEGACY_STOCK_ENTRY_TYPES,
   STOCK_ENTRY_PREFIX,
@@ -28,6 +29,11 @@ import {
   type StockEntrySortField,
   subBillLabel,
   type PipeMaterial,
+  masterItemFor,
+  duplicateGroups,
+  itemKey,
+  normUnit,
+  type ItemDuplicateGroupDto,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -63,6 +69,7 @@ import {
   ReceivableQuery,
   SetMinLevelDto,
   UpdateItemDto,
+  MergeItemsDto,
 } from './stock.dto';
 
 type Tx = Prisma.TransactionClient;
@@ -149,6 +156,21 @@ type IssueLink = { maintenanceJobId?: string; equipmentId?: string; meterReading
 const blank = (s: string | null | undefined) => s?.trim() || null;
 const pipeFields = (r: { pipeDiameterMm: number | null; pipeMaterial: PipeMaterial | null; kgPerMetre: Decimal | null }) => ({ pipeDiameterMm: r.pipeDiameterMm, pipeMaterial: r.pipeMaterial, kgPerMetre: r.kgPerMetre ? r.kgPerMetre.toString() : null });
 const key = (projectId: string, itemId: string) => `${projectId}|${itemId}`;
+
+const sqlName = (s: string) => `"${s.replace(/"/g, '""')}"`;
+
+/** Every column that points at an item, and the other columns of each unique key it is part of (read from the schema). */
+const ITEM_REFS = Prisma.dmmf.datamodel.models.flatMap((m) =>
+  m.fields
+    .filter((f) => f.kind === 'object' && f.type === 'Item' && f.relationFromFields?.length === 1)
+    .map((f) => {
+      const column = f.relationFromFields![0];
+      return { table: m.dbName ?? m.name, column, uniqueWith: m.uniqueFields.filter((u) => u.includes(column)).map((u) => u.filter((c) => c !== column)) };
+    }),
+);
+/** Settings per item (a minimum, a norm): where both merged items have one, the kept item's stands. */
+const ITEM_SETTINGS = new Set(['StockMinLevel', 'MaterialNorm', 'ActivityMaterialNorm', 'OmChemicalNorm']);
+const ITEM_REF_WORDS: Record<string, string> = { SubcontractBillMaterial: "subcontractor bill's material recovery" };
 
 /**
  * Store register per project: goods received (GRN) against approved material requests, material issued at
@@ -280,12 +302,9 @@ export class StockService {
     return `${prefix}${String(n).padStart(4, '0')}`;
   }
 
-  /** Item master lookup by name and unit (case-insensitive); adds the item when it is new. */
+  /** Item master lookup by name and unit (`masterItemFor`: any spelling, or a merged old name); adds the item when it is new. */
   private async resolveItem(tx: Tx, organizationId: string, name: string, unit: string) {
-    const found = await tx.item.findFirst({
-      where: { organizationId, name: { equals: name.trim(), mode: 'insensitive' }, unit: { equals: unit.trim(), mode: 'insensitive' } },
-      select: { id: true, name: true, unit: true },
-    });
+    const found = await findMasterItem(tx, organizationId, name.trim(), unit.trim());
     return found ?? tx.item.create({ data: { organizationId, name: name.trim(), unit: unit.trim() }, select: { id: true, name: true, unit: true } });
   }
 
@@ -1152,15 +1171,10 @@ export class StockService {
     return mr;
   }
 
-  /** The item master rows a request's free-text lines name (by name and unit, ignoring case); none are added. */
+  /** The item master rows a request's free-text lines name (`masterItemFor`); none are added. */
   private async itemsNamed(organizationId: string, lines: { itemName: string; unit: string }[]) {
-    const items = lines.length
-      ? await this.prisma.item.findMany({
-          where: { organizationId, OR: lines.map((l) => ({ name: { equals: l.itemName.trim(), mode: 'insensitive' as const }, unit: { equals: l.unit.trim(), mode: 'insensitive' as const } })) },
-          select: { id: true, name: true, unit: true },
-        })
-      : [];
-    return (l: { itemName: string; unit: string }) => items.find((i) => i.name.toLowerCase() === l.itemName.trim().toLowerCase() && i.unit.toLowerCase() === l.unit.trim().toLowerCase()) ?? null;
+    const items = await masterCandidates(this.prisma, organizationId, lines.map((l) => l.itemName));
+    return (l: { itemName: string; unit: string }) => masterItemFor(l.itemName, l.unit, items);
   }
 
   /**
@@ -1352,7 +1366,8 @@ export class StockService {
     const where: Prisma.ItemWhereInput = { organizationId: user.organizationId };
     if (q.fuel) where.isFuel = true;
     const words = searchWords(q.q);
-    if (words.length) where.AND = words.map((w) => ({ OR: [{ name: ilike(w) }, { category: ilike(w) }, { unit: ilike(w) }] }));
+    // A merged old name finds the item too ("cement opc" → OPC 53 Grade Cement).
+    if (words.length) where.OR = [{ AND: words.map((w) => ({ OR: [{ name: ilike(w) }, { category: ilike(w) }, { unit: ilike(w) }] })) }, { aliases: { has: itemKey(q.q!) } }];
     const sortBy = q.sortBy ?? 'name';
     const order = q.sortOrder ?? (sortBy === 'createdAt' ? 'desc' : 'asc');
     const args = pageArgs(q);
@@ -1364,7 +1379,7 @@ export class StockService {
       ? await this.prisma.stockTxn.groupBy({ by: ['itemId', 'projectId'], where: { itemId: { in: rows.map((r) => r.id) } } })
       : [];
     return paginated(
-      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
+      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
       total,
       args,
     );
@@ -1390,18 +1405,16 @@ export class StockService {
   }
 
   private async assertItemUnique(organizationId: string, name: string, unit: string, excludeId?: string) {
-    const dup = await this.prisma.item.findFirst({
-      where: { organizationId, name: { equals: name, mode: 'insensitive' }, unit: { equals: unit, mode: 'insensitive' }, ...(excludeId ? { id: { not: excludeId } } : {}) },
-      select: { id: true },
-    });
-    if (dup) throw new ConflictException(`${name} (${unit}) is already in the item master`);
+    // The same name however it is written ("opc 53 grade cement, bag"), or an old name merged into another item.
+    const dup = masterItemFor(name, unit, (await masterCandidates(this.prisma, organizationId, [name])).filter((i) => i.id !== excludeId));
+    if (dup) throw new ConflictException(itemKey(dup.name) === itemKey(name) ? `${dup.name} (${dup.unit}) is already in the item master` : `${name} is already in the item master as ${dup.name} (${dup.unit})`);
   }
 
   private async getItem(user: RequestUser, id: string): Promise<ItemDto> {
     const r = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!r) throw new NotFoundException('Item not found');
     const used = await this.prisma.stockTxn.groupBy({ by: ['projectId'], where: { itemId: id } });
-    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), projectCount: used.length, createdAt: iso(r.createdAt)! };
+    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.length, createdAt: iso(r.createdAt)! };
   }
 
   async createItem(user: RequestUser, dto: CreateItemDto): Promise<ItemDto> {
@@ -1446,5 +1459,83 @@ export class StockService {
     await this.audit.log(user, 'ITEM', id, 'DELETED', `${row.name} (${row.unit})`);
     const rows = [{ model: 'item', data: row }, ...minLevels.map((m) => ({ model: 'stockMinLevel', data: m }))];
     return { ok: true, undo: this.undo.offer(user, 'ITEM', { rows }) };
+  }
+  /** How often each item is named: stock movements, and request and order lines with its name and unit. */
+  private async itemUses(organizationId: string, items: { id: string; name: string; unit: string }[]): Promise<Map<string, number>> {
+    const [txns, mrLines, poLines] = await Promise.all([
+      this.prisma.stockTxn.groupBy({ by: ['itemId'], where: { itemId: { in: items.map((i) => i.id) } }, _count: { _all: true } }),
+      this.prisma.materialRequestItem.groupBy({ by: ['itemName', 'unit'], where: { request: { organizationId } }, _count: { _all: true } }),
+      this.prisma.purchaseOrderLine.groupBy({ by: ['itemName', 'unit'], where: { purchaseOrder: { organizationId } }, _count: { _all: true } }),
+    ]);
+    const named = (i: { name: string; unit: string }) =>
+      [...mrLines, ...poLines].filter((l) => l.itemName.toLowerCase() === i.name.toLowerCase() && l.unit.toLowerCase() === i.unit.toLowerCase()).reduce((n, l) => n + l._count._all, 0);
+    return new Map(items.map((i) => [i.id, (txns.find((t) => t.itemId === i.id)?._count._all ?? 0) + named(i)]));
+  }
+
+  /**
+   * Items that look like one item written more ways (finding 3 of the October review), for the store manager to merge
+   * once: the same unit, and the same spelling or one name inside the other (`duplicateGroups`).
+   */
+  async itemDuplicates(user: RequestUser): Promise<ItemDuplicateGroupDto[]> {
+    await this.access.assertCanManageStore(user);
+    const items = await this.prisma.item.findMany({ where: { organizationId: user.organizationId }, select: { id: true, name: true, unit: true, aliases: true } });
+    const uses = await this.itemUses(user.organizationId, items);
+    const entry = (i: { id: string; name: string; unit: string }) => ({ id: i.id, name: i.name, unit: i.unit, uses: uses.get(i.id) ?? 0 });
+    return duplicateGroups(items.map((i) => ({ ...i, uses: uses.get(i.id) ?? 0 }))).map((g) => ({ keep: entry(g.keep), merge: g.merge.map(entry) }));
+  }
+
+  /**
+   * Merge items into one (finding 3): every record that points at them points at the item kept, request and order
+   * lines take its name, and their names become its old names so a line typed that way lands on it. A minimum level
+   * or norm both items have keeps the kept item's. Items in different units do not merge.
+   */
+  async mergeItems(user: RequestUser, keepId: string, dto: MergeItemsDto): Promise<ItemDto> {
+    await this.access.assertCanManageStore(user);
+    const ids = [...new Set(dto.fromIds)].filter((id) => id !== keepId);
+    if (!ids.length) throw new BadRequestException('Choose the items to merge into this one');
+    const rows = await this.prisma.item.findMany({ where: { organizationId: user.organizationId, id: { in: [keepId, ...ids] } } });
+    const keep = rows.find((r) => r.id === keepId);
+    if (!keep) throw new NotFoundException('Item not found');
+    const from = rows.filter((r) => r.id !== keepId);
+    if (from.length !== ids.length) throw new NotFoundException('An item to merge was not found; reload the list');
+    const other = from.find((f) => normUnit(f.unit) !== normUnit(keep.unit));
+    if (other) throw new ConflictException(`${other.name} is counted in ${other.unit} and ${keep.name} in ${keep.unit}. Only items in the same unit merge.`);
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const f of from) {
+        for (const ref of ITEM_REFS) {
+          for (const others of ref.uniqueWith) {
+            const same = others.map((c) => `t.${sqlName(c)} = s.${sqlName(c)}`).join(' AND ');
+            const clash = `SELECT s."id" FROM ${sqlName(ref.table)} s WHERE s.${sqlName(ref.column)} = $1 AND EXISTS (SELECT 1 FROM ${sqlName(ref.table)} t WHERE t.${sqlName(ref.column)} = $2 AND ${same})`;
+            if (ITEM_SETTINGS.has(ref.table)) await tx.$executeRawUnsafe(`DELETE FROM ${sqlName(ref.table)} WHERE "id" IN (${clash})`, f.id, keep.id);
+            else if ((await tx.$queryRawUnsafe<unknown[]>(clash, f.id, keep.id)).length)
+              throw new ConflictException(`${f.name} and ${keep.name} are both on one ${ITEM_REF_WORDS[ref.table] ?? 'record'}. Put them on one line there first.`);
+          }
+          await tx.$executeRawUnsafe(`UPDATE ${sqlName(ref.table)} SET ${sqlName(ref.column)} = $1 WHERE ${sqlName(ref.column)} = $2`, keep.id, f.id);
+        }
+        const named = { itemName: { equals: f.name, mode: 'insensitive' as const }, unit: { equals: f.unit, mode: 'insensitive' as const } };
+        await tx.materialRequestItem.updateMany({ where: { request: { organizationId: user.organizationId }, ...named }, data: { itemName: keep.name, unit: keep.unit } });
+        await tx.purchaseOrderLine.updateMany({ where: { purchaseOrder: { organizationId: user.organizationId }, ...named }, data: { itemName: keep.name, unit: keep.unit } });
+      }
+      const own = itemKey(keep.name);
+      const aliases = [...new Set([...keep.aliases, ...from.flatMap((f) => [itemKey(f.name), ...f.aliases])])].filter((a) => a && a !== own);
+      await tx.item.deleteMany({ where: { id: { in: ids } } });
+      await tx.item.update({
+        where: { id: keep.id },
+        data: {
+          aliases,
+          // What the kept item lacks, it takes from the first merged item that has it.
+          category: keep.category ?? from.find((f) => f.category)?.category ?? null,
+          rate: keep.rate ?? from.find((f) => f.rate)?.rate ?? null,
+          isFuel: keep.isFuel || from.some((f) => f.isFuel),
+          pipeDiameterMm: keep.pipeDiameterMm ?? from.find((f) => f.pipeDiameterMm)?.pipeDiameterMm ?? null,
+          pipeMaterial: keep.pipeMaterial ?? from.find((f) => f.pipeMaterial)?.pipeMaterial ?? null,
+          kgPerMetre: keep.kgPerMetre ?? from.find((f) => f.kgPerMetre)?.kgPerMetre ?? null,
+        },
+      });
+    });
+    await this.audit.log(user, 'ITEM', keep.id, 'MERGED', `${from.map((f) => `${f.name} (${f.unit})`).join(', ')} merged into ${keep.name} (${keep.unit})`);
+    for (const f of from) await this.audit.log(user, 'ITEM', f.id, 'MERGED', `Merged into ${keep.name} (${keep.unit})`);
+    return this.getItem(user, keep.id);
   }
 }
