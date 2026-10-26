@@ -18,7 +18,7 @@ test('an engineer turns on WhatsApp alerts and a send-back reaches the message l
     await api(se, '/messaging/me', { method: 'PUT', body: { whatsapp: false, sms: false } });
     await signIn(page, 'engineer@demo.com');
     await page.goto('/notifications');
-    await page.getByRole('button', { name: 'WhatsApp and SMS' }).click();
+    await page.getByRole('button', { name: 'Alerts' }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: 'WhatsApp and SMS alerts' });
     await expect(modal.getByLabel('Mobile number')).toHaveValue(before.phone ?? '');
     await modal.getByLabel('Mobile number').fill('98000 00006');
@@ -27,7 +27,7 @@ test('an engineer turns on WhatsApp alerts and a send-back reaches the message l
     await modal.getByRole('button', { name: 'Send a test on WhatsApp' }).click();
     await expect(modal.getByText(/Test sent on WhatsApp|Test WhatsApp not sent/)).toBeVisible();
     await modal.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Alerts on WhatsApp saved')).toBeVisible();
+    await expect(page.getByText(/^Alerts by (email, )?WhatsApp saved$/)).toBeVisible();
     const prefs = await api<Prefs>(se, '/messaging/me');
     expect(prefs.whatsapp).toBe(true);
     expect(prefs.sendTo).toBe('919800000006');

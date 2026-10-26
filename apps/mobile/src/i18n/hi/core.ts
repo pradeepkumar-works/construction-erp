@@ -138,6 +138,7 @@ export const CORE: Record<string, string> = {
   'Morning brief': 'सुबह की झलक',
   'Supplier portal': 'सप्लायर पोर्टल',
   'Comments': 'टिप्पणियाँ',
+  'Your turn': 'आपकी बारी',
   'No DPR for today': 'आज का DPR नहीं',
   'Sent today': 'आज भेजा गया',
   'Due today': 'आज देय',

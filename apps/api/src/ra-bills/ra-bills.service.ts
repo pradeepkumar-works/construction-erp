@@ -559,6 +559,8 @@ export class RaBillsService {
           body: `${out.projectName}: work value ₹${out.grossAmount}, net payable ₹${out.netPayable}. Check the quantities and certify it in the client portal.`,
           projectId: bill.projectId,
           entityId: id,
+          // "Mark sent" also emails the client's engineer the link to the bill (e2e review, fix 2).
+          email: { href: `/portal/${bill.projectId}?open=${id}`, cta: 'Open the bill' },
         });
     }
     return out;
@@ -572,7 +574,9 @@ export class RaBillsService {
   async certify(user: RequestUser, id: string, dto: CertifyBillDto) {
     const bill = await this.approvedBill(user, id);
     await this.applyCertificate(user, bill, dto);
-    return this.get(user, id);
+    const out = await this.get(user, id);
+    await this.notifications.onBillCertified(user, id, out.billLabel);
+    return out;
   }
 
   /* ---------- the client portal ---------- */
@@ -616,6 +620,7 @@ export class RaBillsService {
       entityType: 'BILL',
       entityId: id,
     });
+    await this.notifications.onBillCertified(user, id, dtoOut.billLabel);
     return dtoOut;
   }
 
