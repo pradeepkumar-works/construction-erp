@@ -733,6 +733,18 @@ reconciliation: design". One pull request each, in this order.
      the watch list's OM_SERVICE and the demo scheme in year 2. The phone's daily entry, a complaints register and meter
      feeds wait. ARCHITECTURE "Operation and maintenance".
 
+## Management dashboard and reports (item 132)
+
+Asked by Pradeep on 26 Oct 2026: a dashboard and the reports management needs, from the BI review in the end-to-end
+test report.
+
+132. ~~**Management dashboard and reports** (L).~~ Done: `/management` with every contract project's health and reasons,
+     progress against plan, money from contract to work done, billed, certified and paid, cost against budget, what
+     clients owe, approvals by age, cash and the monthly trend; a drill-down per project; and nine reports with Print and
+     Excel (Monthly MIS, project profit and loss, work in progress, receivables and payables ageing, procurement spend,
+     labour and attendance, stock position, approvals waiting). The phone, a scheduled MIS email and the My work card for
+     work not billed wait. ARCHITECTURE "Management dashboard and reports".
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

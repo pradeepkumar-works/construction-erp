@@ -152,7 +152,8 @@ export class ManagementReportsService {
       const out = projects.map((p) => {
         const a = acc.get(p.id)!;
         const cost = N(total(a.heads));
-        return { _href: projectHref(p.id), project: projectCell(p), workDone: r2(N(a.executed)), measured: r2(N(a.measured)), billed: r2(N(a.billed)), received: r2(N(a.cashIn)), cost: r2(cost), margin: r2(N(a.billed) - cost) };
+        // A lump-sum or EPC contract is valued by its stages, not its BOQ rates, so its work done in a period is left blank.
+        return { _href: projectHref(p.id), project: projectCell(p), workDone: p.contractModel === 'ITEM_RATE' ? r2(N(a.executed)) : null, measured: r2(N(a.measured)), billed: r2(N(a.billed)), received: r2(N(a.cashIn)), cost: r2(cost), margin: r2(N(a.billed) - cost) };
       });
       return { columns, rows: out };
     };
@@ -193,7 +194,7 @@ export class ManagementReportsService {
     attention.sort((a, b) => (a.level === b.level ? 0 : a.level === 'Act now' ? -1 : 1));
     const sum = (rs: ReportRowDto[], k: string) => r2(rs.reduce((s, r) => s + N(r[k] as number), 0));
     const figures: ReportFigureDto[] = [
-      { label: 'Work done in the month', value: sum(inMonth.rows, 'workDone'), kind: 'money', note: 'Approved progress at BOQ rates' },
+      { label: 'Work done in the month', value: sum(inMonth.rows, 'workDone'), kind: 'money', note: 'Item-rate contracts, at BOQ rates' },
       { label: 'Billed in the month', value: sum(inMonth.rows, 'billed'), kind: 'money' },
       { label: 'Received in the month', value: sum(inMonth.rows, 'received'), kind: 'money' },
       { label: 'Cost in the month', value: sum(inMonth.rows, 'cost'), kind: 'money' },
@@ -203,7 +204,7 @@ export class ManagementReportsService {
     return {
       figures,
       sections: [
-        section({ key: 'month', title: `In ${period.label}`, note: 'Work done is approved progress at BOQ rates; measured is approved measurement sheets; billed is RA bills dated in the month before GST.', ...inMonth, totals: true }),
+        section({ key: 'month', title: `In ${period.label}`, note: 'Work done is approved progress at BOQ rates (blank for a lump-sum or EPC contract, which is valued by its stages); measured is approved measurement sheets; billed is RA bills dated in the month before GST.', ...inMonth, totals: true }),
         section({ key: 'year', title: `Financial year to ${formatDay(period.to)}`, note: `From ${formatDay(fy)}.`, ...inYear, totals: true }),
         section({ key: 'standing', title: 'Where each project stands today', ...standing, totals: true }),
         section({ key: 'attention', title: 'Needs action', columns: [projectCol, col('level', 'Level', 'text'), col('what', 'What', 'text')], rows: attention, empty: 'Nothing needs action.' }),

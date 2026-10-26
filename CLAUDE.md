@@ -226,6 +226,11 @@ and the pre-delivery checklist.
   `omInstalment`, priced only through `om-bill.ts` (`omPricing`, instalment less staff short, penalties as `omPenalty`);
   periods, service level failures, staff short and chemicals are pure in `om-rules.ts`. A day or staff month in a billed
   period never changes. Keep `src/scripts/om-test.ts` passing.
+- Management dashboard (item 132, `apps/api/src/management`, ARCHITECTURE "Management dashboard and reports"): every figure is
+  read through the modules' own services (cost, budget, receivables, payables, stock, cash forecast), never a query of its own
+  for money; health, schedule and work done are pure in `management-rules.ts`. A new report is a `MANAGEMENT_REPORTS` key, a
+  builder in `ManagementReportsService` and a Reports node; print and Excel come from the same `ManagementReportDto`.
+  Keep `src/scripts/management-test.ts` passing.
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.
