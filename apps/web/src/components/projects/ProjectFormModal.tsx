@@ -10,7 +10,7 @@ import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, STANDARD
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivityTemplates } from '@/lib/queries';
+import { useActivityTemplates, useNextProjectCode } from '@/lib/queries';
 import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useAuth } from '@/lib/auth';
@@ -75,6 +75,11 @@ export function ProjectFormModal({
   const { data: templates } = useActivityTemplates(open && !project);
   const type = Form.useWatch('type', form);
   const template = templates?.find((t) => t.projectType === type);
+  // The next code in the company's series (finding 17 of the October review); `filledCode` keeps the one we filled in,
+  // so a code typed by hand is never written over, and a change of type moves our own suggestion along.
+  const mayCreate = !!user && (MANAGER_ROLES as readonly string[]).includes(user.roleKey);
+  const { data: nextCode } = useNextProjectCode(type as ProjectType | undefined, open && !isEdit && mayCreate);
+  const filledCode = useRef<string | null>(null);
   // The saved project, handed to `onSaved` once the form has closed (e.g. to open it).
   const saved = useRef<string | null>(null);
   // A work order or LoA read to fill a new project (finding 10 of the October review).
@@ -129,6 +134,7 @@ export function ProjectFormModal({
       });
     } else {
       form.resetFields();
+      filledCode.current = null;
       // A project manager making a project manages it, or would not see it once made.
       form.setFieldsValue({
         status: initialType === 'STORE' ? 'ACTIVE' : 'PLANNED',
@@ -138,6 +144,14 @@ export function ProjectFormModal({
       });
     }
   }, [open, project, form, initialType, user]);
+
+  useEffect(() => {
+    if (!open || isEdit || !nextCode?.code) return;
+    const typed = form.getFieldValue('code');
+    if (typed && typed !== filledCode.current) return;
+    form.setFieldValue('code', nextCode.code);
+    filledCode.current = nextCode.code;
+  }, [open, isEdit, nextCode, form]);
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -212,7 +226,12 @@ export function ProjectFormModal({
         ) : null}
         <FormSection title="Project">
           <FormGrid cols={2}>
-            <Form.Item name="code" label="Project code" rules={[{ required: true, whitespace: true, message: 'Enter the project code, e.g. RD-2026-01' }]}>
+            <Form.Item
+              name="code"
+              label="Project code"
+              extra={!isEdit && nextCode?.code ? 'The next in your series. Change it if you number projects another way.' : undefined}
+              rules={[{ required: true, whitespace: true, message: 'Enter the project code, e.g. RD-2026-01' }]}
+            >
               <Input placeholder="RD-2026-01" />
             </Form.Item>
             <Form.Item name="name" label="Project name" rules={[{ required: true, whitespace: true, message: 'Enter the project name' }]} {...read('nameOfWork')}>

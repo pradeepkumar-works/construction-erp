@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { App, Checkbox, Form, Input, InputNumber, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientDto, ClientTermPercent } from '@erp/shared';
-import { CLIENT_TERM_PERCENTS, CONTRACT_PERCENT_LABELS, GST_STATES, GSTIN_PATTERN, MAX_GST_RATE, PAN_PATTERN, STANDARD_TERMS, gstStateCode } from '@erp/shared';
+import { CLIENT_TERM_PERCENTS, CONTRACT_PERCENT_LABELS, GST_STATES, GSTIN_PATTERN, MAX_GST_RATE, PAN_PATTERN, panFromGstin, STANDARD_TERMS, gstStateCode } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -44,6 +44,8 @@ export function ClientFormModal({ open, client, initialName, onClose, onSaved }:
   const qc = useQueryClient();
   const gstin = Form.useWatch('gstin', form);
   const fromGstin = gstStateCode(gstin && GSTIN_PATTERN.test(gstin.toUpperCase()) ? gstin : null);
+  // The PAN is inside the GSTIN (finding 17 of the October review); it fills an empty box, never one already typed.
+  const panOfGstin = panFromGstin(gstin);
 
   useEffect(() => {
     if (!open) return;
@@ -69,7 +71,8 @@ export function ClientFormModal({ open, client, initialName, onClose, onSaved }:
 
   useEffect(() => {
     if (fromGstin) form.setFieldValue('stateCode', fromGstin);
-  }, [fromGstin, form]);
+    if (panOfGstin && !form.getFieldValue('pan')) form.setFieldValue('pan', panOfGstin);
+  }, [fromGstin, panOfGstin, form]);
 
   const save = useMutation({
     mutationFn: async (v: FormValues) => {
