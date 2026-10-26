@@ -6,7 +6,7 @@
  *   node dist/scripts/doc-read-test.js
  */
 import assert from 'node:assert/strict';
-import { boqRowsFromRead, disciplineOf, gstinCheckChar, itemSimilarity, matchLines, normUnit, workOrderEnd } from '@erp/shared';
+import { boqRowsFromRead, disciplineOf, gstinCheckChar, itemSimilarity, matchLines, normUnit, readDateProblem, workOrderEnd } from '@erp/shared';
 import { fixGstin, fixVehicleNo, normalise, parseReply, toDate, toNumber } from '../ai/ai-read.service';
 
 const tests: [string, () => void][] = [];
@@ -187,6 +187,18 @@ test('BOQ rows for the import: headings carried down, run-on descriptions joined
   assert.match(rows[1].check!, /rate: not printed/);
   assert.equal(rows[2].originalQty, '');
   assert.match(rows[2].check!, /quantity/);
+});
+
+test('a date that cannot be right is left for the person, with the reason', () => {
+  const today = '2026-10-26';
+  // A year misread turns last Christmas into next: never filled in by itself.
+  assert.equal(readDateProblem('2026-12-25', today), 'future');
+  assert.equal(readDateProblem('2025-09-30', today), null);
+  assert.equal(readDateProblem('2025-01-02', today), 'old');
+  assert.equal(readDateProblem('15-10-2026', today), 'unreadable');
+  // Today is fine, and no date at all is no problem.
+  assert.equal(readDateProblem(today, today), null);
+  assert.equal(readDateProblem(null, today), null);
 });
 
 let failed = 0;

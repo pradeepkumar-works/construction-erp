@@ -3,13 +3,16 @@
 import React, { useState } from 'react';
 import { themeFontSize } from '@/lib/theme';
 import { App, Button, Flex, Pagination, Segmented, Tooltip, Typography, theme } from 'antd';
-import type { FormItemProps } from 'antd';
+import type { AttachmentDto } from '@erp/shared';
+import type { FormInstance, FormItemProps } from 'antd';
 import type { DocReadField, DocReadKind, DocReadResultDto } from '@erp/shared';
-import { DOC_READ_MAX_PAGES, DOC_READ_PAGES_OF } from '@erp/shared';
+import { DOC_READ_MAX_PAGES, DOC_READ_PAGES_OF, readDateProblem } from '@erp/shared';
+import dayjs from 'dayjs';
 import { errorMessage } from '@/lib/api';
+import { formatDate } from '@/lib/format';
 import { useAsk } from '@/lib/ask';
 import { pagesOf, type PageImage } from '@/lib/doc-pages';
-import { useReadDocument } from '@/lib/queries';
+import { uploadFile, useReadDocument } from '@/lib/queries';
 import { SparkleIcon } from './SparkleIcon';
 
 /** A document read to fill a form (AI item 70): what came back, the pages it came from and the file picked. */
@@ -123,7 +126,22 @@ export function ReadDocumentButton({ kind, purchaseOrderId, label, onRead, disab
  * The pages read, with a box around each value that filled the form: amber where it needs checking, blue for the one
  * a field's "From the invoice" tag points at. With `pagesHidden` only the summary and its children show.
  */
-export function ReadPreview({ state, active, onClear, pagesHidden, children }: { state: ReadState; active: string | null; onClear: () => void; pagesHidden?: boolean; children?: React.ReactNode }) {
+export function ReadPreview({
+  state,
+  active,
+  onClear,
+  pagesHidden,
+  kept,
+  children,
+}: {
+  state: ReadState;
+  active: string | null;
+  onClear: () => void;
+  pagesHidden?: boolean;
+  /** The file's name once it is kept on the record, so nobody attaches it again */
+  kept?: string | null;
+  children?: React.ReactNode;
+}) {
   const { token } = theme.useToken();
   const boxes = readBoxes(state.result);
   const activeBox = boxes.find((b) => b.key === active);
@@ -144,9 +162,10 @@ export function ReadPreview({ state, active, onClear, pagesHidden, children }: {
           {state.result.kind === 'boq' ? null : (
             <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               {toCheck.length
-                ? `${toCheck.length} value${toCheck.length === 1 ? '' : 's'} to check, marked in amber: ${toCheck.map((b) => b.label.toLowerCase()).join(', ')}.`
+                ? `${toCheck.length} value${toCheck.length === 1 ? '' : 's'} to check, marked in amber: ${toCheck.map((b) => b.label.toLowerCase().replace(/\.$/, '')).join(', ')}.`
                 : `Check the values against the ${noun} before saving.`}{' '}
               Point at a field&apos;s &ldquo;From the {noun}&rdquo; to see where it was read. Nothing is saved until you save.
+              {kept ? ` ${kept} is attached below, so there is no need to pick it again.` : ''}
             </div>
           )}
           {children}
@@ -206,15 +225,49 @@ export function ReadPreview({ state, active, onClear, pagesHidden, children }: {
  * Props for the Form.Item a read value went into: low confidence shows as a warning with why; any read value says it
  * came from the document, and pointing at that shows its box.
  */
-export function readFieldProps(state: ReadState | null, key: string, setActive: (k: string | null) => void): Partial<FormItemProps> {
+export function readFieldProps(state: ReadState | null, key: string, setActive: (k: string | null) => void, problem?: string | null): Partial<FormItemProps> {
   if (!state) return {};
   const m = key.match(/^line-(\d+)-(.+)$/);
   const field = m ? state.result.lines[Number(m[1])]?.[m[2]] : state.result.fields[key];
-  if (!field || field.value === null) return {};
+  if (!field || (field.value === null && !problem)) return {};
   const tag = <ReadSource kind={state.result.kind} page={field.page} onActive={(on) => setActive(on ? key : null)} />;
-  return field.confidence === 'low'
-    ? { validateStatus: 'warning', help: <span>Check this: {field.reason ?? 'hard to read'}. {tag}</span> }
+  // A value the form would not take (a date in the future, finding 13 of the October review) is amber with its reason,
+  // however sure the model was.
+  return problem || field.confidence === 'low'
+    ? { validateStatus: 'warning', help: <span>Check this: {problem ?? field.reason ?? 'hard to read'}. {tag}</span> }
     : { extra: tag };
+}
+
+/**
+ * Why a date read off a document was not filled in, in words for the amber line under the field, or null when it was
+ * taken (finding 13 of the October review).
+ */
+export function readDateReason(value: string | null | undefined): string | null {
+  const problem = readDateProblem(value, dayjs().format('YYYY-MM-DD'));
+  if (!problem || !value) return null;
+  if (problem === 'unreadable') return `“${value}” is not a date`;
+  return problem === 'future' ? `the date read, ${formatDate(value)}, is still to come` : `the date read, ${formatDate(value)}, is over a year old`;
+}
+
+/**
+ * Keeps the read file on the record (finding 13 of the October review): the scan the model read is uploaded and added
+ * to the form's own attachment field, so nobody picks the same file twice. `kept` is its name once it is on the form.
+ */
+export function useKeepReadFile(form: FormInstance, field: string | (string | number)[]) {
+  const { message } = App.useApp();
+  const [kept, setKept] = useState<string | null>(null);
+  const keep = (s: ReadState) => {
+    uploadFile(s.file)
+      .then((att) => {
+        form.setFieldValue(field, [...((form.getFieldValue(field) as AttachmentDto[] | undefined) ?? []), att]);
+        setKept(s.file.name);
+      })
+      .catch((e) => {
+        setKept(null);
+        message.warning(`The form is filled, but the ${NOUN[s.result.kind]} could not be attached: ${errorMessage(e)}`);
+      });
+  };
+  return { keep, kept, forgetKept: () => setKept(null) };
 }
 
 /** "From the invoice, page 1": pointing at it or focusing it shows the value's box in the preview. */

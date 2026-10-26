@@ -7,14 +7,14 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto } from '@erp/shared';
 import { MATERIAL_PRIORITY_LABELS, itemSimilarity, matchLines, readNumber, readText } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { uploadFile, useProjects, useReceivable, useReceivableOrders } from '@/lib/queries';
+import { useProjects, useReceivable, useReceivableOrders } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { ReadDocumentButton, ReadPreview, ReadSource, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
+import { ReadDocumentButton, ReadPreview, ReadSource, readDateReason, readFieldProps, useKeepReadFile, type ReadState } from '@/components/ai/ReadDocument';
 
 interface FormValues {
   projectId?: string;
@@ -96,6 +96,10 @@ export function ReceiptModal({
   const [activeRead, setActiveRead] = useState<string | null>(null);
   const [readLines, setReadLines] = useState<Record<string, number> | null>(null);
   const pendingQty = useRef<{ key: string; qty: Record<string, string | null> } | null>(null);
+  // The challan itself is kept on the GRN, and a date it cannot have been dispatched on is left for the store keeper
+  // to type (finding 13 of the October review).
+  const keepChallan = useKeepReadFile(form, 'photos');
+  const dateProblem = readDateReason(readText(readState?.result.fields.date));
 
   useEffect(() => {
     if (!open) return;
@@ -137,7 +141,12 @@ export function ReceiptModal({
     setReadState(s);
     setActiveRead(null);
     const f = s.result.fields;
-    form.setFieldsValue({ challanNo: readText(f.challanNo) ?? undefined, vehicleNo: readText(f.vehicleNo) ?? undefined });
+    const dispatched = readText(f.date);
+    form.setFieldsValue({
+      challanNo: readText(f.challanNo) ?? undefined,
+      vehicleNo: readText(f.vehicleNo) ?? undefined,
+      ...(dispatched && !readDateReason(dispatched) ? { date: dayjs(dispatched) } : {}),
+    });
     const read = s.result.lines.map((l) => ({ description: readText(l.description) ?? '', unit: readText(l.unit) }));
     const poNo = readText(f.poNo)?.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const supplier = readText(f.supplierName) ?? '';
@@ -163,9 +172,7 @@ export function ReceiptModal({
         form.setFieldValue('source', best.src.key);
       }
     }
-    uploadFile(s.file)
-      .then((att) => form.setFieldValue('photos', [...((form.getFieldValue('photos') as AttachmentDto[] | undefined) ?? []), att]))
-      .catch((e) => message.warning(`The form is filled, but the challan could not be attached: ${errorMessage(e)}`));
+    keepChallan.keep(s);
   };
 
   const save = useMutation({
@@ -205,7 +212,7 @@ export function ReceiptModal({
             <ReadDocumentButton kind="challan" label="Fill from challan" onRead={applyRead} disabled={loading} />
           </Flex>
         ) : (
-          <ReadPreview state={readState} active={activeRead} onClear={() => setReadState(null)} />
+          <ReadPreview state={readState} active={activeRead} kept={keepChallan.kept} onClear={() => setReadState(null)} />
         )}
         {projectId ? null : (
           <Form.Item name="projectId" label="Project">
@@ -297,7 +304,7 @@ export function ReceiptModal({
         )}
 
         <FormGrid cols={2}>
-          <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Pick the date' }]} {...readFieldProps(readState, 'date', setActiveRead, dateProblem)}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {request?.kind === 'PO' ? (

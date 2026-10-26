@@ -95,8 +95,16 @@ test('a challan photo fills the GRN against the order', async ({ page }) => {
   await expect(modal.getByLabel('Challan / invoice no.')).toHaveValue('DC-7781');
   await expect(modal.getByLabel('Quantity received of Binding wire 18 SWG (e2e)')).toHaveValue('20');
   await expect(modal.getByText(/Check this/)).toBeVisible();
+  // The challan's own date is taken (finding 13 of the October review); a date still to come would be left in amber.
+  await expect(modal.getByLabel('Received on')).toHaveValue('15 Oct 2026');
+  // The challan itself is kept on the GRN, so nobody uploads it twice (finding 13 of the October review).
+  await expect(modal.locator('.ant-upload-list-item[title="challan.png"], .ant-upload-list-item:has([title="challan.png"])')).toHaveCount(1);
   await modal.getByRole('button', { name: 'Save GRN' }).click();
   await expect(page.getByText(/GRN-\d{4}-\d{4} saved: 1 item received|saved: 1 item received/)).toBeVisible();
+  const store2 = await apiToken('store@demo.com');
+  const entry = (await api<Page<{ id: string }>>(store2, '/stock/entries?q=DC-7781&pageSize=1')).items[0];
+  const saved = await api<{ attachments: { fileName: string }[] }>(store2, `/stock/entries/${entry.id}`);
+  expect(saved.attachments.map((x) => x.fileName)).toContain('challan.png');
 });
 
 test("a drawing's title block fills the register entry", async ({ page }) => {

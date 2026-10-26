@@ -6,11 +6,11 @@ import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentDiscipline, DocumentKind, RevisionStatus } from '@erp/shared';
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, disciplineOf, readText } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { uploadFile, useProjects } from '@/lib/queries';
+import { useProjects } from '@/lib/queries';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
-import { ReadDocumentButton, ReadPreview, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
+import { ReadDocumentButton, ReadPreview, readDateReason, readFieldProps, useKeepReadFile, type ReadState } from '@/components/ai/ReadDocument';
 import { RevisionFields } from './RevisionFields';
 
 interface FormValues {
@@ -32,6 +32,8 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
   const editing = !!doc;
   // A drawing's title block read to fill the form (AI item 70).
   const [readState, setReadState] = useState<ReadState | null>(null);
+  // The drawing itself is kept as the revision's file (finding 13 of the October review).
+  const keepDrawing = useKeepReadFile(form, ['revision', 'files']);
   const [activeRead, setActiveRead] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,13 +58,11 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
       revision: {
         ...form.getFieldValue('revision'),
         ...(readText(f.revision) ? { revision: readText(f.revision)! } : {}),
-        ...(date && !dayjs(date).isAfter(dayjs(), 'day') ? { issuedOn: dayjs(date) } : {}),
+        ...(date && !readDateReason(date) ? { issuedOn: dayjs(date) } : {}),
         ...(readText(f.issuedBy) ? { receivedFrom: readText(f.issuedBy)! } : {}),
       },
     });
-    uploadFile(s.file)
-      .then((att) => form.setFieldValue(['revision', 'files'], [...((form.getFieldValue(['revision', 'files']) as AttachmentDto[] | undefined) ?? []), att]))
-      .catch((e) => message.warning(`The form is filled, but the drawing could not be attached: ${errorMessage(e)}`));
+    keepDrawing.keep(s);
   };
   const read = (key: string) => readFieldProps(readState, key, setActiveRead);
 
@@ -102,7 +102,7 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
             <ReadDocumentButton kind="drawing" label="Fill from title block" onRead={applyRead} />
           </Flex>
         ) : null}
-        {readState ? <ReadPreview state={readState} active={activeRead} onClear={() => setReadState(null)} /> : null}
+        {readState ? <ReadPreview state={readState} active={activeRead} kept={keepDrawing.kept} onClear={() => setReadState(null)} /> : null}
         <FormSection title="Document">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!(doc || projectId)}>
             <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />

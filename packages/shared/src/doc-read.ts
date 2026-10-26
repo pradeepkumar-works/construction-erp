@@ -142,6 +142,25 @@ export const readNumber = (f: DocReadField | undefined): number | null => (typeo
 /** A read field's value as text, or null. */
 export const readText = (f: DocReadField | undefined): string | null => (f?.value === null || f?.value === undefined ? null : String(f.value));
 
+/** A date read off a document is older than this many days before it is left for the person to type. */
+export const READ_DATE_MAX_AGE_DAYS = 400;
+
+/** Why a date read off a document cannot be used as it stands (finding 13 of the October review). */
+export type ReadDateProblem = 'unreadable' | 'future' | 'old';
+
+/**
+ * Checks a date read off a challan or invoice. A misread year turns 25 Dec 2025 into 25 Dec 2026, so a date after
+ * today, one over a year old or one that is not a date at all is never filled in silently: the form keeps its own date
+ * and marks the field in amber with the reason. `today` and `value` are both YYYY-MM-DD.
+ */
+export function readDateProblem(value: string | null | undefined, today: string): ReadDateProblem | null {
+  if (!value) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00Z`))) return 'unreadable';
+  if (value > today) return 'future';
+  if ((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${value}T00:00:00Z`)) / 86_400_000 > READ_DATE_MAX_AGE_DAYS) return 'old';
+  return null;
+}
+
 /** A drawing's discipline as printed ("STRUCTURAL", "MEP", "Plumbing & drainage") as the register's, or null. */
 export function disciplineOf(text: string | null | undefined): 'ARCHITECTURAL' | 'STRUCTURAL' | 'ROAD' | 'WATER' | 'ELECTRICAL' | 'MECHANICAL' | 'PLUMBING' | null {
   const t = (text ?? '').toLowerCase();
