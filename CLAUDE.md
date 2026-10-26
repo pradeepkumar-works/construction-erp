@@ -131,7 +131,9 @@ and the pre-delivery checklist.
   `src/scripts/launcher-test.ts` passing); a node is New by default with `newUntil`, and admins override it in Admin › Home tiles.
 - My work (`app/(app)/my-work/page.tsx`): what each role leads with is `homeLayout(role)` in `components/home/layout.ts` (order only;
   the API's `GET /dashboard/my-work` and `/dashboard/trends` in `HomeService` leave out what a role may not see). A new My work
-  card is a key on `MyWorkDto`, a block in `HomeService.myWork` and a line in `MyWorkPanel`'s `CARDS`. Charts use
+  card is a key on `MyWorkDto`, a block in `HomeService.myWork`, a line in `MyWorkPanel`'s `CARDS` and `CLEAR`, its place in
+  `homeLayout` and in the phone's `ORDERS`/`CARDS` (`apps/mobile/src/components/MyWork.tsx`, title in Hindi). Home's Waiting
+  for you shows the top three of the same cards (`WaitingForYou`). Charts use
   `@ant-design/plots` from `components/home/charts.tsx`, loaded with `dynamic(..., { ssr: false })`.
 - Work breakdown (item 125, ARCHITECTURE "Work breakdown"): project progress is `rollUp` in `@erp/shared/wbs.ts` (through
   `physicalProgress` in `src/common/progress.ts`), never a sum of its own; an activity with sub-activities takes no

@@ -145,7 +145,13 @@ submission types, and, if it has figures, a branch in `ModuleHomeService.figures
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search
 box over the navigation tree, the person's pinned tiles, Recent, and every module they can open as a `TileGrid`. The old
 dashboard is the My work page (`/my-work`, a tile of its own); `homeLayout(role)` and `HomeService` still decide what it
-shows. The `home` node has `tile: false`, so it is a sidebar link but never a tile.
+shows. Each desk has a queue of its own there (finding 8 of the October review): **Requests to order** (`toOrder`,
+`canPurchase`: approved material requests with something left to order, by the day needed), **Deliveries due this week**
+(`dueThisWeek`, purchase and store roles that see orders), **Leave and overtime to decide** (`staffToDecide`, the Staff
+page's Waiting on me rule `leaveDeciderWhere`; HR always, anyone else while something waits), **Certified, payment to come**
+(`certifiedToReceive`, `canRecordReceipt`: open client bills with a certificate) and **Goods received, no bill yet**
+(`toMatch`, `canRecordVendorBill` and `canViewPayables`: GRNs against an order in the last 90 days whose order has no supplier
+bill, valued at the order's rates). Purchase and HR have layouts of their own. The `home` node has `tile: false`, so it is a sidebar link but never a tile.
 
 - **Search** filters the tree by label, keywords, description and module, every word matching, labels that start with the
   text first (up to 12). Enter opens the first match; with none, "Search records for …" hands the text to Search (Ctrl K) through `requestSearch`
@@ -163,6 +169,10 @@ shows. The `home` node has `tile: false`, so it is a sidebar link but never a ti
   approvals waiting for the person on the Approvals tile and on each module by `MODULE_SUBMISSION_TYPES`, approvals plus
   entries sent back plus missing daily reports on My work, and the watch list's count on Watch list.
 - **Old favourites.** The localStorage favourites and recent pages from before are sent once to `POST /launcher/import`.
+- **Waiting for you** (finding 8 of the October review, `components/launcher/WaitingForYou.tsx`) is Home's first section:
+  the three most pressing of the person's My work cards, in My work's own order (`myWorkOrder` over `homeLayout(role)`),
+  each a line with its count and most pressing entry that opens the card's list, then All my work. It reads the same
+  `GET /dashboard/my-work`, so it never shows what My work would not.
 
 Both tables are tenant tables with `tenant_isolation` policies (migration `20261205090000_launcher_pins`).
 

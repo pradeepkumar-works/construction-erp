@@ -10,11 +10,16 @@ import {
   CheckSquareOutlined,
   CreditCardOutlined,
   EyeOutlined,
+  FileDoneOutlined,
   FileTextOutlined,
   HourglassOutlined,
   InboxOutlined,
+  ReconciliationOutlined,
   RollbackOutlined,
   SafetyCertificateOutlined,
+  ScheduleOutlined,
+  ShoppingCartOutlined,
+  TeamOutlined,
   TruckOutlined,
   WalletOutlined,
 } from '@/components/common/icons';
@@ -24,7 +29,7 @@ import { QUEUE_TYPE_LABELS } from '@/components/approvals/queue';
 import { LinkButton } from '@/components/common/LinkButton';
 import type { MyWorkKey } from './layout';
 
-const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: React.ReactNode; href: string | null; tone: 'warning' | 'error' | 'info' }> = {
+export const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: React.ReactNode; href: string | null; tone: 'warning' | 'error' | 'info' }> = {
   watchList: { title: 'Watch list', icon: <EyeOutlined />, href: '/watch-list', tone: 'warning' },
   dprsMissing: { title: 'DPRs not filed today', icon: <FileTextOutlined />, href: '/dpr', tone: 'warning' },
   sentBack: { title: 'Sent back to you', icon: <RollbackOutlined />, href: null, tone: 'warning' },
@@ -35,9 +40,14 @@ const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: Reac
   lateDeliveries: { title: 'Late deliveries', icon: <TruckOutlined />, href: '/purchase-orders', tone: 'error' },
   lowStock: { title: 'Below minimum stock', icon: <InboxOutlined />, href: '/stock', tone: 'warning' },
   meetingActions: { title: 'Your actions from meetings', icon: <CarryOutOutlined />, href: '/meetings?view=actions&mine=1', tone: 'warning' },
+  toOrder: { title: 'Requests to order', icon: <ShoppingCartOutlined />, href: '/material-requests?status=APPROVED', tone: 'error' },
+  dueThisWeek: { title: 'Deliveries due this week', icon: <ScheduleOutlined />, href: '/purchase-orders?tab=status', tone: 'info' },
+  staffToDecide: { title: 'Leave and overtime to decide', icon: <TeamOutlined />, href: '/staff?tab=leave', tone: 'warning' },
+  certifiedToReceive: { title: 'Certified, payment to come', icon: <FileDoneOutlined />, href: '/receivables', tone: 'error' },
+  toMatch: { title: 'Goods received, no bill yet', icon: <ReconciliationOutlined />, href: '/vendor-bills', tone: 'warning' },
 };
 
-const APPROVALS_TITLE = 'Waiting for your approval';
+export const APPROVALS_TITLE = 'Waiting for your approval';
 
 /** What each card is about, inside the "Nothing else waiting" line. */
 const CLEAR: Record<MyWorkKey, string> = {
@@ -52,6 +62,11 @@ const CLEAR: Record<MyWorkKey, string> = {
   lateDeliveries: 'deliveries',
   lowStock: 'stock levels',
   meetingActions: 'meeting actions',
+  toOrder: 'requests to order',
+  dueThisWeek: 'deliveries this week',
+  staffToDecide: 'leave and overtime',
+  certifiedToReceive: 'certified bills',
+  toMatch: 'goods to match with a bill',
 };
 
 /**
