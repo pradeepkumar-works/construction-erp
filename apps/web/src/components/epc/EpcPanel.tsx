@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { Alert, App, Button, Flex, Form, Input, InputNumber, Segmented, Select, Space, Statistic, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -339,15 +340,15 @@ function DeliverableForm({ projectId, target, onClose }: { projectId: string; ta
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="plannedSubmitOn" label="Planned submission">
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="plannedApprovalOn" label="Planned approval">
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>
           <Form.Item name="submittedOn" label="Submitted on" extra="The latest submission">
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={notAfterToday} />
+            <DatePicker style={{ width: '100%' }} disabledDate={notAfterToday} />
           </Form.Item>
           <Form.Item name="revision" label="Revision">
             <Input maxLength={20} placeholder="R1" />
@@ -358,7 +359,7 @@ function DeliverableForm({ projectId, target, onClose }: { projectId: string; ta
         </FormGrid>
         {approvalCodeApproves(code) ? (
           <Form.Item name="approvedOn" label="Approved on" rules={[{ required: true, message: 'Give the day the client approved it' }]}>
-            <DatePicker format="DD MMM YYYY" style={{ width: 220, maxWidth: '100%' }} disabledDate={notAfterToday} />
+            <DatePicker style={{ width: 220, maxWidth: '100%' }} disabledDate={notAfterToday} />
           </Form.Item>
         ) : null}
         <Form.Item name="note" label="Note">
@@ -667,7 +668,7 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
           </FormGrid>
           <FormGrid cols={2}>
             <Form.Item name="neededOn" label="Needed on site" extra="The day erection needs it; a package forecast after it is late">
-              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="byShip" label="Comes by sea or air">
               <Segmented<'yes' | 'no'>
@@ -690,7 +691,7 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
                 <Input maxLength={60} />
               </Form.Item>
               <Form.Item name="eta" label="ETA at the port" extra="The forecast on site is the ETA plus the days to site">
-                <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                <DatePicker style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item name="portToSiteDays" label="Days from the port to site" extra="Customs and the truck">
                 <InputNumber<number> min={0} max={120} precision={0} style={{ width: '100%' }} placeholder={String(DEFAULT_PORT_TO_SITE_DAYS)} inputMode="numeric" />
@@ -704,10 +705,10 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
             <FormGrid key={stage} cols={3}>
               <div style={{ alignSelf: 'center', paddingBottom: 12 }}>{PACKAGE_STAGE_LABELS[stage]}</div>
               <Form.Item name={['stages', stage, 'plannedOn']} label="Planned">
-                <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                <DatePicker style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item name={['stages', stage, 'actualOn']} label="Done">
-                <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={notAfterToday} />
+                <DatePicker style={{ width: '100%' }} disabledDate={notAfterToday} />
               </Form.Item>
             </FormGrid>
           ))}
@@ -864,10 +865,10 @@ function ClientInputForm({ projectId, target, onClose }: { projectId: string; ta
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="dueDate" label="Due on" rules={[{ required: true, message: 'Give the day it is due' }]}>
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="achievedOn" label="Given on" extra={m?.delayId ? 'Also ends the delay recorded for it' : 'Empty until the client gives it'}>
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={notAfterToday} />
+            <DatePicker style={{ width: '100%' }} disabledDate={notAfterToday} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="note" label="Note">

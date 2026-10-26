@@ -4,7 +4,8 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { Alert, Button, Card, DatePicker, Empty, Flex, Form, Input, Switch, Typography, theme } from 'antd';
+import { Alert, Button, Card, Empty, Flex, Form, Input, Switch, Typography, theme } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import {
   ACCESS_REQUEST_STATUS_LABELS,
@@ -180,7 +181,7 @@ function FlagRow({ node, flag }: { node: NavNode; flag: LauncherFlagDto | undefi
           <DatePicker
             aria-label={`${node.label}: New until`}
             placeholder="Until turned off"
-            format="DD MMM YYYY"
+           
             value={newUntil ? dayjs(newUntil) : null}
             disabledDate={(d) => d.isBefore(dayjs(), 'day')}
             onChange={(d) => save({ isNew: true, newUntil: d ? d.format('YYYY-MM-DD') : null })}

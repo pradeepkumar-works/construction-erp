@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, AutoComplete, DatePicker, Form, Input, Select } from 'antd';
+import { App, AutoComplete, Form, Input, Select } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ComplianceDocDetailDto, ComplianceDocDto, ComplianceDocKind } from '@erp/shared';
@@ -198,14 +199,14 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
                   </Form.Item>
                 ) : null}
                 <Form.Item name="issuedOn" label="Issued on">
-                  <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                  <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item name="expiresOn" label="Valid to" extra={kind === 'EMD' ? 'Empty until the tender result' : undefined}>
-                  <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                  <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
                 {guarantee ? (
                   <Form.Item name="claimUntil" label="Claim period to">
-                    <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                    <DatePicker style={{ width: '100%' }} />
                   </Form.Item>
                 ) : null}
               </FormGrid>
@@ -228,14 +229,14 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
                 <MoneyInput />
               </Form.Item>
               <Form.Item name="issuedOn" label="Starts on">
-                <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} allowClear={false} />
+                <DatePicker style={{ width: '100%' }} allowClear={false} />
               </Form.Item>
               <Form.Item name="expiresOn" label="Valid to" rules={[{ required: true, message: 'Pick the new expiry date' }]}>
-                <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                <DatePicker style={{ width: '100%' }} />
               </Form.Item>
               {guarantee ? (
                 <Form.Item name="claimUntil" label="Claim period to">
-                  <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                  <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
               ) : null}
             </FormGrid>
@@ -248,7 +249,7 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
         {mode === 'release' || mode === 'invoke' ? (
           <>
             <Form.Item name="date" label={mode === 'release' ? 'Released on' : 'Invoked on'}>
-              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="note" label="Note" extra={mode === 'release' ? 'e.g. returned by the client after the defect liability period' : 'e.g. encashed by the client for delay'}>
               <Input.TextArea rows={2} maxLength={500} />

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, DatePicker, Form, Input, Segmented, Select, Typography } from 'antd';
+import { App, Form, Input, Segmented, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, NcrDto, NcrSeverity } from '@erp/shared';
 import { NCR_SEVERITIES, NCR_SEVERITY_LABELS } from '@erp/shared';
@@ -158,7 +159,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={people} placeholder="Site engineer or contractor's in-charge" />
           </Form.Item>
           <Form.Item name="dueDate" label="Rectify by">
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="photos" label="Photos">

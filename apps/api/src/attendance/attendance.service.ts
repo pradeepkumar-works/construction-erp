@@ -21,7 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { dateOnly, iso, parseDate } from '../common/serialize';
+import { dateOnly, iso, parseDate, assertNotAfterToday } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { AttendanceDayQuery, AttendanceSuggestionsQuery, CreateAttendanceDto, ListAttendanceQuery, UpdateAttendanceDto } from './attendance.dto';
@@ -262,6 +262,7 @@ export class AttendanceService {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanRecordAttendance(user, dto.projectId);
+    assertNotAfterToday(dto.date, 'attendance');
     const date = parseDate(dto.date);
     const lines = await this.linkVendors(user.organizationId, this.cleanLines(dto.lines, dto.remarks));
     await this.assertUnlocked(dto.projectId, date);
@@ -307,6 +308,7 @@ export class AttendanceService {
     const row = await this.loadForWrite(user, id);
     const data: Prisma.AttendanceSheetUncheckedUpdateInput = { updatedById: user.id };
     if (dto.date !== undefined) {
+      assertNotAfterToday(dto.date, 'attendance');
       const date = parseDate(dto.date);
       if (date.getTime() !== row.date.getTime()) {
         await this.assertUnlocked(row.projectId, date);

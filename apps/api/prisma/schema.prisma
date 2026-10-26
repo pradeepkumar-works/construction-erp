@@ -1175,6 +1175,8 @@ model Project {
   clientPaymentDays      Int?
   /// Days the contract allows to give notice of a hindrance; the notice clock assumes 14 when not set (AI item 123)
   noticeDays             Int?
+  /// How far, in %, measurement may run past a BOQ item's quantity before it needs a variation; 25 when not set
+  measureTolerancePct    Int?
   /// When the schedule baseline was last frozen (activity planned dates and milestone due dates copied to their baseline)
   baselineAt             DateTime?
   baselineById           String?

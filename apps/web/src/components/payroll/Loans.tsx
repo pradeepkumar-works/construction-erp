@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, DatePicker, Form, Input, Popconfirm, Select, Switch, Table, Typography } from 'antd';
+import { App, Button, Form, Input, Popconfirm, Select, Switch, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -55,7 +56,7 @@ function LoanForm({ open, onClose }: { open: boolean; onClose: () => void }) {
             <Select options={STAFF_LOAN_KINDS.map((k) => ({ value: k, label: STAFF_LOAN_KIND_LABELS[k] }))} />
           </Form.Item>
           <Form.Item name="issuedOn" label="Given on" rules={[{ required: true, message: 'Pick the day it was given' }]}>
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Enter the amount given' }]}>
             <MoneyInput min={1} />

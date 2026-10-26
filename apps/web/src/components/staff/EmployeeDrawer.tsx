@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Space, Table, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Space, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import dayjs from 'dayjs';

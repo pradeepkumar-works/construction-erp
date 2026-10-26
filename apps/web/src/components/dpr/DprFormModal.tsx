@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Button, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { Alert, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
@@ -235,7 +236,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           </Form.Item>
           <FormGrid cols={3}>
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the report' }]} {...aiFlagItem(draft, 'date', watchedDate)}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="weather" label="Weather">
               <Select options={WEATHER_OPTIONS.map((w) => ({ value: w, label: WEATHER_LABELS[w] }))} />

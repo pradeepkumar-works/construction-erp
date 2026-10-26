@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Input, InputNumber, Segmented, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Input, InputNumber, Segmented, Space, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { formatDayMonth } from '@/lib/format';
 import type { TableProps } from 'antd';

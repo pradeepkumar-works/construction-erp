@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, Checkbox, DatePicker, Form, Input, Select, Typography } from 'antd';
+import { App, Checkbox, Form, Input, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { PAYMENT_MODES, PAYMENT_MODE_LABELS, type RmcInvoiceDto, type RmcReceiptDto } from '@erp/shared';
 import { useRmcAction, useRmcBatches, useRmcInvoices, useRmcOrders } from '@/lib/queries';
@@ -48,7 +49,7 @@ export function InvoiceForm({ open, orderId, onClose }: { open: boolean; orderId
             <Select showSearch={{ optionFilterProp: 'label' }} options={billable.map((o) => ({ value: o.id, label: `${o.orderNo} · ${o.customer} · ${m3(o.unbilled)} to bill` }))} />
           </Form.Item>
           <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
         {chosen && (
@@ -97,7 +98,7 @@ export function ReceiptForm({ open, invoice, onClose }: { open: boolean; invoice
         </FormGrid>
         <FormGrid cols={3}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Enter the amount received' }]}>
             <MoneyInput />

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Col, DatePicker, Row, Space, Statistic, Table, Typography } from 'antd';
+import { Button, Card, Col, Row, Space, Statistic, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { CarOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -28,7 +29,7 @@ export function DayView() {
   return (
     <div style={{ padding: 16 }}>
       <Space wrap style={{ marginBottom: 12 }}>
-        <DatePicker aria-label="Day" format="DD MMM YYYY" allowClear={false} value={date} onChange={(d) => d && setDate(d)} disabledDate={(d) => d.isAfter(dayjs().add(7, 'day'))} />
+        <DatePicker aria-label="Day" allowClear={false} value={date} onChange={(d) => d && setDate(d)} disabledDate={(d) => d.isAfter(dayjs().add(7, 'day'))} />
         <PlantFilter />
       </Space>
       {error ? (

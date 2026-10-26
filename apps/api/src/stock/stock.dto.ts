@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { IsQuantity } from '../common/quantity';
 import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
 import { GRN_QC_STATUSES, LIST_SORT_FIELDS, PIPE_MATERIALS, STOCK_ADJUSTMENT_REASONS, STOCK_ENTRY_TYPES, type GrnQcStatus, type PipeMaterial, type StockAdjustmentReason, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
@@ -20,7 +21,7 @@ export class ReceiptLineDto {
   @IsUUID()
   materialRequestItemId?: string;
   @ApiPropertyOptional({ description: 'Line of the approved purchase order being received (GRN against a PO)' }) @IsOptional() @IsUUID() purchaseOrderLineId?: string;
-  @ApiProperty({ example: '250' }) @qty() @IsNumberString() quantity: string;
+  @ApiProperty({ example: '250' }) @qty() @IsQuantity() quantity: string;
 }
 
 export class CreateReceiptDto {
@@ -48,7 +49,7 @@ export class CreateReceiptDto {
 
 export class IssueLineDto {
   @ApiProperty() @IsUUID() itemId: string;
-  @ApiProperty({ example: '40' }) @qty() @IsNumberString() quantity: string;
+  @ApiProperty({ example: '40' }) @qty() @IsQuantity() quantity: string;
 }
 
 export class CreateIssueDto {
@@ -84,7 +85,7 @@ export class CreateFuelIssueDto {
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
   @ApiProperty({ description: 'The machine fuelled; an active machine of the company' }) @IsUUID() equipmentId: string;
   @ApiProperty({ description: 'A fuel item of the item master (isFuel)' }) @IsUUID() itemId: string;
-  @ApiProperty({ example: '120', description: 'Litres (in the item unit); at most the stock at the project' }) @qty() @IsNumberString() quantity: string;
+  @ApiProperty({ example: '120', description: 'Litres (in the item unit); at most the stock at the project' }) @qty() @IsQuantity() quantity: string;
   @ApiPropertyOptional({ example: '2154.5', description: 'Hour meter or odometer when fuelled' })
   @IsOptional()
   @qty()
@@ -138,7 +139,7 @@ export class CreateTransferDto {
 
 export class CoverLineDto {
   @ApiProperty() @IsUUID() materialRequestItemId: string;
-  @ApiProperty({ example: '20' }) @qty() @IsNumberString() quantity: string;
+  @ApiProperty({ example: '20' }) @qty() @IsQuantity() quantity: string;
 }
 
 export class CoverRequestDto {

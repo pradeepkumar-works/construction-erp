@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Descriptions, Drawer, Form, Input, Skeleton, Table, Typography } from 'antd';
+import { Alert, App, Button, Descriptions, Drawer, Form, Input, Skeleton, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import type { UseQueryResult } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { PortalBillDto, RaBillItemDto } from '@erp/shared';
@@ -163,7 +164,7 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
       <Form form={form} layout="vertical" requiredMark={false}>
         <FormGrid cols={2}>
           <Form.Item name="date" label="Certificate date" rules={[{ required: true, message: 'Pick the certificate date' }]}>
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="certificateNo" label="Certificate no.">
             <Input maxLength={100} placeholder="EE/RD/2026/114" />

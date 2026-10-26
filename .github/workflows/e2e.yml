@@ -130,6 +130,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/items-test.js
+      - name: Quantities above zero, no day's record after today, measurement held to the BOQ plus its tolerance
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/validation-test.js
       - name: Pipe networks read from EPANET and Excel, segments held to their length, zone sheets and working fronts
         if: matrix.suite == 'flows'
         working-directory: apps/api

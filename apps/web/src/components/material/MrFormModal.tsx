@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, DatePicker, Form, Input, Select } from 'antd';
+import { Alert, Form, Input, Select } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AiDraftDto, MaterialPriority, MaterialRequestDto } from '@erp/shared';
 import { MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS } from '@erp/shared';
@@ -97,7 +98,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Pick the date it is needed by' }]} {...aiFlagItem(draft, 'requiredDate', requiredDate)}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="priority" label="Priority" rules={[{ required: true, message: 'Choose the priority' }]}>
             <Select options={MATERIAL_PRIORITIES.map((p) => ({ value: p, label: MATERIAL_PRIORITY_LABELS[p] }))} />

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { App, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, QualityTestDto, TestKind, TestResult } from '@erp/shared';
 import { TEST_KINDS, TEST_KIND_DEFAULTS, TEST_KIND_LABELS, comparePipeCodes, segmentLabel } from '@erp/shared';
@@ -133,7 +134,7 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
               />
             </Form.Item>
             <Form.Item name="sampledOn" label="Sampled on" rules={[{ required: true, message: 'Pick the date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
           </FormGrid>
           <Form.Item name="title" label="What was sampled" rules={[{ required: true, whitespace: true, message: 'Say what was sampled' }]}>

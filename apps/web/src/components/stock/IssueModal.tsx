@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { Alert, App, AutoComplete, Button, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -89,7 +90,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {(wos.data?.items.length ?? 0) > 0 && (
             <Form.Item name="workOrderId" label="To a subcontractor" tooltip="Material issued against a work order is recovered from the subcontractor's next bill">

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AimOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { ContractModel, ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
@@ -188,7 +189,7 @@ export function ProjectFormModal({
               <Input />
             </Form.Item>
             <Form.Item name="dates" label="Start / end date">
-              <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
+              <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
             </Form.Item>
             <Form.Item name="contractValue" label="Contract value">
               <MoneyInput />

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { App, AutoComplete, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, DefectDto, DefectPhase, DefectPriority, HandoverSummaryDto, ProjectMemberDto } from '@erp/shared';
