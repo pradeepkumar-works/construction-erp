@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, Table, Typography, theme } from 'antd';
 import type { TableColumnsType } from 'antd';
 import type { ReportRowDto, ReportSectionDto } from '@erp/shared';
@@ -14,6 +15,7 @@ import { cellText, isNegative, isNumeric } from './report-format';
  */
 export function ReportSection({ section }: { section: ReportSectionDto }) {
   const { token } = theme.useToken();
+  const router = useRouter();
   const first = section.columns[0]?.key;
   // A wide section reads its money in lakhs and crores on the screen, so every column fits; print and Excel keep rupees.
   const compact = section.columns.length > 7;
@@ -70,6 +72,9 @@ export function ReportSection({ section }: { section: ReportSectionDto }) {
         rowKey={(r) => String(r._href ?? '') + JSON.stringify(r)}
         dataSource={section.rows}
         columns={columns}
+        // A row that opens something takes the click anywhere on it, as the lists do; its link stays for the keyboard.
+        rowClassName={(r) => (r._href ? 'row-click' : '')}
+        onRow={(r) => (r._href ? { onClick: (e) => !(e.target as HTMLElement).closest('a') && router.push(r._href!) } : {})}
         pagination={section.rows.length > 25 ? { pageSize: 25, showSizeChanger: false, hideOnSinglePage: true } : false}
         scroll={{ x: 'max-content' }}
         locale={{

@@ -208,10 +208,8 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
       columns={columns}
       pagination={false}
       scroll={{ x: 1100 }}
-      onRow={(p) => ({
-        onClick: () => router.push(`/management/projects/${p.projectId}`),
-        style: { cursor: 'pointer' },
-      })}
+      rowClassName={() => 'row-click'}
+      onRow={(p) => ({ onClick: () => router.push(`/management/projects/${p.projectId}`) })}
       locale={{ emptyText: 'No contract projects yet.' }}
     />
   );
