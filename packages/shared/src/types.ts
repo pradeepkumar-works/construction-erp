@@ -589,7 +589,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'WARNING_ALERTS' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'RECEIPTS_WEEKLY' | 'WARNING_ALERTS' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
   date: string;
   created: number;
   pushed: number;

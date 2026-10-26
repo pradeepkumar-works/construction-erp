@@ -108,8 +108,9 @@ export class NotificationsController {
     await this.jobs.machineryDue(q.date).catch(() => undefined);
     await this.jobs.complianceDue(q.date).catch(() => undefined);
     await this.jobs.handoverDue(q.date).catch(() => undefined);
-    // ...and, on Mondays, the weekly watch list of early warnings.
+    // ...and, on Mondays, the weekly watch list of early warnings and last week's money in from clients.
     await this.jobs.watchList(q.date).catch(() => undefined);
+    await this.jobs.receiptsWeekly(q.date).catch(() => undefined);
     // ...and so does erasing companies whose deletion date has come.
     await this.companyData.purgeDue(q.date).catch(() => undefined);
     // ...and starting trials and billing reminders.
@@ -198,5 +199,14 @@ export class NotificationsController {
   @Get('jobs/watch-list')
   watchList(@Query() q: JobQuery) {
     return this.jobs.watchList(q.date, true);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: "Last week's money in from clients: one notification and email per project manager and to management, once a week (runs on any day when called here). Auth: Authorization: Bearer <CRON_SECRET>." })
+  @Get('jobs/receipts-weekly')
+  receiptsWeekly(@Query() q: JobQuery) {
+    return this.jobs.receiptsWeekly(q.date, true);
   }
 }

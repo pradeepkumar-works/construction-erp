@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EMI_DUE_DAYS, TALLY_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, DAILY_WARNING_ALERTS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { EMI_DUE_DAYS, TALLY_ROLES, COMPANY_WIDE_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, DAILY_WARNING_ALERTS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
@@ -13,6 +13,7 @@ import { MessagingService } from '../messaging/messaging.service';
 import { PayablesService } from '../payables/payables.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from './email-layout';
 import { JOB_TIMEZONE, todayIn } from './time';
+import { receiptWeek } from './receipt-week';
 import { latestDocIds, serviceStatuses } from '../maintenance/service-status';
 import { WarningsService } from '../warnings/warnings.service';
 import { alertsToSend } from '../warnings/warning-rules';
@@ -683,6 +684,71 @@ export class NotificationJobsService {
       );
     }
     this.log.log(`Handover due ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * The money that came in from clients last week (finding 18 of the October review): on Mondays (any day with
+   * `anyDay`, for a manual run), the week's receipts per project to management and to each project's manager, in the
+   * app and by email. Each receipt is already told as it is recorded; this is the week read at once, so nobody has to
+   * add it up from the bell. Nothing goes out for a week with no money in. Once per person per week.
+   */
+  async receiptsWeekly(date = todayIn(), anyDay = false): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'RECEIPTS_WEEKLY', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
+    const weekday = (parseDate(date).getUTCDay() + 6) % 7;
+    if (weekday !== 0 && !anyDay) return result;
+    const end = new Date(parseDate(date).getTime() - 86_400_000);
+    const start = new Date(end.getTime() - 6 * 86_400_000);
+    const from = start.toISOString().slice(0, 10);
+    const to = end.toISOString().slice(0, 10);
+    const dedupeKey = `RECEIPTS_WEEKLY:${from}`;
+    const rows = await this.prisma.receipt.findMany({
+      where: { receiptDate: { gte: start, lte: end } },
+      select: { organizationId: true, projectId: true, amount: true, receiptDate: true, project: { select: { code: true, name: true, projectManagerId: true } }, bill: { select: { billNo: true } } },
+    });
+    if (!rows.length) return result;
+    const byOrg = new Map<string, typeof rows>();
+    for (const r of rows) byOrg.set(r.organizationId, [...(byOrg.get(r.organizationId) ?? []), r]);
+    for (const [organizationId, list] of byOrg) {
+      const managerIds = [...new Set(list.map((r) => r.project.projectManagerId).filter((u): u is string => !!u))];
+      const readers = await this.prisma.user.findMany({
+        where: { organizationId, isActive: true, OR: [{ role: { key: { in: COMPANY_WIDE_ROLES } } }, { id: { in: managerIds } }] },
+        include: { role: { select: { key: true } } },
+      });
+      for (const u of readers) {
+        // Management and admin see every project; a project manager sees the projects they run.
+        const theirs = COMPANY_WIDE_ROLES.includes(u.role.key as RoleKey) ? list : list.filter((r) => r.project.projectManagerId === u.id);
+        const summary = receiptWeek(
+          from,
+          to,
+          theirs.map((r) => ({
+            projectId: r.projectId,
+            projectCode: r.project.code,
+            projectName: r.project.name,
+            amount: r.amount.toFixed(2),
+            date: r.receiptDate.toISOString().slice(0, 10),
+            billLabel: r.bill ? `RA bill ${r.bill.billNo}` : null,
+          })),
+        );
+        if (!summary) {
+          result.skipped++;
+          continue;
+        }
+        const r = await this.notifications.notify({
+          organizationId,
+          userIds: [u.id],
+          type: 'HANDOFF',
+          title: summary.title,
+          body: summary.body,
+          dedupeKey,
+          email: { href: '/receivables', cta: 'Open receivables' },
+        });
+        result.created += r.created;
+        result.pushed += r.pushed;
+        result.skipped += r.skipped;
+      }
+    }
+    this.log.log(`Receipts weekly ${date} (${from} to ${to}): ${JSON.stringify(result)}`);
     return result;
   }
 
