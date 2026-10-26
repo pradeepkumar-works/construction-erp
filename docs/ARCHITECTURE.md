@@ -3030,6 +3030,47 @@ export; the client portal and the phone app show the amount.
   to the PM and HR only, a planted padded head count, and roles. `bill-checks-test` counts the padded bill as a seeded
   anomaly.
 
+## Management dashboard and reports
+
+- **What it is.** Item 132, asked by Pradeep on 26 Oct 2026 from the end-to-end test report's BI review: one place for
+  the MD and management to see every contract project, and the reports they print or send each month. For those who see
+  project cost (`canSeeManagement`, which is `canViewCost`: admin, management, accounts, and a project manager for their
+  own projects). A store or yard (`STORE`) and an RMC plant (`PLANT`) have no contract, so they stay out
+  (`ManagementService.contractProjects`), except from the stock position.
+- **Reads, never its own rules.** Every figure comes through the modules' own services: projects and their access
+  (`ProjectsService.listAll`), progress and measurement at BOQ rates, approved RA bills and their receipts, client bills
+  open (`ReceivablesService`), vendor bills (`PayablesService`), cost by head (`CostService.compute`), budget and forecast
+  (`BudgetService.forecasts`), the cash forecast (`CashForecastService.forecast`, for `canSeeCashForecast` only), stock
+  (`StockService`) and approvals waiting (`SubmissionLifecycleService.submitted`). The arithmetic is pure in
+  `apps/api/src/management/management-rules.ts`, tested in `src/scripts/management-test.ts` (CI flows).
+- **Work done.** Each BOQ item at the larger of its approved progress and its approved measurement, at the BOQ rate
+  (`workDoneValue`). A lump-sum or EPC contract is worth the larger of that and its physical progress times the lump sum
+  (`contractWorkDone`), since its BOQ rarely carries the whole price. In a period (the MIS's month and year) a lump-sum or
+  EPC project's work done is left blank: it is valued by its stages.
+- **Health.** `healthOf` gives each project On course, Watch or Act now with the reasons in words: finishing late (Act
+  past 30 days), behind plan by `BEHIND_BY` (10) points, cost above work done or a forecast loss (Act), a margin under
+  `THIN_MARGIN_PCT` (5%), work done and not billed for `UNBILLED_WATCH_DAYS` (45, Act from 90) when it matters
+  (`unbilledMatters`: from ₹1 lakh or 0.5% of the contract), client money over 90 days (Act), approvals older than
+  `APPROVAL_OLD_DAYS` (7, Act past 14) and high risks (score 15 or more). The schedule is `scheduleOf` over the leaf
+  activities' planned progress, the completion date plus extensions granted.
+- **API.** `GET /api/management/portfolio` (`PortfolioDto`: totals, every project's row, approvals by age, 12 months of
+  billed, received and cost, the cash forecast's headline, and every reason worst first); `GET
+  /api/management/projects/:id` (`PortfolioProjectDetailDto`: cost by head against budget and forecast, months with work
+  done, client bills open, entries waiting, risks and open orders); `GET /api/management/reports/:key?month|from&to&projectId`
+  (`ManagementReportDto`: figures, sections of typed columns with totals and row links, and notes). The keys are
+  `MANAGEMENT_REPORT_KEYS` in `packages/shared/src/management.ts`: Monthly MIS (a month), Project profit and loss,
+  Procurement spend and Labour and attendance (a range, the financial year by default), and Work in progress,
+  Receivables ageing, Payables ageing, Stock position and Approvals waiting (as of today).
+- **Web.** `/management` (the figure strip, the money pipeline from contract to paid, Needs action, the projects table
+  with a done-against-plan bullet, the monthly trend through `ChartCard`, approvals by age and the reports),
+  `/management/projects/[id]` (the same for one project, cost heads as budget tracks and the open items in tabs) and
+  `/management/reports/[key]` (period and project in the address, `useProjectScope`; Print opens the brand's A4 page from
+  `components/management/reportOutput.ts`, Excel writes a summary sheet and a sheet per section with numbers kept as
+  numbers). A wide section reads its money in lakhs and crores on the screen; print and Excel keep rupees. The trend's
+  colours are `BRAND.colors.trend…`, checked for colour-blind separation in both themes. A new report is a key and an
+  entry in `MANAGEMENT_REPORTS`, a builder in `ManagementReportsService`, and a node under Reports in the navigation tree.
+- **Not yet.** The phone, a scheduled email of the MIS, and a budget for the company as a whole.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

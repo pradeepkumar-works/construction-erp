@@ -66,6 +66,14 @@ export const BRAND = {
     chartAmber: '#D97706',
     chartTeal: '#0F766E',
     chartPink: '#BE185D',
+    /** The management trend's billed, received and cost lines, on white and on the night surface (checked for colour-blind
+     *  separation with the dataviz palette check). */
+    trendBilled: '#1E63D6',
+    trendReceived: '#0D9488',
+    trendCost: '#D97706',
+    trendBilledNight: '#5B93F0',
+    trendReceivedNight: '#14A093',
+    trendCostNight: '#D07A1E',
     /** Drawing markup ink (item 109), on the white of a drawing sheet in either theme. */
     markupRed: '#D92D20',
     markupBlue: '#1E63D6',
