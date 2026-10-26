@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-measure-from-progress',
+    date: '2027-02-13',
+    title: 'Measure from the approved progress',
+    points: [
+      'The measurement book now shows what each BOQ item has approved on site that no sheet holds yet, with what it is worth at the BOQ rate.',
+      'Start sheet opens a measurement with one line per approved day, where it was and how much, so the quantities are checked rather than typed again.',
+    ],
+  },
+  {
     id: '2027-02-scan-kept',
     date: '2027-02-12',
     title: 'The scan stays with the entry',

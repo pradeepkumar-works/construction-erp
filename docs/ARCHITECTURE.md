@@ -1076,9 +1076,22 @@ The store register per project, fed by approved material requests:
 - **Rollup.** `GET /projects/:id/boq` adds `measuredQty` (approved sheets), `measuredAmount` (× rate)
   and `pendingMeasuredQty` (submitted). The measured quantity is what RA billing (v3) will bill; the
   activity progress (`executedQty`) stays the site's own count and the two sit side by side on the BOQ tab.
+- **Measure from progress (finding 14 of the October review).** The quantities the site got approved on its daily
+  reports were read off them and typed into the book again. `GET /measurements/to-measure?projectId=` answers with each
+  BOQ item whose approved progress its sheets do not hold yet: the approved quantity (through the item's activities),
+  what the sheets hold (all but rejected, so a draft counts once), the remainder at the BOQ rate, and the days that make
+  it up. Which days those are is pure: `unmeasuredEntries` in `@erp/shared/measurement.ts` walks the measured quantity
+  off the approved entries in date order, oldest first, and returns the rest, part of a day included; the sheets carry
+  no link to the days they came from, so that order is the honest reading. Only activities recording the item's own unit
+  count — the others are named (`otherUnitActivities`), never converted. On the web the measurement book's "Measure from
+  progress" opens `MeasureFromProgressModal`, and Start sheet fills `MeasurementFormModal` through `MeasurementPrefill`:
+  one line per day (its date, where it was, the activity), the sheet's location when every day is in one place, and
+  remarks naming the span. The quantity surveyor still checks and submits it. Keep
+  `src/scripts/measure-from-progress-test.ts` passing.
 - **Roles.** Record: `MEASUREMENT_ROLES` (QS, site engineer, PM, management, admin). Approve: approvers.
 - **API.** `/measurements` (paged; `projectId`, `boqItemId`, `status`, `from`, `to`, `mine`, `q`) with
-  create / edit / submit / delete, review and audit through `/approvals/measurement/:id/...`.
+  create / edit / submit / delete, review and audit through `/approvals/measurement/:id/...`, and
+  `/measurements/to-measure` for what the approved days leave to measure.
 - **Clients.** Web: Measurement Book page and project tab (line editor with live totals, Excel export one
   row per line), Measured column on the BOQ tab. Site app: `app/measurement/new.tsx` (offline-capable)
   and `[id].tsx`.

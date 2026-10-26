@@ -145,6 +145,7 @@ import type {
   ApprovalMatrixDto,
   AuthOptionsDto,
   MeasurementSheetDto,
+  ToMeasureItemDto,
   InspectionDto,
   ChecklistTemplateDto,
   RaBillDto,
@@ -1178,6 +1179,14 @@ export const useMeasurements = (filters?: MeasurementFilters) =>
   });
 
 export const useMeasurement = (id: string | undefined) => useQuery({ ...recordQuery<MeasurementSheetDto>('/measurements', id), enabled: !!id });
+
+/** Work approved on site that no measurement sheet holds yet (finding 14 of the October review). */
+export const useToMeasure = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['to-measure', projectId],
+    queryFn: async () => (await api.get<ToMeasureItemDto[]>('/measurements/to-measure', { params: { projectId } })).data,
+    enabled: !!projectId && enabled,
+  });
 
 export interface InspectionFilters extends ListFilters {
   from?: string;
