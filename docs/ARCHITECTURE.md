@@ -464,6 +464,18 @@ quotation, its freight and payment terms and a selection reason naming the split
 same pure rules (`AwardLowestModal`); the API draws it again rather than trusting what was sent. Tests:
 `src/scripts/purchase-award-test.ts` (CI runs it).
 
+**Deciding an order away from the desk (finding 15 of the October review).** The approval card showed the order alone:
+no quotes, no lowest bidder, no budget, and Delete a tap from Approve. A purchase order's record now carries two more
+sections (`components/purchasing/OrderDecision.tsx`, both read-only over what is already stored): *Quotations on the
+request* lists the request's quotations with their totals, marking the lowest complete one and this order's own, and
+says plainly when the order goes elsewhere (the reason stays in the facts, under Why this vendor); *Against the budget*
+(`canViewCost` only) shows the project's material budget from `GET /cost/projects/:id/budget`, what it has cost so far,
+and where this order takes it, in red when it would go past. Delete moved out of the action bar: `RecordFrame` takes
+`more`, a list of `RecordMenuAction`s shown in a ⋯ menu after the buttons, in the drawer's header, the phone's footer
+bar and the page's sticky bar alike, and the six records that had a Delete beside Approve (purchase order, vendor bill,
+RA bill, work order, subcontract bill, payment request) put it there through `useConfirmDelete`. Tests:
+`e2e/tests/order-decision.spec.ts`.
+
 **Where it is delivered.** `Project.siteAddress` is where suppliers deliver; `siteDeliveryAddress` falls back to the
 project's `location`. A purchase order with no address of its own takes it when it is created, the order form shows it
 as the field's placeholder, and the supplier's enquiry page shows the same address.
