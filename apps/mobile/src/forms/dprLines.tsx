@@ -25,6 +25,9 @@ export interface DprLineRow {
   /** The line's progress entry: kept on an edit, a new uuid for a new line */
   id: string;
   activityId: string | null;
+  /** The component and sub-component picked before the activity (keys from `componentKey` / `subKey`); the activity's own once one is chosen */
+  componentPick: string | null;
+  subPick: string | null;
   quantity: string;
   location: string;
   /** The pipe segment, or for a valve line the valve, the work was on (item 126) */
@@ -43,6 +46,8 @@ export const newLineRow = (id: string, over: Partial<DprLineRow> = {}): DprLineR
   key: newKey(),
   id,
   activityId: null,
+  componentPick: null,
+  subPick: null,
   quantity: '',
   location: '',
   pipeSegmentId: null,
@@ -69,6 +74,52 @@ export const lineRowFrom = (l: DprLineDto | DprLineInput, id: string): DprLineRo
 /** Yesterday's line as a start for today: the same work, place and crew; today's quantity and material to fill. */
 export const copiedRow = (l: DprLineDto, id: string): DprLineRow =>
   newLineRow(id, { activityId: l.activityId, location: l.location ?? '', pipeSegmentId: l.pipeSegmentId, crew: l.labour.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })) });
+
+type ActivityOption = DprWorkOptionsDto['activities'][number];
+/** An activity outside the breakdown, and one on the component itself rather than a sub-component */
+const OUTSIDE = '~';
+const WHOLE = '=';
+const componentKey = (a: ActivityOption) => a.componentCode ?? OUTSIDE;
+const subKey = (a: ActivityOption) => a.subComponentCode ?? WHOLE;
+const byCode = (x: string, y: string) => Number(x === OUTSIDE) - Number(y === OUTSIDE) || x.localeCompare(y, undefined, { numeric: true });
+
+/** The components the project's activities sit in, in code order, outside the breakdown last; empty with no breakdown. */
+export function componentChoices(options: DprWorkOptionsDto | null) {
+  const acts = options?.activities ?? [];
+  if (!acts.some((a) => a.componentCode)) return [];
+  const seen = new Map<string, { key: string; name: string | null; count: number }>();
+  for (const a of acts) {
+    const k = componentKey(a);
+    const c = seen.get(k) ?? { key: k, name: a.componentName, count: 0 };
+    c.count += 1;
+    seen.set(k, c);
+  }
+  return [...seen.values()].sort((x, y) => byCode(x.key, y.key));
+}
+
+/** The sub-components of a component, and the component as a whole when activities sit on it directly; empty with none. */
+export function subComponentChoices(options: DprWorkOptionsDto | null, component: string | null) {
+  const acts = (options?.activities ?? []).filter((a) => component !== null && componentKey(a) === component);
+  if (!acts.some((a) => a.subComponentCode)) return [];
+  const seen = new Map<string, { key: string; name: string | null; count: number }>();
+  for (const a of acts) {
+    const k = subKey(a);
+    const c = seen.get(k) ?? { key: k, name: a.subComponentName, count: 0 };
+    c.count += 1;
+    seen.set(k, c);
+  }
+  return [...seen.values()].sort((x, y) => Number(x.key === WHOLE) - Number(y.key === WHOLE) || x.key.localeCompare(y.key, undefined, { numeric: true }));
+}
+
+/** Where a line stands in the breakdown: the activity's own place once chosen, else what was picked. */
+export function linePlace(row: DprLineRow, activity: ActivityOption | undefined) {
+  return activity ? { component: componentKey(activity), sub: subKey(activity) } : { component: row.componentPick, sub: row.subPick };
+}
+
+/** The activities a line may take, narrowed by the component and sub-component picked. */
+export function activitiesFor(options: DprWorkOptionsDto | null, component: string | null, sub: string | null): ActivityOption[] {
+  return (options?.activities ?? []).filter((a) => (component === null || componentKey(a) === component) && (sub === null || subKey(a) === sub));
+}
 
 /** The lines as the API takes them. */
 export const linesPayload = (rows: DprLineRow[]): DprLineInput[] =>
@@ -134,15 +185,22 @@ export function DprLinesEditor({
 }) {
   const t = useT();
   const byId = useMemo(() => new Map((options?.activities ?? []).map((a) => [a.id, a])), [options]);
-  const activityOptions = useMemo(
+  const components = useMemo(() => componentChoices(options), [options]);
+  const componentOptions = useMemo(
     () =>
-      (options?.activities ?? []).map((a) => ({
-        value: a.id,
-        label: dprActivityLabel(a),
-        hint: `${a.lookAhead ? `${t('Planned this week')} · ` : ''}${componentLabel(a) === 'Outside the breakdown' ? t('Outside the breakdown') : componentLabel(a)} · ${t('{done} of {planned} {unit} done', { done: qty(a.doneQty), planned: qty(a.plannedQty), unit: a.unit })}`,
+      components.map((c) => ({
+        value: c.key,
+        label: c.key === OUTSIDE ? t('Outside the breakdown') : `${c.key} ${c.name ?? ''}`.trim(),
+        hint: c.count === 1 ? t('1 activity') : t('{n} activities', { n: c.count }),
       })),
-    [options, t],
+    [components, t],
   );
+  const activityOptions = (component: string | null, sub: string | null) =>
+    activitiesFor(options, component, sub).map((a) => ({
+      value: a.id,
+      label: dprActivityLabel(a),
+      hint: `${a.lookAhead ? `${t('Planned this week')} · ` : ''}${component === null ? `${componentLabel(a) === 'Outside the breakdown' ? t('Outside the breakdown') : componentLabel(a)} · ` : ''}${t('{done} of {planned} {unit} done', { done: qty(a.doneQty), planned: qty(a.plannedQty), unit: a.unit })}`,
+    }));
   const itemOptions = useMemo(() => (options?.items ?? []).map((i) => ({ value: i.id, label: `${i.name} (${i.unit})` })), [options]);
   const categoryOptions = useMemo(() => MANPOWER_CATEGORIES.map((c) => ({ value: c, label: t(c) })), [t]);
   const check = crewCheck(
@@ -176,6 +234,8 @@ export function DprLinesEditor({
         const a = byId.get(r.activityId ?? '');
         const n = i + 1;
         const pipe = pipeChoices(options, r.activityId);
+        const place = linePlace(r, a);
+        const subs = subComponentChoices(options, place.component);
         return (
           <View key={r.key} style={styles.line}>
             <View style={styles.head}>
@@ -184,16 +244,43 @@ export function DprLinesEditor({
               </Text>
               <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={() => onChange(rows.filter((x) => x.key !== r.key))} accessibilityLabel={t('Remove line {n}', { n })} style={styles.remove} />
             </View>
+            {components.length ? (
+              <Select
+                label={t('Component')}
+                value={place.component}
+                options={componentOptions}
+                searchable
+                onChange={(v) => update(r.key, { componentPick: v, subPick: null, ...(a && componentKey(a) !== v ? { activityId: null } : {}) })}
+                placeholder={t('Choose the component')}
+              />
+            ) : null}
+            {subs.length ? (
+              <Select
+                label={t('Sub-component')}
+                value={place.sub}
+                options={subs.map((c) => ({
+                  value: c.key,
+                  label: c.key === WHOLE ? t('The component as a whole') : `${c.key} ${c.name ?? ''}`.trim(),
+                  hint: c.count === 1 ? t('1 activity') : t('{n} activities', { n: c.count }),
+                }))}
+                searchable
+                onChange={(v) => update(r.key, { componentPick: place.component, subPick: v, ...(a && subKey(a) !== v ? { activityId: null } : {}) })}
+                placeholder={t('Choose the sub-component')}
+              />
+            ) : null}
             <Select
               label={t('Activity')}
               required
               value={r.activityId}
-              options={activityOptions}
-              onChange={(v) => update(r.key, { activityId: v })}
+              options={activityOptions(place.component, subs.length ? place.sub : null)}
+              onChange={(v) => {
+                const picked = byId.get(v);
+                update(r.key, { activityId: v, componentPick: picked ? componentKey(picked) : r.componentPick, subPick: picked ? subKey(picked) : r.subPick });
+              }}
               placeholder={options ? t('Choose activity') : t('Loading activities…')}
               disabled={!options}
               searchable
-              emptyText={t('No activities in this project')}
+              emptyText={place.component === null ? t('No activities in this project') : t('No activities here take progress')}
             />
             {pipe.segments.length ? (
               <Select
