@@ -28,7 +28,7 @@ import { StockMoveModal } from "./StockMoveModal";
 import { StockCountModal } from "./StockCountModal";
 import { StockValuation } from "./StockValuation";
 import { IncomingTransfers } from "./IncomingTransfers";
-import { DeliveriesExpected, seesDeliveries, useDeliveriesExpected } from "./DeliveriesExpected";
+import { DeliveriesExpected, seesDeliveries } from "./DeliveriesExpected";
 
 type Action =
   | "receipt"
@@ -138,9 +138,9 @@ export function StockPanel({
   const { user } = useAuth();
   const valuer =
     !!user && (canManageStore(user.roleKey) || canViewCost(user.roleKey));
-  // What is on order for the store, so the store keeper receives it from here (not from Purchase orders).
+  // What is on order for the store, so the store keeper receives it from here (not from Purchase orders). The tab carries
+  // no count: one arriving after the first paint would move the tab bar and its buttons under a click (My work counts them).
   const receiver = seesDeliveries(user?.roleKey);
-  const expected = useDeliveriesExpected(projectId, receiver);
   // The open tab is `?sub=` in the URL (UX item 84), so a reload or a link keeps it.
   const tabs = [
     "balances",
@@ -176,8 +176,6 @@ export function StockPanel({
                 {
                   key: "deliveries",
                   label: "Deliveries expected",
-                  count: expected.rows.length || undefined,
-                  countLabel: "orders still to come",
                   children: <DeliveriesExpected projectId={projectId} />,
                 },
               ]
