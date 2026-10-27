@@ -4,6 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { QuotationsService } from './quotations.service';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { VendorBillsService } from './vendor-bills.service';
+import { RequestsToOrderService } from './requests-to-order.service';
 import {
   ClosePurchaseOrderDto,
   CreatePurchaseOrderDto,
@@ -16,7 +17,9 @@ import {
   ListPurchaseOrdersQuery,
   ListVendorBillsQuery,
   ProcurementStatusQuery,
+  FinaliseL1Dto,
   ReceivableOrdersQuery,
+  RequestsToOrderQuery,
   UpdatePurchaseOrderDto,
   UpdateQuotationDto,
   UpdateVendorBillDto,
@@ -26,7 +29,7 @@ import {
 @ApiBearerAuth()
 @Controller()
 export class PurchasingController {
-  constructor(private quotations: QuotationsService, private orders: PurchaseOrdersService, private bills: VendorBillsService) {}
+  constructor(private quotations: QuotationsService, private orders: PurchaseOrdersService, private bills: VendorBillsService, private toOrder: RequestsToOrderService) {}
 
   /* ---------- quotations ---------- */
 
@@ -58,6 +61,27 @@ export class PurchasingController {
   @Post('material-requests/:id/award-lowest')
   awardLowest(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.orders.awardLowest(user, id);
+  }
+
+  @ApiOperation({ summary: 'A material request as purchase works it', description: 'Its stage, L1 and L2 for what is still to order, and the supplier finalised.' })
+  @Get('material-requests/:id/to-order')
+  requestToOrder(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.toOrder.get(user, id);
+  }
+
+  @ApiOperation({
+    summary: 'Finalise the supplier for what is still to order (Finalise L1)',
+    description: 'One quotation (a reason when it is not L1), or the lowest per item split. Procurement, project managers and management.',
+  })
+  @Post('material-requests/:id/finalise')
+  finalise(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: FinaliseL1Dto) {
+    return this.toOrder.finalise(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Undo the supplier finalised on a request, to compare the quotations again' })
+  @Post('material-requests/:id/reopen-supplier')
+  reopenSupplier(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.toOrder.reopen(user, id);
   }
 
   @ApiOperation({ summary: 'Enter a vendor quotation', description: 'Against an approved material request, one per vendor. Procurement, project managers and management.' })
@@ -101,6 +125,15 @@ export class PurchasingController {
   @Get('purchase-orders/status')
   status(@CurrentUser() user: RequestUser, @Query() q: ProcurementStatusQuery) {
     return this.orders.status(user, q);
+  }
+
+  @ApiOperation({
+    summary: 'Approved material requests with something still to order, for purchase',
+    description: 'Each with its stage (quotations to get, an enquiry being answered, L1 ready for its order), its L1 and L2 for what is still to order, and the count at each stage.',
+  })
+  @Get('purchase-orders/requests-to-order')
+  requestsToOrder(@CurrentUser() user: RequestUser, @Query() q: RequestsToOrderQuery) {
+    return this.toOrder.list(user, q);
   }
 
   @ApiOperation({ summary: 'The last approved orders of items, newest first', description: 'v5 item 95. Up to five per item (`item=name|unit`, repeated), keyed by `name|unit` in lower case.' })

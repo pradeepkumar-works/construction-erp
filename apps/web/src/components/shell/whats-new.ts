@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-requests-to-order',
+    date: '2027-02-18',
+    title: 'Purchase has its own list of requests to order',
+    points: [
+      'Purchases › Requests to order lists every approved material request with something left to buy, at its stage: no quotations yet, waiting for quotations, L1 to finalise, or L1 finalised with the PO to raise.',
+      'Each request opens on one screen in four steps: send the enquiry, see and record the quotations, finalise L1 with the totals, the gap to L2, the split per item and the last order rates beside it, then raise the order.',
+      'Choosing a supplier other than L1 asks why, and the order carries the reason.',
+      'QA/QC gets Material to check under Quality, accounts get Received, not billed under Vendor bills and Debit notes to raise under Payables, and the store sees Deliveries expected under Stock, each with the button that clears it and a card on My work.',
+    ],
+  },
+  {
     id: '2027-02-emails-that-act',
     date: '2027-02-17',
     title: 'The email carries the work, not just a link',

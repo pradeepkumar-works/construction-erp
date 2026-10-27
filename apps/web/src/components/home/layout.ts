@@ -17,28 +17,28 @@ export interface HomeLayout {
  */
 const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores' | 'hr' | 'qs' | 'site', HomeLayout> = {
   director: {
-    myWork: ['approvals', 'watchList', 'receivables', 'payablesDue', 'certifiedToReceive', 'expiring', 'lateDeliveries', 'toOrder', 'staffToDecide', 'dprsMissing', 'lowStock', 'toMatch', 'dueThisWeek', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+    myWork: ['approvals', 'watchList', 'receivables', 'payablesDue', 'certifiedToReceive', 'expiring', 'lateDeliveries', 'toOrder', 'staffToDecide', 'dprsMissing', 'lowStock', 'toMatch', 'toDebit', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'meetingActions', 'sentBack', 'waitingWithOthers'],
     kpis: ['contract', 'workDone', 'billed', 'cashIn', 'receivables', 'payables'],
     charts: ['sCurve', 'cashFlow', 'billingVsContract', 'costByHead'],
   },
   manager: {
-    myWork: ['approvals', 'watchList', 'meetingActions', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'dueThisWeek', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
+    myWork: ['approvals', 'watchList', 'meetingActions', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
     // The approvals count is My work's and the sidebar's (UX item 85); this row leads with progress against plan instead.
     kpis: ['progress', 'workDone', 'delayed', 'dprsToday', 'cost', 'billed'],
     charts: ['sCurve', 'costByHead', 'billingVsContract', 'cashFlow'],
   },
   accounts: {
-    myWork: ['payablesDue', 'certifiedToReceive', 'toMatch', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+    myWork: ['payablesDue', 'certifiedToReceive', 'toMatch', 'toDebit', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'sentBack', 'waitingWithOthers'],
     kpis: ['cashIn', 'receivables', 'payables', 'billed', 'cost'],
     charts: ['cashFlow', 'billingVsContract', 'costByHead'],
   },
   purchase: {
-    myWork: ['toOrder', 'lateDeliveries', 'dueThisWeek', 'approvals', 'watchList', 'lowStock', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+    myWork: ['toOrder', 'lateDeliveries', 'dueThisWeek', 'toMatch', 'toDebit', 'approvals', 'watchList', 'lowStock', 'meetingActions', 'sentBack', 'waitingWithOthers'],
     kpis: ['projects', 'workDone', 'dprsToday', 'delayed'],
     charts: ['sCurve'],
   },
   stores: {
-    myWork: ['dueThisWeek', 'lateDeliveries', 'lowStock', 'watchList', 'approvals', 'meetingActions', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
+    myWork: ['dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'watchList', 'approvals', 'meetingActions', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
     kpis: ['projects', 'workDone', 'dprsToday', 'delayed'],
     charts: ['sCurve'],
   },
@@ -53,7 +53,7 @@ const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores
     charts: ['billingVsContract', 'sCurve'],
   },
   site: {
-    myWork: ['sentBack', 'meetingActions', 'waitingWithOthers', 'dprsMissing', 'approvals', 'dueThisWeek', 'lateDeliveries', 'lowStock', 'staffToDecide'],
+    myWork: ['grnsToCheck', 'sentBack', 'meetingActions', 'waitingWithOthers', 'dprsMissing', 'approvals', 'dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'staffToDecide'],
     kpis: ['dprsToday', 'delayed', 'workDone', 'projects'],
     charts: ['sCurve'],
   },

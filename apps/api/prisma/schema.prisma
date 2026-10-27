@@ -954,6 +954,7 @@ model User {
   reviewedReports       DailyReport[]              @relation("DprReviewer")
   submittedRequests     MaterialRequest[]          @relation("MrSubmitter")
   reviewedRequests      MaterialRequest[]          @relation("MrReviewer")
+  finalisedRequests     MaterialRequest[]          @relation("MrFinaliser")
   uploadedAttachments   Attachment[]
   auditLogs             AuditLog[]
   notifications         Notification[]
@@ -1422,6 +1423,7 @@ model Quotation {
   lines          QuotationLine[]
   purchaseOrders PurchaseOrder[]
   enquiryTokens  EnquiryToken[]
+  finalFor       MaterialRequest[] @relation("MrFinalQuotation")
 
   @@unique([materialRequestId, vendorId])
   @@index([organizationId])
@@ -2418,25 +2420,37 @@ model DailyReport {
 }
 
 model MaterialRequest {
-  id             String           @id @default(uuid())
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  projectId      String
-  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  requestNo      String
-  requiredDate   DateTime         @db.Date
-  priority       MaterialPriority @default(NORMAL)
-  remarks        String?
-  status         SubmissionStatus @default(DRAFT)
-  submittedById  String
-  submittedBy    User             @relation("MrSubmitter", fields: [submittedById], references: [id])
-  submittedAt    DateTime?
-  reviewedById   String?
-  reviewedBy     User?            @relation("MrReviewer", fields: [reviewedById], references: [id])
-  reviewedAt     DateTime?
-  reviewNote     String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id               String           @id @default(uuid())
+  organizationId   String
+  organization     Organization     @relation(fields: [organizationId], references: [id])
+  projectId        String
+  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestNo        String
+  requiredDate     DateTime         @db.Date
+  priority         MaterialPriority @default(NORMAL)
+  remarks          String?
+  status           SubmissionStatus @default(DRAFT)
+  submittedById    String
+  submittedBy      User             @relation("MrSubmitter", fields: [submittedById], references: [id])
+  submittedAt      DateTime?
+  reviewedById     String?
+  reviewedBy       User?            @relation("MrReviewer", fields: [reviewedById], references: [id])
+  reviewedAt       DateTime?
+  reviewNote       String?
+  /// Purchase's choice of supplier for what is still to order (Purchases › Requests to order, Finalise L1): one
+  /// quotation, or the lowest per item split between vendors (`finalSplit`). Cleared by reopening it.
+  finalQuotationId String?
+  finalQuotation   Quotation?       @relation("MrFinalQuotation", fields: [finalQuotationId], references: [id], onDelete: SetNull)
+  finalSplit       Boolean          @default(false)
+  /// The L rank the choice had when it was made (1 = L1); null for the split
+  finalRank        Int?
+  /// Why a quotation other than L1 was chosen
+  finalReason      String?
+  finalisedAt      DateTime?
+  finalisedById    String?
+  finalisedBy      User?            @relation("MrFinaliser", fields: [finalisedById], references: [id], onDelete: SetNull)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   items          MaterialRequestItem[]
   attachments    Attachment[]

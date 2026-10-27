@@ -3,7 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { IsQuantity } from '../common/quantity';
 import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
-import { GRN_QC_STATUSES, LIST_SORT_FIELDS, PIPE_MATERIALS, STOCK_ADJUSTMENT_REASONS, STOCK_ENTRY_TYPES, type GrnQcStatus, type PipeMaterial, type StockAdjustmentReason, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
+import { GRN_QC_STATUSES, LIST_SORT_FIELDS, RECEIPT_WAITS, type ReceiptWait, PIPE_MATERIALS, STOCK_ADJUSTMENT_REASONS, STOCK_ENTRY_TYPES, type GrnQcStatus, type PipeMaterial, type StockAdjustmentReason, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -235,6 +235,10 @@ export class ListStockEntriesQuery extends PageQuery {
   @IsOptional()
   @IsIn(['PENDING', ...GRN_QC_STATUSES])
   qc?: GrnQcStatus | 'PENDING';
+  @ApiPropertyOptional({ enum: RECEIPT_WAITS, description: 'Receipts waiting on a desk: CHECK (QA/QC), BILL (a supplier bill to match) or DEBIT_NOTE (rejected or returned, no debit note)' })
+  @IsOptional()
+  @IsIn(RECEIPT_WAITS as unknown as string[])
+  waiting?: ReceiptWait;
 }
 
 /** `q` matches item name, category and project. */

@@ -109,6 +109,8 @@ export const NAV_ACCESS = {
   checklists: (u: NavUser) => P.canManageChecklists(u.roleKey),
   letters: (u: NavUser) => P.canViewLetters(u.roleKey),
   materialRequests: (u: NavUser) => onSite(u) || P.canPurchase(u.roleKey),
+  purchase: (u: NavUser) => P.canPurchase(u.roleKey),
+  checkGrn: (u: NavUser) => P.canCheckGrn(u.roleKey),
   stock: (u: NavUser) => onSite(u) || P.canPurchase(u.roleKey) || P.canViewCost(u.roleKey),
   stockValue: (u: NavUser) => P.canManageStore(u.roleKey) || P.canViewCost(u.roleKey),
   reconciliation: (u: NavUser) => P.canViewReconciliation(u.roleKey),
@@ -211,6 +213,7 @@ export const NAV_TREE: NavNode[] = [
   // ── Quality and safety (split out of Site) ────────────────────────────────────────────────────────────────────
   { id: 'quality.inspections', parent: 'quality', label: 'Inspections', icon: 'clipboard-check', route: '/inspections?tab=inspections', nav: 'Quality', access: 'onSite', status: 'live', badge: 'qualityWaiting', description: 'Inspection requests with hold points.', keywords: 'qa qc inspections tests ncr hold point', concord: ['p5-safety'] },
   { id: 'quality.tests', parent: 'quality', label: 'Material tests', icon: 'flask-conical', route: '/inspections?tab=tests', access: 'onSite', status: 'live', description: 'Cube, slump and other tests with results due.', concord: ['p5-safety'] },
+  { id: 'quality.grns', parent: 'quality', label: 'Material to check', icon: 'clipboard-list', route: '/inspections?tab=grns', access: 'checkGrn', status: 'live', description: 'Goods received at the sites waiting for QA/QC to accept or reject them.', keywords: 'grn qa qc incoming material inspection receipt check reject' },
   { id: 'quality.ncrs', parent: 'quality', label: 'NCRs', icon: 'shield-alert', route: '/inspections?tab=ncrs', access: 'onSite', status: 'live', badge: 'ncrsOpen', description: 'Non-conformance reports until closed.', concord: ['p5-safety'] },
   { id: 'quality.checklists', parent: 'quality', label: 'Checklists', icon: 'list-checks', route: '/inspections?tab=checklists', access: 'checklists', status: 'live', description: "The company's inspection checklists." },
   { id: 'quality.incidents', parent: 'quality', label: 'Incidents', icon: 'siren', route: '/safety?tab=incidents', nav: 'Safety', access: 'onSite', status: 'live', description: 'Incidents and near misses.', keywords: 'incident near miss toolbox talk permit to work ppe accident', concord: ['p5-safety'] },
@@ -245,9 +248,11 @@ export const NAV_TREE: NavNode[] = [
   { id: 'plant.finance', parent: 'plant', label: 'Machine loans', icon: 'badge-indian-rupee', shortcutOf: 'accounts.machineLoans', access: 'machineFinance', status: 'live', description: 'Loans on financed machines, EMIs paid and due.' },
 
   // ── Purchases ─────────────────────────────────────────────────────────────────────────────────────────────────
+  { id: 'purchases.toOrder', parent: 'purchases', label: 'Requests to order', icon: 'list-checks', route: '/requests-to-order', access: 'purchase', status: 'live', description: 'Approved material requests to buy: send enquiries, record quotations, finalise L1 and raise the order.', keywords: 'rfq enquiry quotation comparative statement l1 l2 finalise vendor selection indent to order', concord: ['p4-proc'] },
   { id: 'purchases.orders', parent: 'purchases', label: 'Purchase orders', icon: 'file-text', route: '/purchase-orders', access: 'purchaseOrders', status: 'live', badge: 'poWaiting', description: 'Quotations, comparison and orders.', keywords: 'po', concord: ['p4-proc'] },
   { id: 'purchases.delivery', parent: 'purchases', label: 'Delivery status', icon: 'truck', route: '/purchase-orders?tab=status', access: 'purchaseOrders', status: 'live', description: 'What is still to come on each order.' },
   { id: 'purchases.bills', parent: 'purchases', label: 'Vendor bills', icon: 'receipt', route: '/vendor-bills', access: 'vendorBills', status: 'live', badge: 'vendorBillsWaiting', description: 'Supplier, hire and service bills checked against orders.', keywords: 'supplier invoice' },
+  { id: 'purchases.toBill', parent: 'purchases', label: 'Received, not billed', icon: 'receipt-text', route: '/vendor-bills?tab=to-bill', access: 'vendorBills', status: 'live', description: "Goods received against an order with no supplier's bill yet, to match when it comes.", keywords: 'grn unbilled three way match invoice pending' },
   { id: 'purchases.suppliers', parent: 'purchases', label: 'Suppliers', icon: 'contact', route: '/vendors?kind=SUPPLIER', nav: 'Vendors', access: 'vendors', status: 'live', description: 'Suppliers with GST, MSME and bank details.', keywords: 'suppliers' },
   { id: 'purchases.portal', parent: 'purchases', label: 'Supplier inbox', icon: 'mail', route: '/supplier-inbox', access: 'supplierPortal', status: 'live', description: 'Invoices suppliers sent on their portal, and the changes to their details they asked for.', keywords: 'supplier portal invoices bank change logins', concord: ['p7-portals'] },
 

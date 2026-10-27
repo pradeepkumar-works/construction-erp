@@ -24,9 +24,11 @@ import { IsQuantity } from '../common/quantity';
 import {
   EXPENSE_CATEGORIES,
   LIST_SORT_FIELDS,
+  ORDER_STAGES,
   SUBMISSION_STATUSES,
   VENDOR_BILL_KINDS,
   type ExpenseCategory,
+  type OrderStage,
   type PurchaseOrderSortField,
   type SubmissionStatus,
   type VendorBillKind,
@@ -154,6 +156,22 @@ export class ListPurchaseOrdersQuery extends PageQuery {
   @ApiPropertyOptional({ example: '2026-10-01', description: 'From this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
   @ApiPropertyOptional({ example: '2026-10-31', description: 'Up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
   @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
+}
+
+/** Purchases › Requests to order: approved requests with something still to order. */
+export class RequestsToOrderQuery extends PageQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional({ enum: ORDER_STAGES, description: 'NEEDS_QUOTES, AWAITING_QUOTES (an enquiry being answered) or READY (L1 ready for its order)' })
+  @IsOptional()
+  @IsIn(ORDER_STAGES as unknown as string[])
+  stage?: OrderStage;
+}
+
+/** Finalise L1: purchase's choice of supplier on a request. */
+export class FinaliseL1Dto {
+  @ApiPropertyOptional({ description: 'The quotation chosen; leave out with `split`' }) @IsOptional() @IsUUID() quotationId?: string;
+  @ApiPropertyOptional({ description: 'The lowest per item, split between the vendors who quoted it' }) @IsOptional() @IsBoolean() split?: boolean;
+  @ApiPropertyOptional({ description: 'Why, when the quotation is not L1 or leaves out items still to order' }) @IsOptional() @IsString() @MaxLength(500) reason?: string;
 }
 
 export class ReceivableOrdersQuery {

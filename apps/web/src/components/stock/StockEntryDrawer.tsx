@@ -31,7 +31,7 @@ const KIND: Record<StockEntryType, string> = {
 };
 
 /** What a debit note starts from: a GRN's rejected quantities, or what went back to the supplier (v5 item 91). */
-function debitNoteFrom(e: StockEntryDto): DebitNoteGrn | null {
+export function debitNoteFrom(e: StockEntryDto): DebitNoteGrn | null {
   const returned = e.type === 'RETURN_TO_VENDOR';
   const lines = e.lines
     .map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, itemName: l.itemName, unit: l.unit, quantity: Math.abs(Number(returned ? l.quantity : (l.rejectedQty ?? 0))) }))

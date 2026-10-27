@@ -28,7 +28,7 @@ function entryOf(data: MyWorkDto, k: MyWorkKey) {
   return {
     title: meta.title,
     icon: meta.icon,
-    href: meta.href ?? first?.href ?? '/my-work',
+    href: card.href ?? meta.href ?? first?.href ?? '/my-work',
     note: first ? [first.label, first.note].filter(Boolean).join(' · ') : '',
     amount: card.amount,
     late: meta.tone === 'error' && urgencyOf(data, k) > 0,

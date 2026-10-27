@@ -217,6 +217,7 @@ export function VendorBillFormModal({
       notify.saved(`${b.billNo} ${submit ? 'submitted for approval' : 'saved as a draft'}${b.matched ? '' : ', with exceptions for the approver'}`, recordPage('VENDOR_BILL', b.id));
       qc.invalidateQueries({ queryKey: ['vendor-bills'] });
       qc.invalidateQueries({ queryKey: ['purchase-orders'] });
+      qc.invalidateQueries({ queryKey: ['stock', 'waiting'] });
       onSaved?.(b);
     },
     meta: FAIL_NOTICE,

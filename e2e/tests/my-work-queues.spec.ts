@@ -17,7 +17,7 @@ test('each desk gets its own queue on My work', async () => {
   expect(purchase.toOrder).toBeDefined();
   expect(purchase.dueThisWeek).toBeDefined();
   expect(purchase.certifiedToReceive).toBeUndefined();
-  for (const i of purchase.toOrder!.items) expect(i.href).toMatch(/^\/material-requests\//);
+  for (const i of purchase.toOrder!.items) expect(i.href).toMatch(/^\/requests-to-order\//);
 
   expect(store.dueThisWeek).toBeDefined();
   expect(store.toOrder).toBeUndefined();
@@ -46,7 +46,7 @@ test('Home leads with what waits for you', async ({ page }) => {
     const link = waiting.getByRole('link', { name: /Requests to order/ });
     await expect(link).toContainText(String(work.toOrder!.count));
     await link.click();
-    await expect(page).toHaveURL(/\/material-requests\?status=APPROVED/);
+    await expect(page).toHaveURL(/\/requests-to-order/);
   } else {
     await expect(waiting.getByRole('link', { name: /All my work|Open My work/ })).toBeVisible();
   }

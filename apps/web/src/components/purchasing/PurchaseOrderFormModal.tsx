@@ -45,6 +45,8 @@ export interface PoStart {
   paymentTerms?: string | null;
   deliveryBy?: string | null;
   lines?: PoLineValue[];
+  /** Why this vendor, when purchase finalised a quotation other than L1 (Finalise L1) */
+  selectionReason?: string | null;
 }
 
 interface FormValues {
@@ -147,6 +149,7 @@ export function PurchaseOrderFormModal({
         deliveryBy: start?.deliveryBy ? dayjs(start.deliveryBy) : null,
         paymentTerms: start?.paymentTerms ?? undefined,
         freight: start?.freight ?? 0,
+        selectionReason: start?.selectionReason ?? undefined,
         lines: start?.lines?.length ? start.lines : [{ gstRate: 18 }],
       });
   }, [open, order, start, form]);

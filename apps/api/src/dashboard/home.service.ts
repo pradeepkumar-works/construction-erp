@@ -1,13 +1,16 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { CompanyTodayDto, DueRowDto, HomeTrendsDto, MyWorkCard, MyWorkDto, MyWorkItem, PurchaseTodayDto, SubmissionType } from '@erp/shared';
+import type { CompanyTodayDto, DueRowDto, HomeTrendsDto, MyWorkCard, MyWorkDto, MyWorkItem, PurchaseTodayDto, ReceiptWait, SubmissionType } from '@erp/shared';
 import {
   COMPANY_TODAY_ROWS,
   COMPLIANCE_DOC_KIND_LABELS,
   DEFAULT_CLIENT_PAYMENT_DAYS,
   LEAVE_TYPE_LABELS,
+  ORDER_STAGE_LABELS,
   billLabel,
   canApprove,
+  canCheckGrn,
+  canRaiseDebitNote,
   canPurchase,
   canRecordMeetings,
   canViewMeetings,
@@ -45,7 +48,7 @@ import { StockService } from '../stock/stock.service';
 import { ProjectsService } from '../projects/projects.service';
 import { WarningsService } from '../warnings/warnings.service';
 import { FleetService } from '../machinery/fleet.service';
-import { toOrderOf } from '../purchasing/purchase-math';
+import { RequestsToOrderService } from '../purchasing/requests-to-order.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { moduleOn } from '../common/module-switch.guard';
 
@@ -71,10 +74,12 @@ const dayBefore = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) - 86_400_
 const sumOf = <T>(rows: T[], f: (r: T) => D) => rows.reduce((s, r) => s.add(f(r)), ZERO);
 /** A YYYY-MM-DD `n` days on. */
 const daysAfter = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
-/** Goods received this long ago or less wait for a supplier bill on My work; older ones are the payables page's business. */
-const MATCH_WITHIN_DAYS = 90;
 /** A GRN starts to press once a supplier bill should have come in: two weeks after the goods. */
 const MATCH_LATE_AFTER = 14;
+/** Material is tested before it goes into the work: a GRN unchecked after two days presses. */
+const CHECK_LATE_AFTER = 2;
+/** A debit note goes with the next payment run: a week after the rejection or return. */
+const DEBIT_LATE_AFTER = 7;
 
 /** The last `n` months up to and including the one `today` is in, oldest first (YYYY-MM). */
 export function lastMonths(today: string, n: number): string[] {
@@ -112,6 +117,7 @@ export class HomeService {
     private warnings: WarningsService,
     private fleet: FleetService,
     private meetings: MeetingsService,
+    private toOrderList: RequestsToOrderService,
   ) {}
 
   async myWork(user: RequestUser): Promise<MyWorkDto> {
@@ -120,7 +126,8 @@ export class HomeService {
     const rights = await this.rights.rightsFor(user.organizationId, role);
     const seesDue = canViewPurchaseOrders(role) && (canPurchase(role) || canKeepStock(role));
     const matches = canRecordVendorBill(role) && canViewPayables(role);
-    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch, actions, toOrder, orders, staff, unmatched] = await Promise.all([
+    const checks = canCheckGrn(role) && role !== 'ADMIN' && role !== 'MANAGEMENT';
+    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch, actions, toOrder, orders, staff, unmatched, unchecked, toDebit, incoming] = await Promise.all([
       rights.length ? this.lifecycle.pending(user) : null,
       canApprove(role) || submitsDpr(role) ? this.dprsMissing(user, today) : null,
       this.lifecycle.mine(user, ['REJECTED', 'CHANGES_REQUESTED']),
@@ -133,11 +140,16 @@ export class HomeService {
       canKeepStock(role) || canManageStore(role) ? this.stock.balances(user, { lowOnly: true, page: 1, pageSize: TOP }) : null,
       canSeeWatchList(role) ? this.warnings.open(user) : null,
       canViewMeetings(role) && moduleOn(user, 'meetings') ? this.meetings.actions(user, { mine: true, status: 'open' }) : null,
-      canPurchase(role) ? this.requestsToOrder(user) : null,
+      canPurchase(role) ? this.toOrderList.rows(user) : null,
       seesDue ? this.purchaseOrders.status(user, { show: 'PENDING' }) : null,
       this.staffToDecide(user),
       matches ? this.grnsToMatch(user, today) : null,
+      checks ? this.receiptsWaiting(user, 'CHECK', today) : null,
+      canRaiseDebitNote(role) ? this.receiptsWaiting(user, 'DEBIT_NOTE', today) : null,
+      canKeepStock(role) ? this.stock.incomingTransfers(user, {}) : null,
     ]);
+    // The store receives on its own Stock page; purchase follows its orders under Purchases.
+    const storeSide = canKeepStock(role) && !canPurchase(role);
 
     const out: MyWorkDto = {};
     if (pending) {
@@ -219,6 +231,7 @@ export class HomeService {
         late.rows.reduce((s, r) => s.add(r.pendingValue), ZERO),
         most(late.rows.map((r) => r.daysLate)),
       );
+      if (storeSide) out.lateDeliveries.href = '/stock?sub=deliveries';
     }
     if (low) {
       out.lowStock = card(
@@ -244,15 +257,19 @@ export class HomeService {
     }
     // The queues each desk works through (finding 8 of the October review).
     if (toOrder) {
-      const late = (r: { requiredDate: Date }) => daysBetween(r.requiredDate.toISOString().slice(0, 10), today);
+      const late = (r: { requiredDate: string }) => daysBetween(r.requiredDate, today);
+      const needed = (r: { requiredDate: string }) => (late(r) > 0 ? `needed ${days(late(r))} ago` : late(r) === 0 ? 'needed today' : `needed in ${days(-late(r))}`);
+      // What purchase can act on first: an order to raise, then an L1 to finalise, then quotations to get.
+      const rank: Record<string, number> = { READY: 0, TO_FINALISE: 1, TO_ENQUIRE: 2, AWAITING_QUOTES: 3 };
+      const sorted = [...toOrder].sort((a, b) => rank[a.stage] - rank[b.stage] || late(b) - late(a));
       out.toOrder = card(
         toOrder.length,
-        toOrder.map((r) => ({
+        sorted.map((r) => ({
           label: r.requestNo,
-          note: late(r) > 0 ? `Needed ${days(late(r))} ago` : late(r) === 0 ? 'Needed today' : `Needed in ${days(-late(r))}`,
-          projectName: r.project.name,
-          amount: null,
-          href: `/material-requests/${r.id}`,
+          note: `${ORDER_STAGE_LABELS[r.stage]} · ${needed(r)}`,
+          projectName: r.projectName,
+          amount: r.stage === 'READY' || r.stage === 'TO_FINALISE' ? (r.l1?.total ?? null) : null,
+          href: `/requests-to-order/${r.id}`,
         })),
         null,
         most(toOrder.map(late)),
@@ -274,6 +291,7 @@ export class HomeService {
         null,
         most(due.map((r) => -left(r))),
       );
+      if (storeSide) out.dueThisWeek.href = '/stock?sub=deliveries';
     }
     if (staff.count > 0 || canManageStaff(role)) out.staffToDecide = card(staff.count, staff.items, null, most(staff.items.map((i) => i.waited)));
     if (receivables && canRecordReceipt(role)) {
@@ -301,36 +319,51 @@ export class HomeService {
           note: [g.poNo, ago(g.date) === 0 ? 'received today' : `received ${days(ago(g.date))} ago`].join(' · '),
           projectName: g.projectName,
           amount: money(g.value),
-          href: `/purchase-orders/${g.purchaseOrderId}`,
+          href: `/vendor-bills?tab=to-bill`,
         })),
         sumOf(unmatched, (g) => g.value),
         most(unmatched.map((g) => ago(g.date) - MATCH_LATE_AFTER)),
       );
     }
+    // Receipts waiting on the desks after the store, each in its own place (Quality, Vendor bills, Debit notes).
+    if (unchecked && (role === 'QA_QC_ENGINEER' || unchecked.length)) {
+      const ago = (d: string) => daysBetween(d, today);
+      out.grnsToCheck = card(
+        unchecked.length,
+        unchecked.map((g) => ({ label: [g.entryNo, g.from].filter(Boolean).join(' · '), note: ago(g.date) === 0 ? 'received today' : `received ${days(ago(g.date))} ago`, projectName: g.projectName, amount: null, href: '/inspections?tab=grns' })),
+        null,
+        most(unchecked.map((g) => ago(g.date) - CHECK_LATE_AFTER)),
+      );
+    }
+    if (toDebit && (role === 'ACCOUNTS_MANAGER' || toDebit.length)) {
+      const ago = (d: string) => daysBetween(d, today);
+      out.toDebit = card(
+        toDebit.length,
+        toDebit.map((g) => ({ label: [g.entryNo, g.from].filter(Boolean).join(' · '), note: `${g.type === 'RETURN_TO_VENDOR' ? 'Returned to the supplier' : 'Rejected at QA/QC'} ${ago(g.date) === 0 ? 'today' : `${days(ago(g.date))} ago`}`, projectName: g.projectName, amount: null, href: '/payables?tab=debit-notes&sub=to-raise' })),
+        null,
+        most(toDebit.map((g) => ago(g.date) - DEBIT_LATE_AFTER)),
+      );
+    }
+    if (incoming && (role === 'STORE_MANAGER' || incoming.length)) {
+      const ago = (d: string) => daysBetween(d, today);
+      out.transfersToReceive = card(
+        incoming.length,
+        incoming.map((t) => ({ label: `${t.entryNo} from ${t.projectName}`, note: `${ago(t.date) === 0 ? 'Sent today' : `Sent ${days(ago(t.date))} ago`}: ${t.lines.map((l) => l.itemName).slice(0, 2).join(', ')}`, projectName: t.toProjectName, amount: null, href: `/stock${t.toProjectId ? `?projectId=${t.toProjectId}` : ''}` })),
+        null,
+        most(incoming.map((t) => ago(t.date) - 1)),
+      );
+    }
     return out;
   }
 
-  /** Approved material requests with something left to order, by the day they are needed. */
-  private async requestsToOrder(user: RequestUser) {
-    const requests = await this.prisma.materialRequest.findMany({
-      where: { ...this.access.submissionWhere(user), status: 'APPROVED' },
-      select: {
-        id: true,
-        requestNo: true,
-        requiredDate: true,
-        project: { select: { name: true } },
-        items: {
-          select: {
-            quantity: true,
-            stockTxns: { select: { quantity: true, purchaseOrderLineId: true } },
-            covers: { select: { quantity: true } },
-            poLines: { where: { purchaseOrder: { status: { not: 'REJECTED' } } }, select: { quantity: true, purchaseOrder: { select: { closedAt: true } }, stockTxns: { select: { quantity: true } } } },
-          },
-        },
-      },
-      orderBy: { requiredDate: 'asc' },
+  /** Receipts waiting on a desk (`StockService.waitingWhere`), oldest first, with who they came from. */
+  private async receiptsWaiting(user: RequestUser, kind: ReceiptWait, today: string) {
+    const rows = await this.prisma.stockEntry.findMany({
+      where: { ...this.access.submissionWhere(user), ...this.stock.waitingWhere(kind, today) },
+      select: { entryNo: true, date: true, type: true, supplier: true, vendor: { select: { name: true } }, project: { select: { name: true } }, purchaseOrder: { select: { vendor: { select: { name: true } } } } },
+      orderBy: { date: 'asc' },
     });
-    return requests.filter((r) => r.items.some((i) => toOrderOf(i).gt(0)));
+    return rows.map((g) => ({ entryNo: g.entryNo, date: dateOnly(g.date)!, type: g.type, from: g.purchaseOrder?.vendor.name ?? g.vendor?.name ?? g.supplier, projectName: g.project.name }));
   }
 
   /** Leave and overtime waiting on the caller (the same rule as the Staff page's Waiting on me), oldest first. */
@@ -370,10 +403,7 @@ export class HomeService {
     const rows = await this.prisma.stockEntry.findMany({
       where: {
         ...this.access.submissionWhere(user),
-        type: 'RECEIPT',
-        purchaseOrderId: { not: null },
-        date: { gte: parseDate(daysAfter(today, -MATCH_WITHIN_DAYS)) },
-        purchaseOrder: { vendorBills: { none: { status: { not: 'REJECTED' } } } },
+        ...this.stock.waitingWhere('BILL', today),
       },
       select: {
         id: true,
@@ -596,14 +626,14 @@ export class HomeService {
     const where = this.access.submissionWhere(user);
     const [orders, toOrder, grnsToday, unchecked] = await Promise.all([
       this.purchaseOrders.status(user, { show: 'PENDING' }),
-      this.requestsToOrder(user),
+      canPurchase(user.roleKey) ? this.toOrderList.rows(user) : Promise.resolve([]),
       this.prisma.stockEntry.count({ where: { ...where, type: 'RECEIPT', date: day } }),
       this.prisma.stockEntry.count({ where: { ...where, type: 'RECEIPT', purchaseOrderId: { not: null }, qcStatus: null, date: { gte: new Date(day.getTime() - 30 * 86_400_000) } } }),
     ]);
     const late = orders.rows.filter((r) => r.daysLate > 0);
     const rows: PurchaseTodayDto['rows'] = [
       ...late.map((r) => ({ kind: 'ORDER' as const, label: `${r.poNo} · ${r.vendorName}`, projectName: r.projectName, amount: r.pendingValue, daysLate: r.daysLate, href: `/purchase-orders/${r.purchaseOrderId}` })),
-      ...toOrder.map((r) => ({ kind: 'REQUEST' as const, label: r.requestNo, projectName: r.project.name, amount: null, daysLate: Math.max(0, daysBetween(r.requiredDate.toISOString().slice(0, 10), today)), href: `/material-requests/${r.id}` })),
+      ...toOrder.map((r) => ({ kind: 'REQUEST' as const, label: r.requestNo, projectName: r.projectName, amount: null, daysLate: Math.max(0, daysBetween(r.requiredDate, today)), href: `/requests-to-order/${r.id}` })),
     ].slice(0, COMPANY_TODAY_ROWS);
     return {
       requestsToOrder: toOrder.length,
