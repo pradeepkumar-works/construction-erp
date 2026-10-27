@@ -25,6 +25,11 @@ test('a project opens in groups, keeps its last tab and still takes old tab link
   // Coming back to the project opens the tab last used on it.
   await page.goto(projectUrl);
   await expect(projectTabs(page, 'Site').getByRole('radio', { name: 'Daily reports' })).toBeChecked();
+  // ...and Overview still opens from there, though its address has no ?tab=.
+  await bar.getByRole('tab', { name: 'Overview' }).click();
+  await expect(page).toHaveURL(projectUrl);
+  await expect(bar.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('project-status')).toBeVisible();
 
   // Links from before the groups still open their tab.
   await page.goto(`${projectUrl}?tab=stock`);

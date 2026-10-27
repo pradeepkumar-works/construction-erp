@@ -126,13 +126,15 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
   ];
   const tabs = all.filter((t): t is WorkspaceTab => !!t);
 
-  // ?tab= wins (links from elsewhere); without it, the tab last open on this project in this browser.
+  // ?tab= wins (links from elsewhere); without it, the tab last open on this project in this browser. The remembered
+  // tab only places the page as it opens: once a tab is picked the URL alone says which, so Overview (no ?tab=) opens.
   const fromUrl = search.get('tab');
-  const [remembered] = useState(() => readPref<string | null>(tabPref(project.id), null));
+  const [remembered, setRemembered] = useState(() => readPref<string | null>(tabPref(project.id), null));
   const active = tabs.find((t) => t.key === (fromUrl ?? remembered))?.key ?? 'overview';
   useEffect(() => writePref(tabPref(project.id), active), [project.id, active]);
 
   const open = (key: string) => {
+    setRemembered(null);
     const sp = new URLSearchParams(search.toString());
     sp.delete('defect');
     // A tab's own tabs (`?sub=`, UX item 84) start again on the first in the next tab.
