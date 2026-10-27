@@ -2,10 +2,12 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { PurchaseOrderDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canViewCost } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
+import { useAuth } from '../../src/auth/AuthContext';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
+import { OrderBudget, OrderQuotes } from '../../src/components/OrderDecision';
 import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
@@ -16,6 +18,7 @@ export default function PurchaseOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
+  const { user } = useAuth();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<PurchaseOrderDto>((api) => api.get(`/purchase-orders/${id}`), [id], { enabled: !!id });
 
   if (loading && !data) return <Loading />;
@@ -39,6 +42,7 @@ export default function PurchaseOrderScreen() {
         <KeyValue label={t('Deliver by')} value={data.deliveryBy ? formatDate(data.deliveryBy) : null} />
         <KeyValue label={t('Payment')} value={data.paymentTerms ?? (data.paymentDays !== null ? t('{n} days from invoice', { n: data.paymentDays }) : null)} />
         {data.status === 'APPROVED' ? <KeyValue label={t('Received')} value={data.closedAt ? t('{pct}% (closed)', { pct: data.receivedPct }) : `${data.receivedPct}%`} /> : null}
+        {data.selectionReason ? <KeyValue label={t('Why this vendor')} value={data.selectionReason} multiline /> : null}
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
       <Card title={t('Items ({n})', { n: data.lines.length })}>
@@ -57,6 +61,8 @@ export default function PurchaseOrderScreen() {
           </View>
         ))}
       </Card>
+      <OrderQuotes order={data} />
+      {user && canViewCost(user.roleKey) ? <OrderBudget order={data} /> : null}
       <AttachmentGallery attachments={data.attachments} />
       <ReviewActions type="PURCHASE_ORDER" item={data} onReviewed={setData} />
     </Screen>

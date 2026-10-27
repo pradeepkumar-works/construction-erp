@@ -13,6 +13,7 @@ import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
+import { ItemNameField, useItemMaster } from '../../src/forms/ItemNameField';
 
 interface ItemRow {
   key: string;
@@ -39,6 +40,7 @@ export default function NewMaterialRequestScreen() {
   // (a new one for each entry made with Submit another).
   const clientId = useRef(newId());
   const projects = useProjectOptions();
+  const master = useItemMaster();
   const existing = useFetch<MaterialRequestDto>((a) => a.get(`/material-requests/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
@@ -163,11 +165,20 @@ export default function NewMaterialRequestScreen() {
                 <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={() => setItems((rows) => rows.filter((x) => x.key !== r.key))} accessibilityLabel={t('Remove item {n}', { n: i + 1 })} style={styles.remove} />
               ) : null}
             </View>
-            <Input {...field()} value={r.itemName} onChangeText={(v) => update(r.key, { itemName: v })} placeholder={t('Item name, e.g. Cement OPC 53')} accessibilityLabel={t('Item {n} name', { n: i + 1 })} containerStyle={styles.field} />
+            <ItemNameField
+              inputProps={field()}
+              value={r.itemName}
+              onChange={(v) => update(r.key, { itemName: v })}
+              onPick={(item) => update(r.key, { itemName: item.name, unit: item.unit })}
+              unit={r.unit}
+              items={master}
+              placeholder={t('Item name, e.g. Cement OPC 53')}
+              accessibilityLabel={t('Item {n} name', { n: i + 1 })}
+            />
             <Input {...field()} value={r.specification} onChangeText={(v) => update(r.key, { specification: v })} placeholder={t('Specification (optional)')} accessibilityLabel={t('Item {n} specification (optional)', { n: i + 1 })} containerStyle={styles.field} />
             <View style={styles.row}>
               <View style={styles.grow}>
-                <Select value={r.unit} options={UNIT_OPTIONS} onChange={(v) => update(r.key, { unit: v })} placeholder={t('Unit')} />
+                <Select value={r.unit} options={r.unit && !UNIT_OPTIONS.some((o) => o.value === r.unit) ? [{ value: r.unit, label: r.unit }, ...UNIT_OPTIONS] : UNIT_OPTIONS} onChange={(v) => update(r.key, { unit: v })} placeholder={t('Unit')} />
               </View>
               <Input {...field()} value={r.quantity} onChangeText={(v) => update(r.key, { quantity: v })} keyboardType="decimal-pad" placeholder={t('Qty')} accessibilityLabel={t('Item {n} quantity', { n: i + 1 })} containerStyle={styles.qty} />
             </View>
