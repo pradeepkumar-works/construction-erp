@@ -8,11 +8,15 @@ import type {
   ProjectSubconReconciliationDto,
   ReconciliationItemDto,
   StockAdjustmentReason,
+  StandardNormMatchDto,
+  StandardNormPlanDto,
+  StandardNormResultDto,
   SubconMaterialDto,
   WastageReportDto,
   WastageRowDto,
 } from '@erp/shared';
-import { STOCK_ADJUSTMENT_REASONS, USE_ISSUE_DAYS, canRecoverExcessMaterial, canSetMaterialNorms, canViewCost, canViewReconciliation, subBillLabel } from '@erp/shared';
+import { STOCK_ADJUSTMENT_REASONS, USE_ISSUE_DAYS, canRecoverExcessMaterial, canSetMaterialNorms, canViewCost, canViewReconciliation, masterItemFor, subBillLabel, suggestStandardNorms } from '@erp/shared';
+import { masterCandidates } from '../stock/item-master';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -283,6 +287,96 @@ export class ReconciliationService {
   }
 
   /** Add a norm, or change the one the BOQ item already has for that store item. */
+  /**
+   * What adopting the standard norms library would do to a project (finding 16 of the October review): the BOQ items
+   * the library recognises, the norms they would get, and the store items it would have to add. Nothing is written.
+   */
+  async standardNormPlan(user: RequestUser, projectId: string): Promise<StandardNormPlanDto> {
+    await this.access.assertCanAccessProject(user, projectId);
+    const boq = await this.prisma.boqItem.findMany({
+      where: { projectId },
+      orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }],
+      select: { id: true, itemNo: true, description: true, unit: true, _count: { select: { materialNorms: true } } },
+    });
+    const suggestions = suggestStandardNorms(boq.map((b) => ({ id: b.id, description: b.description, unit: b.unit })));
+    const names = [...new Set(suggestions.flatMap((s) => s.norm.materials.map((m) => m.item)))];
+    const master = await masterCandidates(this.prisma, user.organizationId, names);
+    const newItems: { name: string; unit: string }[] = [];
+    const matches: StandardNormMatchDto[] = suggestions.map(({ item, norm }) => {
+      const row = boq.find((b) => b.id === item.id)!;
+      return {
+        boqItemId: row.id,
+        itemNo: row.itemNo,
+        description: row.description,
+        unit: row.unit,
+        normKey: norm.key,
+        normLabel: norm.label,
+        note: norm.note,
+        hasNorms: row._count.materialNorms > 0,
+        materials: norm.materials.map((m) => {
+          const found = masterItemFor(m.item, m.unit, master);
+          if (!found && !newItems.some((n) => n.name === m.item)) newItems.push({ name: m.item, unit: m.unit });
+          return {
+            item: m.item,
+            unit: m.unit,
+            qtyPerUnit: norm6(new Dec(m.qtyPerUnit)),
+            wastagePct: pctStr(new Dec(m.wastagePct)),
+            itemId: found?.id ?? null,
+            itemName: found?.name ?? null,
+          };
+        }),
+      };
+    });
+    return { projectId, matches, unmatchedCount: boq.length - matches.length, newItems, canAdopt: canSetMaterialNorms(user.roleKey) };
+  }
+
+  /**
+   * Adopt the library on a project: the store items it needs are added to the master, and each recognised BOQ item
+   * gets its norms. An item that already has norms of its own is left alone unless `replace` says otherwise, so a
+   * second run never quietly undoes the quantity surveyor's figures.
+   */
+  async adoptStandardNorms(user: RequestUser, projectId: string, replace: boolean): Promise<StandardNormResultDto> {
+    await this.assertEdit(user, projectId);
+    const plan = await this.standardNormPlan(user, projectId);
+    const take = plan.matches.filter((m) => replace || !m.hasNorms);
+    const skipped = plan.matches.length - take.length;
+    if (!take.length) return { boqItems: 0, norms: 0, newItems: 0, skipped };
+
+    // The items the norms point at: the master's own where it has them, added where it does not.
+    const needed = [...new Map(take.flatMap((m) => m.materials).map((m) => [`${m.item}|${m.unit}`, m])).values()];
+    const idOf = new Map<string, string>();
+    let added = 0;
+    for (const m of needed) {
+      if (m.itemId) {
+        idOf.set(`${m.item}|${m.unit}`, m.itemId);
+        continue;
+      }
+      const where = { organizationId_name_unit: { organizationId: user.organizationId, name: m.item, unit: m.unit } };
+      const had = await this.prisma.item.findUnique({ where, select: { id: true } });
+      const row =
+        had ??
+        (await this.prisma.item.upsert({ where, create: { organizationId: user.organizationId, name: m.item, unit: m.unit, category: 'Standard norms' }, update: {}, select: { id: true } }));
+      idOf.set(`${m.item}|${m.unit}`, row.id);
+      if (!had) added++;
+    }
+
+    let norms = 0;
+    for (const m of take)
+      for (const mat of m.materials) {
+        const itemId = idOf.get(`${mat.item}|${mat.unit}`)!;
+        const qtyPerUnit = new Dec(mat.qtyPerUnit);
+        const wastagePct = new Dec(mat.wastagePct);
+        await this.prisma.materialNorm.upsert({
+          where: { boqItemId_itemId: { boqItemId: m.boqItemId, itemId } },
+          create: { organizationId: user.organizationId, projectId, boqItemId: m.boqItemId, itemId, qtyPerUnit, wastagePct, note: m.note, updatedById: user.id },
+          update: { qtyPerUnit, wastagePct, note: m.note, updatedById: user.id },
+        });
+        norms++;
+      }
+    await this.audit.log(user, 'PROJECT', projectId, 'MATERIAL_NORMS_ADOPTED', `${norms} norms on ${take.length} BOQ items from the standard library${added ? `, ${added} items added to the master` : ''}`);
+    return { boqItems: take.length, norms, newItems: added, skipped };
+  }
+
   async save(user: RequestUser, projectId: string, dto: SaveMaterialNormDto): Promise<MaterialNormDto> {
     await this.assertEdit(user, projectId);
     const [boq, item] = await Promise.all([
