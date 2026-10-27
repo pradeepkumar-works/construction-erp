@@ -23,6 +23,7 @@ import {
   canResumeWarningKind,
   canSeeCashForecast,
   fuelNormText,
+  revisedCompletion,
   watchListKinds,
 } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
@@ -76,6 +77,7 @@ import {
   machineTrend,
   materialOveruse,
   overuseStep,
+  planFinishLate,
   scheduleWarns,
   stockRunout,
   vendorTrend,
@@ -94,6 +96,8 @@ export const rupees = (v: number) => {
 /** One decimal, or two significant figures below 1 so a slow rate is not "0". */
 const qty = (v: number) => (Math.abs(v) > 0 && Math.abs(v) < 1 ? Number(v.toPrecision(2)) : Math.round(v * 10) / 10).toLocaleString('en-IN');
 /** 2026-10-23 → "23 Oct". */
+/** With the year: a completion date is often next year or later. */
+const dayYear = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -109,6 +113,7 @@ interface Project {
   status: string;
   type: string;
   startDate: Date | null;
+  endDate: Date | null;
 }
 
 /**
@@ -241,7 +246,7 @@ export class WarningsService {
     if (!kinds.length) return [];
     const projects: Project[] = await this.prisma.project.findMany({
       where: this.access.projectWhere(user),
-      select: { id: true, code: true, name: true, status: true, type: true, startDate: true },
+      select: { id: true, code: true, name: true, status: true, type: true, startDate: true, endDate: true },
       orderBy: { code: 'asc' },
     });
     const active = projects.filter((p) => p.status === 'ACTIVE');
@@ -342,7 +347,63 @@ export class WarningsService {
         slip: f.stalled ? 10_000 : f.slipDays!,
       });
     }
+    out.push(...(await this.planFinishes(projects)));
     return out.sort((a, b) => b.slip - a.slip).map(({ slip: _slip, ...w }) => w);
+  }
+
+  /** Projects whose plan ends after the completion date with its extensions (e2e review, fix 1), first in the list. */
+  private async planFinishes(projects: Project[]): Promise<(Draft & { slip: number })[]> {
+    const dated = projects.filter((p) => p.endDate);
+    if (!dated.length) return [];
+    const ids = dated.map((p) => p.id);
+    const [finishes, milestones, eots] = await Promise.all([
+      this.prisma.activity.groupBy({ by: ['projectId'], where: { projectId: { in: ids } }, _max: { plannedEnd: true } }),
+      this.prisma.milestone.groupBy({ by: ['projectId'], where: { projectId: { in: ids } }, _max: { dueDate: true } }),
+      this.prisma.risk.groupBy({ by: ['projectId'], where: { projectId: { in: ids }, kind: 'DELAY' }, _sum: { eotGrantedDays: true } }),
+    ]);
+    // The Gantt's planned finish: the latest activity end or milestone due date.
+    const finishOf = new Map<string, string | null>(finishes.map((f) => [f.projectId, dateOnly(f._max.plannedEnd)]));
+    for (const m of milestones) {
+      const due = dateOnly(m._max.dueDate);
+      const was = finishOf.get(m.projectId) ?? null;
+      if (due && (!was || due > was)) finishOf.set(m.projectId, due);
+    }
+    const eotOf = new Map(eots.map((e) => [e.projectId, e._sum.eotGrantedDays ?? 0]));
+    const out: (Draft & { slip: number })[] = [];
+    for (const p of dated) {
+      const finish = finishOf.get(p.id) ?? null;
+      const eot = eotOf.get(p.id) ?? 0;
+      const completion = revisedCompletion(dateOnly(p.endDate), eot);
+      const late = planFinishLate(finish, completion);
+      if (late === null) continue;
+      out.push({
+        // A new key each fortnight the finish moves, so a dismissal holds only while the slip is about the same.
+        key: `schedule-finish:${p.id}:${completion}:${Math.floor(late / 14)}`,
+        kind: 'SCHEDULE',
+        title: `${p.code}'s plan ends ${plural(late, 'day')} after the completion date`,
+        detail: `The schedule's planned dates run to ${dayYear(finish!)}, against the completion date of ${dayYear(completion!)}${eot ? ` (with ${plural(eot, 'day')} of extensions granted)` : ''}.`,
+        action: 'Re-plan the critical activities to finish in time, or claim an extension of time for the delays that excuse it',
+        impact: { text: `${plural(late, 'day')} late`, inr: null, days: late },
+        working: [
+          `Latest planned finish of the activities and milestones: ${dayYear(finish!)}`,
+          `Completion date: ${dayYear(dateOnly(p.endDate)!)}${eot ? ` + ${plural(eot, 'day')} of extensions = ${dayYear(completion!)}` : ''}`,
+          `${dayYear(finish!)} − ${dayYear(completion!)} = ${plural(late, 'day')}`,
+        ],
+        facts: [
+          { label: 'Plan ends', value: dayYear(finish!) },
+          { label: 'Completion date', value: dayYear(completion!) },
+        ],
+        links: [
+          { label: 'Schedule', href: `/projects/${p.id}?tab=schedule` },
+          { label: 'Contract', href: `/projects/${p.id}?tab=contract` },
+        ],
+        projectId: p.id,
+        projectName: p.name,
+        // Whole-project lateness goes above any one activity's.
+        slip: 20_000 + late,
+      });
+    }
+    return out;
   }
 
   /** Materials consumed beyond their norms' allowance at active projects with norms (v5 item 92), largest overuse first. */

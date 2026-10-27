@@ -2530,7 +2530,11 @@ export; the client portal and the phone app show the amount.
   figures (`facts`) and links to the records behind it.
 - **Rules.** `apps/api/src/warnings/warning-rules.ts` holds pure functions with unit tests:
   - Schedule: the last 28 days' rate puts the finish more than 7 days past the baseline (or planned) end, or the
-    activity was due to start 14 days or more ago and has no progress recorded in the last 28 days.
+    activity was due to start 14 days or more ago and has no progress recorded in the last 28 days. A project whose
+    activities' latest planned finish is after its completion date with the extensions granted (`planFinishLate`) is a
+    SCHEDULE warning of its own, above any one activity's. The project header, Overview and Schedule tab read the same
+    rule, `projectScheduleStatus` in `@erp/shared/schedule.ts` (no dated plan, behind, plan ends late, overrun); the
+    client portal shows only the frozen baseline's dates.
   - Cash: bills due against expected receipts over the next 8 weeks, cumulative, where each client's receipts are
     expected after its median actual days to pay (at least two paid bills). Overdue amounts fall in week 1.
   - Vendors: over the last 60 days against the 60 before, a rising share of late deliveries (against the PO's

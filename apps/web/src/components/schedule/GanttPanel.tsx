@@ -6,7 +6,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { CheckOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FlagOutlined, LockOutlined, PlusOutlined, UploadOutlined } from '@/components/common/icons';
 import type { GanttActivityDto, MilestoneDto, MilestoneState, ScheduleFileFormat } from '@erp/shared';
-import { MILESTONE_STATE_LABELS, SCHEDULE_FILE_FORMAT_LABELS, SCHEDULE_FILE_FORMATS, canEditProjects, canFreezeBaseline } from '@erp/shared';
+import { MILESTONE_STATE_LABELS, SCHEDULE_FILE_FORMAT_LABELS, SCHEDULE_FILE_FORMATS, canEditProjects, canFreezeBaseline, daysBetween } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
@@ -131,6 +131,17 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         ) : null}
         <Statistic title="Milestones achieved" value={s.milestonesAchieved} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>of {s.milestones}{s.milestonesMissed ? `, ${s.milestonesMissed} missed` : ''}</span>} styles={big} />
       </div>
+
+      {data.completionDate && s.plannedFinish && s.plannedFinish > data.completionDate ? (
+        <Alert
+          className="finish-after-completion"
+          type="error"
+          showIcon
+          style={{ marginBottom: 12 }}
+          title={`The plan ends ${formatDate(s.plannedFinish)}, ${daysBetween(data.completionDate, s.plannedFinish)} days after the completion date of ${formatDate(data.completionDate)}.`}
+          description="Re-plan the critical activities to finish in time, or record the delays that excuse it and claim an extension of time on the Contract tab. The client portal shows only the frozen baseline."
+        />
+      ) : null}
 
       <Alert
         className="baseline-info"

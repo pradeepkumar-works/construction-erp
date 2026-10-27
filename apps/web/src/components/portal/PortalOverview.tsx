@@ -33,9 +33,10 @@ export function PortalOverview({ project: p }: { project: PortalProjectDetailDto
         dataSource={p.activities}
         scroll={{ x: 800 }}
         locale={{ emptyText: 'No activities planned yet' }}
+        title={p.programme === 'NONE' && p.activities.length ? () => 'Programme dates show here once the contractor freezes the agreed baseline.' : undefined}
         columns={[
           { title: 'Activity', dataIndex: 'name' },
-          { title: 'Planned', key: 'planned', width: 200, render: (_, a) => (a.plannedStart && a.plannedEnd ? `${formatDate(a.plannedStart)} to ${formatDate(a.plannedEnd)}` : '-') },
+          { title: 'Agreed programme', key: 'planned', width: 200, render: (_, a) => (a.plannedStart && a.plannedEnd ? `${formatDate(a.plannedStart)} to ${formatDate(a.plannedEnd)}` : '-') },
           { title: 'Quantity', key: 'qty', align: 'right', width: 220, render: (_, a) => `${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${a.unit}` },
           { title: 'Done', dataIndex: 'pct', width: 180, render: (v: number) => <Progress percent={v} size="small" status={progressStatus(v)} style={{ margin: 0 }} aria-label={`${v}% done`} /> },
         ]}

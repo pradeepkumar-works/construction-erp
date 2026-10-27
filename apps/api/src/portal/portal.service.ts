@@ -35,10 +35,24 @@ type ProjectRow = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
 export class PortalService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private dpr: DprService) {}
 
+  /**
+   * Activities with the agreed programme's dates (e2e review, fix 1): the client sees the baseline the PM froze, never
+   * the contractor's working re-plan, which may run past the contract date while recovery is worked out.
+   */
   private activities(p: ProjectRow): PortalActivityDto[] {
+    const baselined = !!p.baselineAt;
     return p.activities.map((a) => {
       const done = a.progressEntries.reduce((s, e) => s.add(e.quantity), new Prisma.Decimal(0));
-      return { id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty)!, doneQty: dec(done)!, pct: pct(done, a.plannedQty), plannedStart: dateOnly(a.plannedStart), plannedEnd: dateOnly(a.plannedEnd) };
+      return {
+        id: a.id,
+        name: a.name,
+        unit: a.unit,
+        plannedQty: dec(a.plannedQty)!,
+        doneQty: dec(done)!,
+        pct: pct(done, a.plannedQty),
+        plannedStart: baselined ? dateOnly(a.baselineStart) : null,
+        plannedEnd: baselined ? dateOnly(a.baselineEnd) : null,
+      };
     });
   }
 
@@ -79,7 +93,7 @@ export class PortalService {
   async project(user: RequestUser, id: string): Promise<PortalProjectDetailDto> {
     const p = await this.prisma.project.findFirst({ where: { id, ...this.access.projectWhere(user) }, include: projectInclude });
     if (!p) throw new NotFoundException('Project not found or not accessible');
-    return { ...this.toDto(p), activities: this.activities(p) };
+    return { ...this.toDto(p), programme: p.baselineAt ? 'BASELINE' : 'NONE', activities: this.activities(p) };
   }
 
   /** Approved DPRs, newest first. */

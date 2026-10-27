@@ -4,12 +4,12 @@ import React from 'react';
 import { Badge, Flex, Tooltip, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
-import { canViewCost } from '@erp/shared';
+import { canViewCost, projectScheduleStatus, type ProjectScheduleStatus } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { formatPct } from '@/lib/format';
+import { formatDate, formatPct } from '@/lib/format';
 import { useProjectCost, useProjectDashboard } from '@/lib/queries';
 
-type Level = 'success' | 'warning' | 'error';
+type Level = 'success' | 'warning' | 'error' | 'default';
 
 export interface HealthSignal {
   key: 'schedule' | 'cost' | 'billing';
@@ -31,40 +31,54 @@ export function timeElapsedPct(start: string | null, end: string | null, on = to
   return Math.min(100, Math.max(0, (days(start, on) / total) * 100));
 }
 
-/** Points of progress a project may trail its plan (or the time gone) by before it counts as behind. */
-const BEHIND_BY = 10;
-
-export interface ScheduleStatus {
-  level: Level;
-  /** Behind its plan (or the time gone, without a plan) by 10 points or more, or past its end date unfinished */
-  behind: boolean;
+export interface ScheduleStatus extends ProjectScheduleStatus {
   done: number;
   /** % planned by today from the activities' dates, else null */
   planned: number | null;
   /** % of the time between the project's start and end gone by, else null */
   elapsed: number | null;
-  late: number;
-  /** Past its end date and not finished */
-  overrun: boolean;
+  /** Where the plan now ends, and the completion date it is held to */
+  plannedFinish: string | null;
+  completionDate: string | null;
 }
 
 /**
  * Where the project stands against its schedule (UX item 85), the one reading behind the header's chip and the
- * overview's lead line: progress against what the activities' dates planned by today (against the time gone when they
- * have no dates), and activities past their finish.
+ * overview's lead line, from `projectScheduleStatus` (shared with the watch list): progress against what the
+ * activities' dates planned by today, and where the plan ends against the completion date.
  */
 export function scheduleStatus(project: ProjectDetail, dash: ProjectDashboard, on = today()): ScheduleStatus {
   const done = dash.physicalProgressPct ?? project.physicalProgressPct;
   const planned = dash.plannedProgressPct ?? null;
   const elapsed = timeElapsedPct(project.startDate, project.endDate, on);
-  const mark = planned ?? elapsed;
-  // A completed project (handed over, perhaps in O&M) is behind nothing.
-  const finished = project.status === 'COMPLETED';
-  const overrun = !finished && !!project.endDate && project.endDate < on && done < 100;
-  const behind = overrun || (!finished && mark !== null && done <= mark - BEHIND_BY);
-  const late = dash.activitiesDelayed;
-  const level: Level = late > 0 && behind ? 'error' : late > 0 || behind ? 'warning' : 'success';
-  return { level, behind, done, planned, elapsed, late, overrun };
+  const completionDate = dash.completionDate ?? project.endDate;
+  const plannedFinish = dash.plannedFinish ?? null;
+  const s = projectScheduleStatus({
+    status: project.status,
+    done,
+    planned,
+    elapsed,
+    late: dash.activitiesDelayed,
+    scheduled: dash.activitiesScheduled ?? (planned === null ? 0 : dash.activitiesTotal),
+    completionDate,
+    plannedFinish,
+    today: on,
+  });
+  return { ...s, done, planned, elapsed, plannedFinish, completionDate };
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** The chip's words: "Schedule: ends 245 days late", "Schedule: no plan yet", "Schedule: on track". */
+export function scheduleChipText(s: ScheduleStatus): string {
+  if (s.state === 'COMPLETED') return 'Schedule: completed';
+  if (s.state === 'ON_HOLD') return 'Schedule: on hold';
+  if (s.state === 'OVERRUN') return 'Schedule: past completion date';
+  if (s.state === 'FINISH_LATE') return `Schedule: ends ${plural(s.finishLateDays!, 'day')} late`;
+  if (s.late > 0) return `Schedule: ${plural(s.late, 'activity', 'activities')} late`;
+  if (s.state === 'BEHIND') return 'Schedule: behind';
+  if (s.state === 'NO_PLAN') return 'Schedule: no plan yet';
+  return 'Schedule: on track';
 }
 
 /**
@@ -79,11 +93,16 @@ export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
   const out: HealthSignal[] = [];
 
   if (dash) {
-    const { level, behind, done, planned, elapsed, late } = scheduleStatus(project, dash);
-    const text = late > 0 ? `Schedule: ${late} ${late === 1 ? 'activity' : 'activities'} late` : behind ? 'Schedule: behind' : 'Schedule: on track';
-    const against = planned !== null ? `, ${formatPct(planned)} planned by today` : elapsed !== null ? `, ${formatPct(elapsed)} of the time gone` : '';
-    const detail = `${formatPct(done)} done${against}; ${late} of ${dash.activitiesTotal} activities past their finish date.`;
-    out.push({ key: 'schedule', level, text, detail });
+    const s = scheduleStatus(project, dash);
+    const against = s.planned !== null ? `, ${formatPct(s.planned)} planned by today` : s.elapsed !== null ? `, ${formatPct(s.elapsed)} of the time gone` : '';
+    const finish =
+      s.finishLateDays !== null
+        ? ` The plan ends ${formatDate(s.plannedFinish)}, after the completion date of ${formatDate(s.completionDate)}.`
+        : s.state === 'NO_PLAN'
+          ? ' No activity has planned dates yet.'
+          : '';
+    const detail = `${formatPct(s.done)} done${against}; ${s.late} of ${dash.activitiesTotal} activities past their finish date.${finish}`;
+    out.push({ key: 'schedule', level: s.level, text: scheduleChipText(s), detail });
   }
 
   if (cost) {
