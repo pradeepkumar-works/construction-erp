@@ -257,6 +257,7 @@ export class WorkersService {
       projectId: q.projectId,
       date: q.date,
       locked: day.locked,
+      lockedByRun: day.lockedByRun,
       rows: out,
       totals: {
         workers: out.length,

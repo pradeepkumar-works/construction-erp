@@ -614,6 +614,8 @@ export interface AttendanceSheetDto {
   dprStatus: SubmissionStatus | null;
   /** True once that DPR is approved; the sheet can no longer be changed. */
   locked: boolean;
+  /** The approved payroll run that locks the day ("SAL-2026-10"), null while it is open */
+  lockedByRun: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -625,6 +627,8 @@ export interface AttendanceDayDto {
   sheet: AttendanceSheetDto | null;
   dprStatus: SubmissionStatus | null;
   locked: boolean;
+  /** The approved payroll run that locks the day ("SAL-2026-10"), null while it is open */
+  lockedByRun: string | null;
 }
 
 /** Names used on earlier sheets of the project, for pickers. */
