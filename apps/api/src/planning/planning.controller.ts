@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PlanningService } from './planning.service';
-import { BulkBoqDto, CreateActivityDto, CreateBoqItemDto, UpdateActivityDto, UpdateBoqItemDto } from './planning.dto';
+import { BulkBoqDto, CreateActivityDto, CreateBoqItemDto, LinkBoqDto, UpdateActivityDto, UpdateBoqItemDto } from './planning.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Roles } from '../common/decorators';
 import { RolesGuard } from '../common/roles.guard';
@@ -42,6 +42,17 @@ export class PlanningController {
   @Roles(...EDITORS)
   deleteBoq(@CurrentUser() user: RequestUser, @Param('projectId') projectId: string, @Param('id') id: string) {
     return this.planning.deleteBoq(user, projectId, id);
+  }
+
+  @Get('activities/boq-links')
+  boqLinkSuggestions(@CurrentUser() user: RequestUser, @Param('projectId') projectId: string) {
+    return this.planning.boqLinkSuggestions(user, projectId);
+  }
+
+  @Post('activities/boq-links')
+  @Roles(...EDITORS)
+  linkBoq(@CurrentUser() user: RequestUser, @Param('projectId') projectId: string, @Body() dto: LinkBoqDto) {
+    return this.planning.linkBoq(user, projectId, dto);
   }
 
   @Get('activities')

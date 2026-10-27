@@ -58,7 +58,8 @@ export async function downloadBoqTemplate() {
   XLSX.writeFile(wb, 'BOQ-import-template.xlsx');
 }
 
-export function BoqImportModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId: string }) {
+/** `onImported` is called once the items are in, to offer the activity links (finding 11 of the October review). */
+export function BoqImportModal({ open, onClose, projectId, onImported }: { open: boolean; onClose: () => void; projectId: string; onImported?: () => void }) {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const [fileName, setFileName] = useState<string | null>(null);
@@ -190,9 +191,11 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
     onSuccess: (res) => {
       message.success(`Imported ${res.created} item${res.created === 1 ? '' : 's'}${res.skipped ? `, skipped ${res.skipped} duplicate${res.skipped === 1 ? '' : 's'}` : ''}`);
       qc.invalidateQueries({ queryKey: ['boq', projectId] });
+      qc.invalidateQueries({ queryKey: ['activities', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       reset();
       onClose();
+      onImported?.();
     },
     meta: FAIL_NOTICE,
   });

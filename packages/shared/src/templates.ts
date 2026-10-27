@@ -108,3 +108,44 @@ export function scheduleTemplate(items: ActivityTemplateItem[], startDate: strin
     return { name: i.name, unit: i.unit, plannedStart: start, plannedEnd: end, sortOrder: idx + 1 };
   });
 }
+
+/** An activity on the project, as the spread and the BOQ links read it. */
+export interface PlanActivity {
+  id: string;
+  name: string;
+  unit: string;
+  plannedQty: string;
+  plannedStart: string | null;
+  plannedEnd: string | null;
+  boqItemId: string | null;
+  sortOrder: number;
+}
+
+/**
+ * Dates for the activities that have none, once the project's own dates arrive (finding 11 of the October review):
+ * an activity named after a template item takes that item's place in the schedule; the rest are spread in order over
+ * the period, each taking an equal share. Activities that already have a date are left as they are.
+ */
+export function spreadUndated(activities: PlanActivity[], template: ActivityTemplateItem[], startDate: string, endDate: string | null): { id: string; plannedStart: string; plannedEnd: string }[] {
+  const undated = activities.filter((a) => !a.plannedStart && !a.plannedEnd).sort((a, b) => a.sortOrder - b.sortOrder);
+  if (!undated.length) return [];
+  const scheduled = new Map(scheduleTemplate(template, startDate, endDate).map((s) => [s.name.trim().toLowerCase(), s]));
+  const rest = undated.filter((a) => !scheduled.has(a.name.trim().toLowerCase()));
+  const last = endDate && endDate > startDate ? endDate : addDays(startDate, Math.max(1, rest.length) * 30 - 1);
+  const days = Math.round((Date.parse(`${last}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / DAY) + 1;
+  const share = rest.length ? Math.max(1, Math.floor(days / rest.length)) : 0;
+  const out: { id: string; plannedStart: string; plannedEnd: string }[] = [];
+  let i = 0;
+  for (const a of undated) {
+    const fromTemplate = scheduled.get(a.name.trim().toLowerCase());
+    if (fromTemplate?.plannedStart && fromTemplate.plannedEnd) {
+      out.push({ id: a.id, plannedStart: fromTemplate.plannedStart, plannedEnd: fromTemplate.plannedEnd });
+      continue;
+    }
+    const start = addDays(startDate, Math.min(days - 1, i * share));
+    const end = i === rest.length - 1 ? last : addDays(startDate, Math.min(days - 1, (i + 1) * share - 1));
+    out.push({ id: a.id, plannedStart: start, plannedEnd: end < start ? start : end });
+    i += 1;
+  }
+  return out;
+}

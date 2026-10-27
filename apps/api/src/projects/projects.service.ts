@@ -284,8 +284,11 @@ export class ProjectsService {
     }
     const data = this.toData(dto);
     await this.withClient(user, dto, data);
+    const before = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { startDate: true } });
     const row = await this.prisma.project.update({ where: { id }, data, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'UPDATED');
+    // The dates arriving for the first time spread the activities that have none (finding 11 of the October review).
+    if (!before.startDate && row.startDate) await this.templates.spreadUndated(user, id);
     return this.toDetail(row);
   }
 

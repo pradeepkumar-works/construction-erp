@@ -6,6 +6,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { ClientsService } from '../clients/clients.service';
+import { TemplatesService } from '../templates/templates.service';
 import { dateOnly, fxRate, iso, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { PriceVariationDto, UpdateContractDto } from './contracts.dto';
@@ -38,7 +39,7 @@ export interface LdInputs {
  */
 @Injectable()
 export class ContractsService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private templates: TemplatesService) {}
 
   toDto(p: Row, ld?: LdInputs): ProjectContractDto {
     const today = new Date().toISOString().slice(0, 10);
@@ -250,8 +251,11 @@ export class ContractsService {
       const e = end !== undefined ? end : dateOnly(cur?.endDate);
       if (s && e && e < s) throw new BadRequestException('The completion date cannot be before the start date');
     }
+    const hadStart = dateOnly((await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { startDate: true } })).startDate);
     await this.prisma.project.update({ where: { id: projectId }, data });
     await this.audit.log(user, 'PROJECT', projectId, 'CONTRACT_UPDATED');
+    // The dates arriving for the first time spread the activities that have none (finding 11 of the October review).
+    if (!hadStart && data.startDate) await this.templates.spreadUndated(user, projectId);
     return this.get(user, projectId);
   }
 
