@@ -1,7 +1,19 @@
 import { NotificationsService } from '../notifications/notifications.service';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { COPIED_TERMS, termsFor, type Paginated, type ProjectDetail, type ProjectSortField, type ProjectSummary, type RoleKey, type SortOrder } from '@erp/shared';
+import {
+  COPIED_TERMS,
+  nextProjectCode,
+  termsFor,
+  type NextProjectCodeDto,
+  type Paginated,
+  type ProjectDetail,
+  type ProjectSortField,
+  type ProjectSummary,
+  type ProjectType,
+  type RoleKey,
+  type SortOrder,
+} from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { physicalProgress } from '../common/progress';
 import { PrismaService } from '../prisma/prisma.service';
@@ -209,6 +221,15 @@ export class ProjectsService {
     data.clientName = client.name;
   }
 
+  /**
+   * The code to offer a new project of this type (finding 17 of the October review). Every code in the company counts
+   * towards the series, including projects this user does not work on, or the suggestion would clash with them.
+   */
+  async nextCode(user: RequestUser, type: ProjectType): Promise<NextProjectCodeDto> {
+    const taken = await this.prisma.project.findMany({ where: { organizationId: user.organizationId }, select: { code: true } });
+    return { code: nextProjectCode(type, new Date().getFullYear(), taken.map((p) => p.code)) };
+  }
+
   async create(user: RequestUser, dto: CreateProjectDto): Promise<ProjectDetail> {
     const dup = await this.prisma.project.findFirst({ where: { organizationId: user.organizationId, code: dto.code } });
     if (dup) throw new ConflictException(`Project code ${dto.code} already exists`);
@@ -300,6 +321,19 @@ export class ProjectsService {
     if (!ids.length) throw new BadRequestException('Choose who to add');
     await this.joinTeam(user, id, ids);
     return this.get(user, id);
+  }
+
+  /**
+   * One person onto several project teams, which is how a new user gets their projects as they are created
+   * (finding 17 of the October review: the New user form had no project).
+   */
+  async addToProjects(user: RequestUser, userId: string, projectIds: string[]): Promise<number> {
+    let joined = 0;
+    for (const id of [...new Set(projectIds)]) {
+      await this.access.assertCanAccessProject(user, id);
+      joined += await this.joinTeam(user, id, [userId]);
+    }
+    return joined;
   }
 
   /** "Copy team from project": everyone on another project the caller sees joins this one. */

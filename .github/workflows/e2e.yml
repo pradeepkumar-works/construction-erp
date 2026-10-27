@@ -126,6 +126,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/norms-library-test.js
+      - name: A GSTIN gives up its PAN and a new project is offered the next code in the series
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/small-fixes-test.js
       - name: Material reconciliation adds up theoretical, allowed and consumed quantities and flags each item
         if: matrix.suite == 'flows'
         working-directory: apps/api

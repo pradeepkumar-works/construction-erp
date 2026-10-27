@@ -11,6 +11,11 @@ export class ListProjectsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.projects, default: 'status' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.projects as unknown as string[]) sortBy?: ProjectSortField;
 }
 
+/** The type of project a suggested code is for. */
+export class NextProjectCodeQuery {
+  @ApiProperty({ enum: PROJECT_TYPES }) @IsIn(PROJECT_TYPES as unknown as string[]) type: ProjectType;
+}
+
 export class CreateProjectDto {
   @ApiProperty({ example: 'RD-001' }) @IsString() @MinLength(2) code: string;
   @ApiProperty() @IsString() @MinLength(2) name: string;
