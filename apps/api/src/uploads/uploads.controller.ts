@@ -12,6 +12,7 @@ import { StorageService } from '../common/storage.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { CAD_MIME_TYPES } from '@erp/shared';
 import { CompleteDirectUploadDto, StartDirectUploadDto } from './uploads.dto';
+import { ACTIVE_FILE, SANDBOXED_FILE_CSP } from '../common/security-headers';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf', ...Object.values(CAD_MIME_TYPES)];
 const ALLOWED_WORDS = 'jpeg, png, webp, heic, pdf, dxf, dwg';
@@ -114,6 +115,7 @@ export class UploadsController {
     res.setHeader('Content-Type', row.mimeType);
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(row.fileName)}"`);
+    if (ACTIVE_FILE.test(row.mimeType)) res.setHeader('Content-Security-Policy', SANDBOXED_FILE_CSP);
     res.send(Buffer.from(row.data));
   }
 }

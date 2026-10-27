@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { PasswordLinksService } from './password-links.service';
+import { LoginGuardService } from './login-guard.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { PasswordLinksService } from './password-links.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PasswordLinksService],
+  providers: [AuthService, JwtStrategy, PasswordLinksService, LoginGuardService],
   exports: [AuthService, PasswordLinksService],
 })
 export class AuthModule {}

@@ -112,6 +112,8 @@ export class UsersService {
     if (dto.password) {
       data.passwordHash = await bcrypt.hash(dto.password, 10);
       data.invitedAt = null;
+      // A password the admin sets ends the sessions signed in with the old one.
+      data.tokensValidAfter = new Date();
     }
     if (dto.roleKey && (dto.roleKey === 'SUPPLIER') !== (existing.vendorId !== null)) throw new BadRequestException('A supplier login stays a supplier login, tied to its vendor');
     if (dto.roleKey) {

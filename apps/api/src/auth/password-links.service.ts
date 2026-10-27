@@ -95,7 +95,8 @@ export class PasswordLinksService {
     const done = await this.prisma.passwordToken.updateMany({ where: { id: r.id, usedAt: null }, data: { usedAt: new Date() } });
     if (done.count === 0) throw new BadRequestException('This link has already been used.');
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: r.userId }, data: { passwordHash, invitedAt: null } }),
+      // Sessions signed in with the old password end (finding 5 of the October review).
+      this.prisma.user.update({ where: { id: r.userId }, data: { passwordHash, invitedAt: null, tokensValidAfter: new Date() } }),
       this.prisma.passwordToken.updateMany({ where: { userId: r.userId, usedAt: null }, data: { usedAt: new Date() } }),
     ]);
     return r.userId;
