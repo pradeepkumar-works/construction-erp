@@ -4,7 +4,7 @@ import React from 'react';
 import { Badge, Flex, Tooltip, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
-import { canViewCost, projectScheduleStatus, type ProjectScheduleStatus } from '@erp/shared';
+import { canViewCost, scheduleReading, type ScheduleReading } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { formatDate, formatPct } from '@/lib/format';
 import { useProjectCost, useProjectDashboard } from '@/lib/queries';
@@ -21,50 +21,15 @@ export interface HealthSignal {
 }
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-const days = (from: string, to: string) => (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
 
-/** Share of the project's time gone by today (0 to 100), or null without both dates. */
-export function timeElapsedPct(start: string | null, end: string | null, on = today()): number | null {
-  if (!start || !end) return null;
-  const total = days(start, end);
-  if (total <= 0) return null;
-  return Math.min(100, Math.max(0, (days(start, on) / total) * 100));
-}
-
-export interface ScheduleStatus extends ProjectScheduleStatus {
-  done: number;
-  /** % planned by today from the activities' dates, else null */
-  planned: number | null;
-  /** % of the time between the project's start and end gone by, else null */
-  elapsed: number | null;
-  /** Where the plan now ends, and the completion date it is held to */
-  plannedFinish: string | null;
-  completionDate: string | null;
-}
+export type ScheduleStatus = ScheduleReading;
 
 /**
  * Where the project stands against its schedule (UX item 85), the one reading behind the header's chip and the
- * overview's lead line, from `projectScheduleStatus` (shared with the watch list): progress against what the
- * activities' dates planned by today, and where the plan ends against the completion date.
+ * overview's lead line: `scheduleReading` in shared, which the phone's project screen reads too.
  */
 export function scheduleStatus(project: ProjectDetail, dash: ProjectDashboard, on = today()): ScheduleStatus {
-  const done = dash.physicalProgressPct ?? project.physicalProgressPct;
-  const planned = dash.plannedProgressPct ?? null;
-  const elapsed = timeElapsedPct(project.startDate, project.endDate, on);
-  const completionDate = dash.completionDate ?? project.endDate;
-  const plannedFinish = dash.plannedFinish ?? null;
-  const s = projectScheduleStatus({
-    status: project.status,
-    done,
-    planned,
-    elapsed,
-    late: dash.activitiesDelayed,
-    scheduled: dash.activitiesScheduled ?? (planned === null ? 0 : dash.activitiesTotal),
-    completionDate,
-    plannedFinish,
-    today: on,
-  });
-  return { ...s, done, planned, elapsed, plannedFinish, completionDate };
+  return scheduleReading(project, dash, on);
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;

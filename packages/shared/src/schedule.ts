@@ -271,3 +271,59 @@ export function projectScheduleStatus(f: ProjectScheduleFacts): ProjectScheduleS
   if (f.scheduled === 0) return { ...base, state: 'NO_PLAN', level: 'default', behind: false, overrun };
   return { ...base, state: 'ON_TRACK', level: f.late > 0 ? 'warning' : 'success', behind: false, overrun };
 }
+
+/** Share of the project's time gone by on a day (0 to 100), or null without both dates. */
+export function timeElapsedPct(start: string | null, end: string | null, on: string): number | null {
+  if (!start || !end) return null;
+  const total = daysBetween(start, end);
+  if (total <= 0) return null;
+  return Math.min(100, Math.max(0, (daysBetween(start, on) / total) * 100));
+}
+
+export interface ScheduleReading extends ProjectScheduleStatus {
+  done: number;
+  /** % planned by today from the activities' dates, else null */
+  planned: number | null;
+  /** % of the time between the project's start and end gone by, else null */
+  elapsed: number | null;
+  /** Where the plan now ends, and the completion date it is held to */
+  plannedFinish: string | null;
+  completionDate: string | null;
+}
+
+/**
+ * A project's schedule status read from its record and its dashboard, the same on the web's header and Overview and
+ * on the phone's project screen: progress against what the activities' dates planned by today, and where the plan
+ * ends against the completion date (`projectScheduleStatus`).
+ */
+export function scheduleReading(
+  project: { status: string; physicalProgressPct: number; startDate: string | null; endDate: string | null },
+  dash: {
+    physicalProgressPct?: number | null;
+    plannedProgressPct?: number | null;
+    completionDate?: string | null;
+    plannedFinish?: string | null;
+    activitiesDelayed: number;
+    activitiesScheduled?: number;
+    activitiesTotal: number;
+  },
+  on: string,
+): ScheduleReading {
+  const done = dash.physicalProgressPct ?? project.physicalProgressPct;
+  const planned = dash.plannedProgressPct ?? null;
+  const elapsed = timeElapsedPct(project.startDate, project.endDate, on);
+  const completionDate = dash.completionDate ?? project.endDate;
+  const plannedFinish = dash.plannedFinish ?? null;
+  const s = projectScheduleStatus({
+    status: project.status,
+    done,
+    planned,
+    elapsed,
+    late: dash.activitiesDelayed,
+    scheduled: dash.activitiesScheduled ?? (planned === null ? 0 : dash.activitiesTotal),
+    completionDate,
+    plannedFinish,
+    today: on,
+  });
+  return { ...s, done, planned, elapsed, plannedFinish, completionDate };
+}

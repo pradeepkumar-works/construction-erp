@@ -491,4 +491,18 @@ export const SITE: Record<string, string> = {
   'Add material': 'माल जोड़ें',
   'Add work line': 'काम की लाइन जोड़ें',
   'All {n} on site are on a work line': 'साइट के सभी {n} किसी काम की लाइन पर हैं',
+  // Schedule status on the project screen (October review, finding 1)
+  'Schedule: completed': 'शेड्यूल: पूरा',
+  'Schedule: on hold': 'शेड्यूल: रुका हुआ',
+  'Schedule: past completion date': 'शेड्यूल: पूरा होने की तारीख़ निकल गई',
+  'Schedule: ends 1 day late': 'शेड्यूल: 1 दिन देर से ख़त्म',
+  'Schedule: ends {n} days late': 'शेड्यूल: {n} दिन देर से ख़त्म',
+  'Schedule: 1 activity late': 'शेड्यूल: 1 गतिविधि देर से',
+  'Schedule: {n} activities late': 'शेड्यूल: {n} गतिविधियाँ देर से',
+  'Schedule: behind': 'शेड्यूल: पीछे',
+  'Schedule: no plan yet': 'शेड्यूल: अभी कोई योजना नहीं',
+  'Schedule: on track': 'शेड्यूल: समय पर',
+  'The plan ends {finish}, after the completion date of {completion}.': 'योजना {finish} को ख़त्म होती है, पूरा होने की तारीख़ {completion} के बाद।',
+  'The completion date of {completion} has passed with the work not finished.': 'पूरा होने की तारीख़ {completion} निकल गई है और काम पूरा नहीं हुआ।',
+  'No activity has planned dates yet.': 'अभी किसी गतिविधि की योजना वाली तारीख़ें नहीं हैं।',
 };

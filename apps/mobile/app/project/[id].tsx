@@ -9,6 +9,7 @@ import { Button, Card, EmptyState, ErrorState, KeyValue, Loading, Pill, Progress
 import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ScheduleStatus } from '../../src/components/ScheduleStatus';
 
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,6 +41,7 @@ export default function ProjectScreen() {
         </View>
         <Text style={typography.h2}>{project.name}</Text>
         <Text style={typography.caption}>{t(PROJECT_TYPE_LABELS[project.type])}</Text>
+        <ScheduleStatus project={project} />
         <View style={styles.bar}>
           <ProgressBar value={project.physicalProgressPct} height={12} />
         </View>

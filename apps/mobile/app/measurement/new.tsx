@@ -18,6 +18,7 @@ import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
+import { MeasureFromProgress, type ProgressPrefill } from '../../src/forms/MeasureFromProgress';
 
 interface Line {
   key: string;
@@ -168,6 +169,17 @@ export default function NewMeasurementScreen() {
   const total = measurementTotal(asInput);
   const unit = item?.unit ?? existing.data?.unit ?? '';
 
+  // A sheet started from the approved days: the item, one line per day, and where and when they were, for the
+  // surveyor to check against the book (finding 14 of the October review).
+  const startFromProgress = (p: ProgressPrefill) => {
+    setBoqItemId(p.boqItemId);
+    setWorkOrderId('');
+    setLines(p.lines.map((l) => ({ ...blankLine(), description: l.description, nos: l.nos })));
+    if (p.location) setLocation(p.location);
+    setRemarks(p.remarks);
+    setErrors({});
+  };
+
   const setLine = (key: string, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
   const validate = () => {
@@ -283,6 +295,7 @@ export default function NewMeasurementScreen() {
       <ErrorBanner message={submitError ?? projects.error ?? boq.error} />
       <ReviewerNote entry={existing.data} />
       <OutboxRefusal item={refused} />
+      {projectId && !editId && !outboxId ? <MeasureFromProgress projectId={projectId} onStart={startFromProgress} /> : null}
       <Card>
         <Select
           label={t('Project')}
