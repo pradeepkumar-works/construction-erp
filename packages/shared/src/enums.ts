@@ -144,6 +144,7 @@ export const NOTIFICATION_TYPES = [
   'SUPPLIER',
   'COMMENT',
   'ACCESS_REQUEST',
+  'HANDOFF',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

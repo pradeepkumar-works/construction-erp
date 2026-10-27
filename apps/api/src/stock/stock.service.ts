@@ -483,6 +483,7 @@ export class StockService {
     if ('existing' in saved) return this.get(user, saved.id);
     await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
     await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${mr.requestNo}`);
+    await this.notifications.onGoodsReceived(user, saved.id);
     return this.get(user, saved.id);
   }
 
@@ -536,6 +537,7 @@ export class StockService {
     if ('existing' in saved) return this.get(user, saved.id);
     await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
     await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${po.poNo}${dispatch ? `, from the supplier's dispatch note ${dispatch.dispatchNo}` : ''}`);
+    await this.notifications.onGoodsReceived(user, saved.id);
     return this.get(user, saved.id);
   }
 

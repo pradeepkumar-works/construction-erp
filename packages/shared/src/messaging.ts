@@ -106,6 +106,8 @@ export interface MessagingPrefsDto {
   sendTo: string | null;
   whatsapp: boolean;
   sms: boolean;
+  /** Email for what waits on the user: hand-offs and send-backs */
+  email: boolean;
   /** WhatsApp / SMS provider configured on the server */
   whatsappReady: boolean;
   /** Who sends WhatsApp from this server: WATI, Meta's Cloud API directly, or nobody yet */

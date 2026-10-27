@@ -81,6 +81,16 @@ hold points use the latter on progress. The clients keep a few per-type maps (we
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
+**Who is told.** An approval ask goes to the approvers on the project (its manager and members) through
+`NotificationsService.onProjectFirst`; company-wide approvers (management, admin) are asked only when nobody on the
+project may decide the entry, such as one above the PM's limit, and see the rest in the daily digest. When a step is
+done, `NotificationsService.handoff` tells the role that acts next (`HANDOFF`, "Your turn"): an approved material request
+to procurement, an approved PO to the project's store, a GRN to the requester, QA/QC and (against a PO) accounts, a
+client certificate to accounts, a client receipt to the PM and management, a DPR remark that `classifyRemark` reads as an
+excusable hindrance to the PM with the notice date, and a new team member. Hand-offs, send-backs and approvals waiting
+past their hours are also emailed (`NotifyInput.email`) to users with `emailAlerts` on (the default; Notifications ›
+Alerts).
+
 ### Navigation tree and module screens (v6 item 98, launcher phase 1)
 
 One tree, `NAV_TREE` in `packages/shared/src/navigation.ts`, lists every module and every page and tab in it: id, parent,

@@ -2629,7 +2629,7 @@ export const useMessagingPrefs = (enabled = true) =>
 export function useUpdateMessagingPrefs() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { phone?: string | null; whatsapp?: boolean; sms?: boolean }) => (await api.put<MessagingPrefsDto>('/messaging/me', body)).data,
+    mutationFn: async (body: { phone?: string | null; whatsapp?: boolean; sms?: boolean; email?: boolean }) => (await api.put<MessagingPrefsDto>('/messaging/me', body)).data,
     onSuccess: (d) => {
       qc.setQueryData(['messaging', 'me'], d);
     },
