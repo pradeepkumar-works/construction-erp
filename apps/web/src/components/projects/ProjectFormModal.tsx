@@ -30,6 +30,7 @@ interface FormValues {
   clientId?: string | null;
   consultantName?: string;
   location?: string;
+  siteAddress?: string;
   workOrderNo?: string;
   /** New projects: the agreement, when the work order gives one apart (later on the Contract tab) */
   agreementNo?: string;
@@ -115,6 +116,7 @@ export function ProjectFormModal({
         clientId: project.clientId,
         consultantName: project.consultantName ?? undefined,
         location: project.location ?? undefined,
+        siteAddress: project.siteAddress ?? undefined,
         workOrderNo: project.workOrderNo ?? undefined,
         description: project.description ?? undefined,
         dates: [project.startDate ? dayjs(project.startDate) : null, project.endDate ? dayjs(project.endDate) : null],
@@ -149,6 +151,7 @@ export function ProjectFormModal({
         ...(values.clientId ? { clientId: values.clientId } : isEdit && project?.clientId ? { clientId: null } : {}),
         consultantName: values.consultantName || undefined,
         location: values.location || undefined,
+        siteAddress: values.siteAddress?.trim() || undefined,
         workOrderNo: values.workOrderNo || undefined,
         ...(isEdit ? {} : { agreementNo: values.agreementNo?.trim() || undefined, agreementDate: values.agreementDate ? values.agreementDate.format('YYYY-MM-DD') : undefined }),
         description: values.description || undefined,
@@ -245,6 +248,9 @@ export function ProjectFormModal({
             </Form.Item>
             <Form.Item name="location" label="Location" {...read('location')}>
               <Input />
+            </Form.Item>
+            <Form.Item name="siteAddress" label="Delivery address" extra="Where suppliers deliver: the site store. A purchase order with no address of its own takes it.">
+              <Input.TextArea rows={2} maxLength={500} />
             </Form.Item>
             <Form.Item name="workOrderNo" label="Work order no." {...read(readText(readState?.result.fields.workOrderNo) ? 'workOrderNo' : 'agreementNo')}>
               <Input />

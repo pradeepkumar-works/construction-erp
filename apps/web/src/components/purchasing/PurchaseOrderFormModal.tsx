@@ -6,10 +6,10 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, MakeWarningDto, PurchaseOrderDto } from '@erp/shared';
-import { GST_RATES, MSME_CATEGORY_LABELS, lastRateKey } from '@erp/shared';
+import { GST_RATES, MSME_CATEGORY_LABELS, lastRateKey, siteDeliveryAddress } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useComparative, useLastRates, useMakeCheck, useProjects, useRateCheck } from '@/lib/queries';
+import { useComparative, useLastRates, useMakeCheck, useProject, useProjects, useRateCheck } from '@/lib/queries';
 import { useDebounced } from '@/lib/debounce';
 import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
@@ -101,6 +101,8 @@ export function PurchaseOrderFormModal({
   const makeCheck = useMakeCheck(open ? projectId : undefined, makeLines);
   const makeWarnings = makeCheck.data ?? [];
   const vendor = useVendor(open ? vendorId : undefined);
+  // Where it is delivered when the order says nothing: the project's own address (finding 12 of the October review).
+  const siteAddress = siteDeliveryAddress(useProject(open ? projectId : undefined).data);
   const msme = vendor?.msmeCategory === 'MICRO' || vendor?.msmeCategory === 'SMALL';
   const fromRequest = order ? order.requestNo : start?.requestNo;
   // An order not from the lowest quotation that prices every line says why before it goes for approval.
@@ -428,8 +430,8 @@ export function PurchaseOrderFormModal({
               <Form.Item name="paymentTerms" label="Payment terms">
                 <Input maxLength={300} placeholder="30 days from receipt of material and invoice" />
               </Form.Item>
-              <Form.Item name="deliveryAddress" label="Delivery address">
-                <Input maxLength={500} placeholder="Site store" />
+              <Form.Item name="deliveryAddress" label="Delivery address" extra={siteAddress ? 'Left empty, the order is delivered to the project’s address.' : undefined}>
+                <Input maxLength={500} placeholder={siteAddress ?? 'Site store'} />
               </Form.Item>
               <Form.Item name="remarks" label="Remarks (printed under the terms)">
                 <Input.TextArea rows={2} maxLength={1000} />

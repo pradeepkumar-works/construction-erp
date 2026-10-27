@@ -13,6 +13,9 @@ import {
   type PoLineRateCheckDto,
   type RateBenchmarksDto,
   type RateQuote,
+  awardLowestPerItem,
+  siteDeliveryAddress,
+  type AwardPlan,
   type Paginated,
   type DeliveryState,
   type ProcurementStatusDto,
@@ -34,7 +37,8 @@ import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, LastRatesQuery, ListPurchaseOrdersQuery, RateCheckQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
 import { todayIn } from '../notifications/time';
-import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
+import { addDays } from '../planning/schedule-rules';
+import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, toOrderOf, totals } from './purchase-math';
 import { QuotationsService } from './quotations.service';
 import { poEmail, selectionProblem } from './po-supplier-rules';
 import { EmailService } from '../notifications/email.service';
@@ -197,6 +201,12 @@ export class PurchaseOrdersService {
   private async assertCanPurchase(user: RequestUser, projectId: string) {
     if (!canPurchase(user.roleKey)) throw new ForbiddenException('Only procurement, project managers and management raise purchase orders');
     await this.access.assertCanAccessProject(user, projectId);
+  }
+
+  /** Where the order's goods go when it names no address: the project's site store (finding 12 of the October review). */
+  private async siteAddress(organizationId: string, projectId: string) {
+    const p = await this.prisma.project.findFirst({ where: { id: projectId, organizationId }, select: { siteAddress: true, location: true } });
+    return siteDeliveryAddress(p);
   }
 
   private where(user: RequestUser, q: ListPurchaseOrdersQuery): Prisma.PurchaseOrderWhereInput {
@@ -576,6 +586,7 @@ export class PurchaseOrdersService {
     const { vendor, mr } = await this.refs(user, dto.projectId, dto.vendorId, dto.materialRequestId ?? null, dto.quotationId ?? null);
     const paymentDays = this.paymentDays(dto.paymentDays, vendor);
     const freight = parseFreight(dto.freight);
+    const deliveryAddress = dto.deliveryAddress?.trim() || (await this.siteAddress(user.organizationId, dto.projectId));
     let id: string | null;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -596,7 +607,7 @@ export class PurchaseOrdersService {
             materialRequestId: mr?.id ?? null,
             quotationId: dto.quotationId ?? null,
             deliveryBy: dto.deliveryBy ? parseDate(dto.deliveryBy) : null,
-            deliveryAddress: dto.deliveryAddress || null,
+            deliveryAddress,
             paymentTerms: dto.paymentTerms || null,
             paymentDays,
             freight,
@@ -623,6 +634,57 @@ export class PurchaseOrdersService {
     await this.audit.log(user, 'PURCHASE_ORDER', id, 'CREATED');
     if (dto.submit) await this.submitOrder(user, id);
     return this.get(user, id);
+  }
+
+  /**
+   * The split of a request between the vendors who quoted lowest for each item (finding 12 of the October review):
+   * what is still to order, at each winner's rate. The screen previews it with the same rules; `awardLowest` draws it
+   * again here rather than trusting what was sent.
+   */
+  async awardPlan(user: RequestUser, materialRequestId: string): Promise<AwardPlan> {
+    this.assertCanView(user);
+    const cs = await this.quotations.comparative(user, materialRequestId);
+    const items = await this.prisma.materialRequestItem.findMany({
+      where: { requestId: materialRequestId },
+      include: {
+        poLines: { where: { purchaseOrder: { status: { not: 'REJECTED' } } }, select: { quantity: true, purchaseOrder: { select: { closedAt: true } }, stockTxns: { select: { quantity: true } } } },
+        stockTxns: { select: { quantity: true, purchaseOrderLineId: true } },
+        covers: { select: { quantity: true } },
+      },
+    });
+    return awardLowestPerItem(cs, Object.fromEntries(items.map((i) => [i.id, dec(toOrderOf(i))!])));
+  }
+
+  /** Raises one draft order per winning vendor. Nothing to award is a conflict, not an empty answer. */
+  async awardLowest(user: RequestUser, materialRequestId: string): Promise<PurchaseOrderDto[]> {
+    const plan = await this.awardPlan(user, materialRequestId);
+    const cs = await this.quotations.comparative(user, materialRequestId);
+    await this.assertCanPurchase(user, cs.projectId);
+    if (!plan.orders.length)
+      throw new ConflictException(
+        plan.leftOut.some((l) => l.reason === 'not quoted')
+          ? `No quotation on ${cs.requestNo} prices what is still to order.`
+          : `Everything on ${cs.requestNo} is already ordered or received.`,
+      );
+    const out: PurchaseOrderDto[] = [];
+    for (const o of plan.orders) {
+      const q = cs.quotations.find((x) => x.id === o.quotationId)!;
+      out.push(
+        await this.create(user, {
+          projectId: cs.projectId,
+          vendorId: o.vendorId,
+          materialRequestId,
+          quotationId: o.quotationId,
+          freight: String(o.freight),
+          deliveryBy: q.deliveryDays != null ? addDays(todayIn(), q.deliveryDays) : undefined,
+          paymentTerms: q.paymentTerms ?? undefined,
+          selectionReason: `Lowest rate per item on ${cs.requestNo}: ${o.lines.length} item${o.lines.length === 1 ? '' : 's'} of the comparative statement go to ${o.vendorName}.`,
+          lines: o.lines.map((l) => ({ materialRequestItemId: l.materialRequestItemId, quantity: String(l.quantity), rate: String(l.rate), gstRate: String(l.gstRate) })),
+        }),
+      );
+    }
+    await this.audit.log(user, 'MATERIAL_REQUEST', materialRequestId, 'AWARDED_LOWEST', `${out.length} order${out.length === 1 ? '' : 's'}: ${out.map((o) => o.poNo).join(', ')}`);
+    return out;
   }
 
   async update(user: RequestUser, id: string, dto: UpdatePurchaseOrderDto): Promise<PurchaseOrderDto> {

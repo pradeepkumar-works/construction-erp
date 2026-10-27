@@ -451,6 +451,27 @@ and closing date. The reply is saved once (the token's `respondedAt` is claimed 
 `Quotation` on the request with `fromSupplier` (an earlier one of theirs is replaced unless an order was raised on it),
 audited under the buyer who sent the enquiry, who is emailed. It then sits on the comparative statement like any other.
 
+**Awarding the lowest per item (finding 12 of the October review).** The comparative statement marks the cheapest
+landed rate for each line, but a purchase order goes to one vendor, so a split used to be raised order by order.
+`awardLowestPerItem` (`packages/shared/src/purchase-award.ts`, pure) turns a comparative statement and the quantities
+still to order into one `AwardOrder` per winning vendor: each item goes to the lowest landed rate (rate with GST, the
+earlier quotation on a tie), a winner's freight is charged once in full, and items nobody quoted or that are already
+ordered are listed in `leftOut`. It also prices the same quantities from the cheapest quotation that covers them all
+(`singleVendor`), so the screen can say what the split saves — or costs, when freight is paid twice.
+`GET /material-requests/:id/award-lowest` is the plan, `POST` the same route raises a draft order per winner through
+`PurchaseOrdersService.create` (so numbering, line limits and the audit are the usual ones), each carrying the
+quotation, its freight and payment terms and a selection reason naming the split. The screen previews the plan with the
+same pure rules (`AwardLowestModal`); the API draws it again rather than trusting what was sent. Tests:
+`src/scripts/purchase-award-test.ts` (CI runs it).
+
+**Where it is delivered.** `Project.siteAddress` is where suppliers deliver; `siteDeliveryAddress` falls back to the
+project's `location`. A purchase order with no address of its own takes it when it is created, the order form shows it
+as the field's placeholder, and the supplier's enquiry page shows the same address.
+
+**Sending a link by hand.** `whatsAppShareUrl` (`packages/shared/src/messaging.ts`) builds a `wa.me` link with the
+message ready: to the vendor's own number when `normalisePhone` can read it, else WhatsApp asks whom to send it to. The
+enquiry's answer carries each vendor's phone for this; nothing is sent until the buyer presses send in WhatsApp.
+
 ### Approval levels and escalation (v5 item 94)
 
 Who approves a type is the approval matrix (`ApprovalRule`, Settings > Approval rules), or the fixed rule while a company

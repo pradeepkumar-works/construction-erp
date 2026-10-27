@@ -1115,6 +1115,9 @@ model Project {
   clientName             String?
   consultantName         String?
   location               String?
+  /// Where deliveries go: the site store's address, which a purchase order takes when it names none
+  /// (finding 12 of the October review). Falls back to `location`.
+  siteAddress            String?
   /// Road or pipeline length the sector view draws, in metres from the start (chainage 0+000 = 0)
   chainageStart          Int?
   chainageEnd            Int?

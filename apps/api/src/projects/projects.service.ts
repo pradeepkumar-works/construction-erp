@@ -86,6 +86,7 @@ export class ProjectsService {
       contractModel: p.contractModel,
       clientName: p.clientName,
       location: p.location,
+      siteAddress: p.siteAddress,
       startDate: dateOnly(p.startDate),
       endDate: dateOnly(p.endDate),
       contractValue: money(p.contractValue),
@@ -165,6 +166,7 @@ export class ProjectsService {
     if (dto.clientName !== undefined) data.clientName = dto.clientName;
     if (dto.consultantName !== undefined) data.consultantName = dto.consultantName;
     if (dto.location !== undefined) data.location = dto.location;
+    if (dto.siteAddress !== undefined) data.siteAddress = dto.siteAddress || null;
     if (dto.workOrderNo !== undefined) data.workOrderNo = dto.workOrderNo;
     if (dto.agreementNo !== undefined) data.agreementNo = dto.agreementNo || null;
     if (dto.agreementDate !== undefined) data.agreementDate = dto.agreementDate ? parseDate(dto.agreementDate) : null;
