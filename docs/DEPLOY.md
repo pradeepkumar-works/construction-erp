@@ -25,6 +25,7 @@ API (`apps/api`):
 | `JWT_EXPIRES_IN` | e.g. `7d`. A password change, reset or admin-set password ends the sessions signed in before it. |
 | `STORAGE_MODE` | `db` on serverless hosts; unset = local disk; `BLOB_READ_WRITE_TOKEN` set = Vercel Blob |
 | `SEED_ON_BUILD` | `true` runs the demo seed during the Vercel build (idempotent: refreshes users, never duplicates projects). Set to `false` once real client data exists. |
+| `SEED_TOWN_ON_BUILD` | with `SEED_ON_BUILD` off, `true` adds only the Devgarh demo project (WS-2026-04: work breakdown, DPRs, pipe network) through `prisma/seed-town.ts`, writing nothing outside it; idempotent. Set it for one deploy, then remove it. |
 | `CORS_ORIGINS` | optional comma-separated allow-list of browser origins; unset = any origin. Also the only sites that may frame a stored file (the web's document viewer); set it in production. |
 | `UPLOAD_DIR` | disk mode only |
 | `CRON_SECRET` | long random string; Vercel Cron sends it as `Authorization: Bearer` to the daily notification jobs. Jobs are disabled when unset. |

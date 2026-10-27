@@ -13,5 +13,8 @@ DATABASE_URL="$OWNER_URL" npx prisma migrate deploy
 if [ "$SEED_ON_BUILD" = "true" ]; then
   echo "SEED_ON_BUILD=true: seeding demo data (idempotent)"
   DATABASE_URL="$OWNER_URL" npx tsx prisma/seed.ts
+elif [ "$SEED_TOWN_ON_BUILD" = "true" ]; then
+  echo "SEED_TOWN_ON_BUILD=true: adding only the Devgarh demo project (idempotent)"
+  DATABASE_URL="$OWNER_URL" npx tsx prisma/seed-town.ts
 fi
 pnpm build
