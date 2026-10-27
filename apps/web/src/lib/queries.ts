@@ -104,6 +104,10 @@ import type {
   CompanyExportManifestDto,
   ComparativeStatementDto,
   PurchaseOrderDto,
+  OrderStage,
+  ReceiptWait,
+  RequestToOrderDto,
+  RequestsToOrderPage,
   QuotationDto,
   ReceivableOrderDto,
   VendorBillDto,
@@ -970,6 +974,15 @@ export const useStockEntries = (filters?: StockEntryFilters, enabled = true) =>
   useQuery({
     queryKey: ['stock', 'entries', clean(filters)],
     queryFn: async () => (await api.get<Paginated<StockEntryDto>>('/stock/entries', { params: { ...clean(filters), allTypes: true } })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+/** Receipts waiting on a desk after the store (`RECEIPT_WAITS`): QA/QC's check, accounts' bill, a debit note. */
+export const useWaitingReceipts = (waiting: ReceiptWait, filters: Omit<StockEntryFilters, 'qc' | 'type'>, enabled = true) =>
+  useQuery({
+    queryKey: ['stock', 'waiting', waiting, clean(filters)],
+    queryFn: async () => (await api.get<Paginated<StockEntryDto>>('/stock/entries', { params: { ...clean(filters), allTypes: true, waiting } })).data,
     placeholderData: keepPreviousData,
     enabled,
   });
@@ -2098,6 +2111,46 @@ export const useComparative = (materialRequestId: string | undefined, enabled = 
     enabled: enabled && !!materialRequestId,
   });
 
+/* ---------- Requests to order and Finalise L1 ---------- */
+
+export interface RequestsToOrderFilters extends PageParams {
+  projectId?: string;
+  stage?: OrderStage;
+}
+
+/** Under the quotations key, so a quotation, enquiry or order saved anywhere refreshes the list. */
+export const useRequestsToOrder = (filters: RequestsToOrderFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['quotations', 'to-order', clean(filters)],
+    queryFn: async () => (await api.get<RequestsToOrderPage>('/purchase-orders/requests-to-order', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useRequestToOrder = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['quotations', 'to-order', 'one', id],
+    queryFn: async () => (await api.get<RequestToOrderDto>(`/material-requests/${id}/to-order`)).data,
+    enabled: !!id,
+  });
+
+/** Finalise the supplier on a request (one quotation, or the lowest per item split), or reopen it. */
+export function useFinaliseL1(id: string) {
+  const qc = useQueryClient();
+  const done = () => qc.invalidateQueries({ queryKey: ['quotations'] });
+  return {
+    finalise: useMutation({
+      mutationFn: async (body: { quotationId?: string; split?: boolean; reason?: string | null }) => (await api.post<RequestToOrderDto>(`/material-requests/${id}/finalise`, body)).data,
+      onSuccess: done,
+    }),
+    reopen: useMutation({
+      mutationFn: async () => (await api.post<RequestToOrderDto>(`/material-requests/${id}/reopen-supplier`)).data,
+      onSuccess: done,
+      meta: FAIL_NOTICE,
+    }),
+  };
+}
+
 /* ---------- small purchase items (v5 item 95) ---------- */
 
 /** Stock of a request's lines at its own site and the other sites (stock first). */
@@ -3222,11 +3275,12 @@ export const useUnits = () =>
     staleTime: 5 * 60_000,
   });
 
-export const useProcurementStatus = (filters: { projectId?: string; vendorId?: string; show?: 'PENDING' | 'LATE' | 'ALL'; from?: string; to?: string }) =>
+export const useProcurementStatus = (filters: { projectId?: string; vendorId?: string; show?: 'PENDING' | 'LATE' | 'ALL'; from?: string; to?: string }, enabled = true) =>
   useQuery({
     queryKey: ['purchase-orders', 'status', clean(filters)],
     queryFn: async () => (await api.get<ProcurementStatusDto>('/purchase-orders/status', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 /* Liquidated damages exposure (v4 item 50) */

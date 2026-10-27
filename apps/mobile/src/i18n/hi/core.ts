@@ -139,6 +139,8 @@ export const CORE: Record<string, string> = {
   'Leave and overtime to decide': 'छुट्टी और ओवरटाइम पर फ़ैसला',
   'Certified, payment to come': 'प्रमाणित, भुगतान आना बाकी',
   'Goods received, no bill yet': 'माल आया, बिल अभी नहीं',
+  'Debit notes to raise': 'बनाने बाकी डेबिट नोट',
+  'Material on the way': 'रास्ते में सामग्री',
   'Watch list': 'निगरानी सूची',
   'Morning brief': 'सुबह की झलक',
   'Supplier portal': 'सप्लायर पोर्टल',

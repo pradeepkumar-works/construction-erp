@@ -558,7 +558,7 @@ export class NotificationsService {
       entityType: 'MATERIAL_REQUEST',
       entityId: id,
       dedupeKey: `HANDOFF_TO_ORDER:${id}`,
-      email: { href: `/material-requests/${id}`, cta: 'Open the request' },
+      email: { href: `/requests-to-order/${id}`, cta: 'Open in Requests to order' },
     });
   }
 
@@ -610,22 +610,95 @@ export class NotificationsService {
         ...base,
         roles: ['QA_QC_ENGINEER'],
         exceptUserIds: [actor.id, ...requesters],
-        title: `Material to test: ${e.entryNo}`,
-        body: `${actor.fullName} received ${line} Test the lot before it goes into the work.`,
+        entityType: 'GRN_CHECK',
+        title: `Material to check: ${e.entryNo}`,
+        body: `${actor.fullName} received ${line} Check the lot, and test it, before it goes into the work.`,
         dedupeKey: `HANDOFF_GRN_QA:${entryId}`,
-        email: { href: `/inspections?tab=tests`, cta: 'Record the test' },
+        email: { href: `/inspections?tab=grns`, cta: 'Check the material' },
       });
       if (e.purchaseOrder)
         await this.handoff({
           ...base,
           roles: ['ACCOUNTS_MANAGER'],
           exceptUserIds: [actor.id, ...requesters],
+          entityType: 'GRN_TO_BILL',
           title: `Ready to match: ${e.entryNo}`,
           body: `${actor.fullName} received ${line} Match the supplier's bill against ${e.purchaseOrder.poNo} and this receipt.`,
           dedupeKey: `HANDOFF_GRN_AC:${entryId}`,
+          email: { href: `/vendor-bills?tab=to-bill`, cta: 'Record the bill' },
         });
     } catch (err) {
       this.log.warn(`onGoodsReceived(${entryId}) failed: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * Material rejected at QA/QC or sent back to the supplier: accounts raise the debit note that takes it off the bill,
+   * and purchase hears of it to settle with the vendor. Called by StockService after the check or the return is saved.
+   */
+  async onDebitToRaise(actor: RequestUser, entryId: string) {
+    try {
+      const e = await this.prisma.stockEntry.findUnique({
+        where: { id: entryId },
+        select: {
+          entryNo: true,
+          type: true,
+          projectId: true,
+          supplier: true,
+          qcNote: true,
+          project: { select: { name: true } },
+          purchaseOrder: { select: { poNo: true, vendor: { select: { name: true } } } },
+          lines: { select: { quantity: true, rejectedQty: true, item: { select: { name: true, unit: true } } } },
+        },
+      });
+      if (!e) return;
+      const returned = e.type === 'RETURN_TO_VENDOR';
+      const lines = e.lines
+        .map((l) => ({ name: l.item.name, unit: l.item.unit, qty: returned ? l.quantity.abs() : (l.rejectedQty ?? new Prisma.Decimal(0)) }))
+        .filter((l) => l.qty.gt(0));
+      if (!lines.length) return;
+      const what = lines.slice(0, 3).map((l) => `${l.name} ${l.qty.toString()} ${l.unit}`).join(', ') + (lines.length > 3 ? ` and ${lines.length - 3} more` : '');
+      const vendor = e.purchaseOrder?.vendor.name ?? e.supplier ?? 'the supplier';
+      await this.handoff({
+        organizationId: actor.organizationId,
+        projectId: e.projectId,
+        roles: ['ACCOUNTS_MANAGER', 'PROCUREMENT_MANAGER'],
+        exceptUserIds: [actor.id],
+        title: `Debit note to raise: ${e.entryNo}`,
+        body: `${actor.fullName} ${returned ? `sent back to ${vendor}` : `rejected at QA/QC from ${vendor}`} on ${e.project.name}: ${what}${e.purchaseOrder ? ` (${e.purchaseOrder.poNo})` : ''}${!returned && e.qcNote ? `. ${e.qcNote}` : ''}. Raise the debit note so it comes off their bill.`,
+        entityType: 'DEBIT_TO_RAISE',
+        entityId: entryId,
+        dedupeKey: `HANDOFF_DEBIT:${entryId}`,
+        email: { href: `/payables?tab=debit-notes&sub=to-raise`, cta: 'Raise the debit note' },
+      });
+    } catch (err) {
+      this.log.warn(`onDebitToRaise(${entryId}) failed: ${(err as Error).message}`);
+    }
+  }
+
+  /** Material sent from another site or store: the receiving site's store expects it and receives it on arrival. */
+  async onTransferSent(actor: RequestUser, entryId: string) {
+    try {
+      const e = await this.prisma.stockEntry.findUnique({
+        where: { id: entryId },
+        select: { entryNo: true, toProjectId: true, vehicleNo: true, project: { select: { name: true } }, toProject: { select: { name: true } }, lines: { select: { quantity: true, item: { select: { name: true, unit: true } } } } },
+      });
+      if (!e?.toProjectId) return;
+      const what = e.lines.slice(0, 3).map((l) => `${l.item.name} ${l.quantity.abs().toString()} ${l.item.unit}`).join(', ') + (e.lines.length > 3 ? ` and ${e.lines.length - 3} more` : '');
+      await this.handoff({
+        organizationId: actor.organizationId,
+        projectId: e.toProjectId,
+        roles: ['STORE_MANAGER'],
+        exceptUserIds: [actor.id],
+        title: `Material on the way: ${e.entryNo}`,
+        body: `${actor.fullName} sent ${what} from ${e.project.name} to ${e.toProject?.name ?? 'your site'}${e.vehicleNo ? ` on ${e.vehicleNo}` : ''}. Receive it against ${e.entryNo} when it arrives.`,
+        entityType: 'TRANSFER_IN',
+        entityId: entryId,
+        dedupeKey: `HANDOFF_TRANSFER:${entryId}`,
+        email: { href: `/stock?projectId=${e.toProjectId}`, cta: 'Open stock' },
+      });
+    } catch (err) {
+      this.log.warn(`onTransferSent(${entryId}) failed: ${(err as Error).message}`);
     }
   }
 

@@ -128,6 +128,7 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
     onSuccess: (n) => {
       notify.saved(`${n.noteNo} raised: ${formatINR(n.total, true)} off ${n.billLabel}`, `/debit-notes/${n.id}`);
       for (const k of ['debit-notes', 'vendor-bills', 'subcontract-bills', 'payables', 'payment-requests']) qc.invalidateQueries({ queryKey: [k] });
+      qc.invalidateQueries({ queryKey: ['stock', 'waiting'] });
       onSaved?.(n);
     },
     meta: FAIL_NOTICE,

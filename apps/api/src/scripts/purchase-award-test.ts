@@ -5,7 +5,7 @@
  *   node dist/scripts/purchase-award-test.js
  */
 import assert from 'node:assert/strict';
-import { awardLowestPerItem, isSplitWorthwhile, whatsAppShareUrl, type ComparativeStatementDto, type QuotationDto } from '@erp/shared';
+import { awardLowestPerItem, finaliseProblem, isSplitWorthwhile, orderStage, rankQuotations, whatsAppShareUrl, type ComparativeStatementDto, type QuoteToRank, type QuotationDto } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -156,6 +156,70 @@ test('the enquiry link goes to WhatsApp, to that supplier’s number when we hav
   assert.equal(whatsAppShareUrl(link, '12345'), `https://wa.me/?text=${encodeURIComponent(link)}`);
 });
 
+/* ---------- Requests to order: L1, L2 and where a request stands ---------- */
+
+const priced = (id: string, vendorName: string, lines: [string, string, string][], freight = '0'): QuoteToRank => ({
+  id,
+  vendorId: `v-${id}`,
+  vendorName,
+  freight,
+  lines: lines.map(([materialRequestItemId, rate, gstRate]) => ({ materialRequestItemId, rate, gstRate })),
+});
+const a = priced('qa', 'A', [['i1', '100', '18'], ['i2', '50', '18']]);
+const b = priced('qb', 'B', [['i1', '90', '18'], ['i2', '55', '18']], '200');
+const c = priced('qc', 'C', [['i1', '80', '18']]);
+
+test('L1, L2 rank by what is still to order at each rate, with GST and freight; a quote leaving an item out is not ranked', () => {
+  const ranked = rankQuotations([a, b, c], { i1: '10', i2: '20' });
+  // A: 1000 + 1000 = 2000 + 18% = 2360. B: 900 + 1100 = 2000 + 18% + 200 freight = 2560. C misses i2.
+  assert.deepEqual(ranked.map((r) => [r.vendorName, r.rank, r.total, r.missing]), [['A', 1, 2360, 0], ['B', 2, 2560, 0], ['C', null, 944, 1]]);
+});
+
+test('once an item is ordered the ranking is over what is left, so the cheaper vendor for it becomes L1', () => {
+  const ranked = rankQuotations([a, b, c], { i1: '10', i2: '0' });
+  assert.deepEqual(ranked.map((r) => [r.vendorName, r.rank]), [['C', 1], ['A', 2], ['B', 3]]);
+});
+
+test('a tie goes to the quotation taken first', () => {
+  const twin = priced('qd', 'D', [['i1', '100', '18'], ['i2', '50', '18']]);
+  assert.deepEqual(rankQuotations([a, twin], { i1: '10', i2: '20' }).map((r) => r.rank), [1, 2]);
+});
+
+test('the stage: no quotes, waiting while an enquiry is open, L1 to finalise, finalised', () => {
+  const toOrder = { i1: '10', i2: '20' };
+  const today = '2026-10-27';
+  assert.equal(orderStage({ toOrder, quotations: [], enquiries: [], final: null }, today), 'TO_ENQUIRE');
+  const open = { closesOn: '2026-10-30', invited: 3, replied: 1 };
+  assert.equal(orderStage({ toOrder, quotations: [a], enquiries: [open], final: null }, today), 'AWAITING_QUOTES');
+  // Everyone replied, or the closing day passed: nothing more to wait for.
+  assert.equal(orderStage({ toOrder, quotations: [a], enquiries: [{ ...open, replied: 3 }], final: null }, today), 'TO_FINALISE');
+  assert.equal(orderStage({ toOrder, quotations: [a], enquiries: [{ ...open, closesOn: '2026-10-26' }], final: null }, today), 'TO_FINALISE');
+  // Finalised comes first, even with an enquiry still open.
+  assert.equal(orderStage({ toOrder, quotations: [a], enquiries: [open], final: { quotationId: 'qa', split: false } }, today), 'READY');
+  assert.equal(orderStage({ toOrder, quotations: [a, b], enquiries: [], final: { quotationId: null, split: true } }, today), 'READY');
+});
+
+test('a finalised quote that prices nothing left (its order raised) sends the rest back to quotations', () => {
+  const today = '2026-10-27';
+  // C was finalised for i1 and ordered; i2 is left and only A and B quote it.
+  assert.equal(orderStage({ toOrder: { i1: '0', i2: '20' }, quotations: [a, b, c], enquiries: [], final: { quotationId: 'qc', split: false } }, today), 'TO_FINALISE');
+  // Its quotation deleted: the choice is gone with it.
+  assert.equal(orderStage({ toOrder: { i1: '10', i2: '20' }, quotations: [a], enquiries: [], final: { quotationId: null, split: false } }, today), 'TO_FINALISE');
+  // Quotes only for what is already ordered: the rest still needs quotations.
+  assert.equal(orderStage({ toOrder: { i1: '0', i2: '20' }, quotations: [c], enquiries: [], final: null }, today), 'TO_ENQUIRE');
+});
+
+test('finalising L1 needs no reason; anything else does', () => {
+  const ranked = rankQuotations([a, b, c], { i1: '10', i2: '20' });
+  assert.equal(finaliseProblem(ranked, { quotationId: 'qa' }, null), null);
+  assert.match(finaliseProblem(ranked, { quotationId: 'qb' }, null)!, /B is L2, not the lowest/);
+  assert.match(finaliseProblem(ranked, { quotationId: 'qb' }, 'ok')!, /at least 5/);
+  assert.equal(finaliseProblem(ranked, { quotationId: 'qb' }, 'Delivers in 2 days, A takes 3 weeks'), null);
+  assert.match(finaliseProblem(ranked, { quotationId: 'qc' }, null)!, /does not quote one item/);
+  assert.match(finaliseProblem(ranked, { quotationId: 'nope' }, 'whatever reason')!, /Choose one of the quotations/);
+  assert.equal(finaliseProblem(ranked, { split: true }, null), null);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try {
@@ -165,5 +229,5 @@ for (const [name, fn] of tests) {
     console.error(`✗ ${name}\n  ${(e as Error).message}`);
   }
 }
-console.log(`Awarding the lowest per item: ${tests.length - failed} of ${tests.length} tests pass`);
+console.log(`Awarding the lowest per item and finalising L1: ${tests.length - failed} of ${tests.length} tests pass`);
 if (failed) process.exit(1);

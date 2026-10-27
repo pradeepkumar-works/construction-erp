@@ -30,7 +30,7 @@ import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from '@/componen
 import { PaymentRequestFormModal, type RequestFor } from '@/components/payables/PaymentRequestFormModal';
 import { PaymentRequestDrawer } from '@/components/payables/PaymentRequestRecord';
 import { PaymentRequestList } from '@/components/payables/PaymentRequestList';
-import { DebitNoteList } from '@/components/payables/DebitNoteList';
+import { DebitNotesTab } from '@/components/payables/DebitNotesTab';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -551,7 +551,7 @@ export default function PayablesPage() {
               children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} scrollX={1700} emptyText="Nothing owed on any project" />,
             },
             { key: 'payments', label: 'Payments', children: <PaymentsTab projectId={projectId} vendorId={vendorId} onBill={setBill} /> },
-            { key: 'debit-notes', label: 'Debit notes', children: <DebitNoteList projectId={projectId} vendorId={vendorId} /> },
+            { key: 'debit-notes', label: 'Debit notes', children: <DebitNotesTab projectId={projectId} vendorId={vendorId} /> },
           ]}
         />
       </Card>

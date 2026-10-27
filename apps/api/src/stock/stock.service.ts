@@ -34,7 +34,11 @@ import {
   itemKey,
   normUnit,
   type ItemDuplicateGroupDto,
+  RECEIPT_BILL_WITHIN_DAYS,
+  RECEIPT_CHECK_WITHIN_DAYS,
+  type ReceiptWait,
 } from '@erp/shared';
+import { todayIn } from '../notifications/time';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -427,6 +431,11 @@ export class StockService {
     if (q.workOrderId) where.workOrderId = q.workOrderId;
     if (q.itemId) where.lines = { some: { itemId: q.itemId } };
     if (q.qc) Object.assign(where, { type: 'RECEIPT', qcStatus: q.qc === 'PENDING' ? null : q.qc });
+    if (q.waiting) {
+      const { type, ...rest } = this.waitingWhere(q.waiting, todayIn());
+      Object.assign(where, rest);
+      if (type) where.type = type;
+    }
     if (q.from || q.to) where.date = { ...(q.from ? { gte: parseDate(q.from) } : {}), ...(q.to ? { lte: parseDate(q.to) } : {}) };
     const words = searchWords(q.q);
     if (words.length)
@@ -451,6 +460,22 @@ export class StockService {
       this.prisma.stockEntry.count({ where }),
     ]);
     return paginated(rows.map((r) => this.toDto(r)), total, args);
+  }
+
+  /**
+   * Receipts waiting on a desk after the store (`RECEIPT_WAITS`): unchecked GRNs for QA/QC, GRNs against an order no
+   * live supplier bill covers for accounts, and rejected or returned material with no live debit note. The lists, My
+   * work and the hand-offs all read this one rule. Add the caller's project filter to it.
+   */
+  waitingWhere(kind: ReceiptWait, today: string): Prisma.StockEntryWhereInput {
+    const since = (days: number) => ({ gte: new Date(parseDate(today).getTime() - days * 86_400_000) });
+    if (kind === 'CHECK') return { type: 'RECEIPT', qcStatus: null, date: since(RECEIPT_CHECK_WITHIN_DAYS) };
+    if (kind === 'BILL') return { type: 'RECEIPT', purchaseOrderId: { not: null }, date: since(RECEIPT_BILL_WITHIN_DAYS), purchaseOrder: { vendorBills: { none: { status: { not: 'REJECTED' } } } } };
+    return {
+      type: { in: ['RECEIPT', 'RETURN_TO_VENDOR'] },
+      OR: [{ type: 'RETURN_TO_VENDOR' }, { lines: { some: { rejectedQty: { gt: 0 } } } }],
+      debitNotes: { none: { cancelledAt: null } },
+    };
   }
 
   async get(user: RequestUser, id: string): Promise<StockEntryDto> {
@@ -723,6 +748,7 @@ export class StockService {
       ...row.lines.map((l) => this.prisma.stockTxn.update({ where: { id: l.id }, data: { rejectedQty: rejected.get(l.id) ?? ZERO } })),
     ]);
     await this.audit.log(user, 'STOCK', id, `QC_${dto.status}`, note);
+    if (dto.status !== 'ACCEPTED') await this.notifications.onDebitToRaise(user, id);
     return this.get(user, id);
   }
 
@@ -791,6 +817,7 @@ export class StockService {
     if ('existing' in saved) return this.get(user, saved.id);
     await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} to ${to.name}`);
     await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
+    await this.notifications.onTransferSent(user, saved.id);
     return this.get(user, saved.id);
   }
 
@@ -858,6 +885,7 @@ export class StockService {
     await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
     await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} back to ${vendor.name}`);
     await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
+    await this.notifications.onDebitToRaise(user, saved.id);
     return this.get(user, saved.id);
   }
 

@@ -183,6 +183,11 @@ export class LauncherService {
     }
     add('my-work', (nodes.approvals ?? 0) + (work.sentBack?.count ?? 0) + (work.dprsMissing?.count ?? 0));
     add('watch', work.watchList?.count);
+    // Each desk's queue on the tile that opens it.
+    add('purchases.toOrder', work.toOrder?.count);
+    add('quality.grns', work.grnsToCheck?.count);
+    add('purchases.toBill', work.toMatch?.count);
+    add('accounts.debitNotes', work.toDebit?.count);
     return { nodes };
   }
 }

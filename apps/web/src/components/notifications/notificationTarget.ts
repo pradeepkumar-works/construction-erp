@@ -30,8 +30,13 @@ export function notificationHref(n: NotificationDto): string {
   if (n.entityType === 'EQUIPMENT_LOAN' && n.entityId) return `/machine-loans/${n.entityId}`;
   // Hand-offs (e2e review, fix 2): a goods receipt opens in Stock, a new project's team member opens the project.
   if (n.entityType === 'GRN') return `/stock${n.projectId ? `?projectId=${n.projectId}` : ''}`;
+  // Each desk's notice opens its own queue, not the store's register.
+  if (n.entityType === 'GRN_CHECK') return '/inspections?tab=grns';
+  if (n.entityType === 'GRN_TO_BILL') return '/vendor-bills?tab=to-bill';
+  if (n.entityType === 'DEBIT_TO_RAISE') return '/payables?tab=debit-notes&sub=to-raise';
+  if (n.entityType === 'TRANSFER_IN') return `/stock${n.projectId ? `?projectId=${n.projectId}` : ''}`;
   if (n.entityType === 'PROJECT' && n.entityId) return `/projects/${n.entityId}`;
-  if (n.type === 'HANDOFF' && n.entityType === 'MATERIAL_REQUEST' && n.entityId) return `/material-requests/${n.entityId}`;
+  if (n.type === 'HANDOFF' && n.entityType === 'MATERIAL_REQUEST' && n.entityId) return `/requests-to-order/${n.entityId}`;
   if (n.type === 'HANDOFF' && n.entityType === 'PURCHASE_ORDER' && n.entityId) return `/purchase-orders/${n.entityId}`;
   if (n.entityType && n.entityId) return `/notifications?type=${n.entityType}&id=${n.entityId}`;
   if (n.type === 'APPROVAL_DIGEST') return '/approvals';

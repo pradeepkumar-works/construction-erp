@@ -70,6 +70,7 @@ export function AwardLowestModal({
       qc.invalidateQueries({ queryKey: ['purchase-orders'] });
       qc.invalidateQueries({ queryKey: ['material-requests'] });
       qc.invalidateQueries({ queryKey: ['comparative', request.id] });
+      qc.invalidateQueries({ queryKey: ['quotations'] });
       onRaised?.(orders);
       onClose();
     },

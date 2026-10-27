@@ -458,6 +458,11 @@ export interface MyWorkCard {
    * (0 when it is due today, negative while it is still ahead); null when nothing waits. My work puts the highest first.
    */
   urgencyDays?: number | null;
+  /**
+   * Where this caller works the card's list, when it is not the card's usual page: the store sees its deliveries on its
+   * own Stock page rather than under Purchases.
+   */
+  href?: string;
 }
 
 /**
@@ -498,6 +503,12 @@ export interface MyWorkDto {
   certifiedToReceive?: MyWorkCard;
   /** Accounts: goods received against an order in the last 90 days that no supplier bill matches yet, oldest first */
   toMatch?: MyWorkCard;
+  /** QA/QC: goods received that nobody has checked yet, oldest first (Quality › Material to check) */
+  grnsToCheck?: MyWorkCard;
+  /** Accounts: material rejected at QA/QC or returned to the supplier with no debit note yet, oldest first */
+  toDebit?: MyWorkCard;
+  /** Store: material another site or store sent here that is still on the road, oldest first */
+  transfersToReceive?: MyWorkCard;
 }
 
 /** Month by month, oldest first, for the home page's KPI trends and charts (UI roadmap item 59). */
@@ -565,7 +576,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'PROJECT' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;

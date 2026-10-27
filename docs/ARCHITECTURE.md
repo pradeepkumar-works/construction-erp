@@ -496,6 +496,25 @@ bar and the page's sticky bar alike, and the six records that had a Delete besid
 RA bill, work order, subcontract bill, payment request) put it there through `useConfirmDelete`. Tests:
 `e2e/tests/order-decision.spec.ts`.
 
+**Requests to order and Finalise L1.** Purchase used to find approved requests by opening Materials and each request
+in turn. `RequestsToOrderService` (`GET /purchase-orders/requests-to-order`, `canPurchase`) lists every approved request
+with something still to order (`toOrderOf`, as everywhere), most urgent first, at its stage from the pure `orderStage`
+(`@erp/shared/purchase-queue.ts`): *No quotations yet*, *Waiting for quotations* (an enquiry still open, by
+`enquiryOpen`), *L1 to finalise* (a quotation prices something left) and *L1 finalised, PO to raise*. `rankQuotations`
+ranks the quotations by what they cost for the items still to order (each line rounded to paise, with GST, plus
+freight; ties go to the earlier quote; a quote missing an item has no rank), which gives the row its L1 and L2.
+Purchases › Requests to order is that list; a row opens `/requests-to-order/[id]`, one screen per request in four tabs:
+the enquiry (items still to order, Send enquiry, the enquiries and who replied), the quotations (validity, delivery,
+terms, the total for what is left and the rank; Record, Edit, Delete), Finalise L1 (L1 total, how far L2 is above it,
+what the lowest per item split would cost, the L1 rates against the last orders, the ranking and the comparative
+statement) and the purchase order (raised on the finalised quotation with its reason, or the split through
+`AwardLowestModal`). Finalising (`POST /material-requests/:id/finalise`) stores the choice on the request
+(`finalQuotationId` or `finalSplit`, `finalRank`, `finalReason`, `finalisedAt`, `finalisedById`) and is audited as
+`SUPPLIER_FINALISED`; a quotation other than L1, or a part quote, needs a reason (`finaliseProblem`), which the order
+then carries as why this vendor. `POST /material-requests/:id/reopen-supplier` undoes it. The approved request's
+notice and email, My work's Requests to order card (by stage, with the L1) and its launcher badge open the same screen.
+Tests: `src/scripts/purchase-award-test.ts` and `e2e/tests/requests-to-order.spec.ts`.
+
 **Where it is delivered.** `Project.siteAddress` is where suppliers deliver; `siteDeliveryAddress` falls back to the
 project's `location`. A purchase order with no address of its own takes it when it is created, the order form shows it
 as the field's placeholder, and the supplier's enquiry page shows the same address.
@@ -1919,6 +1938,18 @@ which is required unless accepted. Partly accepted takes a rejected quantity per
 the quantity received); rejected marks every line in full. It can be recorded again to correct it and is audited as
 `QC_<status>`. Stock is not changed: rejected material goes back with a return to vendor. `GET /stock/entries?qc=`
 filters by result, with `PENDING` for receipts not yet checked.
+
+**Receipts waiting on a desk.** A receipt goes from the store to three desks, and each has its own queue rather than
+the store register: `StockService.waitingWhere(kind)` (`RECEIPT_WAITS`, `GET /stock/entries?waiting=`) is *CHECK*
+(receipts in the last `RECEIPT_CHECK_WITHIN_DAYS` with no QA/QC result), *BILL* (receipts against an order in the last
+`RECEIPT_BILL_WITHIN_DAYS` whose order has no supplier bill) and *DEBIT_NOTE* (rejected lines or a return to the
+supplier with no debit note that is not cancelled). The web shows them as `WaitingReceipts` with the step that clears
+each row: Quality › Material to check (Check), Vendor bills › Received, not billed (Record bill, from the order) and
+Payables › Debit notes › To raise (Raise debit note). My work has a card for each (`grnsToCheck`, `toMatch`, `toDebit`),
+the bell tells QA/QC of a receipt (`GRN_CHECK`), accounts of one to bill (`GRN_TO_BILL`) and accounts and purchase of a
+rejection or return (`DEBIT_TO_RAISE`, `onDebitToRaise`). The store keeper's side is Stock › Deliveries expected (approved
+orders with something to come, from `/purchase-orders/status`, with Receive) and transfers on the way
+(`transfersToReceive` on My work, `TRANSFER_IN` to the receiving site's store keeper, `onTransferSent`).
 
 `GET /purchase-orders/status` (purchase order viewers; `show` PENDING, LATE or ALL, `projectId`, `vendorId`, PO date
 `from`/`to`) lists approved orders with ordered, received and pending quantity and value per line from the receipts

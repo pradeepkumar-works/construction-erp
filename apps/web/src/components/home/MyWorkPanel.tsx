@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, Col, Flex, Grid, Row, Skeleton, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import {
+  AuditOutlined,
   CarryOutOutlined,
   CheckCircleOutlined,
   CheckSquareOutlined,
@@ -18,7 +19,9 @@ import {
   RollbackOutlined,
   SafetyCertificateOutlined,
   ScheduleOutlined,
+  SendOutlined,
   ShoppingCartOutlined,
+  SyncOutlined,
   TeamOutlined,
   TruckOutlined,
   WalletOutlined,
@@ -40,11 +43,14 @@ export const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; ico
   lateDeliveries: { title: 'Late deliveries', icon: <TruckOutlined />, href: '/purchase-orders', tone: 'error' },
   lowStock: { title: 'Below minimum stock', icon: <InboxOutlined />, href: '/stock', tone: 'warning' },
   meetingActions: { title: 'Your actions from meetings', icon: <CarryOutOutlined />, href: '/meetings?view=actions&mine=1', tone: 'warning' },
-  toOrder: { title: 'Requests to order', icon: <ShoppingCartOutlined />, href: '/material-requests?status=APPROVED', tone: 'error' },
+  toOrder: { title: 'Requests to order', icon: <ShoppingCartOutlined />, href: '/requests-to-order', tone: 'error' },
   dueThisWeek: { title: 'Deliveries due this week', icon: <ScheduleOutlined />, href: '/purchase-orders?tab=status', tone: 'info' },
   staffToDecide: { title: 'Leave and overtime to decide', icon: <TeamOutlined />, href: '/staff?tab=leave', tone: 'warning' },
   certifiedToReceive: { title: 'Certified, payment to come', icon: <FileDoneOutlined />, href: '/receivables', tone: 'error' },
-  toMatch: { title: 'Goods received, no bill yet', icon: <ReconciliationOutlined />, href: '/vendor-bills', tone: 'warning' },
+  toMatch: { title: 'Goods received, no bill yet', icon: <ReconciliationOutlined />, href: '/vendor-bills?tab=to-bill', tone: 'warning' },
+  grnsToCheck: { title: 'Material to check', icon: <AuditOutlined />, href: '/inspections?tab=grns', tone: 'warning' },
+  toDebit: { title: 'Debit notes to raise', icon: <SyncOutlined />, href: '/payables?tab=debit-notes&sub=to-raise', tone: 'warning' },
+  transfersToReceive: { title: 'Material on the way', icon: <SendOutlined />, href: '/stock', tone: 'info' },
 };
 
 export const APPROVALS_TITLE = 'Waiting for your approval';
@@ -67,6 +73,9 @@ const CLEAR: Record<MyWorkKey, string> = {
   staffToDecide: 'leave and overtime',
   certifiedToReceive: 'certified bills',
   toMatch: 'goods to match with a bill',
+  grnsToCheck: 'material to check',
+  toDebit: 'debit notes to raise',
+  transfersToReceive: 'transfers on the way',
 };
 
 /**
@@ -205,10 +214,12 @@ function ApprovalsCard({ approvals, waitingDays }: { approvals: NonNullable<MyWo
 function WorkCard({ k, card }: { k: Exclude<MyWorkKey, 'approvals'>; card: MyWorkCard }) {
   const { token } = theme.useToken();
   const meta = CARDS[k];
+  // A card may point somewhere of the user's own (the store keeper's deliveries open Stock, not Purchase orders).
+  const href = card.href ?? meta.href;
   // A phone stacks the cards, so each shows its first item only and links to the rest.
   const items = Grid.useBreakpoint().sm === false ? card.items.slice(0, 1) : card.items;
   return (
-    <Frame title={meta.title} icon={meta.icon} href={meta.href} count={card.count} tone={meta.tone} amount={card.amount} overdue={card.urgencyDays == null ? undefined : card.urgencyDays > 0}>
+    <Frame title={meta.title} icon={meta.icon} href={href} count={card.count} tone={meta.tone} amount={card.amount} overdue={card.urgencyDays == null ? undefined : card.urgencyDays > 0}>
       {card.count === 0 ? (
         <Typography.Text type="secondary">Nothing to do.</Typography.Text>
       ) : (
@@ -230,9 +241,9 @@ function WorkCard({ k, card }: { k: Exclude<MyWorkKey, 'approvals'>; card: MyWor
               </Typography.Text>
             </li>
           ))}
-          {card.count > items.length && meta.href && (
+          {card.count > items.length && href && (
             <li style={{ paddingTop: token.paddingXXS }}>
-              <Link href={meta.href} className="text-link" style={{ fontSize: token.fontSizeSM }}>
+              <Link href={href} className="text-link" style={{ fontSize: token.fontSizeSM }}>
                 {card.count - items.length} more
               </Link>
             </li>
