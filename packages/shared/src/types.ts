@@ -1816,6 +1816,37 @@ export interface QuotationDto {
   createdAt: string;
 }
 
+/** A day's approved work still to measure (finding 14 of the October review), as the measure-from-progress list shows it. */
+export interface ToMeasureEntryDto {
+  id: string;
+  date: string;
+  quantity: string;
+  location: string | null;
+  activityName: string;
+  fromDpr: boolean;
+}
+
+/** A BOQ item with work approved on site that no measurement sheet holds yet. */
+export interface ToMeasureItemDto {
+  boqItemId: string;
+  itemNo: string;
+  description: string;
+  unit: string;
+  rate: string;
+  /** Approved on site, through the activities of this BOQ item */
+  executedQty: string;
+  /** What the item's sheets already hold, all but the rejected ones */
+  measuredQty: string;
+  /** Executed less measured, never below zero */
+  toMeasureQty: string;
+  /** Its value at the BOQ rate */
+  toMeasureAmount: string;
+  /** The days that make it up, oldest first */
+  entries: ToMeasureEntryDto[];
+  /** Activities of this item that record another unit, so their days are not offered */
+  otherUnitActivities: string[];
+}
+
 /** Quotations of one request side by side: per line, each vendor's rate and the lowest. */
 export interface ComparativeStatementDto {
   materialRequestId: string;

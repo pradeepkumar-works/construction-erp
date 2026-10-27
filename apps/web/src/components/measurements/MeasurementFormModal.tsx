@@ -45,10 +45,12 @@ const LINE_GRID = { display: 'grid', gridTemplateColumns: '2.4fr 0.8fr 1fr 1fr 1
 const n = (v: string | null) => (v === null ? null : Number(v));
 const str = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
-/** Lines and remarks a new sheet starts with, e.g. measures taken off a drawing (item 118). */
+/** Lines and remarks a new sheet starts with, e.g. measures taken off a drawing (item 118) or approved progress. */
 export interface MeasurementPrefill {
   lines: LineValues[];
   remarks?: string;
+  /** Where it was measured, when what filled the lines in knows */
+  location?: string;
 }
 
 /** Record a measurement sheet against a BOQ item, or (with `sheet`) fix a returned one and resubmit it. */
@@ -104,7 +106,7 @@ export function MeasurementFormModal({
         photos: sheet.attachments,
       });
     } else {
-      form.setFieldsValue({ projectId, boqItemId, date: dayjs(), lines: prefill?.lines.length ? prefill.lines : [{ nos: 1 }], remarks: prefill?.remarks });
+      form.setFieldsValue({ projectId, boqItemId, date: dayjs(), lines: prefill?.lines.length ? prefill.lines : [{ nos: 1 }], remarks: prefill?.remarks, location: prefill?.location });
     }
   }, [open, projectId, boqItemId, sheet, prefill, form]);
 

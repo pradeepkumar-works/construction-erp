@@ -42,3 +42,37 @@ export function measureOverBoq(f: { boqQty: number; before: number; sheet: numbe
   const after = round3(f.before + f.sheet);
   return after > cap ? { cap, after } : null;
 }
+
+/** An approved day's work on a BOQ item, in the order it was done, as the measure-from-progress list reads it. */
+export interface ProgressForMeasure {
+  id: string;
+  date: string;
+  /** The approved quantity recorded that day, in the BOQ item's unit */
+  quantity: number;
+  /** Chainage, floor, village or whatever the entry named */
+  location: string | null;
+  activityName: string;
+  /** Whether it came in on a daily report rather than on its own */
+  fromDpr: boolean;
+}
+
+/**
+ * What is still to measure on a BOQ item (finding 14 of the October review). The QS used to read the DPRs and type the
+ * quantities again; the sheets hold no link to the days they came from, so the oldest work is taken as measured first:
+ * `measured` (approved and waiting sheets together) is walked off the entries in date order, and what is left over —
+ * including the remainder of the day the measurement stopped in the middle of — is what the sheet starts with.
+ */
+export function unmeasuredEntries(entries: ProgressForMeasure[], measured: number): ProgressForMeasure[] {
+  let left = Math.max(0, measured);
+  const out: ProgressForMeasure[] = [];
+  for (const e of [...entries].sort((a, b) => (a.date === b.date ? a.id.localeCompare(b.id) : a.date < b.date ? -1 : 1))) {
+    if (e.quantity <= 0) continue;
+    if (left >= e.quantity) {
+      left = round3(left - e.quantity);
+      continue;
+    }
+    out.push(left > 0 ? { ...e, quantity: round3(e.quantity - left) } : e);
+    left = 0;
+  }
+  return out;
+}
