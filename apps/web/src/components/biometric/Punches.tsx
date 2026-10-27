@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Form, Select, Space, Table, Typography, Upload } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Button, DatePicker, Form, Select, Space, Table, Typography, Upload } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps, UploadProps } from 'antd';
 import { UploadOutlined } from '@/components/common/icons';
@@ -102,7 +101,7 @@ export function Punches() {
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <Space wrap>
-          <DatePicker value={date} onChange={(d) => d && setDate(d)} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} aria-label="Day" />
+          <DatePicker value={date} onChange={(d) => d && setDate(d)} allowClear={false} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} aria-label="Day" />
           <Select allowClear placeholder="Every device" value={deviceId} onChange={setDeviceId} options={(devices ?? []).map((d) => ({ value: d.id, label: d.name }))} style={{ minWidth: 180 }} aria-label="Device" />
           <Select allowClear placeholder="Any result" value={result} onChange={setResult} options={BIOMETRIC_PUNCH_RESULTS.map((r) => ({ value: r, label: BIOMETRIC_PUNCH_RESULT_LABELS[r] }))} style={{ minWidth: 150 }} aria-label="Attendance" />
         </Space>

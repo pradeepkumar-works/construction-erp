@@ -45,7 +45,6 @@ export class NotificationSchedulerService implements OnModuleInit, OnModuleDestr
     await this.runIfDue('COMPLIANCE_DUE', digestAt, now, today, () => this.jobs.complianceDue(today));
     await this.runIfDue('HANDOVER_DUE', digestAt, now, today, () => this.jobs.handoverDue(today));
     await this.runIfDue('WATCH_LIST', digestAt, now, today, () => this.jobs.watchList(today));
-    await this.runIfDue('RECEIPTS_WEEKLY', digestAt, now, today, () => this.jobs.receiptsWeekly(today));
     if (now.endsWith(':00')) await this.runIfDue(`ESCALATION_${now}`, now, now, today, () => this.jobs.approvalEscalation());
   }
 

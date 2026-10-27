@@ -21,15 +21,13 @@ type Tone = 'warning' | 'error' | 'info';
  * What each kind of user leads with, the same order as the web home (apps/web/src/components/home/layout.ts). Order
  * only: the API leaves out a card the role may not see.
  */
-const ORDERS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores' | 'hr' | 'qs' | 'site', MyWorkKey[]> = {
-  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'certifiedToReceive', 'expiring', 'lateDeliveries', 'toOrder', 'staffToDecide', 'dprsMissing', 'lowStock', 'toMatch', 'dueThisWeek', 'meetingActions', 'sentBack', 'waitingWithOthers'],
-  manager: ['approvals', 'watchList', 'meetingActions', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'dueThisWeek', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
-  accounts: ['payablesDue', 'certifiedToReceive', 'toMatch', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'sentBack', 'waitingWithOthers'],
-  purchase: ['toOrder', 'lateDeliveries', 'dueThisWeek', 'approvals', 'watchList', 'lowStock', 'meetingActions', 'sentBack', 'waitingWithOthers'],
-  stores: ['dueThisWeek', 'lateDeliveries', 'lowStock', 'watchList', 'approvals', 'meetingActions', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
-  hr: ['staffToDecide', 'approvals', 'watchList', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+const ORDERS: Record<'director' | 'manager' | 'accounts' | 'stores' | 'qs' | 'site', MyWorkKey[]> = {
+  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+  manager: ['approvals', 'watchList', 'meetingActions', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
+  accounts: ['payablesDue', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+  stores: ['lateDeliveries', 'lowStock', 'watchList', 'approvals', 'meetingActions', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
   qs: ['sentBack', 'waitingWithOthers', 'approvals', 'meetingActions', 'receivables', 'dprsMissing'],
-  site: ['sentBack', 'meetingActions', 'waitingWithOthers', 'dprsMissing', 'approvals', 'dueThisWeek', 'lateDeliveries', 'lowStock', 'staffToDecide'],
+  site: ['sentBack', 'meetingActions', 'waitingWithOthers', 'dprsMissing', 'approvals', 'lateDeliveries', 'lowStock'],
 };
 
 function myWorkOrder(role: RoleKey): MyWorkKey[] {
@@ -42,12 +40,9 @@ function myWorkOrder(role: RoleKey): MyWorkKey[] {
       return ORDERS.manager;
     case 'ACCOUNTS_MANAGER':
       return ORDERS.accounts;
-    case 'PROCUREMENT_MANAGER':
-      return ORDERS.purchase;
     case 'STORE_MANAGER':
+    case 'PROCUREMENT_MANAGER':
       return ORDERS.stores;
-    case 'HR_MANAGER':
-      return ORDERS.hr;
     case 'QUANTITY_SURVEYOR':
       return ORDERS.qs;
     default:
@@ -67,11 +62,6 @@ const CARDS: Record<CardKey, { title: string; icon: keyof typeof Ionicons.glyphM
   lowStock: { title: 'Below minimum stock', icon: 'file-tray-stacked-outline', tone: 'warning', route: '/stock' },
   watchList: { title: 'Watch list', icon: 'eye-outline', tone: 'warning', route: null },
   meetingActions: { title: 'Your actions from meetings', icon: 'checkbox-outline', tone: 'warning', route: null },
-  toOrder: { title: 'Requests to order', icon: 'cart-outline', tone: 'error', route: null },
-  dueThisWeek: { title: 'Deliveries due this week', icon: 'calendar-outline', tone: 'info', route: null },
-  staffToDecide: { title: 'Leave and overtime to decide', icon: 'people-outline', tone: 'warning', route: '/staff' },
-  certifiedToReceive: { title: 'Certified, payment to come', icon: 'document-attach-outline', tone: 'error', route: null },
-  toMatch: { title: 'Goods received, no bill yet', icon: 'git-compare-outline', tone: 'warning', route: null },
 };
 
 const TONES: Record<Tone, { fg: string; bg: string }> = {
@@ -89,7 +79,6 @@ const PHONE_ROUTES: [RegExp, (id: string) => string][] = [
   [/^\/purchase-orders\/([^/?]+)$/, (id) => `/purchase-order/${id}`],
   [/^\/bills\/([^/?]+)$/, (id) => `/bill/${id}`],
   [/^\/stock$/, () => '/stock'],
-  [/^\/staff(\?.*)?$/, () => '/staff'],
 ];
 
 function phoneRoute(href: string): string | null {

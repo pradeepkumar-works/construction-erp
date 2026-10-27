@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, Form, Input, InputNumber, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, ProgressEntryDto } from '@erp/shared';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -146,7 +145,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
             />
           </Form.Item>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} {...aiFlagItem(draft, 'date', date)}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>

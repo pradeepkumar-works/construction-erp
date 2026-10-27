@@ -154,7 +154,6 @@ async function main() {
     await seedReceipts(org.id);
     await seedVendors(org.id);
     await seedPurchasing(org.id);
-    await seedSplitQuotes(org.id);
     await seedSubcontracts(org.id);
     await seedPayables(org.id);
     await seedPaymentRequests(org.id);
@@ -217,17 +216,14 @@ async function main() {
   const projects = [
     {
       code: 'RD-2026-01', name: 'Bhubaneswar - Puri Highway Widening (Km 12 to Km 28)', type: 'ROAD' as const, client: 'Odisha Works Department', consultant: 'LEA Associates', location: 'Khordha, Odisha',
-      site: 'Project site store, Km 16+400, Bhubaneswar - Puri road, Khordha 752055. Store in charge on site, 7 am to 7 pm.',
       wo: 'WO/OWD/2025/0417', start: -120, end: 240, value: '186500000.00', pm: 'pm@demo.com', members: ['tl@demo.com', 'engineer@demo.com', 'store@demo.com', 'qs@demo.com', 'qaqc@demo.com'], boq: ROAD_BOQ, engineer: 'engineer@demo.com',
     },
     {
       code: 'BL-2026-02', name: 'District Hospital Block B (G+3)', type: 'BUILDING' as const, client: 'Dept. of Health & Family Welfare', consultant: 'Shilpa Architects', location: 'Cuttack, Odisha',
-      site: 'Site store, District Hospital campus, Ring Road, Cuttack 753001. Deliveries at gate 2.',
       wo: 'WO/DHFW/2025/1188', start: -90, end: 300, value: '94200000.00', pm: 'pm2@demo.com', members: ['engineer2@demo.com', 'store@demo.com', 'qs@demo.com', 'qaqc@demo.com'], boq: BUILDING_BOQ, engineer: 'engineer2@demo.com',
     },
     {
       code: 'WS-2026-03', name: 'Jajpur Rural Piped Water Supply Scheme', type: 'WATER_SUPPLY' as const, client: 'RWSS Odisha (Jal Jeevan Mission)', consultant: 'WAPCOS', location: 'Jajpur, Odisha',
-      site: 'Scheme store, WTP site, Dharmasala block, Jajpur 755007.',
       wo: 'WO/RWSS/2025/0922', start: -150, end: 420, value: '312000000.00', pm: 'pm@demo.com', members: ['tl@demo.com', 'engineer@demo.com', 'engineer2@demo.com', 'store@demo.com', 'procurement@demo.com'], boq: WATER_BOQ, engineer: 'engineer@demo.com',
     },
   ];
@@ -236,7 +232,7 @@ async function main() {
   for (const p of projects) {
     const project = await prisma.project.create({
       data: {
-        organizationId: org.id, code: p.code, name: p.name, type: p.type, status: 'ACTIVE', clientName: p.client, consultantName: p.consultant, location: p.location, siteAddress: p.site,
+        organizationId: org.id, code: p.code, name: p.name, type: p.type, status: 'ACTIVE', clientName: p.client, consultantName: p.consultant, location: p.location,
         workOrderNo: p.wo, startDate: day(p.start), endDate: day(p.end), contractValue: D(p.value), projectManagerId: users.get(p.pm)!,
         members: { create: p.members.map((m) => ({ userId: users.get(m)! })) },
       },
@@ -370,7 +366,6 @@ async function main() {
   await seedReceipts(org.id);
   await seedVendors(org.id);
   await seedPurchasing(org.id);
-  await seedSplitQuotes(org.id);
   await seedSubcontracts(org.id);
   await seedPayables(org.id);
   await seedPaymentRequests(org.id);
@@ -2277,18 +2272,6 @@ const DEMO_POS: [string, string, number, number, [number, number][], [string, nu
 ];
 
 /**
- * A request still to be ordered, quoted by two suppliers who each win one item (finding 12 of the October review), so
- * Award lowest per item has something to split: [project type, rate and GST % per line per vendor].
- */
-const DEMO_SPLIT: [string, [string, number, [number, number][]][]] = [
-  'ROAD',
-  [
-    ['Kalinga Bitumen & Aggregates', 0, [[48200, 18], [1210, 5]]],
-    ['Konark Aggregates & Minerals', 3000, [[49100, 18], [1145, 5]]],
-  ],
-];
-
-/**
  * Demo purchasing on the first approved request of the building and road projects: quotations (the building one from
  * two vendors, for the comparative statement), an approved PO to the vendor that supplied it, and the GRN already
  * received against the request moved onto that PO. The building PO has a vendor bill waiting for approval whose
@@ -2376,36 +2359,6 @@ async function seedPurchasing(organizationId: string) {
         { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'CREATED', actorId: accounts, createdAt: day(-1) },
         { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'SUBMITTED', actorId: accounts, createdAt: day(-1) },
       ],
-    });
-  }
-}
-
-/**
- * Quotations from two suppliers on a request nothing has been ordered on, each cheaper on one item, so the comparative
- * statement offers Award lowest per item (finding 12 of the October review). Only when the request has no quotations.
- */
-async function seedSplitQuotes(organizationId: string) {
-  const [type, quotes] = DEMO_SPLIT;
-  const buyer = (await prisma.user.findFirst({ where: { organizationId, role: { key: 'PROCUREMENT_MANAGER' } }, select: { id: true } }))?.id;
-  if (!buyer) return;
-  const mr = await prisma.materialRequest.findFirst({
-    where: { organizationId, status: 'APPROVED', project: { type: type as never }, quotations: { none: {} }, purchaseOrders: { none: {} } },
-    include: { items: { orderBy: { sortOrder: 'asc' } } },
-    orderBy: { createdAt: 'asc' },
-  });
-  if (!mr || mr.items.length < 2) return;
-  for (const [name, freight, rates] of quotes) {
-    const vendor =
-      (await prisma.vendor.findFirst({ where: { organizationId, name } })) ??
-      (await prisma.vendor.create({
-        data: { organizationId, name, kinds: ['SUPPLIER'], gstin: '21AAFCM2847K1Z8', pan: 'AAFCM2847K', stateCode: '21', contactPerson: 'S. Patra', phone: '9437556677', address: 'Cuttack Road, Bhubaneswar' },
-      }));
-    await prisma.quotation.create({
-      data: {
-        organizationId, projectId: mr.projectId, materialRequestId: mr.id, vendorId: vendor.id, quoteDate: day(-2), validUntil: day(28), deliveryDays: 10, freight: D(freight),
-        paymentTerms: '30 days from invoice', createdById: buyer, createdAt: day(-2),
-        lines: { create: rates.map(([rate, gst], i) => ({ materialRequestItemId: mr.items[i].id, rate: D(rate), gstRate: D(gst) })) },
-      },
     });
   }
 }

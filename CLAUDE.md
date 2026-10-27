@@ -80,11 +80,7 @@ and the pre-delivery checklist.
 - Notifications: the bell opens the drawer in `components/notifications/NotificationBell.tsx`; a new `NOTIFICATION_TYPES` entry
   needs its tab in `NOTIFICATION_TAB_OF` (`packages/shared/src/notifications.ts`) and its link in `notificationTarget.ts`.
   Page-level notices (read-only, deletion, support, offline) are entries in `useShellMessages` (`components/shell/MessageBar.tsx`),
-  never a separate `Alert` above the page. An action that waits on someone carries an email too: pass `email: { href, cta }`
-  to `notify` / `handoff` (ARCHITECTURE "An email for every action that waits on someone"). Where the reader may have no
-  login, the email is the thing itself, rendered by a pure function with a test: `poEmail` for an order, `billEmail`
-  (`apps/api/src/ra-bills/ra-bill-email.ts`) for an RA bill. A weekly round-up is a job that gates itself to Monday and
-  dedupes on that Monday (`receiptsWeekly`, over the pure `receipt-week.ts`); keep `src/scripts/action-email-test.ts` passing.
+  never a separate `Alert` above the page.
 - Lists: a submission list page uses `useListFrame` (`components/list/useListFrame.tsx`: filters in the URL via
   `useListPage`, views, chips, chosen columns) and `DataTable` (`ListColumn` with a stable `key`, row click, `RowActions`
   menu, bulk bar, page totals). A list with saved views is a key in `SAVED_VIEW_LISTS` (`packages/shared/src/views.ts`).
@@ -116,9 +112,7 @@ and the pre-delivery checklist.
   `pointer: coarse` block of `globals.css`. Running text with links is a `<p>`; a row that opens something is 44 px high.
 - Records: a submission's drawer and its own page (`/dpr/[id]`, `/bills/[id]`, …) are one `XRecord` component on
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
-  export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`. Only the deciding buttons
-  go in `actions`; a delete or anything else that cannot be taken back is a `RecordMenuAction` in `more` (the ⋯ menu,
-  through `useConfirmDelete`), never a tap from Approve.
+  export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`.
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
   decision bar). Every submission type has a page; a new type adds one line in `RECORD_PAGES` and one in `ApprovalPane`
   (`components/approvals/`), or the pane falls back to a summary with Open details.
@@ -137,38 +131,12 @@ and the pre-delivery checklist.
   `src/scripts/launcher-test.ts` passing); a node is New by default with `newUntil`, and admins override it in Admin › Home tiles.
 - My work (`app/(app)/my-work/page.tsx`): what each role leads with is `homeLayout(role)` in `components/home/layout.ts` (order only;
   the API's `GET /dashboard/my-work` and `/dashboard/trends` in `HomeService` leave out what a role may not see). A new My work
-  card is a key on `MyWorkDto`, a block in `HomeService.myWork`, a line in `MyWorkPanel`'s `CARDS` and `CLEAR`, its place in
-  `homeLayout` and in the phone's `ORDERS`/`CARDS` (`apps/mobile/src/components/MyWork.tsx`, title in Hindi). Home's Waiting
-  for you shows the top three of the same cards (`WaitingForYou`). Charts use
+  card is a key on `MyWorkDto`, a block in `HomeService.myWork` and a line in `MyWorkPanel`'s `CARDS`. Charts use
   `@ant-design/plots` from `components/home/charts.tsx`, loaded with `dynamic(..., { ssr: false })`.
 - Work breakdown (item 125, ARCHITECTURE "Work breakdown"): project progress is `rollUp` in `@erp/shared/wbs.ts` (through
   `physicalProgress` in `src/common/progress.ts`), never a sum of its own; an activity with sub-activities takes no
   progress. A new kind of component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in
   `element-templates.ts`; keep `src/scripts/wbs-rollup-test.ts` passing.
-- Purchase (ARCHITECTURE "Small purchase items"): the split of a request between the vendors who quoted lowest per item is
-  `awardLowestPerItem` (`@erp/shared/purchase-award.ts`), shared by the preview and `PurchaseOrdersService.awardLowest`,
-  which raises each draft order through its own `create`; where an order is delivered with no address of its own is
-  `siteDeliveryAddress` over `Project.siteAddress`, and a link sent by hand goes through `whatsAppShareUrl`
-  (`@erp/shared/messaging.ts`), never a `wa.me` string of a screen's own. Keep `src/scripts/purchase-award-test.ts` passing.
-- Activities and the BOQ (ARCHITECTURE "Linking activities to BOQ items"): which BOQ item an activity is offered is
-  `boqLinkSuggestions` over `nameMatch` (`@erp/shared/boq-links.ts`), never a match of a screen's own; the user keeps the
-  offers and `PlanningService.linkBoq` sets `boqItemId` (taking the item's unit and quantity only where the activity has
-  none). Activities created with no dates are placed by `spreadUndated` (`@erp/shared/templates.ts`) when a start date
-  first arrives, through `TemplatesService.spreadUndated`. Keep `src/scripts/boq-links-test.ts` passing.
-- Standard norms (ARCHITECTURE "Material reconciliation"): the starting figures a project adopts are `STANDARD_NORMS`
-  (`@erp/shared/norms-library.ts`) and a BOQ item is read as one of them only by `standardNormFor`; adopting goes through
-  `ReconciliationService.adoptStandardNorms` (never a second write path), which leaves an item that already has norms
-  alone. Keep `src/scripts/norms-library-test.ts` passing.
-- Measure from progress (ARCHITECTURE "Measurement book"): what a BOQ item still has to measure comes from
-  `MeasurementsService.toMeasure` (`GET /measurements/to-measure`), whose choice of days is pure in `unmeasuredEntries`
-  (`@erp/shared/measurement.ts`: the measured quantity walked off the approved entries oldest first); only activities in
-  the item's own unit count. A sheet starts from them through `MeasurementPrefill`, never a second set of rules. Keep
-  `src/scripts/measure-from-progress-test.ts` passing.
-- What a form already knows (ARCHITECTURE "What a form already knows"): a new project's code comes from
-  `nextProjectCode` (`@erp/shared/project-code.ts`) through `GET /projects/next-code`, a PAN from `panFromGstin`
-  (`@erp/shared/contract.ts`), and a new user's teams from `POST /users { projectIds }`, which joins them only through
-  `ProjectsService.addToProjects`. A form fills a box it filled itself, never one someone typed. Keep
-  `src/scripts/small-fixes-test.ts` passing.
 - Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line
@@ -224,12 +192,6 @@ and the pre-delivery checklist.
   `DocumentTextService`, searched with Postgres full-text search); a new kind of filed PDF is a branch in its `pendingWhere`
   and search join. `search_documents` never reads files itself. Sample contracts and their questions are
   `src/documents/demo-contracts.ts`; keep `src/scripts/contract-search-test.ts` passing when changing search words.
-- Reading documents (item 70; work orders and BOQs, finding 10 of the October review; ARCHITECTURE "Reading invoices,
-  challans, drawings, work orders and BOQs"): a new kind is a key in `DOC_READ_KINDS` with its fields (`@erp/shared/doc-read.ts`),
-  a guide in `docReadPrompt`, a stand-in reading in `FAKE_READS` (`src/ai/model.ts`) and the form's own right in
-  `AiReadService.assertMayRead`; the checks are code in `normalise`. A form that reads a file keeps it with
-  `useKeepReadFile` (never its own upload call) and takes a read date only through `readDateReason` over the pure
-  `readDateProblem`, passing the reason to `readFieldProps` so the field goes amber. Keep `src/scripts/doc-read-test.ts` passing.
 - Site photo checks (item 76, `apps/api/src/photo-checks`, ARCHITECTURE "Site photo checks"): a record's photos go to the model
   through `PhotoChecksService`, which loads the record with its own service; flags are advice and never gate a submission.
   A record with photos shows them with `photosSection(kind, id, attachments)` / `PhotosWithChecks`; a new flag is a key in
@@ -287,22 +249,6 @@ and the pre-delivery checklist.
   and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
   filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`
   (tested in `src/scripts/supplier-test.ts`, CI runs it); web pages under `app/(app)/supplier`, the company's side at `/supplier-inbox`.
-- Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
-  lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
-  anything that writes attendance calls `assertUnlocked`.
-- Project setup (ARCHITECTURE "Setting up a project"): a new project's terms come from `termsFor` / `COPIED_TERMS` in
-  `@erp/shared/project-setup.ts` (copied project, else the client's usual terms, else `STANDARD_TERMS`), never zeros; the
-  Overview checklist is `setupSteps` over `ProjectSetupService.facts`, so a new step is a key in `SETUP_STEPS`, a fact and
-  its words in `ProjectSetup.tsx`. Keep `src/scripts/project-setup-test.ts` passing.
-- Security (ARCHITECTURE "Signing in and headers"): sign-in and reset requests go through `LoginGuardService` (rules in
-  `auth/login-guard-rules.ts`, keep `src/scripts/login-guard-test.ts` passing); a password change sets `User.tokensValidAfter`.
-  The web's CSP is in `next.config.ts`: a page that loads from a new outside service adds it there.
-- Input checks (ARCHITECTURE "Measurement book", Other input checks): a quantity field is `@IsQuantity()` (`src/common/quantity.ts`),
-  a day's record calls `assertNotAfterToday`, and a web date field is `DatePicker` from `components/common/DatePicker` (it reads
-  typed dates in the common formats; ESLint refuses antd's). Keep `src/scripts/validation-test.ts` passing.
-- Item names (ARCHITECTURE "Stock", One name per item): a request or order line's item is `ItemPicker` on the web and is saved
-  through `asMasterNames` (`apps/api/src/stock/item-master.ts`); anything that finds an item by a typed name uses `masterItemFor`
-  (`@erp/shared/items.ts`, aliases included), never a name match of its own. Keep `src/scripts/items-test.ts` passing.
 - Central store (item 106, ARCHITECTURE "Stock"): a store or yard is a project of type `STORE`; its stock is the normal
   stock service. Sites see store stock through `ProjectAccessService.stockSourceWhere`, never a role check of their own;
   anything per site that a store has no part in (DPRs, progress) filters `type: { not: 'STORE' }`. Pages at `/stores`.

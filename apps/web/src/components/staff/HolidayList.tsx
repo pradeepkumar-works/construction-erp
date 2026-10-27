@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Select, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { HolidayDto } from '@erp/shared';
@@ -98,7 +97,7 @@ export function HolidayList() {
       <FormShell open={adding} onClose={() => setAdding(false)} form={form} layout="modal" title="New holiday" okText="Save" onSubmit={(v) => add.mutateAsync(v)} projectDefault={false}>
         <Form form={form} layout="vertical">
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
           <Form.Item name="name" label="Holiday" rules={[{ required: true, whitespace: true, message: 'Name the holiday' }]}>
             <Input maxLength={100} placeholder="Ratha Yatra" />

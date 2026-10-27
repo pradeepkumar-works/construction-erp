@@ -64,8 +64,3 @@ export class ListMeasurementsQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Only entries created by the current user' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.measurements, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.measurements as unknown as string[]) sortBy?: MeasurementSortField;
 }
-
-/** The project whose unmeasured work to list (finding 14 of the October review). */
-export class ToMeasureQuery {
-  @ApiProperty() @IsUUID() projectId: string;
-}

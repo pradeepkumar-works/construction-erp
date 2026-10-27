@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, InputNumber, Select, TimePicker } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, DatePicker, Form, Input, InputNumber, Select, TimePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, SafetyIncidentDto, SafetyIncidentType } from '@erp/shared';
@@ -114,7 +113,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
               <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Near miss, first aid…" options={SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))} />
             </Form.Item>
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
             </Form.Item>
             <Form.Item name="time" label="Time">
               <TimePicker style={{ width: '100%' }} format="HH:mm" minuteStep={5} />

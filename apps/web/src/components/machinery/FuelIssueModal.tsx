@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Form, Input, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { MAX_PAGE_SIZE, fuelNormText, meterUnit } from '@erp/shared';
 import { useEquipment, useFuelIssue, useProjects, useStockBalances } from '@/lib/queries';
@@ -89,7 +88,7 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
             />
           </Form.Item>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="itemId" label="Fuel" rules={[{ required: true, message: 'Choose the fuel' }]}>
             <Select

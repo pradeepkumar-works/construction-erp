@@ -55,26 +55,6 @@ shapes of every API response, so web, mobile and API agree on one contract.
 - A submitter cannot approve their own entry unless they also hold an approver role.
 - `ProjectAccessService` is the single place that encodes these rules; every service calls it.
 
-### Signing in and headers (finding 5 of the October review)
-
-- **Guessing.** `LoginGuardService` counts failed sign-ins in `AuthAttempt` (a platform table, no organisation, left out
-  of company data; rows over a day old are removed as new ones come in). Five wrong passwords for an email in 15 minutes
-  lock it for 15 minutes from the fifth, whatever comes next; 30 failures from one address (first `x-forwarded-for`
-  hop) hold it off. Both answer 429 with when to try again. A good password clears the email's failures. Reset links:
-  5 an hour per email and 20 per address, past which nothing is sent and the answer is the same. Rules pure in
-  `auth/login-guard-rules.ts`, tested in `src/scripts/login-guard-test.ts`.
-- **Sessions.** `User.tokensValidAfter` is set when the password changes (own change, reset link, admin) and the JWT
-  strategy refuses a token issued before it, so a leaked session ends with the password. `POST /auth/change-password`
-  returns a fresh `accessToken` for the session that made the change. Tokens still last `JWT_EXPIRES_IN` (7 days): the
-  phone's outbox works offline for days, so a short token with refresh is left for when the phone stores a refresh
-  token securely.
-- **Headers.** The API (`common/security-headers.ts`): `nosniff`, `Referrer-Policy`, HSTS over HTTPS, and
-  `default-src 'none'; frame-ancestors 'none'` with `X-Frame-Options: DENY` on every answer but stored files (framed
-  only by `CORS_ORIGINS`, for the document viewer) and Swagger. A stored HTML, SVG or XML file opens sandboxed. The web
-  (`next.config.ts`): a CSP allowing this site, the API (`NEXT_PUBLIC_API_URL`), Razorpay checkout, Vercel Blob uploads
-  and Google Fonts for printouts, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff` and HSTS. A new outside
-  service a page loads from is a line in that CSP.
-
 ## One approval workflow
 
 `SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material
@@ -100,36 +80,6 @@ free. A type can register `onApproved` (run after approval) and `beforeApprove` 
 hold points use the latter on progress. The clients keep a few per-type maps (web drawers on the approvals and notifications pages,
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
-
-**Who is told.** An approval ask goes to the approvers on the project (its manager and members) through
-`NotificationsService.onProjectFirst`; company-wide approvers (management, admin) are asked only when nobody on the
-project may decide the entry, such as one above the PM's limit, and see the rest in the daily digest. When a step is
-done, `NotificationsService.handoff` tells the role that acts next (`HANDOFF`, "Your turn"): an approved material request
-to procurement, an approved PO to the project's store, a GRN to the requester, QA/QC and (against a PO) accounts, a
-client certificate to accounts, a client receipt to the PM and management, a DPR remark that `classifyRemark` reads as an
-excusable hindrance to the PM with the notice date, a supplier's bill that misses its order to purchase and the PM
-(`onVendorBillExceptions`, with the mismatch in the notice), and a new team member. Hand-offs, send-backs, leave to
-decide and approvals waiting past their hours are also emailed (`NotifyInput.email`) to users with `emailAlerts` on (the
-default; Notifications › Alerts).
-
-### An email for every action that waits on someone (finding 18 of the October review)
-
-A notice that only rings the bell is missed by whoever is not in the app that day, so each action that waits on someone
-carries an email with the button that does it. Two of them are the thing itself rather than a link, because the reader
-may have no login:
-
-- **The RA bill in the client engineer's inbox.** "Mark sent" (`RaBillsService.send`) mails the bill to the project's
-  guests (`projectGuests`, their `emailAlerts` on) through the pure `billEmail` (`ra-bill-email.ts`): the same items,
-  quantities, rates, deductions and net as the printed bill, so it prints to a PDF from any mail app, with the portal
-  button to certify it and the QS to reply to when there is no login. Beyond `BILL_EMAIL_ITEMS` items it names the rest
-  and leaves them to the portal. Same shape as `poEmail` for the vendor's order.
-- **Last week's money in.** `NotificationJobsService.receiptsWeekly` runs on Mondays with the digest: the week's client
-  receipts per project to management and to each project's manager, once per person per week
-  (`dedupeKey RECEIPTS_WEEKLY:<Monday>`), in the app and by email. Each receipt is told as it is recorded too
-  (`onClientReceipt`); this is the week read at once. The arithmetic and the wording are pure in `receipt-week.ts`
-  (`receiptWeek`, null for a week with no money in, so an empty week sends nothing).
-
-Both are tested without a database in `src/scripts/action-email-test.ts` (CI runs it).
 
 ### Navigation tree and module screens (v6 item 98, launcher phase 1)
 
@@ -165,13 +115,7 @@ submission types, and, if it has figures, a branch in `ModuleHomeService.figures
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search
 box over the navigation tree, the person's pinned tiles, Recent, and every module they can open as a `TileGrid`. The old
 dashboard is the My work page (`/my-work`, a tile of its own); `homeLayout(role)` and `HomeService` still decide what it
-shows. Each desk has a queue of its own there (finding 8 of the October review): **Requests to order** (`toOrder`,
-`canPurchase`: approved material requests with something left to order, by the day needed), **Deliveries due this week**
-(`dueThisWeek`, purchase and store roles that see orders), **Leave and overtime to decide** (`staffToDecide`, the Staff
-page's Waiting on me rule `leaveDeciderWhere`; HR always, anyone else while something waits), **Certified, payment to come**
-(`certifiedToReceive`, `canRecordReceipt`: open client bills with a certificate) and **Goods received, no bill yet**
-(`toMatch`, `canRecordVendorBill` and `canViewPayables`: GRNs against an order in the last 90 days whose order has no supplier
-bill, valued at the order's rates). Purchase and HR have layouts of their own. The `home` node has `tile: false`, so it is a sidebar link but never a tile.
+shows. The `home` node has `tile: false`, so it is a sidebar link but never a tile.
 
 - **Search** filters the tree by label, keywords, description and module, every word matching, labels that start with the
   text first (up to 12). Enter opens the first match; with none, "Search records for …" hands the text to Search (Ctrl K) through `requestSearch`
@@ -189,10 +133,6 @@ bill, valued at the order's rates). Purchase and HR have layouts of their own. T
   approvals waiting for the person on the Approvals tile and on each module by `MODULE_SUBMISSION_TYPES`, approvals plus
   entries sent back plus missing daily reports on My work, and the watch list's count on Watch list.
 - **Old favourites.** The localStorage favourites and recent pages from before are sent once to `POST /launcher/import`.
-- **Waiting for you** (finding 8 of the October review, `components/launcher/WaitingForYou.tsx`) is Home's first section:
-  the three most pressing of the person's My work cards, in My work's own order (`myWorkOrder` over `homeLayout(role)`),
-  each a line with its count and most pressing entry that opens the card's list, then All my work. It reads the same
-  `GET /dashboard/my-work`, so it never shows what My work would not.
 
 Both tables are tenant tables with `tenant_isolation` policies (migration `20261205090000_launcher_pins`).
 
@@ -448,7 +388,7 @@ under the `company-today` cache key, so the tiles show offline with the last fig
 ### Small purchase items (v5 item 95)
 
 **Stock first.** A material request's lines are free text; `StockService.requestStock` matches each to the item master
-by name and unit (`masterItemFor`, adding nothing) and sums `StockTxn` per project over the projects the user can see:
+by name and unit (ignoring case, adding nothing) and sums `StockTxn` per project over the projects the user can see:
 what the request's own site holds and what the others hold. Take from stock (`POST /material-requests/:id/cover`, store
 keepers of the sending site, approved requests only) is an `ISSUE` to whoever raised the request when it comes from the
 request's site, or a `TRANSFER_OUT` to it from another site (received there as any transfer). Each line gets a
@@ -470,39 +410,6 @@ sign-in, sixty tries in ten minutes per address) is looked up with `withoutTenan
 and closing date. The reply is saved once (the token's `respondedAt` is claimed in the same transaction) as that vendor's
 `Quotation` on the request with `fromSupplier` (an earlier one of theirs is replaced unless an order was raised on it),
 audited under the buyer who sent the enquiry, who is emailed. It then sits on the comparative statement like any other.
-
-**Awarding the lowest per item (finding 12 of the October review).** The comparative statement marks the cheapest
-landed rate for each line, but a purchase order goes to one vendor, so a split used to be raised order by order.
-`awardLowestPerItem` (`packages/shared/src/purchase-award.ts`, pure) turns a comparative statement and the quantities
-still to order into one `AwardOrder` per winning vendor: each item goes to the lowest landed rate (rate with GST, the
-earlier quotation on a tie), a winner's freight is charged once in full, and items nobody quoted or that are already
-ordered are listed in `leftOut`. It also prices the same quantities from the cheapest quotation that covers them all
-(`singleVendor`), so the screen can say what the split saves — or costs, when freight is paid twice.
-`GET /material-requests/:id/award-lowest` is the plan, `POST` the same route raises a draft order per winner through
-`PurchaseOrdersService.create` (so numbering, line limits and the audit are the usual ones), each carrying the
-quotation, its freight and payment terms and a selection reason naming the split. The screen previews the plan with the
-same pure rules (`AwardLowestModal`); the API draws it again rather than trusting what was sent. Tests:
-`src/scripts/purchase-award-test.ts` (CI runs it).
-
-**Deciding an order away from the desk (finding 15 of the October review).** The approval card showed the order alone:
-no quotes, no lowest bidder, no budget, and Delete a tap from Approve. A purchase order's record now carries two more
-sections (`components/purchasing/OrderDecision.tsx`, both read-only over what is already stored): *Quotations on the
-request* lists the request's quotations with their totals, marking the lowest complete one and this order's own, and
-says plainly when the order goes elsewhere (the reason stays in the facts, under Why this vendor); *Against the budget*
-(`canViewCost` only) shows the project's material budget from `GET /cost/projects/:id/budget`, what it has cost so far,
-and where this order takes it, in red when it would go past. Delete moved out of the action bar: `RecordFrame` takes
-`more`, a list of `RecordMenuAction`s shown in a ⋯ menu after the buttons, in the drawer's header, the phone's footer
-bar and the page's sticky bar alike, and the six records that had a Delete beside Approve (purchase order, vendor bill,
-RA bill, work order, subcontract bill, payment request) put it there through `useConfirmDelete`. Tests:
-`e2e/tests/order-decision.spec.ts`.
-
-**Where it is delivered.** `Project.siteAddress` is where suppliers deliver; `siteDeliveryAddress` falls back to the
-project's `location`. A purchase order with no address of its own takes it when it is created, the order form shows it
-as the field's placeholder, and the supplier's enquiry page shows the same address.
-
-**Sending a link by hand.** `whatsAppShareUrl` (`packages/shared/src/messaging.ts`) builds a `wa.me` link with the
-message ready: to the vendor's own number when `normalisePhone` can read it, else WhatsApp asks whom to send it to. The
-enquiry's answer carries each vendor's phone for this; nothing is sent until the buyer presses send in WhatsApp.
 
 ### Approval levels and escalation (v5 item 94)
 
@@ -695,31 +602,6 @@ turns a list into planned dates: from the project start, scaled so the template 
 end date is set. `POST /projects` with `applyTemplate: true`, or `POST /projects/:id/activities/from-template`
 (optionally `names`), creates the activities with planned quantity 0, skipping names the project already has.
 
-A project often starts before its dates are known, so the template's activities are created without any
-(`scheduleTemplate` has nothing to scale). `spreadUndated` (shared, pure) places them once the dates arrive: an
-activity whose name is in the template takes that template's scaled slot, and anything else is given an equal
-consecutive share of what is left, the last one ending with the project. `TemplatesService.spreadUndated` runs it
-in a transaction and audits `SCHEDULED_FROM_TEMPLATE`; `ContractsService.update` calls it when a contract first
-brings a start date, and `ProjectsService.update` when the project itself gets one. An activity that already has
-dates is never moved.
-
-### Linking activities to BOQ items (v6 item 125, finding 11 of the October review)
-
-A BOQ import and a template both name the same work in their own words, so the activities and the BOQ items
-arrive unlinked. `boqLinkSuggestions` (`packages/shared/src/boq-links.ts`, pure) offers the pairs: `nameMatch`
-scores two names over a normaliser that drops "works", "item", "part", "section", "schedule" and "boq", and a
-pair is offered above `min` (0.6). An activity is matched against the BOQ's section names first (reason
-`section`, the section's largest item by amount) and then against the item descriptions (reason `description`);
-duplicate offers for the same pair merge, keeping `section`. Each activity and each item is offered once, best
-score first.
-
-`GET /projects/:projectId/activities/boq-links` returns the offers for the project's unlinked activities,
-`POST` the same route takes the ones the user kept (`canEditProjects`). Linking sets `Activity.boqItemId` and,
-where the activity's planned quantity is still zero, takes the item's unit and quantity; it audits
-`ACTIVITIES_LINKED_TO_BOQ` and refuses (409) when nothing could be linked. On the web the BOQ tab's import opens
-`LinkBoqModal` when it finishes, and the Activities tab has a "Link to BOQ (n)" button for the unlinked ones.
-`src/scripts/boq-links-test.ts` holds the rules' tests (CI runs it).
-
 ### Gantt, milestones and baseline
 
 - **Tables.** `Milestone`: project, name, `dueDate`, `baselineDate`, `achievedOn`, note (with a `tenant_isolation`
@@ -777,8 +659,8 @@ A site labour register, not HR: no PF, ESI or payslips (those stay with Payroll 
 - **Roll call.** `GET /workers/roll-call?projectId&date` lists the workers posted there that day (joined, not
   left) plus anyone already marked there. `PUT /workers/roll-call` (`canManageWorkers` = the attendance recorders,
   with project access) sets or clears marks; overtime defaults to the time past `WORKER_SHIFT_HOURS` (9) between in
-  and out. A worker marked at another site that day gives 409, a future day 400, and a day whose month's payroll is
-  approved 409 (the same lock as the head count). In the same transaction the day's `AttendanceSheet` takes the roll call's
+  and out. A worker marked at another site that day gives 409, a future day 400, and a day whose DPR is approved
+  409 (the same lock as the head count). In the same transaction the day's `AttendanceSheet` takes the roll call's
   counts (present or half day = one head) for each contractor and trade pair on the roll call; other lines stay,
   and a sheet is created when there was none (`mergeHeadCount`, `AttendanceService.applyRollCall`).
 - **Muster and output.** `GET /workers/muster?projectId&month` gives each worker's marks by day, man-days (half day
@@ -875,14 +757,6 @@ tabs. Export fetches every matching row page by page with the current filters (n
 page) and writes `.xlsx` in the browser with SheetJS; column layouts live in `src/lib/exportColumns.ts`.
 Material requests export one row per item so quantities can be summed.
 
-A column's `defaultFrom` (`ListColumn`, `components/list/DataTable.tsx`) is the window width that turns it on by
-default, so the columns a list leads with fit without scrolling sideways; the column chooser still turns any of them on
-at any width. They are a budget, not a wish: the vendor bills list showed the invoice date from 1400 and what the bill
-was against from 1600, which at both widths left the table wider than the page, and the fixed Status column lay over
-Match (finding 17 of the October review). Each now waits for the next width up. On a phone, a list card's title is what
-opens the record and the whole card takes the tap; the title's own box is 44 px tall around the same text, so it
-measures as the target it is (`.list-card-open` in the `pointer: coarse` block of `globals.css`).
-
 ## Attendance
 
 The site supervisor records who worked each day: `AttendanceSheet` (one per project per day, unique on
@@ -890,11 +764,8 @@ The site supervisor records who worked each day: `AttendanceSheet` (one per proj
 workers), trade and head count. `totalWorkers` is stored on the sheet so lists sort and total cheaply.
 
 - **Not an approval submission.** Attendance has no status columns and is not in the approvals queue.
-  It feeds the day's DPR, and the DPR is what the PM approves. Attendance first (finding 7 of the October review):
-  sites often send the DPR before the head count, so a sheet stays editable after its DPR is approved and locks only
-  once payroll for its month is approved or paid, the project's own run or else the company's
-  (`isAttendanceLocked` in `packages/shared/src/permissions.ts`, `AttendanceService.lockingRuns`; `lockedByRun` names
-  it). An approved DPR keeps the manpower it was approved with.
+  It feeds the day's DPR, and the DPR is what the PM approves. A sheet stays editable until that DPR is
+  approved, then it locks (`isAttendanceLocked` in `packages/shared/src/permissions.ts`).
 - **Who.** Team leaders, site engineers and approvers record and correct it (`ATTENDANCE_RECORDER_ROLES`,
   checked by `ProjectAccessService.assertCanRecordAttendance`); everyone who can see the project can
   read it. Every create, edit and delete is in `AuditLog` as entity type `ATTENDANCE`.
@@ -964,16 +835,6 @@ The store register per project, fed by approved material requests:
   transfer may go to, stores first. The web has Central stores (`/stores`, `/stores/[id]` with the project's stock
   panel); a store's project page redirects there. Chosen over a separate `storeId` on stock rows so every stock
   path stays one path.
-- **One name per item (finding 3 of the October review).** Request and order lines are still text, but the web's
-  `ItemPicker` picks from the item master with its unit (and a PO line its standard rate), and a new name first offers
-  the items it may mean (`similarItems`). On save, `asMasterNames` (`stock/item-master.ts`) writes each line's name and
-  unit as the master has them when `masterItemFor` finds the item (case, dots and spacing ignored by `itemKey`, the unit
-  by `normUnit`, or a merged old name in `Item.aliases`); GRNs, stock-first, PO approval and the item form's duplicate
-  check use the same lookup, so stock, last rates and leakage stay on one item. Existing duplicates are merged once
-  from Stock › Item master › Possible duplicates (`GET /stock/items/duplicates`, `duplicateGroups`; `POST
-  /stock/items/:id/merge`, store managers and approvers): every foreign key to `Item` (read from the Prisma schema)
-  moves to the kept item, a minimum or norm both have keeps the kept one's, request and order lines take its name,
-  and the merged names become its aliases. Rules in `@erp/shared/items.ts`, tested in `src/scripts/items-test.ts`.
 - **Valuation.** `GET /stock/valuation` values stock on hand at the item master rate and ages it first in,
   first out over the inward movements (0-30, 31-90, 91-180, over 180 days). Store managers, approvers and
   anyone who sees project cost.
@@ -1104,34 +965,12 @@ The store register per project, fed by approved material requests:
   rounded to 3 decimals, negative for a deduction. A line needs nos or at least one dimension and the
   sheet total must be above zero. The API recomputes every line; what the client sends as quantity is
   ignored. An edit with `lines` replaces all lines.
-- **Held to the BOQ (finding 4 of the October review).** A create or an edit of the lines or BOQ item is refused
-  when every sheet of the item but rejected ones would pass its BOQ quantity (revised, else original) plus
-  `Project.measureTolerancePct` (Contract › Edit; 25 when not set, `MEASURE_TOLERANCE_PCT`): `measureOverBoq` in
-  shared, tested in `src/scripts/validation-test.ts`. An extra item (no BOQ quantity) is held by its variation instead.
-- **Other input checks.** A DPR, progress entry or attendance sheet is not dated after today in the company's time
-  zone (`assertNotAfterToday`, `common/serialize.ts`); quantity fields are `@IsQuantity()` (`common/quantity.ts`: a plain
-  decimal above zero, or zero or more), never a bare `IsNumberString`, which takes a minus sign. On the web every date
-  field is `components/common/DatePicker` (ESLint refuses antd's), which reads dates typed as 13/10/2026, 13-10-2026,
-  13.10.2026 or 13 Oct 26 (`DATE_FORMATS`).
 - **Rollup.** `GET /projects/:id/boq` adds `measuredQty` (approved sheets), `measuredAmount` (× rate)
   and `pendingMeasuredQty` (submitted). The measured quantity is what RA billing (v3) will bill; the
   activity progress (`executedQty`) stays the site's own count and the two sit side by side on the BOQ tab.
-- **Measure from progress (finding 14 of the October review).** The quantities the site got approved on its daily
-  reports were read off them and typed into the book again. `GET /measurements/to-measure?projectId=` answers with each
-  BOQ item whose approved progress its sheets do not hold yet: the approved quantity (through the item's activities),
-  what the sheets hold (all but rejected, so a draft counts once), the remainder at the BOQ rate, and the days that make
-  it up. Which days those are is pure: `unmeasuredEntries` in `@erp/shared/measurement.ts` walks the measured quantity
-  off the approved entries in date order, oldest first, and returns the rest, part of a day included; the sheets carry
-  no link to the days they came from, so that order is the honest reading. Only activities recording the item's own unit
-  count — the others are named (`otherUnitActivities`), never converted. On the web the measurement book's "Measure from
-  progress" opens `MeasureFromProgressModal`, and Start sheet fills `MeasurementFormModal` through `MeasurementPrefill`:
-  one line per day (its date, where it was, the activity), the sheet's location when every day is in one place, and
-  remarks naming the span. The quantity surveyor still checks and submits it. Keep
-  `src/scripts/measure-from-progress-test.ts` passing.
 - **Roles.** Record: `MEASUREMENT_ROLES` (QS, site engineer, PM, management, admin). Approve: approvers.
 - **API.** `/measurements` (paged; `projectId`, `boqItemId`, `status`, `from`, `to`, `mine`, `q`) with
-  create / edit / submit / delete, review and audit through `/approvals/measurement/:id/...`, and
-  `/measurements/to-measure` for what the approved days leave to measure.
+  create / edit / submit / delete, review and audit through `/approvals/measurement/:id/...`.
 - **Clients.** Web: Measurement Book page and project tab (line editor with live totals, Excel export one
   row per line), Measured column on the BOQ tab. Site app: `app/measurement/new.tsx` (offline-capable)
   and `[id].tsx`.
@@ -1385,48 +1224,6 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
 - **Clients.** Web: Billing → Clients page, a Contract tab on each project (agreement, bill percentages, extensions
   from the delay register) with an edit form, a client picker on the project form, and "EOT granted" on delays.
 
-### Setting up a project (finding 6 of the October review)
-
-- **Starting terms.** A new project no longer bills with every deduction at 0%. `ProjectsService.create` takes its
-  terms from the project named in `copyFromProjectId` (the `COPIED_TERMS`: deductions, GST, LD, defect liability,
-  payment and notice days, measurement tolerance, price variation), else from its client's usual terms
-  (`Client.retentionPct`, `securityDepositPct`, `tdsPct`, `gstTdsPct`, `labourCessPct`, `gstRate`,
-  `defectLiabilityMonths`, `clientPaymentDays`, nullable, on the client form), else `STANDARD_TERMS` (5% retention,
-  2% TDS, 2% GST TDS, 1% cess, 18% GST), merged field by field by `termsFor` (`@erp/shared/project-setup.ts`).
-  Approval rules are company-wide, so there is nothing of them to copy.
-- **Team.** `POST /projects/:id/members` takes `userIds` (several at once) as well as `userId`, and
-  `POST /projects/:id/members/copy { fromProjectId }` adds everyone on another project the caller sees; each person is
-  told once, as before. Copying from a project at creation copies its team too.
-- **Setup checklist.** `GET /projects/:id/setup` (`ProjectSetupDto`, `ProjectSetupService`) ticks `SETUP_STEPS` from the
-  project's own records with the pure `setupSteps` (team, dates and value, BOQ, activities, BOQ items linked to an
-  activity, activity dates, baseline, agreement, budget, chainage/floors/villages, material norms), leaving out the
-  steps the role cannot do. The Overview shows it (`ProjectSetup`) to those who edit projects while `setupShown`: an open
-  project of a kind that has one (not a store or plant), under 10% done, not hidden, with steps left. Each step links
-  to its tab; `PUT /projects/:id/setup { hidden }` hides it for everyone (`Project.setupHiddenAt`).
-- **BOQ against the contract.** `boqContractGap` flags an item-rate project whose BOQ total (at revised quantities) is
-  more than `BOQ_GAP_PCT` (15%) from its contract value, since work done, earned value and the budget are all built on
-  the BOQ. It holds the checklist's BOQ step open, shows on the BOQ tab, and is the watch list's `BOQ_OFF_CONTRACT`
-  (managers who see cost and edit projects), so it reaches the morning brief. Lump sum and EPC are priced by stages and
-  left out. Tested in `src/scripts/project-setup-test.ts`.
-
-### What a form already knows (finding 17 of the October review)
-
-- **The project code.** `nextProjectCode` (`packages/shared/src/project-code.ts`, pure) reads the company's codes as
-  `<prefix>-<year>-<serial>`, where the prefix is the kind of work (`PROJECT_CODE_PREFIXES`) and the serial runs on
-  across the company, and offers the next one; `GET /projects/next-code?type=` counts every project of the
-  organisation, including those the caller does not work on, so the suggestion never clashes. A company whose codes are
-  its own shape gets no suggestion, and a code typed by hand is never written over: the New project form only replaces
-  a box it filled itself, so changing the type moves its own suggestion along.
-- **The PAN inside a GSTIN.** `panFromGstin` (`@erp/shared/contract.ts`) returns characters 3 to 12 of a well-formed
-  GSTIN. The vendor and client forms fill an empty PAN from it, as they already filled the state code, and leave a PAN
-  that was typed alone.
-- **A new user's projects.** `POST /users` takes `projectIds`: `UsersService.create` hands them to
-  `ProjectsService.addToProjects`, which checks the caller sees each project and adds the person through the usual
-  `joinTeam` (audit, and the person is told). The New user form shows the picker only for a role that sees projects one
-  by one, since a company-wide role already sees them all.
-- **Tests.** `src/scripts/small-fixes-test.ts` (CI runs it) for the two pure rules, `e2e/tests/small-fixes.spec.ts` for
-  the three forms.
-
 ## RA bills
 
 - **Tables.** `RaBill` (number per project, `isFinal`, `billDate`, `measuredUpTo`; work value previous / this bill /
@@ -1579,22 +1376,8 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   allowed, valued at the item rate for cost viewers only. Issued items with no norm are listed as unreconciled.
 - **Roles.** Seen by `RECONCILIATION_VIEW_ROLES` (QS, approvers, stores, procurement, accounts, site engineer); norms set
   by `MATERIAL_NORM_ROLES` (QS, PM, management, admin). Every change is in the project's audit log.
-- **The standard norms library (finding 16 of the October review).** A new project's reconciliation was empty, because a
-  norm had to be typed for every BOQ item before anything could be checked. `STANDARD_NORMS`
-  (`packages/shared/src/norms-library.ts`, pure data) holds the usual figures for the work a civil contractor does:
-  concrete by grade, reinforcement, brickwork, plaster, granular sub-base, wet mix and bituminous work, each in its own
-  unit with its materials, wastage and a note saying what the figures stand on. `standardNormFor` reads a BOQ item as
-  one of them by the words in its description and its unit (the most particular norm wins), so nothing is guessed at:
-  work the library does not know is left for the quantity surveyor. `GET /reconciliation/projects/:id/standard-norms`
-  is the plan — which items match, what they would get, which store items the item master lacks — and `POST` the same
-  route adopts it: missing items are added to the master (matched through `masterItemFor`, so an item written another
-  way is reused), each recognised BOQ item gets its norms, and an item that already has norms is left alone unless
-  `replace` is asked for. Audited as `MATERIAL_NORMS_ADOPTED`. On the web it is *Add standard norms* on the
-  Reconciliation view, which previews the plan (`StandardNormsModal`). The figures are a starting point and the screen
-  says so. Tests: `src/scripts/norms-library-test.ts` (CI runs it), `e2e/tests/norms-library.spec.ts`.
 - **API.** `GET /reconciliation/projects/:id?from&to`, `PUT /reconciliation/projects/:id/norms` (adds or changes by BOQ
-  item + store item), `DELETE /reconciliation/projects/:id/norms/:normId`, `GET`/`POST`
-  `/reconciliation/projects/:id/standard-norms` for the library.
+  item + store item), `DELETE /reconciliation/projects/:id/norms/:normId`.
 - **Web.** Project > Materials > Reconciliation (`components/reconciliation/`), with views under `?sub=`:
   Materials (period picker, the reconciliation with each item's BOQ lines, items without a norm, the norms with
   add/edit/remove, and an Excel export), Structure, Pipe and Kits, Exceptions (below), Subcontractors, Wastage and
@@ -2674,7 +2457,7 @@ export; the client portal and the phone app show the amount.
   every seeded anomaly (`seedCheckAnomalies`) is flagged and every other demo bill and expense shows no flag. CI runs it
   after the seed. A new rule is a function in `bill-rules.ts` plus its tests there.
 
-## Reading invoices, challans, drawings, work orders and BOQs
+## Reading invoices, challans and drawings
 
 - **What it is.** AI item 70: Fill from invoice on a new vendor bill, Fill from challan on a GRN and Fill from title
   block on a new register entry (`components/ai/ReadDocument.tsx`). The browser turns a photo or the first three pages
@@ -2688,25 +2471,8 @@ export; the client portal and the phone app show the amount.
   The vendor bill form runs the bill checks on the draft (`POST /checks/vendor-bill/preview`) before it is saved.
 - **Nothing is saved by reading.** The read fills the form and attaches the scan as an upload; the user saves. Each read
   is an `AiDocumentRead` row (cost, time, success) counted in the monthly allowance; the page images are not kept there.
-- **One upload, and dates that can be right** (finding 13 of the October review). `useKeepReadFile` uploads the file
-  the model read and adds it to the form's own attachment field (the GRN's challan photo, the bill's documents, the
-  drawing revision's files), and the read's summary says so, so nobody picks the same file twice. A date is never filled
-  in blind: `readDateProblem` (shared, pure) refuses one that is still to come, one over `READ_DATE_MAX_AGE_DAYS` old or
-  one that is not a date, the form keeps its own, and `readFieldProps` marks the field amber with the reason
-  (`readDateReason` words it). A date that passes fills the field, so a GRN is dated the day the challan says.
-- **Work orders and BOQs** (finding 10 of the October review). New project › Fill from work order reads a work order,
-  LoA or agreement (`workOrder`: name of work, issuing office, work order and agreement numbers and dates, contract value,
-  start, completion or months allowed, place) and fills the form; the end date is `workOrderEnd` (the printed one, else the
-  start plus the months), the client is the master's when exactly one has the office's name (`AiReadService.matchClient`),
-  else Add client opens the client form with that name. The agreement number and date go to the project on create
-  (later the Contract tab's). Import BOQ › Read a BOQ PDF or scan (`boq`) draws up to 30 pages (`DOC_READ_PAGES_OF`) and
-  reads them three to a call, merged in the browser; `boqRowsFromRead` turns the lines into import rows (headings carried
-  down as the section, run-on descriptions joined, a missing rate from the amount, each with what to check), shown in the
-  import's table with the amber ones explained and a tick to leave a row out. A BOQ's amounts may be rounded by half a per
-  cent before quantity × rate is flagged. Work orders need `canApprove` (the roles that create projects), BOQs
-  `canEditProjects` (the BOQ's editors).
 - **Tests.** `src/scripts/doc-read-test.ts` (CI) covers parsing, the checks and matching; `e2e/tests/doc-read.spec.ts`
-  runs the three forms with the stand-in model, `e2e/tests/read-work-order.spec.ts` New project and the BOQ import. `scripts/doc-read-pack.ts` renders 31 synthetic invoices, challans and
+  runs the three forms with the stand-in model. `scripts/doc-read-pack.ts` renders 31 synthetic invoices, challans and
   drawings (printed, photographed, handwritten, Hindi) and `scripts/doc-read-eval.ts` grades a deployed API on them; it
   calls the real model, so it is run by hand.
 

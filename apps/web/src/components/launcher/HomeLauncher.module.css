@@ -117,35 +117,8 @@
   color: var(--ant-color-text-secondary);
 }
 
-/* Waiting for you: My work's most pressing cards, as lines like Recent's with the count at the end. */
-.waitList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--ant-margin-sm);
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-}
-
-.wait {
-  min-height: 64px;
-}
-
-.waitCount {
-  margin-left: auto;
-  flex: none;
-  font-size: var(--ant-font-size-heading-3);
-  font-weight: var(--ant-font-weight-strong);
-  font-variant-numeric: tabular-nums;
-}
-
-.waitLate {
-  color: var(--ant-color-error-text);
-}
-
 @media (max-width: 575px) {
-  .recentList,
-  .waitList {
+  .recentList {
     grid-template-columns: minmax(0, 1fr);
   }
 }

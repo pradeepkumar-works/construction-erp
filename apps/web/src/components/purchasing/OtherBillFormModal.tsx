@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, Checkbox, Form, Input, Select, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, Checkbox, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ExpenseCategory, VendorBillDto, VendorBillKind } from '@erp/shared';
@@ -298,7 +297,7 @@ export function OtherBillFormModal({
               <Input maxLength={60} />
             </Form.Item>
             <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]}>
-              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="freight" label="Freight">
               <MoneyInput />

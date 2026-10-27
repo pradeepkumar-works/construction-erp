@@ -20,7 +20,6 @@ import { TileGrid, tileEntries } from './TileGrid';
 import { pinEntry, usePins } from './pins';
 import { EditPins } from './EditPins';
 import { DiscoverSection } from './Discover';
-import { WaitingForYou } from './WaitingForYou';
 import s from './HomeLauncher.module.css';
 
 const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
@@ -113,9 +112,9 @@ function RecentLink({ visit, user }: { visit: NavVisitDto; user: AuthUser }) {
 }
 
 /**
- * Home (launcher phase 2): search over modules and pages, what waits for you (My work's top cards), Pinned (yours, on
- * every device), Recent, and every module you can open as a tile with what waits on you there. The module grid comes
- * from the navigation tree and the signed-in user, so it draws at once; pins, Recent and the counts fill in after.
+ * Home (launcher phase 2): search over modules and pages, Pinned (yours, on every device), Recent, and every module you
+ * can open as a tile with what waits on you there. The module grid comes from the navigation tree and the signed-in user,
+ * so it draws at once; pins, Recent and the counts fill in after without moving it.
  */
 export function HomeLauncher() {
   const { user } = useAuth();
@@ -199,8 +198,6 @@ export function HomeLauncher() {
         </section>
       ) : (
         <>
-          <WaitingForYou user={user} />
-
           <section aria-labelledby="home-pinned" className={s.section}>
             <Flex justify="space-between" align="center" className={s.sectionHead}>
               <h2 id="home-pinned" className={s.sectionTitle}>

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Dropdown, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
+import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
-import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, MoreOutlined, PrinterOutlined } from '@/components/common/icons';
+import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@/components/common/icons';
 import { useComments, type ApprovalTypeParam } from '@/lib/queries';
 import type { CommentKind } from '@erp/shared';
 import { CommentsSection } from '@/components/comments/CommentsSection';
@@ -33,33 +33,6 @@ export interface RecordSection {
 export type RecordMode = 'drawer' | 'page' | 'pane';
 type ActionSize = 'small' | 'middle';
 
-/**
- * An action that lives in the record's ⋯ menu rather than beside Approve (finding 15 of the October review: Delete sat
- * next to Approve in the bar). Anything that destroys or cannot be taken back belongs here; the deciding buttons stay
- * in the bar. A `danger` item asks first, usually through `useConfirmDelete`.
- */
-export interface RecordMenuAction {
-  key: string;
-  label: string;
-  icon?: React.ReactNode;
-  danger?: boolean;
-  disabled?: boolean;
-  onSelect: () => void;
-}
-
-/** The record's ⋯ menu, after its buttons. */
-function MoreMenu({ items, size }: { items: RecordMenuAction[]; size: ActionSize }) {
-  if (!items.length) return null;
-  return (
-    <Dropdown
-      trigger={['click']}
-      menu={{ items: items.map((i) => ({ key: i.key, label: i.label, icon: i.icon, danger: i.danger, disabled: i.disabled, onClick: i.onSelect })) }}
-    >
-      <Button size={size} icon={<MoreOutlined />} aria-label="More actions" />
-    </Dropdown>
-  );
-}
-
 export interface RecordFrameProps {
   mode: RecordMode;
   /** Drawer only. */
@@ -88,8 +61,6 @@ export interface RecordFrameProps {
     activity?: { type: ApprovalTypeParam; id: string; submission?: SubmissionBase };
     /** The record's actions, at the drawer's top or in the page's footer. */
     actions?: (size: ActionSize) => React.ReactNode;
-    /** What sits in the ⋯ menu after them: deletes and anything else that should not be a tap from Approve. */
-    more?: RecordMenuAction[];
     /** Its print-out; the page falls back to the browser's print of itself. */
     print?: () => void;
   };
@@ -226,7 +197,6 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
   const { token } = theme.useToken();
   // On a phone Approve, Submit and the rest are in the drawer's footer, always in reach of a thumb, not at its top.
   const phone = useIsPhone();
-  const more = record?.more ?? [];
   const footerActions = phone && record ? record.actions?.('middle') : null;
   return (
     <Drawer
@@ -255,15 +225,13 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
               <LinkButton href={record.href} size="small" icon={<ExpandOutlined />} aria-label="Open full page" />
             </Tooltip>
             {phone ? null : record.actions?.('small')}
-            {phone ? null : <MoreMenu items={more} size="small" />}
           </Space>
         ) : null
       }
       footer={
-        hasContent(footerActions) || (phone && more.length) ? (
+        hasContent(footerActions) ? (
           <Flex wrap gap={token.marginXS} justify="flex-end" role="toolbar" aria-label="Record actions">
             {footerActions}
-            {phone ? <MoreMenu items={more} size="middle" /> : null}
           </Flex>
         ) : undefined
       }
@@ -443,13 +411,9 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             {phone ? (
               <Flex wrap gap={token.marginXS} justify="flex-end" style={{ flex: 1 }}>
                 {record.actions?.('middle')}
-                <MoreMenu items={record.more ?? []} size="middle" />
               </Flex>
             ) : (
-              <Space wrap>
-                {record.actions?.('middle')}
-                <MoreMenu items={record.more ?? []} size="middle" />
-              </Space>
+              <Space wrap>{record.actions?.('middle')}</Space>
             )}
           </Flex>
           {/* Room under the content for the fixed bar, so nothing hides behind it. */}

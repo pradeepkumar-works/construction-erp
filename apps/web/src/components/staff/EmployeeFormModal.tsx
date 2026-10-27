@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, InputNumber, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { EmployeeDto, EmploymentType, Gender } from '@erp/shared';
 import { EMPLOYMENT_TYPES, EMPLOYMENT_TYPE_LABELS, ESI_PATTERN, GENDERS, GENDER_LABELS, UAN_PATTERN, canViewEmployeePrivate } from '@erp/shared';

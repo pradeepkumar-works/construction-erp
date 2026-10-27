@@ -77,8 +77,6 @@ export interface EnquiryVendorDto {
   vendorId: string;
   vendorName: string;
   email: string | null;
-  /** The vendor master's phone, for sending the link on WhatsApp (finding 12 of the October review) */
-  phone: string | null;
   state: EnquiryVendorState;
   emailedAt: string | null;
   emailError: string | null;

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { DatePicker } from "@/components/common/DatePicker";
+import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import { formatINR } from "@/lib/format";
 
@@ -56,6 +56,7 @@ export function PeriodPicker({
   return (
     <DatePicker.RangePicker
       aria-label="Period"
+      format="DD MMM YYYY"
       allowClear={false}
       value={value}
       presets={PRESETS()}

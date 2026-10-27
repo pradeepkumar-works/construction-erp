@@ -20,7 +20,6 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
-import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
@@ -141,7 +140,6 @@ export class VendorBillsService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
-    private notifications: NotificationsService,
   ) {}
 
   toDto(r: Row, sources?: VendorBillSourceDto[]): VendorBillDto {
@@ -802,10 +800,7 @@ export class VendorBillsService {
       }
     }
     await this.lifecycle.submit(user, 'VENDOR_BILL', id);
-    const out = await this.get(user, id);
-    // A bill that misses its order is purchase's to settle, not the approver's alone (finding 18 of the October review).
-    if (out.exceptions.length) await this.notifications.onVendorBillExceptions(user, id);
-    return out;
+    return this.get(user, id);
   }
 
   async remove(user: RequestUser, id: string) {

@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MeasurementsService } from './measurements.service';
-import { CreateMeasurementDto, ListMeasurementsQuery, ToMeasureQuery, UpdateMeasurementDto } from './measurements.dto';
+import { CreateMeasurementDto, ListMeasurementsQuery, UpdateMeasurementDto } from './measurements.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('measurements')
@@ -13,17 +13,6 @@ export class MeasurementsController {
   @Get()
   list(@CurrentUser() user: RequestUser, @Query() q: ListMeasurementsQuery) {
     return this.measurements.list(user, q);
-  }
-
-  @ApiOperation({
-    summary: 'What is still to measure on a project',
-    description:
-      'Each BOQ item with work approved on site that no measurement sheet holds yet: the approved quantity, what the ' +
-      'sheets hold, the remainder and the days that make it up, oldest first. Only activities recording the item’s own unit count.',
-  })
-  @Get('to-measure')
-  toMeasure(@CurrentUser() user: RequestUser, @Query() q: ToMeasureQuery) {
-    return this.measurements.toMeasure(user, q.projectId);
   }
 
   @Get(':id')

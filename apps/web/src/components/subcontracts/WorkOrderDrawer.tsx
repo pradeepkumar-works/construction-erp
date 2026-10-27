@@ -25,7 +25,7 @@ import { SubBillFormModal } from './SubBillFormModal';
 import { openWoPrint } from './subcontractPrint';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
-import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { TargetRequests } from '@/components/payables/TargetRequests';
 
 const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
@@ -73,7 +73,6 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
     onSuccess: (o) => done(`${o.woNo} closed`),
     meta: FAIL_NOTICE,
   });
-  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/work-orders/${id}`)).data,
     onSuccess: () => {
@@ -309,10 +308,15 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                   Close order
                 </Button>
               ) : null}
+              {editable ? (
+                <ConfirmDelete what={`work order ${data.woNo}`} onConfirm={() => remove.mutateAsync()}>
+                  <Button size={size} danger loading={remove.isPending}>
+                    Delete
+                  </Button>
+                </ConfirmDelete>
+              ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
-          more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `work order ${data.woNo}`, onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }
     >
@@ -325,7 +329,6 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
         </Form>
       </FormShell>
       <SubBillFormModal open={billing} workOrderId={data?.id} onClose={() => setBilling(false)} />
-      {deleteDialog}
     </RecordFrame>
   );
 }

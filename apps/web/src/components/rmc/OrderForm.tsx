@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, Segmented, Select, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, DatePicker, Form, Input, Segmented, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { RmcOrderDto } from '@erp/shared';
 import { useMixDesigns, useRmcAction } from '@/lib/queries';
@@ -100,7 +99,7 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
             <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ mixDesignId: undefined })} />
           </Form.Item>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="for" label="For">
@@ -149,10 +148,10 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
         </FormGrid>
         <FormGrid cols={2}>
           <Form.Item name="pourDate" label="Pour on">
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="validUntil" label="Quote valid until">
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="notes" label="Notes">

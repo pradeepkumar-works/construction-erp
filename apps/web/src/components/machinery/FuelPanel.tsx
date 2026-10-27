@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Empty, Skeleton, Space, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Button, DatePicker, Empty, Skeleton, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -133,6 +132,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
           value={date}
           onChange={(d) => setDate(d ?? dayjs())}
           allowClear={false}
+          format="DD MMM YYYY"
           disabledDate={(d) => d.isAfter(dayjs(), 'day')}
           aria-label="Day"
         />

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Input, Select, Space, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Button, DatePicker, Input, Select, Space, Table, Typography } from 'antd';
 import { SyncOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { BookSource, BookVoucherDto, BookVoucherType, BooksPostResultDto } from '@erp/shared';
@@ -87,7 +86,7 @@ export function DayBook() {
       <Space wrap style={{ marginBottom: 12 }}>
         <DatePicker.RangePicker
           aria-label="Period"
-         
+          format="DD MMM YYYY"
           allowClear={false}
           value={range}
           onChange={(r) => {

@@ -42,24 +42,6 @@ export class PurchasingController {
     return this.quotations.comparative(user, id);
   }
 
-  @ApiOperation({
-    summary: 'The split of a request between the vendors who quoted lowest per item',
-    description: 'What is still to order, at each winning vendor’s rate, with what the split saves against the cheapest single quotation.',
-  })
-  @Get('material-requests/:id/award-lowest')
-  awardPlan(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
-    return this.orders.awardPlan(user, id);
-  }
-
-  @ApiOperation({
-    summary: 'Raise a draft order on each vendor who quoted lowest per item',
-    description: 'One draft purchase order per winning vendor, for what the request still needs. Procurement, project managers and management.',
-  })
-  @Post('material-requests/:id/award-lowest')
-  awardLowest(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
-    return this.orders.awardLowest(user, id);
-  }
-
   @ApiOperation({ summary: 'Enter a vendor quotation', description: 'Against an approved material request, one per vendor. Procurement, project managers and management.' })
   @Post('quotations')
   createQuotation(@CurrentUser() user: RequestUser, @Body() dto: CreateQuotationDto) {

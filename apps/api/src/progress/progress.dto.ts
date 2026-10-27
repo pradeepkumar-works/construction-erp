@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
-import { IsQuantity } from '../common/quantity';
+import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, SubmissionStatus, type ProgressSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -11,7 +10,7 @@ export class CreateProgressDto {
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty() @IsUUID() activityId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;
-  @ApiProperty({ example: '45.5' }) @IsQuantity() quantity: string;
+  @ApiProperty({ example: '45.5' }) @IsNumberString() quantity: string;
   @ApiPropertyOptional() @IsOptional() @IsString() remarks?: string;
   @ApiPropertyOptional({ example: 'Ch. 2+400 to 2+600', description: 'Free text; made from the chainage, floor or village when left out' }) @IsOptional() @IsString() location?: string;
   @ChainageField('Road / pipeline: metres from 0+000 where the work starts') chainageFrom?: number | null;

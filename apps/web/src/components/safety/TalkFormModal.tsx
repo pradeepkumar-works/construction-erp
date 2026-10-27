@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, AutoComplete, Form, Input, InputNumber, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ToolboxTalkDto } from '@erp/shared';
@@ -88,7 +87,7 @@ export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolea
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           <Form.Item name="conductedBy" label="Given by" rules={[{ required: true, whitespace: true, message: 'Who gave it?' }]}>
             <Input maxLength={120} />

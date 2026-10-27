@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Alert, App, Button, Descriptions, Form, Modal, Segmented, Select, Space, Table, Typography, Upload } from "antd";
-import { DatePicker } from "@/components/common/DatePicker";
+import { Alert, App, Button, DatePicker, Descriptions, Form, Modal, Segmented, Select, Space, Table, Typography, Upload } from "antd";
 import { AppTag } from "@/components/common/AppTag";
 import type { UploadProps } from "antd";
 import { SyncOutlined, UploadOutlined } from "@/components/common/icons";
@@ -406,6 +405,7 @@ export function BankReconciliation() {
           />
           <DatePicker
             aria-label="As on"
+            format="DD MMM YYYY"
             allowClear={false}
             value={asOn}
             onChange={(d) => d && setAsOn(d)}

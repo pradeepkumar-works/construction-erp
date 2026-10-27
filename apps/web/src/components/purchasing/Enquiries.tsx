@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CopyOutlined, WhatsAppOutlined } from '@/components/common/icons';
+import { CopyOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
-import { ENQUIRY_DEFAULT_DAYS, ENQUIRY_VENDOR_STATE_LABELS, MAX_PAGE_SIZE, whatsAppShareUrl, type EnquiryDto, type EnquiryVendorDto, type EnquiryVendorState, type MaterialRequestDto } from '@erp/shared';
+import { ENQUIRY_DEFAULT_DAYS, ENQUIRY_VENDOR_STATE_LABELS, MAX_PAGE_SIZE, type EnquiryDto, type EnquiryVendorDto, type EnquiryVendorState, type MaterialRequestDto } from '@erp/shared';
 import { useEnquiries, useSendEnquiry, useVendorsPage } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
@@ -68,7 +67,7 @@ export function EnquiryFormModal({ open, request, onClose, onSent }: { open: boo
           />
         </Form.Item>
         <Form.Item name="closesOn" label="Quotes by" rules={[{ required: true, message: 'Pick the last day to quote' }]} extra="The links stop working after this day.">
-          <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
+          <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
         </Form.Item>
         <Form.Item name="message" label="Note to suppliers">
           <Input.TextArea rows={2} maxLength={1000} placeholder="Delivery to site, unloading, brands accepted…" />
@@ -81,8 +80,8 @@ export function EnquiryFormModal({ open, request, onClose, onSent }: { open: boo
   );
 }
 
-/** After sending: who was emailed, and the links for the rest, to copy or send on WhatsApp. */
-export function EnquirySentModal({ enquiry, request, onClose }: { enquiry: EnquiryDto | null; request: MaterialRequestDto; onClose: () => void }) {
+/** After sending: who was emailed, and the links for the rest. */
+export function EnquirySentModal({ enquiry, onClose }: { enquiry: EnquiryDto | null; onClose: () => void }) {
   const { message } = App.useApp();
   const copy = async (v: EnquiryVendorDto) => {
     if (!v.link) return;
@@ -92,12 +91,6 @@ export function EnquirySentModal({ enquiry, request, onClose }: { enquiry: Enqui
     } catch {
       message.error('Copy failed: select the link and copy it');
     }
-  };
-  /** Opens WhatsApp with the message ready for that supplier; nothing is sent until they press send there. */
-  const share = (v: EnquiryVendorDto) => {
-    if (!v.link || !enquiry) return;
-    const text = `${v.vendorName}: please quote for ${request.items.length} item${request.items.length === 1 ? '' : 's'} on ${request.requestNo} by ${formatDate(enquiry.closesOn)}. Rates go here, no sign-in needed: ${v.link}`;
-    window.open(whatsAppShareUrl(text, v.phone), '_blank', 'noopener');
   };
   const emailed = enquiry?.vendors.filter((v) => v.emailedAt) ?? [];
   const byHand = enquiry?.vendors.filter((v) => !v.emailedAt) ?? [];
@@ -118,9 +111,6 @@ export function EnquirySentModal({ enquiry, request, onClose }: { enquiry: Enqui
                       <Input readOnly value={v.link} aria-label={`Quote link for ${v.vendorName}`} onFocus={(e) => e.target.select()} />
                       <Button icon={<CopyOutlined />} onClick={() => copy(v)}>
                         Copy
-                      </Button>
-                      <Button icon={<WhatsAppOutlined />} onClick={() => share(v)}>
-                        WhatsApp
                       </Button>
                     </Space.Compact>
                   ) : (

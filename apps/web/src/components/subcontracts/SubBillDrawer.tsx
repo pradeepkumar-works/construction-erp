@@ -26,7 +26,7 @@ import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { openSubBillPrint } from './subcontractPrint';
 import { Section } from '@/components/common/Section';
-import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
@@ -58,7 +58,6 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
     onSuccess: (b) => done(`${b.label} submitted for approval`),
     meta: FAIL_NOTICE,
   });
-  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/subcontract-bills/${id}`)).data,
     onSuccess: () => {
@@ -365,15 +364,18 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                 preparer && <EditResubmitButton entry={data} onEdit={onEdit} size={size} />
               )}
               <ReviewActions type="subcontract_bill" id={data.id} status={data.status} amount={data.grossAmount} size={size} />
+              {editable ? (
+                <ConfirmDelete what={data.label} onConfirm={() => remove.mutateAsync()}>
+                  <Button size={size} danger loading={remove.isPending}>
+                    Delete
+                  </Button>
+                </ConfirmDelete>
+              ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
-          more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: data.label, onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }
-    >
-      {deleteDialog}
-    </RecordFrame>
+    />
   );
 }
 

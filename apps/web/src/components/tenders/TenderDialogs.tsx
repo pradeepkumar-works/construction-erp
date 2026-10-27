@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Checkbox, Form, Input, InputNumber, Radio, Select, Switch, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Checkbox, DatePicker, Form, Input, InputNumber, Radio, Select, Switch, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
 import type { ProjectType, TenderDetailDto, TenderStatus } from '@erp/shared';
@@ -45,7 +44,7 @@ export function SubmitDialog({ tender, open, onClose }: { tender: TenderDetailDt
           {`Our quote ${formatINR(tender.totals.quotedAmount, true)}${tender.totals.quotedPct ? `, ${sorPctLabel(tender.totals.quotedPct).toLowerCase()} the SOR` : ''}. The bid BOQ and its pricing are fixed once it is in.`}
         </Typography.Paragraph>
         <Form.Item name="submittedOn" label="Submitted on" rules={[{ required: true, message: 'Choose the date the bid went in' }]}>
-          <DatePicker disabledDate={notAfterToday} style={{ width: '100%' }} />
+          <DatePicker format="DD MMM YYYY" disabledDate={notAfterToday} style={{ width: '100%' }} />
         </Form.Item>
       </Form>
     </FormShell>
@@ -84,7 +83,7 @@ export function StatusDialog({ tender, status, onClose }: { tender: TenderDetail
     >
       <Form form={form} layout="vertical">
         <Form.Item name="on" label="On" rules={[{ required: true, message: 'Choose the date' }]}>
-          <DatePicker disabledDate={notAfterToday} style={{ width: '100%' }} />
+          <DatePicker format="DD MMM YYYY" disabledDate={notAfterToday} style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item name="note" label="Note">
           <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} maxLength={1000} placeholder={text?.note} />
@@ -171,7 +170,7 @@ export function EmdReturnedDialog({ tender, open, onClose }: { tender: TenderDet
       <Form form={form} layout="vertical">
         <Typography.Paragraph translate="no">{`${tender.emd?.reference ?? ''}, ${formatINR(tender.emd?.amount, true)}${tender.emd?.issuer ? ` from ${tender.emd.issuer}` : ''}`}</Typography.Paragraph>
         <Form.Item name="on" label="Returned on" rules={[{ required: true, message: 'Choose the date the EMD came back' }]}>
-          <DatePicker disabledDate={notAfterToday} style={{ width: '100%' }} />
+          <DatePicker format="DD MMM YYYY" disabledDate={notAfterToday} style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item name="note" label="Note">
           <Input maxLength={300} placeholder="Refunded to the current account" />
@@ -260,7 +259,7 @@ export function MakeProjectDialog({ tender, open, onClose }: { tender: TenderDet
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="startDate" label="Start date" extra={tender.completionMonths ? `Ends ${tender.completionMonths} months later` : undefined}>
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="agreementNo" label="Agreement no.">
               <Input maxLength={80} placeholder="Agreement No. 14/2026-27" {...CODE_INPUT} />
@@ -292,7 +291,7 @@ export function MakeProjectDialog({ tender, open, onClose }: { tender: TenderDet
                   <Input maxLength={120} placeholder="State Bank of India" />
                 </Form.Item>
                 <Form.Item name={['guarantee', 'expiresOn']} label="Valid until">
-                  <DatePicker style={{ width: '100%' }} />
+                  <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
                 </Form.Item>
               </FormGrid>
             </>

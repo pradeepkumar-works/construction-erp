@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, MaintenanceJobDto, MaintenanceKind } from '@erp/shared';
@@ -113,7 +112,7 @@ export function JobFormModal({
         </FormGrid>
         <FormGrid cols={2}>
           <Form.Item name="date" label={breakdown ? 'Stopped on' : 'Date'} rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           <Form.Item name="meterReading" label="Hour meter / km">
             <QuantityInput />

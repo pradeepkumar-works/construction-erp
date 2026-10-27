@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Descriptions, Empty, Flex, Form, Input, InputNumber, Popconfirm, Progress, Segmented, Select, Space, Table, Tooltip, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Button, DatePicker, Descriptions, Empty, Flex, Form, Input, InputNumber, Popconfirm, Progress, Segmented, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -594,7 +593,7 @@ function StageModal({ projectId, epc, target, onClose, onSaved }: { projectId: s
         {trigger === 'EVENT' && !byDeliverables ? (
           <FormGrid cols={2}>
             <Form.Item name="achievedOn" label="Happened on" extra="Empty until it does">
-              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="evidence" label="Evidence" extra="The letter or certificate that says so">
               <Input maxLength={300} placeholder="e.g. EE letter SUWM/DES/114" />

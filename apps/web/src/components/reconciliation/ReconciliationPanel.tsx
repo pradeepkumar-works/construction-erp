@@ -19,7 +19,6 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Section, SectionStack } from '@/components/common/Section';
 import { PeriodPicker, periodLabel, periodParams, type PeriodState } from '@/components/cost/PeriodPicker';
 import { NormFormModal } from './NormFormModal';
-import { StandardNormsModal } from './StandardNormsModal';
 import { SubconReconciliation } from './SubconReconciliation';
 import { WastageReport } from './WastageReport';
 import { EstimatePanel } from './EstimatePanel';
@@ -136,7 +135,6 @@ function MaterialsView({ projectId }: { projectId: string }) {
   const [editing, setEditing] = useState<MaterialNormDto | null>(null);
   const [editingActivity, setEditingActivity] = useState<ActivityNormDto | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [libraryOpen, setLibraryOpen] = useState(false);
   const { data, isLoading, error, refetch } = useProjectReconciliation(projectId, periodParams(period));
   const remove = useRemoveMaterialNorm();
   const removeActivity = useRemoveActivityNorm();
@@ -365,13 +363,9 @@ function MaterialsView({ projectId }: { projectId: string }) {
             Export
           </Button>
           {data?.canEditNorms ? (
-            <>
-              {/* The standard norms library (finding 16 of the October review): a project need not start from nothing. */}
-              <Button onClick={() => setLibraryOpen(true)}>Add standard norms</Button>
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm(null)}>
-                New norm
-              </Button>
-            </>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm(null)}>
+              New norm
+            </Button>
           ) : null}
         </Space>
       </div>
@@ -385,14 +379,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
               showIcon
               style={{ marginBottom: 12 }}
               title="No material norms yet"
-              description={`A norm says how much of a store item one unit of a BOQ item uses, such as 8.2 bags of cement per cum of M25. With norms set, approved progress gives the theoretical consumption to check issues against.${data.canEditNorms ? ' Add standard norms starts from the usual figures for the work your BOQ names.' : ' The QS, the project manager, management or admin can set them.'}`}
-              action={
-                data.canEditNorms ? (
-                  <Button size="small" onClick={() => setLibraryOpen(true)}>
-                    Add standard norms
-                  </Button>
-                ) : undefined
-              }
+              description={`A norm says how much of a store item one unit of a BOQ item uses, such as 8.2 bags of cement per cum of M25. With norms set, approved progress gives the theoretical consumption to check issues against.${data.canEditNorms ? '' : ' The QS, the project manager, management or admin can set them.'}`}
             />
           ) : null}
           <Row gutter={[16, 16]}>
@@ -511,7 +498,6 @@ function MaterialsView({ projectId }: { projectId: string }) {
         </>
       )}
       <NormFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} norm={editing} activityNorm={editingActivity} />
-      <StandardNormsModal open={libraryOpen} onClose={() => setLibraryOpen(false)} projectId={projectId} />
     </SectionStack>
   );
 }

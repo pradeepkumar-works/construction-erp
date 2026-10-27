@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { ImportOutlined, MailOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewCost, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -28,8 +28,7 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormShell } from '@/components/form/FormShell';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
-import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { OrderBudget, OrderQuotes } from './OrderDecision';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { TargetRequests } from '@/components/payables/TargetRequests';
 
 const money = (v: string | number) => <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}</span>;
@@ -66,7 +65,6 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
   const [closing, setClosing] = useState(false);
   const [closeForm] = Form.useForm<{ note: string }>();
   const buyer = !!user && canPurchase(user.roleKey);
-  const [askDelete, deleteDialog] = useConfirmDelete();
 
   const done = (text: string) => {
     message.success(text);
@@ -372,9 +370,6 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
             ...(approved && !data.closedAt && user && canViewPaymentRequests(user.roleKey)
               ? [{ key: 'advances', title: 'Advance requests', children: <TargetRequests approved target={{ kind: 'PO_ADVANCE', purchaseOrderId: data.id, label: data.poNo, vendorName: data.vendorName }} base={String(toNumber(data.total) - toNumber(data.advanceRequested))} /> }]
               : []),
-            // What the approver needs to decide it (finding 15 of the October review): who else quoted, and the budget.
-            ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the request', children: <OrderQuotes order={data} /> }] : []),
-            ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', title: 'Against the budget', children: <OrderBudget order={data} /> }] : []),
             { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],
           activity: { type: 'purchase_order', id: data.id, submission: data },
@@ -419,10 +414,15 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                   Close short
                 </Button>
               ) : null}
+              {editable ? (
+                <ConfirmDelete what={`purchase order ${data.poNo}`} onConfirm={() => remove.mutateAsync()}>
+                  <Button size={size} danger loading={remove.isPending}>
+                    Delete
+                  </Button>
+                </ConfirmDelete>
+              ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
-          more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `purchase order ${data.poNo}`, onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }
     >
@@ -434,7 +434,6 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
           </Form.Item>
         </Form>
       </FormShell>
-      {deleteDialog}
       <ReceiptModal open={receiving} onClose={() => setReceiving(false)} projectId={data?.projectId} purchaseOrderId={data?.id} />
       <VendorBillFormModal open={billing} purchaseOrderId={data?.id} onClose={() => setBilling(false)} />
     </RecordFrame>

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Descriptions, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Button, DatePicker, Descriptions, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PrinterOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -91,7 +90,7 @@ function PayModal({ s, onClose }: { s: FinalSettlementDto | null; onClose: () =>
     >
       <Form form={form} layout="vertical" initialValues={{ paidOn: dayjs() }}>
         <Form.Item name="paidOn" label={s && Number(s.net) < 0 ? 'Received on' : 'Paid on'} rules={[{ required: true, message: 'Pick the day it was settled' }]}>
-          <DatePicker style={{ width: '100%' }} />
+          <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item name="paymentRef" label="Bank reference (optional)">
           <Input maxLength={80} placeholder="UTR or cheque number" />

@@ -4,7 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { ReconciliationService } from './reconciliation.service';
 import { RateAnalysisService } from './rate-analysis.service';
 import { StockViewsService } from './stock-views.service';
-import { AdoptStandardNormsDto, CopyRateAnalysisDto, EstimateTermsDto, ImportRateAnalysisDto, ReconciliationQuery, RecoverExcessDto, SaveActivityNormDto, SaveBoqResourceDto, SaveMaterialNormDto } from './reconciliation.dto';
+import { CopyRateAnalysisDto, EstimateTermsDto, ImportRateAnalysisDto, ReconciliationQuery, RecoverExcessDto, SaveActivityNormDto, SaveBoqResourceDto, SaveMaterialNormDto } from './reconciliation.dto';
 
 @ApiTags('reconciliation')
 @ApiBearerAuth()
@@ -24,23 +24,6 @@ export class ReconciliationController {
   @Get('projects/:id')
   get(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Query() q: ReconciliationQuery) {
     return this.reconciliation.get(user, id, q);
-  }
-
-  @ApiOperation({
-    summary: 'What the standard norms library would set on this project',
-    description:
-      'Finding 16 of the October review: the BOQ items the library recognises by their description and unit, the norms they would get, ' +
-      'and the store items it would add to the master. Nothing is written. An item that already has norms is marked, and left alone unless `replace`.',
-  })
-  @Get('projects/:id/standard-norms')
-  standardNorms(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
-    return this.reconciliation.standardNormPlan(user, id);
-  }
-
-  @ApiOperation({ summary: 'Adopt the standard norms on this project', description: 'QS, project manager, management or admin. `replace` overwrites the norms a BOQ item already has.' })
-  @Post('projects/:id/standard-norms')
-  adoptStandardNorms(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AdoptStandardNormsDto) {
-    return this.reconciliation.adoptStandardNorms(user, id, !!dto.replace);
   }
 
   @ApiOperation({ summary: 'Add or change the norm of a store item on a BOQ item', description: 'QS, project manager, management or admin. One norm per BOQ item and store item.' })

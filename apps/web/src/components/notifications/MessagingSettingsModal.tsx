@@ -9,9 +9,9 @@ import { useMessagingPrefs, useSendTestMessage, useUpdateMessagingPrefs } from '
 import { FormShell } from '@/components/form/FormShell';
 import { PHONE_INPUT } from '@/components/form/inputs';
 
-type Values = { phone: string; whatsapp: boolean; sms: boolean; email: boolean };
+type Values = { phone: string; whatsapp: boolean; sms: boolean };
 
-/** The user's own switches for alerts by email (on by default), on WhatsApp and by SMS: what waits on them, send-backs, the daily reminders and digest. */
+/** The user's own opt-in for alerts on WhatsApp and by SMS: approval requests, send-backs, the daily reminders and digest. */
 export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { message } = App.useApp();
   const { refresh } = useAuth();
@@ -26,7 +26,7 @@ export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClo
   const filled = useRef(false);
   useEffect(() => {
     if (open && data && !filled.current) {
-      form.setFieldsValue({ phone: data.phone ?? '', whatsapp: data.whatsapp, sms: data.sms, email: data.email });
+      form.setFieldsValue({ phone: data.phone ?? '', whatsapp: data.whatsapp, sms: data.sms });
       filled.current = true;
     }
     if (!open) {
@@ -36,10 +36,9 @@ export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClo
   }, [open, data, form]);
 
   const save = async (v: Values) => {
-    await update.mutateAsync({ phone: v.phone.trim() || null, whatsapp: v.whatsapp, sms: v.sms, email: v.email });
+    await update.mutateAsync({ phone: v.phone.trim() || null, whatsapp: v.whatsapp, sms: v.sms });
     await refresh();
-    const on = [v.email && 'email', v.whatsapp && 'WhatsApp', v.sms && 'SMS'].filter(Boolean);
-    message.success(on.length ? `Alerts by ${on.join(', ')} saved` : 'Alerts are in the app only');
+    message.success(v.whatsapp || v.sms ? `Alerts on ${[v.whatsapp && 'WhatsApp', v.sms && 'SMS'].filter(Boolean).join(' and ')} saved` : 'WhatsApp and SMS alerts are off');
   };
 
   const sendTest = async (channel: MessageChannel) => {
@@ -57,18 +56,14 @@ export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClo
   const valid = !!normalisePhone(phone);
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Email, WhatsApp and SMS alerts" okText="Save" onSubmit={save} okDisabled={isLoading} projectDefault={false}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title="WhatsApp and SMS alerts" okText="Save" onSubmit={save} okDisabled={isLoading} projectDefault={false}>
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
         <Typography.Text type="secondary">
-          Email tells you when a step waits on you (an order to place, a delivery to expect, material to test, money to collect) and when an entry of yours is sent back. WhatsApp
-          and SMS also bring approval requests, the morning approvals digest and the DPR, test and payment reminders to your phone. WhatsApp goes first; SMS is used when
-          WhatsApp is off or does not get through.
+          Get approval requests, send-backs on your submissions, the morning approvals digest and the DPR, test and payment reminders on your phone, as well as in the app. WhatsApp
+          goes first; SMS is used when WhatsApp is off or does not get through.
         </Typography.Text>
         {notReady ? <Alert type="info" showIcon title="WhatsApp and SMS are not set up on this server yet" description="You can switch alerts on now; they start once your company's account is connected." /> : null}
-        <Form<Values> form={form} layout="vertical" requiredMark={false} initialValues={{ phone: '', whatsapp: false, sms: false, email: true }}>
-          <Form.Item name="email" valuePropName="checked" style={{ marginBottom: 8 }}>
-            <Checkbox>Email me what waits on me</Checkbox>
-          </Form.Item>
+        <Form<Values> form={form} layout="vertical" requiredMark={false} initialValues={{ phone: '', whatsapp: false, sms: false }}>
           <Form.Item
             name="phone"
             label="Mobile number"

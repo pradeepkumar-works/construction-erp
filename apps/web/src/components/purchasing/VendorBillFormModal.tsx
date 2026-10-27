@@ -1,20 +1,19 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Flex, Form, Input, Select, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, DatePicker, Flex, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto, VendorBillKind } from '@erp/shared';
 import { GST_RATES, readNumber, readText } from '@erp/shared';
-import { api } from '@/lib/api';
+import { api, errorMessage } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { usePurchaseOrder, usePurchaseOrders } from '@/lib/queries';
+import { uploadFile, usePurchaseOrder, usePurchaseOrders } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
-import { ReadDocumentButton, ReadPreview, ReadSource, readDateReason, readFieldProps, useKeepReadFile, type ReadState } from '@/components/ai/ReadDocument';
+import { ReadDocumentButton, ReadPreview, ReadSource, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
 import { DraftBillChecks } from './DraftBillChecks';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
@@ -59,6 +58,7 @@ export function VendorBillFormModal({
   onSaved?: (b: VendorBillDto) => void;
 }) {
   const [form] = Form.useForm<FormValues>();
+  const { message } = App.useApp();
   const qc = useQueryClient();
   const notify = useNotify();
   const watchedPo = Form.useWatch('purchaseOrderId', form);
@@ -74,8 +74,6 @@ export function VendorBillFormModal({
   // A scanned invoice read to fill the form (AI item 70): what came back, the line values waiting for its PO to load,
   // and the field whose place on the page is shown.
   const [readState, setReadState] = useState<ReadState | null>(null);
-  // The invoice scan is kept on the bill, so nobody picks the same file twice (finding 13 of the October review).
-  const keepScan = useKeepReadFile(form, 'docs');
   const [activeRead, setActiveRead] = useState<string | null>(null);
   const pendingLines = useRef<{ poId: string; lines: Record<string, LineValue> } | null>(null);
 
@@ -161,7 +159,7 @@ export function VendorBillFormModal({
     const date = readText(f.invoiceDate);
     form.setFieldsValue({
       invoiceNo: readText(f.invoiceNo) ?? form.getFieldValue('invoiceNo'),
-      ...(date && !readDateReason(date) ? { invoiceDate: dayjs(date) } : {}),
+      ...(date && !dayjs(date).isAfter(dayjs(), 'day') ? { invoiceDate: dayjs(date) } : {}),
       freight: readNumber(f.freight) ?? 0,
     });
     const target = result.match?.purchaseOrder?.id;
@@ -177,7 +175,9 @@ export function VendorBillFormModal({
       setLines({});
     }
     // The scan itself goes on the bill, as if attached by hand.
-    keepScan.keep(s);
+    uploadFile(s.file)
+      .then((att) => form.setFieldValue('docs', [...((form.getFieldValue('docs') as AttachmentDto[] | undefined) ?? []), att]))
+      .catch((e) => message.warning(`The form is filled, but the scan could not be attached: ${errorMessage(e)}`));
   };
 
   /** Which read line went into a PO line, for its "From the invoice" link and warnings. */
@@ -190,8 +190,6 @@ export function VendorBillFormModal({
     return i >= 0 && readState!.result.lines[i][key]?.confidence === 'low';
   };
   const unmatched = readState ? readState.result.lines.filter((_, i) => !readState.result.match?.lines[i]) : [];
-  // A date the invoice cannot carry is left for accounts to type, in amber (finding 13 of the October review).
-  const dateProblem = readDateReason(readText(readState?.result.fields.invoiceDate));
   const printedTotal = readState ? readNumber(readState.result.fields.total) : null;
 
   const save = useMutation({
@@ -245,7 +243,7 @@ export function VendorBillFormModal({
           </Flex>
         ) : null}
         {readState ? (
-          <ReadPreview state={readState} active={activeRead} kept={keepScan.kept} onClear={() => setReadState(null)}>
+          <ReadPreview state={readState} active={activeRead} onClear={() => setReadState(null)}>
             {readState.result.match?.vendor ? (
               <div style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 4 }}>
                 Vendor {readState.result.match.vendor.name}
@@ -281,8 +279,8 @@ export function VendorBillFormModal({
             <Form.Item name="invoiceNo" label="Vendor's invoice no." rules={[{ required: true, whitespace: true, message: 'Enter the invoice number' }]} {...readFieldProps(readState, 'invoiceNo', setActiveRead)}>
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead, dateProblem)}>
-              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead)}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="freight" label="Freight" extra={po && toNumber(po.freight) > 0 ? `PO freight ${formatINR(po.freight, true)}` : undefined} {...readFieldProps(readState, 'freight', setActiveRead)}>
               <MoneyInput />

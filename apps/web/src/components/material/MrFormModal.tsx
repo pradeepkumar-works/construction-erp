@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, Form, Input, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AiDraftDto, MaterialPriority, MaterialRequestDto } from '@erp/shared';
 import { MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS } from '@erp/shared';
@@ -14,7 +13,6 @@ import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
-import { ItemPicker } from '@/components/form/ItemPicker';
 import { QuantityInput } from '@/components/form/inputs';
 import { aiFlagInput, aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { recordPage } from '@/components/approvals/queue';
@@ -98,7 +96,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Pick the date it is needed by' }]} {...aiFlagItem(draft, 'requiredDate', requiredDate)}>
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
           <Form.Item name="priority" label="Priority" rules={[{ required: true, message: 'Choose the priority' }]}>
             <Select options={MATERIAL_PRIORITIES.map((p) => ({ value: p, label: MATERIAL_PRIORITY_LABELS[p] }))} />
@@ -117,14 +115,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
                 title: 'Item',
                 render: (f) => (
                   <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Enter the item' }]}>
-                    <ItemPicker
-                      placeholder="Cement OPC 53"
-                      aria-label={`Item of line ${f.name + 1}`}
-                      style={{ minWidth: 160 }}
-                      unit={lines?.[f.name]?.unit}
-                      onPick={(item) => form.setFieldValue(['items', f.name, 'unit'], item.unit)}
-                      {...aiFlagInput(draft, `items.${f.name}.itemName`, lines?.[f.name]?.itemName)}
-                    />
+                    <Input placeholder="Cement OPC 53" aria-label={`Item of line ${f.name + 1}`} style={{ minWidth: 160 }} {...aiFlagInput(draft, `items.${f.name}.itemName`, lines?.[f.name]?.itemName)} />
                   </Form.Item>
                 ),
               },

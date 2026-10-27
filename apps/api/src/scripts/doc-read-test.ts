@@ -1,12 +1,11 @@
 /**
- * Tests for reading invoices, challans and drawings (AI item 70), work orders and BOQs (finding 10 of the October
- * review) that need no model: turning the model's reply into
+ * Tests for reading invoices, challans and drawings (AI item 70) that need no model: turning the model's reply into
  * typed values, the checks that mark a value to check, and matching read lines to order lines.
  *
  *   node dist/scripts/doc-read-test.js
  */
 import assert from 'node:assert/strict';
-import { boqRowsFromRead, disciplineOf, gstinCheckChar, itemSimilarity, matchLines, normUnit, readDateProblem, workOrderEnd } from '@erp/shared';
+import { disciplineOf, gstinCheckChar, itemSimilarity, matchLines, normUnit } from '@erp/shared';
 import { fixGstin, fixVehicleNo, normalise, parseReply, toDate, toNumber } from '../ai/ai-read.service';
 
 const tests: [string, () => void][] = [];
@@ -133,72 +132,6 @@ test('units and disciplines as printed', () => {
   assert.equal(disciplineOf('Plumbing & drainage'), 'PLUMBING');
   assert.equal(disciplineOf('Landscape'), null);
   assert.ok(itemSimilarity('Bitumen VG-30 (bulk)', 'Bitumen VG-30') >= 0.9);
-});
-
-test('a work order: dates and the contract value typed, a completion before the start marked', () => {
-  const r = normalise('workOrder', { fields: { nameOfWork: at('Road from Km 12 to Km 18'), workOrderDate: at('02/11/2026'), contractValue: at('₹ 8,46,50,000'), startDate: at('15.11.2026'), completionDate: at('01/11/2026'), durationMonths: at('18') }, lines: [] }, 1);
-  assert.equal(r.fields.workOrderDate.value, '2026-11-02');
-  assert.equal(r.fields.contractValue.value, 84650000);
-  assert.equal(r.fields.durationMonths.value, 18);
-  assert.equal(r.fields.completionDate.confidence, 'low');
-  assert.equal(r.lines.length, 0);
-  // A value of a few hundred is a figure in lakh or crore misread as rupees.
-  assert.equal(normalise('workOrder', { fields: { contractValue: at('846.5') }, lines: [] }, 1).fields.contractValue.confidence, 'low');
-});
-
-test('a work order runs its months from the start when no completion date is printed', () => {
-  assert.equal(workOrderEnd('2026-11-01', null, 18), '2028-04-30');
-  assert.equal(workOrderEnd('2026-11-15', null, 18), '2028-05-14');
-  assert.equal(workOrderEnd('2027-01-31', null, 1), '2027-02-28');
-  assert.equal(workOrderEnd('2026-11-15', '2028-05-31', 18), '2028-05-31');
-  assert.equal(workOrderEnd(null, null, 18), null);
-  assert.equal(workOrderEnd('2026-11-15', null, 2.5), null);
-});
-
-test('BOQ lines: amounts checked against quantity × rate, with a BOQ’s rounding allowed', () => {
-  const r = normalise('boq', { fields: {}, lines: [
-    { itemNo: at('1.01'), description: at('Earthwork in embankment'), unit: at('Cum'), quantity: at('18,500'), rate: at('245'), amount: at('45,32,500') },
-    { itemNo: at('1.02'), description: at('Granular sub-base'), unit: at('Cum'), quantity: at('6400'), rate: at('1850'), amount: at('1,18,40,000') },
-    { itemNo: at('1.03'), description: at('Wet mix macadam'), unit: at('Cum'), quantity: at('4812'), rate: at('2650'), amount: at('1,27,52,000') },
-  ] }, 1);
-  assert.equal(r.lines[0].amount.confidence, 'high');
-  // 6400 × 1850 is 1,18,40,000: right. 4812 × 2650 is 1,27,51,800: within half a per cent of the rounded amount.
-  assert.equal(r.lines[1].quantity.confidence, 'high');
-  assert.equal(r.lines[2].amount.confidence, 'high');
-  const wrong = normalise('boq', { fields: {}, lines: [{ description: at('GSB'), quantity: at('6400'), rate: at('1850'), amount: at('11480000') }] }, 1);
-  assert.equal(wrong.lines[0].quantity.confidence, 'low');
-});
-
-test('BOQ rows for the import: headings carried down, run-on descriptions joined, missing rates worked out', () => {
-  const read = normalise('boq', { fields: {}, lines: [
-    { description: at('PART A: EARTHWORK') },
-    { itemNo: at('1.01'), description: at('Earthwork in embankment with approved borrowed earth,'), unit: at('Cum'), quantity: at(18500), rate: at(245), amount: at(4532500) },
-    { description: at('compacted in layers of 200 mm') },
-    { itemNo: at('1.02'), section: at('Earthwork'), description: at('Clearing and grubbing'), unit: at('Sqm'), quantity: at(42000), amount: at(777000) },
-    { itemNo: at('2.01'), description: at('Granular sub-base'), unit: at('Cum'), quantity: at('64OO', 'low'), rate: at(1850) },
-  ] }, 1);
-  const rows = boqRowsFromRead(read.lines);
-  assert.equal(rows.length, 3);
-  assert.equal(rows[0].section, 'PART A: EARTHWORK');
-  assert.equal(rows[0].description, 'Earthwork in embankment with approved borrowed earth, compacted in layers of 200 mm');
-  assert.equal(rows[0].check, null);
-  assert.equal(rows[1].section, 'Earthwork');
-  assert.equal(rows[1].rate, '18.5');
-  assert.match(rows[1].check!, /rate: not printed/);
-  assert.equal(rows[2].originalQty, '');
-  assert.match(rows[2].check!, /quantity/);
-});
-
-test('a date that cannot be right is left for the person, with the reason', () => {
-  const today = '2026-10-26';
-  // A year misread turns last Christmas into next: never filled in by itself.
-  assert.equal(readDateProblem('2026-12-25', today), 'future');
-  assert.equal(readDateProblem('2025-09-30', today), null);
-  assert.equal(readDateProblem('2025-01-02', today), 'old');
-  assert.equal(readDateProblem('15-10-2026', today), 'unreadable');
-  // Today is fine, and no date at all is no problem.
-  assert.equal(readDateProblem(today, today), null);
-  assert.equal(readDateProblem(null, today), null);
 });
 
 let failed = 0;

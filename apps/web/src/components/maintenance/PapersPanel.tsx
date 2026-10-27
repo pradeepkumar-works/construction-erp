@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Form, Input, Select, Space, Typography, theme } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, Checkbox, DatePicker, Form, Input, Select, Space, Typography, theme } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -393,7 +392,7 @@ export function PapersPanel() {
             </Form.Item>
           </FormGrid>
           <Form.Item name="validity" label="Valid from / to" rules={[{ validator: (_, v?: [unknown, unknown]) => (v?.[1] ? Promise.resolve() : Promise.reject(new Error('Pick the date it expires'))) }]}>
-            <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, false]} />
+            <DatePicker.RangePicker format="DD MMM YYYY" style={{ width: '100%' }} allowEmpty={[true, false]} />
           </Form.Item>
           <Form.Item name="notes" label="Notes">
             <Input maxLength={1000} />
@@ -422,7 +421,7 @@ export function PapersPanel() {
               <Input maxLength={40} placeholder="HMV, LMV, crane operator" />
             </Form.Item>
             <Form.Item name="licenceValidTo" label="Licence valid to">
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
           <Form.Item name="equipmentId" label="Drives">

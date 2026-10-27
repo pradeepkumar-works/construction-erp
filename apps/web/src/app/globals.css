@@ -718,14 +718,6 @@ kbd {
     height: 44px;
     line-height: 42px;
   }
-  /* A list card's title is the control that opens the record, and the whole card already takes the tap (the title's
-     ::after covers it). Its own box grows to 44 px around the same text, half above and half below the 22 px line, so
-     a check that measures the control rather than its hit area agrees too (finding 17 of the October review). The
-     padding is cancelled by the margin, so nothing in the card moves. */
-  :root .list-card-open {
-    padding-block: 11px;
-    margin-block: -11px;
-  }
   /* A checkbox on its own (no label text) still takes a 44 px square, and a table's selection column widens to hold it. */
   :root :is(.ant-checkbox-wrapper, .ant-radio-wrapper) {
     min-height: 44px;

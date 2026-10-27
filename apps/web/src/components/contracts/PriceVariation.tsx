@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, Empty, Form, Input, InputNumber, Space, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, DatePicker, Empty, Form, Input, InputNumber, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -112,7 +111,7 @@ function PriceVariationModal({ open, contract, onClose }: { open: boolean; contr
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Price variation formula" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical" className="pv-form" requiredMark="optional">
         <Form.Item name="pvBaseDate" label="Base date" extra="Usually the month before the bids were due; the base indices are for this date">
-          <DatePicker style={{ width: '100%' }} />
+          <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
         </Form.Item>
         <Form.List name="components">
           {(fields, { add, remove }) => (

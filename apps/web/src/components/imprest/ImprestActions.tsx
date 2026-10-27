@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Checkbox, Form, Input, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Checkbox, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDetailDto, ImprestDto, PaymentMode } from '@erp/shared';
@@ -146,7 +145,7 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
         ) : null}
         {kind === 'pay' || kind === 'advance' || kind === 'return' ? (
           <Form.Item name="date" label={kind === 'return' ? 'Returned on' : 'Paid on'}>
-            <DatePicker style={{ width: '100%' }} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         ) : null}
         {paying ? (

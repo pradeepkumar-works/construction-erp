@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, AutoComplete, Button, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -132,7 +131,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
             </Form.Item>
           )}
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {move === 'vendor' && (
             <Form.Item name="supplier" label="Supplier" rules={[{ required: true, whitespace: true, message: 'Who does it go back to?' }]}>

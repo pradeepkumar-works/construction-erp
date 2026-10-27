@@ -1,6 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { asMasterNames, findMasterItem } from '../stock/item-master';
 import {
   SUBMISSION_STATUS_LABELS,
   canPurchase,
@@ -13,9 +12,6 @@ import {
   type PoLineRateCheckDto,
   type RateBenchmarksDto,
   type RateQuote,
-  awardLowestPerItem,
-  siteDeliveryAddress,
-  type AwardPlan,
   type Paginated,
   type DeliveryState,
   type ProcurementStatusDto,
@@ -37,8 +33,7 @@ import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, LastRatesQuery, ListPurchaseOrdersQuery, RateCheckQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
 import { todayIn } from '../notifications/time';
-import { addDays } from '../planning/schedule-rules';
-import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, toOrderOf, totals } from './purchase-math';
+import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
 import { QuotationsService } from './quotations.service';
 import { poEmail, selectionProblem } from './po-supplier-rules';
 import { EmailService } from '../notifications/email.service';
@@ -201,12 +196,6 @@ export class PurchaseOrdersService {
   private async assertCanPurchase(user: RequestUser, projectId: string) {
     if (!canPurchase(user.roleKey)) throw new ForbiddenException('Only procurement, project managers and management raise purchase orders');
     await this.access.assertCanAccessProject(user, projectId);
-  }
-
-  /** Where the order's goods go when it names no address: the project's site store (finding 12 of the October review). */
-  private async siteAddress(organizationId: string, projectId: string) {
-    const p = await this.prisma.project.findFirst({ where: { id: projectId, organizationId }, select: { siteAddress: true, location: true } });
-    return siteDeliveryAddress(p);
   }
 
   private where(user: RequestUser, q: ListPurchaseOrdersQuery): Prisma.PurchaseOrderWhereInput {
@@ -530,10 +519,7 @@ export class PurchaseOrdersService {
    * the request still needs: requested, less what other orders hold (see `orderedOn`), what was received without one
    * and what stock met (v5 item 95).
    */
-  private async lines(tx: Tx | PrismaService, organizationId: string, mr: Prisma.MaterialRequestGetPayload<{ include: { items: true } }> | null, input: PoLineInput[], excludePoId?: string): Promise<LineData[]> {
-    // A line of its own names its item as the master has it (finding 3 of the October review).
-    const typed = await asMasterNames(tx, organizationId, input.map((l) => ({ itemName: l.itemName ?? '', unit: l.unit ?? '' })));
-    input = input.map((l, i) => (l.materialRequestItemId || !l.itemName || !l.unit ? l : { ...l, itemName: typed[i].itemName, unit: typed[i].unit }));
+  private async lines(tx: Tx | PrismaService, mr: Prisma.MaterialRequestGetPayload<{ include: { items: true } }> | null, input: PoLineInput[], excludePoId?: string): Promise<LineData[]> {
     const linked = input.map((l) => l.materialRequestItemId).filter((x): x is string => !!x);
     if (linked.length && !mr) throw new BadRequestException('Lines from a material request need the request on the order');
     if (new Set(linked).size !== linked.length) throw new BadRequestException('A request line is ordered twice');
@@ -586,7 +572,6 @@ export class PurchaseOrdersService {
     const { vendor, mr } = await this.refs(user, dto.projectId, dto.vendorId, dto.materialRequestId ?? null, dto.quotationId ?? null);
     const paymentDays = this.paymentDays(dto.paymentDays, vendor);
     const freight = parseFreight(dto.freight);
-    const deliveryAddress = dto.deliveryAddress?.trim() || (await this.siteAddress(user.organizationId, dto.projectId));
     let id: string | null;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -595,7 +580,7 @@ export class PurchaseOrdersService {
         );
         if (dto.id && (await tx.purchaseOrder.count({ where: { id: dto.id } }))) return null;
         // Under the PO number lock, so two orders on the same request line cannot both take its balance.
-        const lines = await this.lines(tx, user.organizationId, mr, dto.lines);
+        const lines = await this.lines(tx, mr, dto.lines);
         const row = await tx.purchaseOrder.create({
           data: {
             id: dto.id,
@@ -607,7 +592,7 @@ export class PurchaseOrdersService {
             materialRequestId: mr?.id ?? null,
             quotationId: dto.quotationId ?? null,
             deliveryBy: dto.deliveryBy ? parseDate(dto.deliveryBy) : null,
-            deliveryAddress,
+            deliveryAddress: dto.deliveryAddress || null,
             paymentTerms: dto.paymentTerms || null,
             paymentDays,
             freight,
@@ -636,57 +621,6 @@ export class PurchaseOrdersService {
     return this.get(user, id);
   }
 
-  /**
-   * The split of a request between the vendors who quoted lowest for each item (finding 12 of the October review):
-   * what is still to order, at each winner's rate. The screen previews it with the same rules; `awardLowest` draws it
-   * again here rather than trusting what was sent.
-   */
-  async awardPlan(user: RequestUser, materialRequestId: string): Promise<AwardPlan> {
-    this.assertCanView(user);
-    const cs = await this.quotations.comparative(user, materialRequestId);
-    const items = await this.prisma.materialRequestItem.findMany({
-      where: { requestId: materialRequestId },
-      include: {
-        poLines: { where: { purchaseOrder: { status: { not: 'REJECTED' } } }, select: { quantity: true, purchaseOrder: { select: { closedAt: true } }, stockTxns: { select: { quantity: true } } } },
-        stockTxns: { select: { quantity: true, purchaseOrderLineId: true } },
-        covers: { select: { quantity: true } },
-      },
-    });
-    return awardLowestPerItem(cs, Object.fromEntries(items.map((i) => [i.id, dec(toOrderOf(i))!])));
-  }
-
-  /** Raises one draft order per winning vendor. Nothing to award is a conflict, not an empty answer. */
-  async awardLowest(user: RequestUser, materialRequestId: string): Promise<PurchaseOrderDto[]> {
-    const plan = await this.awardPlan(user, materialRequestId);
-    const cs = await this.quotations.comparative(user, materialRequestId);
-    await this.assertCanPurchase(user, cs.projectId);
-    if (!plan.orders.length)
-      throw new ConflictException(
-        plan.leftOut.some((l) => l.reason === 'not quoted')
-          ? `No quotation on ${cs.requestNo} prices what is still to order.`
-          : `Everything on ${cs.requestNo} is already ordered or received.`,
-      );
-    const out: PurchaseOrderDto[] = [];
-    for (const o of plan.orders) {
-      const q = cs.quotations.find((x) => x.id === o.quotationId)!;
-      out.push(
-        await this.create(user, {
-          projectId: cs.projectId,
-          vendorId: o.vendorId,
-          materialRequestId,
-          quotationId: o.quotationId,
-          freight: String(o.freight),
-          deliveryBy: q.deliveryDays != null ? addDays(todayIn(), q.deliveryDays) : undefined,
-          paymentTerms: q.paymentTerms ?? undefined,
-          selectionReason: `Lowest rate per item on ${cs.requestNo}: ${o.lines.length} item${o.lines.length === 1 ? '' : 's'} of the comparative statement go to ${o.vendorName}.`,
-          lines: o.lines.map((l) => ({ materialRequestItemId: l.materialRequestItemId, quantity: String(l.quantity), rate: String(l.rate), gstRate: String(l.gstRate) })),
-        }),
-      );
-    }
-    await this.audit.log(user, 'MATERIAL_REQUEST', materialRequestId, 'AWARDED_LOWEST', `${out.length} order${out.length === 1 ? '' : 's'}: ${out.map((o) => o.poNo).join(', ')}`);
-    return out;
-  }
-
   async update(user: RequestUser, id: string, dto: UpdatePurchaseOrderDto): Promise<PurchaseOrderDto> {
     const row = await this.lifecycle.load(user, 'PURCHASE_ORDER', id);
     await this.assertCanPurchase(user, row.projectId);
@@ -708,7 +642,7 @@ export class PurchaseOrdersService {
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`PO:${user.organizationId}`}))`;
       if (dto.lines) {
-        const lines = await this.lines(tx, user.organizationId, mr, dto.lines, id);
+        const lines = await this.lines(tx, mr, dto.lines, id);
         Object.assign(data, totals(lines, freight));
         data.lines = { deleteMany: {}, create: lines };
       } else Object.assign(data, totals(current.lines, freight));
@@ -830,7 +764,10 @@ export class PurchaseOrdersService {
   private async updateItemRates(user: RequestUser, id: string) {
     const lines = await this.prisma.purchaseOrderLine.findMany({ where: { purchaseOrderId: id }, select: { itemName: true, unit: true, rate: true } });
     for (const l of lines) {
-      const found = await findMasterItem(this.prisma, user.organizationId, l.itemName, l.unit);
+      const found = await this.prisma.item.findFirst({
+        where: { organizationId: user.organizationId, name: { equals: l.itemName, mode: 'insensitive' }, unit: { equals: l.unit, mode: 'insensitive' } },
+        select: { id: true },
+      });
       if (found) await this.prisma.item.update({ where: { id: found.id }, data: { rate: l.rate } });
       else await this.prisma.item.create({ data: { organizationId: user.organizationId, name: l.itemName, unit: l.unit, rate: l.rate } });
     }

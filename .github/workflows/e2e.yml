@@ -110,30 +110,6 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/doc-read-test.js
-      - name: The lowest rate per item splits the request between its winners, freight and all
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/purchase-award-test.js
-      - name: BOQ sections offer their activities' links, and dates arriving spread the undated activities
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/boq-links-test.js
-      - name: A measurement sheet starts from the approved days no sheet holds yet
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/measure-from-progress-test.js
-      - name: The standard norms library reads a BOQ item by its words and unit
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/norms-library-test.js
-      - name: A GSTIN gives up its PAN and a new project is offered the next code in the series
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/small-fixes-test.js
-      - name: The RA bill email carries the bill, and the weekly summary adds up the money in
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/action-email-test.js
       - name: Material reconciliation adds up theoretical, allowed and consumed quantities and flags each item
         if: matrix.suite == 'flows'
         working-directory: apps/api
@@ -150,22 +126,6 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/dpr-lines-test.js
-      - name: Item names are one spelling, a typed line finds its master item, and duplicates group for merging
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/items-test.js
-      - name: Quantities above zero, no day's record after today, measurement held to the BOQ plus its tolerance
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/validation-test.js
-      - name: Wrong passwords lock an email for 15 minutes, an address trying many is held off, reset links are limited
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/login-guard-test.js
-      - name: Project setup checklist, starting contract terms and the BOQ against the contract value
-        if: matrix.suite == 'flows'
-        working-directory: apps/api
-        run: node dist/scripts/project-setup-test.js
       - name: Pipe networks read from EPANET and Excel, segments held to their length, zone sheets and working fronts
         if: matrix.suite == 'flows'
         working-directory: apps/api

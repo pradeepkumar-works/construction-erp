@@ -21,7 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { dateOnly, iso, parseDate, assertNotAfterToday } from '../common/serialize';
+import { dateOnly, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { AttendanceDayQuery, AttendanceSuggestionsQuery, CreateAttendanceDto, ListAttendanceQuery, UpdateAttendanceDto } from './attendance.dto';
@@ -47,19 +47,10 @@ const DESC_DEFAULT = new Set<string>(['date', 'totalWorkers', 'updatedAt']);
 const ROLL_CALL_REMARK = 'From the roll call';
 
 const dayKey = (projectId: string, date: Date) => `${projectId}|${dateOnly(date)}`;
-/** "2026-10-14" → "October 2026" */
-const monthName = (d: string) => new Date(`${d.slice(0, 7)}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-
-/** The approved payroll run a day falls in, which locks its attendance. */
-interface LockingRun {
-  runNo: string;
-  status: string;
-}
 
 /**
  * Daily attendance register: one sheet per project per day with head counts by contractor and trade.
- * Not an approval submission. It feeds the day's DPR manpower, stays open after that DPR is approved (attendance first,
- * finding 7 of the October review) and locks once payroll for its month is approved (`isAttendanceLocked`).
+ * Not an approval submission. It feeds the day's DPR manpower and locks once that DPR is approved.
  */
 @Injectable()
 export class AttendanceService {
@@ -69,7 +60,7 @@ export class AttendanceService {
     private audit: AuditService,
   ) {}
 
-  toDto(r: Row, dprStatus: SubmissionStatus | null, run: LockingRun | null): AttendanceSheetDto {
+  toDto(r: Row, dprStatus: SubmissionStatus | null): AttendanceSheetDto {
     const lines = r.lines.map((l) => ({ id: l.id, contractor: l.contractor, vendorId: l.vendorId, category: l.category, count: l.count }));
     return {
       id: r.id,
@@ -84,8 +75,7 @@ export class AttendanceService {
       recordedByName: r.recordedBy.fullName,
       updatedByName: r.updatedBy?.fullName ?? null,
       dprStatus,
-      locked: isAttendanceLocked(run?.status),
-      lockedByRun: run?.runNo ?? null,
+      locked: isAttendanceLocked(dprStatus),
       createdAt: iso(r.createdAt)!,
       updatedAt: iso(r.updatedAt)!,
     };
@@ -114,39 +104,9 @@ export class AttendanceService {
     return (await this.dprStatuses([{ projectId, date }])).get(dayKey(projectId, date)) ?? null;
   }
 
-  /**
-   * The approved (or paid) payroll run covering each (project, day): the project's own run for the month, else the
-   * company's. Only those lock attendance.
-   */
-  async lockingRuns(organizationId: string, days: { projectId: string; date: Date }[]): Promise<Map<string, LockingRun>> {
-    const out = new Map<string, LockingRun>();
-    if (!days.length) return out;
-    const months = [...new Set(days.map((d) => dateOnly(d.date)!.slice(0, 7)))];
-    const runs = await this.prisma.payrollRun.findMany({
-      where: { organizationId, month: { in: months }, status: { in: ['APPROVED', 'PAID'] }, OR: [{ projectId: null }, { projectId: { in: [...new Set(days.map((d) => d.projectId))] } }] },
-      select: { runNo: true, month: true, projectId: true, status: true },
-    });
-    for (const d of days) {
-      const month = dateOnly(d.date)!.slice(0, 7);
-      const run = runs.find((r) => r.month === month && r.projectId === d.projectId) ?? runs.find((r) => r.month === month && r.projectId === null);
-      if (run) out.set(dayKey(d.projectId, d.date), { runNo: run.runNo, status: run.status });
-    }
-    return out;
-  }
-
-  private async lockingRun(organizationId: string, projectId: string, date: Date) {
-    return (await this.lockingRuns(organizationId, [{ projectId, date }])).get(dayKey(projectId, date)) ?? null;
-  }
-
   async assertUnlocked(projectId: string, date: Date) {
-    const { organizationId } = await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { organizationId: true } });
-    const run = await this.lockingRun(organizationId, projectId, date);
-    if (isAttendanceLocked(run?.status))
-      throw new ConflictException(
-        run!.status === 'PAID'
-          ? `Payroll for ${monthName(dateOnly(date)!)} is paid (${run!.runNo}), so attendance for ${dateOnly(date)} can no longer change.`
-          : `Payroll for ${monthName(dateOnly(date)!)} is approved (${run!.runNo}), so attendance for ${dateOnly(date)} can no longer change. Ask for the run to be sent back first.`,
-      );
+    if (isAttendanceLocked(await this.dprStatus(projectId, date)))
+      throw new ConflictException(`The DPR for ${dateOnly(date)} is approved, so its attendance can no longer be changed.`);
   }
 
   private async assertNoDuplicate(projectId: string, date: Date, excludeId?: string) {
@@ -200,27 +160,24 @@ export class AttendanceService {
       this.prisma.attendanceSheet.findMany({ where, include, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.attendanceSheet.count({ where }),
     ]);
-    const days = rows.map((r) => ({ projectId: r.projectId, date: r.date }));
-    const [statuses, runs] = await Promise.all([this.dprStatuses(days), this.lockingRuns(user.organizationId, days)]);
-    return paginated(rows.map((r) => this.toDto(r, statuses.get(dayKey(r.projectId, r.date)) ?? null, runs.get(dayKey(r.projectId, r.date)) ?? null)), total, args);
+    const statuses = await this.dprStatuses(rows.map((r) => ({ projectId: r.projectId, date: r.date })));
+    return paginated(rows.map((r) => this.toDto(r, statuses.get(dayKey(r.projectId, r.date)) ?? null)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<AttendanceSheetDto> {
     const row = await this.prisma.attendanceSheet.findFirst({ where: { id, ...this.visibleWhere(user) }, include });
     if (!row) throw new NotFoundException('Attendance sheet not found');
-    const [dprStatus, run] = await Promise.all([this.dprStatus(row.projectId, row.date), this.lockingRun(user.organizationId, row.projectId, row.date)]);
-    return this.toDto(row, dprStatus, run);
+    return this.toDto(row, await this.dprStatus(row.projectId, row.date));
   }
 
   async day(user: RequestUser, q: AttendanceDayQuery): Promise<AttendanceDayDto> {
     await this.access.assertCanAccessProject(user, q.projectId);
     const date = parseDate(q.date);
-    const [row, dprStatus, run] = await Promise.all([
+    const [row, dprStatus] = await Promise.all([
       this.prisma.attendanceSheet.findFirst({ where: { projectId: q.projectId, date, organizationId: user.organizationId }, include }),
       this.dprStatus(q.projectId, date),
-      this.lockingRun(user.organizationId, q.projectId, date),
     ]);
-    return { projectId: q.projectId, date: q.date, sheet: row ? this.toDto(row, dprStatus, run) : null, dprStatus, locked: isAttendanceLocked(run?.status), lockedByRun: run?.runNo ?? null };
+    return { projectId: q.projectId, date: q.date, sheet: row ? this.toDto(row, dprStatus) : null, dprStatus, locked: isAttendanceLocked(dprStatus) };
   }
 
   /** Contractor and trade names for pickers: what this project (or the organisation) used before, plus defaults. */
@@ -305,7 +262,6 @@ export class AttendanceService {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanRecordAttendance(user, dto.projectId);
-    assertNotAfterToday(dto.date, 'attendance');
     const date = parseDate(dto.date);
     const lines = await this.linkVendors(user.organizationId, this.cleanLines(dto.lines, dto.remarks));
     await this.assertUnlocked(dto.projectId, date);
@@ -351,7 +307,6 @@ export class AttendanceService {
     const row = await this.loadForWrite(user, id);
     const data: Prisma.AttendanceSheetUncheckedUpdateInput = { updatedById: user.id };
     if (dto.date !== undefined) {
-      assertNotAfterToday(dto.date, 'attendance');
       const date = parseDate(dto.date);
       if (date.getTime() !== row.date.getTime()) {
         await this.assertUnlocked(row.projectId, date);

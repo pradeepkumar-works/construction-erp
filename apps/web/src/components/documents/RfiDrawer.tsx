@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Alert, Button, Descriptions, Divider, Drawer, Dropdown, Form, Input, Skeleton, Space, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Alert, Button, DatePicker, Descriptions, Divider, Drawer, Dropdown, Form, Input, Skeleton, Space, Typography } from 'antd';
 import { CheckOutlined, DeleteOutlined, EditOutlined, MessageOutlined, MoreOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { RfiDto } from '@erp/shared';
@@ -52,7 +51,7 @@ function AnswerModal({ rfi, open, onClose }: { rfi: RfiDto; open: boolean; onClo
             <Input maxLength={200} />
           </Form.Item>
           <Form.Item name="answeredOn" label="Answered on" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(rfi.raisedOn), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(rfi.raisedOn), 'day')} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="answerRef" label="Their letter or mail reference">
@@ -91,7 +90,7 @@ function CloseModal({ rfi, mode, onClose }: { rfi: RfiDto; mode: 'close' | 'with
       <Form form={form} layout="vertical">
         {closing ? (
           <Form.Item name="on" label="Closed on" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!rfi.answeredOn && d.isBefore(dayjs(rfi.answeredOn), 'day'))} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!rfi.answeredOn && d.isBefore(dayjs(rfi.answeredOn), 'day'))} />
           </Form.Item>
         ) : null}
         <Form.Item name="note" label={closing ? 'What was done' : 'Why it is withdrawn'} rules={closing ? [] : [{ required: true, whitespace: true, message: 'Say why it is no longer needed' }]}>

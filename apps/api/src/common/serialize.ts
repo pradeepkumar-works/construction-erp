@@ -1,6 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { todayIn } from '../notifications/time';
 
 /** Decimal -> string, Date -> ISO string (date-only columns -> YYYY-MM-DD). */
 export const dec = (v: Prisma.Decimal | number | null | undefined): string | null =>
@@ -25,14 +23,6 @@ export const pct = (executed: Prisma.Decimal | number, planned: Prisma.Decimal |
 
 /** Parse a YYYY-MM-DD string into a UTC date for @db.Date columns. */
 export const parseDate = (s: string): Date => new Date(`${s}T00:00:00.000Z`);
-
-/**
- * A day's record cannot be dated after today in the company's time zone (finding 4 of the October review): a DPR,
- * progress or attendance for a day still to come was taken before.
- */
-export function assertNotAfterToday(date: string, what: string) {
-  if (date.slice(0, 10) > todayIn()) throw new BadRequestException(`The ${what} date cannot be after today. Choose today or an earlier day.`);
-}
 
 /** A YYYY-MM-DD day as people read it in a message: 31 Mar 2026. */
 export const formatDay = (d: string | null | undefined): string =>

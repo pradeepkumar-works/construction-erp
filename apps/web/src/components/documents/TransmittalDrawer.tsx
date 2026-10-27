@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Form, Input, Skeleton, Space, Table } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Skeleton, Space, Table } from 'antd';
 import { DeleteOutlined, EditOutlined, PrinterOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -36,7 +35,7 @@ function AcknowledgeForm({ t }: { t: TransmittalDto }) {
   return (
     <Form form={form} layout="inline" initialValues={{ on: dayjs() }} onFinish={(v) => save.mutate(v)} style={{ rowGap: 8 }}>
       <Form.Item name="on" rules={[{ required: true, message: 'Pick the date it was received' }]}>
-        <DatePicker disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(t.sentOn), 'day')} aria-label="Received on" />
+        <DatePicker format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(t.sentOn), 'day')} aria-label="Received on" />
       </Form.Item>
       <Form.Item name="by" rules={[{ required: true, whitespace: true, message: 'Who signed for it' }]}>
         <Input maxLength={200} placeholder="Received by" style={{ width: 220 }} />

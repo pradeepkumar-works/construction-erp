@@ -39,7 +39,6 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   SUPPLIER: { name: 'cube', color: colors.info, bg: colors.infoSoft },
   COMMENT: { name: 'chatbubbles', color: colors.primary, bg: colors.primarySoft },
   ACCESS_REQUEST: { name: 'key', color: colors.accent, bg: colors.accentSoft },
-  HANDOFF: { name: 'arrow-forward-circle', color: colors.primary, bg: colors.primarySoft },
 };
 
 export default function NotificationsScreen() {

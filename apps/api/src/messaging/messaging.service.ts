@@ -101,8 +101,8 @@ export class MessagingService {
   /* ---------- preferences ---------- */
 
   async prefs(user: RequestUser): Promise<MessagingPrefsDto> {
-    const u = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { phone: true, whatsappAlerts: true, smsAlerts: true, emailAlerts: true } });
-    return { phone: u.phone, sendTo: normalisePhone(u.phone), whatsapp: u.whatsappAlerts, sms: u.smsAlerts, email: u.emailAlerts, whatsappReady: this.ready('WHATSAPP'), whatsappProvider: this.disabled ? null : this.whatsappProvider, smsReady: this.ready('SMS') };
+    const u = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { phone: true, whatsappAlerts: true, smsAlerts: true } });
+    return { phone: u.phone, sendTo: normalisePhone(u.phone), whatsapp: u.whatsappAlerts, sms: u.smsAlerts, whatsappReady: this.ready('WHATSAPP'), whatsappProvider: this.disabled ? null : this.whatsappProvider, smsReady: this.ready('SMS') };
   }
 
   async updatePrefs(user: RequestUser, dto: UpdateMessagingPrefsDto): Promise<MessagingPrefsDto> {
@@ -114,7 +114,7 @@ export class MessagingService {
     if ((whatsapp || sms) && !normalisePhone(phone)) throw new BadRequestException('Add your mobile number to get alerts on WhatsApp or SMS');
     // WhatsApp entries (AI item 120) are read from the number they were switched on with: a new number switches them off.
     const captureOff = normalisePhone(phone) !== normalisePhone(current.phone) ? { captureFrom: null } : {};
-    await this.prisma.user.update({ where: { id: user.id }, data: { phone, whatsappAlerts: whatsapp, smsAlerts: sms, ...(dto.email !== undefined ? { emailAlerts: dto.email } : {}), ...captureOff } });
+    await this.prisma.user.update({ where: { id: user.id }, data: { phone, whatsappAlerts: whatsapp, smsAlerts: sms, ...captureOff } });
     return this.prefs(user);
   }
 

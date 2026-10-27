@@ -2,13 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, Radio, Select, Switch } from 'antd';
-import { MIN_PASSWORD_LENGTH, ROLE_LABELS, isCompanyWide, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
+import { MIN_PASSWORD_LENGTH, ROLE_LABELS, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useRoles } from '@/lib/queries';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { ProjectMultiSelect } from '@/components/common/ProjectSelect';
 import { EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule } from '@/components/form/inputs';
 
 interface FormValues {
@@ -19,8 +18,6 @@ interface FormValues {
   password?: string;
   isActive?: boolean;
   how?: 'invite' | 'password';
-  /** The project teams they join as they are created (finding 17 of the October review) */
-  projectIds?: string[];
 }
 
 export function UserFormModal({ open, onClose, user, onInvited }: { open: boolean; onClose: () => void; user?: UserSummary | null; onInvited?: (created: CreateUserResultDto) => void }) {
@@ -31,9 +28,6 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
   const isEdit = !!user;
   const [resetPwd, setResetPwd] = useState(false);
   const how = Form.useWatch('how', form);
-  const roleKey = Form.useWatch('roleKey', form);
-  // A company-wide role sees every project, so there is nothing to pick; the rest see only the projects they are on.
-  const perProject = !!roleKey && roleKey !== 'SUPPLIER' && !isCompanyWide(roleKey);
 
   useEffect(() => {
     if (!open) return;
@@ -53,22 +47,11 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
         if (resetPwd && v.password) body.password = v.password;
         return (await api.patch(`/users/${user.id}`, body)).data;
       }
-      return (
-        await api.post<CreateUserResultDto>('/users', {
-          email: v.email.trim(),
-          fullName: v.fullName.trim(),
-          phone: v.phone || undefined,
-          roleKey: v.roleKey,
-          password: v.how === 'password' ? v.password : undefined,
-          // The teams they join as they are made (finding 17 of the October review).
-          projectIds: perProject && v.projectIds?.length ? v.projectIds : undefined,
-        })
-      ).data;
+      return (await api.post<CreateUserResultDto>('/users', { email: v.email.trim(), fullName: v.fullName.trim(), phone: v.phone || undefined, roleKey: v.roleKey, password: v.how === 'password' ? v.password : undefined })).data;
     },
-    onSuccess: (data, v) => {
+    onSuccess: (data) => {
       const created = data as CreateUserResultDto;
-      const teams = !isEdit && perProject && v.projectIds?.length ? `, on ${v.projectIds.length} project${v.projectIds.length === 1 ? '' : 's'}` : '';
-      message.success(isEdit ? 'User updated' : created.invite ? `User invited${teams}` : `User created${teams}`);
+      message.success(isEdit ? 'User updated' : created.invite ? 'User invited' : 'User created');
       if (!isEdit && created.invite) onInvited?.(created);
       qc.invalidateQueries({ queryKey: ['users'] });
     },
@@ -97,11 +80,6 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
         ) : (
           <Form.Item name="roleKey" label="Role" rules={[{ required: true, message: 'Choose the role' }]}>
             <Select showSearch={{ optionFilterProp: 'label' }} options={(roles ?? []).map((r) => ({ value: r.key, label: r.name }))} />
-          </Form.Item>
-        )}
-        {!isEdit && perProject && (
-          <Form.Item name="projectIds" label="Projects" extra="They see only the projects they are on. Add or remove them later from the project's team.">
-            <ProjectMultiSelect />
           </Form.Item>
         )}
         {isEdit && (

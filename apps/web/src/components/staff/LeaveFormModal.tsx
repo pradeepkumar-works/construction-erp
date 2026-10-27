@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Checkbox, Form, Input, Select, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Checkbox, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { LeaveRequestDto, LeaveType } from '@erp/shared';
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS, canManageStaff, leaveDays } from '@erp/shared';
@@ -96,7 +95,7 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
           <Form.Item name="fromDate" label="From" rules={[{ required: true, message: 'Pick the first day' }]}>
             <DatePicker
               style={{ width: '100%' }}
-             
+              format="DD MMM YYYY"
               onChange={(d) => {
                 const end = form.getFieldValue('toDate') as dayjs.Dayjs | undefined;
                 if (d && (!end || end.isBefore(d, 'day'))) form.setFieldsValue({ toDate: d });
@@ -104,7 +103,7 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
             />
           </Form.Item>
           <Form.Item name="toDate" label="To" rules={[{ required: true, message: 'Pick the last day' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => !!from && d.isBefore(from, 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => !!from && d.isBefore(from, 'day')} />
           </Form.Item>
         </FormGrid>
         {from && to && from.isSame(to, 'day') && (

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { App, Checkbox, Form, Input, Segmented, Select, Space, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Checkbox, DatePicker, Form, Input, Segmented, Select, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, RfiDto, RfiPriority } from '@erp/shared';
 import { RFI_PRIORITIES, RFI_PRIORITY_LABELS, rfiReplyBy } from '@erp/shared';
@@ -167,7 +166,7 @@ export function RfiFormModal({
               <Segmented<RfiPriority> options={RFI_PRIORITIES.map((p) => ({ value: p, label: RFI_PRIORITY_LABELS[p] }))} onChange={() => setTimeout(followReplyBy)} />
             </Form.Item>
             <Form.Item name="raisedOn" label="Raised on" rules={[{ required: true, message: 'Pick the date' }]}>
-              <DatePicker style={{ width: '100%' }} disabled={editing} disabledDate={(d) => d.isAfter(dayjs(), 'day')} onChange={() => setTimeout(followReplyBy)} />
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabled={editing} disabledDate={(d) => d.isAfter(dayjs(), 'day')} onChange={() => setTimeout(followReplyBy)} />
             </Form.Item>
             <Form.Item
               name="replyBy"
@@ -180,7 +179,7 @@ export function RfiFormModal({
                 }),
               ]}
             >
-              <DatePicker style={{ width: '100%' }} onChange={() => (replyTouched.current = true)} />
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" onChange={() => (replyTouched.current = true)} />
             </Form.Item>
           </FormGrid>
           <Form.Item name="impacts" label="The answer may change">

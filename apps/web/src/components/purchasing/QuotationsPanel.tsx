@@ -7,7 +7,7 @@ import { DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartO
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ComparativeStatementDto, EnquiryDto, MaterialRequestDto, QuotationDto } from '@erp/shared';
-import { awardLowestPerItem, canPurchase, lastRateKey } from '@erp/shared';
+import { canPurchase, lastRateKey } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -22,7 +22,6 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { LastRates } from './LastRates';
 import { EnquiriesList, EnquiryFormModal, EnquirySentModal } from './Enquiries';
-import { AwardLowestModal } from './AwardLowestModal';
 
 type Line = ComparativeStatementDto['lines'][number];
 
@@ -40,7 +39,6 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
   const [start, setStart] = useState<PoStart | null>(null);
   const [openPo, setOpenPo] = useState<string | null>(null);
   const [enquiring, setEnquiring] = useState(false);
-  const [awarding, setAwarding] = useState(false);
   const [sent, setSent] = useState<EnquiryDto | null>(null);
   const last = useLastRates(request.items);
 
@@ -75,8 +73,6 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
     });
 
   const quotes = data?.quotations ?? [];
-  // Offered only where the split beats one order: more than one vendor wins an item still to be ordered.
-  const splitWins = data ? awardLowestPerItem(data, Object.fromEntries(request.items.map((i) => [i.id, i.toOrderQty]))).orders.length : 0;
   const best = (l: Line, q: QuotationDto) => l.lowestQuotationId === q.id && quotes.length > 1;
 
   return (
@@ -95,11 +91,6 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
             <Button size="small" icon={<PlusOutlined />} onClick={() => setQuoting('new')}>
               Record quotation
             </Button>
-            {remaining && splitWins > 1 && data && (
-              <Button size="small" icon={<TrophyOutlined />} onClick={() => setAwarding(true)}>
-                Award lowest per item
-              </Button>
-            )}
             {remaining && (
               <Button size="small" icon={<ShoppingCartOutlined />} onClick={() => raise(null)}>
                 Raise PO without a quotation
@@ -222,9 +213,8 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No quotations or purchase orders yet" />
       ) : null}
       {!remaining && <AppTag tone="success" style={{ marginTop: 8 }}>Everything on this request is ordered or received</AppTag>}
-      {data && <AwardLowestModal open={awarding} onClose={() => setAwarding(false)} request={request} comparative={data} onRaised={(o) => setOpenPo(o[0]?.id ?? null)} />}
       <EnquiryFormModal open={enquiring} request={request} onClose={() => setEnquiring(false)} onSent={setSent} />
-      <EnquirySentModal enquiry={sent} request={request} onClose={() => setSent(null)} />
+      <EnquirySentModal enquiry={sent} onClose={() => setSent(null)} />
       <QuotationFormModal open={!!quoting} request={request} quotation={quoting === 'new' ? null : quoting} onClose={() => setQuoting(null)} />
       <PurchaseOrderFormModal open={!!start} start={start} onClose={() => setStart(null)} onSaved={(o) => setOpenPo(o.id)} />
       <PurchaseOrderDrawer id={openPo} open={!!openPo} onClose={() => setOpenPo(null)} />

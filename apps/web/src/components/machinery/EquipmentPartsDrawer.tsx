@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Drawer, Empty, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, DatePicker, Drawer, Empty, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
@@ -250,7 +249,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
               <Input maxLength={60} />
             </Form.Item>
             <Form.Item name="fittedOn" label="Fitted on" rules={[{ required: true, message: 'Pick the date it was fitted' }]} hidden={off}>
-              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="fittedMeter" label={`Meter when fitted (${unit})`} hidden={off}>
               <QuantityInput unit={unit} precision={1} />
@@ -263,7 +262,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
             {showRemoval ? (
               <>
                 <Form.Item name="removedOn" label="Came off on" rules={[{ required: off, message: 'Pick the date it came off' }]}>
-                  <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+                  <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
                 </Form.Item>
                 <Form.Item name="removedMeter" label={`Meter when it came off (${unit})`}>
                   <QuantityInput unit={unit} precision={1} />

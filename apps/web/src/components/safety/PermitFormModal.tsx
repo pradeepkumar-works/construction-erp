@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, WorkPermitDto, WorkPermitType } from '@erp/shared';

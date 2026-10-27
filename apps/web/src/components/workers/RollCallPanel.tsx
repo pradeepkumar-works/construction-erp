@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Input, InputNumber, Radio, Select, Space, Table, Tooltip } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Button, DatePicker, Input, InputNumber, Radio, Select, Space, Table, Tooltip } from 'antd';
 import type { TableProps } from 'antd';
 import { CheckOutlined, SaveOutlined } from '@/components/common/icons';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -13,6 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useActivities, useRollCall } from '@/lib/queries';
+import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -204,7 +204,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
     <div className="roll-call">
       <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Pick a project" allowClear={false} /> : null}
-        <DatePicker value={date} onChange={(v) => v && setDate(v)} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} aria-label="Date" />
+        <DatePicker value={date} onChange={(v) => v && setDate(v)} format="DD MMM YYYY" allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} aria-label="Date" />
         <Input.Search allowClear placeholder="Search name, trade" aria-label="Search workers" style={{ width: 200 }} value={search} onChange={(e) => setSearch(e.target.value)} />
         <div style={{ flex: 1 }} />
         {!readOnly && data?.rows.length ? (
@@ -230,7 +230,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
       ) : (
         <>
           {data?.locked ? (
-            <Alert type="info" showIcon style={{ margin: 12 }} title={`Payroll for ${dayjs(dateStr).format('MMMM YYYY')} is approved (${data.lockedByRun}), so this roll call can no longer change.`} />
+            <Alert type="info" showIcon style={{ margin: 12 }} title={`The DPR for ${formatDate(dateStr)} is approved, so this roll call can no longer change.`} />
           ) : null}
           {data ? (
             <div className="roll-call-summary text-muted" style={{ padding: '8px 12px', fontSize: themeFontSize('fontSizeSM') }}>

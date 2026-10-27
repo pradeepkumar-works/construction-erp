@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, DatePicker, Form, Input, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto, StockLineDto } from '@erp/shared';
@@ -46,7 +45,7 @@ export function ReceiveTransferModal({ open, onClose, transfer }: { open: boolea
       />
       <Form form={form} layout="vertical">
         <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
-          <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(transfer.date), 'day')} />
+          <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(transfer.date), 'day')} />
         </Form.Item>
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />

@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
-import { IsQuantity } from '../common/quantity';
 import { EQUIPMENT_DOC_TYPES, MAINTENANCE_KINDS, MAINTENANCE_STATUSES, type EquipmentDocType, type ExpiryState, type MaintenanceKind, type MaintenanceStatus } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -38,7 +37,7 @@ export class CloseJobDto {
 
 export class SpareLineDto {
   @ApiProperty() @IsUUID() itemId: string;
-  @ApiProperty({ example: '2' }) @num() @IsQuantity() quantity: string;
+  @ApiProperty({ example: '2' }) @num() @IsNumberString() quantity: string;
 }
 
 export class IssueSparesDto {

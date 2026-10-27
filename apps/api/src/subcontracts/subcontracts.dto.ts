@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
-import { IsQuantity } from '../common/quantity';
 import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, type SubcontractBillSortField, type SubmissionStatus, type WorkOrderSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -19,7 +18,7 @@ export class WoLineInput {
   boqItemId?: string;
   @ApiPropertyOptional({ example: 'Scaffolding, hire and erection', description: "The work order's own item (no BOQ item)" }) @IsOptional() @trim() @IsString() @MaxLength(300) description?: string;
   @ApiPropertyOptional({ example: 'LS' }) @IsOptional() @trim() @IsString() @MaxLength(30) unit?: string;
-  @ApiProperty({ example: '1200' }) @num() @IsQuantity() quantity: string;
+  @ApiProperty({ example: '1200' }) @num() @IsNumberString() quantity: string;
   @ApiProperty({ example: '310.00', description: 'Rate per unit before GST' }) @num() @IsNumberString() rate: string;
 }
 
@@ -85,7 +84,7 @@ export class MarginQuery {
 
 export class OwnItemQtyInput {
   @ApiProperty({ description: "A work order line without a BOQ item (its quantity is not measured)" }) @IsUUID() workOrderLineId: string;
-  @ApiProperty({ example: '1', description: 'Quantity in this bill' }) @num() @IsQuantity() quantity: string;
+  @ApiProperty({ example: '1', description: 'Quantity in this bill' }) @num() @IsNumberString() quantity: string;
 }
 
 class SubBillFields {

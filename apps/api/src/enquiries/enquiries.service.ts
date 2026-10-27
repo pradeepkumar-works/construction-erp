@@ -6,7 +6,6 @@ import {
   SUBMISSION_STATUS_LABELS,
   canPurchase,
   canViewPurchaseOrders,
-  siteDeliveryAddress,
   type EnquiryDto,
   type EnquiryVendorState,
   type PublicEnquiryDto,
@@ -32,7 +31,7 @@ const INVALID = 'This link is not valid. Check that you opened the whole link fr
 
 const include = {
   createdBy: { select: { fullName: true } },
-  tokens: { include: { vendor: { select: { name: true, phone: true } } }, orderBy: { vendor: { name: 'asc' as const } } },
+  tokens: { include: { vendor: { select: { name: true } } }, orderBy: { vendor: { name: 'asc' as const } } },
 } satisfies Prisma.EnquiryInclude;
 type Row = Prisma.EnquiryGetPayload<{ include: typeof include }>;
 
@@ -43,7 +42,7 @@ const tokenInclude = {
     include: {
       organization: { select: { name: true } },
       createdBy: { select: { id: true, email: true, fullName: true, isActive: true } },
-      materialRequest: { include: { project: { select: { name: true, location: true, siteAddress: true } }, items: { orderBy: { sortOrder: 'asc' as const } } } },
+      materialRequest: { include: { project: { select: { name: true, location: true } }, items: { orderBy: { sortOrder: 'asc' as const } } } },
     },
   },
 } satisfies Prisma.EnquiryTokenInclude;
@@ -91,7 +90,6 @@ export class EnquiriesService {
         vendorId: t.vendorId,
         vendorName: t.vendor.name,
         email: t.email,
-        phone: t.vendor.phone,
         state: this.stateOf(t, now),
         emailedAt: iso(t.emailedAt),
         emailError: t.emailError,
@@ -121,7 +119,7 @@ export class EnquiriesService {
     if (!canPurchase(user.roleKey)) throw new ForbiddenException('Only procurement, project managers and management send enquiries');
     const mr = await this.prisma.materialRequest.findFirst({
       where: { id: materialRequestId, ...this.access.submissionWhere(user) },
-      include: { project: { select: { name: true, location: true, siteAddress: true } }, organization: { select: { name: true } }, items: { orderBy: { sortOrder: 'asc' } } },
+      include: { project: { select: { name: true, location: true } }, organization: { select: { name: true } }, items: { orderBy: { sortOrder: 'asc' } } },
     });
     if (!mr) throw new NotFoundException('Material request not found');
     if (mr.status !== 'APPROVED') throw new ConflictException(`Enquiries are sent for approved requests. ${mr.requestNo} is ${SUBMISSION_STATUS_LABELS[mr.status].toLowerCase()}.`);
@@ -251,7 +249,7 @@ export class EnquiriesService {
     return {
       organizationName: row.enquiry.organization.name,
       projectName: mr.project.name,
-      siteAddress: siteDeliveryAddress(mr.project),
+      siteAddress: mr.project.location,
       vendorName: row.vendor.name,
       requestNo: mr.requestNo,
       requiredDate: dateOnly(mr.requiredDate)!,

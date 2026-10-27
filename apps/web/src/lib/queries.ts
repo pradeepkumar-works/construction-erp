@@ -2,7 +2,6 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
-  ProjectSetupDto,
   ManagementReportDto,
   ManagementReportKey,
   PortfolioDto,
@@ -149,8 +148,6 @@ import type {
   ApprovalMatrixDto,
   AuthOptionsDto,
   MeasurementSheetDto,
-  ToMeasureItemDto,
-  StandardNormPlanDto,
   InspectionDto,
   ChecklistTemplateDto,
   RaBillDto,
@@ -181,7 +178,6 @@ import type {
   ProgressReportDto,
   PaymentMode,
   ItemDto,
-  ItemDuplicateGroupDto,
   MachineryLogDto,
   ReceivableRequestDto,
   StockBalanceDto,
@@ -264,7 +260,6 @@ import type {
   FinalSettlementDto,
   ModuleHomeDto,
   HomeTrendsDto,
-  NextProjectCodeDto,
   ProgressEntryDto,
   ProjectDashboard,
   ProjectDetail,
@@ -617,24 +612,6 @@ export const useCompanyDashboard = () =>
 
 export const useGettingStarted = (enabled: boolean) =>
   useQuery({ queryKey: ['dashboard', 'getting-started'], queryFn: async () => (await api.get<GettingStartedDto>('/dashboard/getting-started')).data, enabled });
-
-/** The new project's setup checklist (finding 6 of the October review); under the project's key, so team changes refresh it. */
-export const useProjectSetup = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['projects', id, 'setup'],
-    queryFn: async () => (await api.get<ProjectSetupDto>(`/projects/${id}/setup`)).data,
-    enabled: !!id,
-    refetchOnMount: 'always',
-  });
-
-export const useHideProjectSetup = (id: string) => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (hidden: boolean) => (await api.put<ProjectSetupDto>(`/projects/${id}/setup`, { hidden })).data,
-    onSuccess: (d) => qc.setQueryData(['projects', id, 'setup'], d),
-    meta: FAIL_NOTICE,
-  });
-};
 
 export const useProjectDashboard = (id: string | undefined) =>
   useQuery({
@@ -1003,14 +980,6 @@ export const useStockItems = (filters?: PageParams) =>
     placeholderData: keepPreviousData,
   });
 
-/** Items that look like one item, for the store manager to merge (finding 3 of the October review). */
-export const useItemDuplicates = (enabled: boolean) =>
-  useQuery({
-    queryKey: ['stock', 'items', 'duplicates'],
-    queryFn: async () => (await api.get<ItemDuplicateGroupDto[]>('/stock/items/duplicates')).data,
-    enabled,
-  });
-
 export const useMachineryLogs = (filters?: MachineryFilters) =>
   useQuery({
     queryKey: ['machinery', 'logs', clean(filters)],
@@ -1138,14 +1107,6 @@ export const useApprovalMatrix = (enabled = true) =>
 export const useActivityTemplates = (enabled = true) =>
   useQuery({ queryKey: ['activity-templates'], queryFn: async () => (await api.get<ActivityTemplateDto[]>('/activity-templates')).data, enabled });
 
-/** The code to offer a new project of this type (finding 17 of the October review). */
-export const useNextProjectCode = (type: ProjectType | undefined, enabled = true) =>
-  useQuery({
-    queryKey: ['next-project-code', type],
-    queryFn: async () => (await api.get<NextProjectCodeDto>('/projects/next-code', { params: { type } })).data,
-    enabled: enabled && !!type,
-  });
-
 export const useRisks = (filters?: RiskFilters, enabled = true) =>
   useQuery({
     queryKey: ['risks', clean(filters)],
@@ -1193,14 +1154,6 @@ export const useMeasurements = (filters?: MeasurementFilters) =>
   });
 
 export const useMeasurement = (id: string | undefined) => useQuery({ ...recordQuery<MeasurementSheetDto>('/measurements', id), enabled: !!id });
-
-/** Work approved on site that no measurement sheet holds yet (finding 14 of the October review). */
-export const useToMeasure = (projectId: string | undefined, enabled = true) =>
-  useQuery({
-    queryKey: ['to-measure', projectId],
-    queryFn: async () => (await api.get<ToMeasureItemDto[]>('/measurements/to-measure', { params: { projectId } })).data,
-    enabled: !!projectId && enabled,
-  });
 
 export interface InspectionFilters extends ListFilters {
   from?: string;
@@ -2358,14 +2311,6 @@ export const useProjectReconciliation = (projectId: string | undefined, period: 
     enabled: !!projectId,
   });
 
-/** What adopting the standard norms library would set on a project (finding 16 of the October review). */
-export const useStandardNorms = (projectId: string | undefined, enabled = true) =>
-  useQuery({
-    queryKey: ['standard-norms', projectId],
-    queryFn: async () => (await api.get<StandardNormPlanDto>(`/reconciliation/projects/${projectId}/standard-norms`)).data,
-    enabled: enabled && !!projectId,
-  });
-
 export interface SaveMaterialNormInput {
   projectId: string;
   boqItemId: string;
@@ -2684,7 +2629,7 @@ export const useMessagingPrefs = (enabled = true) =>
 export function useUpdateMessagingPrefs() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { phone?: string | null; whatsapp?: boolean; sms?: boolean; email?: boolean }) => (await api.put<MessagingPrefsDto>('/messaging/me', body)).data,
+    mutationFn: async (body: { phone?: string | null; whatsapp?: boolean; sms?: boolean }) => (await api.put<MessagingPrefsDto>('/messaging/me', body)).data,
     onSuccess: (d) => {
       qc.setQueryData(['messaging', 'me'], d);
     },

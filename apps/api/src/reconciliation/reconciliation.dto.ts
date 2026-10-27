@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
-import { IsQuantity } from '../common/quantity';
 
 const numberString = ({ value }: { value: unknown }) => (typeof value === 'number' ? String(value) : value);
 
@@ -69,15 +68,7 @@ export class EstimateTermsDto {
 
 export class RecoverExcessDto {
   @ApiProperty() @IsUUID() itemId: string;
-  @ApiProperty({ example: '12.5', description: "In the item's unit; at most the excess not yet raised" }) @Transform(numberString) @IsQuantity() quantity: string;
+  @ApiProperty({ example: '12.5', description: "In the item's unit; at most the excess not yet raised" }) @Transform(numberString) @IsNumberString() quantity: string;
   @ApiProperty({ example: '395', description: 'Per unit; the item rate unless the contract says otherwise' }) @Transform(numberString) @IsNumberString() rate: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) note?: string;
-}
-
-/** Adopting the standard norms library (finding 16 of the October review). */
-export class AdoptStandardNormsDto {
-  @ApiPropertyOptional({ default: false, description: "Overwrite the norms a BOQ item already has; left out, those items are kept as the quantity surveyor set them" })
-  @IsOptional()
-  @IsBoolean()
-  replace?: boolean;
 }

@@ -20,7 +20,6 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import { IsQuantity } from '../common/quantity';
 import {
   EXPENSE_CATEGORIES,
   LIST_SORT_FIELDS,
@@ -84,7 +83,7 @@ export class PoLineInput {
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(300) specification?: string | null;
   @ApiPropertyOptional({ description: 'The make (brand) ordered, checked against the project’s approved makes' }) @IsOptional() @trim() @IsString() @MaxLength(120) make?: string | null;
   @ApiPropertyOptional({ example: 'Bag' }) @IsOptional() @trim() @IsString() @MaxLength(30) unit?: string;
-  @ApiProperty({ example: '500' }) @num() @IsQuantity() quantity: string;
+  @ApiProperty({ example: '500' }) @num() @IsNumberString() quantity: string;
   @ApiProperty({ example: '385.00' }) @num() @IsNumberString() rate: string;
   @ApiPropertyOptional({ example: '28', default: '0' }) @IsOptional() @num() @IsNumberString() gstRate?: string;
 }
@@ -183,7 +182,7 @@ export class VendorBillLineInput {
   @MaxLength(200)
   description?: string;
   @ApiPropertyOptional({ example: 'trip' }) @IsOptional() @trim() @IsString() @MaxLength(20) unit?: string;
-  @ApiProperty({ example: '460' }) @num() @IsQuantity() quantity: string;
+  @ApiProperty({ example: '460' }) @num() @IsNumberString() quantity: string;
   @ApiProperty({ example: '385.00' }) @num() @IsNumberString() rate: string;
   @ApiPropertyOptional({ example: '28', description: "The PO line's rate when left out (0 on a line without a PO)" }) @IsOptional() @num() @IsNumberString() gstRate?: string;
 }

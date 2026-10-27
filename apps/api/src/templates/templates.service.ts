@@ -6,7 +6,6 @@ import {
   canEditProjects,
   canManageTemplates,
   scheduleTemplate,
-  spreadUndated,
   templateSpan,
   type ActivityTemplateDto,
   type ActivityTemplateItem,
@@ -101,32 +100,5 @@ export class TemplatesService {
       });
     }
     return { created: toCreate.length, skipped };
-  }
-
-  /**
-   * Dates for the activities that have none, once the project's own dates arrive (finding 11 of the October review):
-   * a project made before its work order was in hand gets its template activities spread the moment its start and
-   * completion dates are set, instead of staying undated. Returns how many were given dates.
-   */
-  async spreadUndated(user: RequestUser, projectId: string, db: Prisma.TransactionClient = this.prisma): Promise<number> {
-    const project = await db.project.findUniqueOrThrow({
-      where: { id: projectId },
-      select: { type: true, startDate: true, endDate: true, activities: { select: { id: true, name: true, unit: true, plannedQty: true, plannedStart: true, plannedEnd: true, boqItemId: true, sortOrder: true } } },
-    });
-    const start = dateOnly(project.startDate);
-    if (!start) return 0;
-    const { items } = await this.items(user.organizationId, project.type, db);
-    const dates = spreadUndated(
-      project.activities.map((a) => ({ ...a, plannedQty: a.plannedQty.toString(), plannedStart: dateOnly(a.plannedStart), plannedEnd: dateOnly(a.plannedEnd) })),
-      items,
-      start,
-      dateOnly(project.endDate),
-    );
-    for (const d of dates) await db.activity.update({ where: { id: d.id }, data: { plannedStart: parseDate(d.plannedStart), plannedEnd: parseDate(d.plannedEnd) } });
-    if (dates.length)
-      await db.auditLog.create({
-        data: { organizationId: user.organizationId, entityType: 'PROJECT', entityId: projectId, action: 'ACTIVITIES_SCHEDULED', actorId: user.id, note: `${dates.length} activities spread over the project's dates` },
-      });
-    return dates.length;
   }
 }

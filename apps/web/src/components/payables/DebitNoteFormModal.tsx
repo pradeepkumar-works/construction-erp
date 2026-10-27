@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, Form, Input, Select, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DebitNoteDto, DebitNoteReason, VendorBillDto } from '@erp/shared';
@@ -175,7 +174,7 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
             <Select showSearch={{ optionFilterProp: 'label' }} options={DEBIT_NOTE_REASONS.map((r) => ({ value: r, label: DEBIT_NOTE_REASON_LABELS[r] }))} />
           </Form.Item>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the note' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!target && d.isBefore(dayjs(target.billDate), 'day'))} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!target && d.isBefore(dayjs(target.billDate), 'day'))} />
           </Form.Item>
         </FormGrid>
         <LineTable

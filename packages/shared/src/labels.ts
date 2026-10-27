@@ -222,7 +222,6 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   SUPPLIER: 'Supplier portal',
   COMMENT: 'Comments',
   ACCESS_REQUEST: 'Access requests',
-  HANDOFF: 'Your turn',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

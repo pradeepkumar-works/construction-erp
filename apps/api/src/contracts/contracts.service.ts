@@ -6,7 +6,6 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { ClientsService } from '../clients/clients.service';
-import { TemplatesService } from '../templates/templates.service';
 import { dateOnly, fxRate, iso, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { PriceVariationDto, UpdateContractDto } from './contracts.dto';
@@ -39,7 +38,7 @@ export interface LdInputs {
  */
 @Injectable()
 export class ContractsService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private templates: TemplatesService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
 
   toDto(p: Row, ld?: LdInputs): ProjectContractDto {
     const today = new Date().toISOString().slice(0, 10);
@@ -81,7 +80,6 @@ export class ContractsService {
       defectLiabilityMonths: p.defectLiabilityMonths,
       clientPaymentDays: p.clientPaymentDays,
       noticeDays: p.noticeDays,
-      measureTolerancePct: p.measureTolerancePct,
       priceVariation: p.priceVariation,
       pvBaseDate: dateOnly(p.pvBaseDate),
       pvComponents: p.pvComponents.map((c) => ({ id: c.id, name: c.name, sharePct: pctStr(c.sharePct), baseIndex: c.baseIndex.toFixed(3).replace(/\.?0+$/, '') })),
@@ -232,7 +230,6 @@ export class ContractsService {
     if (dto.defectLiabilityMonths !== undefined) data.defectLiabilityMonths = dto.defectLiabilityMonths;
     if (dto.clientPaymentDays !== undefined) data.clientPaymentDays = dto.clientPaymentDays;
     if (dto.noticeDays !== undefined) data.noticeDays = dto.noticeDays;
-    if (dto.measureTolerancePct !== undefined) data.measureTolerancePct = dto.measureTolerancePct;
     if (dto.priceVariation !== undefined) data.priceVariation = dto.priceVariation;
     for (const k of ['ldRatePct', 'ldCapPct'] as const) {
       const v = dto[k];
@@ -251,11 +248,8 @@ export class ContractsService {
       const e = end !== undefined ? end : dateOnly(cur?.endDate);
       if (s && e && e < s) throw new BadRequestException('The completion date cannot be before the start date');
     }
-    const hadStart = dateOnly((await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { startDate: true } })).startDate);
     await this.prisma.project.update({ where: { id: projectId }, data });
     await this.audit.log(user, 'PROJECT', projectId, 'CONTRACT_UPDATED');
-    // The dates arriving for the first time spread the activities that have none (finding 11 of the October review).
-    if (!hadStart && data.startDate) await this.templates.spreadUndated(user, projectId);
     return this.get(user, projectId);
   }
 

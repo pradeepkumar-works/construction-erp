@@ -8,7 +8,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
-import { dateOnly, dec, iso, parseDate, assertNotAfterToday } from '../common/serialize';
+import { dateOnly, dec, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { CreateProgressDto, ListProgressQuery, UpdateProgressDto } from './progress.dto';
@@ -141,7 +141,6 @@ export class ProgressService {
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { progressFromDpr: true } });
     if (org.progressFromDpr) throw new BadRequestException("Your company records progress in the DPR: add a work line to the day's DPR instead");
     await assertTakesProgress(this.prisma, dto.activityId, dto.projectId);
-    assertNotAfterToday(dto.date, 'progress');
     const sector = await resolveSector(this.prisma, dto.projectId, dto);
     let row: { id: string };
     try {
@@ -186,10 +185,7 @@ export class ProgressService {
       await assertTakesProgress(this.prisma, dto.activityId, row.projectId);
       data.activityId = dto.activityId;
     }
-    if (dto.date !== undefined) {
-      assertNotAfterToday(dto.date, 'progress');
-      data.date = parseDate(dto.date);
-    }
+    if (dto.date !== undefined) data.date = parseDate(dto.date);
     if (dto.quantity !== undefined) data.quantity = new Prisma.Decimal(dto.quantity);
     if (dto.remarks !== undefined) data.remarks = dto.remarks;
     const sector = await resolveSector(this.prisma, row.projectId, dto, (await this.prisma.progressEntry.findUnique({ where: { id }, select: SECTOR_SELECT }))!);

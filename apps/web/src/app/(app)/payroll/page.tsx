@@ -2,8 +2,7 @@
 
 import React, { Suspense, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Card, DatePicker } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
 import dayjs from 'dayjs';
 import { canViewLabourSummary, canViewPayroll } from '@erp/shared';

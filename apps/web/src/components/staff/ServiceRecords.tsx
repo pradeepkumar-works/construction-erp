@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Select, Space, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Button, DatePicker, Select, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PrinterOutlined } from '@/components/common/icons';
@@ -83,7 +82,7 @@ export function ServiceRecords({ onOpen }: { onOpen: (employeeId: string) => voi
           options={EMPLOYEE_EVENT_TYPES.map((t) => ({ value: t, label: EMPLOYEE_EVENT_LABELS[t] }))}
         />
         <DatePicker.RangePicker
-         
+          format="DD MMM YYYY"
           aria-label="Dates"
           value={range}
           onChange={(v) => {

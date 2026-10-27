@@ -42,11 +42,10 @@ test('a sentence becomes a material request, matched to the item master, saved o
   await expect(form.getByLabel('Item of line 1')).toHaveValue('OPC 53 Grade Cement');
   await expect(form.getByLabel('Quantity of line 1')).toHaveValue('200');
   await expect(form.getByLabel('Unit of line 1')).toHaveValue('Bags');
-  // The unknown item is marked until it is changed (the item picker carries the mark on its box).
-  const item2 = form.locator('.ant-select').filter({ has: page.getByLabel('Item of line 2') });
-  await expect(item2).toHaveClass(/ant-select-status-warning/);
+  // The unknown item is marked until it is changed.
+  await expect(form.getByLabel('Item of line 2')).toHaveClass(/ant-input-status-warning/);
   await form.getByLabel('Item of line 2').fill('Binding wire');
-  await expect(item2).not.toHaveClass(/ant-select-status-warning/);
+  await expect(form.getByLabel('Item of line 2')).not.toHaveClass(/ant-input-status-warning/);
 
   // Closing a drafted form asks first, like any form with changes.
   await form.getByRole('button', { name: 'Cancel' }).click();

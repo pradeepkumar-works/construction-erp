@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { asMasterNames } from '../stock/item-master';
 import type { MaterialRequestDto, MaterialRequestSortField, Paginated, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -151,7 +150,7 @@ export class MaterialRequestsService {
           submittedById: user.id,
           status: 'DRAFT',
           items: {
-            create: (await asMasterNames(this.prisma, user.organizationId, dto.items)).map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+            create: dto.items.map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
           },
         },
         select: { id: true, requestNo: true },
@@ -181,7 +180,7 @@ export class MaterialRequestsService {
       if (dto.items) {
         await tx.materialRequestItem.deleteMany({ where: { requestId: id } });
         await tx.materialRequestItem.createMany({
-          data: (await asMasterNames(tx, user.organizationId, dto.items)).map((i, idx) => ({ requestId: id, itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+          data: dto.items.map((i, idx) => ({ requestId: id, itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
         });
       }
     });

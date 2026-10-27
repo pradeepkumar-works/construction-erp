@@ -14,12 +14,12 @@ export interface PageImage {
 const LONG_SIDE = 2000;
 
 /**
- * A photo or PDF as page images: a photo turned upright and scaled down, a PDF's first `max` pages drawn. Done in the browser,
+ * A photo or PDF as page images: a photo turned upright and scaled down, a PDF's first pages drawn. Done in the browser,
  * so a 20 MB PDF or a 12 MP phone photo goes to the server as a few hundred kilobytes a page.
  */
-export async function pagesOf(file: File, max = DOC_READ_MAX_PAGES): Promise<PageImage[]> {
+export async function pagesOf(file: File): Promise<PageImage[]> {
   const pdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-  if (pdf) return pdfPages(file, max);
+  if (pdf) return pdfPages(file);
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
@@ -31,7 +31,7 @@ export async function pagesOf(file: File, max = DOC_READ_MAX_PAGES): Promise<Pag
   return [page];
 }
 
-async function pdfPages(file: File, max: number): Promise<PageImage[]> {
+async function pdfPages(file: File): Promise<PageImage[]> {
   // The legacy build: the modern one needs very recent browsers (Map.getOrInsertComputed), which older phones lack.
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).toString();
@@ -42,7 +42,7 @@ async function pdfPages(file: File, max: number): Promise<PageImage[]> {
     throw new Error('That PDF could not be opened. It may be damaged or password protected.');
   }
   const pages: PageImage[] = [];
-  for (let n = 1; n <= Math.min(doc.numPages, max); n++) {
+  for (let n = 1; n <= Math.min(doc.numPages, DOC_READ_MAX_PAGES); n++) {
     const page = await doc.getPage(n);
     const base = page.getViewport({ scale: 1 });
     const viewport = page.getViewport({ scale: LONG_SIDE / Math.max(base.width, base.height) });

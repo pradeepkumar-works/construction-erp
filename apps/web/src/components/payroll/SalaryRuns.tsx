@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, DatePicker, Form, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';

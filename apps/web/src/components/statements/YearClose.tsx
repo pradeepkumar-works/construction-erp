@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Alert, App, Button, Card, Form, Select, Space, Table, Typography } from "antd";
-import { DatePicker } from "@/components/common/DatePicker";
+import { Alert, App, Button, Card, DatePicker, Form, Select, Space, Table, Typography } from "antd";
 import { AppTag } from "@/components/common/AppTag";
 import type { FormInstance } from "antd";
 import { LockOutlined } from "@/components/common/icons";
@@ -139,6 +138,7 @@ function OpeningForm({
           extra="Usually 1 April. Bills, payments and other records before this day stay out of the books: the balances below stand for them."
         >
           <DatePicker
+            format="DD MMM YYYY"
             style={{ width: 220 }}
             disabledDate={(d) => d.isAfter(dayjs(), "day")}
           />
@@ -253,6 +253,7 @@ function LockForm({
           extra="Nothing dated on or before this day can be posted, changed or cancelled, from the modules or by hand. Leave empty to take the lock off."
         >
           <DatePicker
+            format="DD MMM YYYY"
             style={{ width: 220 }}
             disabledDate={(d) => d.isAfter(dayjs(), "day")}
           />

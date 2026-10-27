@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Alert, Form, Input, InputNumber, Radio, Select, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, DatePicker, Form, Input, InputNumber, Radio, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EquipmentLoanDetailDto, LoanDisbursal, PaymentMode } from '@erp/shared';
@@ -163,10 +162,10 @@ export function LoanFormModal({ open, onClose, loan, equipmentId, onSaved }: { o
           </FormGrid>
           <FormGrid cols={3}>
             <Form.Item name="sanctionDate" label="Sanctioned on" rules={[{ required: true, message: 'Choose the sanction date' }]}>
-              <DatePicker style={{ width: '100%' }} disabled={fixedTerms} />
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabled={fixedTerms} />
             </Form.Item>
             <Form.Item name="firstEmiDate" label="First EMI on" rules={[{ required: true, message: 'Choose the date of the first EMI' }]}>
-              <DatePicker style={{ width: '100%' }} disabled={fixedTerms} />
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabled={fixedTerms} />
             </Form.Item>
             <Form.Item name="emi" label="EMI" extra={fixedTerms ? undefined : preview && !watch?.emi ? `Works out to ${formatINR(preview.emi, true)}` : "Leave blank to work it out, or enter the lender's"}>
               <MoneyInput disabled={fixedTerms} placeholder={preview ? String(toNumber(preview.emi)) : undefined} />
@@ -256,7 +255,7 @@ export function PayEmiModal({ loan, close, onClose }: { loan: EquipmentLoanDetai
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="paidOn" label="Paid on" rules={[{ required: true, message: 'Choose the day it was paid' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="mode" label="Paid by">
             <Select options={RECEIPT_MODES.map((m) => ({ value: m, label: RECEIPT_MODE_LABELS[m] }))} />

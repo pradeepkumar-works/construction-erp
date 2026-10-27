@@ -288,8 +288,6 @@ enum NotificationType {
   SUPPLIER
   COMMENT
   ACCESS_REQUEST
-  /// A step handed to the next role in the chain (e2e review, fix 2): to order, delivery to expect, goods received, money to collect
-  HANDOFF
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -901,35 +899,31 @@ model ApprovalEscalation {
 }
 
 model User {
-  id               String       @id @default(uuid())
-  organizationId   String
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  roleId           String
-  role             Role         @relation(fields: [roleId], references: [id])
-  email            String
-  passwordHash     String
-  /// Sessions signed in before this are refused (finding 5 of the October review): set when the password changes or is reset
-  tokensValidAfter DateTime?
-  fullName         String
-  phone            String?
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  roleId         String
+  role           Role         @relation(fields: [roleId], references: [id])
+  email          String
+  passwordHash   String
+  fullName       String
+  phone          String?
   /// The user's own opt-in for alerts on WhatsApp and by SMS (WhatsApp first, SMS as the fallback).
-  whatsappAlerts   Boolean      @default(false)
-  smsAlerts        Boolean      @default(false)
-  /// Email for what waits on the user (hand-offs and send-backs, e2e review fix 2); on unless they switch it off
-  emailAlerts      Boolean      @default(true)
+  whatsappAlerts Boolean      @default(false)
+  smsAlerts      Boolean      @default(false)
   /// The user's own opt-in for a three-line morning brief from Ask Nirmaan (AI item 74).
-  morningBrief     Boolean      @default(false)
+  morningBrief   Boolean      @default(false)
   /// WhatsApp entries (AI item 120): the user's number, normalised (919876543210), while they have them switched on.
   /// Messages from it are read as this user; one number belongs to one user across all companies.
-  captureFrom      String?      @unique
-  isActive         Boolean      @default(true)
+  captureFrom    String?      @unique
+  isActive       Boolean      @default(true)
   /// Set when invited; cleared once the user chooses a password.
-  invitedAt        DateTime?
+  invitedAt      DateTime?
   /// A supplier-portal login (role SUPPLIER, v6 item 105): the vendor it acts for. Null for everyone else.
-  vendorId         String?
-  vendor           Vendor?      @relation("VendorPortalLogins", fields: [vendorId], references: [id])
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  vendorId       String?
+  vendor         Vendor?      @relation("VendorPortalLogins", fields: [vendorId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   savedViews            SavedView[]
   navPins               NavPin[]
@@ -1115,9 +1109,6 @@ model Project {
   clientName             String?
   consultantName         String?
   location               String?
-  /// Where deliveries go: the site store's address, which a purchase order takes when it names none
-  /// (finding 12 of the October review). Falls back to `location`.
-  siteAddress            String?
   /// Road or pipeline length the sector view draws, in metres from the start (chainage 0+000 = 0)
   chainageStart          Int?
   chainageEnd            Int?
@@ -1180,8 +1171,6 @@ model Project {
   clientPaymentDays      Int?
   /// Days the contract allows to give notice of a hindrance; the notice clock assumes 14 when not set (AI item 123)
   noticeDays             Int?
-  /// How far, in %, measurement may run past a BOQ item's quantity before it needs a variation; 25 when not set
-  measureTolerancePct    Int?
   /// When the schedule baseline was last frozen (activity planned dates and milestone due dates copied to their baseline)
   baselineAt             DateTime?
   baselineById           String?
@@ -1196,8 +1185,6 @@ model Project {
   siteRadiusM            Int?
   /// Refuse a check-in from outside the radius (or without a position) instead of only flagging it
   siteCheckInStrict      Boolean        @default(false)
-  /// Someone who edits the project hid its setup checklist from the Overview (finding 6 of the October review)
-  setupHiddenAt          DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
 
@@ -1302,33 +1289,23 @@ model Project {
 
 /// A client (employer) the organisation builds for: a government department or a private owner.
 model Client {
-  id                    String       @id @default(uuid())
-  organizationId        String
-  organization          Organization @relation(fields: [organizationId], references: [id])
-  name                  String
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
   /// Department, division or circle that issues the work orders, e.g. "Roads Division, Khordha"
-  department            String?
-  gstin                 String?
-  pan                   String?
-  billingAddress        String?
+  department     String?
+  gstin          String?
+  pan            String?
+  billingAddress String?
   /// GST state code (first two digits of the GSTIN, or set by hand)
-  stateCode             String?
-  contactPerson         String?
-  email                 String?
-  phone                 String?
-  isActive              Boolean      @default(true)
-  /// The client's usual terms (finding 6 of the October review): what a new project of theirs starts with; null takes
-  /// STANDARD_TERMS in @erp/shared
-  retentionPct          Decimal?     @db.Decimal(5, 2)
-  securityDepositPct    Decimal?     @db.Decimal(5, 2)
-  tdsPct                Decimal?     @db.Decimal(5, 2)
-  gstTdsPct             Decimal?     @db.Decimal(5, 2)
-  labourCessPct         Decimal?     @db.Decimal(5, 2)
-  gstRate               Decimal?     @db.Decimal(5, 2)
-  defectLiabilityMonths Int?
-  clientPaymentDays     Int?
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  stateCode      String?
+  contactPerson  String?
+  email          String?
+  phone          String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   projects    Project[]
   rmcOrders   RmcOrder[]
@@ -2598,9 +2575,6 @@ model Item {
   pipeMaterial   PipeMaterial?
   /// Pipe bought by weight (MS, DI by the tonne): kg per metre, to turn issues into metres
   kgPerMetre     Decimal?      @db.Decimal(10, 3)
-  /// Other spellings of this item, as `itemKey` writes them ("cement opc53"): names merged into it, so a request or
-  /// order line typed the old way still lands on it
-  aliases        String[]      @default([])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -7657,21 +7631,4 @@ model HindranceCheck {
   @@index([organizationId, decision])
   @@index([projectId])
   @@index([riskId])
-}
-
-/// Failed sign-ins and reset-link requests (finding 5 of the October review), counted per email and per address to slow
-/// password guessing (`login-guard-rules.ts`). Not a tenant table: an attempt may name no one's account. Rows older than
-/// a day are removed as new ones come in.
-model AuthAttempt {
-  id        String   @id @default(uuid())
-  /// LOGIN_FAILED or RESET_REQUESTED (internal to the guard, never shown)
-  kind      String
-  /// As typed, lower case
-  email     String
-  ip        String?
-  createdAt DateTime @default(now())
-
-  @@index([email, kind, createdAt])
-  @@index([ip, kind, createdAt])
-  @@index([createdAt])
 }

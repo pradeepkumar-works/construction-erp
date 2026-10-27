@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Flex, Progress, Segmented, Statistic, Table, Typography, theme } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Card, DatePicker, Flex, Progress, Segmented, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { Dayjs } from 'dayjs';
@@ -152,7 +151,7 @@ export function ProcurementStatusPanel() {
         />
         <ProjectSelect value={projectId} onChange={setProjectId} placeholder="All projects" style={{ width: 220 }} />
         <VendorSelect allowClear placeholder="All vendors" value={vendorId} onChange={setVendorId} style={{ width: 220 }} aria-label="Vendor" />
-        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => setRange(v as [Dayjs | null, Dayjs | null] | null)} allowEmpty={[true, true]} placeholder={['Orders from', 'to']} aria-label="Order dates" />
+        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => setRange(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} placeholder={['Orders from', 'to']} aria-label="Order dates" />
         <span style={{ flex: 1 }} />
         <ExportButton onExport={exportRows} />
       </Flex>

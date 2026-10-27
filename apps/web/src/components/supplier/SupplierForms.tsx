@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Card, Flex, Form, Input, InputNumber, Select, Table, Typography, theme } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Card, DatePicker, Flex, Form, Input, InputNumber, Select, Table, Typography, theme } from 'antd';
 import dayjs from 'dayjs';
 import {
   GST_RATES,
@@ -109,7 +108,7 @@ export function QuoteForm({ enquiry, onClose }: { enquiry: SupplierEnquiryDto | 
                 <Input maxLength={60} {...CODE_INPUT} />
               </Form.Item>
               <Form.Item name="validUntil" label="Rates valid until">
-                <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
+                <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
               </Form.Item>
             </FormGrid>
             <Form.Item name="remarks" label="Remarks">
@@ -244,7 +243,7 @@ export function DispatchForm({ open, orderId, onClose }: { open: boolean; orderI
             <Input maxLength={40} {...CODE_INPUT} />
           </Form.Item>
           <Form.Item name="date" label="Sent on" rules={[{ required: true, message: 'Choose the date sent' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="vehicleNo" label="Vehicle no.">
             <Input maxLength={20} {...CODE_INPUT} placeholder="OD02AB1234" />
@@ -338,7 +337,7 @@ export function InvoiceForm({ open, again, onClose }: { open: boolean; again?: S
             <Input maxLength={60} {...CODE_INPUT} disabled={!!again} />
           </Form.Item>
           <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Choose the invoice date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="amount" label="Amount with GST" rules={[{ required: true, message: 'Enter the invoice amount' }]}>
             <MoneyInput />

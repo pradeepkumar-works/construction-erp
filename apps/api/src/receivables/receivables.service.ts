@@ -1,4 +1,3 @@
-import { NotificationsService } from '../notifications/notifications.service';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
@@ -116,7 +115,7 @@ const addMonths = (date: string, months: number) => {
  */
 @Injectable()
 export class ReceivablesService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private notifications: NotificationsService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
 
   toDto(r: Row): ReceiptDto {
     return {
@@ -306,7 +305,6 @@ export class ReceivablesService {
     }
     await this.audit.log(user, 'RECEIPT', id, 'CREATED', billId ? `₹${a.amount.toFixed(2)} received` : null);
     if (billId) await this.audit.log(user, 'BILL', billId, 'PAYMENT_RECEIVED', `₹${a.amount.toFixed(2)} received on ${dto.receiptDate}${dto.reference ? ` (${dto.reference})` : ''}`);
-    await this.notifications.onClientReceipt(user, id);
     return this.get(user, id);
   }
 

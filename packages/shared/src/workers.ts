@@ -128,10 +128,8 @@ export interface RollCallRowDto {
 export interface RollCallDto {
   projectId: string;
   date: string;
-  /** Payroll for the month is approved: the roll call, like the head count, can no longer change */
+  /** The day's DPR is approved: the roll call, like the head count, can no longer change */
   locked: boolean;
-  /** The approved payroll run that locks the day, null while it is open */
-  lockedByRun: string | null;
   rows: RollCallRowDto[];
   totals: { workers: number; present: number; halfDay: number; absent: number; unmarked: number; manDays: number; otHours: number };
   /** The head-count sheet of the day after the roll call (null when none) */

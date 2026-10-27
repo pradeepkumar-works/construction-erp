@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Card, Col, ConfigProvider, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, Button, Card, Col, ConfigProvider, DatePicker, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
 import { StageBar } from '@/components/record/StageBar';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleFilled, CheckOutlined, CloseCircleFilled, EditOutlined, PlusOutlined } from '@/components/common/icons';

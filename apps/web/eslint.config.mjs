@@ -74,7 +74,6 @@ export default defineConfig([
       // `components/common/icons`, never `@ant-design/icons`.
       'no-restricted-imports': ['error', { paths: [
         { name: 'antd', importNames: ['Tag', 'Steps'], message: 'Use AppTag (components/common/AppTag) or StageBar (components/record/StageBar).' },
-        { name: 'antd', importNames: ['DatePicker'], message: 'Use DatePicker from components/common/DatePicker: it reads dates typed as 13/10/2026, 13-10-2026 and the like.' },
         { name: '@ant-design/icons', message: 'Use the Lucide icons in components/common/icons (same names); add one there if it is missing.' },
       ] }],
 
@@ -88,7 +87,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/components/common/AppTag.tsx', 'src/components/common/DatePicker.tsx'],
+    files: ['src/components/common/AppTag.tsx'],
     rules: { 'no-restricted-imports': 'off' },
   },
 ]);

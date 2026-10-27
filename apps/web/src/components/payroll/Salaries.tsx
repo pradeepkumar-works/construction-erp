@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, Checkbox, Form, Input, Popconfirm, Select, Space, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, Checkbox, DatePicker, Form, Input, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -95,7 +94,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
               <Select disabled={!!from} showSearch={{ optionFilterProp: 'label' }} options={(staff?.items ?? []).map((e) => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))} />
             </Form.Item>
             <Form.Item name="effectiveFrom" label="From" rules={[{ required: true, message: 'Pick the first day it applies' }]} extra="Usually the 1st of a month">
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
         </FormSection>

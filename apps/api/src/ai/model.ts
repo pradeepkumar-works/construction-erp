@@ -223,7 +223,7 @@ function linkedRows(value: unknown, out: Record<string, unknown>[] = []): Record
 
 const at = (value: unknown, box: number[], confidence: 'high' | 'low' = 'high') => ({ value, confidence, page: 1, box });
 
-/** What the stand-in "reads" off any page: an invoice and a challan for binding wire from Sahoo Auto Parts, a drawing, a road work order and two pages' worth of its BOQ. */
+/** What the stand-in "reads" off any page: an invoice and a challan for binding wire from Sahoo Auto Parts, and a drawing. */
 const FAKE_READS: Record<string, { fields: Record<string, unknown>; lines: Record<string, unknown>[] }> = {
   invoice: {
     fields: {
@@ -263,30 +263,5 @@ const FAKE_READS: Record<string, { fields: Record<string, unknown>; lines: Recor
       discipline: at('Structural', [820, 940, 980, 965]),
     },
     lines: [],
-  },
-  workOrder: {
-    fields: {
-      nameOfWork: at('Widening and strengthening of the district road from Km 12 to Km 18', [80, 300, 920, 360]),
-      clientName: at('Roads Division, Public Works Department', [80, 60, 600, 100]),
-      workOrderNo: at('WO/RD/2026-27/118', [600, 140, 920, 170]),
-      workOrderDate: at('02/11/2026', [600, 180, 920, 210]),
-      agreementNo: at('14/EE/2026-27', [80, 400, 400, 430]),
-      agreementDate: at('05/11/2026', [420, 400, 700, 430], 'low'),
-      contractValue: at(84650000, [600, 460, 920, 490]),
-      startDate: at('15/11/2026', [80, 520, 400, 550]),
-      completionDate: at(null, [0, 0, 0, 0]),
-      durationMonths: at(18, [420, 520, 700, 550]),
-      location: at('Bhadrak', [80, 580, 400, 610]),
-    },
-    lines: [],
-  },
-  boq: {
-    fields: { total: at(null, [0, 0, 0, 0]) },
-    lines: [
-      { itemNo: at('1.01', [40, 200, 100, 225]), section: at('EARTHWORK', [40, 170, 400, 195]), description: at('Clearing and grubbing road land including uprooting of vegetation', [110, 200, 560, 225]), unit: at('Sqm', [570, 200, 630, 225]), quantity: at(42000, [640, 200, 740, 225]), rate: at(18.5, [750, 200, 840, 225]), amount: at(777000, [850, 200, 960, 225]) },
-      { itemNo: at('1.02', [40, 240, 100, 265]), section: at('EARTHWORK', [40, 170, 400, 195]), description: at('Earthwork in embankment with approved borrowed earth, compacted in layers', [110, 240, 560, 265]), unit: at('Cum', [570, 240, 630, 265]), quantity: at(18500, [640, 240, 740, 265]), rate: at(245, [750, 240, 840, 265]), amount: at(4532500, [850, 240, 960, 265]) },
-      { itemNo: at('2.01', [40, 320, 100, 345]), section: at('GRANULAR SUB-BASE AND BASE', [40, 290, 400, 315]), description: at('Granular sub-base with well graded material, grading I', [110, 320, 560, 345]), unit: at('Cum', [570, 320, 630, 345]), quantity: at(6400, [640, 320, 740, 345], 'low'), rate: at(1850, [750, 320, 840, 345]), amount: at(11480000, [850, 320, 960, 345]) },
-      { itemNo: at('2.02', [40, 360, 100, 385]), section: at('GRANULAR SUB-BASE AND BASE', [40, 290, 400, 315]), description: at('Wet mix macadam base course', [110, 360, 560, 385]), unit: at('Cum', [570, 360, 630, 385]), quantity: at(4800, [640, 360, 740, 385]), rate: at(2650, [750, 360, 840, 385]), amount: at(12720000, [850, 360, 960, 385]) },
-    ],
   },
 };

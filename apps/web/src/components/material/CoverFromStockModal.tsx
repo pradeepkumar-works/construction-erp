@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Form, Input, Select, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { MaterialRequestDto, MaterialRequestStockDto, RequestLineStockDto } from '@erp/shared';
 import { useCoverRequest } from '@/lib/queries';
@@ -77,7 +76,7 @@ export function CoverFromStockModal({ open, onClose, request, stock }: { open: b
             <Select options={sites} placeholder="Site with stock" />
           </Form.Item>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
         <Table<RequestLineStockDto>

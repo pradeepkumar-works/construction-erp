@@ -7,7 +7,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { tenantMiddleware } from './prisma/tenant-context';
-import { SANDBOXED_FILE_CSP, securityHeaders } from './common/security-headers';
 import { PRODUCT_NAME } from '@erp/shared';
 
 async function bootstrap() {
@@ -20,7 +19,6 @@ async function bootstrap() {
   app.useBodyParser('json', { limit: '4mb' });
   app.useBodyParser('text', { type: (req: IncomingMessage) => !req.headers['content-type'] || /^text\//.test(req.headers['content-type']), limit: '5mb' });
   app.use(tenantMiddleware);
-  app.use(securityHeaders);
   // CORS_ORIGINS: comma-separated list of allowed origins; unset = allow any origin (dev / mobile apps)
   const origins = (process.env.CORS_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean);
   // maxAge: the browser asks once per URL per 2 hours (Chrome's cap) instead of before every call, which on a list doubled
@@ -29,12 +27,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, transformOptions: { enableImplicitConversion: true } }));
 
   const uploadDir = process.env.UPLOAD_DIR || './uploads';
-  app.useStaticAssets(join(process.cwd(), uploadDir), {
-    prefix: '/uploads/',
-    setHeaders: (res, path) => {
-      if (/\.(html?|xhtml|svg|xml)$/i.test(path)) res.setHeader('Content-Security-Policy', SANDBOXED_FILE_CSP);
-    },
-  });
+  app.useStaticAssets(join(process.cwd(), uploadDir), { prefix: '/uploads/' });
 
   const config = new DocumentBuilder()
     .setTitle(`${PRODUCT_NAME} API`)

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Checkbox, Form, Input, InputNumber, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Checkbox, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { ActivityDto, ProjectMemberDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -129,7 +128,7 @@ export function ActivityFormModal({
             <QuantityInput unit={unit} />
           </Form.Item>
           <Form.Item name="dates" label="Planned start / end">
-            <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
+            <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
           </Form.Item>
           <Form.Item name="responsibleId" label="Responsible">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Project member" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />

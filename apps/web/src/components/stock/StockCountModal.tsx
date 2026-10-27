@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Button, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import { DownloadOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -120,7 +119,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
             </Form.Item>
           )}
           <Form.Item name="date" label="Counted on" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           <Form.Item name="remarks" label="Remarks">
             <Input maxLength={800} placeholder="Who counted, which store" />

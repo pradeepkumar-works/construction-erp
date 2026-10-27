@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Select } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
-import type { MeasurementSheetDto, ToMeasureItemDto } from '@erp/shared';
+import type { MeasurementSheetDto } from '@erp/shared';
 import { LIST_SORT_FIELDS, canMeasure } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProjectScope } from '@/lib/project-scope';
@@ -20,8 +20,7 @@ import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { measurementColumns } from './MeasurementTable';
 import { MeasurementDrawer } from './MeasurementDrawer';
-import { MeasurementFormModal, type MeasurementPrefill } from './MeasurementFormModal';
-import { MeasureFromProgressModal, progressPrefill } from './MeasureFromProgressModal';
+import { MeasurementFormModal } from './MeasurementFormModal';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'boqItemId'] as const;
 
@@ -31,8 +30,6 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MeasurementSheetDto | null>(null);
-  const [fromProgress, setFromProgress] = useState(false);
-  const [started, setStarted] = useState<{ boqItemId: string; prefill: MeasurementPrefill } | null>(null);
   const [scope] = useProjectScope();
   const { data: boq } = useBoq(fixedProject ?? scope);
   const frame = useListFrame({
@@ -70,8 +67,6 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
       New measurement
     </Button>
   ) : null;
-  // Start a sheet from the days the site already got approved (finding 14 of the October review).
-  const startFromProgress = (item: ToMeasureItemDto) => setStarted({ boqItemId: item.boqItemId, prefill: progressPrefill(item) });
 
   return (
     <>
@@ -92,7 +87,6 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
         searchLabel="Search measurements"
         extra={
           <>
-            {mayMeasure && frame.projectId ? <Button onClick={() => setFromProgress(true)}>Measure from progress</Button> : null}
             <ExportButton onExport={exportRows} />
             {newButton}
           </>
@@ -129,20 +123,14 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
         emptyAction={newButton}
       />
       <MeasurementDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      {frame.projectId ? (
-        <MeasureFromProgressModal open={fromProgress} onClose={() => setFromProgress(false)} projectId={frame.projectId} onStart={startFromProgress} />
-      ) : null}
       <MeasurementFormModal
-        open={formOpen || !!editing || !!started}
+        open={formOpen || !!editing}
         sheet={editing}
         onClose={() => {
           setFormOpen(false);
           setEditing(null);
-          setStarted(null);
         }}
-        projectId={started ? frame.projectId : fixedProject}
-        boqItemId={started?.boqItemId}
-        prefill={started?.prefill}
+        projectId={fixedProject}
       />
     </>
   );

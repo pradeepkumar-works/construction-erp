@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, Form, Input, Segmented, Select, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, DatePicker, Form, Input, Segmented, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, FundPurpose, PaymentMode, PaymentRequestDto } from '@erp/shared';
@@ -170,7 +169,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
             <MoneyInput />
           </Form.Item>
           <Form.Item name="neededBy" label="Needed by">
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="mode" label="Pay by">
             <Select options={RECEIPT_MODES.map((m) => ({ value: m, label: RECEIPT_MODE_LABELS[m] }))} />
@@ -229,7 +228,7 @@ export function ReleaseFundsModal({ request, onClose }: { request: PaymentReques
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="date" label="Released on" rules={[{ required: true, message: 'Choose the day the money went out' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Enter the amount released' }]}>
             <MoneyInput />

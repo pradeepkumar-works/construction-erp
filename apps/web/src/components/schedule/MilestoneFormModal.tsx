@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, DatePicker, Form, Input } from 'antd';
 import dayjs from 'dayjs';
 import type { MilestoneDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -65,10 +64,10 @@ export function MilestoneFormModal({ open, onClose, projectId, milestone, achiev
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="dueDate" label="Due on" rules={[{ required: true, message: 'Pick the due date' }]}>
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
           <Form.Item name="achievedOn" label="Achieved on" tooltip="Leave empty until the milestone is reached">
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="note" label="Note">

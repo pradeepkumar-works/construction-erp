@@ -38,16 +38,12 @@ const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 const q = (s: string) => `"${s.replace(/"/g, '""')}"`;
 const scalar = (f: Field) => f.kind === 'scalar' || f.kind === 'enum';
 
-/** Tables that belong to no company (`AuthAttempt`): never exported, never purged with one. */
-const PLATFORM_TABLES = new Set(['AuthAttempt']);
-
 function buildScopes(): TableScope[] {
   const models = Prisma.dmmf.datamodel.models;
   const byName = new Map(models.map((m) => [m.name, m]));
   const hasOrg = (m: Model) => m.fields.some((f) => f.name === 'organizationId' && scalar(f));
   const table = (m: Model) => q(m.dbName ?? m.name);
-  // Tables of the platform, not of any company: sign-in attempts are counted before anyone is known.
-  return models.filter((m) => !PLATFORM_TABLES.has(m.name)).map((m): TableScope => {
+  return models.map((m): TableScope => {
     const delegate = lowerFirst(m.name);
     if (m.name === 'Organization') return { model: m, delegate, where: (id) => ({ id }), sql: `"id" = $1` };
     if (hasOrg(m)) return { model: m, delegate, where: (id) => ({ organizationId: id }), sql: `"organizationId" = $1` };

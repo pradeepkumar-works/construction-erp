@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, Button, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, Button, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -185,7 +184,7 @@ export function WorkOrderFormModal({
             <VendorSelect prefer={SUB_KINDS} placeholder="Type a subcontractor's name" onPick={onVendor} />
           </Form.Item>
           <Form.Item name="woDate" label="Work order date" rules={[{ required: true, message: 'Pick the work order date' }]}>
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>
@@ -193,10 +192,10 @@ export function WorkOrderFormModal({
             <Input maxLength={200} placeholder="Brickwork and plaster, Block A" />
           </Form.Item>
           <Form.Item name="startDate" label="Start">
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
           <Form.Item name="endDate" label="Finish">
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
         </FormGrid>
 

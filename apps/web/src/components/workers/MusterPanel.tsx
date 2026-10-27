@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Statistic, Table, Tooltip } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { DatePicker, Statistic, Table, Tooltip } from 'antd';
 import type { TableProps } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { MusterDto, MusterRowDto, OutputRowDto, StaffAttendanceStatus } from '@erp/shared';
@@ -147,7 +146,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
 
           <div style={{ padding: '20px 12px 8px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <h4 style={{ margin: 0 }}>Output per man-day</h4>
-            <DatePicker.RangePicker value={range} onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])} allowClear={false} aria-label="Dates" />
+            <DatePicker.RangePicker value={range} onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])} format="DD MMM YYYY" allowClear={false} aria-label="Dates" />
             {output.data ? (
               <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {output.data.totalManDays} man-days{output.data.untaggedManDays ? `, ${output.data.untaggedManDays} not tagged to an activity` : ''}

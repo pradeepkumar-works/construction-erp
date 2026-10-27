@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Col, Row, Statistic, Table, Typography, theme } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Card, Col, DatePicker, Row, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -40,7 +39,7 @@ export default function SupplierStatementPage() {
             value={from}
             onChange={setFrom}
             placeholder="From the start"
-           
+            format="DD MMM YYYY"
             disabledDate={(d) => d.isAfter(dayjs(), 'day')}
             aria-label="Statement from"
           />

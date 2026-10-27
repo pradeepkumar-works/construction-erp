@@ -16,7 +16,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
-import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
@@ -103,7 +103,6 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
   const releases = !!data && requestReleases(data);
   const accounts = !!user && (releases ? canReleaseFunds(user.roleKey) : canRecordPayment(user.roleKey));
   const requester = !!user && (fund ? canRequestFunds(user.roleKey) : canRequestPayment(user.roleKey));
-  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/payment-requests/${id}`)).data,
     onSuccess: () => {
@@ -321,16 +320,20 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                 ) : null}
                 {requester && <EditResubmitButton entry={data} onEdit={onEdit} size={size} />}
                 <ReviewActions type="payment_request" id={data.id} status={data.status} amount={data.amount} size={size} />
+                {removable ? (
+                  <ConfirmDelete what={`payment request ${data.requestNo}`} onConfirm={() => remove.mutateAsync()}>
+                    <Button size={size} danger loading={remove.isPending}>
+                      Delete
+                    </Button>
+                  </ConfirmDelete>
+                ) : null}
               </>
             ),
-            // Delete is a tap from Approve no longer (finding 15 of the October review).
-            more: removable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `payment request ${data.requestNo}`, onConfirm: () => remove.mutateAsync() }) }] : [],
           }
         }
       />
       <PaymentFormModal open={paying && !!data} bill={data ? requestPayTarget(data) : null} onClose={() => setPaying(false)} />
       <ReleaseFundsModal request={releasing && data ? data : null} onClose={() => setReleasing(false)} />
-      {deleteDialog}
     </>
   );
 }

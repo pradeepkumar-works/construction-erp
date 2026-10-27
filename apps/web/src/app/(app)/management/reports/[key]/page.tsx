@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Flex, Result, Spin, Typography, theme } from 'antd';
+import { App, Button, DatePicker, Flex, Result, Spin, Typography, theme } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canSeeManagement, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -10,7 +10,6 @@ import { useManagementReport, useProjects } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { DatePicker } from '@/components/common/DatePicker';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ResultMark } from '@/components/common/ResultMark';
 import { FileExcelOutlined, PrinterOutlined } from '@/components/common/icons';

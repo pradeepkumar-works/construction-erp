@@ -6,7 +6,7 @@ import { Alert, Button, Descriptions, Skeleton, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined } from '@/components/common/icons';
 import type { ContractExtensionDto } from '@erp/shared';
-import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract, isForeign, MEASURE_TOLERANCE_PCT } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract, isForeign } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useContract } from '@/lib/queries';
 import { formatDate, formatINR, formatMoney, toNumber } from '@/lib/format';
@@ -89,7 +89,6 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Defect liability">{c.defectLiabilityMonths !== null ? `${c.defectLiabilityMonths} months` : '-'}</Descriptions.Item>
           <Descriptions.Item label="Client pays within">{c.clientPaymentDays !== null ? `${c.clientPaymentDays} days` : 'Not set (30 days assumed)'}</Descriptions.Item>
           <Descriptions.Item label="Hindrance notice within">{c.noticeDays !== null ? `${c.noticeDays} days` : 'Not set (14 days assumed)'}</Descriptions.Item>
-          <Descriptions.Item label="Measure past the BOQ by up to">{c.measureTolerancePct !== null ? `${c.measureTolerancePct}%` : `Not set (${MEASURE_TOLERANCE_PCT}% assumed)`}</Descriptions.Item>
           <Descriptions.Item label="Price variation">{c.priceVariation ? 'Yes' : 'No'}</Descriptions.Item>
           <Descriptions.Item label="Mobilisation advance">{Number(c.mobilisationAdvance) > 0 ? <span translate="no">{formatMoney(c.mobilisationAdvance, c)}</span> : 'None'}</Descriptions.Item>
         </Descriptions>

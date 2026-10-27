@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Form, Input, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { DatePicker, Form, Input, Select } from 'antd';
 import type { FormItemProps } from 'antd';
 import dayjs from 'dayjs';
 import { REVISION_STATUSES, REVISION_STATUS_LABELS } from '@erp/shared';
@@ -22,7 +21,7 @@ export function RevisionFields({ prefix = [], read }: { prefix?: string[]; read?
           <Input maxLength={20} placeholder="R0, A, P1" />
         </Form.Item>
         <Form.Item name={n('issuedOn')} label="Issued on" rules={[{ required: true, message: 'Pick the date it was issued' }]} {...read?.('date')}>
-          <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+          <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         </Form.Item>
         <Form.Item name={n('status')} label="Status" rules={[{ required: true, message: 'Choose the status' }]}>
           <Select options={REVISION_STATUSES.map((s) => ({ value: s, label: REVISION_STATUS_LABELS[s] }))} />

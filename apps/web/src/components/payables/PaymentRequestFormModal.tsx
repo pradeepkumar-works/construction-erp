@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, Form, Input, Select, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PaymentMode, PaymentRequestDto, PaymentRequestKind } from '@erp/shared';
@@ -243,7 +242,7 @@ function BillRequestFormModal({ open, onClose, target, request }: { open: boolea
             <MoneyInput />
           </Form.Item>
           <Form.Item name="neededBy" label="Needed by">
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="mode" label="Pay by">
             <Select

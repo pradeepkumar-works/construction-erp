@@ -1,18 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import {
-  hasDimensions,
-  MEASURE_TOLERANCE_PCT,
-  measureOverBoq,
-  measurementLineQty,
-  unmeasuredEntries,
-  type MeasurementSheetDto,
-  type MeasurementSortField,
-  type Paginated,
-  type ProgressForMeasure,
-  type SortOrder,
-  type ToMeasureItemDto,
-} from '@erp/shared';
+import { hasDimensions, measurementLineQty, type MeasurementSheetDto, type MeasurementSortField, type Paginated, type SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { SECTOR_SELECT, locationOr, resolveSector } from '../common/sector';
@@ -151,72 +139,6 @@ export class MeasurementsService {
     return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
 
-  /**
-   * What is still to measure on a project (finding 14 of the October review): the QS used to read the approved DPRs
-   * and type the quantities into a sheet again. Each BOQ item's approved progress, less what its sheets already hold,
-   * with the days that make up the remainder (`unmeasuredEntries`) so a sheet can start from them. Only activities
-   * recording the item's own unit count; the rest are named, not converted.
-   */
-  async toMeasure(user: RequestUser, projectId: string): Promise<ToMeasureItemDto[]> {
-    await this.access.assertCanAccessProject(user, projectId);
-    const items = await this.prisma.boqItem.findMany({
-      where: { projectId, organizationId: user.organizationId, activities: { some: { progressEntries: { some: { status: 'APPROVED' } } } } },
-      orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }],
-      select: {
-        id: true,
-        itemNo: true,
-        description: true,
-        unit: true,
-        rate: true,
-        activities: {
-          select: {
-            name: true,
-            unit: true,
-            progressEntries: {
-              where: { status: 'APPROVED' },
-              select: { id: true, date: true, quantity: true, location: true, dailyReportId: true },
-            },
-          },
-        },
-        measurements: { where: { status: { not: 'REJECTED' } }, select: { totalQty: true } },
-      },
-    });
-    const out: ToMeasureItemDto[] = [];
-    for (const item of items) {
-      const sameUnit = (u: string) => u.trim().toLowerCase() === item.unit.trim().toLowerCase();
-      const entries: ProgressForMeasure[] = [];
-      const otherUnitActivities: string[] = [];
-      for (const a of item.activities) {
-        if (!a.progressEntries.length) continue;
-        if (!sameUnit(a.unit)) {
-          if (!otherUnitActivities.includes(a.name)) otherUnitActivities.push(a.name);
-          continue;
-        }
-        for (const e of a.progressEntries)
-          entries.push({ id: e.id, date: dateOnly(e.date)!, quantity: Number(e.quantity), location: e.location, activityName: a.name, fromDpr: !!e.dailyReportId });
-      }
-      const executed = entries.reduce((s, e) => s + e.quantity, 0);
-      const measured = item.measurements.reduce((s, m) => s + Number(m.totalQty), 0);
-      const left = unmeasuredEntries(entries, measured);
-      const toMeasureQty = left.reduce((s, e) => s + e.quantity, 0);
-      if (toMeasureQty <= 0) continue;
-      out.push({
-        boqItemId: item.id,
-        itemNo: item.itemNo,
-        description: item.description,
-        unit: item.unit,
-        rate: money(item.rate)!,
-        executedQty: dec(executed)!,
-        measuredQty: dec(measured)!,
-        toMeasureQty: dec(toMeasureQty)!,
-        toMeasureAmount: money(new Prisma.Decimal(toMeasureQty).mul(item.rate))!,
-        entries: left.map((e) => ({ id: e.id, date: e.date, quantity: dec(e.quantity)!, location: e.location, activityName: e.activityName, fromDpr: e.fromDpr })),
-        otherUnitActivities,
-      });
-    }
-    return out;
-  }
-
   async get(user: RequestUser, id: string): Promise<MeasurementSheetDto> {
     const row = await this.prisma.measurementSheet.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
     if (!row) throw new NotFoundException('Measurement not found');
@@ -230,26 +152,6 @@ export class MeasurementsService {
   private async assertBoqItem(projectId: string, boqItemId: string) {
     const item = await this.prisma.boqItem.findFirst({ where: { id: boqItemId, projectId }, select: { id: true } });
     if (!item) throw new NotFoundException('BOQ item not found in this project');
-  }
-
-  /**
-   * A sheet may not take the BOQ item's measured quantity past its BOQ quantity plus the contract's tolerance
-   * (`measureOverBoq`); beyond that the extra quantity needs a variation first. Every sheet but a rejected one counts.
-   */
-  private async assertWithinBoq(projectId: string, boqItemId: string, total: Prisma.Decimal, excludeId?: string) {
-    const [item, project, held] = await Promise.all([
-      this.prisma.boqItem.findUniqueOrThrow({ where: { id: boqItemId }, select: { itemNo: true, unit: true, originalQty: true, revisedQty: true } }),
-      this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { measureTolerancePct: true } }),
-      this.prisma.measurementSheet.aggregate({ where: { boqItemId, status: { not: 'REJECTED' }, ...(excludeId ? { id: { not: excludeId } } : {}) }, _sum: { totalQty: true } }),
-    ]);
-    const boqQty = Number(item.revisedQty ?? item.originalQty);
-    const tolerancePct = project.measureTolerancePct ?? MEASURE_TOLERANCE_PCT;
-    const over = measureOverBoq({ boqQty, before: Number(held._sum.totalQty ?? 0), sheet: Number(total), tolerancePct });
-    const n = (v: number) => v.toLocaleString('en-IN', { maximumFractionDigits: 3 });
-    if (over)
-      throw new BadRequestException(
-        `Item ${item.itemNo} would be measured to ${n(over.after)} ${item.unit}, past its BOQ quantity of ${n(boqQty)} ${item.unit} and the ${tolerancePct}% the contract allows (${n(over.cap)} ${item.unit}). Check the dimensions, or record a variation for the extra quantity first.`,
-      );
   }
 
   /** Lines with their computed quantities, and the sheet total. */
@@ -287,7 +189,6 @@ export class MeasurementsService {
     if (dto.workOrderId) await assertOpenWorkOrder(this.prisma, user.organizationId, dto.workOrderId, dto.projectId, dto.boqItemId);
     this.checkDate(dto.date);
     const { lines, total } = this.lines(dto.lines);
-    await this.assertWithinBoq(dto.projectId, dto.boqItemId, total);
     const sector = await resolveSector(this.prisma, dto.projectId, dto);
     const location = locationOr(dto.location, sector);
     if (!location) throw new BadRequestException('Say where it was measured');
@@ -356,10 +257,6 @@ export class MeasurementsService {
       data.location = location;
     }
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
-    if (dto.lines !== undefined || dto.boqItemId !== undefined) {
-      const cur = await this.prisma.measurementSheet.findUniqueOrThrow({ where: { id }, select: { boqItemId: true, totalQty: true } });
-      await this.assertWithinBoq(row.projectId, dto.boqItemId ?? cur.boqItemId, dto.lines !== undefined ? this.lines(dto.lines).total : cur.totalQty, id);
-    }
     await this.prisma.$transaction(async (tx) => {
       if (dto.lines !== undefined) {
         const { lines, total } = this.lines(dto.lines);

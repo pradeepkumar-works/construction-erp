@@ -1,20 +1,19 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import type { DocReadField, DocReadKind, DocReadLine, DocReadResultDto, PurchaseOrderDto } from '@erp/shared';
-import { DOC_READ_FIELDS, DOC_READ_LINE_FIELDS, DOC_READ_MAX_LINES, DOC_READ_MAX_PAGES, DOC_READ_MAX_PAGE_BYTES, canApprove, canEditProjects, canKeepStock, canManageDocuments, canRecordVendorBill, gstinCheckChar, gstinChecksumOk, matchLines, readNumber, readText } from '@erp/shared';
+import { DOC_READ_FIELDS, DOC_READ_LINE_FIELDS, DOC_READ_MAX_PAGES, DOC_READ_MAX_PAGE_BYTES, canKeepStock, canManageDocuments, canRecordVendorBill, gstinCheckChar, gstinChecksumOk, matchLines, readNumber, readText } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { VendorsService } from '../vendors/vendors.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
-import { ClientsService } from '../clients/clients.service';
 import { AiService } from './ai.service';
 import { docReadPrompt } from './prompt';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 type ImageType = (typeof IMAGE_TYPES)[number];
 
-const NUMBER_FIELDS = new Set(['subtotal', 'cgst', 'sgst', 'igst', 'freight', 'total', 'quantity', 'rate', 'gstRate', 'amount', 'contractValue', 'durationMonths']);
-const DATE_FIELDS = new Set(['invoiceDate', 'date', 'workOrderDate', 'agreementDate', 'startDate', 'completionDate']);
+const NUMBER_FIELDS = new Set(['subtotal', 'cgst', 'sgst', 'igst', 'freight', 'total', 'quantity', 'rate', 'gstRate', 'amount']);
+const DATE_FIELDS = new Set(['invoiceDate', 'date']);
 /** Figures within this much agree (rounding on the paper). */
 const TOLERANCE = 1;
 
@@ -38,7 +37,6 @@ export class AiReadService {
     private ai: AiService,
     private vendors: VendorsService,
     private purchaseOrders: PurchaseOrdersService,
-    private clients: ClientsService,
   ) {}
 
   async read(user: RequestUser, kind: DocReadKind, pages: PageImage[], purchaseOrderId?: string): Promise<DocReadResultDto> {
@@ -70,30 +68,12 @@ export class AiReadService {
 
     const read = normalise(kind, parsed, pages.length);
     const match = kind === 'invoice' ? await this.matchInvoice(user, read, purchaseOrderId) : null;
-    const client = kind === 'workOrder' ? await this.matchClient(user, readText(read.fields.clientName)) : undefined;
-    return { kind, fields: read.fields, lines: read.lines, match, ...(client !== undefined ? { client } : {}), model: reply.model, costInr: reply.costPaise / 100 };
-  }
-
-  /** The client in the master with the work order's issuing office's name, when exactly one has it (its own list, active ones). */
-  private async matchClient(user: RequestUser, name: string | null): Promise<{ id: string; name: string } | null> {
-    if (!name) return null;
-    const found = (await this.clients.list(user, { q: name, pageSize: 5 } as never)).items;
-    // The same name only: a search hit like "Roads Division II" is another office, and picking it would bill the wrong one.
-    const same = found.filter((c) => normName(c.name) === normName(name));
-    return same.length === 1 ? { id: same[0].id, name: same[0].name } : null;
+    return { kind, fields: read.fields, lines: read.lines, match, model: reply.model, costInr: reply.costPaise / 100 };
   }
 
   private assertMayRead(user: RequestUser, kind: DocReadKind) {
-    const rules: Record<DocReadKind, [(r: RequestUser['roleKey']) => boolean, string]> = {
-      invoice: [canRecordVendorBill, 'Your role does not record vendor bills'],
-      challan: [canKeepStock, 'Your role does not receive material'],
-      drawing: [canManageDocuments, 'Your role does not keep the document register'],
-      // The roles that create projects and edit the BOQ (POST /projects, the BOQ's editors).
-      workOrder: [canApprove, 'Your role does not set up projects'],
-      boq: [canEditProjects, 'Your role does not edit the BOQ'],
-    };
-    const [may, refusal] = rules[kind];
-    if (!may(user.roleKey)) throw new ForbiddenException(refusal);
+    const may = kind === 'invoice' ? canRecordVendorBill(user.roleKey) : kind === 'challan' ? canKeepStock(user.roleKey) : canManageDocuments(user.roleKey);
+    if (!may) throw new ForbiddenException(kind === 'invoice' ? 'Your role does not record vendor bills' : kind === 'challan' ? 'Your role does not receive material' : 'Your role does not keep the document register');
   }
 
   /**
@@ -147,8 +127,6 @@ export class AiReadService {
 }
 
 const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
-/** A name without case, punctuation or the words every office has: "The Executive Engineer, PWD" ~ "executive engineer pwd". */
-const normName = (s: string) => s.toLowerCase().replace(/\bthe\b/g, '').replace(/[^a-z0-9]/g, '');
 
 /** The JSON object in the model's reply, allowing for a code fence or a sentence around it. */
 export function parseReply(text: string): { fields: Record<string, unknown>; lines: unknown[] } | null {
@@ -176,7 +154,7 @@ export function normalise(kind: DocReadKind, raw: { fields: Record<string, unkno
         .filter((l): l is Record<string, unknown> => !!l && typeof l === 'object')
         .map((l) => Object.fromEntries(DOC_READ_LINE_FIELDS[kind].map((k) => [k, field(k, l[k], pageCount)])) as DocReadLine)
         .filter((l) => readText(l.description))
-        .slice(0, DOC_READ_MAX_LINES[kind])
+        .slice(0, 60)
     : [];
 
   const gstin = fields.gstin;
@@ -197,26 +175,14 @@ export function normalise(kind: DocReadKind, raw: { fields: Record<string, unkno
       vehicle.value = fixed;
     }
   }
-  if (kind === 'workOrder') {
-    const start = readText(fields.startDate);
-    const end = readText(fields.completionDate);
-    if (start && end && end <= start) low(fields.completionDate, 'not after the start date');
-    const value = readNumber(fields.contractValue);
-    if (value !== null && value < 1000) low(fields.contractValue, 'too small for a contract value; it may be in lakh or crore');
-    const months = readNumber(fields.durationMonths);
-    if (months !== null && (months <= 0 || months > 120 || !Number.isInteger(months))) low(fields.durationMonths, 'not a whole number of months');
-  }
-  if (kind !== 'invoice' && kind !== 'boq') return { fields, lines };
+  if (kind !== 'invoice') return { fields, lines };
 
   for (const l of lines) {
     const q = readNumber(l.quantity);
     const r = readNumber(l.rate);
     const a = readNumber(l.amount);
-    // A BOQ prints its amounts rounded to the rupee, or to the hundred on a long one.
-    const tolerance = kind === 'boq' && a !== null ? Math.max(TOLERANCE, Math.abs(a) * 0.005) : TOLERANCE;
-    if (q !== null && r !== null && a !== null && Math.abs(q * r - a) > tolerance) for (const f of [l.quantity, l.rate, l.amount]) low(f, 'quantity × rate is not the amount');
+    if (q !== null && r !== null && a !== null && Math.abs(q * r - a) > TOLERANCE) for (const f of [l.quantity, l.rate, l.amount]) low(f, 'quantity × rate is not the amount');
   }
-  if (kind === 'boq') return { fields, lines };
   const amounts = lines.map((l) => readNumber(l.amount));
   const linesSum = amounts.length && amounts.every((a) => a !== null) ? Math.round(amounts.reduce((s: number, a) => s + a!, 0) * 100) / 100 : null;
   // A kachha bill prints only its lines, one GST figure and the total: what is not printed is worked out, and says so.

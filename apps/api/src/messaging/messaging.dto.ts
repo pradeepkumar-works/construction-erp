@@ -12,7 +12,6 @@ export class UpdateMessagingPrefsDto {
   phone?: string | null;
   @ApiPropertyOptional({ description: 'Alerts on WhatsApp' }) @IsOptional() @IsBoolean() whatsapp?: boolean;
   @ApiPropertyOptional({ description: 'Alerts by SMS (also the fallback when WhatsApp fails)' }) @IsOptional() @IsBoolean() sms?: boolean;
-  @ApiPropertyOptional({ description: 'Email for what waits on you: hand-offs and send-backs' }) @IsOptional() @IsBoolean() email?: boolean;
 }
 
 export class TestMessageDto {

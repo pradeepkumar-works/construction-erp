@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, Button, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DeleteOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { TransmittalDto, TransmittalPurpose } from '@erp/shared';
@@ -123,7 +122,7 @@ export function TransmittalFormModal({
             <Select options={TRANSMITTAL_PURPOSES.map((p) => ({ value: p, label: TRANSMITTAL_PURPOSE_LABELS[p] }))} />
           </Form.Item>
           <Form.Item name="sentOn" label="Sent on" rules={[{ required: true, message: 'Pick the date it was sent' }]}>
-            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 32px', gap: 8 }}>

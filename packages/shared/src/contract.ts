@@ -9,17 +9,6 @@ export const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 /** Udyam (MSME) registration number, e.g. UDYAM-OD-19-0012345. */
 export const UDYAM_PATTERN = /^UDYAM-[A-Z]{2}-[0-9]{2}-[0-9]{7}$/;
 
-/**
- * The PAN inside a GSTIN (finding 17 of the October review: the state filled itself but the PAN was typed again):
- * characters 3 to 12 of a well-formed GSTIN are the holder's PAN. Null when there is no GSTIN to read it from.
- */
-export function panFromGstin(gstin: string | null | undefined): string | null {
-  const g = gstin?.trim().toUpperCase();
-  if (!g || !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(g)) return null;
-  const pan = g.slice(2, 12);
-  return PAN_PATTERN.test(pan) ? pan : null;
-}
-
 /** GST state code (first two digits of a GSTIN), or null when the GSTIN is missing or malformed. */
 export const gstStateCode = (gstin: string | null | undefined): string | null => (gstin && /^[0-9]{2}/.test(gstin) ? gstin.slice(0, 2) : null);
 

@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, Min, ValidateNested } from 'class-validator';
-import { IsQuantity } from '../common/quantity';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, Min, ValidateNested } from 'class-validator';
 import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, SubmissionStatus, WEATHER_OPTIONS, Weather, type DprSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -19,14 +18,14 @@ export class MachineryLineDto {
 
 export class DprMaterialInputDto {
   @ApiProperty({ description: 'A store item' }) @IsUUID() itemId: string;
-  @ApiProperty({ example: '92' }) @IsQuantity({ zero: true }) quantity: string;
+  @ApiProperty({ example: '92' }) @IsNumberString() quantity: string;
 }
 
 /** A work line (item 127): it becomes a progress entry of the DPR. */
 export class DprLineInputDto {
   @ApiPropertyOptional({ description: "The line's progress entry, to keep it when the DPR is edited; a new id (uuid v4) for a new line" }) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty({ description: 'An activity or sub-activity with no sub-activities of its own' }) @IsUUID() activityId: string;
-  @ApiProperty({ example: '11.5' }) @IsQuantity() quantity: string;
+  @ApiProperty({ example: '11.5' }) @IsNumberString() quantity: string;
   @ApiPropertyOptional({ example: 'Lift 4 of 6', description: 'Free text; made from the chainage, floor or village when left out' }) @IsOptional() @IsString() @MaxLength(200) location?: string | null;
   @ChainageField('Road / pipeline: metres from 0+000 where the work starts') chainageFrom?: number | null;
   @ChainageField('Where it ends (same as the start for work at one point)') chainageTo?: number | null;

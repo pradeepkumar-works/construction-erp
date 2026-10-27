@@ -1,17 +1,16 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Typography } from 'antd';
+import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Space, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { CopyOutlined, EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@/components/common/icons';
+import { EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@/components/common/icons';
 import type { ProjectDetail, UserSummary } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { UserMultiSelect } from '@/components/common/SearchSelect';
-import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { UserSelect } from '@/components/common/SearchSelect';
 import { Section } from '@/components/common/Section';
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
@@ -24,28 +23,16 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
   const [askRemove, removeDialog] = useConfirmDelete();
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
-  const [userIds, setUserIds] = useState<string[]>([]);
-  const [fromProject, setFromProject] = useState<string | undefined>();
+  const [userId, setUserId] = useState<string | undefined>();
   const editor = !!user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
 
-  const done = (text: string) => {
-    message.success(text);
-    setUserIds([]);
-    setFromProject(undefined);
-    setAdding(false);
-    qc.invalidateQueries({ queryKey: ['projects', project.id] });
-  };
-  // Several people at once, or everyone on another project (finding 6 of the October review).
   const add = useMutation({
-    mutationFn: async (ids: string[]) => api.post(`/projects/${project.id}/members`, { userIds: ids }),
-    onSuccess: (_, ids) => done(ids.length === 1 ? 'Added to the team' : `${ids.length} people added to the team`),
-    meta: FAIL_NOTICE,
-  });
-  const copy = useMutation({
-    mutationFn: async (from: string) => (await api.post<ProjectDetail>(`/projects/${project.id}/members/copy`, { fromProjectId: from })).data,
-    onSuccess: (p) => {
-      const n = p.members.length - project.members.length;
-      done(n > 0 ? `${n} ${n === 1 ? 'person' : 'people'} added from that project's team` : 'Everyone on that team is already on this one');
+    mutationFn: async (uid: string) => api.post(`/projects/${project.id}/members`, { userId: uid }),
+    onSuccess: () => {
+      message.success('Member added');
+      setUserId(undefined);
+      setAdding(false);
+      qc.invalidateQueries({ queryKey: ['projects', project.id] });
     },
     meta: FAIL_NOTICE,
   });
@@ -84,7 +71,6 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
 
   return (
     <Section
-      id="team"
       title={`Team (${project.members.length})`}
       extra={
         editor && !adding ? (
@@ -95,29 +81,13 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
       }
     >
       {adding && (
-        <Flex vertical gap="small" style={{ marginBottom: 12 }}>
-          <UserMultiSelect exclude={onTeam} placeholder="Type names" aria-label="People to add" value={userIds} onChange={setUserIds} style={{ width: '100%' }} />
-          <Flex gap="small" wrap>
-            <Button type="primary" disabled={!userIds.length} loading={add.isPending} onClick={() => add.mutate(userIds)}>
-              {userIds.length > 1 ? `Add ${userIds.length} people` : 'Add'}
-            </Button>
-            <Button onClick={() => setAdding(false)}>Cancel</Button>
-          </Flex>
-          <Flex gap="small" wrap align="center">
-            <ProjectSelect
-              allowClear
-              placeholder="Or copy the team of a project"
-              aria-label="Project to copy the team from"
-              value={fromProject}
-              onChange={setFromProject}
-              style={{ flex: 1, minWidth: 200 }}
-              exclude={project.id}
-            />
-            <Button icon={<CopyOutlined />} disabled={!fromProject} loading={copy.isPending} onClick={() => fromProject && copy.mutate(fromProject)}>
-              Copy team
-            </Button>
-          </Flex>
-        </Flex>
+        <Space.Compact style={{ width: '100%', marginBottom: 12 }}>
+          <UserSelect exclude={onTeam} placeholder="Type a name" aria-label="User" value={userId} onChange={setUserId} style={{ flex: 1 }} />
+          <Button type="primary" disabled={!userId} loading={add.isPending} onClick={() => userId && add.mutate(userId)}>
+            Add
+          </Button>
+          <Button onClick={() => setAdding(false)}>Cancel</Button>
+        </Space.Compact>
       )}
       {members.length ? (
         <Listy

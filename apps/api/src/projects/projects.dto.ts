@@ -11,11 +11,6 @@ export class ListProjectsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.projects, default: 'status' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.projects as unknown as string[]) sortBy?: ProjectSortField;
 }
 
-/** The type of project a suggested code is for. */
-export class NextProjectCodeQuery {
-  @ApiProperty({ enum: PROJECT_TYPES }) @IsIn(PROJECT_TYPES as unknown as string[]) type: ProjectType;
-}
-
 export class CreateProjectDto {
   @ApiProperty({ example: 'RD-001' }) @IsString() @MinLength(2) code: string;
   @ApiProperty() @IsString() @MinLength(2) name: string;
@@ -26,10 +21,7 @@ export class CreateProjectDto {
   @ApiPropertyOptional({ description: 'Free-text client name, used when no clientId is given' }) @IsOptional() @IsString() clientName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() consultantName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() location?: string;
-  @ApiPropertyOptional({ description: 'Where deliveries go; a purchase order with no address of its own takes it (finding 12)' }) @IsOptional() @IsString() @MaxLength(500) siteAddress?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() workOrderNo?: string;
-  @ApiPropertyOptional({ description: 'The agreement number, when the work order says one (finding 10: read from the work order)' }) @IsOptional() @IsString() @MaxLength(100) agreementNo?: string;
-  @ApiPropertyOptional({ example: '2026-11-05' }) @IsOptional() @IsDateString() agreementDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional({ example: '2026-01-01' }) @IsOptional() @IsDateString() startDate?: string;
   @ApiPropertyOptional({ example: '2027-06-30' }) @IsOptional() @IsDateString() endDate?: string;
@@ -61,24 +53,10 @@ export class CreateProjectDto {
   @IsOptional()
   @IsBoolean()
   applyTemplate?: boolean;
-  @ApiPropertyOptional({ description: "Copy the team and the contract terms (deductions, GST, LD, periods) from this project; else the client's usual terms, else the standard ones" })
-  @IsOptional()
-  @IsUUID()
-  copyFromProjectId?: string;
 }
 
-export class UpdateProjectDto extends PartialType(OmitType(CreateProjectDto, ['applyTemplate', 'copyFromProjectId'] as const)) {}
+export class UpdateProjectDto extends PartialType(OmitType(CreateProjectDto, ['applyTemplate'] as const)) {}
 
-/** One person (`userId`) or several at once (`userIds`). */
 export class AddMemberDto {
-  @ApiPropertyOptional() @ValidateIf((o: AddMemberDto) => !o.userIds) @IsUUID() userId?: string;
-  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayMaxSize(100) @IsUUID('all', { each: true }) userIds?: string[];
-}
-
-export class CopyTeamDto {
-  @ApiProperty({ description: 'The project whose team joins this one' }) @IsUUID() fromProjectId: string;
-}
-
-export class ProjectSetupHiddenDto {
-  @ApiProperty() @IsBoolean() hidden: boolean;
+  @ApiProperty() @IsUUID() userId: string;
 }

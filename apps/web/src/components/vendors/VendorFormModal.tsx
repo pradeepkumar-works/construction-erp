@@ -7,7 +7,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, VendorDto, VendorKind } from '@erp/shared';
-import { GST_STATES, GSTIN_PATTERN, IFSC_PATTERN, MSME_CATEGORIES, MSME_CATEGORY_LABELS, PAN_PATTERN, panFromGstin, UDYAM_PATTERN, VENDOR_KINDS, VENDOR_KIND_LABELS, canSeeVendorBank, gstStateCode } from '@erp/shared';
+import { GST_STATES, GSTIN_PATTERN, IFSC_PATTERN, MSME_CATEGORIES, MSME_CATEGORY_LABELS, PAN_PATTERN, UDYAM_PATTERN, VENDOR_KINDS, VENDOR_KIND_LABELS, canSeeVendorBank, gstStateCode } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -63,8 +63,6 @@ export function VendorFormModal({
   const gstin = Form.useWatch('gstin', form);
   const msme = Form.useWatch('msmeCategory', form);
   const fromGstin = gstStateCode(gstin && GSTIN_PATTERN.test(gstin.trim().toUpperCase()) ? gstin : null);
-  // The PAN is inside the GSTIN (finding 17 of the October review); it fills an empty box, never one already typed.
-  const panOfGstin = panFromGstin(gstin);
 
   useEffect(() => {
     if (!open) return;
@@ -94,8 +92,7 @@ export function VendorFormModal({
 
   useEffect(() => {
     if (fromGstin) form.setFieldValue('stateCode', fromGstin);
-    if (panOfGstin && !form.getFieldValue('pan')) form.setFieldValue('pan', panOfGstin);
-  }, [fromGstin, panOfGstin, form]);
+  }, [fromGstin, form]);
 
   const save = useMutation({
     mutationFn: async (v: FormValues) => {

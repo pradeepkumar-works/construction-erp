@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Divider, Form, Input, InputNumber, Table, Typography } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -34,7 +33,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { Section } from '@/components/common/Section';
 import { OmBillSection } from '@/components/om/OmBillSection';
-import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type StageAction = 'send' | 'certify';
 type CertifyValues = { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null>; stagePct?: Record<string, number | null> };
@@ -88,7 +87,6 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
     onSuccess: (b) => done(`${b.billLabel} submitted for approval`),
     meta: FAIL_NOTICE,
   });
-  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/ra-bills/${id}`)).data,
     onSuccess: () => {
@@ -130,7 +128,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
 
   const dateItem = (
     <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Pick the date' }]}>
-      <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+      <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
     </Form.Item>
   );
 
@@ -387,10 +385,15 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   Record payment
                 </Button>
               ) : null}
+              {editable ? (
+                <ConfirmDelete what={data.billLabel} description="Its measurements become billable again." onConfirm={() => remove.mutateAsync()}>
+                  <Button size={size} danger loading={remove.isPending}>
+                    Delete
+                  </Button>
+                </ConfirmDelete>
+              ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
-          more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: data.billLabel, description: 'Its measurements become billable again.', onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }
     >
@@ -456,7 +459,6 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
         </Form>
       </FormShell>
       <ReceiptFormModal open={paying || !!correcting} bill={correcting ? null : data} receipt={correcting} onClose={() => { setPaying(false); setCorrecting(null); }} />
-      {deleteDialog}
     </RecordFrame>
   );
 }

@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Form, Input, InputNumber, Radio, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { DatePicker, Form, Input, InputNumber, Radio, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, TenderBidType, TenderDetailDto } from '@erp/shared';
 import { TENDER_BID_TYPES, TENDER_BID_TYPE_LABELS } from '@erp/shared';
@@ -162,10 +161,10 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
               <Input maxLength={160} placeholder="Khurda" />
             </Form.Item>
             <Form.Item name="publishedOn" label="Published on">
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="submitBy" label="Submit by" rules={[{ required: true, message: 'Choose the last date to submit' }]}>
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
           <FormGrid cols={2}>
@@ -216,7 +215,7 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
               <Input maxLength={120} placeholder="State Bank of India" />
             </Form.Item>
             <Form.Item name="emdExpiresOn" label="Valid until">
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
         </FormSection>

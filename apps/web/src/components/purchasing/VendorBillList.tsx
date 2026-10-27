@@ -45,9 +45,6 @@ function Sub({ children }: { children: React.ReactNode }) {
 
 function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: VendorBillDto) => void; sortOrderFor: (key: VendorBillSortField) => 'ascend' | 'descend' | null }): ListColumn<VendorBillDto>[] {
   const sort = (key: VendorBillSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
-  // What a window of each width leads with (finding 17 of the October review: at 1440 the table scrolled sideways and
-  // the fixed Status column lay over Match). The due date and the match carry the day's work, so the invoice date and
-  // what the bill is against wait for a wider window; the column chooser turns any of them on at any width.
   return [
     {
       card: 'title',
@@ -65,10 +62,10 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
         </div>
       ),
     },
-    { defaultFrom: 1600, card: 'date', title: 'Invoice date', dataIndex: 'invoiceDate', width: 120, ...sort('invoiceDate'), render: (v) => formatDate(v) },
+    { defaultFrom: 1400, card: 'date', title: 'Invoice date', dataIndex: 'invoiceDate', width: 120, ...sort('invoiceDate'), render: (v) => formatDate(v) },
     { card: 'meta', title: 'Vendor', dataIndex: 'vendorName', ...sort('vendor') },
     {
-      defaultFrom: 1800,
+      defaultFrom: 1600,
       key: 'poNo',
       title: 'Against',
       label: 'PO or kind',

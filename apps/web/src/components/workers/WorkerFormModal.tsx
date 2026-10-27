@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, AutoComplete, Form, Input, Select } from 'antd';
-import { DatePicker } from '@/components/common/DatePicker';
+import { App, AutoComplete, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkerDto, WorkerIdType, WorkerSkill } from '@erp/shared';
@@ -145,11 +144,11 @@ export function WorkerFormModal({ open, onClose, worker, projectId }: { open: bo
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="joinedOn" label="Joined on">
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
             {worker ? (
               <Form.Item name="leftOn" label="Left on" extra="Takes them off the roll call">
-                <DatePicker style={{ width: '100%' }} />
+                <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
               </Form.Item>
             ) : null}
           </FormGrid>

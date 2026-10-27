@@ -157,7 +157,7 @@ export default function RollCallScreen() {
       <ErrorBanner message={error ?? roll.error} />
       {locked ? (
         <Card>
-          <Text style={typography.caption}>{t('Payroll for this month is approved, so its roll call can no longer change.')}</Text>
+          <Text style={typography.caption}>{t('The DPR for this day is approved, so its roll call can no longer change.')}</Text>
         </Card>
       ) : null}
       {roll.data ? (

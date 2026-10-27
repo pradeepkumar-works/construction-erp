@@ -162,8 +162,6 @@ export interface ProjectSummary {
   contractModel: ContractModel;
   clientName: string | null;
   location: string | null;
-  /** Where deliveries go: the site store's address, which an order with none of its own takes */
-  siteAddress: string | null;
   startDate: string | null;
   endDate: string | null;
   contractValue: string | null;
@@ -488,16 +486,6 @@ export interface MyWorkDto {
   lowStock?: MyWorkCard;
   /** The caller's open actions from meeting minutes (v6 item 112), overdue first */
   meetingActions?: MyWorkCard;
-  /** Purchase: approved material requests with something left to order, by the day they are needed (finding 8 of the October review) */
-  toOrder?: MyWorkCard;
-  /** Store and purchase: open orders due in the next 7 days, soonest first */
-  dueThisWeek?: MyWorkCard;
-  /** HR and site managers: leave and overtime waiting on the caller */
-  staffToDecide?: MyWorkCard;
-  /** Accounts: client bills certified and not fully received, longest certified first */
-  certifiedToReceive?: MyWorkCard;
-  /** Accounts: goods received against an order in the last 90 days that no supplier bill matches yet, oldest first */
-  toMatch?: MyWorkCard;
 }
 
 /** Month by month, oldest first, for the home page's KPI trends and charts (UI roadmap item 59). */
@@ -565,7 +553,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'PROJECT' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -589,7 +577,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'RECEIPTS_WEEKLY' | 'WARNING_ALERTS' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'WARNING_ALERTS' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
   date: string;
   created: number;
   pushed: number;
@@ -626,8 +614,6 @@ export interface AttendanceSheetDto {
   dprStatus: SubmissionStatus | null;
   /** True once that DPR is approved; the sheet can no longer be changed. */
   locked: boolean;
-  /** The approved payroll run that locks the day ("SAL-2026-10"), null while it is open */
-  lockedByRun: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -639,8 +625,6 @@ export interface AttendanceDayDto {
   sheet: AttendanceSheetDto | null;
   dprStatus: SubmissionStatus | null;
   locked: boolean;
-  /** The approved payroll run that locks the day ("SAL-2026-10"), null while it is open */
-  lockedByRun: string | null;
 }
 
 /** Names used on earlier sheets of the project, for pickers. */
@@ -664,8 +648,6 @@ export interface ItemDto {
   pipeDiameterMm?: number | null;
   pipeMaterial?: PipeMaterial | null;
   kgPerMetre?: string | null;
-  /** Old spellings merged into it (`itemKey` form): a line typed that way lands on this item */
-  aliases?: string[];
   /** Projects in which this item has stock movements. */
   projectCount: number;
   createdAt: string;
@@ -1398,15 +1380,6 @@ export interface ClientDto {
   email: string | null;
   phone: string | null;
   isActive: boolean;
-  /** The client's usual bill deductions and GST, %, that a new project of theirs starts with; null takes the standard */
-  retentionPct: string | null;
-  securityDepositPct: string | null;
-  tdsPct: string | null;
-  gstTdsPct: string | null;
-  labourCessPct: string | null;
-  gstRate: string | null;
-  defectLiabilityMonths: number | null;
-  clientPaymentDays: number | null;
   /** Projects of this client */
   projectCount: number;
   createdAt: string;
@@ -1469,8 +1442,6 @@ export interface ProjectContractDto {
   clientPaymentDays: number | null;
   /** Days the contract allows to give notice of a hindrance; null = not set (the notice clock assumes 14) */
   noticeDays: number | null;
-  /** How far, in %, measurement may run past a BOQ item's quantity before it needs a variation; null = 25 */
-  measureTolerancePct: number | null;
   priceVariation: boolean;
   /** Price variation: the date the base indices are taken at */
   pvBaseDate: string | null;
@@ -1814,37 +1785,6 @@ export interface QuotationDto {
   fromSupplier: boolean;
   createdByName: string;
   createdAt: string;
-}
-
-/** A day's approved work still to measure (finding 14 of the October review), as the measure-from-progress list shows it. */
-export interface ToMeasureEntryDto {
-  id: string;
-  date: string;
-  quantity: string;
-  location: string | null;
-  activityName: string;
-  fromDpr: boolean;
-}
-
-/** A BOQ item with work approved on site that no measurement sheet holds yet. */
-export interface ToMeasureItemDto {
-  boqItemId: string;
-  itemNo: string;
-  description: string;
-  unit: string;
-  rate: string;
-  /** Approved on site, through the activities of this BOQ item */
-  executedQty: string;
-  /** What the item's sheets already hold, all but the rejected ones */
-  measuredQty: string;
-  /** Executed less measured, never below zero */
-  toMeasureQty: string;
-  /** Its value at the BOQ rate */
-  toMeasureAmount: string;
-  /** The days that make it up, oldest first */
-  entries: ToMeasureEntryDto[];
-  /** Activities of this item that record another unit, so their days are not offered */
-  otherUnitActivities: string[];
 }
 
 /** Quotations of one request side by side: per line, each vendor's rate and the lowest. */
