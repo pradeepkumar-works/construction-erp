@@ -648,6 +648,8 @@ export interface ItemDto {
   pipeDiameterMm?: number | null;
   pipeMaterial?: PipeMaterial | null;
   kgPerMetre?: string | null;
+  /** Old spellings merged into it (`itemKey` form): a line typed that way lands on this item */
+  aliases?: string[];
   /** Projects in which this item has stock movements. */
   projectCount: number;
   createdAt: string;

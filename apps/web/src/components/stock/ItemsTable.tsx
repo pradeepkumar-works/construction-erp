@@ -3,14 +3,14 @@
 import React, { useState } from 'react';
 import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
+import { DeleteOutlined, EditOutlined, MergeCellsOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField, PipeMaterial } from '@erp/shared';
 import { LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, pipeSizeLabel, pipeSizeOf } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useStockItems } from '@/lib/queries';
+import { useItemDuplicates, useStockItems } from '@/lib/queries';
 import { formatDate, formatINR, RUPEE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
@@ -22,6 +22,7 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { ItemDuplicates } from './ItemDuplicates';
 
 const NO_KEYS: string[] = [];
 
@@ -43,6 +44,8 @@ export function ItemsTable() {
   const qc = useQueryClient();
   const mayManage = !!user && canManageStore(user.roleKey);
   const [editing, setEditing] = useState<ItemDto | 'new' | null>(null);
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const { data: duplicates } = useItemDuplicates(mayManage);
   const [form] = Form.useForm<ItemForm>();
   const watchedName = Form.useWatch('name', form);
   const readSize = watchedName ? pipeSizeOf({ name: watchedName }) : null;
@@ -159,6 +162,11 @@ export function ItemsTable() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar wrap gap={8} align="center">
         <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, unit or category" aria-label="Search items" />
+        {duplicates?.length ? (
+          <Button icon={<MergeCellsOutlined />} onClick={() => setShowDuplicates(true)} style={{ marginLeft: newButton ? 'auto' : undefined }}>
+            {duplicates.length === 1 ? '1 possible duplicate' : `${duplicates.length} possible duplicates`}
+          </Button>
+        ) : null}
         {newButton}
       </CardToolbar>
       <DataTable<ItemDto>
@@ -184,6 +192,7 @@ export function ItemsTable() {
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No item matches this search' : 'No items yet. GRNs add them from the request lines.'} />}
         emptyAction={newButton}
       />
+      <ItemDuplicates open={showDuplicates} onClose={() => setShowDuplicates(false)} groups={duplicates ?? []} />
       <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'New item' : 'Edit item'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the item name' }]}>

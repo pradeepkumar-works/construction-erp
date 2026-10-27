@@ -22,6 +22,7 @@ import {
   SetMinLevelDto,
   StockValuationQuery,
   UpdateItemDto,
+  MergeItemsDto,
 } from './stock.dto';
 
 @ApiTags('stock')
@@ -158,10 +159,25 @@ export class StockController {
     return this.stock.remove(user, id);
   }
 
-  @ApiOperation({ summary: 'Item master', description: 'Paged; `q` matches name, category and unit. Receipts add items from the request lines automatically.' })
+  @ApiOperation({ summary: 'Item master', description: 'Paged; `q` matches name, category and unit, or an old name merged into the item. Receipts add items from the request lines automatically.' })
   @Get('items')
   listItems(@CurrentUser() user: RequestUser, @Query() q: ListItemsQuery) {
     return this.stock.listItems(user, q);
+  }
+
+  @ApiOperation({ summary: 'Items that look like one item', description: 'Store manager or approver. Same unit, and the same spelling or one name inside the other; each group leads with the item to keep (the most used).' })
+  @Get('items/duplicates')
+  itemDuplicates(@CurrentUser() user: RequestUser) {
+    return this.stock.itemDuplicates(user);
+  }
+
+  @ApiOperation({
+    summary: 'Merge items into this one',
+    description: 'Store manager or approver. Movements, norms, minimums and every other link move to this item; request and order lines take its name, and the merged names become its old names. Items in another unit, or two items on one subcontractor bill recovery, are refused (409).',
+  })
+  @Post('items/:id/merge')
+  mergeItems(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: MergeItemsDto) {
+    return this.stock.mergeItems(user, id, dto);
   }
 
   @ApiOperation({ summary: 'Add an item', description: 'Store manager or approver.' })

@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { asMasterNames, findMasterItem } from '../stock/item-master';
 import {
   SUBMISSION_STATUS_LABELS,
   canPurchase,
@@ -519,7 +520,10 @@ export class PurchaseOrdersService {
    * the request still needs: requested, less what other orders hold (see `orderedOn`), what was received without one
    * and what stock met (v5 item 95).
    */
-  private async lines(tx: Tx | PrismaService, mr: Prisma.MaterialRequestGetPayload<{ include: { items: true } }> | null, input: PoLineInput[], excludePoId?: string): Promise<LineData[]> {
+  private async lines(tx: Tx | PrismaService, organizationId: string, mr: Prisma.MaterialRequestGetPayload<{ include: { items: true } }> | null, input: PoLineInput[], excludePoId?: string): Promise<LineData[]> {
+    // A line of its own names its item as the master has it (finding 3 of the October review).
+    const typed = await asMasterNames(tx, organizationId, input.map((l) => ({ itemName: l.itemName ?? '', unit: l.unit ?? '' })));
+    input = input.map((l, i) => (l.materialRequestItemId || !l.itemName || !l.unit ? l : { ...l, itemName: typed[i].itemName, unit: typed[i].unit }));
     const linked = input.map((l) => l.materialRequestItemId).filter((x): x is string => !!x);
     if (linked.length && !mr) throw new BadRequestException('Lines from a material request need the request on the order');
     if (new Set(linked).size !== linked.length) throw new BadRequestException('A request line is ordered twice');
@@ -580,7 +584,7 @@ export class PurchaseOrdersService {
         );
         if (dto.id && (await tx.purchaseOrder.count({ where: { id: dto.id } }))) return null;
         // Under the PO number lock, so two orders on the same request line cannot both take its balance.
-        const lines = await this.lines(tx, mr, dto.lines);
+        const lines = await this.lines(tx, user.organizationId, mr, dto.lines);
         const row = await tx.purchaseOrder.create({
           data: {
             id: dto.id,
@@ -642,7 +646,7 @@ export class PurchaseOrdersService {
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`PO:${user.organizationId}`}))`;
       if (dto.lines) {
-        const lines = await this.lines(tx, mr, dto.lines, id);
+        const lines = await this.lines(tx, user.organizationId, mr, dto.lines, id);
         Object.assign(data, totals(lines, freight));
         data.lines = { deleteMany: {}, create: lines };
       } else Object.assign(data, totals(current.lines, freight));
@@ -764,10 +768,7 @@ export class PurchaseOrdersService {
   private async updateItemRates(user: RequestUser, id: string) {
     const lines = await this.prisma.purchaseOrderLine.findMany({ where: { purchaseOrderId: id }, select: { itemName: true, unit: true, rate: true } });
     for (const l of lines) {
-      const found = await this.prisma.item.findFirst({
-        where: { organizationId: user.organizationId, name: { equals: l.itemName, mode: 'insensitive' }, unit: { equals: l.unit, mode: 'insensitive' } },
-        select: { id: true },
-      });
+      const found = await findMasterItem(this.prisma, user.organizationId, l.itemName, l.unit);
       if (found) await this.prisma.item.update({ where: { id: found.id }, data: { rate: l.rate } });
       else await this.prisma.item.create({ data: { organizationId: user.organizationId, name: l.itemName, unit: l.unit, rate: l.rate } });
     }

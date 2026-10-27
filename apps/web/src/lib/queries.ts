@@ -178,6 +178,7 @@ import type {
   ProgressReportDto,
   PaymentMode,
   ItemDto,
+  ItemDuplicateGroupDto,
   MachineryLogDto,
   ReceivableRequestDto,
   StockBalanceDto,
@@ -978,6 +979,14 @@ export const useStockItems = (filters?: PageParams) =>
     queryKey: ['stock', 'items', clean(filters)],
     queryFn: async () => (await api.get<Paginated<ItemDto>>('/stock/items', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+  });
+
+/** Items that look like one item, for the store manager to merge (finding 3 of the October review). */
+export const useItemDuplicates = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['stock', 'items', 'duplicates'],
+    queryFn: async () => (await api.get<ItemDuplicateGroupDto[]>('/stock/items/duplicates')).data,
+    enabled,
   });
 
 export const useMachineryLogs = (filters?: MachineryFilters) =>

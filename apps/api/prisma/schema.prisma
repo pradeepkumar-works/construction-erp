@@ -2579,6 +2579,9 @@ model Item {
   pipeMaterial   PipeMaterial?
   /// Pipe bought by weight (MS, DI by the tonne): kg per metre, to turn issues into metres
   kgPerMetre     Decimal?      @db.Decimal(10, 3)
+  /// Other spellings of this item, as `itemKey` writes them ("cement opc53"): names merged into it, so a request or
+  /// order line typed the old way still lands on it
+  aliases        String[]      @default([])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

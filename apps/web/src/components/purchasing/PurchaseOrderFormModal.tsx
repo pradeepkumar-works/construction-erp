@@ -16,6 +16,7 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
+import { ItemPicker } from '@/components/form/ItemPicker';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
@@ -302,7 +303,17 @@ export function PurchaseOrderFormModal({
                   ) : (
                     <div style={{ minWidth: 200 }}>
                       <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Enter the item' }]}>
-                        <Input placeholder="Item" aria-label={`Item of line ${f.name + 1}`} maxLength={200} />
+                        <ItemPicker
+                          placeholder="Item"
+                          aria-label={`Item of line ${f.name + 1}`}
+                          maxLength={200}
+                          unit={lines?.[f.name]?.unit}
+                          onPick={(item) => {
+                            form.setFieldValue(['lines', f.name, 'unit'], item.unit);
+                            // The master's standard rate (the last approved order's) fills a rate not yet entered.
+                            if (item.rate && !lines?.[f.name]?.rate) form.setFieldValue(['lines', f.name, 'rate'], Number(item.rate));
+                          }}
+                        />
                       </Form.Item>
                       <Form.Item name={[f.name, 'specification']} noStyle>
                         <Input placeholder="Specification" maxLength={300} style={{ marginTop: 4 }} />
