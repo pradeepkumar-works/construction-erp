@@ -28,6 +28,7 @@ import { MaintenanceModule } from '../maintenance/maintenance.module';
 import { PlanningModule } from '../planning/planning.module';
 import { VendorsModule } from '../vendors/vendors.module';
 import { UnitsModule } from '../units/units.module';
+import { ClientsModule } from '../clients/clients.module';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { AiToolsService } from './ai-tools.service';
@@ -38,6 +39,7 @@ import { AiDraftsService } from './ai-drafts.service';
 @Module({
   imports: [
     SearchModule,
+    ClientsModule,
     DprModule,
     ProgressModule,
     MaterialRequestsModule,

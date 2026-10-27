@@ -166,6 +166,8 @@ export class ProjectsService {
     if (dto.consultantName !== undefined) data.consultantName = dto.consultantName;
     if (dto.location !== undefined) data.location = dto.location;
     if (dto.workOrderNo !== undefined) data.workOrderNo = dto.workOrderNo;
+    if (dto.agreementNo !== undefined) data.agreementNo = dto.agreementNo || null;
+    if (dto.agreementDate !== undefined) data.agreementDate = dto.agreementDate ? parseDate(dto.agreementDate) : null;
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.startDate !== undefined) data.startDate = dto.startDate ? parseDate(dto.startDate) : null;
     if (dto.endDate !== undefined) data.endDate = dto.endDate ? parseDate(dto.endDate) : null;

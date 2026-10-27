@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { App, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { App, Button, Checkbox, Flex, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AimOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { ContractModel, ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
-import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, STANDARD_TERMS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
+import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, STANDARD_TERMS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, readNumber, readText, workOrderEnd } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
@@ -18,6 +18,8 @@ import { inSentence } from '@/lib/format';
 import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { currentPosition } from '@/components/staff/staffUi';
+import { ReadDocumentButton, ReadPreview, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
+import { ClientFormModal } from '@/components/clients/ClientFormModal';
 
 interface FormValues {
   code: string;
@@ -29,6 +31,9 @@ interface FormValues {
   consultantName?: string;
   location?: string;
   workOrderNo?: string;
+  /** New projects: the agreement, when the work order gives one apart (later on the Contract tab) */
+  agreementNo?: string;
+  agreementDate?: dayjs.Dayjs | null;
   description?: string;
   dates?: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null;
   contractValue?: number | null;
@@ -71,6 +76,32 @@ export function ProjectFormModal({
   const template = templates?.find((t) => t.projectType === type);
   // The saved project, handed to `onSaved` once the form has closed (e.g. to open it).
   const saved = useRef<string | null>(null);
+  // A work order or LoA read to fill a new project (finding 10 of the October review).
+  const [readState, setReadState] = useState<ReadState | null>(null);
+  const [activeRead, setActiveRead] = useState<string | null>(null);
+  const [addClient, setAddClient] = useState(false);
+  const read = (key: string) => readFieldProps(readState, key, setActiveRead);
+  const readClient = readState ? readText(readState.result.fields.clientName) : null;
+
+  /** Name, client, numbers, value, dates and place from the work order; the type, code and team stay the person's. */
+  const applyRead = (s: ReadState) => {
+    setReadState(s);
+    const f = s.result.fields;
+    const start = readText(f.startDate);
+    const end = workOrderEnd(start, readText(f.completionDate), readNumber(f.durationMonths));
+    const agreementDate = readText(f.agreementDate);
+    const filled: Partial<FormValues> = {
+      ...(readText(f.nameOfWork) ? { name: readText(f.nameOfWork)!.slice(0, 200) } : {}),
+      ...(readText(f.workOrderNo) || readText(f.agreementNo) ? { workOrderNo: (readText(f.workOrderNo) ?? readText(f.agreementNo))! } : {}),
+      ...(readText(f.agreementNo) ? { agreementNo: readText(f.agreementNo)! } : {}),
+      ...(agreementDate ? { agreementDate: dayjs(agreementDate) } : {}),
+      ...(readNumber(f.contractValue) !== null ? { contractValue: readNumber(f.contractValue) } : {}),
+      ...(readText(f.location) ? { location: readText(f.location)! } : {}),
+      ...(start || end ? { dates: [start ? dayjs(start) : null, end ? dayjs(end) : null] as FormValues['dates'] } : {}),
+      ...(s.result.client ? { clientId: s.result.client.id } : {}),
+    };
+    form.setFieldsValue(filled);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -119,6 +150,7 @@ export function ProjectFormModal({
         consultantName: values.consultantName || undefined,
         location: values.location || undefined,
         workOrderNo: values.workOrderNo || undefined,
+        ...(isEdit ? {} : { agreementNo: values.agreementNo?.trim() || undefined, agreementDate: values.agreementDate ? values.agreementDate.format('YYYY-MM-DD') : undefined }),
         description: values.description || undefined,
         startDate: values.dates?.[0] ? values.dates[0].format('YYYY-MM-DD') : undefined,
         endDate: values.dates?.[1] ? values.dates[1].format('YYYY-MM-DD') : undefined,
@@ -145,6 +177,7 @@ export function ProjectFormModal({
     <FormShell
       open={open}
       onClose={() => {
+        setReadState(null);
         onClose();
         const id = saved.current;
         saved.current = null;
@@ -157,12 +190,29 @@ export function ProjectFormModal({
       onSubmit={(v) => mutation.mutateAsync(v)}
     >
       <Form form={form} layout="vertical">
+        {!isEdit && initialType !== 'STORE' && !readState ? (
+          <Flex justify="flex-end" style={{ marginBottom: 8 }}>
+            <ReadDocumentButton kind="workOrder" label="Fill from work order" onRead={applyRead} />
+          </Flex>
+        ) : null}
+        {readState ? (
+          <ReadPreview state={readState} active={activeRead} onClear={() => setReadState(null)}>
+            {readClient && !readState.result.client ? (
+              <Typography.Paragraph style={{ margin: '8px 0 0' }}>
+                {readClient} is not in the client master.{' '}
+                <Button size="small" onClick={() => setAddClient(true)}>
+                  Add client
+                </Button>
+              </Typography.Paragraph>
+            ) : null}
+          </ReadPreview>
+        ) : null}
         <FormSection title="Project">
           <FormGrid cols={2}>
             <Form.Item name="code" label="Project code" rules={[{ required: true, whitespace: true, message: 'Enter the project code, e.g. RD-2026-01' }]}>
               <Input placeholder="RD-2026-01" />
             </Form.Item>
-            <Form.Item name="name" label="Project name" rules={[{ required: true, whitespace: true, message: 'Enter the project name' }]}>
+            <Form.Item name="name" label="Project name" rules={[{ required: true, whitespace: true, message: 'Enter the project name' }]} {...read('nameOfWork')}>
               <Input placeholder="Highway widening Km 12 to Km 28" />
             </Form.Item>
           </FormGrid>
@@ -187,22 +237,32 @@ export function ProjectFormModal({
         </FormSection>
         <FormSection title="Client and contract">
           <FormGrid cols={2}>
-            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'}>
+            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'} {...(readState?.result.client ? read('clientName') : {})}>
               <ClientSelect allowClear />
             </Form.Item>
             <Form.Item name="consultantName" label="Consultant / PMC">
               <Input />
             </Form.Item>
-            <Form.Item name="location" label="Location">
+            <Form.Item name="location" label="Location" {...read('location')}>
               <Input />
             </Form.Item>
-            <Form.Item name="workOrderNo" label="Work order no.">
+            <Form.Item name="workOrderNo" label="Work order no." {...read(readText(readState?.result.fields.workOrderNo) ? 'workOrderNo' : 'agreementNo')}>
               <Input />
             </Form.Item>
-            <Form.Item name="dates" label="Start / end date">
+            {!isEdit ? (
+              <>
+                <Form.Item name="agreementNo" label="Agreement no." {...read('agreementNo')}>
+                  <Input />
+                </Form.Item>
+                <Form.Item name="agreementDate" label="Agreement date" {...read('agreementDate')}>
+                  <DatePicker style={{ width: '100%' }} />
+                </Form.Item>
+              </>
+            ) : null}
+            <Form.Item name="dates" label="Start / end date" {...read(readText(readState?.result.fields.completionDate) || !readText(readState?.result.fields.startDate) ? 'completionDate' : 'startDate')}>
               <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
             </Form.Item>
-            <Form.Item name="contractValue" label="Contract value">
+            <Form.Item name="contractValue" label="Contract value" {...read('contractValue')}>
               <MoneyInput />
             </Form.Item>
             <Form.Item name="contractModel" label="Contract type" tooltip="Item rate pays measured BOQ quantities. Lump sum and EPC pay in stages; their components are weighed by the billing breakup.">
@@ -275,6 +335,16 @@ export function ProjectFormModal({
           </Form.Item>
         </FormSection>
       </Form>
+      <ClientFormModal
+        open={addClient}
+        initialName={readClient ?? undefined}
+        onClose={() => setAddClient(false)}
+        onSaved={(c) => {
+          form.setFieldValue('clientId', c.id);
+          setReadState((s) => (s ? { ...s, result: { ...s.result, client: { id: c.id, name: c.name } } } : s));
+          setAddClient(false);
+        }}
+      />
     </FormShell>
   );
 }
