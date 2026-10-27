@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Min, MinLength, ValidateNested } from 'class-validator';
+import { ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Min, MinLength, ValidateNested } from 'class-validator';
+import { IsQuantity } from '../common/quantity';
 import { LIST_SORT_FIELDS, MATERIAL_PRIORITIES, MaterialPriority, SUBMISSION_STATUSES, SubmissionStatus, type MaterialRequestSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -9,7 +10,7 @@ export class MaterialRequestItemInput {
   @ApiProperty({ example: 'OPC 53 Grade Cement' }) @IsString() @MinLength(2) itemName: string;
   @ApiPropertyOptional({ example: 'UltraTech / ACC, 50kg bags' }) @IsOptional() @IsString() specification?: string;
   @ApiProperty({ example: 'Bags' }) @IsString() unit: string;
-  @ApiProperty({ example: '200' }) @IsNumberString() quantity: string;
+  @ApiProperty({ example: '200' }) @IsQuantity() quantity: string;
 }
 
 export class CreateMaterialRequestDto {

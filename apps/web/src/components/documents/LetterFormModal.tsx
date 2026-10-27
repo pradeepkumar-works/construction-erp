@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, DatePicker, Form, Input, Segmented, Select } from 'antd';
+import { App, Form, Input, Segmented, Select } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, LetterDirection, LetterDto } from '@erp/shared';
 import { LETTER_DIRECTION_LABELS } from '@erp/shared';
@@ -156,7 +157,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, aiD
               <Segmented options={(['IN', 'OUT'] as const).map((d) => ({ value: d, label: LETTER_DIRECTION_LABELS[d] }))} />
             </Form.Item>
             <Form.Item name="letterDate" label="Dated" rules={[{ required: true, message: 'Pick the date on the letter' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="theirRef" label={direction === 'OUT' ? 'Our reference' : 'Their reference'}>
               <Input maxLength={100} placeholder="EE/RB/2026/412" />
@@ -182,7 +183,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, aiD
             </Form.Item>
             {direction === 'IN' ? (
               <Form.Item name="replyBy" label="Reply needed by">
-                <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+                <DatePicker style={{ width: '100%' }} />
               </Form.Item>
             ) : (
               <div />

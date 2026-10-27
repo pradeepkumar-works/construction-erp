@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect } from 'react';
-import { Alert, DatePicker, Form, Input, InputNumber, Select } from 'antd';
+import { Alert, Form, Input, InputNumber, Select } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, EquipmentDto, MachineryLogDto } from '@erp/shared';
 import { MAX_LOG_HOURS, machineryLogProblem } from '@erp/shared';
@@ -134,7 +135,7 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
               <EquipmentSelect sortRows={hereFirst} selected={log ? { value: log.equipmentId, label: `${log.equipmentCode} - ${log.equipmentName}` } : null} />
             </Form.Item>
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
           </FormGrid>
           <FormGrid cols={3}>

@@ -985,6 +985,15 @@ The store register per project, fed by approved material requests:
   rounded to 3 decimals, negative for a deduction. A line needs nos or at least one dimension and the
   sheet total must be above zero. The API recomputes every line; what the client sends as quantity is
   ignored. An edit with `lines` replaces all lines.
+- **Held to the BOQ (finding 4 of the October review).** A create or an edit of the lines or BOQ item is refused
+  when every sheet of the item but rejected ones would pass its BOQ quantity (revised, else original) plus
+  `Project.measureTolerancePct` (Contract › Edit; 25 when not set, `MEASURE_TOLERANCE_PCT`): `measureOverBoq` in
+  shared, tested in `src/scripts/validation-test.ts`. An extra item (no BOQ quantity) is held by its variation instead.
+- **Other input checks.** A DPR, progress entry or attendance sheet is not dated after today in the company's time
+  zone (`assertNotAfterToday`, `common/serialize.ts`); quantity fields are `@IsQuantity()` (`common/quantity.ts`: a plain
+  decimal above zero, or zero or more), never a bare `IsNumberString`, which takes a minus sign. On the web every date
+  field is `components/common/DatePicker` (ESLint refuses antd's), which reads dates typed as 13/10/2026, 13-10-2026,
+  13.10.2026 or 13 Oct 26 (`DATE_FORMATS`).
 - **Rollup.** `GET /projects/:id/boq` adds `measuredQty` (approved sheets), `measuredAmount` (× rate)
   and `pendingMeasuredQty` (submitted). The measured quantity is what RA billing (v3) will bill; the
   activity progress (`executedQty`) stays the site's own count and the two sit side by side on the BOQ tab.

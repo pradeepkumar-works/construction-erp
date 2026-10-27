@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { DatePicker, Select, Space } from 'antd';
+import { Select, Space } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { ACCOUNT_GROUP_LABELS, isMoneyGroup } from '@erp/shared';
 import { useLedger, useLedgerAccounts } from '@/lib/queries';
@@ -48,7 +49,7 @@ export function Ledgers({ money = false }: { money?: boolean }) {
         />
         <DatePicker.RangePicker
           aria-label="Period"
-          format="DD MMM YYYY"
+         
           allowClear={false}
           value={range}
           onChange={(r) => r?.[0] && r[1] && setRange([r[0], r[1]])}

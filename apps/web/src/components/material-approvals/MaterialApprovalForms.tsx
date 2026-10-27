@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { DatePicker, Form, Input, Segmented, Select, Typography } from 'antd';
+import { Form, Input, Segmented, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import {
@@ -189,7 +190,7 @@ export function MaterialApprovalForm({ open, onClose, approval, onSaved }: { ope
               <Input maxLength={200} placeholder="Engineer-in-charge or the consultant" />
             </Form.Item>
             <Form.Item name="replyBy" label="Reply asked by">
-              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
           <Form.Item name="files" label="Catalogue, test certificates and photos">
@@ -251,10 +252,10 @@ export function SubmitDialog({ approval, open, onClose }: { approval: MaterialAp
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="submittedOn" label="Submitted on" rules={[{ required: true, message: 'Choose the day it was submitted' }]}>
-            <DatePicker format="DD MMM YYYY" disabledDate={notAfterToday} style={{ width: '100%' }} />
+            <DatePicker disabledDate={notAfterToday} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="replyBy" label="Reply asked by">
-            <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
         {again ? (
@@ -313,7 +314,7 @@ export function ReviewDialog({ approval, open, onClose }: { approval: MaterialAp
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="reviewedOn" label="Reviewed on" rules={[{ required: true, message: 'Choose the day of the review' }]}>
-            <DatePicker format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!submittedOn && d.isBefore(dayjs(submittedOn), 'day'))} style={{ width: '100%' }} />
+            <DatePicker disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!submittedOn && d.isBefore(dayjs(submittedOn), 'day'))} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="reviewRef" label="Letter or mail reference">
             <Input maxLength={120} placeholder="PMC/MA/031" />

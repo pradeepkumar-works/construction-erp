@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, DatePicker, Descriptions, Drawer, Dropdown, Form, Input, Popconfirm, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Descriptions, Drawer, Dropdown, Form, Input, Popconfirm, Space, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import type { TableProps } from 'antd';
 import { DownloadOutlined, PrinterOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
@@ -44,7 +45,7 @@ function StepModal({ run, step, onClose }: { run: PayrollRunDetailDto; step: 'se
         {step === 'pay' ? (
           <>
             <Form.Item name="paidOn" label="Paid on" rules={[{ required: true, message: 'Pick the day the bank paid it' }]}>
-              <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="paymentRef" label="Bank reference (optional)">
               <Input maxLength={80} placeholder="NEFT batch or UTR" />

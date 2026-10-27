@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { Alert, App, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, OpenBillDto, PaymentMode, RaBillDto, ReceiptDto, ReceiptKind } from '@erp/shared';
@@ -168,7 +169,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
           )}
           <FormGrid cols={3}>
             <Form.Item name="receiptDate" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="amount" label="Amount received" rules={[{ required: true, message: 'Enter the amount received' }]}>
               <MoneyInput prefix={moneyPrefix(cur)} />

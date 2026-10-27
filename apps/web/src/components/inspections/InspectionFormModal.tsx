@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, DatePicker, Form, Input, Select, Typography } from 'antd';
+import { Alert, Form, Input, Select, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, InspectionDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -108,7 +109,7 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
             />
           </Form.Item>
           <Form.Item name="date" label="Ready on" rules={[{ required: true, message: 'Pick the date it is ready' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="location" label="Location" rules={[{ required: true, whitespace: true, message: 'Say where, e.g. the chainage, grid or floor' }]}>

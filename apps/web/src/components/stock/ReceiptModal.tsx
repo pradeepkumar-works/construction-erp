@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, App, DatePicker, Empty, Flex, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { Alert, App, Empty, Flex, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto } from '@erp/shared';
@@ -297,7 +298,7 @@ export function ReceiptModal({
 
         <FormGrid cols={2}>
           <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {request?.kind === 'PO' ? (
             <Form.Item label="Supplier">

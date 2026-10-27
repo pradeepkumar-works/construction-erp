@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { DatePicker } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { rangePresets } from '@/lib/dates';
 

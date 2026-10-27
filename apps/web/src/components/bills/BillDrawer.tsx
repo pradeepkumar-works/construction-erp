@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Table, Typography } from 'antd';
+import { Alert, App, Button, Divider, Form, Input, InputNumber, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -128,7 +129,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
 
   const dateItem = (
     <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Pick the date' }]}>
-      <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+      <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
     </Form.Item>
   );
 

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Divider, Form, Input, InputNumber, Space, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { EditOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

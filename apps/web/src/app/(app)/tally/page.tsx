@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Switch, Table, Typography } from 'antd';
+import { Alert, App, Button, Card, Input, Popconfirm, Select, Space, Switch, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import type { TableProps } from 'antd';

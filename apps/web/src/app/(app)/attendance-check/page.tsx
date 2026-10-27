@@ -3,7 +3,8 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, DatePicker, Empty, Flex, Result, Segmented, Statistic, Table, Typography, theme } from 'antd';
+import { Button, Card, Empty, Flex, Result, Segmented, Statistic, Table, Typography, theme } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, UpOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';

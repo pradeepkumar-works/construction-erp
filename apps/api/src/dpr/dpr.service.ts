@@ -31,7 +31,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
-import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { dateOnly, dec, iso, parseDate, assertNotAfterToday } from '../common/serialize';
 import { locationOr, resolveSector } from '../common/sector';
 import { todayIn } from '../notifications/time';
 import { isUniqueViolation } from '../common/idempotency';
@@ -488,6 +488,7 @@ export class DprService {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
+    assertNotAfterToday(dto.date, 'DPR');
     await this.assertNoDuplicate(dto.projectId, parseDate(dto.date));
     // No manpower sent: take it from the day's attendance sheet, if the supervisor recorded one.
     const manpower = dto.manpower?.length ? dto.manpower : ((await this.attendance.manpowerFor(dto.projectId, parseDate(dto.date))) ?? []);
@@ -542,6 +543,7 @@ export class DprService {
     const current = await this.prisma.dailyReport.findUniqueOrThrow({ where: { id }, select: { date: true, workExecuted: true, submittedAt: true } });
     const data: Prisma.DailyReportUncheckedUpdateInput = {};
     if (dto.date !== undefined) {
+      assertNotAfterToday(dto.date, 'DPR');
       await this.assertNoDuplicate(row.projectId, parseDate(dto.date), id);
       data.date = parseDate(dto.date);
     }

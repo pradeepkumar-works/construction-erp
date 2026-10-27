@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Descriptions, Divider, Drawer, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -239,7 +240,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
           {j?.kind === 'SERVICE' ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Closing a service restarts the machine's service schedule from this date." /> : null}
           <FormGrid cols={3}>
             <Form.Item name="closedDate" label="Back in work on" rules={[{ required: true, message: 'Pick the date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!j && d.isBefore(dayjs(j.date), 'day'))} allowClear={false} />
+              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!j && d.isBefore(dayjs(j.date), 'day'))} allowClear={false} />
             </Form.Item>
             <Form.Item name="downtimeHours" label="Working hours lost">
               <QuantityInput unit="hours" />
@@ -269,7 +270,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
         <Form form={spareForm} layout="vertical">
           <Typography.Paragraph type="secondary">From the store at {j?.projectName}. The issue slip is linked to this job card.</Typography.Paragraph>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} style={{ maxWidth: 220 }}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
+            <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           {!stock.isLoading && !items.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Nothing is in stock at this project." /> : null}
           <Form.List name="lines">

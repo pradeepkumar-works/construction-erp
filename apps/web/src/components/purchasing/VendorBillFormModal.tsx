@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, App, DatePicker, Flex, Form, Input, Select, Table, Typography } from 'antd';
+import { Alert, App, Flex, Form, Input, Select, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto, VendorBillKind } from '@erp/shared';
@@ -280,7 +281,7 @@ export function VendorBillFormModal({
               <Input maxLength={60} />
             </Form.Item>
             <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead)}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="freight" label="Freight" extra={po && toNumber(po.freight) > 0 ? `PO freight ${formatINR(po.freight, true)}` : undefined} {...readFieldProps(readState, 'freight', setActiveRead)}>
               <MoneyInput />

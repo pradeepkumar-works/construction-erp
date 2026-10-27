@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, Checkbox, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
+import { Alert, Checkbox, Form, Input, Select, Table, Typography } from 'antd';
+import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, SubcontractBillDto, WorkOrderLineDto } from '@erp/shared';
@@ -133,10 +134,10 @@ export function SubBillFormModal({
           )}
           <FormGrid cols={2}>
             <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true, message: 'Pick the day work is measured up to' }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+              <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="invoiceNo" label="Their invoice no.">
               <Input maxLength={60} placeholder="SC/24-25/017" />
