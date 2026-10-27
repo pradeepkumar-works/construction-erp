@@ -204,10 +204,15 @@ export async function seedElementTree(prisma: PrismaClient, { organizationId, pr
 }
 
 export async function seedWorkBreakdown(prisma: PrismaClient, organizationId: string) {
-  if (await prisma.project.count({ where: { organizationId, code: 'WS-2026-04' } })) return;
+  if (await seedTownProject(prisma, organizationId)) await seedHospitalSections(prisma, organizationId);
+}
+
+/** The Devgarh town scheme alone: its components, sub-components and activities. False when it is already there. */
+export async function seedTownProject(prisma: PrismaClient, organizationId: string): Promise<boolean> {
+  if (await prisma.project.count({ where: { organizationId, code: 'WS-2026-04' } })) return false;
   const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } }))?.id;
   const [pm, engineer, engineer2, tl, store, qs] = await Promise.all(['pm@demo.com', 'engineer@demo.com', 'engineer2@demo.com', 'tl@demo.com', 'store@demo.com', 'qs@demo.com'].map(user));
-  if (!pm || !engineer || !engineer2 || !tl || !store || !qs) return;
+  if (!pm || !engineer || !engineer2 || !tl || !store || !qs) return false;
 
   const value = 384_000_000;
   const project = await prisma.project.create({
@@ -229,8 +234,7 @@ export async function seedWorkBreakdown(prisma: PrismaClient, organizationId: st
       data: { organizationId, projectId: project.id, activityId: waiting.id, date: day(0), quantity: D(60), status: 'SUBMITTED', submittedById: engineer, submittedAt: new Date(), remarks: 'Container wall shuttering, second ring fixed', manpowerCount: 14 },
     });
   }
-
-  await seedHospitalSections(prisma, organizationId);
+  return true;
 }
 
 /** The hospital block (item rate): BOQ sections, and three components weighed by the BOQ value under them. */
