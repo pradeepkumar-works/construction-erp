@@ -629,6 +629,38 @@ export class NotificationsService {
     }
   }
 
+  /**
+   * A supplier's bill that does not match its order (finding 18 of the October review): purchase raised the order and
+   * agreed the rates, so the mismatch is theirs to settle with the vendor, and the project's manager hears of it too.
+   * The approver already has it in their queue; this is so the bill is not approved or held by them alone.
+   */
+  async onVendorBillExceptions(actor: RequestUser, billId: string) {
+    try {
+      const b = await this.prisma.vendorBill.findUnique({
+        where: { id: billId },
+        select: { billNo: true, invoiceNo: true, exceptions: true, total: true, projectId: true, vendor: { select: { name: true } }, purchaseOrder: { select: { poNo: true } }, project: { select: { name: true, projectManagerId: true } } },
+      });
+      if (!b?.exceptions.length) return;
+      const against = b.purchaseOrder ? ` against ${b.purchaseOrder.poNo}` : '';
+      const listed = b.exceptions.slice(0, 3).join('; ') + (b.exceptions.length > 3 ? `; and ${b.exceptions.length - 3} more` : '');
+      await this.handoff({
+        organizationId: actor.organizationId,
+        projectId: b.projectId,
+        roles: ['PROCUREMENT_MANAGER'],
+        alsoUserIds: [b.project.projectManagerId],
+        exceptUserIds: [actor.id],
+        title: `${b.billNo} does not match the order`,
+        body: `${b.vendor.name}'s invoice ${b.invoiceNo}${against} on ${b.project.name}, ${inr(b.total.toFixed(2))}: ${listed}. Settle it with the vendor or tell the approver it stands.`,
+        entityType: 'VENDOR_BILL',
+        entityId: billId,
+        dedupeKey: `HANDOFF_VB_EXCEPTIONS:${billId}`,
+        email: { href: `/vendor-bills/${billId}`, cta: 'Open the bill' },
+      });
+    } catch (e) {
+      this.log.warn(`onVendorBillExceptions(${billId}) failed: ${(e as Error).message}`);
+    }
+  }
+
   /** The client certified an RA bill: accounts expect the money by the contract's payment days. */
   async onBillCertified(actor: RequestUser, billId: string, label: string) {
     const b = await this.prisma.raBill.findUnique({ where: { id: billId }, select: { projectId: true, netPayable: true, certifiedDate: true, project: { select: { name: true, clientPaymentDays: true } } } });

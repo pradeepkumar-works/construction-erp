@@ -80,7 +80,11 @@ and the pre-delivery checklist.
 - Notifications: the bell opens the drawer in `components/notifications/NotificationBell.tsx`; a new `NOTIFICATION_TYPES` entry
   needs its tab in `NOTIFICATION_TAB_OF` (`packages/shared/src/notifications.ts`) and its link in `notificationTarget.ts`.
   Page-level notices (read-only, deletion, support, offline) are entries in `useShellMessages` (`components/shell/MessageBar.tsx`),
-  never a separate `Alert` above the page.
+  never a separate `Alert` above the page. An action that waits on someone carries an email too: pass `email: { href, cta }`
+  to `notify` / `handoff` (ARCHITECTURE "An email for every action that waits on someone"). Where the reader may have no
+  login, the email is the thing itself, rendered by a pure function with a test: `poEmail` for an order, `billEmail`
+  (`apps/api/src/ra-bills/ra-bill-email.ts`) for an RA bill. A weekly round-up is a job that gates itself to Monday and
+  dedupes on that Monday (`receiptsWeekly`, over the pure `receipt-week.ts`); keep `src/scripts/action-email-test.ts` passing.
 - Lists: a submission list page uses `useListFrame` (`components/list/useListFrame.tsx`: filters in the URL via
   `useListPage`, views, chips, chosen columns) and `DataTable` (`ListColumn` with a stable `key`, row click, `RowActions`
   menu, bulk bar, page totals). A list with saved views is a key in `SAVED_VIEW_LISTS` (`packages/shared/src/views.ts`).

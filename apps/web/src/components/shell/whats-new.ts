@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-emails-that-act',
+    date: '2027-02-17',
+    title: 'The email carries the work, not just a link',
+    points: [
+      'Mark sent on an RA bill now emails the client’s engineer the bill itself: the items, the quantities, the rates, the deductions and the net, with a button to certify it on the portal. It prints to a PDF from their mail app.',
+      'A supplier’s bill that does not match its order now goes to purchase and the project manager with the mismatch spelt out, not to the approver alone.',
+      'A leave request emails whoever decides it, so days off are not waiting on someone opening the app.',
+      'On Monday morning, management and each project manager get last week’s money in from clients, project by project.',
+    ],
+  },
+  {
     id: '2027-02-less-typing',
     date: '2027-02-16',
     title: 'Less to type, and a list that fits',
