@@ -138,6 +138,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/login-guard-test.js
+      - name: Project setup checklist, starting contract terms and the BOQ against the contract value
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/project-setup-test.js
       - name: Pipe networks read from EPANET and Excel, segments held to their length, zone sheets and working fronts
         if: matrix.suite == 'flows'
         working-directory: apps/api

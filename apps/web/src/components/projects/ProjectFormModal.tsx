@@ -6,12 +6,14 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { AimOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { ContractModel, ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
-import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
+import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, STANDARD_TERMS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivityTemplates } from '@/lib/queries';
 import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
+import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { useAuth } from '@/lib/auth';
 import { inSentence } from '@/lib/format';
 import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -32,6 +34,8 @@ interface FormValues {
   contractValue?: number | null;
   projectManagerId?: string;
   applyTemplate?: boolean;
+  /** Copy the team and the contract terms from this project (finding 6 of the October review) */
+  copyFromProjectId?: string;
   /** Attendance extras (v5 item 97): where the site is, for GPS check-in */
   siteLat?: number | null;
   siteLng?: number | null;
@@ -61,6 +65,7 @@ export function ProjectFormModal({
   const qc = useQueryClient();
   const notify = useNotify();
   const isEdit = !!project;
+  const { user } = useAuth();
   const { data: templates } = useActivityTemplates(open && !project);
   const type = Form.useWatch('type', form);
   const template = templates?.find((t) => t.projectType === type);
@@ -91,9 +96,15 @@ export function ProjectFormModal({
       });
     } else {
       form.resetFields();
-      form.setFieldsValue({ status: initialType === 'STORE' ? 'ACTIVE' : 'PLANNED', type: initialType ?? 'ROAD', applyTemplate: initialType !== 'STORE' });
+      // A project manager making a project manages it, or would not see it once made.
+      form.setFieldsValue({
+        status: initialType === 'STORE' ? 'ACTIVE' : 'PLANNED',
+        type: initialType ?? 'ROAD',
+        applyTemplate: initialType !== 'STORE',
+        projectManagerId: user?.roleKey === 'PROJECT_MANAGER' ? user.id : undefined,
+      });
     }
-  }, [open, project, form, initialType]);
+  }, [open, project, form, initialType, user]);
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -113,7 +124,7 @@ export function ProjectFormModal({
         endDate: values.dates?.[1] ? values.dates[1].format('YYYY-MM-DD') : undefined,
         contractValue: values.contractValue !== null && values.contractValue !== undefined ? String(values.contractValue) : undefined,
         projectManagerId: values.projectManagerId || undefined,
-        ...(isEdit ? {} : { applyTemplate: !!values.applyTemplate && values.type !== 'STORE' }),
+        ...(isEdit ? {} : { applyTemplate: !!values.applyTemplate && values.type !== 'STORE', copyFromProjectId: values.copyFromProjectId || undefined }),
         siteLat: values.siteLat ?? (isEdit ? null : undefined),
         siteLng: values.siteLng ?? (isEdit ? null : undefined),
         siteRadiusM: values.siteRadiusM ?? (isEdit ? null : undefined),
@@ -201,6 +212,16 @@ export function ProjectFormModal({
           {!isEdit && type !== 'STORE' ? (
             <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity templates.">
               <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? inSentence(PROJECT_TYPE_LABELS[type as ProjectType]) : ''} activities</Checkbox>
+            </Form.Item>
+          ) : null}
+          {!isEdit && type !== 'STORE' ? (
+            <Form.Item
+              name="copyFromProjectId"
+              label="Copy from project"
+              style={{ marginTop: 16, marginBottom: 0 }}
+              extra={`Its team and contract terms: deductions, GST, liquidated damages and periods. Without one, the client's usual terms, else ${STANDARD_TERMS.retentionPct}% retention, ${STANDARD_TERMS.tdsPct}% TDS, ${STANDARD_TERMS.gstTdsPct}% GST TDS and ${STANDARD_TERMS.labourCessPct}% cess.`}
+            >
+              <ProjectSelect placeholder="None" style={{ width: '100%' }} aria-label={undefined} />
             </Form.Item>
           ) : null}
         </FormSection>

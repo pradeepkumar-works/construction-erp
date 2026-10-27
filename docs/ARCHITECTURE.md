@@ -1273,6 +1273,30 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
 - **Clients.** Web: Billing → Clients page, a Contract tab on each project (agreement, bill percentages, extensions
   from the delay register) with an edit form, a client picker on the project form, and "EOT granted" on delays.
 
+### Setting up a project (finding 6 of the October review)
+
+- **Starting terms.** A new project no longer bills with every deduction at 0%. `ProjectsService.create` takes its
+  terms from the project named in `copyFromProjectId` (the `COPIED_TERMS`: deductions, GST, LD, defect liability,
+  payment and notice days, measurement tolerance, price variation), else from its client's usual terms
+  (`Client.retentionPct`, `securityDepositPct`, `tdsPct`, `gstTdsPct`, `labourCessPct`, `gstRate`,
+  `defectLiabilityMonths`, `clientPaymentDays`, nullable, on the client form), else `STANDARD_TERMS` (5% retention,
+  2% TDS, 2% GST TDS, 1% cess, 18% GST), merged field by field by `termsFor` (`@erp/shared/project-setup.ts`).
+  Approval rules are company-wide, so there is nothing of them to copy.
+- **Team.** `POST /projects/:id/members` takes `userIds` (several at once) as well as `userId`, and
+  `POST /projects/:id/members/copy { fromProjectId }` adds everyone on another project the caller sees; each person is
+  told once, as before. Copying from a project at creation copies its team too.
+- **Setup checklist.** `GET /projects/:id/setup` (`ProjectSetupDto`, `ProjectSetupService`) ticks `SETUP_STEPS` from the
+  project's own records with the pure `setupSteps` (team, dates and value, BOQ, activities, BOQ items linked to an
+  activity, activity dates, baseline, agreement, budget, chainage/floors/villages, material norms), leaving out the
+  steps the role cannot do. The Overview shows it (`ProjectSetup`) to those who edit projects while `setupShown`: an open
+  project of a kind that has one (not a store or plant), under 10% done, not hidden, with steps left. Each step links
+  to its tab; `PUT /projects/:id/setup { hidden }` hides it for everyone (`Project.setupHiddenAt`).
+- **BOQ against the contract.** `boqContractGap` flags an item-rate project whose BOQ total (at revised quantities) is
+  more than `BOQ_GAP_PCT` (15%) from its contract value, since work done, earned value and the budget are all built on
+  the BOQ. It holds the checklist's BOQ step open, shows on the BOQ tab, and is the watch list's `BOQ_OFF_CONTRACT`
+  (managers who see cost and edit projects), so it reaches the morning brief. Lump sum and EPC are priced by stages and
+  left out. Tested in `src/scripts/project-setup-test.ts`.
+
 ## RA bills
 
 - **Tables.** `RaBill` (number per project, `isFinal`, `billDate`, `measuredUpTo`; work value previous / this bill /

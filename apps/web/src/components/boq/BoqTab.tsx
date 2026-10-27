@@ -3,15 +3,15 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Input, Progress, Segmented, Select, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { CalculatorOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
+import { CalculatorOutlined, DeleteOutlined, ExclamationCircleOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
 import type { BoqItemDto } from '@erp/shared';
 import { canEditProjects, canSetRateAnalysis, canViewReconciliation } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useBoq } from '@/lib/queries';
+import { useBoq, useProjectSetup } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
-import { formatINR, formatQty, toNumber, RUPEE } from '@/lib/format';
+import { formatINR, formatINRCompact, formatQty, toNumber, RUPEE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
@@ -26,6 +26,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useBoq(projectId);
+  // An item-rate BOQ far from the contract value (finding 6 of the October review), as the setup checklist and watch list say.
+  const gap = useProjectSetup(projectId).data?.boqGap ?? null;
   const [search, setSearch] = useState('');
   // Bill sections or cost centres (item 125): filter by one, or see their subtotals.
   const [section, setSection] = useState<string | null>(null);
@@ -202,6 +204,12 @@ export function BoqTab({ projectId }: { projectId: string }) {
           <Statistic title="BOQ amount" value={formatINR(totals.amount)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           <Statistic title="Executed value" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           <Statistic title="Measured value (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          {gap ? (
+            <p data-testid="boq-gap" style={{ margin: 0, maxWidth: 420, color: themeColor('colorWarningText'), fontSize: themeFontSize('fontSizeSM') }}>
+              <ExclamationCircleOutlined aria-hidden style={{ marginRight: 6 }} />
+              The BOQ adds up to {formatINRCompact(gap.boqTotal)}, {Math.abs(gap.gapPct)}% {gap.gapPct < 0 ? 'below' : 'above'} the {formatINRCompact(gap.contractValue)} contract value. Work done, earned value and the budget are off until the two agree.
+            </p>
+          ) : null}
         </Space>
         <Space wrap>
           {sections.length ? (
