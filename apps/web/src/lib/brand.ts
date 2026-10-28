@@ -74,6 +74,12 @@ export const BRAND = {
     trendBilledNight: '#5B93F0',
     trendReceivedNight: '#14A093',
     trendCostNight: '#D07A1E',
+    /** Progress by project (Projects screen): physical and financial progress, on white and on the night surface (the
+     *  same checked pair as the trend's billed and received). */
+    progressPhysical: '#1E63D6',
+    progressFinancial: '#0D9488',
+    progressPhysicalNight: '#5B93F0',
+    progressFinancialNight: '#14A093',
     /** Drawing markup ink (item 109), on the white of a drawing sheet in either theme. */
     markupRed: '#D92D20',
     markupBlue: '#1E63D6',

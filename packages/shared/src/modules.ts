@@ -1,5 +1,6 @@
 import type { SubmissionType } from './enums';
 import { NAV_TREE } from './navigation';
+import type { ModuleProgressDto } from './project-progress';
 
 /**
  * Module screens (v6 item 98, launcher phase 1): every module on Home that is not a page itself has a screen at
@@ -44,8 +45,8 @@ export const MODULE_SUBMISSION_TYPES: Record<ModuleKey, SubmissionType[]> = {
 
 export const isModuleKey = (k: string): k is ModuleKey => (MODULE_KEYS as readonly string[]).includes(k);
 
-/** How a figure is shown: a count, rupees, or a count out of a total ("4 of 6"). */
-export type ModuleFigureFormat = 'count' | 'money' | 'ratio';
+/** How a figure is shown: a count, rupees, a count out of a total ("4 of 6"), or a percentage. */
+export type ModuleFigureFormat = 'count' | 'money' | 'ratio' | 'percent';
 /** `warning` and `danger` mark a figure that needs someone (always said in words too, in `note`). */
 export type ModuleFigureTone = 'default' | 'warning' | 'danger';
 
@@ -85,4 +86,6 @@ export interface ModuleHomeDto {
   sentBack: { type: SubmissionType; count: number }[];
   /** The caller's entries in this module still waiting with someone else */
   waitingWithOthers: number;
+  /** Projects only: each contract project's physical and financial progress (`project-progress.ts`) */
+  progress?: ModuleProgressDto;
 }

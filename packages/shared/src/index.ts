@@ -91,6 +91,7 @@ export * from './type-bundle';
 export * from './pipe-network';
 export * from './om';
 export * from './management';
+export * from './project-progress';
 export * from './items';
 export * from './norms-library';
 export * from './project-setup';

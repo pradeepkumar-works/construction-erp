@@ -21,7 +21,11 @@ import { familyColors } from '@/lib/brand';
 import { useAppearance } from '@/lib/appearance';
 import { useProjectScope } from '@/lib/project-scope';
 import { TreeIcon } from '@/components/shell/nav-icons';
+import { ProjectProgressPanel } from './ProjectProgress';
 import s from './DepartmentHome.module.css';
+
+/** The department that holds the projects shows their progress above its pages. */
+const PROJECTS_DEPARTMENT = 'project-management';
 
 // "Vendor Bill" reads "Vendor bill"; a short form (RA, MB) keeps its capitals.
 const sentence = (label: string) =>
@@ -151,6 +155,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
             </ul>
           </Card>
         )}
+        {moduleKey === PROJECTS_DEPARTMENT && <ProjectProgressPanel />}
         <div className={s.subs}>
           {mod.subs.map((sub) => (
             <section key={sub.key} aria-labelledby={`sub-${sub.key}`} className={s.sub}>

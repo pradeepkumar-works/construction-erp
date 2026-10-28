@@ -3,43 +3,28 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Col, Flex, Grid, Result, Row, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Col, Flex, Grid, Result, Row, Typography, theme } from 'antd';
 import { CheckSquareOutlined, HourglassOutlined, RollbackOutlined } from '@/components/common/icons';
-import type { ModuleFigureDto, ModuleHomeDto, ModuleKey } from '@erp/shared';
+import type { ModuleHomeDto, ModuleKey } from '@erp/shared';
 import { MODULE_INTROS, MODULE_LABELS, MODULE_SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useModuleHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { requestNew } from '@/lib/new-intent';
-import { formatINR, formatINRCompact } from '@/lib/format';
+import { formatINRCompact } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { KpiTile, kpiColumns } from '@/components/home/KpiTile';
+import { kpiColumns } from '@/components/home/KpiTile';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { HrDashboard } from '@/components/staff/HrDashboard';
+import { ProjectProgress } from './ProjectProgress';
+import { ModuleFigure as Figure } from './ModuleFigure';
 import { TileGrid, tileEntries } from '@/components/launcher/TileGrid';
 import { usePins } from '@/components/launcher/pins';
 import { useNavMenu } from '@/components/shell/menu';
 import { ResultMark } from '@/components/common/ResultMark';
 
 const days = (n: number) => (n === 0 ? 'today' : `${n} day${n === 1 ? '' : 's'}`);
-
-/** One figure: a count, rupees or "4 of 6", with the line that says what it stands against. */
-function Figure({ f }: { f: ModuleFigureDto }) {
-  const { token } = theme.useToken();
-  const value = f.format === 'money' ? formatINRCompact(f.value) : f.format === 'ratio' ? `${f.value} of ${f.of ?? 0}` : f.value;
-  const note = f.note ? (f.noteMoney != null ? f.note.replace('{money}', formatINR(f.noteMoney)) : f.note) : null;
-  return (
-    <KpiTile href={f.href}>
-      <Statistic title={f.label} value={value} valueRender={() => <span translate="no">{value}</span>} />
-      {note && (
-        <Typography.Text type={f.tone === 'danger' ? 'danger' : f.tone === 'warning' ? 'warning' : 'secondary'} style={{ display: 'block', fontSize: token.fontSizeSM, marginTop: token.marginXXS }}>
-          {note}
-        </Typography.Text>
-      )}
-    </KpiTile>
-  );
-}
 
 /** What waits for the caller in this module: approvals by type, their entries sent back, and theirs waiting with others. */
 function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
@@ -172,6 +157,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
             )}
           </Row>
         )}
+        {data?.progress && <ProjectProgress data={data.progress} />}
         {key === 'people' && (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) && <HrDashboard />}
       </Flex>
     </div>

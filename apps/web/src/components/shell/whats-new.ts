@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-03-progress-by-project',
+    date: '2027-03-03',
+    title: 'Progress by project',
+    points: [
+      'Opening Projects (or Project management, if your menu uses departments) now shows every project with its physical progress and its financial progress side by side, on one scale.',
+      'Physical progress has a tick where the plan says the work should be today. Financial progress is the approved RA bills against the contract value, for those who see bills.',
+      'Figures above sum up all projects, and a project is flagged when its work is behind plan or its billing trails the work by 10 points or more.',
+      'Switch to Table to sort the projects by any figure.',
+    ],
+  },
+  {
     id: '2027-03-update-projects-from-type',
     date: '2027-03-02',
     title: 'Bring running projects up to their type',
