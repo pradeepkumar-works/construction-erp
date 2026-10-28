@@ -50,7 +50,14 @@ export function WaitingForYou({ user }: { user: AuthUser }) {
         Waiting for you
       </h2>
       {isPending ? (
-        <Skeleton.Button active block style={{ height: 64 }} />
+        // As many lines as it will show, plus All my work, so nothing below moves when it loads.
+        <ul className={s.waitList} aria-hidden>
+          {Array.from({ length: SHOWN + 1 }, (_, i) => (
+            <li key={i}>
+              <Skeleton.Button active block style={{ height: 64 }} />
+            </li>
+          ))}
+        </ul>
       ) : !data || busy.length === 0 ? (
         <p className={s.emptyText}>
           Nothing waits for you right now. <Link href="/my-work">Open My work</Link>

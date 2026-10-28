@@ -131,6 +131,13 @@
   min-height: 64px;
 }
 
+/* A line keeps to its height whatever the entry says (a letter's subject is long), so Home does not move once it loads. */
+.wait .recentKind {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .waitCount {
   margin-left: auto;
   flex: none;
