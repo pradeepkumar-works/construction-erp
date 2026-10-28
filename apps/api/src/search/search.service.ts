@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type { Paginated, SearchHitDto, SearchKind, SearchResultDto, SwitchableModule } from '@erp/shared';
-import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders, canRunSubcontractEnquiries, canViewMeetings, canViewMaterialApprovals } from '@erp/shared';
+import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders, canRunSubcontractEnquiries, canViewMeetings, canViewMaterialApprovals, canViewLetters } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { moduleOn } from '../common/module-switch.guard';
 import { MaterialRequestsService } from '../material-requests/material-requests.service';
@@ -15,6 +15,7 @@ import { InspectionsService } from '../inspections/inspections.service';
 import { RisksService } from '../risks/risks.service';
 import { DocumentsService } from '../documents/documents.service';
 import { RfisService } from '../rfis/rfis.service';
+import { CorrespondenceService } from '../correspondence/correspondence.service';
 import { VendorsService } from '../vendors/vendors.service';
 import { ClientsService } from '../clients/clients.service';
 import { StockService } from '../stock/stock.service';
@@ -64,6 +65,7 @@ export class SearchService {
     scEnquiries: ScEnquiriesService,
     meetings: MeetingsService,
     materialApprovals: MaterialApprovalsService,
+    letters: CorrespondenceService,
   ) {
     const page = (q: string) => ({ q, page: 1, pageSize: PER_KIND });
     const sources: Source<any>[] = [
@@ -95,6 +97,12 @@ export class SearchService {
       { kind: 'risk', list: (u, q) => risks.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.riskNo, subtitle: join(r.title, r.projectName), href: `/risks?id=${r.id}`, status: null }) },
       { kind: 'document', list: (u, q) => documents.listDocuments(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.docNo, subtitle: join(r.title, r.projectName), href: `/documents?id=${r.id}`, status: null }) },
       { kind: 'rfi', list: (u, q) => rfis.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.rfiNo, subtitle: join(r.subject, r.projectName), href: `/documents?tab=rfis&rfi=${r.id}`, status: null }) },
+      {
+        kind: 'letter',
+        allowed: (u) => canViewLetters(u.roleKey),
+        list: (u, q) => letters.list(u, page(q) as never),
+        hit: (r) => ({ id: r.id, title: r.letterNo ?? 'Draft letter', subtitle: join(r.subject, r.party, r.projectName ?? 'Head office'), href: `/correspondence/${r.id}`, status: null }),
+      },
       {
         kind: 'meeting',
         module: 'meetings',

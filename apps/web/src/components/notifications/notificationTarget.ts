@@ -27,6 +27,7 @@ export function notificationHref(n: NotificationDto): string {
   if (n.entityType === 'SUPPLIER_INVOICE') return `/supplier-inbox${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.entityType === 'SUPPLIER_CHANGE') return '/supplier-inbox?tab=changes';
   if (n.entityType === 'MEETING' && n.entityId) return `/meetings/${n.entityId}`;
+  if (n.entityType === 'LETTER' && n.entityId) return `/correspondence/${n.entityId}`;
   if (n.entityType === 'EQUIPMENT_LOAN' && n.entityId) return `/machine-loans/${n.entityId}`;
   // Hand-offs (e2e review, fix 2): a goods receipt opens in Stock, a new project's team member opens the project.
   if (n.entityType === 'GRN') return `/stock${n.projectId ? `?projectId=${n.projectId}` : ''}`;

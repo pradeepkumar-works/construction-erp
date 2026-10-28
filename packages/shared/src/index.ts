@@ -100,3 +100,4 @@ export * from './purchase-queue';
 export * from './nav-menu';
 export * from './group';
 export * from './masters';
+export * from './correspondence';

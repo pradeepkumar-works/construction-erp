@@ -9,9 +9,6 @@ import {
   type DocumentRevisionDto,
   type DocumentSortField,
   type DocumentSummaryDto,
-  type LetterDto,
-  type LetterRefDto,
-  type LetterSortField,
   type Paginated,
   type RevisionStatus,
   type SortOrder,
@@ -33,14 +30,11 @@ import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import {
   AcknowledgeTransmittalDto,
   CreateDocumentDto,
-  CreateLetterDto,
   CreateRevisionDto,
   CreateTransmittalDto,
   ListDocumentsQuery,
-  ListLettersQuery,
   ListTransmittalsQuery,
   UpdateDocumentDto,
-  UpdateLetterDto,
   UpdateRevisionDto,
   UpdateTransmittalDto,
 } from './documents.dto';
@@ -66,16 +60,6 @@ const transmittalInclude = {
 } satisfies Prisma.TransmittalInclude;
 type TransmittalRow = Prisma.TransmittalGetPayload<{ include: typeof transmittalInclude }>;
 
-const letterRef = { select: { id: true, letterNo: true, direction: true, letterDate: true, subject: true } } as const;
-const letterInclude = {
-  project: { select: { name: true } },
-  createdBy: { select: { fullName: true } },
-  risk: { select: { riskNo: true, title: true } },
-  inReplyTo: letterRef,
-  replies: { ...letterRef, orderBy: { letterDate: 'asc' } },
-  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
-} satisfies Prisma.LetterInclude;
-type LetterRow = Prisma.LetterGetPayload<{ include: typeof letterInclude }>;
 
 const DOCUMENT_ORDER: Record<DocumentSortField, (o: SortOrder) => Prisma.DocumentOrderByWithRelationInput[]> = {
   docNo: (o) => [{ docNo: o }],
@@ -94,24 +78,19 @@ const TRANSMITTAL_ORDER: Record<TransmittalSortField, (o: SortOrder) => Prisma.T
   project: (o) => [{ project: { name: o } }, { sentOn: 'desc' }],
   createdAt: (o) => [{ createdAt: o }],
 };
-const LETTER_ORDER: Record<LetterSortField, (o: SortOrder) => Prisma.LetterOrderByWithRelationInput[]> = {
-  letterDate: (o) => [{ letterDate: o }, { createdAt: o }],
-  letterNo: (o) => [{ letterNo: o }],
-  party: (o) => [{ party: o }, { letterDate: 'desc' }],
-  replyBy: (o) => [{ replyBy: { sort: o, nulls: 'last' } }, { letterDate: 'desc' }],
-  project: (o) => [{ project: { name: o } }, { letterDate: 'desc' }],
-  createdAt: (o) => [{ createdAt: o }],
-};
 const DESC_DEFAULT = new Set<string>(['issuedOn', 'updatedAt', 'sentOn', 'transmittalNo', 'letterDate', 'letterNo', 'createdAt']);
 const order = (sortBy: string, o: SortOrder | undefined): SortOrder => o ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
+
+/** Letters received that we owe a reply to (Correspondence, item 136, keeps the registers). */
+const LETTERS_AWAITING = { direction: 'IN', status: 'OPEN', replyBy: { not: null }, replies: { none: { direction: 'OUT', status: 'ISSUED' } } } satisfies Prisma.LetterWhereInput;
 
 /** Revisions in force order: the latest issued first (the one added last wins a tie). */
 const REVISION_ORDER: Prisma.DocumentRevisionOrderByWithRelationInput[] = [{ issuedOn: 'desc' }, { createdAt: 'desc' }];
 
 /**
  * Document register: drawings and documents with their revisions (files on each revision), transmittals that send
- * revisions to someone, and letters in and out (IN- / OUT-<year>-0001) linked to each other and to delays.
- * Anyone on a project reads the register; document control roles change it; letters are for correspondence roles.
+ * revisions to someone. Anyone on a project reads the register; document control roles change it. Letters are
+ * Correspondence's (item 136, `CorrespondenceService`).
  * The current revision is the latest issued and is kept on `Document.currentRevisionId`.
  */
 @Injectable()
@@ -564,160 +543,6 @@ export class DocumentsService {
     return { ok: true };
   }
 
-  /* ---------- letters ---------- */
-
-  private ref(l: { id: string; letterNo: string; direction: LetterRefDto['direction']; letterDate: Date; subject: string }): LetterRefDto {
-    return { id: l.id, letterNo: l.letterNo, direction: l.direction, letterDate: dateOnly(l.letterDate)!, subject: l.subject };
-  }
-
-  private toLetterDto(l: LetterRow, today = todayIn()): LetterDto {
-    const replyBy = dateOnly(l.replyBy);
-    const awaitingReply = l.direction === 'IN' && !!replyBy && !l.replies.some((r) => r.direction === 'OUT');
-    return {
-      id: l.id,
-      projectId: l.projectId,
-      projectName: l.project.name,
-      direction: l.direction,
-      letterNo: l.letterNo,
-      theirRef: l.theirRef,
-      letterDate: dateOnly(l.letterDate)!,
-      party: l.party,
-      subject: l.subject,
-      summary: l.summary,
-      replyBy,
-      awaitingReply,
-      overdue: awaitingReply && replyBy! < today,
-      inReplyTo: l.inReplyTo ? this.ref(l.inReplyTo) : null,
-      replies: l.replies.map((r) => this.ref(r)),
-      riskId: l.riskId,
-      riskNo: l.risk?.riskNo ?? null,
-      riskTitle: l.risk?.title ?? null,
-      createdById: l.createdById,
-      createdByName: l.createdBy.fullName,
-      attachments: l.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(l.createdAt)!,
-      updatedAt: iso(l.updatedAt)!,
-    };
-  }
-
-  /** Received letters that need a reply and have none sent. */
-  private awaitingWhere(): Prisma.LetterWhereInput {
-    return { direction: 'IN', replyBy: { not: null }, replies: { none: { direction: 'OUT' } } };
-  }
-
-  async listLetters(user: RequestUser, q: ListLettersQuery): Promise<Paginated<LetterDto>> {
-    await this.access.assertCanUseLetters(user);
-    const where: Prisma.LetterWhereInput = { ...this.access.submissionWhere(user) };
-    const and: Prisma.LetterWhereInput[] = [];
-    if (q.projectId) where.projectId = q.projectId;
-    if (q.direction) where.direction = q.direction;
-    if (q.riskId) where.riskId = q.riskId;
-    if (q.awaitingReply) and.push(this.awaitingWhere());
-    for (const w of searchWords(q.q)) and.push({ OR: [{ letterNo: ilike(w) }, { theirRef: ilike(w) }, { party: ilike(w) }, { subject: ilike(w) }, { summary: ilike(w) }] });
-    if (and.length) where.AND = and;
-    const sortBy = q.sortBy ?? 'letterDate';
-    const args = pageArgs(q);
-    const [rows, total] = await Promise.all([
-      this.prisma.letter.findMany({ where, include: letterInclude, orderBy: [...LETTER_ORDER[sortBy](order(sortBy, q.sortOrder)), { id: 'asc' }], skip: args.skip, take: args.take }),
-      this.prisma.letter.count({ where }),
-    ]);
-    const today = todayIn();
-    return paginated(rows.map((r) => this.toLetterDto(r, today)), total, args);
-  }
-
-  async getLetter(user: RequestUser, id: string): Promise<LetterDto> {
-    await this.access.assertCanUseLetters(user);
-    const row = await this.prisma.letter.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: letterInclude });
-    if (!row) throw new NotFoundException('Letter not found');
-    return this.toLetterDto(row);
-  }
-
-  private async checkLetterLinks(projectId: string, dto: { inReplyToId?: string | null; riskId?: string | null }, selfId?: string) {
-    if (dto.inReplyToId) {
-      if (dto.inReplyToId === selfId) throw new BadRequestException('A letter cannot answer itself');
-      if (!(await this.prisma.letter.count({ where: { id: dto.inReplyToId, projectId } }))) throw new NotFoundException('The letter answered is not in this project');
-    }
-    if (dto.riskId && !(await this.prisma.risk.count({ where: { id: dto.riskId, projectId } }))) throw new NotFoundException('The delay or risk is not in this project');
-  }
-
-  private checkLetterDates(letterDate: string, replyBy: string | null | undefined) {
-    if (letterDate > todayIn()) throw new BadRequestException('The letter date cannot be in the future');
-    if (replyBy && replyBy < letterDate) throw new BadRequestException('The reply-by date is before the letter date');
-  }
-
-  async createLetter(user: RequestUser, dto: CreateLetterDto): Promise<LetterDto> {
-    await this.access.assertCanUseLetters(user, dto.projectId);
-    this.checkLetterDates(dto.letterDate, dto.replyBy);
-    await this.checkLetterLinks(dto.projectId, dto);
-    const id = await this.prisma.$transaction(async (tx) => {
-      const letterNo = await nextDocNo(tx, user.organizationId, dto.direction, async (prefix) =>
-        (await tx.letter.findFirst({ where: { organizationId: user.organizationId, letterNo: { startsWith: prefix } }, orderBy: { letterNo: 'desc' }, select: { letterNo: true } }))?.letterNo ?? null,
-      );
-      const row = await tx.letter.create({
-        data: {
-          organizationId: user.organizationId,
-          projectId: dto.projectId,
-          direction: dto.direction,
-          letterNo,
-          theirRef: dto.theirRef || null,
-          letterDate: parseDate(dto.letterDate),
-          party: dto.party,
-          subject: dto.subject,
-          summary: dto.summary || null,
-          replyBy: dto.direction === 'IN' && dto.replyBy ? parseDate(dto.replyBy) : null,
-          inReplyToId: dto.inReplyToId || null,
-          riskId: dto.riskId || null,
-          createdById: user.id,
-        },
-        select: { id: true },
-      });
-      return row.id;
-    });
-    await this.attachments.link(user, 'letterId', id, dto.attachmentIds);
-    if (dto.attachmentIds?.length) await this.readFiles(user, dto.projectId);
-    await this.audit.log(user, 'LETTER', id, 'CREATED');
-    return this.getLetter(user, id);
-  }
-
-  private async loadLetter(user: RequestUser, id: string) {
-    await this.access.assertCanUseLetters(user);
-    const row = await this.prisma.letter.findFirst({ where: { id, ...this.access.submissionWhere(user) } });
-    if (!row) throw new NotFoundException('Letter not found');
-    await this.access.assertCanAccessProject(user, row.projectId);
-    return row;
-  }
-
-  async updateLetter(user: RequestUser, id: string, dto: UpdateLetterDto): Promise<LetterDto> {
-    const cur = await this.loadLetter(user, id);
-    const letterDate = dto.letterDate ?? dateOnly(cur.letterDate)!;
-    const replyBy = dto.replyBy !== undefined ? dto.replyBy : dateOnly(cur.replyBy);
-    this.checkLetterDates(letterDate, replyBy);
-    await this.checkLetterLinks(cur.projectId, dto, id);
-    const data: Prisma.LetterUncheckedUpdateInput = {};
-    if (dto.theirRef !== undefined) data.theirRef = dto.theirRef || null;
-    if (dto.letterDate !== undefined) data.letterDate = parseDate(dto.letterDate);
-    if (dto.party !== undefined) data.party = dto.party;
-    if (dto.subject !== undefined) data.subject = dto.subject;
-    if (dto.summary !== undefined) data.summary = dto.summary || null;
-    if (dto.replyBy !== undefined) data.replyBy = cur.direction === 'IN' && dto.replyBy ? parseDate(dto.replyBy) : null;
-    if (dto.inReplyToId !== undefined) data.inReplyToId = dto.inReplyToId || null;
-    if (dto.riskId !== undefined) data.riskId = dto.riskId || null;
-    await this.prisma.letter.update({ where: { id }, data });
-    await this.attachments.sync(user, 'letterId', id, dto.attachmentIds);
-    await this.readFiles(user, cur.projectId);
-    await this.audit.log(user, 'LETTER', id, 'UPDATED');
-    return this.getLetter(user, id);
-  }
-
-  /** For a letter recorded by mistake: whoever recorded it or an approver. */
-  async removeLetter(user: RequestUser, id: string) {
-    const cur = await this.loadLetter(user, id);
-    if (cur.createdById !== user.id && !canApprove(user.roleKey)) throw new ForbiddenException('Only whoever recorded the letter or an approver can delete it');
-    await this.prisma.letter.delete({ where: { id } });
-    await this.audit.log(user, 'LETTER', id, 'DELETED', cur.letterNo);
-    return { ok: true };
-  }
-
   /* ---------- summary ---------- */
 
   async summary(user: RequestUser, projectId?: string): Promise<DocumentSummaryDto> {
@@ -728,8 +553,8 @@ export class DocumentsService {
       this.prisma.document.count({ where: base }),
       this.prisma.document.count({ where: { ...base, currentRevision: { status: 'FOR_APPROVAL' satisfies RevisionStatus } } }),
       this.prisma.transmittal.count({ where: { ...base, acknowledgedOn: null } }),
-      letters ? this.prisma.letter.count({ where: { ...base, ...this.awaitingWhere() } }) : null,
-      letters ? this.prisma.letter.count({ where: { ...base, ...this.awaitingWhere(), replyBy: { lt: today } } }) : null,
+      letters ? this.prisma.letter.count({ where: { ...base, ...LETTERS_AWAITING } }) : null,
+      letters ? this.prisma.letter.count({ where: { ...base, ...LETTERS_AWAITING, replyBy: { lt: today } } }) : null,
     ]);
     return { documents, awaitingApproval, unacknowledged, lettersAwaitingReply, lettersOverdue };
   }

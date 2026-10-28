@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canViewLetters, type DocumentPageViewDto, type DocumentSearchHitDto, type DocumentSearchResultDto } from '@erp/shared';
+import { canHeadLetters, canViewLetters, type DocumentPageViewDto, type DocumentSearchHitDto, type DocumentSearchResultDto } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { StorageService } from '../common/storage.service';
@@ -111,6 +111,7 @@ export class DocumentTextService {
     if (!visible.length || !tsq) return { hits: [], unread: 0 };
     if (q.read !== false) await this.readPending(user.organizationId, visible);
     const letters = canViewLetters(user.roleKey);
+    const head = canHeadLetters(user.roleKey);
     const limit = Math.min(q.limit ?? HITS, 10);
 
     const [pages, letterRows, unread] = await this.prisma.$transaction(async (tx) => [
@@ -121,14 +122,14 @@ export class DocumentTextService {
         LEFT JOIN "Document" d ON d."currentRevisionId" = a."revisionId"
         CROSS JOIN to_tsquery('english', ${tsq}) q
         WHERE p."organizationId" = ${user.organizationId} AND p."projectId" = ANY(${visible}::text[]) AND p."search" @@ q
-          AND (d."id" IS NOT NULL OR (${letters} AND a."letterId" IS NOT NULL))
+          AND (d."id" IS NOT NULL OR (${letters} AND a."letterId" IS NOT NULL AND (${head} OR NOT EXISTS (SELECT 1 FROM "Letter" cl WHERE cl."id" = a."letterId" AND cl."confidential"))))
         ORDER BY rank DESC, p."page" ASC
         LIMIT ${limit}`,
       letters
         ? await tx.$queryRaw<LetterRow[]>`
             SELECT l."id", ts_rank_cd(to_tsvector('english', l."subject" || ' ' || coalesce(l."summary", '') || ' ' || l."party"), q, 1) AS rank
             FROM "Letter" l CROSS JOIN to_tsquery('english', ${tsq}) q
-            WHERE l."organizationId" = ${user.organizationId} AND l."projectId" = ANY(${visible}::text[])
+            WHERE l."organizationId" = ${user.organizationId} AND l."projectId" = ANY(${visible}::text[]) AND (${head} OR NOT l."confidential")
               AND to_tsvector('english', l."subject" || ' ' || coalesce(l."summary", '') || ' ' || l."party") @@ q
             ORDER BY rank DESC, l."letterDate" DESC
             LIMIT ${limit}`
@@ -153,7 +154,7 @@ export class DocumentTextService {
       return [{
         source: r ? ('DOCUMENT' as const) : ('LETTER' as const),
         projectId: p.projectId,
-        title: r ? `${r.document.docNo} ${r.document.title}, rev ${r.revision}` : `${l!.letterNo} ${l!.direction === 'IN' ? 'from' : 'to'} ${l!.party}: ${l!.subject}`,
+        title: r ? `${r.document.docNo} ${r.document.title}, rev ${r.revision}` : `${l!.letterNo ?? 'Draft'} ${l!.direction === 'IN' ? 'from' : 'to'} ${l!.party}: ${l!.subject}`,
         kind: r ? r.document.kind : 'LETTER',
         page: p.page,
         pages: f.textPages,
@@ -170,13 +171,13 @@ export class DocumentTextService {
       if (!l) return [];
       return [{
         source: 'LETTER' as const,
-        projectId: l.projectId,
-        title: `${l.letterNo} ${l.direction === 'IN' ? 'from' : 'to'} ${l.party}`,
+        projectId: l.projectId!,
+        title: `${l.letterNo ?? 'Draft'} ${l.direction === 'IN' ? 'from' : 'to'} ${l.party}`,
         kind: l.direction === 'IN' ? 'LETTER_RECEIVED' : 'LETTER_SENT',
         page: null,
         pages: null,
         date: dateOnly(l.letterDate),
-        href: `/documents?tab=letters&letter=${l.id}`,
+        href: `/correspondence/${l.id}`,
         text: [`Subject: ${l.subject}`, l.summary ? `Summary: ${l.summary}` : null, l.theirRef ? `Their ref: ${l.theirRef}` : null].filter(Boolean).join('\n'),
         rank: Number(row.rank),
       }];
@@ -204,8 +205,8 @@ export class DocumentTextService {
       url: this.storage.toUrl(f.id, f.storagePath),
       page,
       pages: f.textPages ?? 0,
-      title: r ? `${r.document.docNo} ${r.document.title}, rev ${r.revision}` : `${f.letter!.letterNo} ${f.letter!.subject}`,
-      recordHref: r ? `/documents?id=${r.document.id}` : `/documents?tab=letters&letter=${f.letter!.id}`,
+      title: r ? `${r.document.docNo} ${r.document.title}, rev ${r.revision}` : `${f.letter!.letterNo ?? 'Draft'} ${f.letter!.subject}`,
+      recordHref: r ? `/documents?id=${r.document.id}` : `/correspondence/${f.letter!.id}`,
       text: row?.text ?? null,
       readError: f.textError,
     };

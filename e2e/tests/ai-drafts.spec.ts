@@ -86,12 +86,12 @@ test('a letter is drafted for the correspondence register', async ({ page }) => 
   await ask(page, 'Write a letter for RD-2026-01 about the land handover delay at km 18');
   const card = panel(page).getByRole('group', { name: 'Drafted letter' });
   await card.getByRole('button', { name: 'Open form' }).click();
-  await expect(page).toHaveURL(/\/documents\?tab=letters/);
-  const form = formPanel(page, 'Record letter');
+  await expect(page).toHaveURL(/\/correspondence\/outward/);
+  const form = formPanel(page, 'New letter');
   await expect(form.getByText('Filled in by Ask Nirmaan from what you wrote')).toBeVisible();
   await expect(form.getByLabel('Subject')).toHaveValue('the land handover delay at km 18');
   // Going out, to the project's client.
-  await expect(form.getByRole('textbox', { name: 'To' })).not.toHaveValue('');
+  await expect(form.getByRole('combobox', { name: /^\W*To$/ })).not.toHaveValue('');
   await expect(form.getByLabel('Letter text')).toHaveValue('We write regarding the matter above.');
   await form.getByRole('button', { name: 'Cancel' }).click();
   await page.getByRole('dialog', { name: 'Close this form?' }).getByRole('button', { name: 'Close' }).click();

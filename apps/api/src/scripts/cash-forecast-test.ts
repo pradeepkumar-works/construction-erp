@@ -326,7 +326,7 @@ async function demo(): Promise<number> {
         if (late) {
           const letters = await prisma.letter.count({ where: { organizationId: org.id } });
           const d = await cash.reminder(pm2, late.billId);
-          const summary = String(d.values.summary);
+          const summary = String(d.values.body);
           check('reminder: an OUT letter to the client', d.kind === 'letter' && d.values.direction === 'OUT' && d.values.party === 'Dept. of Health & Family Welfare', JSON.stringify(d.values));
           check('reminder: quotes clause 7.2 of the agreement', summary.includes('Clause 7.2 of the agreement (HB-AGR-01)') && summary.includes('within 30 days of its submission'), summary);
           check('reminder: says how long the bill has waited, past the contract’s days', summary.includes('40 days after submission, beyond the 30 days the contract allows'), summary);

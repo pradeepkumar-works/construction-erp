@@ -27,7 +27,10 @@ import {
   canViewPurchaseOrders,
   canRecordReceipt,
   canRecordVendorBill,
+  canSignLetters,
+  canViewLetters,
   isCompanyWide,
+  isGuest,
   seesCompanyToday,
   submissionHref,
   submitsDpr,
@@ -50,6 +53,7 @@ import { WarningsService } from '../warnings/warnings.service';
 import { FleetService } from '../machinery/fleet.service';
 import { RequestsToOrderService } from '../purchasing/requests-to-order.service';
 import { MeetingsService } from '../meetings/meetings.service';
+import { CorrespondenceService } from '../correspondence/correspondence.service';
 import { moduleOn } from '../common/module-switch.guard';
 
 type D = Prisma.Decimal;
@@ -118,6 +122,7 @@ export class HomeService {
     private fleet: FleetService,
     private meetings: MeetingsService,
     private toOrderList: RequestsToOrderService,
+    private letters: CorrespondenceService,
   ) {}
 
   async myWork(user: RequestUser): Promise<MyWorkDto> {
@@ -127,7 +132,7 @@ export class HomeService {
     const seesDue = canViewPurchaseOrders(role) && (canPurchase(role) || canKeepStock(role));
     const matches = canRecordVendorBill(role) && canViewPayables(role);
     const checks = canCheckGrn(role) && role !== 'ADMIN' && role !== 'MANAGEMENT';
-    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch, actions, toOrder, orders, staff, unmatched, unchecked, toDebit, incoming] = await Promise.all([
+    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch, actions, toOrder, orders, staff, unmatched, unchecked, toDebit, incoming, letters] = await Promise.all([
       rights.length ? this.lifecycle.pending(user) : null,
       canApprove(role) || submitsDpr(role) ? this.dprsMissing(user, today) : null,
       this.lifecycle.mine(user, ['REJECTED', 'CHANGES_REQUESTED']),
@@ -147,6 +152,7 @@ export class HomeService {
       checks ? this.receiptsWaiting(user, 'CHECK', today) : null,
       canRaiseDebitNote(role) ? this.receiptsWaiting(user, 'DEBIT_NOTE', today) : null,
       canKeepStock(role) ? this.stock.incomingTransfers(user, {}) : null,
+      isGuest(role) ? null : this.letters.forMe(user),
     ]);
     // The store receives on its own Stock page; purchase follows its orders under Purchases.
     const storeSide = canKeepStock(role) && !canPurchase(role);
@@ -254,6 +260,20 @@ export class HomeService {
         null,
         most(open.filter((a) => a.dueOn).map((a) => a.daysOverdue ?? -(a.daysLeft ?? 0))),
       );
+    }
+    // Letters (item 136): for those who keep or sign letters always, for anyone else once one is marked to them.
+    if (letters && (canViewLetters(role) || canSignLetters(role) || letters.total)) {
+      out.letters = card(
+        letters.total,
+        letters.items.map((l) => {
+          const late = l.due ? daysBetween(l.due, today) : null;
+          const when = l.toSign ? (late !== null && late > 0 ? `waiting ${days(late)}` : 'waiting since today') : late === null ? 'No date' : late > 0 ? `${days(late)} overdue` : late === 0 ? 'Due today' : `Due in ${days(-late)}`;
+          return { label: `${l.letterNo ?? 'Draft'} · ${l.party}`, note: [l.toSign ? 'To sign' : l.action, l.subject, when].filter(Boolean).join(' · '), projectName: l.projectName, amount: null, href: `/correspondence/${l.id}` };
+        }),
+        null,
+        most(letters.items.filter((l) => l.due).map((l) => daysBetween(l.due!, today))),
+      );
+      out.letters.href = '/correspondence?mine=1';
     }
     // The queues each desk works through (finding 8 of the October review).
     if (toOrder) {

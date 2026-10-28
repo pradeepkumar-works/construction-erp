@@ -45,7 +45,7 @@ export function NoticeClock({ risk }: { risk: RiskDto }) {
         title={
           <span>
             Notice given:{' '}
-            <Link href={`/documents?tab=letters&letter=${data.noticeSent.letterId}`} className="text-link">
+            <Link href={`/correspondence/${data.noticeSent.letterId}`} className="text-link">
               {data.noticeSent.letterNo}
             </Link>{' '}
             of {formatDate(data.noticeSent.letterDate)}

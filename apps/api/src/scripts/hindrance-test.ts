@@ -284,7 +284,7 @@ async function demo(): Promise<number> {
         // 6. Draft notice: from the delay, its DPR entries and the clause; nothing saved.
         const letters = await prisma.letter.count({ where: { organizationId: org.id } });
         const draft = await hindrances.draftNotice(pm2, design.id);
-        const summary = String(draft.values.summary);
+        const summary = String(draft.values.body);
         check('draft notice: an outgoing letter linked to the delay', draft.kind === 'letter' && draft.values.direction === 'OUT' && draft.values.riskId === design.id && draft.values.party === 'Dept. of Health & Family Welfare');
         check('draft notice: under clause 5.1, held up from the day the delay began', summary.includes('Under Clause 5.1 of the agreement') && summary.includes(`has been held up ${design.delayEnd ? 'from' : 'since'} `), summary.slice(0, 300));
         check('draft notice: its banner says where it came from', draft.note === 'Drafted from RISK-2026-0001, its DPR entries and clause 5.1 of HB-AGR-01, page 2', draft.note);

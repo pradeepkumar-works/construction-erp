@@ -65,8 +65,8 @@ test('Draft notice on a delay opens a letter under the contract’s clause, link
   const drawer = page.locator('.ant-drawer-content-wrapper').filter({ hasText: 'RISK-2026-0001' });
   await expect(drawer.getByText(/^Hindrance notice due /)).toBeVisible();
   await drawer.getByRole('button', { name: 'Draft notice' }).click();
-  await expect(page).toHaveURL(/\/documents\?tab=letters/);
-  const form = formPanel(page, 'Record letter');
+  await expect(page).toHaveURL(/\/correspondence\/outward/);
+  const form = formPanel(page, 'New letter');
   await expect(form.getByText(/Drafted from RISK-2026-0001, its DPR entries and clause 5\.1 of HB-AGR-01, page 2/)).toBeVisible();
   await expect(form.getByLabel('Subject')).toHaveValue('Notice of hindrance: GF slab reinforcement drawings revised by the architect');
   await expect(form.getByLabel('Letter text')).toHaveValue(/^Under Clause 5\.1 of the agreement/);

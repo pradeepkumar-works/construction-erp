@@ -733,6 +733,10 @@ kbd {
     align-items: center;
     justify-content: center;
   }
+  /* In a group stacked one per line, each option stretches across the box, so its words start at the left. */
+  :root .ant-radio-group-vertical > .ant-radio-wrapper {
+    justify-content: flex-start;
+  }
   :root .ant-table-wrapper col.ant-table-selection-col {
     width: 60px;
   }

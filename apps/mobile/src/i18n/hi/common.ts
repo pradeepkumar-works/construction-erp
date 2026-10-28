@@ -38,6 +38,7 @@ export const COMMON: Record<string, string> = {
   'Site Engineer': 'साइट इंजीनियर',
   'Store Manager': 'स्टोर मैनेजर',
   'Quantity Surveyor': 'क्वांटिटी सर्वेयर',
+  'Document Controller': 'डॉक्यूमेंट कंट्रोलर',
   'Procurement Manager': 'खरीद मैनेजर',
   'QA/QC Engineer': 'QA/QC इंजीनियर',
   'Safety Officer': 'सेफ्टी ऑफिसर',

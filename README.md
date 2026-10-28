@@ -198,6 +198,7 @@ All passwords are `password123`.
 | tl@demo.com | Team Leader | road + water projects |
 | qs@demo.com | Quantity Surveyor | road + building projects, records measurements |
 | safety@demo.com | Safety Officer | road + building projects, issues permits, closes incidents |
+| docs@demo.com | Document Controller | keeps the inward and outward registers, numbering and the address book |
 | store@demo.com, procurement@demo.com, qaqc@demo.com, accounts@demo.com, hr@demo.com | other roles | as per role |
 | client@demo.com | Client's Engineer (guest) | client portal for the road project: certifies bills, attends inspections |
 | pmc@demo.com | Consultant / PMC (guest) | client portal for the building project |

@@ -38,7 +38,7 @@ interface SidebarProps {
 
 export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRail, onNavigate }: SidebarProps) {
   const pathname = usePathname();
-  const active = activeHref(pathname);
+  const active = activeHref(pathname, sections);
   // The sections someone closed stay closed for them on this browser.
   const closedKey = `${PREF_CLOSED}.${user.id}`;
   const [closed, setClosed] = useState<string[]>(() => readPref<string[]>(closedKey, []));

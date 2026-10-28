@@ -504,7 +504,7 @@ export class CashForecastService {
     const waited = sent ? daysBetween(sent, today) : null;
     const flags: { field: string; note: string }[] = [];
     if (!party) flags.push({ field: 'party', note: 'The project has no client name: say who the letter is to' });
-    if (!clause) flags.push({ field: 'summary', note: 'No payment clause was found in the filed contract: check the days before sending' });
+    if (!clause) flags.push({ field: 'body', note: 'No payment clause was found in the filed contract: check the days before sending' });
     const lines = [
       `We refer to our ${label} dated ${longDate(dateOnly(bill.billDate)!)} for ${bill.project.name}${bill.project.agreementNo ? ` under agreement ${bill.project.agreementNo}` : ''}${sent ? `, submitted on ${longDate(sent)}` : ''}.`,
       '',
@@ -518,7 +518,7 @@ export class CashForecastService {
       title: `Payment reminder for ${label}, ${bill.project.name}`,
       projectId: bill.project.id,
       projectName: bill.project.name,
-      values: { projectId: bill.project.id, direction: 'OUT', letterDate: today, party, subject: `Payment of ${label} for ${bill.project.name}`, summary: lines.join('\n').slice(0, 4000) },
+      values: { projectId: bill.project.id, direction: 'OUT', letterDate: today, party, subject: `Payment of ${label} for ${bill.project.name}`, body: lines.join('\n').slice(0, 20000), category: 'bill-and-payment' },
       flags,
       note: clause ? `Drafted from the bill and clause ${clause.no} of ${clause.docNo}, page ${clause.page}` : 'Drafted from the bill',
     };

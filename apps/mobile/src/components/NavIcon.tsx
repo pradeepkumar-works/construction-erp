@@ -57,6 +57,9 @@ import TrafficCone from 'lucide-react-native/icons/traffic-cone';
 import DraftingCompass from 'lucide-react-native/icons/drafting-compass';
 import LibraryBig from 'lucide-react-native/icons/library-big';
 import Tags from 'lucide-react-native/icons/tags';
+import MailOpen from 'lucide-react-native/icons/mail-open';
+import BookUser from 'lucide-react-native/icons/book-user';
+import ListOrdered from 'lucide-react-native/icons/list-ordered';
 import Shapes from 'lucide-react-native/icons/shapes';
 import IdCardLanyard from 'lucide-react-native/icons/id-card-lanyard';
 import Building from 'lucide-react-native/icons/building';
@@ -183,6 +186,9 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'drafting-compass': DraftingCompass,
   'library-big': LibraryBig,
   'tags': Tags,
+  'mail-open': MailOpen,
+  'book-user': BookUser,
+  'list-ordered': ListOrdered,
   'shapes': Shapes,
   'id-card-lanyard': IdCardLanyard,
   'building': Building,

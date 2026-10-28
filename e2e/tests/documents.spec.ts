@@ -3,7 +3,6 @@ import { api, apiToken, chooseOption, formPanel, signIn } from './helpers';
 
 type Doc = { id: string; docNo: string; current: { id: string; revision: string; status: string; attachments: { fileName: string }[] } | null; revisionCount: number };
 type Transmittal = { id: string; transmittalNo: string; acknowledgedBy: string | null; items: { docNo: string; revision: string; copies: number }[] };
-type Letter = { id: string; letterNo: string; direction: string; awaitingReply: boolean; riskNo: string | null; replies: { letterNo: string }[]; inReplyTo: { id: string } | null };
 
 /** A one-page PDF, enough for the upload to accept it as a drawing. */
 const PDF = Buffer.from(
@@ -12,11 +11,10 @@ const PDF = Buffer.from(
 
 /**
  * Document register (v3 item 28): the project manager adds a drawing with its file, issues a new revision (site is told),
- * sends it on a transmittal that is then signed for, and records a letter about a delay and its reply.
+ * sends it on a transmittal that is then signed for. Letters are Correspondence's (correspondence.spec.ts).
  */
-test.describe.serial('drawings, transmittals and letters', () => {
+test.describe.serial('drawings and transmittals', () => {
   const docNo = `E2E-${Date.now()}`;
-  const subject = `E2E hindrance ${Date.now()}`;
   let docId = '';
 
   test('the project manager adds a drawing and issues a new revision', async ({ page }) => {
@@ -82,42 +80,5 @@ test.describe.serial('drawings, transmittals and letters', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].acknowledgedBy).toBe('Site in-charge, SJC');
     expect(sent[0].items).toEqual([expect.objectContaining({ docNo, revision: 'R1', copies: 2 })]);
-  });
-
-  test('a letter about a delay is answered, and site cannot read letters', async ({ page }) => {
-    await signIn(page, 'pm@demo.com');
-    await page.goto('/documents?tab=letters');
-    await page.getByRole('button', { name: 'Record letter' }).click();
-    const modal = formPanel(page, 'Record letter');
-    await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
-    await modal.getByLabel('From').fill('Executive Engineer, R&B Division, Khordha');
-    await modal.getByLabel('Subject').fill(subject);
-    await chooseOption(modal.getByLabel('About a delay or risk'), 'Encroachment');
-    await modal.getByLabel('Reply needed by').click();
-    await page.locator('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden) .ant-picker-now-btn').click();
-    await modal.getByRole('button', { name: 'Record', exact: true }).click();
-    await expect(page.getByText(/IN-\d{4}-\d{4} recorded/)).toBeVisible();
-    await expect(modal).toBeHidden();
-
-    const drawer = page.locator('.ant-drawer-open');
-    await drawer.getByRole('button', { name: 'Reply' }).click();
-    const reply = formPanel(page, 'Reply').filter({ hasText: 'In reply to' });
-    await expect(reply.getByLabel('Subject')).toHaveValue(`Re: ${subject}`);
-    await reply.getByRole('button', { name: 'Record', exact: true }).click();
-    await expect(page.getByText(/OUT-\d{4}-\d{4} recorded/)).toBeVisible();
-
-    const pm = await apiToken('pm@demo.com');
-    const letters = (await api<{ items: Letter[] }>(pm, `/letters?q=${encodeURIComponent(subject)}`)).items;
-    const received = letters.find((l) => l.direction === 'IN')!;
-    const sent = letters.find((l) => l.direction === 'OUT')!;
-    expect(received.awaitingReply).toBe(false);
-    expect(received.replies.map((r) => r.letterNo)).toEqual([sent.letterNo]);
-    expect(sent.inReplyTo?.id).toBe(received.id);
-    expect(sent.riskNo).toBe(received.riskNo);
-    expect(received.riskNo).toMatch(/^RISK-/);
-
-    const se = await apiToken('engineer@demo.com');
-    await expect(api(se, '/letters')).rejects.toThrow(/403/);
-    for (const l of letters) await api(pm, `/letters/${l.id}`, { method: 'DELETE' });
   });
 });

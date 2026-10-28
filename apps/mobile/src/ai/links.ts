@@ -4,6 +4,7 @@
  * and the link is then shown as plain text.
  */
 const RECORDS: Record<string, string> = {
+  correspondence: '/letter/',
   dpr: '/dpr/',
   progress: '/progress/',
   machinery: '/machinery/',

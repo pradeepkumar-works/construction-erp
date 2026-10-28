@@ -133,6 +133,10 @@ and the pre-delivery checklist.
   (`DEPARTMENT_MODULES`), shown in Admin › Masters; a simple list of words is a key in `MASTER_LISTS` (`@erp/shared/masters.ts`)
   with standard entries in code and the company's `MasterEntry` rows over them by code, picked with `MasterInput` (web) or
   read through `MastersService.entriesFor`, never a fixed array of a form's own. Keep `src/scripts/masters-test.ts` passing.
+- Correspondence (item 136, `apps/api/src/correspondence`, ARCHITECTURE "Correspondence"): a letter's number comes only from
+  its series through `formatLetterNo` (`@erp/shared/correspondence.ts`), an outward letter waits for its signatory only by
+  `letterNeedsApproval`, and a received letter comes in only through `CorrespondenceService.recordInward` (the form and the
+  email inbox). Keep `src/scripts/correspondence-test.ts` passing.
 - Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
   over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep

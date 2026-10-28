@@ -114,9 +114,18 @@ function departmentSections(user: AuthUser, settings: NavSettingsDto, top: NavSe
   return sections;
 }
 
-/** The nav link a path belongs to: "/" only for the dashboard, otherwise the link whose path is the first segment. */
-export function activeHref(pathname: string): string {
+/** The nav link a path belongs to: "/" only for the dashboard, a link of two or more segments that the path is or sits
+ *  under (the longest wins, so /correspondence/outward is the Outward register, not the Inward one at /correspondence),
+ *  otherwise the link whose path is the first segment. */
+export function activeHref(pathname: string, sections: NavSection[] = []): string {
   if (pathname === '/') return '/';
+  let nested = '';
+  for (const s of sections) {
+    for (const { href } of s.items) {
+      if (href.split('/').length > 2 && href.length > nested.length && (pathname === href || pathname.startsWith(`${href}/`))) nested = href;
+    }
+  }
+  if (nested) return nested;
   const [, first, second] = pathname.split('/');
   // A module's screen is /modules/<key>: the link is the whole path.
   if (first === 'modules' && second) return `/modules/${second}`;
@@ -127,7 +136,7 @@ export function activeHref(pathname: string): string {
 
 /** Where a path sits in the sidebar, for the header: the section's title (none for the top links) and the link. */
 export function navTrail(sections: NavSection[], pathname: string): { section?: string; item: NavItem } | null {
-  const href = activeHref(pathname);
+  const href = activeHref(pathname, sections);
   for (const s of sections) {
     const item = s.items.find((i) => i.href === href);
     if (item) return { section: s.title, item };

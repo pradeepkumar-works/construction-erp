@@ -284,7 +284,7 @@ export class HindranceService {
     const delays = await this.prisma.risk.findMany({
       where: { organizationId: user.organizationId, kind: 'DELAY', ...where },
       include: {
-        letters: { select: { id: true, letterNo: true, letterDate: true, direction: true, subject: true }, orderBy: { letterDate: 'asc' } },
+        letters: { where: { status: { in: ['ISSUED', 'OPEN', 'CLOSED'] } }, select: { id: true, letterNo: true, letterDate: true, direction: true, subject: true }, orderBy: { letterDate: 'asc' } },
         activity: { select: { name: true } },
         hindrances: { where: { decision: 'RECORDED' }, select: { remark: true, dailyReport: { select: { date: true } } } },
       },
@@ -302,7 +302,7 @@ export class HindranceService {
         noticeDays: days,
         due: clock.due,
         daysLeft: clock.daysLeft,
-        noticeSent: out ? { letterId: out.id, letterNo: out.letterNo, letterDate: dateOnly(out.letterDate)! } : null,
+        noticeSent: out ? { letterId: out.id, letterNo: out.letterNo ?? '', letterDate: dateOnly(out.letterDate)! } : null,
         source,
       };
       return { d, start, notice };
@@ -348,14 +348,14 @@ export class HindranceService {
     });
     const flags: { field: string; note: string }[] = [];
     if (!party) flags.push({ field: 'party', note: 'The project has no client name: say who the notice is to' });
-    if (!found) flags.push({ field: 'summary', note: 'No notice clause was found in the filed contract: check the clause before sending' });
+    if (!found) flags.push({ field: 'body', note: 'No notice clause was found in the filed contract: check the clause before sending' });
     if (notice.noticeSent) flags.push({ field: 'subject', note: `${notice.noticeSent.letterNo} of ${notice.noticeSent.letterDate} is already linked to this delay: send this as a further notice only if it is one` });
     return {
       kind: 'letter',
       title: `Notice of hindrance for ${risk.riskNo}, ${p.name}`,
       projectId: p.id,
       projectName: p.name,
-      values: { projectId: p.id, direction: 'OUT', letterDate: today, party, subject: subject.slice(0, 300), summary: lines.join('\n').slice(0, 4000), riskId },
+      values: { projectId: p.id, direction: 'OUT', letterDate: today, party, subject: subject.slice(0, 300), body: lines.join('\n').slice(0, 20000), category: 'hindrance', riskId },
       flags,
       note: found ? `Drafted from ${risk.riskNo}, its DPR entries and clause ${found.clause} of ${found.docNo}, page ${found.page}` : `Drafted from ${risk.riskNo} and its DPR entries`,
     };
@@ -383,7 +383,7 @@ export class HindranceService {
         eotClaimed: d.eotClaimed,
         eotGrantedDays: d.eotGrantedDays,
         notice,
-        letters: d.letters.map((l) => ({ letterNo: l.letterNo, letterDate: dateOnly(l.letterDate)!, direction: l.direction, subject: l.subject })),
+        letters: d.letters.map((l) => ({ letterNo: l.letterNo ?? '', letterDate: dateOnly(l.letterDate)!, direction: l.direction, subject: l.subject })),
         remarks: d.hindrances.map((h) => ({ reportDate: dateOnly(h.dailyReport.date)!, remark: h.remark })).sort((a, b) => a.reportDate.localeCompare(b.reportDate)),
       };
     });

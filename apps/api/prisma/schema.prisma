@@ -299,6 +299,8 @@ enum NotificationType {
   ACCESS_REQUEST
   /// A step handed to the next role in the chain (e2e review, fix 2): to order, delivery to expect, goods received, money to collect
   HANDOFF
+  /// A letter marked to someone, or sent to its signatory (item 136)
+  LETTER
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -401,6 +403,44 @@ enum TransmittalPurpose {
 enum LetterDirection {
   IN
   OUT
+}
+
+/// Item 136. IN: OPEN until settled, then CLOSED. OUT: DRAFT, AWAITING_APPROVAL with its signatory, ISSUED once numbered.
+enum LetterStatus {
+  DRAFT
+  AWAITING_APPROVAL
+  ISSUED
+  OPEN
+  CLOSED
+}
+
+enum LetterMode {
+  HAND
+  POST
+  SPEED_POST
+  REGISTERED_POST
+  COURIER
+  EMAIL
+  PORTAL
+}
+
+enum LetterAction {
+  REPLY
+  COMPLY
+  NOTE
+  FILE
+}
+
+enum LetterPriority {
+  NORMAL
+  URGENT
+}
+
+/// Which outward letters need their signatory's approval before they are numbered
+enum LetterApprovalRule {
+  ALL
+  CONTRACTUAL
+  NONE
 }
 
 enum StaffAttendanceStatus {
@@ -678,37 +718,39 @@ model Organization {
   billingRemindedFor String?
 
   /// Ask Nirmaan (AI item 67): switched on by an admin; off until then
-  aiEnabled           Boolean       @default(false)
+  aiEnabled           Boolean            @default(false)
   /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
   aiMonthlyCapInr     Int?
   /// Roles besides admins that may use Ask Nirmaan (AI item 77); empty = all staff
-  aiRoles             String[]      @default([])
+  aiRoles             String[]           @default([])
   /// Payment requests (v5 item 90): accounts may pay a bill only against an approved payment request. Off for companies
   /// made before item 90, on for new sign-ups.
-  paymentsNeedRequest Boolean       @default(false)
+  paymentsNeedRequest Boolean            @default(false)
   /// Progress from the DPR only (item 127): progress is recorded as the DPR's work lines, not on its own. Off for
   /// companies made before item 127, on for new sign-ups.
-  progressFromDpr     Boolean       @default(false)
+  progressFromDpr     Boolean            @default(false)
   /// Module switches (v6 item 117): the switchable modules (SWITCHABLE_MODULES in @erp/shared) an admin turned off.
   /// Their data stays; turning one on again brings it back.
-  modulesOff          String[]      @default([])
+  modulesOff          String[]           @default([])
+  /// Correspondence (item 136): which outward letters wait for their signatory's approval before they are numbered
+  letterApproval      LetterApprovalRule @default(CONTRACTUAL)
   /// Launcher phase 3: Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
-  discoverLocked      Boolean       @default(true)
+  discoverLocked      Boolean            @default(true)
   /// The plan's module set, set from the Nirmaan console; null = every module
   moduleTier          ModuleTier?
   /// Menu and names (NavSettingsDto in @erp/shared): the menu down the side or across the top, the top bar's look,
   /// how pages are grouped into modules, and the company's own names for modules (by module key)
-  navLayout           NavLayout     @default(SIDEBAR)
-  navLook             NavLook       @default(NAVY)
-  navModuleSet        NavModuleSet  @default(AREAS)
-  navNames            Json          @default("{}")
+  navLayout           NavLayout          @default(SIDEBAR)
+  navLook             NavLook            @default(NAVY)
+  navModuleSet        NavModuleSet       @default(AREAS)
+  navNames            Json               @default("{}")
   /// People may choose their own look (User.navLook)
-  navPersonalLook     Boolean       @default(false)
+  navPersonalLook     Boolean            @default(false)
   /// Group companies (phase 1): the group the company belongs to, if any, and what kind of company it is. The kind sets
   /// the modules a new company starts with (COMPANY_KIND_MODULES_OFF in @erp/shared); it changes nothing afterwards.
   groupId             String?
-  group               CompanyGroup? @relation(fields: [groupId], references: [id])
-  kind                CompanyKind   @default(CONSTRUCTION)
+  group               CompanyGroup?      @relation(fields: [groupId], references: [id])
+  kind                CompanyKind        @default(CONSTRUCTION)
   /// Legal details, kept for the group's list of companies and, later, consolidation
   legalName           String?
   pan                 String?
@@ -757,6 +799,10 @@ model Organization {
   items                Item[]
   units                Unit[]
   masterEntries        MasterEntry[]
+  letterMarks          LetterMark[]
+  letterContacts       LetterContact[]
+  letterSeries         LetterSeries[]
+  letterTemplates      LetterTemplate[]
   stockEntries         StockEntry[]
   stockTxns            StockTxn[]
   stockMinLevels       StockMinLevel[]
@@ -1089,6 +1135,11 @@ model User {
   markupsResolved       DrawingMarkup[]            @relation("MarkupResolver")
   transmittalsSent      Transmittal[]              @relation("TransmittalSender")
   lettersRecorded       Letter[]                   @relation("LetterRecorder")
+  lettersMarkedTo       Letter[]                   @relation("LetterMarkedTo")
+  lettersToSign         Letter[]                   @relation("LetterSignatory")
+  lettersClosed         Letter[]                   @relation("LetterCloser")
+  letterMarksFrom       LetterMark[]               @relation("LetterMarkFrom")
+  letterMarksTo         LetterMark[]               @relation("LetterMarkTo")
   variationsCreated     Variation[]                @relation("VariationCreator")
   budgetsUpdated        ProjectBudget[]            @relation("BudgetUpdater")
   incidentsReported     SafetyIncident[]           @relation("IncidentReporter")
@@ -1346,6 +1397,7 @@ model Project {
   documents          Document[]
   drawingMarkups     DrawingMarkup[]
   transmittals       Transmittal[]
+  letterSeries       LetterSeries[]
   letters            Letter[]
   staff              Employee[]
   employeeEventsFrom EmployeeEvent[]          @relation("EmployeeEventFrom")
@@ -1415,11 +1467,12 @@ model Client {
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
 
-  projects    Project[]
-  rmcOrders   RmcOrder[]
-  rmcInvoices RmcInvoice[]
-  rmcReceipts RmcReceipt[]
-  tenders     Tender[]
+  projects       Project[]
+  rmcOrders      RmcOrder[]
+  rmcInvoices    RmcInvoice[]
+  rmcReceipts    RmcReceipt[]
+  tenders        Tender[]
+  letterContacts LetterContact[]
 
   @@unique([organizationId, name])
 }
@@ -4801,34 +4854,184 @@ model Letter {
   id             String          @id @default(uuid())
   organizationId String
   organization   Organization    @relation(fields: [organizationId], references: [id])
-  projectId      String
-  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Null for a head office letter (banks, tax offices, authorities, sister companies)
+  projectId      String?
+  project        Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   direction      LetterDirection
-  letterNo       String
+  /// From the numbering series (P07/OUT/26-27/042); null for an outward draft until it is approved
+  letterNo       String?
+  /// The series and financial year the number came from
+  seriesId       String?
+  series         LetterSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  status         LetterStatus    @default(OPEN)
   /// The other side's reference number
   theirRef       String?
+  /// The letter's own date: theirs for one received, ours (the day it is issued) for one sent
   letterDate     DateTime        @db.Date
-  /// Received from (IN) or addressed to (OUT)
+  /// IN: the day it reached us
+  receivedOn     DateTime?       @db.Date
+  /// Received from (IN) or addressed to (OUT), as written
   party          String
+  /// The address book entry behind `party`
+  contactId      String?
+  contact        LetterContact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
   subject        String
   summary        String?
-  /// IN only: when a reply is due
+  /// OUT: the letter's text, printed on the letterhead
+  body           String?
+  /// A `letterCategory` master entry's code (notice, claim, extension-of-time…)
+  category       String?
+  priority       LetterPriority  @default(NORMAL)
+  /// Seen only by correspondence heads, whoever recorded it, its signatory and whoever it is marked to
+  confidential   Boolean         @default(false)
+  /// IN: how it came; OUT: how it was sent
+  mode           LetterMode?
+  /// When a reply is due: ours to a letter received, theirs to one sent
   replyBy        DateTime?       @db.Date
   inReplyToId    String?
   inReplyTo      Letter?         @relation("LetterReply", fields: [inReplyToId], references: [id], onDelete: SetNull)
   replies        Letter[]        @relation("LetterReply")
   riskId         String?
   risk           Risk?           @relation(fields: [riskId], references: [id], onDelete: SetNull)
-  createdById    String
-  createdBy      User            @relation("LetterRecorder", fields: [createdById], references: [id])
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+
+  /// Who it is marked to now, for what and by when (history in LetterMark)
+  markedToId String?
+  markedTo   User?         @relation("LetterMarkedTo", fields: [markedToId], references: [id], onDelete: SetNull)
+  action     LetterAction?
+  actionDue  DateTime?     @db.Date
+
+  /// OUT: who signs it, and the sign-off
+  signatoryId       String?
+  signatory         User?     @relation("LetterSignatory", fields: [signatoryId], references: [id], onDelete: SetNull)
+  sentForApprovalAt DateTime?
+  approvedAt        DateTime?
+  returnNote        String?
+
+  /// OUT: dispatch and proof of delivery
+  docketNo      String?
+  dispatchedOn  DateTime? @db.Date
+  deliveredOn   DateTime? @db.Date
+  /// How delivery is shown: acknowledged copy, speed post tracking, email read receipt…
+  deliveryProof String?
+
+  closedAt   DateTime?
+  closedNote String?
+  closedById String?
+  closedBy   User?     @relation("LetterCloser", fields: [closedById], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User     @relation("LetterRecorder", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   attachments Attachment[]
+  marks       LetterMark[]
 
   @@unique([organizationId, letterNo])
   @@index([projectId, letterDate])
+  @@index([organizationId, direction, status])
+  @@index([markedToId])
   @@index([riskId])
+}
+
+/// Each time a letter is marked or forwarded to someone (item 136), kept in order.
+model LetterMark {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  letterId       String
+  letter         Letter       @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  fromId         String
+  from           User         @relation("LetterMarkFrom", fields: [fromId], references: [id])
+  toId           String
+  to             User         @relation("LetterMarkTo", fields: [toId], references: [id])
+  action         LetterAction
+  dueOn          DateTime?    @db.Date
+  note           String?
+  /// When the person it was marked to acted (forwarded, replied, closed)
+  doneAt         DateTime?
+  doneNote       String?
+  createdAt      DateTime     @default(now())
+
+  @@index([letterId, createdAt])
+  @@index([toId, doneAt])
+}
+
+/// The address book (item 136): offices and people letters come from and go to.
+model LetterContact {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// How a letter is addressed: "The Executive Engineer"
+  name           String
+  /// The office or division: "Road Division No. 2, Cuttack"
+  office         String?
+  /// The body it belongs to: "Odisha Works Department", a consultant, a bank
+  organisation   String?
+  address        String?
+  email          String?
+  phone          String?
+  /// The client it is, when it is one
+  clientId       String?
+  client         Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  letters Letter[]
+
+  @@index([organizationId, name])
+}
+
+/// A numbering series (item 136): one per project (or head office) and direction, its number restarting each financial year.
+model LetterSeries {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  /// Null for head office
+  projectId      String?
+  project        Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  direction      LetterDirection
+  /// {PREFIX} in the pattern: the project's code, or HO
+  prefix         String
+  /// {PREFIX}/{DIR}/{FY}/{NNN} by default (LETTER_NUMBER_PATTERN in @erp/shared)
+  pattern        String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  counters LetterSeriesCounter[]
+  letters  Letter[]
+
+  @@index([organizationId, projectId, direction])
+}
+
+/// The last number given in a series in a financial year; numbers are never given twice.
+model LetterSeriesCounter {
+  id       String       @id @default(uuid())
+  seriesId String
+  series   LetterSeries @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  /// 26-27
+  fy       String
+  last     Int          @default(0)
+
+  @@unique([seriesId, fy])
+}
+
+/// A letter template (item 136): subject and text with {placeholders}, filled when a draft starts from it.
+model LetterTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  /// A `letterCategory` master entry's code
+  category       String?
+  subject        String
+  body           String
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
 }
 
 /// The company's own staff (not contractor labour), with or without a login. Posted at one site at a time.

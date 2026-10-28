@@ -37,7 +37,7 @@ test('a site engineer asks for Correspondence from Discover, and the admin decli
   const drawer = page.getByRole('dialog', { name: 'Correspondence' });
   // A rerun on the same data finds the last run's declined request, which can be asked again.
   await expect(drawer).toContainText(/Your role does not open it yet|You can ask again/);
-  await expect(drawer.getByText('Letters', { exact: true })).toBeVisible();
+  await expect(drawer.getByText('Inward register', { exact: true })).toBeVisible();
   await drawer.getByRole('button', { name: 'Request access' }).click();
   const ask = page.getByRole('dialog', { name: 'Request access to Correspondence' });
   await ask.getByLabel('What do you need it for?').fill('To see the letters about my site');

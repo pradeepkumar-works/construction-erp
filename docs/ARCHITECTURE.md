@@ -303,6 +303,42 @@ checklists); a new master is a node in its department's Masters, never a page of
   (an `AutoComplete` over the entries switched on, still taking a word not in the list, as `UnitInput` does) on the item,
   equipment and employee forms. Rules are tested in `src/scripts/masters-test.ts` (CI runs it).
 
+### Correspondence (item 136)
+
+Letters in and out for every project and for head office (`CorrespondenceService`, `apps/api/src/correspondence`;
+`/letters`, `/letter-contacts`, `/letter-templates`). Rules are pure in `@erp/shared/correspondence.ts`, tested in
+`src/scripts/correspondence-test.ts` (CI runs it).
+
+- **Tables.** `Letter`: `projectId` (null for head office), `direction`, `status` (`DRAFT` → `AWAITING_APPROVAL` → `ISSUED`
+  for one we send; `OPEN` → `CLOSED` for one received), `letterNo` (null until a letter we send is issued), their
+  reference, date and `receivedOn`, `party` and `contactId` (the address book), subject, gist (`summary`) and `body` (the
+  text we send), `category` (the `letterCategory` master), `priority`, `confidential`, `mode` (hand, post, speed post…),
+  `replyBy`, `inReplyToId`, `riskId`, `markedToId` / `action` / `actionDue`, `signatoryId`, `sentForApprovalAt`,
+  `approvedAt`, `returnNote`, `docketNo`, `dispatchedOn`, `deliveredOn`, `deliveryProof`, `closedAt` / `closedNote`.
+  `LetterMark` keeps every mark and forward (from, to, action, due, note, done). `LetterContact` (the address book),
+  `LetterSeries` (per project or head office and direction: `prefix`, `pattern`) with `LetterSeriesCounter` (one per
+  financial year), `LetterTemplate`. All four have RLS. `Organization.letterApproval` is the approval rule.
+- **Numbers.** `formatLetterNo(pattern, …)` over `{PREFIX}/{DIR}/{FY}/{NNN}` by default: `P07/OUT/26-27/042`,
+  `HO/IN/26-27/015`. A project's prefix starts as `letterPrefixOf(code)` (RD-2026-01 is RD01); the counter starts again
+  on 1 April. A series is made with the defaults on its first letter; heads change its prefix and pattern
+  (`letterPatternProblem` needs the running number, the year and `{DIR}`).
+- **Received.** Numbered at once on entry (`recordInward`, the one way in: the form, and the email inbox of item 155),
+  marked to someone with an action (reply, comply, note, file) and a date; whoever has it, or the desk, forwards or closes
+  it. `LETTER` notifications go to the person marked, with an email.
+- **Sent.** A draft (from a template, `fillLetterTemplate`, or Ask's `draft_letter`) is issued at once, or, where
+  `letterNeedsApproval(rule, category)` (by default the contractual categories: notice, claim, extension of time,
+  hindrance, reply to show cause), sent to its signatory (the project's manager or a director, `people`), who approves
+  it (numbered and dated then) or returns it with what to change. It prints on the letterhead (`GET /letters/:id/print`),
+  and the desk records dispatch and delivery; a contractual letter issued with no delivery date shows "no proof"
+  (`proofMissing`). An "already sent" letter is numbered at once.
+- **Who.** `canViewLetters` (admin, management, PM, QS, document controller) keep the registers of their projects;
+  `canHeadLetters` (admin, management, document controller) also see head office and confidential letters and change
+  numbering; `canSignLetters` sign. Anyone sees a letter marked to them or waiting for their signature (`mine`, `toSign`).
+- **Clients.** Web: `/correspondence` (inward register), `/correspondence/outward`, `/correspondence/<id>`
+  (`LetterRecord`), the address book, numbering and templates pages, letter categories at `/masters/letter-category`, a
+  project's Documents › Letters, Search's Letters, My work's "Letters for you". Phone: `app/letters.tsx` (marked to you,
+  to sign) and `app/letter/[id].tsx` (close, approve, return).
+
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 
 The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the person's day and then a menu, as a phone's home
@@ -1435,7 +1471,8 @@ Registers, not approval submissions (`QualityService`, `/quality/...`).
 
 ## Document register
 
-Registers, not approval submissions (`DocumentsService`; `/documents`, `/transmittals`, `/letters`).
+Registers, not approval submissions (`DocumentsService`; `/documents`, `/transmittals`). Letters are Correspondence's own
+("Correspondence", item 136).
 
 - **Tables.** `Document`: project, `docNo` (as issued, unique per project), title, `kind`, `discipline`, remarks and
   `currentRevisionId`. `DocumentRevision` (child, no RLS policy of its own): `revision` (unique per document),
@@ -1443,19 +1480,17 @@ Registers, not approval submissions (`DocumentsService`; `/documents`, `/transmi
   revision is the latest issued (then the latest added); the service keeps `currentRevisionId` in step on every
   add, change and delete, so lists filter and sort by it. `Transmittal` (`TRN-<year>-0001`): to, attention,
   `purpose`, `sentOn`, remarks, `acknowledgedOn` / `acknowledgedBy`; `TransmittalItem` (child) lists revisions with
-  copies. `Letter`: `direction` IN / OUT numbered `IN-` / `OUT-<year>-0001`, their reference, date, party, subject,
-  gist, `replyBy` (IN only), `inReplyToId` (another letter), `riskId` (a delay or risk), files (`Attachment.letterId`).
+  copies.
 - **Rules.** A revision sent on a transmittal is kept (`onDelete: Restrict`), so is its document; withdraw it with a
-  new revision marked Withdrawn. An acknowledged transmittal keeps its list and cannot be deleted. A received letter
-  awaits a reply while it has `replyBy` and no OUT letter answers it.
+  new revision marked Withdrawn. An acknowledged transmittal keeps its list and cannot be deleted.
 - **Who.** Anyone with project access reads the register and transmittals. `DOCUMENT_CONTROL_ROLES` (admin,
-  management, PM, QS, QA/QC) change them. Letters are contractual: `CORRESPONDENCE_ROLES` (admin, management, PM, QS)
-  read and record them; others get 403 and no Letters tab.
+  management, PM, QS, QA/QC, document controller) change them.
 - **Notification.** A revision that becomes current with status `FOR_CONSTRUCTION` sends `DOCUMENT_ISSUED` to the
   project's manager and members (`ProjectAccessService.projectPeople`), once per revision.
-- **Clients.** Web: Site → Documents with tabs Register / Transmittals / Letters (`?tab=`, `?id=` opens a document,
-  `&letter=` a letter) and a project Documents tab; the document drawer sends its current revision on a transmittal;
-  the transmittal prints a cover sheet; a delay's drawer lists its letters. Site app: `app/documents.tsx` lists a
+- **Clients.** Web: Site → Documents with tabs Register / Transmittals / RFIs (`?tab=`, `?id=` opens a document; an old
+  `?tab=letters&letter=` link goes on to Correspondence) and a project Documents tab, whose Letters tab is the project's
+  inward and outward registers; the document drawer sends its current revision on a transmittal; the transmittal prints a
+  cover sheet; a delay's drawer lists its letters. Site app: `app/documents.tsx` lists a
   project's current revisions (`GET /documents/site`, cached for offline) and "Save offline" downloads their files to
   the app's document directory (`src/offline/drawings.ts`, removing superseded ones). Saved PDFs open from the phone
   (Android: a PDF viewer through `expo-intent-launcher`; iOS: the preview sheet through `expo-sharing`), images in the

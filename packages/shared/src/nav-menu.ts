@@ -109,7 +109,11 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     icon: 'mail',
     family: 'work',
     description: 'Letters in and out, numbered, with the replies due.',
-    subs: [sub('letters', 'Letters', 'documents.letters')],
+    subs: [
+      sub('inward', 'Inward register', 'documents.letters'),
+      sub('outward', 'Outward register', 'correspondence.outward'),
+      sub('masters', 'Masters', 'correspondence.contacts', 'correspondence.templates', 'correspondence.categories', 'correspondence.numbering'),
+    ],
   },
   {
     key: 'planning-estimation',

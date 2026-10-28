@@ -137,7 +137,7 @@ async function runDemo(): Promise<string[]> {
         if (bill) {
           const letter = await draftOf('pm@demo.com', 'draft_letter', { projectId: road.id, raBillId: bill.id });
           const net = `₹${Number(bill.netPayable).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          check('Letter: the cover note carries the net payable', String(letter.values.summary).includes(`Net payable: ${net}`), String(letter.values.summary));
+          check('Letter: the cover note carries the net payable', String(letter.values.body).includes(`Net payable: ${net}`), String(letter.values.body));
           check('Letter: it goes to the client', typeof letter.values.party === 'string' && letter.values.party.length > 0);
         } else problems.push('No RA bill on the road project to write a cover note for');
         const site = await tools.run(as('engineer@demo.com'), 'draft_letter', { projectId: road.id, subject: 'Hindrance' });

@@ -53,11 +53,11 @@ test('Draft reminder opens a letter to the client quoting the contract’s payme
   }
   const letters = (await api<{ total: number }>(pm2, '/letters?pageSize=1')).total;
   await page.locator(`[data-bill="${bill.billId}"]`).getByRole('button', { name: 'Draft reminder' }).click();
-  await expect(page).toHaveURL(/\/documents\?tab=letters/);
-  const form = formPanel(page, 'Record letter');
+  await expect(page).toHaveURL(/\/correspondence\/outward/);
+  const form = formPanel(page, 'New letter');
   await expect(form.getByText(/Drafted from the bill and clause 7\.2 of HB-AGR-01/)).toBeVisible();
   await expect(form.getByLabel('Subject')).toHaveValue(`Payment of ${bill.label} for District Hospital Block B (G+3)`);
-  await expect(form.getByRole('textbox', { name: 'To' })).toHaveValue('Dept. of Health & Family Welfare');
+  await expect(form.getByRole('combobox', { name: /^\W*To$/ })).toHaveValue('Dept. of Health & Family Welfare');
   await expect(form.getByLabel('Letter text')).toHaveValue(/7\.2 The Department shall pay a running account bill within 30 days of its submission/);
   await form.getByRole('button', { name: 'Cancel' }).click();
   await page.getByRole('dialog', { name: 'Close this form?' }).getByRole('button', { name: 'Close' }).click();
