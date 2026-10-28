@@ -145,6 +145,10 @@ and the pre-delivery checklist.
   `homeLayout` and in the phone's `ORDERS`/`CARDS` (`apps/mobile/src/components/MyWork.tsx`, title in Hindi). Home's Waiting
   for you shows the top three of the same cards (`WaitingForYou`). Charts use
   `@ant-design/plots` from `components/home/charts.tsx`, loaded with `dynamic(..., { ssr: false })`.
+- Progress by project (ARCHITECTURE "Progress by project"): the Projects screen's and the Project management department's
+  bars are `ModuleHomeDto.progress` from `ModuleHomeService.progress` (physical against planned by today; financial is
+  approved RA bills against the revised contract value, for `canViewContract`); the totals and notes are pure in
+  `@erp/shared/project-progress.ts` (`portfolioProgress`, `progressNotes`). Keep `src/scripts/project-progress-test.ts` passing.
 - Work breakdown (item 125, ARCHITECTURE "Work breakdown"): project progress is `rollUp` in `@erp/shared/wbs.ts` (through
   `physicalProgress` in `src/common/progress.ts`), never a sum of its own; an activity with sub-activities takes no
   progress. A new kind of component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in

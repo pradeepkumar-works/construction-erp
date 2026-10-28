@@ -1,6 +1,6 @@
 import { NotFoundException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { ModuleFigureDto, ModuleHomeDto, ModuleKey, ModuleWaitingDto, SubmissionType } from '@erp/shared';
+import type { ModuleFigureDto, ModuleHomeDto, ModuleKey, ModuleProgressDto, ModuleWaitingDto, ProjectProgressDto, SubmissionType } from '@erp/shared';
 import {
   MODULE_SUBMISSION_TYPES,
   canMarkStaff,
@@ -23,14 +23,19 @@ import {
   canViewPurchaseOrders,
   canViewVariations,
   canViewWorkers,
+  BEHIND_TOLERANCE_PCT,
+  byProgressOrder,
   isCompanyWide,
+  isGuest,
   isModuleKey,
+  portfolioProgress,
+  progressNotes,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { money, parseDate } from '../common/serialize';
+import { dateOnly, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
@@ -42,6 +47,8 @@ import { PayrollRunService } from '../payroll/payroll-run.service';
 import { BooksService } from '../books/books.service';
 import { StatementsService } from '../statements/statements.service';
 import { moduleOn } from '../common/module-switch.guard';
+import { ProjectsService } from '../projects/projects.service';
+import { plannedProgress } from './dashboard.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -70,6 +77,7 @@ export class ModuleHomeService {
     private payrollRuns: PayrollRunService,
     private books: BooksService,
     private statements: StatementsService,
+    private projects: ProjectsService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -80,8 +88,9 @@ export class ModuleHomeService {
     const inModule = <T extends { type: SubmissionType; projectId?: string | null }>(rows: T[]) =>
       rows.filter((r) => types.has(r.type) && (!projectId || !r.projectId || r.projectId === projectId));
 
+    const progress = key === 'projects' && !isGuest(user.roleKey) ? await this.progress(user, today, projectId) : undefined;
     const [figures, pending, sentBack, waiting] = await Promise.all([
-      this.figures(user, key, today, projectId),
+      progress ? this.progressFigures(progress) : this.figures(user, key, today, projectId),
       types.size ? this.lifecycle.pending(user) : [],
       types.size ? this.lifecycle.mine(user, ['REJECTED', 'CHANGES_REQUESTED']) : [],
       types.size ? this.lifecycle.waiting(user) : [],
@@ -109,7 +118,77 @@ export class ModuleHomeService {
       waiting: waitingRows,
       sentBack: [...back.entries()].map(([type, n]) => ({ type, count: n })),
       waitingWithOthers: inModule(waiting).length,
+      ...(progress ? { progress } : {}),
     };
+  }
+
+  /**
+   * Progress by project (`project-progress.ts`): every contract project the caller sees (or the header's one) that is not
+   * closed, with its physical progress against the share planned by today, and for those who see bills its approved RA
+   * bills against the revised contract value, the same figures My work's "Billed to date" adds up.
+   */
+  private async progress(user: RequestUser, today: string, projectId?: string): Promise<ModuleProgressDto> {
+    const seesFinancial = canViewContract(user.roleKey);
+    const projects = (await this.projects.listAll(user)).filter((p) => p.type !== 'STORE' && p.type !== 'PLANT' && p.status !== 'CLOSED' && (!projectId || p.id === projectId));
+    const ids = projects.map((p) => p.id);
+    const [items, activities, bills] = ids.length
+      ? await Promise.all([
+          this.prisma.boqItem.findMany({ where: { projectId: { in: ids } }, select: { id: true, rate: true } }),
+          // The leaves only: an activity with sub-activities takes no progress (Work breakdown)
+          this.prisma.activity.findMany({ where: { projectId: { in: ids }, subActivities: { none: {} } }, select: { projectId: true, boqItemId: true, plannedQty: true, plannedStart: true, plannedEnd: true } }),
+          seesFinancial ? this.prisma.raBill.groupBy({ by: ['projectId'], where: { organizationId: user.organizationId, projectId: { in: ids }, status: 'APPROVED' }, _sum: { grossAmount: true } }) : [],
+        ])
+      : [[], [], []];
+    const rates = new Map(items.map((b) => [b.id, new Prisma.Decimal(b.rate)]));
+    const billedOf = new Map(bills.map((b) => [b.projectId, b._sum.grossAmount ?? ZERO]));
+    const rows: ProjectProgressDto[] = projects
+      .map((p) => {
+        const contract = p.revisedContractValue ? new Prisma.Decimal(p.revisedContractValue) : null;
+        const billed = billedOf.get(p.id) ?? ZERO;
+        const planned = plannedProgress(
+          activities.filter((a) => a.projectId === p.id).map((a) => ({ plannedQty: a.plannedQty.toString(), boqItemId: a.boqItemId, plannedStart: dateOnly(a.plannedStart), plannedEnd: dateOnly(a.plannedEnd) })),
+          rates,
+          today,
+        );
+        return {
+          projectId: p.id,
+          code: p.code,
+          name: p.name,
+          status: p.status,
+          physicalPct: p.physicalProgressPct,
+          plannedPct: planned,
+          financialPct: seesFinancial && contract?.gt(0) ? Math.round(billed.div(contract).mul(1000).toNumber()) / 10 : null,
+          contractValue: seesFinancial ? p.revisedContractValue : null,
+          billed: seesFinancial ? money(billed)! : null,
+        };
+      })
+      .sort(byProgressOrder);
+    // Weighed by the contract values whether or not the caller sees them, so everyone reads the same physical figure.
+    const contractOf = new Map(projects.map((p) => [p.id, p.revisedContractValue ? Number(p.revisedContractValue) : null]));
+    const totals = portfolioProgress(rows.map((r) => ({ physicalPct: r.physicalPct, contractValue: contractOf.get(r.projectId) ?? null, billed: r.billed === null ? null : Number(r.billed) })));
+    return { projects: rows, ...totals, financialPct: seesFinancial ? totals.financialPct : null, seesFinancial };
+  }
+
+  /** The Projects screen's figures: the projects' progress together, and how many are behind plan or behind on billing. */
+  private progressFigures(p: ModuleProgressDto): ModuleFigureDto[] {
+    const n = p.projects.length;
+    if (!n) return [];
+    const notes = p.projects.map(progressNotes);
+    const behind = notes.filter((ns) => ns.some((x) => x.key === 'behind')).length;
+    const unbilled = notes.filter((ns) => ns.some((x) => x.key === 'billingBehind')).length;
+    const out: ModuleFigureDto[] = [
+      { key: 'physical', label: 'Physical progress', value: String(p.physicalPct ?? 0), format: 'percent', note: p.weighting === 'contract' && n > 1 ? `${plural(n, 'project')}, weighted by contract value` : plural(n, 'project'), href: '/projects' },
+    ];
+    if (p.seesFinancial)
+      out.push(
+        p.financialPct === null
+          ? { key: 'financial', label: 'Financial progress', value: '0', format: 'percent', note: 'No contract values yet', href: '/projects' }
+          : { key: 'financial', label: 'Financial progress', value: String(p.financialPct), format: 'percent', note: 'Approved RA bills against contract', href: '/bills' },
+      );
+    out.push({ key: 'behind', label: 'Behind plan', value: String(behind), of: n, format: 'ratio', tone: behind ? 'warning' : 'default', note: behind ? `More than ${BEHIND_TOLERANCE_PCT} points behind the plan` : 'None behind the plan', href: '/projects' });
+    if (p.seesFinancial)
+      out.push({ key: 'billingBehind', label: 'Billing behind', value: String(unbilled), of: n, format: 'ratio', tone: unbilled ? 'warning' : 'default', note: unbilled ? 'Work done and not billed' : 'Billing keeps up', href: '/bills' });
+    return out;
   }
 
   private async figures(user: RequestUser, key: ModuleKey, today: string, projectId?: string): Promise<ModuleFigureDto[]> {

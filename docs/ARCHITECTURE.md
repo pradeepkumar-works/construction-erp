@@ -162,6 +162,26 @@ A new page is one node in its module (and an `NAV_ACCESS` line if it needs a new
 node turns it `live` and gives it its route. A new module is a node with `parent: null`, its key in `MODULE_KEYS` with its
 submission types, and, if it has figures, a branch in `ModuleHomeService.figures`.
 
+### Progress by project
+
+The Projects module's screen (`/modules/projects`), and the Project management department's when the company uses the
+department menu (`DepartmentHome`, through `ProjectProgressPanel`), lead their figures with every contract project the
+caller sees (not stores, plants or closed projects; the header's project only, when one is chosen) and its two
+progress figures side by side, as bars on one 0–100 scale (`components/modules/ProjectProgress.tsx`, with Chart / Table):
+
+- **Physical**: the project's `physicalProgressPct` (the work breakdown's `rollUp`), with a tick at the share planned by
+  today (`plannedProgress` over the leaf activities' dates, as the management dashboard reads it).
+- **Financial**, for roles that see bills (`canViewContract`): approved RA bills, work value before GST and price
+  variation, against the revised contract value; a project without a contract value says so. It is the figure My work's
+  "Billed to date" adds up.
+
+The figures above the bars are the projects together (`portfolioProgress` in `@erp/shared/project-progress.ts`: physical
+weighs by contract value only when every project has one, else the projects count alike; financial compares bills with the
+contract values that exist), how many are behind plan by more than the schedule's tolerance and how many have billing
+`BILLING_GAP_PCT` points or more behind the work. The notes beside a project are `progressNotes`. Guests get none of it.
+`ModuleHomeService.progress` builds the rows; keep `src/scripts/project-progress-test.ts` passing. Bars rather than a pie
+per figure: two percentages per project compare across projects on a shared scale, which separate circles do not.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search

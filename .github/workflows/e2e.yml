@@ -286,6 +286,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/nav-menu-test.js
+      - name: Progress by project weighs by contract value, compares bills with contract values and notes the gaps
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/project-progress-test.js
       - name: Measures on drawings scale right, add up lines, areas and counts, and make measurement book lines
         if: matrix.suite == 'flows'
         working-directory: apps/api
