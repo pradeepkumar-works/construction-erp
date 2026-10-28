@@ -12,7 +12,7 @@ import { submissionListHref } from './links';
  * (`NAV_TREE`); a module set only groups its nodes, so a page is never two things.
  *
  * - `AREAS` is the tree's own modules (Projects, Site, Purchases…), each node a sub-module (Accounts by its groups).
- * - `DEPARTMENTS` is the ten modules contractors' brochures use (Project management, Purchase management…), each with its
+ * - `DEPARTMENTS` is the fifteen modules contractors' departments run (Project management, Purchase management…), each with its
  *   sub-modules naming the tree's nodes. A node may sit in two modules (Project cost is planning's and the reports').
  * - A module's name is the company's when it gave one (`names`, by module key), else the set's.
  */
@@ -57,23 +57,59 @@ export interface NavModuleDef {
 
 const sub = (key: string, label: string, ...nodes: string[]): NavSubDef => ({ key, label, nodes });
 
-/** The ten modules of a contractor's brochure, plus Reports and MIS and Administration. Keys are kept forever (names hang on them). */
+/** The ten modules of a contractor's brochure, QA/QC, Design and drawings and Correspondence (item 135), plus Reports and MIS and
+ *  Administration. Keys are kept forever (names hang on them). Each module's Masters names the pages that are its masters
+ *  (`mastersByDepartment`). */
 export const DEPARTMENT_MODULES: NavModuleDef[] = [
   {
     key: 'project-management',
     label: 'Project management',
     icon: 'folder-kanban',
     family: 'work',
-    description: 'Projects, schedule, site work, quality, documents and client billing.',
+    description: 'Projects, schedule, site work, safety and client billing.',
     subs: [
       sub('projects', 'Projects', 'projects.all', 'projects.handover', 'projects.templates'),
       sub('schedule', 'Schedule', 'projects.schedule', 'projects.lookahead', 'projects.earned'),
       sub('site', 'Site execution', 'site.dpr', 'site.progress', 'site.mb', 'site.risks', 'site.meetings', 'site.whatsapp'),
-      sub('quality', 'Quality and safety', 'quality.inspections', 'quality.tests', 'quality.ncrs', 'quality.checklists', 'quality.incidents', 'quality.permits', 'quality.talks', 'quality.ppe'),
-      sub('documents', 'Documents', 'documents.register', 'documents.transmittals', 'documents.letters', 'documents.rfis'),
+      sub('safety', 'Safety', 'quality.incidents', 'quality.permits', 'quality.talks', 'quality.ppe'),
       sub('billing', 'Client billing', 'billing.bills', 'billing.variations', 'billing.readiness', 'billing.clients'),
       sub('reports', 'Reports', 'reports.progress', 'reports.cashflow'),
+      sub('masters', 'Masters', 'billing.clients', 'projects.templates'),
     ],
+  },
+  {
+    key: 'quality-control',
+    label: 'Quality (QA/QC)',
+    icon: 'shield-check',
+    family: 'work',
+    description: 'Inspections and hold points, material tests, NCRs and material checked on arrival.',
+    subs: [
+      sub('inspections', 'Inspections', 'quality.inspections'),
+      sub('tests', 'Tests', 'quality.tests'),
+      sub('material', 'Material', 'quality.grns', 'materials.approvals'),
+      sub('ncrs', 'NCRs', 'quality.ncrs'),
+      sub('masters', 'Masters', 'quality.checklists'),
+    ],
+  },
+  {
+    key: 'design-drawings',
+    label: 'Design and drawings',
+    icon: 'drafting-compass',
+    family: 'work',
+    description: 'Drawings and documents with their revisions, the drawing viewer, transmittals and RFIs.',
+    subs: [
+      sub('register', 'Drawings and documents', 'documents.register'),
+      sub('transmittals', 'Transmittals', 'documents.transmittals'),
+      sub('rfis', 'RFIs', 'documents.rfis'),
+    ],
+  },
+  {
+    key: 'correspondence',
+    label: 'Correspondence',
+    icon: 'mail',
+    family: 'work',
+    description: 'Letters in and out, numbered, with the replies due.',
+    subs: [sub('letters', 'Letters', 'documents.letters')],
   },
   {
     key: 'planning-estimation',
@@ -86,6 +122,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('estimates', 'Estimates', 'projects.boq', 'reports.estimate'),
       sub('budgets', 'Budgets', 'projects.budget'),
       sub('analysis', 'Analysis', 'reports.cost', 'reports.profitLoss'),
+      sub('masters', 'Masters', 'tenders.sor', 'projects.templates'),
     ],
   },
   {
@@ -102,6 +139,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('bills', 'Vendor bills', 'purchases.bills', 'purchases.toBill', 'accounts.debitNotes'),
       sub('vendors', 'Vendors', 'purchases.suppliers', 'purchases.portal'),
       sub('reports', 'Reports', 'reports.procurementSpend'),
+      sub('masters', 'Masters', 'purchases.suppliers', 'materials.items', 'materials.units'),
     ],
   },
   {
@@ -116,6 +154,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('stores', 'Central stores', 'materials.store'),
       sub('control', 'Control', 'materials.reconciliation', 'materials.value', 'materials.leakage'),
       sub('reports', 'Reports', 'reports.stockPosition'),
+      sub('masters', 'Masters', 'materials.items', 'materials.units', 'materials.itemCategories'),
     ],
   },
   {
@@ -130,6 +169,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('orders', 'Work orders', 'subcontracts.orders'),
       sub('bills', 'Contractor bills', 'subcontracts.bills'),
       sub('labour', 'Labour contractors', 'payroll.contractors'),
+      sub('masters', 'Masters', 'subcontracts.vendors', 'site.trades'),
     ],
   },
   {
@@ -145,6 +185,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('maintenance', 'Maintenance', 'plant.maintenance'),
       sub('papers', 'Papers and drivers', 'plant.papers'),
       sub('reports', 'Reports', 'plant.utilisation'),
+      sub('masters', 'Masters', 'plant.equipment', 'plant.equipmentCategories'),
     ],
   },
   {
@@ -158,6 +199,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('production', 'Production', 'rmc.schedule', 'rmc.batches'),
       sub('mixes', 'Mix designs', 'rmc.mixes'),
       sub('sales', 'Sales', 'rmc.sales'),
+      sub('masters', 'Masters', 'rmc.mixes'),
     ],
   },
   {
@@ -174,6 +216,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('statements', 'Statements', 'accounts.trialBalance', 'accounts.pl', 'accounts.balanceSheet', 'accounts.bankReco', 'accounts.yearClose'),
       sub('tax', 'Tax and compliance', 'accounts.gst', 'accounts.tally', 'billing.guarantees'),
       sub('reports', 'Reports', 'reports.receivablesAgeing', 'reports.payablesAgeing', 'reports.wip'),
+      sub('masters', 'Masters', 'accounts.chart'),
     ],
   },
   {
@@ -187,6 +230,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('check', 'Cross-check', 'site.attendanceCheck'),
       sub('biometric', 'Biometric', 'people.biometric'),
       sub('reports', 'Reports', 'reports.labour'),
+      sub('masters', 'Masters', 'site.trades'),
     ],
   },
   {
@@ -201,6 +245,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('employees', 'Employees', 'people.employees', 'people.register', 'people.letters', 'people.holidays'),
       sub('payroll', 'Payroll', 'payroll.runs', 'payroll.structures', 'payroll.inputs', 'payroll.settings'),
       sub('loans', 'Loans and exits', 'payroll.loans', 'payroll.settlement'),
+      sub('masters', 'Masters', 'people.departments', 'people.designations', 'people.holidays', 'payroll.structures'),
     ],
   },
   {
@@ -228,6 +273,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('group', 'Group companies', 'admin.group'),
       sub('rules', 'Approval rules', 'admin.rules'),
       sub('modules', 'Modules and menu', 'admin.modules', 'admin.menu', 'admin.home'),
+      sub('masters', 'Masters', 'admin.masters'),
       sub('data', 'Data and privacy', 'admin.data'),
       sub('ai', 'Ask', 'admin.ai'),
       sub('billing', 'Subscription', 'admin.billing'),
@@ -412,3 +458,13 @@ export function navSettingsFrom(row: { navLayout?: string | null; navLook?: stri
 /** Whether a company's choice is the default (so the sign-in leaves it out). */
 export const isDefaultNav = (s: NavSettingsDto) =>
   s.layout === DEFAULT_NAV_SETTINGS.layout && s.look === DEFAULT_NAV_SETTINGS.look && s.moduleSet === DEFAULT_NAV_SETTINGS.moduleSet && !s.personalLook && Object.keys(s.names).length === 0;
+
+/** Administration › Masters (item 135): each department's Masters sub-module, with only the pages this user may open. */
+export function mastersByDepartment(user: NavUser): { module: NavModuleDef; nodes: NavNode[] }[] {
+  return DEPARTMENT_MODULES.filter((m) => m.key !== 'administration')
+    .map((m) => ({
+      module: m,
+      nodes: (m.subs.find((s) => s.key === 'masters')?.nodes ?? []).map((id) => navNode(id)).filter((n): n is NavNode => !!n && canSeeNav(user, n)),
+    }))
+    .filter((d) => d.nodes.length > 0);
+}

@@ -756,6 +756,7 @@ model Organization {
   attendanceSheets     AttendanceSheet[]
   items                Item[]
   units                Unit[]
+  masterEntries        MasterEntry[]
   stockEntries         StockEntry[]
   stockTxns            StockTxn[]
   stockMinLevels       StockMinLevel[]
@@ -2801,6 +2802,27 @@ model Item {
   omChemicalNorms   OmChemicalNorm[]
 
   @@unique([organizationId, name, unit])
+}
+
+/// A company's entry in one of its simple master lists (item 135): trades, designations, departments, item and equipment
+/// categories (`MASTER_LISTS` in shared). Standard entries live in code; a row with a standard code renames it, switches it
+/// off or carries its Hindi name, and a row with any other code is the company's own.
+model MasterEntry {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// A key of MASTER_LISTS, e.g. trade
+  list           String
+  /// e.g. bar-bender: the standard entry's code, or one made from the name when the company adds it
+  code           String
+  name           String
+  nameHi         String?
+  isActive       Boolean      @default(true)
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, list, code])
 }
 
 /// Units of measure the company uses (v4 item 48). Units stay free text on items and lines; this list suggests them

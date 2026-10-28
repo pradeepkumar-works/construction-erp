@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-03-masters-and-modules',
+    date: '2027-03-04',
+    title: 'Masters, and QA/QC, design and letters as modules of their own',
+    points: [
+      'Admin › Masters lists every list your company keeps, by department: items and units, vendors, clients, equipment, the chart of accounts, holidays, checklists and the rest.',
+      'Trades, designations, departments, item categories and equipment categories are now lists you keep: add your own, give each a Hindi name, and switch off the ones you do not use. The forms suggest them.',
+      'With the department menu, Quality (QA/QC), Design and drawings, and Correspondence are modules of their own, each with its own home. Safety stays in Project management.',
+      'In the standard menu, Safety and Correspondence have their own modules on Home too.',
+    ],
+  },
+  {
     id: '2027-03-progress-by-project',
     date: '2027-03-03',
     title: 'Progress by project',

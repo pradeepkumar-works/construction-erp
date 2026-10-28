@@ -82,6 +82,9 @@ import type {
   LdExposureDto,
   ProcurementStatusDto,
   UnitDto,
+  MasterCountsDto,
+  MasterEntryDto,
+  MasterListDto,
   DriverDto,
   GanttDto,
   EquipmentDocType,
@@ -3381,6 +3384,38 @@ export const useDefect = (id: string | null | undefined) =>
     queryFn: async () => (await api.get<DefectDto>(`/defects/${id}`)).data,
     enabled: !!id,
   });
+/** One master list as the company has it (item 135), by its address (`trade`, `item-category`…); `usage` counts records. */
+export const useMasterList = (slug: string, usage = false, enabled = true) =>
+  useQuery({
+    queryKey: ['masters', slug, usage],
+    queryFn: async () => (await api.get<MasterListDto>(`/masters/${slug}`, { params: usage ? { usage: 1 } : {} })).data,
+    staleTime: usage ? 0 : 5 * 60_000,
+    enabled,
+  });
+
+/** Each simple list's counts, for Administration › Masters. */
+export const useMasterCounts = (enabled = true) =>
+  useQuery({ queryKey: ['masters', 'counts'], queryFn: async () => (await api.get<MasterCountsDto>('/masters')).data, enabled });
+
+export function useSaveMasterEntry(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { code?: string; name?: string; nameHi?: string | null; isActive?: boolean }) => {
+      const { code, ...body } = v;
+      return (code ? await api.patch<MasterEntryDto>(`/masters/${slug}/${encodeURIComponent(code)}`, body) : await api.post<MasterEntryDto>(`/masters/${slug}`, body)).data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['masters'] }),
+  });
+}
+
+export function useDeleteMasterEntry(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (code: string) => (await api.delete(`/masters/${slug}/${encodeURIComponent(code)}`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['masters'] }),
+  });
+}
+
 export const useUnits = () =>
   useQuery({
     queryKey: ['units'],

@@ -778,6 +778,31 @@ with default templates for each type. Plan in the artifact "Configurable project
      their DPR forms) and kinds as a file, previewed item by item through the editors' checks. ARCHITECTURE "Updating
      projects from their type" and "Export and import of project types".
 
+## QA/QC, design and drawings, correspondence and masters (items 135 to 138)
+
+Asked by Pradeep on 28 Oct 2026: QA/QC, Design and drawings, and Correspondence (inward and outward letters) as modules of
+their own, analysed as a senior construction business analyst would for an Indian contractor, and masters where the modules
+need them. Analysis and decisions in the Claude Doc "QA/QC, Design and drawings, Correspondence and masters: analysis":
+masters first, then correspondence, QA/QC and design; Safety stays in Project management; a Document controller role, and
+outward letters approved before they are numbered (on by default for notices, claims and EoT letters); letter numbers short,
+such as P07/OUT/26-27/042; bar bending schedules later.
+
+135. ~~**Masters and the three modules in the menu** (L).~~ Done: QA/QC, Design and drawings and Correspondence as
+     department modules (fifteen), Safety and Correspondence as tree modules, a Masters sub-module in every department and
+     Administration › Masters listing them; trades, designations, departments, item categories and equipment categories as
+     company lists over standard entries, with Hindi names, picked on the attendance, worker, item, equipment and employee
+     forms. ARCHITECTURE "Masters".
+136. **Correspondence** (L): company-wide inward and outward registers, marking to a person with an action and due date,
+     numbering series by financial year, an address book, templates with sign-off and letterhead print, dispatch and proof
+     of delivery, threads and links, replies due, a photographed letter read by Ask, the phone. Inward letters are created
+     through one service method that the integrations' email inbox (item 155) calls too.
+137. **QA/QC** (L): test types and quality plans (ITP), tests due from DPR quantities and receipts, the pour register with
+     the IS 456 cube acceptance check, pour cards; then labs and samples sent out, calibration, supplier test certificates,
+     audits and visits, NCR categories and root causes, the dashboard and monthly report.
+138. **Design and drawings** (L): drawing schedule with late drawings as delays and reminder letters, design submissions and
+     comment replies on every project, vetting, controlled copies, numbering, revision impact, the as-built check, the
+     design dashboard. Bar bending schedules follow as an item of their own.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

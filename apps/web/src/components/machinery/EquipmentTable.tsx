@@ -44,6 +44,7 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { EquipmentPartsDrawer } from './EquipmentPartsDrawer';
+import { MasterInput } from '@/components/masters/MasterInput';
 
 const KEYS = ['ownership', 'inactive'] as const;
 
@@ -330,7 +331,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
             </FormGrid>
             <FormGrid cols={2}>
               <Form.Item name="category" label="Category">
-                <Input maxLength={60} placeholder="Earthmoving, Compaction, Lifting" />
+                <MasterInput list="equipmentCategory" maxLength={60} placeholder="Earthmoving, Compaction, Lifting" />
               </Form.Item>
               <Form.Item name="registrationNo" label="Registration / serial no.">
                 <Input maxLength={40} />

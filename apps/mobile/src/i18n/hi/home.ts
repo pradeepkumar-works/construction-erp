@@ -54,7 +54,9 @@ export const HOME: Record<string, string> = {
 export const MENU: Record<string, string> = {
   'TDS returns': 'TDS रिटर्न',
   'Project management': 'प्रोजेक्ट प्रबंधन',
-  'Projects, schedule, site work, quality, documents and client billing.': 'प्रोजेक्ट, शेड्यूल, साइट का काम, क्वालिटी, दस्तावेज़ और क्लाइंट बिलिंग।',
+  'Projects, schedule, site work, safety and client billing.': 'प्रोजेक्ट, शेड्यूल, साइट का काम, सुरक्षा और क्लाइंट बिलिंग।',
+  'Inspections and hold points, material tests, NCRs and material checked on arrival.': 'निरीक्षण और होल्ड पॉइंट, मटीरियल टेस्ट, NCR और आने पर जाँचा गया माल।',
+  'Tests': 'टेस्ट',
   'Site execution': 'साइट पर काम',
   'Planning and estimation': 'प्लानिंग और एस्टिमेशन',
   'Tenders and rates, estimates from the BOQ, budgets and what each project earns.': 'टेंडर और रेट, BOQ से एस्टिमेट, बजट और हर प्रोजेक्ट की कमाई।',

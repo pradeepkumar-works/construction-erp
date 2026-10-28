@@ -12,6 +12,7 @@ import { canSeeAttendanceCheck } from './attendance-check';
 import { canSeeManagement } from './management';
 import { canSeeGroupCompanies, type AuthGroupDto } from './group';
 import { canManageModules, pathIsOff } from './module-switches';
+import { MASTER_LISTS, canManageMaster } from './masters';
 
 /**
  * The navigation tree (launcher, phase 1): one list of every module and every page in it. The sidebar, its rail, quick-jump
@@ -165,6 +166,7 @@ export const NAV_ACCESS = {
   rmc: (u: NavUser) => P.canViewRmc(u.roleKey),
   rmcBills: (u: NavUser) => P.canSellRmc(u.roleKey) || P.canBillRmc(u.roleKey),
   groupCompanies: (u: NavUser) => canSeeGroupCompanies(u),
+  masters: (u: NavUser) => P.canManageUsers(u.roleKey) || MASTER_LISTS.some((l) => canManageMaster(u.roleKey, l)),
 } satisfies Record<string, (u: NavUser) => boolean>;
 export type NavAccessKey = keyof typeof NAV_ACCESS;
 
@@ -175,8 +177,10 @@ export const NAV_TREE: NavNode[] = [
   { id: 'approvals', parent: null, label: 'Approvals', icon: 'inbox', route: '/approvals', family: 'work', access: 'approvals', status: 'live', badge: 'approvals', description: 'Everything waiting for your decision, oldest first.', keywords: 'pending queue approve inbox', concord: ['p7-workflow'] },
   { id: 'projects', parent: null, label: 'Projects', icon: 'folder-kanban', family: 'work', access: 'internal', status: 'live', description: 'Your projects, their schedule, BOQ, budget and handover.', keywords: 'sites boq contract', concord: ['p3-pm', 'p4-pm', 'p5-projects'] },
   { id: 'site', parent: null, label: 'Site', icon: 'hard-hat', family: 'work', access: 'internal', status: 'live', badge: 'module', description: 'Daily reports, labour, progress, measurements and site cash.', concord: ['p5-exec'] },
-  { id: 'quality', parent: null, label: 'Quality and safety', icon: 'shield-check', family: 'work', access: 'internal', status: 'live', badge: 'module', description: 'Inspections, tests, NCRs, incidents, permits and toolbox talks.', concord: ['p5-safety'] },
-  { id: 'documents', parent: null, label: 'Documents', icon: 'folder-open', family: 'work', access: 'internal', status: 'live', description: 'Drawings, revisions, transmittals, letters and RFIs.', keywords: 'drawings files', concord: ['p7-attach'] },
+  { id: 'quality', parent: null, label: 'Quality (QA/QC)', icon: 'shield-check', family: 'work', access: 'internal', status: 'live', badge: 'module', description: 'Inspections and hold points, material tests, NCRs, material to check and checklists.', keywords: 'qa qc quality control assurance inspection test ncr', concord: ['p5-safety'] },
+  { id: 'safety', parent: null, label: 'Safety', icon: 'traffic-cone', family: 'work', access: 'internal', status: 'live', description: 'Incidents and near misses, permits to work, toolbox talks and PPE.', keywords: 'hse ehs safety incident near miss permit toolbox ppe', concord: ['p5-safety'] },
+  { id: 'documents', parent: null, label: 'Design and drawings', icon: 'drafting-compass', family: 'work', access: 'internal', status: 'live', description: 'Drawings and documents with their revisions, the drawing viewer, transmittals and RFIs.', keywords: 'drawings files documents gfc revisions design', concord: ['p7-attach'] },
+  { id: 'correspondence', parent: null, label: 'Correspondence', icon: 'mail', family: 'work', access: 'letters', status: 'live', description: 'Letters in and out, numbered, with the replies due.', keywords: 'letters inward outward dak correspondence notice' },
   { id: 'materials', parent: null, label: 'Materials', icon: 'package', family: 'materials', access: 'internal', status: 'live', badge: 'module', description: 'Material requests, stock at each site, and reconciliation.', keywords: 'store inventory', concord: ['p3-mat', 'p4-stores', 'p5-mat'] },
   { id: 'plant', parent: null, label: 'Plant and machinery', icon: 'tractor', family: 'materials', access: 'internal', status: 'live', badge: 'module', description: 'Machine logs, fuel, use, maintenance, papers and drivers.', keywords: 'equipment vehicles fleet asset', concord: ['p3-asset', 'p4-pnm', 'p5-pnm'] },
   { id: 'purchases', parent: null, label: 'Purchases', icon: 'shopping-cart', family: 'buying', access: 'internal', status: 'live', badge: 'module', description: 'Purchase orders, deliveries, supplier bills and suppliers.', keywords: 'procurement buying', concord: ['p4-proc'] },
@@ -213,6 +217,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'site.meetings', parent: 'site', label: 'Meetings', icon: 'calendar-check', route: '/meetings', access: 'meetings', status: 'live', description: "Minutes of each project's meetings, and the actions they gave out until each is done.", keywords: 'mom minutes of meeting action items progress review client meeting decisions' },
   { id: 'site.whatsapp', parent: 'site', label: 'WhatsApp entries', icon: 'message-circle', route: '/whatsapp-capture', access: 'whatsappCapture', status: 'live', newUntil: '2027-03-31', description: 'Send a text, photo or voice note from site; Nirmaan drafts the entry for you to save.', keywords: 'whatsapp voice note dictate message capture hindi' },
   { id: 'site.funds', parent: 'site', label: 'Site fund requests', icon: 'piggy-bank', route: '/imprest?tab=funds', access: 'funds', status: 'live', description: 'A site asks head office for money for wages, a local purchase or running costs.', keywords: 'fund request money wages advance' },
+  { id: 'site.trades', parent: 'site', group: 'Masters', label: 'Trades', icon: 'hammer', route: '/masters/trade', nav: false, access: 'attendance', status: 'live', description: 'Kinds of labour on the head count, roll call, workers and labour rates.', keywords: 'trade manpower category mason helper labour master' },
 
   // ── Quality and safety (split out of Site) ────────────────────────────────────────────────────────────────────
   { id: 'quality.inspections', parent: 'quality', label: 'Inspections', icon: 'clipboard-check', route: '/inspections?tab=inspections', nav: 'Quality', access: 'onSite', status: 'live', badge: 'qualityWaiting', description: 'Inspection requests with hold points.', keywords: 'qa qc inspections tests ncr hold point', concord: ['p5-safety'] },
@@ -220,15 +225,15 @@ export const NAV_TREE: NavNode[] = [
   { id: 'quality.grns', parent: 'quality', label: 'Material to check', icon: 'clipboard-list', route: '/inspections?tab=grns', access: 'checkGrn', status: 'live', description: 'Goods received at the sites waiting for QA/QC to accept or reject them.', keywords: 'grn qa qc incoming material inspection receipt check reject' },
   { id: 'quality.ncrs', parent: 'quality', label: 'NCRs', icon: 'shield-alert', route: '/inspections?tab=ncrs', access: 'onSite', status: 'live', badge: 'ncrsOpen', description: 'Non-conformance reports until closed.', concord: ['p5-safety'] },
   { id: 'quality.checklists', parent: 'quality', label: 'Checklists', icon: 'list-checks', route: '/inspections?tab=checklists', access: 'checklists', status: 'live', description: "The company's inspection checklists." },
-  { id: 'quality.incidents', parent: 'quality', label: 'Incidents', icon: 'siren', route: '/safety?tab=incidents', nav: 'Safety', access: 'onSite', status: 'live', description: 'Incidents and near misses.', keywords: 'incident near miss toolbox talk permit to work ppe accident', concord: ['p5-safety'] },
-  { id: 'quality.permits', parent: 'quality', label: 'Permits to work', icon: 'file-pen-line', route: '/safety?tab=permits', access: 'onSite', status: 'live', badge: 'permitsWaiting', description: 'Permits for height, hot and confined work.', concord: ['p5-safety'] },
-  { id: 'quality.talks', parent: 'quality', label: 'Toolbox talks', icon: 'message-square-text', route: '/safety?tab=talks', access: 'onSite', status: 'live', description: 'Talks held at the sites and who attended.', concord: ['p5-safety'] },
-  { id: 'quality.ppe', parent: 'quality', label: 'PPE', icon: 'shield', route: '/safety?tab=ppe', access: 'onSite', status: 'live', description: 'Safety gear issued to workers.', concord: ['p5-safety'] },
+  { id: 'quality.incidents', parent: 'safety', label: 'Incidents', icon: 'siren', route: '/safety?tab=incidents', nav: 'Safety', access: 'onSite', status: 'live', description: 'Incidents and near misses.', keywords: 'incident near miss toolbox talk permit to work ppe accident', concord: ['p5-safety'] },
+  { id: 'quality.permits', parent: 'safety', label: 'Permits to work', icon: 'file-pen-line', route: '/safety?tab=permits', access: 'onSite', status: 'live', badge: 'permitsWaiting', description: 'Permits for height, hot and confined work.', concord: ['p5-safety'] },
+  { id: 'quality.talks', parent: 'safety', label: 'Toolbox talks', icon: 'message-square-text', route: '/safety?tab=talks', access: 'onSite', status: 'live', description: 'Talks held at the sites and who attended.', concord: ['p5-safety'] },
+  { id: 'quality.ppe', parent: 'safety', label: 'PPE', icon: 'shield', route: '/safety?tab=ppe', access: 'onSite', status: 'live', description: 'Safety gear issued to workers.', concord: ['p5-safety'] },
 
   // ── Documents (out of Site) ───────────────────────────────────────────────────────────────────────────────────
   { id: 'documents.register', parent: 'documents', label: 'Drawings and documents', icon: 'file-stack', route: '/documents?tab=register', nav: 'Documents', access: 'internal', status: 'live', description: 'Drawings and their revisions, GFC status and the drawing viewer.', keywords: 'drawings files rfi', concord: ['p7-attach'] },
   { id: 'documents.transmittals', parent: 'documents', label: 'Transmittals', icon: 'send', route: '/documents?tab=transmittals', access: 'internal', status: 'live', description: 'Documents sent and acknowledged.' },
-  { id: 'documents.letters', parent: 'documents', label: 'Letters', icon: 'scroll-text', route: '/documents?tab=letters', access: 'letters', status: 'live', badge: 'lettersDue', description: 'Numbered letters in and out, replies due.' },
+  { id: 'documents.letters', parent: 'correspondence', label: 'Letters', icon: 'scroll-text', route: '/documents?tab=letters', access: 'letters', status: 'live', badge: 'lettersDue', description: 'Numbered letters in and out, replies due.' },
   { id: 'documents.rfis', parent: 'documents', label: 'RFIs', icon: 'circle-help', route: '/documents?tab=rfis', access: 'internal', status: 'live', badge: 'rfisOpen', description: 'Questions to the designer, waiting for answers.' },
 
   // ── Materials ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -240,7 +245,9 @@ export const NAV_TREE: NavNode[] = [
   { id: 'materials.reconciliation', parent: 'materials', label: 'Material reconciliation', icon: 'scale', projectTab: 'reconciliation', access: 'reconciliation', status: 'live', description: 'Material used against the work done, wastage by reason.', keywords: 'wastage consumption theoretical', concord: ['p9-notused'] },
   { id: 'materials.leakage', parent: 'materials', label: 'Leakage checks', icon: 'scan-search', route: '/leakage', access: 'leakage', status: 'live', newUntil: '2027-03-31', description: "The month's material, rate, fuel and idle-hire flags, with the rupees at risk and the working behind each.", keywords: 'leakage theft pilferage wastage overuse rate fuel diesel idle hire loss' },
   { id: 'materials.store', parent: 'materials', label: 'Central stores', icon: 'warehouse', route: '/stores', access: 'stores', status: 'live', description: 'The company stores and yards: what each holds, its value and age, and what is on the road to the sites.', keywords: 'yard warehouse godown central store transfer' },
-  { id: 'materials.items', parent: 'materials', label: 'Item master', icon: 'package', route: '/stock?sub=items', access: 'stock', status: 'live', description: 'Materials, units and minimum levels.' },
+  { id: 'materials.items', parent: 'materials', group: 'Masters', label: 'Item master', icon: 'package', route: '/stock?sub=items', access: 'stock', status: 'live', description: 'Materials, units and minimum levels.' },
+  { id: 'materials.units', parent: 'materials', group: 'Masters', label: 'Units', icon: 'ruler', route: '/stock?sub=units', access: 'stock', status: 'live', description: 'Units of measure every quantity field suggests.', keywords: 'uom unit of measure master' },
+  { id: 'materials.itemCategories', parent: 'materials', group: 'Masters', label: 'Item categories', icon: 'tags', route: '/masters/item-category', nav: false, access: 'stock', status: 'live', description: 'Groups of the item master, for stock reports and reorder.', keywords: 'item group category master' },
 
   // ── Plant and machinery ───────────────────────────────────────────────────────────────────────────────────────
   { id: 'plant.logs', parent: 'plant', label: 'Daily logs', icon: 'notebook-pen', route: '/machinery?tab=logs', nav: 'Machinery', access: 'machinery', status: 'live', description: 'Hours, idle time, breakdowns and diesel per machine.', keywords: 'plant equipment fuel hours', concord: ['p5-pnm', 'p4-pnm'] },
@@ -249,6 +256,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'plant.maintenance', parent: 'plant', label: 'Maintenance', icon: 'wrench', route: '/machinery?tab=maintenance', access: 'machinery', status: 'live', badge: 'machinesDown', description: 'Job cards, services due and breakdowns.', keywords: 'job card service breakdown' },
   { id: 'plant.papers', parent: 'plant', label: 'Papers and drivers', icon: 'id-card', route: '/machinery?tab=papers', access: 'machinery', status: 'live', badge: 'papersDue', description: 'Insurance, fitness, permits and licences due.' },
   { id: 'plant.equipment', parent: 'plant', label: 'Equipment register', icon: 'construction', route: '/machinery?tab=equipment', access: 'machinery', status: 'live', description: 'Own and hired machines, tyres and batteries.', concord: ['p3-asset'] },
+  { id: 'plant.equipmentCategories', parent: 'plant', group: 'Masters', label: 'Equipment categories', icon: 'shapes', route: '/masters/equipment-category', nav: false, access: 'machinery', status: 'live', description: 'Kinds of machine on the equipment register, rates and norms.', keywords: 'machine type category master' },
   { id: 'plant.finance', parent: 'plant', label: 'Machine loans', icon: 'badge-indian-rupee', shortcutOf: 'accounts.machineLoans', access: 'machineFinance', status: 'live', description: 'Loans on financed machines, EMIs paid and due.' },
 
   // ── Purchases ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -305,6 +313,8 @@ export const NAV_TREE: NavNode[] = [
   { id: 'people.employees', parent: 'people', label: 'Employees', icon: 'id-card', route: '/staff?tab=staff', access: 'markStaff', status: 'live', description: 'Employee records, from joining to exit.', keywords: 'staff master', concord: ['p3-hr', 'p5-hrms'] },
   { id: 'people.letters', parent: 'people', label: 'Service records', icon: 'scroll-text', route: '/staff?tab=service', access: 'hrRecords', status: 'live', description: 'Confirmations, transfers, promotions, increments and exits, with their letters.', keywords: 'hr letters transfer promotion increment warning exit' },
   { id: 'people.holidays', parent: 'people', label: 'Holidays', icon: 'calendar', route: '/staff?tab=holidays', access: 'internal', status: 'live', description: 'Holidays by site.' },
+  { id: 'people.departments', parent: 'people', group: 'Masters', label: 'Departments', icon: 'building', route: '/masters/department', nav: false, access: 'staffAdmin', status: 'live', description: 'The departments people work in.', keywords: 'department master hr' },
+  { id: 'people.designations', parent: 'people', group: 'Masters', label: 'Designations', icon: 'id-card-lanyard', route: '/masters/designation', nav: false, access: 'staffAdmin', status: 'live', description: 'Job titles on employee records.', keywords: 'designation job title master hr' },
   { id: 'people.biometric', parent: 'people', label: 'Biometric devices', icon: 'fingerprint-pattern', route: '/biometric', access: 'biometric', status: 'live', description: 'Fingerprint and face devices, who is enrolled on them, and their punches marking attendance.', keywords: 'fingerprint face punch attendance machine zkteco essl adms', concord: ['p7-bio'] },
   { id: 'people.attendanceCheck', parent: 'people', label: 'Attendance cross-check', icon: 'check-check', shortcutOf: 'site.attendanceCheck', access: 'attendanceCheck', status: 'live', description: 'Man-days labour contractors bill against the head count, roll call, biometric punches and DPR.' },
 
@@ -357,6 +367,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'admin.modules', parent: 'admin', label: 'Modules', icon: 'toggle-right', route: '/company-modules', access: 'modules', status: 'live', description: 'Turn off the modules the company does not use; their data is kept.', keywords: 'switch on off turn features plan hide' },
   { id: 'admin.menu', parent: 'admin', label: 'Menu and names', icon: 'panels-top-left', route: '/menu-and-names', access: 'modules', status: 'live', newUntil: '2027-03-31', description: 'Menu in the top bar or a sidebar, its look, and what each module is called.', keywords: 'navigation menu top bar sidebar rename module names look layout departments' },
   { id: 'admin.home', parent: 'admin', label: 'Home tiles', icon: 'layout-grid', route: '/home-tiles', access: 'users', status: 'live', description: 'Mark modules as new or featured, and answer requests for access.', keywords: 'discover new featured request access' },
+  { id: 'admin.masters', parent: 'admin', label: 'Masters', icon: 'library-big', route: '/masters', access: 'masters', status: 'live', newUntil: '2027-03-31', description: 'Every list the company keeps (items, vendors, trades, categories…), by department.', keywords: 'master data lists setup categories trades designations departments' },
   { id: 'admin.data', parent: 'admin', label: 'Data and privacy', icon: 'database', route: '/company-data', access: 'companyData', status: 'live', description: 'Export or delete company data.', keywords: 'export delete' },
   { id: 'admin.ai', parent: 'admin', label: `Ask ${PRODUCT_NAME}`, icon: 'sparkles', route: '/ai-settings', access: 'ai', status: 'live', description: 'Who may ask, allowance and the conversation log.', keywords: 'ai assistant chat allowance' },
   { id: 'admin.billing', parent: 'admin', label: 'Subscription', icon: 'credit-card', route: '/billing', access: 'subscription', status: 'live', description: 'Plan, invoices and renewal.', keywords: 'billing plan invoice pay renew' },
