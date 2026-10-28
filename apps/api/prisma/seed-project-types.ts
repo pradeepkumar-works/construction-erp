@@ -7,7 +7,7 @@
  * and the deck, and starts with five loose activities. Safe to run again: the rows are replaced by code.
  */
 import { Prisma, PrismaClient } from '@prisma/client';
-import { STANDARD_COMPONENT_KINDS, componentKindProblems, projectTypeProblems, type ComponentKindDef, type ProjectTypeDef } from '@erp/shared';
+import { STANDARD_COMPONENT_KINDS, STANDARD_DPR_FORMS, componentKindProblems, dprFormProblems, normaliseDprForm, projectTypeProblems, type ComponentKindDef, type DprFormDef, type ProjectTypeDef } from '@erp/shared';
 
 const json = (v: unknown) => v as Prisma.InputJsonValue;
 
@@ -79,6 +79,24 @@ export const DEMO_TYPE: ProjectTypeDef = {
   active: true,
 };
 
+/**
+ * The demo bridge's DPR form (item 134 part 2): the road's form with the weather required, a site photo, the piling
+ * rig and crane offered by name, and the figures a bridge site reports every day.
+ */
+export const DEMO_DPR_FORM: DprFormDef = normaliseDprForm({
+  ...STANDARD_DPR_FORMS.ROAD,
+  fields: STANDARD_DPR_FORMS.ROAD.fields.map((f) => (f.key === 'weather' ? { ...f, required: true } : f.key === 'nextDayPlan' ? { ...f, label: 'Plan for tomorrow' } : f)),
+  minPhotos: 1,
+  lines: { ...STANDARD_DPR_FORMS.ROAD.lines, parts: ['crew', 'machines', 'material', 'workOrder', 'remarks', 'photo'], machineNames: ['Piling rig', 'Crane 50 t', 'Transit mixer', 'Concrete pump', 'Excavator'] },
+  own: [
+    ...STANDARD_DPR_FORMS.ROAD.own.filter((f) => f.key === 'rainHours'),
+    { key: 'riverLevel', label: 'River level at the gauge', labelHi: 'गेज पर नदी का स्तर', kind: 'NUMBER', scope: 'DAY', required: true, unit: 'm', min: 0, max: 50, options: [] },
+    { key: 'craneOnSite', label: 'Crane on site', labelHi: 'साइट पर क्रेन', kind: 'YES_NO', scope: 'DAY', required: false, unit: null, min: null, max: null, options: [] },
+    { key: 'pileDepth', label: 'Pile depth bored', labelHi: 'पाइल की खुदी गहराई', kind: 'NUMBER', scope: 'LINE', required: false, unit: 'm', min: 0, max: 60, options: [] },
+    { key: 'concreteGrade', label: 'Concrete grade', labelHi: 'कंक्रीट ग्रेड', kind: 'CHOICE', scope: 'LINE', required: false, unit: null, min: null, max: null, options: ['M15', 'M20', 'M25', 'M30', 'M35'] },
+  ],
+});
+
 export async function seedProjectTypes(prisma: PrismaClient, organizationId: string) {
   const kinds = [...STANDARD_COMPONENT_KINDS, ...DEMO_KINDS];
   for (const k of DEMO_KINDS) {
@@ -114,6 +132,11 @@ export async function seedProjectTypes(prisma: PrismaClient, organizationId: str
     update: data,
     create: { organizationId, code: t.code, sortOrder: 7, ...data },
   });
+  // The form's first version, once: a company that has changed it keeps its versions (and the reports on them).
+  const formProblems = dprFormProblems(DEMO_DPR_FORM);
+  if (formProblems.length) throw new Error(`Demo DPR form: ${formProblems.join('; ')}`);
+  if (!(await prisma.dprFormConfig.count({ where: { organizationId, typeCode: t.code } })))
+    await prisma.dprFormConfig.create({ data: { organizationId, typeCode: t.code, version: 1, definition: json(DEMO_DPR_FORM) } });
   await prisma.$transaction([
     prisma.activityTemplate.deleteMany({ where: { organizationId, typeCode: t.code } }),
     prisma.activityTemplate.createMany({
