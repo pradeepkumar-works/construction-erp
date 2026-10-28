@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { AuthUser, NavMenuModule, NavMenuSub, NavNode, NavSettingsDto, PendingApprovalDto } from '@erp/shared';
-import { isGuest, isSupplier, navMenuFor, navMenuPlace, navNodeForPath, navSettingsOf, submissionListHref } from '@erp/shared';
+import { isGuest, isSupplier, menuWaiting, navMenuFor, navMenuPlace, navNodeForPath, navSettingsOf } from '@erp/shared';
 
 /**
  * The company's menu on the web (Menu and names): its settings with the person's own look, the modules this user sees in
@@ -47,26 +47,9 @@ export function useMenuPlace(menu: NavMenuModule[]): MenuPlace | null {
 }
 
 /**
- * What waits on the user in each module: their approvals whose list is one of its pages, and the queues counted on its
- * pages (requests to order, material to check…). A module's count is what waits in it, so an entry in two modules counts
- * in both.
+ * What waits on the user in each module (`menuWaiting`): their approvals whose list is one of its pages, and the queues
+ * counted on its pages (requests to order, material to check…).
  */
 export function moduleWaiting(menu: NavMenuModule[], pending: PendingApprovalDto[] | undefined, nodeBadges: Record<string, number> | undefined): Record<string, number> {
-  const out: Record<string, number> = {};
-  const nodesOf = (m: NavMenuModule) => new Set(m.subs.flatMap((x) => x.nodes.map((n) => n.shortcutOf ?? n.id)));
-  const listNode = new Map<string, string | undefined>();
-  for (const p of pending ?? []) {
-    if (!listNode.has(p.type)) {
-      const [path, query = ''] = submissionListHref(p.type).split('?');
-      listNode.set(p.type, navNodeForPath(path, query)?.id);
-    }
-  }
-  for (const m of menu) {
-    const ids = nodesOf(m);
-    let n = 0;
-    for (const p of pending ?? []) if (ids.has(listNode.get(p.type) ?? '')) n++;
-    for (const [id, count] of Object.entries(nodeBadges ?? {})) if (id.includes('.') && ids.has(id)) n += count;
-    if (n > 0) out[m.key] = n;
-  }
-  return out;
+  return menuWaiting(menu, (pending ?? []).map((p) => ({ type: p.type, count: 1 })), nodeBadges);
 }

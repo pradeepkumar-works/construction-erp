@@ -1,6 +1,6 @@
 import { Appearance } from 'react-native';
 import type { Ionicons } from '@expo/vector-icons';
-import type { SubmissionStatus } from '@erp/shared';
+import type { NavFamily, SubmissionStatus } from '@erp/shared';
 import { kvGet, kvSet } from './utils/kv';
 
 /**
@@ -149,6 +149,32 @@ const DARK: typeof LIGHT = {
 };
 
 export const colors = { ...(scheme === 'dark' ? DARK : LIGHT), ...TILES };
+
+/**
+ * Home's menu icons (the phone launcher): each module's colour family as a soft square with the icon in its own ink, as a
+ * phone's home screen. Each ink keeps 3:1 on its fill and on the page in both palettes.
+ */
+const FAMILY_TINT_LIGHT: Record<NavFamily, { bg: string; fg: string }> = {
+  work: { bg: '#E6EEFB', fg: '#1E63D6' },
+  materials: { bg: '#DDF1EE', fg: '#0F766E' },
+  buying: { bg: '#FDF0D5', fg: '#985606' },
+  money: { bg: '#E2F3E9', fg: '#177245' },
+  people: { bg: '#EDE9FE', fg: '#6D28D9' },
+  business: { bg: '#FDE9DD', fg: '#B23B0B' },
+  insight: { bg: '#DFF1F7', fg: '#0E6A85' },
+  admin: { bg: '#E9ECF0', fg: '#334155' },
+};
+const FAMILY_TINT_DARK: Record<NavFamily, { bg: string; fg: string }> = {
+  work: { bg: '#16263F', fg: '#8DB8FF' },
+  materials: { bg: '#0F2A28', fg: '#5CCFC0' },
+  buying: { bg: '#2E2410', fg: '#E9B35A' },
+  money: { bg: '#12291E', fg: '#4CC07E' },
+  people: { bg: '#231C3D', fg: '#B9A2FF' },
+  business: { bg: '#33190F', fg: '#EE8A62' },
+  insight: { bg: '#0F2730', fg: '#6CC6E2' },
+  admin: { bg: '#1E2733', fg: '#B7C2D1' },
+};
+export const familyTint = scheme === 'dark' ? FAMILY_TINT_DARK : FAMILY_TINT_LIGHT;
 
 /**
  * Drawing markup ink (item 109), as the web's `BRAND.colors.markup*`. Marks sit on the white of a drawing sheet in either

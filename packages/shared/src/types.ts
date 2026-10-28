@@ -3090,6 +3090,8 @@ export interface MyStaffDto {
   holidays: HolidayDto[];
   /** Attendance extras (v5 item 97): the site check-in is measured against (their posting); null when it has no location */
   site: CheckInSiteDto | null;
+  /** Days present this month so far, a half day counting half (the phone's Home shows it) */
+  monthPresent: string;
 }
 
 /** A site's location for GPS check-in. */

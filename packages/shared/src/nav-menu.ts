@@ -2,6 +2,8 @@ import type { NavLayout, NavLook, NavModuleSet } from './enums';
 import { NAV_LOOKS, NAV_MODULE_SETS, NAV_LAYOUTS } from './enums';
 import type { NavFamily, NavNode, NavUser } from './navigation';
 import { NAV_TREE, canSeeNav, navNode, navNodeAt } from './navigation';
+import type { SubmissionType } from './enums';
+import { submissionListHref } from './links';
 
 /**
  * Menu and names (ARCHITECTURE "Menu and names"): each company chooses where its menu sits (a sidebar, or a top bar with
@@ -346,6 +348,31 @@ export function navNodeForPath(pathname: string, search = '', allowed: (n: NavNo
     if (n) return n;
   }
   return undefined;
+}
+
+/**
+ * What waits on the user in each module of their menu: their approvals whose list is one of its pages (`count` of each
+ * submission type), and the queues counted on its pages (`nodeBadges`, by node id: requests to order, material to
+ * check…). A module's count is what waits in it, so an entry in two modules counts in both. The web's module bar and
+ * Home and the phone's menu read it.
+ */
+export function menuWaiting(menu: NavMenuModule[], approvals: { type: SubmissionType; count: number }[] | undefined, nodeBadges: Record<string, number> | undefined): Record<string, number> {
+  const out: Record<string, number> = {};
+  const listNode = new Map<SubmissionType, string | undefined>();
+  for (const a of approvals ?? []) {
+    if (!listNode.has(a.type)) {
+      const [path, query = ''] = submissionListHref(a.type).split('?');
+      listNode.set(a.type, navNodeForPath(path, query)?.id);
+    }
+  }
+  for (const m of menu) {
+    const ids = new Set(m.subs.flatMap((x) => x.nodes.map((n) => n.shortcutOf ?? n.id)));
+    let n = 0;
+    for (const a of approvals ?? []) if (ids.has(listNode.get(a.type) ?? '')) n += a.count;
+    for (const [id, count] of Object.entries(nodeBadges ?? {})) if (id.includes('.') && ids.has(id)) n += count;
+    if (n > 0) out[m.key] = n;
+  }
+  return out;
 }
 
 /** What is wrong with names an admin gives, or null: only known modules, and each at most `NAV_NAME_MAX` characters. */

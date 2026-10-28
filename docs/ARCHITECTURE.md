@@ -253,19 +253,33 @@ reads it through `components/shell/menu.ts` (`useNavMenu`, `useMenuPlace`, `modu
 it in `TopBar.tsx`; the sidebar's sections follow the same set and names in `navFor`. A page added to the tree needs a place
 in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live page with none. The phone keeps its launcher.
 
-### The launcher on the phone (launcher phase 4)
+### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 
-The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the launcher too, from the same tree:
+The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the person's day and then a menu, as a phone's home
+screen. It carries no overview: what waits, today's DPR and recent entries are one level down, in My work.
 
-- **New entry** stays on top (Progress, DPR, Material, and Attendance or Stock): it is what a site fills in every day.
-- **Pinned** is the account's pins (`src/launcher/useLauncher.ts` over `GET /launcher`, cached on the phone with
-  `useFetch`'s `cacheKey`, so Home draws them offline). A long press on any tile or page opens its menu
+- **The top bar**: the mark, the company's name (in a group, a tap opens Switch company, `CompanyChoices` in
+  `src/components/CompanySwitch.tsx`, shared with Profile), Search and the bell.
+- **The day card** (`src/home/DayCard.tsx`): the time, check in and check out for today over `GET /staff/me` and
+  `POST /staff/me/check-in|check-out` (with the phone's position where the site has one, as the Attendance and leave screen),
+  then the HR row: days present this month (`MyStaffDto.monthPresent`), leave left, the last payslip, and the next holiday,
+  or for those who mark staff, the leave and overtime waiting on them (`GET /staff/summary`). A login with no staff record
+  sees a line asking HR to link it.
+- **The menu** (`src/home/menu.ts`, `MenuGrid`): My work (the one solid icon), then the account's pins, then the modules of
+  the company's menu in its set and under its names (`navMenuFor(user, navSettingsOf(user))`, the same as the web's top bar
+  and Home), four a row, each a soft square in its family's tint (`familyTint` in `src/theme.ts`, both palettes). A module's
+  count is `menuWaiting` (`@erp/shared/nav-menu.ts`, shared with the web's module bar) over `GET /launcher/badges`, which
+  carries the approvals by type beside the node counts. A long press on a page or one of the tree's modules opens its menu
   (`src/launcher/TileMenu.tsx`: Pin to Home, or Move earlier, Move later and Unpin with Undo); screen readers get the same
-  menu as an action.
-- **Modules** are `navTilesFor(user, null)` as tiles (`NavTileGrid` in `src/components/NavTile.tsx`), two columns on a phone,
-  with the counts of `GET /launcher/badges`.
-- **Recent** is the latest five visits from any device.
-- **My work** (the old Home tab, unchanged) is a tile and the screen `app/my-work.tsx`.
+  menu as an action. The last icon, Edit menu, opens `app/find.tsx` with every page of each module and a pin on each.
+- **Search** (`app/find.tsx`, the top bar's icon): the modules and pages of the menu by name, words or line (`findInMenu`
+  in `src/home/find.ts`), and with nothing typed, Recent (the latest visits from any device) and the modules.
+- **My work** (`app/my-work.tsx`, the first icon): the company's day for those who lead with it, **Today on site** (each
+  project's DPR: sent, in the outbox, its four steps while a draft is on this phone, read by `readDprDraft` in
+  `src/home/today.ts` from the form's own draft, or not started), Waiting for you (`MyWorkPanel`; a card or entry with no
+  phone screen opens its web page), New entry (`src/home/NewEntries.tsx`) and the recent entries.
+- **A module's screen** (`app/module/[key].tsx`) is a module of the company's menu under its name: the tree's own modules
+  keep their pages' headings, a department module shows its sub-modules as headings.
 
 **Where a node opens** is `phoneTarget` in `src/launcher/routes.ts` (no React Native in it):
 

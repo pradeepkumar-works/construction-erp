@@ -351,10 +351,11 @@ and the pre-delivery checklist.
   and sends one `clientId` both directly and to the outbox; a form in `OUTBOX_FIX_PATH` also opens a refused entry by
   `?outboxId=`. Every `Input` has a `label` or an `accessibilityLabel`; dates and times are `DatePicker`/`TimePicker`
   (the phone's own pickers). `app/dpr/new.tsx` is the reference.
-- Mobile Home tab (ARCHITECTURE "The launcher on the phone"): tiles, Pinned and Recent from the navigation tree; a node
-  with a phone screen is a line in `PHONE_ROUTES` (`src/launcher/routes.ts`), anything else opens on the web; a new tree icon
-  goes in `src/components/NavIcon.tsx` too and a new node's name and description get Hindi in `src/i18n/hi/nav.ts`
-  (`nav-check.ts` and `i18n:check` fail otherwise).
+- Mobile Home tab (ARCHITECTURE "The launcher on the phone"): the day card (time, check in, HR row), then the menu: My work,
+  pins and the company's modules (`navMenuFor`, counts by `menuWaiting`); what waits and today's DPR live in My work, Recent in
+  Search (`app/find.tsx`); a node with a phone screen is a line in `PHONE_ROUTES` (`src/launcher/routes.ts`), anything else
+  opens on the web; a new tree icon goes in `src/components/NavIcon.tsx` too and a new node's name and description get Hindi in
+  `src/i18n/hi/nav.ts`, a menu module's in `src/i18n/hi/home.ts` (`nav-check.ts` and `i18n:check` fail otherwise).
 - Mobile Ask tab (`app/(tabs)/ask.tsx`, ARCHITECTURE "Ask on the phone"): links in answers open phone screens through
   `phoneRoute` (`src/ai/links.ts`), so a new record screen adds its line there; a server status line needs its Hindi in `src/i18n/hi/ai.ts`.
 - Mobile text: wrap everything a screen shows in `t()` from `useT()` (English is the key, `{placeholders}` for values)

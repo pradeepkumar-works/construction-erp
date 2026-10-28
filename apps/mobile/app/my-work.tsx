@@ -1,18 +1,21 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SUBMISSION_STATUS_LABELS, seesCompanyToday } from '@erp/shared';
 import type { CompanyTodayDto, DailyReportDto, MaterialRequestDto, MyWorkDto, Paginated, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
 import { fetchProjects } from '../src/api/lists';
 import { useAuth } from '../src/auth/AuthContext';
-import { Button, Card, EmptyState, ErrorState, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow } from '../src/components';
+import { Button, EmptyState, ErrorState, OfflineBanner, Screen, SectionTitle, SubmissionRow, Touchable } from '../src/components';
 import { CompanyTodayPanel } from '../src/components/CompanyToday';
 import { MyWorkPanel } from '../src/components/MyWork';
+import { NewEntries } from '../src/home/NewEntries';
+import { readDprDraft, type DprDraftSteps } from '../src/home/today';
+import { useLauncher } from '../src/launcher/useLauncher';
 import { Skeleton } from '../src/components/Skeleton';
 import { useOffline } from '../src/offline';
-import { colors, fontSize, radius, spacing, statusTone, typography } from '../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, statusTone, typography } from '../src/theme';
 import { fmtQty, formatDate, timeAgo, today } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -26,8 +29,9 @@ interface HomeData {
 type Recent = { type: SubmissionType; item: SubmissionBase; title: string; subtitle: string };
 
 /**
- * My work (launcher phase 4): what the Home tab was before it became the launcher, unchanged, opened from its tile. What
- * waits for the role, the company's day for those who lead with it, today's DPR per project and recent submissions.
+ * My work, the level under Home (its first icon): the company's day for those who lead with it, Today on site (each
+ * project's DPR, with its steps while a draft is on this phone), what waits for the role, New entry and the recent
+ * entries.
  */
 export default function MyWorkScreen() {
   const { user } = useAuth();
@@ -53,6 +57,10 @@ export default function MyWorkScreen() {
   // Owners, directors, accounts and project managers lead with the company's day (v5 item 96); site roles keep the rest.
   const leads = !!user && seesCompanyToday(user.roleKey);
   const company = useFetch<CompanyTodayDto | null>((api) => (leads ? api.get('/dashboard/company-today') : Promise.resolve(null)), [syncedCount, leads], { cacheKey: 'company-today' });
+  const launcher = useLauncher();
+  // A DPR typed on this phone and not sent yet, read again each time My work comes back into view.
+  const [draft, setDraft] = useState<DprDraftSteps | null>(null);
+  useFocusEffect(useCallback(() => setDraft(user ? readDprDraft(user.id) : null), [user]));
   const refreshAll = async () => {
     await Promise.all([refresh(), myWork.refresh(), leads ? company.refresh() : null]);
   };
@@ -64,16 +72,14 @@ export default function MyWorkScreen() {
       ...data.dprs.map((d) => ({ type: 'DPR' as const, item: d, title: `DPR · ${formatDate(d.date)}`, subtitle: d.projectName })),
       ...data.mrs.map((m) => ({ type: 'MATERIAL_REQUEST' as const, item: m, title: `${m.requestNo} · ${m.items.length === 1 ? t('1 item') : t('{n} items', { n: m.items.length })}`, subtitle: `${m.projectName} · ${t('needed {date}', { date: formatDate(m.requiredDate) })}` })),
     ];
-    const pending = all.filter((r) => r.item.status === 'SUBMITTED').length;
-    const changes = all.filter((r) => r.item.status === 'CHANGES_REQUESTED').length;
-    const recent = [...all].sort((a, b) => (b.item.createdAt > a.item.createdAt ? 1 : -1)).slice(0, 8);
+    const recent = [...all].sort((a, b) => (b.item.createdAt > a.item.createdAt ? 1 : -1)).slice(0, 5);
     const day = today();
     const dprToday = data.projects.map((p) => ({
       project: p,
       dpr: data.dprs.find((d) => d.projectId === p.id && d.date === day) ?? null,
       queued: outbox.some((i) => i.type === 'DPR' && i.payload.projectId === p.id && i.payload.date === day),
     }));
-    return { pending, changes, recent, dprToday };
+    return { recent, dprToday };
   }, [data, outbox, t]);
 
   const openDetail = (r: Recent) => {
@@ -86,59 +92,33 @@ export default function MyWorkScreen() {
       <OfflineBanner />
 
       {leads ? <CompanyTodayPanel data={company.data} loading={company.loading} /> : null}
-      <MyWorkPanel data={myWork.data} loading={myWork.loading} title={false} />
 
       {loading && !data ? (
         <Skeleton variant="card" label={t('Loading…')} />
       ) : error && !data ? (
         <ErrorState message={error} onRetry={reload} />
-      ) : data && derived ? (
+      ) : data && derived && derived.dprToday.length ? (
         <>
-          <View style={styles.stats}>
-            <Stat label={t('My projects')} value={data.projects.length} />
-            <Stat label={t(SUBMISSION_STATUS_LABELS.SUBMITTED)} value={derived.pending} tone={statusTone.SUBMITTED.fg} />
-            <Stat label={t(SUBMISSION_STATUS_LABELS.CHANGES_REQUESTED)} value={derived.changes} tone={derived.changes ? statusTone.CHANGES_REQUESTED.fg : colors.textMuted} />
+          <SectionTitle title={t('Today on site')} right={<Text style={typography.caption}>{formatDate(today())}</Text>} />
+          <View style={styles.today}>
+            {derived.dprToday.map(({ project, dpr, queued }, i) => (
+              <TodayRow key={project.id} first={i === 0} project={project} dpr={dpr} queued={queued} draft={draft && draft.projectId === project.id && draft.date === today() ? draft : null} />
+            ))}
           </View>
+        </>
+      ) : null}
 
-          <SectionTitle title={t("Today's DPR")} />
-          {derived.dprToday.length === 0 ? (
-            <Card>
-              <Text style={typography.caption}>{t('You are not assigned to any project yet.')}</Text>
-            </Card>
-          ) : (
-            derived.dprToday.map(({ project, dpr, queued }) => (
-              <Card key={project.id} onPress={() => (dpr ? router.push(`/dpr/${dpr.id}`) : queued ? router.push('/outbox') : router.push(`/dpr/new?projectId=${project.id}`))}>
-                <View style={styles.dprRow}>
-                  <View style={styles.flex}>
-                    <Text style={typography.bodyStrong} numberOfLines={1}>
-                      {project.name}
-                    </Text>
-                    <Text style={typography.caption}>{project.code}</Text>
-                  </View>
-                  {dpr ? (
-                    <View style={[styles.dprState, { backgroundColor: colors.successSoft }]}>
-                      <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-                      <Text style={[styles.dprStateText, { color: colors.success }]}>{t('Done')}</Text>
-                    </View>
-                  ) : queued ? (
-                    <View style={[styles.dprState, { backgroundColor: colors.primarySoft }]}>
-                      <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
-                      <Text style={[styles.dprStateText, { color: colors.primary }]}>{t('In outbox')}</Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.dprState, { backgroundColor: colors.warningSoft }]}>
-                      <Ionicons name="time" size={18} color={colors.warning} />
-                      <Text style={[styles.dprStateText, { color: colors.warning }]}>{t('Not submitted')}</Text>
-                    </View>
-                  )}
-                </View>
-              </Card>
-            ))
-          )}
+      <SectionTitle title={t('Waiting for you')} />
+      <MyWorkPanel data={myWork.data} loading={myWork.loading} title={false} webUrl={launcher.webUrl} />
 
-          <SectionTitle title={t('My recent submissions')} right={<Button title={t('See all')} variant="ghost" size="sm" onPress={() => router.push('/submissions')} />} />
+      <SectionTitle title={t('New')} />
+      <NewEntries />
+
+      {data && derived ? (
+        <>
+          <SectionTitle title={t('Recent')} right={<Button title={t('See all')} variant="ghost" size="sm" onPress={() => router.push('/submissions')} />} />
           {derived.recent.length === 0 ? (
-            <EmptyState title={t('No submissions yet')} subtitle={t('Use New entry on Home to submit your first entry.')} icon="create-outline" art="entries" />
+            <EmptyState title={t('No submissions yet')} subtitle={t('Use New above to send your first entry.')} icon="create-outline" art="entries" />
           ) : (
             derived.recent.map((r) => <SubmissionRow key={`${r.type}-${r.item.id}`} type={r.type} title={r.title} subtitle={r.subtitle} status={r.item.status} meta={timeAgo(r.item.createdAt)} onPress={() => openDetail(r)} />)
           )}
@@ -148,10 +128,109 @@ export default function MyWorkScreen() {
   );
 }
 
+/**
+ * One project's DPR today: sent (or in the outbox), its steps while a draft is on this phone (head count, work lines,
+ * photos, send), or not started.
+ */
+function TodayRow({ project, dpr, queued, draft, first }: { project: ProjectSummary; dpr: DailyReportDto | null; queued: boolean; draft: DprDraftSteps | null; first: boolean }) {
+  const router = useRouter();
+  const t = useT();
+  const head = (
+    <View style={styles.flex}>
+      <Text style={typography.bodyStrong} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>
+        {project.name}
+      </Text>
+      <Text style={typography.caption} maxFontSizeMultiplier={maxFontScale}>
+        {project.code}
+      </Text>
+    </View>
+  );
+  if (dpr || queued) {
+    const tone = dpr ? statusTone[dpr.status] : { fg: colors.primary, bg: colors.primarySoft, icon: 'cloud-upload-outline' as const };
+    return (
+      <Touchable accessibilityRole="button" onPress={() => router.push(dpr ? `/dpr/${dpr.id}` : '/outbox')} style={[styles.todayRow, !first && styles.todayRule]}>
+        {head}
+        <View style={[styles.dprState, { backgroundColor: tone.bg }]}>
+          <Ionicons name={tone.icon} size={18} color={tone.fg} />
+          <Text style={[styles.dprStateText, { color: tone.fg }]} maxFontSizeMultiplier={maxFontScale}>
+            {dpr ? t(SUBMISSION_STATUS_LABELS[dpr.status]) : t('In outbox')}
+          </Text>
+        </View>
+      </Touchable>
+    );
+  }
+  if (draft) {
+    const steps = [
+      { label: t('Head count'), done: draft.headCount > 0, note: draft.headCount ? t('{n} on site', { n: draft.headCount }) : t('Not counted') },
+      { label: t('Work lines'), done: draft.lines > 0, note: draft.lines === 1 ? t('1 line') : draft.lines ? t('{n} lines', { n: draft.lines }) : t('None yet') },
+      { label: t('Photos'), done: draft.photos > 0, note: draft.photos === 1 ? t('1 photo') : draft.photos ? t('{n} photos', { n: draft.photos }) : t('None yet') },
+      { label: t('Send'), done: false, note: t('Not sent') },
+    ];
+    const at = steps.findIndex((s) => !s.done);
+    const next = [t('Add the head count'), t('Add the work lines'), t('Add photos and send'), t('Send the DPR')][at];
+    return (
+      <View style={[styles.draft, !first && styles.todayRule]}>
+        <View style={styles.todayHead}>
+          {head}
+          <View style={[styles.dprState, { backgroundColor: colors.primarySoft }]}>
+            <Text style={[styles.dprStateText, { color: colors.primary }]} maxFontSizeMultiplier={maxFontScale}>
+              {t('{n} of 4 done', { n: at })}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.steps} accessibilityRole="list">
+          {steps.map((s, i) => (
+            <View key={s.label} style={styles.step} accessibilityLabel={`${s.label}, ${s.note}${s.done ? `, ${t('done')}` : ''}`}>
+              <View style={[styles.dot, s.done ? styles.dotDone : i === at ? styles.dotNow : null]}>
+                {s.done ? <Ionicons name="checkmark" size={16} color={colors.textOnPrimary} /> : <Text style={[styles.dotText, i === at && { color: colors.primary }]}>{i + 1}</Text>}
+              </View>
+              <View style={styles.flex}>
+                <Text style={typography.body} maxFontSizeMultiplier={maxFontScale}>
+                  {s.label}
+                </Text>
+                <Text style={[typography.caption, i === at && styles.nowNote]} maxFontSizeMultiplier={maxFontScale}>
+                  {s.note}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+        <Button title={next} icon={at === 2 ? 'camera-outline' : 'create-outline'} onPress={() => router.push('/dpr/new')} />
+      </View>
+    );
+  }
+  return (
+    <Touchable accessibilityRole="button" accessibilityLabel={t('{project}: no DPR yet. Start', { project: project.name })} onPress={() => router.push(`/dpr/new?projectId=${project.id}`)} style={[styles.todayRow, !first && styles.todayRule]}>
+      <View style={styles.flex}>
+        <Text style={typography.bodyStrong} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>
+          {project.name}
+        </Text>
+        <Text style={[typography.caption, { color: colors.warning }]} maxFontSizeMultiplier={maxFontScale}>
+          {t('No DPR yet')}
+        </Text>
+      </View>
+      <Text style={styles.start} maxFontSizeMultiplier={maxFontScale}>
+        {t('Start')}
+      </Text>
+    </Touchable>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  stats: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  dprRow: { flexDirection: 'row', alignItems: 'center' },
-  dprState: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.pill, marginLeft: spacing.sm },
+  today: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginBottom: spacing.lg, overflow: 'hidden' },
+  todayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 64, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  todayRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  todayHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  draft: { padding: spacing.lg, gap: spacing.md },
+  dprState: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.pill },
   dprStateText: { fontSize: fontSize.small, fontWeight: '700' },
+  steps: { gap: spacing.sm },
+  step: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
+  dot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  dotDone: { backgroundColor: colors.success, borderColor: colors.success },
+  dotNow: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  dotText: { fontSize: fontSize.small, fontWeight: '700', color: colors.textMuted },
+  nowNote: { color: colors.primary, fontWeight: '600' },
+  start: { fontSize: fontSize.body, fontWeight: '600', color: colors.primary },
 });

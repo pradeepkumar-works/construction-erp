@@ -103,6 +103,8 @@ export function useLauncher() {
     recent: data?.recent ?? [],
     webUrl: data?.webUrl ?? null,
     badges: badges.data?.nodes ?? {},
+    /** Approvals waiting by type, for the counts on the company's modules (`menuWaiting`). */
+    approvals: badges.data?.approvals,
     loading: launcher.loading && !data,
     refreshing: launcher.refreshing || badges.refreshing,
     refresh,

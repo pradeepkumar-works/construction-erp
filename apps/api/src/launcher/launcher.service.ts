@@ -188,6 +188,6 @@ export class LauncherService {
     add('quality.grns', work.grnsToCheck?.count);
     add('purchases.toBill', work.toMatch?.count);
     add('accounts.debitNotes', work.toDebit?.count);
-    return { nodes };
+    return { nodes, approvals: approvals.filter((a) => a.count > 0) };
   }
 }

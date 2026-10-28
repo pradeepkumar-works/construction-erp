@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { ChainageLayer, PipelineStages, SectorMatrix, SectorProgressDto } from '@erp/shared';
-import { formatChainage } from '@erp/shared';
+import { formatChainage, sectorStepOf } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
 import { useT } from '../src/i18n/LanguageContext';
 import { Card, EmptyState, ErrorState, Loading, ProgressBar, Screen } from '../src/components';
@@ -11,13 +11,15 @@ import { fmtQty } from '../src/utils/format';
 
 /** Progress where it happened: along the road, floor by floor, or village by village with the pipe stages. */
 export default function SectorScreen() {
-  const { projectId } = useLocalSearchParams<{ projectId: string }>();
+  const { projectId, kind } = useLocalSearchParams<{ projectId: string; kind?: 'chainage' | 'floors' | 'villages' }>();
   const t = useT();
   const { data, loading, refreshing, error, refresh, reload } = useFetch<SectorProgressDto>((a) => a.get(`/projects/${projectId}/sector-progress`), [projectId], { enabled: !!projectId, cacheKey: `sector:${projectId}` });
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
-  const title = t(data.type === 'ROAD' ? 'Progress by Chainage' : data.type === 'BUILDING' ? 'Progress by Floor' : 'Villages & Pipeline');
+  // The project's places (its type's, item 134) as the project screen named them; the type's own when opened without.
+  const step = kind ?? sectorStepOf(data.type);
+  const title = step === 'chainage' ? t('Progress by chainage') : step === 'floors' ? t('Progress by floor') : t('Villages & pipeline');
   const empty = !data.pipeline && !data.strip?.length && !data.matrix?.rows.length;
 
   return (
@@ -25,7 +27,7 @@ export default function SectorScreen() {
       <Stack.Screen options={{ title }} />
       {empty ? <EmptyState title={t('Nothing placed yet')} subtitle={t('Give the chainage, floor or village on progress entries and it shows here.')} icon="map-outline" /> : null}
       {data.pipeline ? <Pipeline stages={data.pipeline.stages} villages={data.pipeline.villages} /> : null}
-      {data.strip?.length ? <Strip layers={data.strip} start={data.chainageStart} end={data.chainageEnd} main={data.type !== 'ROAD'} /> : null}
+      {data.strip?.length ? <Strip layers={data.strip} start={data.chainageStart} end={data.chainageEnd} main={!!data.pipeline} /> : null}
       {data.matrix && data.matrix.rows.length ? <Matrix matrix={data.matrix} /> : null}
     </Screen>
   );
