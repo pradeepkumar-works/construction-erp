@@ -107,3 +107,9 @@ export class SaveComponentKindDto {
   @ApiProperty({ type: [ComponentStepDto] }) @IsArray() @ArrayMaxSize(MAX_KIND_STEPS) @ValidateNested({ each: true }) @Type(() => ComponentStepDto) steps: ComponentStepDto[];
   @ApiProperty() @IsBoolean() active: boolean;
 }
+
+export class SaveDprFormDto {
+  @ApiProperty({ description: 'The whole form: fields (built-in, each with show, required and label), minPhotos, lines (picker, parts, crewCategories, machineNames) and own (up to 20 fields of the company\'s own)' })
+  @IsObject()
+  definition: Record<string, unknown>;
+}

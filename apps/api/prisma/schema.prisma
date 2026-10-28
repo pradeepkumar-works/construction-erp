@@ -773,6 +773,7 @@ model Organization {
   risks                Risk[]
   activityTemplates    ActivityTemplate[]
   projectTypes         ProjectTypeConfig[]
+  dprForms             DprFormConfig[]
   componentKinds       ComponentKind[]
   approvalRules        ApprovalRule[]
   approvalSteps        ApprovalStep[]
@@ -1021,6 +1022,7 @@ model User {
   managedProjects       Project[]                  @relation("ProjectManager")
   baselinedProjects     Project[]                  @relation("ProjectBaselineBy")
   projectTypesUpdated   ProjectTypeConfig[]        @relation("ProjectTypeUpdatedBy")
+  dprFormsCreated       DprFormConfig[]            @relation("DprFormCreatedBy")
   componentKindsUpdated ComponentKind[]            @relation("ComponentKindUpdatedBy")
   responsibleFor        Activity[]                 @relation("ActivityResponsible")
   submittedProgress     ProgressEntry[]            @relation("ProgressSubmitter")
@@ -2300,6 +2302,26 @@ model ProjectTypeConfig {
   @@unique([organizationId, code])
 }
 
+/// One saved version of a project type's DPR form (item 134 part 2), never changed once saved: a DPR keeps the version
+/// it was made on. A type with none uses its standard form (@erp/shared dpr-form.ts)
+model DprFormConfig {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// The project type's code
+  typeCode       String
+  version        Int
+  /// DprFormDef (@erp/shared dpr-form.ts)
+  definition     Json
+  createdById    String?
+  createdBy      User?        @relation("DprFormCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+
+  reports DailyReport[]
+
+  @@unique([organizationId, typeCode, version])
+}
+
 /// A company's component kind (item 134): its own, or its copy of a built-in kind (same code). Built on a
 /// `WorkElementType`, which components laid out from it take as `WorkElement.elementType`
 model ComponentKind {
@@ -2352,6 +2374,8 @@ model ProgressEntry {
   labour         Json?
   /// [{ name: string, hours: number }]: machines on this line; machineryUsed is their names
   machines       Json?
+  /// A DPR line's values of the form's own line fields (item 134), by key
+  extra          Json?
   /// The subcontractor's work order the line was done under
   workOrderId    String?
   workOrder      WorkOrder?       @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
@@ -2537,6 +2561,11 @@ model DailyReport {
   safetyObservations String?
   issues             String?
   nextDayPlan        String?
+  /// The version of its type's DPR form it was made on (item 134); null for the type's standard form
+  dprFormConfigId    String?
+  dprFormConfig      DprFormConfig?   @relation(fields: [dprFormConfigId], references: [id], onDelete: Restrict)
+  /// Values of the form's own day fields, by key ({ rainHours: 2.5 })
+  extra              Json             @default("{}")
   status             SubmissionStatus @default(DRAFT)
   submittedById      String
   submittedBy        User             @relation("DprSubmitter", fields: [submittedById], references: [id])

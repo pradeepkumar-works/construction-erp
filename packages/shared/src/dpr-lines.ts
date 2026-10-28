@@ -4,8 +4,9 @@
  * of the DPR: it is submitted, approved and sent back with the DPR. The arithmetic here is pure, so the API, the web
  * and the phone agree on it.
  */
-import type { PipeNodeKind, PipeStage } from './enums';
-import type { MachineryLine, ManpowerLine } from './types';
+import type { PipeNodeKind, PipeStage, WorkLocation } from './enums';
+import type { AttachmentDto, MachineryLine, ManpowerLine } from './types';
+import type { DprExtra, DprFormDto } from './dpr-form';
 
 export interface DprMaterialDto {
   itemId: string;
@@ -57,6 +58,10 @@ export interface DprLineDto {
   pct: number | null;
   /** scope − cumulative (negative when the work ran over the scope) */
   balance: string;
+  /** The line's values of the form's own fields (item 134), by key */
+  extra: DprExtra;
+  /** The line's photo, when the form asks for one */
+  attachments: AttachmentDto[];
 }
 
 /** A work line as the forms send it. `id` keeps a line's progress entry when the DPR is edited. */
@@ -77,6 +82,10 @@ export interface DprLineInput {
   /** On a pipe stage activity (item 126): the segment worked on, and the valve fixed or the end the work started from */
   pipeSegmentId?: string | null;
   pipeNodeId?: string | null;
+  /** Values of the form's own line fields (item 134), by key */
+  extra?: Record<string, unknown>;
+  /** The line's photos (uploaded attachments) */
+  attachmentIds?: string[];
 }
 
 /** Material one unit of the activity uses: its own norm (item 128), else its BOQ item's reconciliation norm (v5 item 92). */
@@ -141,6 +150,10 @@ export interface DprWorkOptionsDto {
   /** Proposed pipe segments and valve points of the project's zones and mains (item 126) */
   segments: DprSegmentOptionDto[];
   valves: DprValveOptionDto[];
+  /** The DPR form of the project's type (item 134), the version a new report is made on */
+  form: DprFormDto;
+  /** Where the project's work is located, for a line's chainage, floor or village */
+  sector: { locations: WorkLocation[]; chainageStart: number | null; chainageEnd: number | null; floors: string[]; villages: string[] };
 }
 
 const num = (s: string | number | null | undefined) => {
@@ -275,3 +288,56 @@ export function dprLineProblem(l: { activityId?: string | null; quantity?: strin
   if (q <= 0) return `Line ${n}: the quantity must be more than 0`;
   return null;
 }
+
+/* ---------- picking a line's activity: component, then sub-component, then activity (web and phone) ---------- */
+
+type PickActivity = Pick<DprActivityOptionDto, 'componentCode' | 'componentName' | 'subComponentCode' | 'subComponentName'>;
+/** The pick of an activity outside the breakdown, and of activities on a component itself rather than a sub-component. */
+export const PICK_OUTSIDE = '~';
+export const PICK_WHOLE = '=';
+export const componentPickOf = (a: PickActivity) => a.componentCode ?? PICK_OUTSIDE;
+export const subPickOf = (a: PickActivity) => a.subComponentCode ?? PICK_WHOLE;
+const byPick = (x: string, y: string) => Number(x === PICK_OUTSIDE) - Number(y === PICK_OUTSIDE) || x.localeCompare(y, undefined, { numeric: true });
+
+export interface PickChoice {
+  key: string;
+  name: string | null;
+  /** Activities under it */
+  count: number;
+}
+
+/** The components the project's activities sit in, in code order, outside the breakdown last; empty with no breakdown. */
+export function componentChoices(activities: PickActivity[]): PickChoice[] {
+  if (!activities.some((a) => a.componentCode)) return [];
+  const seen = new Map<string, PickChoice>();
+  for (const a of activities) {
+    const k = componentPickOf(a);
+    const c = seen.get(k) ?? { key: k, name: a.componentName, count: 0 };
+    c.count += 1;
+    seen.set(k, c);
+  }
+  return [...seen.values()].sort((x, y) => byPick(x.key, y.key));
+}
+
+/** The sub-components of a component, and the component as a whole when activities sit on it directly; empty with none. */
+export function subComponentChoices(activities: PickActivity[], component: string | null): PickChoice[] {
+  const acts = activities.filter((a) => component !== null && componentPickOf(a) === component);
+  if (!acts.some((a) => a.subComponentCode)) return [];
+  const seen = new Map<string, PickChoice>();
+  for (const a of acts) {
+    const k = subPickOf(a);
+    const c = seen.get(k) ?? { key: k, name: a.subComponentName, count: 0 };
+    c.count += 1;
+    seen.set(k, c);
+  }
+  return [...seen.values()].sort((x, y) => Number(x.key === PICK_WHOLE) - Number(y.key === PICK_WHOLE) || x.key.localeCompare(y.key, undefined, { numeric: true }));
+}
+
+/** The activities a line may take, narrowed by the component and sub-component picked (null: any). */
+export function activitiesFor<T extends PickActivity>(activities: T[], component: string | null, sub: string | null): T[] {
+  return activities.filter((a) => (component === null || componentPickOf(a) === component) && (sub === null || subPickOf(a) === sub));
+}
+
+/** Where a line stands in the breakdown: its activity's own place once chosen, else what was picked. */
+export const linePick = (picked: { component: string | null; sub: string | null }, activity: PickActivity | undefined) =>
+  activity ? { component: componentPickOf(activity), sub: subPickOf(activity) } : picked;

@@ -1,5 +1,6 @@
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
+import type { DprExtra, DprFormDto } from './dpr-form';
 import type { AuthGroupDto, CompanyChoiceDto } from './group';
 import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
 import type { OmBillDto } from './om';
@@ -356,6 +357,12 @@ export interface DailyReportDto extends SubmissionBase {
   lineCount: number;
   /** The work lines with their figures; on the single report (GET /dpr/:id), not in lists */
   lines?: DprLineDto[];
+  /** The version of its type's DPR form it was made on (item 134); null for the type's standard form */
+  formId: string | null;
+  /** Values of the form's own fields for the day, by key */
+  extra: DprExtra;
+  /** The form it was made on; on the single report */
+  form?: DprFormDto;
 }
 
 export interface MaterialRequestItemDto {

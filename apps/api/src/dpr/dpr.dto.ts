@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, Min, ValidateNested } from 'class-validator';
 import { IsQuantity } from '../common/quantity';
 import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, SubmissionStatus, WEATHER_OPTIONS, Weather, type DprSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
@@ -39,6 +39,8 @@ export class DprLineInputDto {
   @ApiPropertyOptional({ nullable: true, description: 'The valve fixed (VALVES stage), or the end of the segment the work started from' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pipeNodeId?: string | null;
   @ApiPropertyOptional({ description: "A work order of the project the line was done under", nullable: true }) @IsOptional() @IsUUID() workOrderId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) remarks?: string | null;
+  @ApiPropertyOptional({ description: "The line's fields of the company's own (item 134 part 2), by key", example: { trenchOpenRmt: 40 } }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsObject() extra?: Record<string, unknown> | null;
+  @ApiPropertyOptional({ type: [String], description: "The line's photos; on an edit, when sent, the complete list" }) @IsOptional() @IsArray() @ArrayMaxSize(10) @IsUUID('4', { each: true }) attachmentIds?: string[];
 }
 
 export class CreateDprDto {
@@ -63,6 +65,11 @@ export class CreateDprDto {
   @ApiPropertyOptional() @IsOptional() @IsString() issues?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() nextDayPlan?: string;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
+  @ApiPropertyOptional({ description: "The day's fields of the company's own (item 134 part 2), by key", example: { rainHours: 2.5 } }) @IsOptional() @IsObject() extra?: Record<string, unknown>;
+  @ApiPropertyOptional({ description: "The version of the project type's DPR form the report was filled on (a phone filling offline); else the type's latest. Ignored on an edit, which keeps the report's own." })
+  @IsOptional()
+  @IsUUID()
+  formId?: string;
   @ApiPropertyOptional({ default: true }) @IsOptional() @IsBoolean() submit?: boolean;
 }
 
