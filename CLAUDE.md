@@ -129,6 +129,10 @@ and the pre-delivery checklist.
   Fields side by side go in `FormGrid`; amounts are `MoneyInput`, quantities `QuantityInput unit=…`, phones/emails/GSTINs use
   `PHONE_INPUT`/`EMAIL_INPUT`/`CODE_INPUT` and their rules (`components/form/inputs.tsx`). Error messages say how to fix
   ("Choose the project"), never just "Required".
+- Masters (item 135, ARCHITECTURE "Masters"): a list the company keeps is a node in its department's Masters sub-module
+  (`DEPARTMENT_MODULES`), shown in Admin › Masters; a simple list of words is a key in `MASTER_LISTS` (`@erp/shared/masters.ts`)
+  with standard entries in code and the company's `MasterEntry` rows over them by code, picked with `MasterInput` (web) or
+  read through `MastersService.entriesFor`, never a fixed array of a form's own. Keep `src/scripts/masters-test.ts` passing.
 - Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
   over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep

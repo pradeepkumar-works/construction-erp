@@ -2,7 +2,6 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma, SubmissionStatus } from '@prisma/client';
 import {
   DEPARTMENTAL_CONTRACTOR,
-  MANPOWER_CATEGORIES,
   attendanceToManpower,
   isAttendanceLocked,
   mergeHeadCount,
@@ -20,6 +19,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
+import { MastersService } from '../masters/masters.service';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, iso, parseDate, assertNotAfterToday } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
@@ -67,6 +67,7 @@ export class AttendanceService {
     private prisma: PrismaService,
     private access: ProjectAccessService,
     private audit: AuditService,
+    private masters: MastersService,
   ) {}
 
   toDto(r: Row, dprStatus: SubmissionStatus | null, run: LockingRun | null): AttendanceSheetDto {
@@ -237,6 +238,9 @@ export class AttendanceService {
         take: 100,
       }),
     ]);
+    // Trades come from the company's master (item 135); one it switched off is no longer offered, even if used before.
+    const trades = await this.masters.entriesFor(user.organizationId, 'trade');
+    const tradesOff = new Set(trades.filter((t) => !t.isActive).map((t) => t.name.trim().toLowerCase()));
     const uniq = (xs: string[]) => {
       const seen = new Set<string>();
       return xs.filter((x) => {
@@ -248,7 +252,7 @@ export class AttendanceService {
     };
     return {
       contractors: uniq([DEPARTMENTAL_CONTRACTOR, ...contractors.map((c) => c.contractor), ...vendors.map((v) => v.name)]),
-      categories: uniq([...categories.map((c) => c.category), ...MANPOWER_CATEGORIES]),
+      categories: uniq([...trades.filter((t) => t.isActive).map((t) => t.name), ...categories.map((c) => c.category).filter((c) => !tradesOff.has(c.trim().toLowerCase()))]),
     };
   }
 

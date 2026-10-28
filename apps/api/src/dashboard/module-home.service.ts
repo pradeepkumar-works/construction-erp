@@ -16,6 +16,7 @@ import {
   canReportSafety,
   canViewCompliance,
   canViewContract,
+  canViewLetters,
   canViewCost,
   canViewLabourSummary,
   canViewPayables,
@@ -49,6 +50,7 @@ import { StatementsService } from '../statements/statements.service';
 import { moduleOn } from '../common/module-switch.guard';
 import { ProjectsService } from '../projects/projects.service';
 import { plannedProgress } from './dashboard.service';
+import { DocumentsService } from '../documents/documents.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -78,6 +80,7 @@ export class ModuleHomeService {
     private books: BooksService,
     private statements: StatementsService,
     private projects: ProjectsService,
+    private documents: DocumentsService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -196,7 +199,11 @@ export class ModuleHomeService {
       case 'site':
         return this.site(user, today, projectId);
       case 'quality':
-        return this.quality(user, today, projectId);
+        return this.quality(user, projectId);
+      case 'safety':
+        return this.safety(user, today, projectId);
+      case 'correspondence':
+        return this.correspondence(user, projectId);
       case 'materials':
         return this.materials(user, projectId);
       case 'plant':
@@ -212,7 +219,7 @@ export class ModuleHomeService {
       case 'people':
         return this.people(user, today, projectId);
       default:
-        // Projects, Documents, Subcontracts, Payroll, Reports and Admin show their pages and what waits, no figures yet.
+        // Projects, Design and drawings, Subcontracts, Payroll, Reports and Admin show their pages and what waits, no figures yet.
         return [];
     }
   }
@@ -259,19 +266,30 @@ export class ModuleHomeService {
     return out;
   }
 
-  private async quality(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
+  private async quality(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {
     if (!canReportSafety(user.roleKey)) return [];
-    const where = this.where(user, projectId);
-    const day = parseDate(today);
+    const ncrs = await this.prisma.ncr.count({ where: { ...this.where(user, projectId), status: { not: 'CLOSED' } } });
+    return [count('openNcrs', 'Open NCRs', ncrs, '/inspections?tab=ncrs', { tone: ncrs ? 'warning' : 'default', note: ncrs ? 'Waiting for action or closing' : 'None open' })];
+  }
+
+  private async safety(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
+    if (!canReportSafety(user.roleKey) || !moduleOn(user, 'safety')) return [];
     const monthStart = parseDate(`${today.slice(0, 7)}-01`);
-    const safety = moduleOn(user, 'safety');
-    const [ncrs, incidents] = await Promise.all([
-      this.prisma.ncr.count({ where: { ...where, status: { not: 'CLOSED' } } }),
-      safety ? this.prisma.safetyIncident.count({ where: { ...where, date: { gte: monthStart, lte: day } } }) : 0,
-    ]);
-    const out = [count('openNcrs', 'Open NCRs', ncrs, '/inspections?tab=ncrs', { tone: ncrs ? 'warning' : 'default', note: ncrs ? 'Waiting for action or closing' : 'None open' })];
-    if (safety) out.push(count('incidents', 'Safety incidents this month', incidents, '/safety', { tone: incidents ? 'danger' : 'default', note: incidents ? 'Reported since the 1st' : 'None since the 1st' }));
-    return out;
+    const incidents = await this.prisma.safetyIncident.count({ where: { ...this.where(user, projectId), date: { gte: monthStart, lte: parseDate(today) } } });
+    return [count('incidents', 'Safety incidents this month', incidents, '/safety', { tone: incidents ? 'danger' : 'default', note: incidents ? 'Reported since the 1st' : 'None since the 1st' })];
+  }
+
+  private async correspondence(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {
+    if (!canViewLetters(user.roleKey)) return [];
+    const s = await this.documents.summary(user, projectId);
+    const due = s.lettersAwaitingReply ?? 0;
+    const late = s.lettersOverdue ?? 0;
+    return [
+      count('lettersDue', 'Letters waiting for our reply', due, '/documents?tab=letters', {
+        tone: late ? 'danger' : due ? 'warning' : 'default',
+        note: late ? `${plural(late, 'reply', 'replies')} past the date asked` : due ? 'Replies asked by a date' : 'Nothing waiting',
+      }),
+    ];
   }
 
   private async materials(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {

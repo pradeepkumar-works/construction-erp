@@ -53,6 +53,13 @@ import Gauge from 'lucide-react-native/icons/gauge';
 import Gavel from 'lucide-react-native/icons/gavel';
 import GitBranch from 'lucide-react-native/icons/git-branch';
 import Hammer from 'lucide-react-native/icons/hammer';
+import TrafficCone from 'lucide-react-native/icons/traffic-cone';
+import DraftingCompass from 'lucide-react-native/icons/drafting-compass';
+import LibraryBig from 'lucide-react-native/icons/library-big';
+import Tags from 'lucide-react-native/icons/tags';
+import Shapes from 'lucide-react-native/icons/shapes';
+import IdCardLanyard from 'lucide-react-native/icons/id-card-lanyard';
+import Building from 'lucide-react-native/icons/building';
 import HandCoins from 'lucide-react-native/icons/hand-coins';
 import Handshake from 'lucide-react-native/icons/handshake';
 import HardHat from 'lucide-react-native/icons/hard-hat';
@@ -172,6 +179,13 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'gavel': Gavel,
   'git-branch': GitBranch,
   'hammer': Hammer,
+  'traffic-cone': TrafficCone,
+  'drafting-compass': DraftingCompass,
+  'library-big': LibraryBig,
+  'tags': Tags,
+  'shapes': Shapes,
+  'id-card-lanyard': IdCardLanyard,
+  'building': Building,
   'hand-coins': HandCoins,
   'handshake': Handshake,
   'hard-hat': HardHat,

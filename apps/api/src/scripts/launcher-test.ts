@@ -65,7 +65,7 @@ test('Home tiles to mark are the top-level tiles but My work, and a visit counts
 });
 
 test('a site engineer sees New first, then modules never opened (three at most), then modules to ask for', () => {
-  assert.deepEqual(shown(discoverFor({ roleKey: 'SITE_ENGINEER' }, none, TODAY)), ['tenders:new', 'rmc:new', 'projects:unopened', 'site:unopened', 'quality:unopened', 'billing:locked']);
+  assert.deepEqual(shown(discoverFor({ roleKey: 'SITE_ENGINEER' }, none, TODAY)), ['tenders:new', 'rmc:new', 'projects:unopened', 'site:unopened', 'quality:unopened', 'correspondence:locked']);
   const entries = discoverFor({ roleKey: 'SITE_ENGINEER' }, none, TODAY);
   assert.equal(entries.find((e) => e.node.id === 'tenders')!.locked, true, 'New but not for the role: greyed, with Request access');
   assert.equal(entries.find((e) => e.node.id === 'rmc')!.locked, false);
@@ -73,7 +73,7 @@ test('a site engineer sees New first, then modules never opened (three at most),
 
 test('opening a module takes it out of Discover, New included', () => {
   const after = discoverFor({ roleKey: 'SITE_ENGINEER' }, { ...none, opened: ['rmc', 'projects', 'site', 'quality', 'documents'] }, TODAY);
-  assert.deepEqual(shown(after).slice(0, 3), ['tenders:new', 'materials:unopened', 'plant:unopened']);
+  assert.deepEqual(shown(after).slice(0, 3), ['tenders:new', 'safety:unopened', 'materials:unopened']);
   assert.ok(!shown(after).some((s) => s.startsWith('rmc:') || s.startsWith('site:')));
 });
 
@@ -87,7 +87,7 @@ test('Featured leads after New; with the switch off a role sees only what it can
 
 test('New and Featured filling Discover still leave a place for a module to ask for', () => {
   const full = discoverFor({ roleKey: 'SITE_ENGINEER' }, { ...none, flags: [flag('documents', { featured: true })] }, TODAY);
-  assert.deepEqual(shown(full), ['tenders:new', 'rmc:new', 'documents:featured', 'projects:unopened', 'site:unopened', 'billing:locked']);
+  assert.deepEqual(shown(full), ['tenders:new', 'rmc:new', 'documents:featured', 'projects:unopened', 'site:unopened', 'correspondence:locked']);
 });
 
 test('a module the company turned off is neither shown nor asked for; Admin and single pages are never asked for', () => {
@@ -102,9 +102,9 @@ test('a module the company turned off is neither shown nor asked for; Admin and 
 
 test('Discover holds at most six, and a request rides on its tile', () => {
   for (const roleKey of ['ADMIN', 'MANAGEMENT', 'HR_MANAGER', 'STORE_MANAGER', 'SITE_ENGINEER'] as const) assert.ok(discoverFor({ roleKey }, none, TODAY).length <= DISCOVER_SHOWN, roleKey);
-  const request = { id: 'r1', nodeId: 'billing', status: 'OPEN' as const, reply: null, createdAt: `${TODAY}T05:00:00.000Z`, decidedAt: null };
+  const request = { id: 'r1', nodeId: 'correspondence', status: 'OPEN' as const, reply: null, createdAt: `${TODAY}T05:00:00.000Z`, decidedAt: null };
   const entries = discoverFor({ roleKey: 'SITE_ENGINEER' }, { ...none, requests: [request] }, TODAY);
-  assert.equal(entries.find((e) => e.node.id === 'billing')!.request, request);
+  assert.equal(entries.find((e) => e.node.id === 'correspondence')!.request, request);
 });
 
 let failed = 0;

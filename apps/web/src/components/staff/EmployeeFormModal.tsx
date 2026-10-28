@@ -13,6 +13,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useEmployees, useLinkableUsers, useProjects } from '@/lib/queries';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, EMAIL_INPUT, MoneyInput, PHONE_INPUT, emailRule, ifscRule, panRule, phoneRule, upper } from '@/components/form/inputs';
+import { MasterInput } from '@/components/masters/MasterInput';
 
 interface FormValues {
   employeeCode?: string;
@@ -178,10 +179,10 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
               <Input maxLength={30} placeholder="EMP-022" {...CODE_INPUT} />
             </Form.Item>
             <Form.Item name="designation" label="Designation" rules={[{ required: true, whitespace: true, message: 'Enter the designation, e.g. Site supervisor' }]}>
-              <Input maxLength={80} placeholder="Site supervisor" />
+              <MasterInput list="designation" maxLength={80} placeholder="Site supervisor" />
             </Form.Item>
             <Form.Item name="department" label="Department">
-              <Input maxLength={80} placeholder="Execution" />
+              <MasterInput list="department" maxLength={80} placeholder="Execution" />
             </Form.Item>
             <Form.Item name="projectId" label="Posted at" extra="Blank for head office">
               <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Head office" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />

@@ -258,10 +258,13 @@ A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`
   modules by `navMenuGroup`). `navPersonalLook` lets each person pick their own (`User.navLook`, the account menu's Top bar
   look, `PUT /nav-settings/own-look`); `navSettingsOf(user)` decides which applies.
 - **The modules** (`navModuleSet`): `AREAS`, the tree's own modules (`AREA_MODULES`, built from `NAV_TREE`), or
-  `DEPARTMENTS`, the twelve a contractor's departments run (`DEPARTMENT_MODULES`: project management, planning and
-  estimation, purchase, store and inventory, contractors, machinery, plant, accounts, labour, HR and payroll, reports and
-  MIS, administration), each a list of sub-modules naming tree nodes. A department module's screen is `DepartmentHome` at
-  `/modules/<key>` (keys are kept forever, names hang on them).
+  `DEPARTMENTS`, the fifteen a contractor's departments run (`DEPARTMENT_MODULES`: project management, quality (QA/QC),
+  design and drawings, correspondence, planning and estimation, purchase, store and inventory, contractors, machinery,
+  plant, accounts, labour, HR and payroll, reports and MIS, administration), each a list of sub-modules naming tree nodes,
+  with a Masters sub-module naming its masters (below). A department module's screen is `DepartmentHome` at
+  `/modules/<key>` (keys are kept forever, names hang on them). Item 135 took QA/QC, Design and drawings and
+  Correspondence out of Project management, which keeps Safety; in the tree, Safety (`safety`) and Correspondence
+  (`correspondence`) are modules of their own and the moved nodes keep their ids (`quality.incidents`, `documents.letters`).
 - **The names** (`navNames`, by module key, at most `NAV_NAME_MAX` characters, checked by `navNamesProblem` and tidied by
   `cleanNavNames`): the sidebar, the top bar, Home and the module's screen show the company's name.
 
@@ -272,6 +275,33 @@ carries `navigation` (left out while it is the default) and `ownLook`, so the sh
 reads it through `components/shell/menu.ts` (`useNavMenu`, `useMenuPlace`, `moduleWaiting` for a module's count) and draws
 it in `TopBar.tsx`; the sidebar's sections follow the same set and names in `navFor`. A page added to the tree needs a place
 in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live page with none. The phone keeps its launcher.
+
+### Masters (item 135)
+
+A master is a list the company keeps and other records pick from. Each department module's **Masters** sub-module names its
+masters as tree nodes, and **Administration › Masters** (`/masters`, `mastersByDepartment` in `nav-menu.ts`) lists every one
+the user may open, under the department whose menu names it. Most masters are pages that existed already (items and units,
+vendors, clients, project types, schedules of rates, equipment, mix designs, the chart of accounts, holidays, salaries,
+checklists); a new master is a node in its department's Masters, never a page of its own outside the tree.
+
+- **Simple lists** (`MASTER_LISTS` in `@erp/shared/masters.ts`): trades, designations, departments, item categories and
+  equipment categories. Each list's standard entries are code (`MASTER_LIST_DEFS`: code, name, Hindi name), and the
+  company's `MasterEntry` rows (RLS) lay over them by code (`mergeMaster`): a row with a standard code renames it, gives it
+  a Hindi name or switches it off; any other code is the company's own, after the standard ones. Nothing is seeded.
+- **Records keep the words**, not a key (an attendance line says "Mason"), so `masterProblem` keeps the name of an entry
+  that records use (`MastersService` counts them per list) and a standard entry is switched off, never deleted. A switched-off
+  entry stays on old records and leaves the pickers.
+- **Who.** Every member of staff reads the lists (`canViewMasters`); each list says who changes it (`manage`: labour rates'
+  roles for trades, HR for designations and departments, the store for item categories, approvers for equipment
+  categories). Changes are audited as `MASTER`.
+- **API** (`MastersService`, `/masters`): `GET /masters` (each list's counts), `GET /masters/:list` (`trade`,
+  `item-category`…; `usage=1` counts records), `POST /masters/:list`, `PATCH /masters/:list/:code` (rename while unused,
+  Hindi name, switch), `DELETE /masters/:list/:code` (the company's own, unused). `entriesFor` gives a service the list:
+  `AttendanceService.suggestions` offers the company's trades (and leaves out the ones switched off), so the head count,
+  roll call and worker forms on the web and the phone follow the master.
+- **Web.** `/masters/<list>` (`MasterListPage`: find, Export, Import from Excel, New, edit, switch, delete) and `MasterInput`
+  (an `AutoComplete` over the entries switched on, still taking a word not in the list, as `UnitInput` does) on the item,
+  equipment and employee forms. Rules are tested in `src/scripts/masters-test.ts` (CI runs it).
 
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 

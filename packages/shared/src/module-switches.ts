@@ -35,7 +35,7 @@ export interface SwitchableModuleInfo {
 export const SWITCHABLE_MODULE_INFO: Record<SwitchableModule, SwitchableModuleInfo> = {
   meetings: { label: 'Meetings', description: 'Minutes of meetings and the actions they give out.', paths: ['/meetings'], section: 'site' },
   material_approvals: { label: 'Material approvals', description: 'Approved makes, and make and sample approvals from the client.', paths: ['/material-approvals'], section: 'materials' },
-  safety: { label: 'Safety', description: 'Incidents and near misses, toolbox talks, permits to work and PPE.', paths: ['/safety', '/ppe'], section: 'site' },
+  safety: { label: 'Safety', description: 'Incidents and near misses, toolbox talks, permits to work and PPE.', paths: ['/safety', '/ppe'], section: 'safety' },
   imprest: { label: 'Site imprest', description: 'Petty cash floats at sites, top-ups and fund requests.', paths: ['/imprest'], section: 'site' },
   compliance: { label: 'Guarantees and licences', description: 'Bank guarantees, insurance and licences with their expiry reminders.', paths: ['/compliance'], section: 'billing' },
   tenders: { label: 'Tenders', description: 'Bids, their estimates and the schedule of rates.', paths: ['/tenders', '/schedule-of-rates'], section: 'billing' },

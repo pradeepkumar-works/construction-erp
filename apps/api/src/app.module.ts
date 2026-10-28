@@ -46,6 +46,7 @@ import { PpeModule } from './ppe/ppe.module';
 import { RfisModule } from './rfis/rfis.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
+import { MastersModule } from './masters/masters.module';
 import { SectorModule } from './sector/sector.module';
 import { TemplatesModule } from './templates/templates.module';
 import { MeasurementsModule } from './measurements/measurements.module';
@@ -174,6 +175,7 @@ import { VitalsController } from './vitals.controller';
     RfisModule,
     MaintenanceModule,
     UnitsModule,
+    MastersModule,
     SectorModule,
     TemplatesModule,
     ApprovalsModule,

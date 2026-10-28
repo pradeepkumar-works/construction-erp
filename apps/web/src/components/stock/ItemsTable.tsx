@@ -23,6 +23,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { ItemDuplicates } from './ItemDuplicates';
+import { MasterInput } from '@/components/masters/MasterInput';
 
 const NO_KEYS: string[] = [];
 
@@ -207,7 +208,7 @@ export function ItemsTable() {
             <UnitInput maxLength={30} disabled={!!editing && editing !== 'new' && editing.projectCount > 0} />
           </Form.Item>
           <Form.Item name="category" label="Category">
-            <Input maxLength={60} placeholder="e.g. Cement, Steel, Fuel" />
+            <MasterInput list="itemCategory" maxLength={60} placeholder="e.g. Cement, Steel, Fuel" />
           </Form.Item>
           <Form.Item name="rate" label="Standard rate per unit" extra="Values material issued in the project cost view.">
             <MoneyInput />
