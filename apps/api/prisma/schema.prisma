@@ -18,9 +18,18 @@ enum ProjectType {
   WATER_SUPPLY
   /// Sewer network, pumping stations and a sewage treatment plant (item 125)
   SEWERAGE
+  /// Work that is none of the four above (item 134): irrigation, solar, sheds; its company type says where work is located
+  OTHER
   PLANT
   /// A central store or yard (v6 item 106): holds stock and sends it to sites; no works of its own
   STORE
+}
+
+/// Where a project type's work is located on progress and measurements (item 134)
+enum WorkLocation {
+  CHAINAGE
+  FLOOR
+  VILLAGE
 }
 
 /// How the contract pays (item 125): by measured BOQ quantities, a lump sum paid in stages, or design and build (EPC)
@@ -689,12 +698,12 @@ model Organization {
   moduleTier          ModuleTier?
   /// Menu and names (NavSettingsDto in @erp/shared): the menu down the side or across the top, the top bar's look,
   /// how pages are grouped into modules, and the company's own names for modules (by module key)
-  navLayout           NavLayout    @default(SIDEBAR)
-  navLook             NavLook      @default(NAVY)
-  navModuleSet        NavModuleSet @default(AREAS)
-  navNames            Json         @default("{}")
+  navLayout           NavLayout     @default(SIDEBAR)
+  navLook             NavLook       @default(NAVY)
+  navModuleSet        NavModuleSet  @default(AREAS)
+  navNames            Json          @default("{}")
   /// People may choose their own look (User.navLook)
-  navPersonalLook     Boolean      @default(false)
+  navPersonalLook     Boolean       @default(false)
   /// Group companies (phase 1): the group the company belongs to, if any, and what kind of company it is. The kind sets
   /// the modules a new company starts with (COMPANY_KIND_MODULES_OFF in @erp/shared); it changes nothing afterwards.
   groupId             String?
@@ -763,6 +772,8 @@ model Organization {
   expenses             Expense[]
   risks                Risk[]
   activityTemplates    ActivityTemplate[]
+  projectTypes         ProjectTypeConfig[]
+  componentKinds       ComponentKind[]
   approvalRules        ApprovalRule[]
   approvalSteps        ApprovalStep[]
   approvalEscalations  ApprovalEscalation[]
@@ -986,12 +997,12 @@ model User {
   /// Set when invited; cleared once the user chooses a password.
   invitedAt      DateTime?
   /// A supplier-portal login (role SUPPLIER, v6 item 105): the vendor it acts for. Null for everyone else.
-  vendorId         String?
+  vendorId       String?
   /// The top bar's look this person chose (Profile › Appearance), used when their company lets people choose
-  navLook          NavLook?
-  vendor           Vendor?      @relation("VendorPortalLogins", fields: [vendorId], references: [id])
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  navLook        NavLook?
+  vendor         Vendor?      @relation("VendorPortalLogins", fields: [vendorId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   savedViews            SavedView[]
   navPins               NavPin[]
@@ -1009,6 +1020,8 @@ model User {
   memberships           ProjectMember[]
   managedProjects       Project[]                  @relation("ProjectManager")
   baselinedProjects     Project[]                  @relation("ProjectBaselineBy")
+  projectTypesUpdated   ProjectTypeConfig[]        @relation("ProjectTypeUpdatedBy")
+  componentKindsUpdated ComponentKind[]            @relation("ComponentKindUpdatedBy")
   responsibleFor        Activity[]                 @relation("ActivityResponsible")
   submittedProgress     ProgressEntry[]            @relation("ProgressSubmitter")
   reviewedProgress      ProgressEntry[]            @relation("ProgressReviewer")
@@ -1173,6 +1186,11 @@ model Project {
   code                   String
   name                   String
   type                   ProjectType
+  /// The company's project type (item 134, `ProjectTypeConfig.code` or a standard type's code); null takes the standard
+  /// type of `type`. `type` is always the type's built-in kind
+  typeCode               String?
+  /// The type's version the project was made with
+  typeVersion            Int?
   status                 ProjectStatus  @default(PLANNED)
   /// Item rate, lump sum or EPC (item 125): lump sum and EPC projects weigh their components by billing share
   contractModel          ContractModel  @default(ITEM_RATE)
@@ -2091,6 +2109,8 @@ model WorkElement {
   code           String
   name           String
   elementType    WorkElementType  @default(GENERAL)
+  /// The company's component kind it was laid out from (item 134, `ComponentKind.code` or a built-in kind's code)
+  kindCode       String?
   /// What the template needs to know, e.g. { capacityKl: 650, stagingM: 16, liftM: 3 } for a tank
   specs          Json?
   /// Share of its parent (or of the project for a component), %; null shares what is left by BOQ value
@@ -2234,7 +2254,10 @@ model ActivityTemplate {
   id             String       @id @default(uuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+  /// The type's built-in kind
   projectType    ProjectType
+  /// The company's project type the activity belongs to (item 134); a standard type's code for the standard types
+  typeCode       String
   name           String
   unit           String
   /// Planned start in days from the project start
@@ -2244,8 +2267,61 @@ model ActivityTemplate {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  @@unique([organizationId, projectType, name])
-  @@index([organizationId, projectType])
+  @@unique([organizationId, typeCode, name])
+  @@index([organizationId, typeCode])
+}
+
+/// A company's project type (item 134, ARCHITECTURE "Project types"): its own, or its copy of a standard type (same
+/// code). Built on a `ProjectType`, which its projects take as `Project.type`
+model ProjectTypeConfig {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  code           String
+  name           String
+  baseType       ProjectType
+  description    String?
+  locations      WorkLocation[] @default([])
+  pipeNetwork    Boolean        @default(false)
+  contractModel  ContractModel  @default(ITEM_RATE)
+  /// Component kind codes offered first when adding a component
+  kinds          String[]       @default([])
+  /// StartComponent[] (@erp/shared project-types.ts): the starting breakdown a New project lays out
+  breakdown      Json           @default("[]")
+  active         Boolean        @default(true)
+  sortOrder      Int            @default(0)
+  /// Saves so far; a project keeps the one it was made with
+  version        Int            @default(1)
+  updatedById    String?
+  updatedBy      User?          @relation("ProjectTypeUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+/// A company's component kind (item 134): its own, or its copy of a built-in kind (same code). Built on a
+/// `WorkElementType`, which components laid out from it take as `WorkElement.elementType`
+model ComponentKind {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  code           String
+  name           String
+  elementType    WorkElementType
+  /// ElementSpecField[]
+  specFields     Json            @default("[]")
+  /// ComponentStep[] (@erp/shared element-templates.ts)
+  steps          Json            @default("[]")
+  active         Boolean         @default(true)
+  sortOrder      Int             @default(0)
+  version        Int             @default(1)
+  updatedById    String?
+  updatedBy      User?           @relation("ComponentKindUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([organizationId, code])
 }
 
 // ---------- Site submissions (all share the same approval lifecycle) ----------

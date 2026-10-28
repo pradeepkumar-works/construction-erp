@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, Button, Empty } from 'antd';
 import { SettingOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
-import { formatChainage } from '@erp/shared';
+import { formatChainage, sectorKinds } from '@erp/shared';
 import { useSectorProgress } from '@/lib/queries';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { ChainageStrip } from './ChainageStrip';
@@ -13,19 +13,26 @@ import { PipelineCard } from './PipelineCard';
 import { SectorSettingsModal } from './SectorSettingsModal';
 import { Section } from '@/components/common/Section';
 
-/** Tab label for a project's sector view. */
-export const sectorTabLabel = (type: ProjectDetail['type']) => (type === 'ROAD' || type === 'SEWERAGE' ? 'Chainage' : type === 'BUILDING' ? 'Floors' : 'Villages and pipeline');
+/** Tab label for a project's sector view: what its type locates work by (item 134). */
+export const sectorTabLabel = (project: Pick<ProjectDetail, 'type' | 'locations'>) => {
+  const k = sectorKinds(project);
+  return k.village ? 'Villages and pipeline' : k.floor ? 'Floors' : 'Chainage';
+};
+
+/** What the strip runs along: a main, a road, or the work's own chainage. */
+export const alongWhat = (project: Pick<ProjectDetail, 'type' | 'pipeNetwork'>) => (project.pipeNetwork ? 'main' : project.type === 'ROAD' ? 'road' : 'work');
 
 /** Progress where it happened: along the road, floor by floor, or village by village with the pipe stages. */
 export function SectorPanel({ project, editable }: { project: ProjectDetail; editable: boolean }) {
   const { data, isLoading, error, refetch } = useSectorProgress(project.id);
   const [settings, setSettings] = useState(false);
+  const k = sectorKinds(project);
   const missing =
-    project.type === 'ROAD' && project.chainageStart === null
-      ? "Set the road's chainage from and to so the strip covers the whole contract stretch."
-      : project.type === 'BUILDING' && !project.floors.length
+    k.chainage && !project.pipeNetwork && project.chainageStart === null
+      ? `Set the ${alongWhat(project)}'s chainage from and to so the strip covers the whole contract stretch.`
+      : k.floor && !project.floors.length
         ? "Set the building's floors so site entries can pick one."
-        : project.type === 'WATER_SUPPLY' && !project.villages.length
+        : k.village && !project.villages.length
           ? 'Add the villages the scheme serves so site entries can pick one.'
           : null;
 
@@ -52,7 +59,7 @@ export function SectorPanel({ project, editable }: { project: ProjectDetail; edi
             </Section>
           ) : null}
           {data.strip ? (
-            <Section title={`Along the ${project.type === 'ROAD' ? 'road' : 'main'}${data.chainageStart !== null && data.chainageEnd !== null ? `: Ch ${formatChainage(data.chainageStart)} to ${formatChainage(data.chainageEnd)}` : ''}`}>
+            <Section title={`Along the ${alongWhat(project)}${data.chainageStart !== null && data.chainageEnd !== null ? `: Ch ${formatChainage(data.chainageStart)} to ${formatChainage(data.chainageEnd)}` : ''}`}>
               {data.strip.length ? <ChainageStrip layers={data.strip} start={data.chainageStart} end={data.chainageEnd} /> : <Empty description="No progress placed along the chainage yet" />}
             </Section>
           ) : null}

@@ -131,6 +131,8 @@ export interface WorkElementDto {
   code: string;
   name: string;
   elementType: WorkElementType;
+  /** The component kind it was laid out from (item 134); null for one made before item 134 or by import */
+  kindCode: string | null;
   specs: Record<string, number> | null;
   /** Share of its parent or of the project, %; null shares what is left by value */
   weightPct: string | null;

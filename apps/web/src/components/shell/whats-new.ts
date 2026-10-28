@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-project-types',
+    date: '2027-02-24',
+    title: 'Project types of your own',
+    points: [
+      'Projects › Project types lists your types: the standard road, building, town water scheme, transmission main, sewerage and general works, and any you make, such as a bridge.',
+      'Each type says where its work is placed (chainage, floor or village), whether it has a pipe network, its usual contract, the components a new project starts with and how many, and its activities outside them.',
+      'Component kinds are on their own tab: what the planner fills in for each, and the steps that become its activities, with RCC split into its parts and tanks or piers cast in lifts.',
+      'New project asks for the type and how many of each component; the Structure tab offers the type’s kinds first. Activity templates now live on each type.',
+    ],
+  },
+  {
     id: '2027-02-menu-and-names',
     date: '2027-02-20',
     title: 'Your menu, your names',

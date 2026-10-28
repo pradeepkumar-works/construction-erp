@@ -173,6 +173,11 @@ and the pre-delivery checklist.
   (`@erp/shared/contract.ts`), and a new user's teams from `POST /users { projectIds }`, which joins them only through
   `ProjectsService.addToProjects`. A form fills a box it filled itself, never one someone typed. Keep
   `src/scripts/small-fixes-test.ts` passing.
+- Project types (item 134, `apps/api/src/templates/project-types.service.ts`, ARCHITECTURE "Project types"): the standard types
+  and component kinds are data in `@erp/shared/project-types.ts`, overlaid by the company's rows by code, never seeded; a
+  screen reads a project's places and pipe network from `project.locations` / `project.pipeNetwork` (`sectorKinds(project)`),
+  never `project.type === 'WATER_SUPPLY'`; a kind's steps are laid out only by `kindPlan`, a new project's breakdown only by
+  `layOutBreakdown`. Keep `src/scripts/project-types-test.ts` passing.
 - Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line

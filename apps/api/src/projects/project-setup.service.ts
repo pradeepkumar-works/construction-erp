@@ -6,6 +6,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dateOnly } from '../common/serialize';
+import { ProjectTypesService } from '../templates/project-types.service';
 import { ProjectsService } from './projects.service';
 
 /**
@@ -20,6 +21,7 @@ export class ProjectSetupService {
     private access: ProjectAccessService,
     private audit: AuditService,
     private projects: ProjectsService,
+    private types: ProjectTypesService,
   ) {}
 
   /** The BOQ total of each project, at the revised quantity where there is one. */
@@ -34,7 +36,9 @@ export class ProjectSetupService {
     const p = await this.prisma.project.findUniqueOrThrow({
       where: { id: projectId },
       select: {
+        organizationId: true,
         type: true,
+        typeCode: true,
         status: true,
         contractModel: true,
         projectManagerId: true,
@@ -61,9 +65,11 @@ export class ProjectSetupService {
       this.prisma.activityMaterialNorm.count({ where: { projectId } }),
     ]);
     const parents = new Set(activities.map((a) => a.parentActivityId).filter(Boolean));
-    const sector = sectorStepOf(p.type as ProjectType);
+    const { locations } = (await this.types.featuresOf(p.organizationId, [{ id: projectId, type: p.type, typeCode: p.typeCode }])).get(projectId)!;
+    const sector = sectorStepOf({ type: p.type, locations });
     return {
       type: p.type as ProjectType,
+      locations,
       status: p.status,
       setupHiddenAt: p.setupHiddenAt,
       contractModel: p.contractModel as ContractModel,

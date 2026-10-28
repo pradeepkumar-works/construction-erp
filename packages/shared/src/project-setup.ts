@@ -1,4 +1,5 @@
-import type { ContractModel, ProjectType, RoleKey } from './enums';
+import type { ContractModel, ProjectType, RoleKey, WorkLocation } from './enums';
+import { sectorKinds } from './sector';
 import { canFreezeBaseline, canViewContract, canViewCost, canViewReconciliation } from './permissions';
 
 /**
@@ -107,6 +108,8 @@ const STEP_ACCESS: Partial<Record<SetupStepKey, (role: RoleKey) => boolean>> = {
 
 export interface ProjectSetupFacts {
   type: ProjectType;
+  /** Where its type locates work (item 134); the built-in kind's places when left out */
+  locations?: WorkLocation[];
   contractModel: ContractModel;
   /** People on the project besides its project manager */
   team: number;
@@ -156,9 +159,14 @@ export function setupShown(f: { type: ProjectType; status: string; physicalProgr
   return setupApplies(f.type) && (f.status === 'PLANNED' || f.status === 'ACTIVE') && f.physicalProgressPct < SETUP_UNTIL_PROGRESS_PCT && !f.hidden && f.done < f.total;
 }
 
-/** The sector view each type has: chainage for a road or a sewer line, floors for a building, villages for water supply. */
-export const sectorStepOf = (type: ProjectType): 'chainage' | 'floors' | 'villages' | null =>
-  type === 'ROAD' || type === 'SEWERAGE' ? 'chainage' : type === 'BUILDING' ? 'floors' : type === 'WATER_SUPPLY' ? 'villages' : null;
+/**
+ * The sector view a project sets up: villages where its type locates work by village, else floors, else chainage
+ * (item 134: from its type's places; a road or a sewer line chainage, a building floors, water supply villages).
+ */
+export const sectorStepOf = (p: ProjectType | { type: ProjectType; locations?: WorkLocation[] | null }): 'chainage' | 'floors' | 'villages' | null => {
+  const k = sectorKinds(p);
+  return k.village ? 'villages' : k.floor ? 'floors' : k.chainage ? 'chainage' : null;
+};
 
 /** The steps the role sees, in order, each ticked from the facts. */
 export function setupSteps(f: ProjectSetupFacts, role: RoleKey): SetupStepDto[] {
@@ -175,7 +183,7 @@ export function setupSteps(f: ProjectSetupFacts, role: RoleKey): SetupStepDto[] 
     sector: [f.sectorSet, null],
     norms: [f.norms > 0, f.norms],
   };
-  return SETUP_STEPS.filter((k) => (k !== 'sector' || sectorStepOf(f.type)) && (STEP_ACCESS[k]?.(role) ?? true)).map((key) => ({
+  return SETUP_STEPS.filter((k) => (k !== 'sector' || sectorStepOf(f)) && (STEP_ACCESS[k]?.(role) ?? true)).map((key) => ({
     key,
     done: done[key][0],
     tab: SETUP_STEP_TAB[key],

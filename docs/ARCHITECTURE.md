@@ -734,13 +734,47 @@ commissioned, with valves fixed at their points.
   branches with sluice valves, an air valve and a scour (53 pipes, 10.1 km), its approved work laid out pipe by pipe
   from the tank, the town DPRs' pipe lines on the pipes past each stage's front, and a passed hydraulic test.
 
+### Project types (item 134)
+
+A company's project types say what a new project of each type starts with. A type (`ProjectTypeDef`,
+`packages/shared/src/project-types.ts`) has a code, a name, the built-in kind it is built on (`baseType`: road,
+building, water supply, sewerage or other works; it is `Project.type` of its projects, so the project code, reports,
+the DPR form for now and every `project.type` check keep working), the places its work is located by (`locations`:
+chainage, floor, village), whether it has a pipe network (water supply and sewerage only), its usual contract, the
+component kinds offered first, a starting breakdown and its loose activities.
+
+The standard types and kinds are data in shared: `STANDARD_PROJECT_TYPES` (Road, Building, Town water scheme,
+Transmission main, Sewerage, General works) and `STANDARD_COMPONENT_KINDS` (the twenty `WorkElementType`s, their
+steps `STANDARD_STEPS`). A company's `ProjectTypeConfig` or `ComponentKind` row with the same code replaces one, and
+its own codes follow (`overlay`), so a new company needs no seeding and deleting a standard row resets it. Both tables
+have `tenant_isolation` policies. `ProjectTypesService` (`apps/api/src/templates`) reads them (`kinds`, `typeRows`,
+`type`, `featuresOf` for a list of projects) and writes them for admin and management (`canManageTemplates`, audited
+`PROJECT_TYPE` / `COMPONENT_KIND`); checks are `projectTypeProblems` and `componentKindProblems` in shared, which the
+editors run live and the API runs again. A type projects use, or a kind components were laid out from, cannot change
+what it is built on; an own type or kind in use is archived (`active: false`) rather than deleted.
+
+A component kind's steps are data (`ComponentStep`: a plain activity, an RCC one split into parts, RCC in lifts over
+a height spec, or an activity with sub-activities) and `kindPlan` lays them out; `elementPlan(type)` is `kindPlan` over
+the standard kind, so the built-in kinds give the same activities as before (`project-types-test.ts` checks every one).
+
+A project keeps `typeCode` (null for a project made before item 134: `typeCodeOf` falls back to its kind's standard
+type) and the `typeVersion` it was made with. `ProjectSummary` carries `typeName`, `locations` and `pipeNetwork` from
+`featuresOf`, and the screens read those: the Pipe network tab, the sector view and its inputs (`sectorKinds(project)`),
+the setup step (`sectorStepOf`), the reconciliation's pipe and kit views. `POST /projects` with `typeCode` and
+`breakdown` (top-level keys of the starting breakdown and how many of each) lays the components out through
+`layOutBreakdown` and `StructureService.layOutUnchecked`: copies are numbered ("Pier 1" to "Pier 4"), a sub-component
+goes under every copy, a kind the company no longer has is skipped with its branch, and when every component has a
+weight the shares are scaled back to 100% if the counts picked differ from the usual ones. A component made from the
+Structure tab names its `kindCode`; the API takes its `elementType` from that kind. Web: Admin and management edit
+types and kinds at `/project-types` (`?tab=kinds`) and `/project-types/:code`; `/templates` redirects there.
+
 ### Activity templates
 
-`DEFAULT_ACTIVITY_TEMPLATES` in `packages/shared/src/templates.ts` holds a standard activity list per project
-type (name, unit, start day, duration). An organisation that saves its own list for a type gets
-`ActivityTemplate` rows (unique per organisation, type and name); with no rows the built-in list applies, so a
-new organisation needs no seeding and `PUT /activity-templates/:type` with an empty list resets to it. Admin and
-management edit them (`canManageTemplates`). `scheduleTemplate` (shared, so the web preview matches the API)
+A type's loose activities (not under a component) are `ActivityTemplate` rows keyed by its code (`typeCode`, unique
+per organisation, type code and name); with no rows a standard type's own list applies (`DEFAULT_ACTIVITY_TEMPLATES`
+in `packages/shared/src/templates.ts`), so `PUT /activity-templates/:typeCode` with an empty list resets to it.
+`PUT /project-types/:code` leaves them alone unless it sends `activities`. Admin and management edit them
+(`canManageTemplates`). `scheduleTemplate` (shared, so the web preview matches the API)
 turns a list into planned dates: from the project start, scaled so the template span fills the project when an
 end date is set. `POST /projects` with `applyTemplate: true`, or `POST /projects/:id/activities/from-template`
 (optionally `names`), creates the activities with planned quantity 0, skipping names the project already has.

@@ -215,7 +215,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
             column={1}
             items={[
               { key: 'code', label: 'Code', children: project.code },
-              { key: 'type', label: 'Type', children: <ProjectTypeTag type={project.type} /> },
+              { key: 'type', label: 'Type', children: <ProjectTypeTag type={project.type} name={project.typeName} /> },
               { key: 'status', label: 'Status', children: <ProjectStatusTag status={project.status} /> },
               { key: 'client', label: 'Client', children: project.clientName ?? '-' },
               { key: 'consultant', label: 'Consultant', children: project.consultantName ?? '-' },

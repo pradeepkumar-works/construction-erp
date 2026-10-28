@@ -93,13 +93,13 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
   const all: (WorkspaceTab | false)[] = [
     { key: 'overview', group: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
     { key: 'structure', group: 'plan', label: 'Structure', children: <StructurePanel project={project} /> },
-    can(project.type === 'WATER_SUPPLY' || project.type === 'SEWERAGE') && { key: 'pipes', group: 'plan', label: 'Pipe network', children: <PipeNetworkPanel project={project} /> },
+    can(project.pipeNetwork) && { key: 'pipes', group: 'plan', label: 'Pipe network', children: <PipeNetworkPanel project={project} /> },
     can(project.contractModel === 'EPC' && !!user && canViewEpc(user.roleKey)) && { key: 'epc', group: 'plan', label: 'Engineering and packages', children: <EpcPanel project={project} /> },
     { key: 'boq', group: 'plan', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
     { key: 'activities', group: 'plan', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
     { key: 'schedule', group: 'plan', label: 'Gantt', children: <GanttPanel projectId={project.id} /> },
     { key: 'lookahead', group: 'plan', label: 'Look-ahead', children: <LookaheadPanel projectId={project.id} /> },
-    { key: 'sector', group: 'plan', label: sectorTabLabel(project.type), children: <SectorPanel project={project} editable={editor} /> },
+    project.locations.length > 0 && { key: 'sector', group: 'plan', label: sectorTabLabel(project), children: <SectorPanel project={project} editable={editor} /> },
     { key: 'progress', group: 'site', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
     { key: 'dpr', group: 'site', label: 'Daily reports', children: <DprList projectId={project.id} newLabel="New daily report" /> },
     { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
@@ -111,7 +111,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'material', group: 'materials', label: 'Material requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
     can(!!user && canViewPurchaseOrders(user.roleKey)) && { key: 'po', group: 'materials', label: 'Purchase orders', children: <PurchaseOrderList projectId={project.id} /> },
     { key: 'stock', group: 'materials', label: 'Stock', children: <StockPanel projectId={project.id} /> },
-    can(!!user && canViewReconciliation(user.roleKey)) && { key: 'reconciliation', group: 'materials', label: 'Reconciliation', children: <ReconciliationPanel projectId={project.id} projectType={project.type} /> },
+    can(!!user && canViewReconciliation(user.roleKey)) && { key: 'reconciliation', group: 'materials', label: 'Reconciliation', children: <ReconciliationPanel projectId={project.id} network={project.pipeNetwork} /> },
     { key: 'machinery', group: 'materials', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'contract', group: 'money', label: 'Contract', children: <ContractPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'bills', group: 'money', label: 'RA bills', children: <BillList projectId={project.id} /> },
@@ -155,7 +155,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
           <Space wrap size={8}>
             <span>{project.name}</span>
             <ProjectStatusTag status={project.status} />
-            <ProjectTypeTag type={project.type} />
+            <ProjectTypeTag type={project.type} name={project.typeName} />
           </Space>
         }
         subtitle={

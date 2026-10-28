@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { compareCodes, effectiveWeights, guessPipeStage, isPipeElement, nextCode, parentCodeOf, type StructureActivityDto, type StructureDto, type WorkElementDto } from '@erp/shared';
+import { compareCodes, effectiveWeights, guessPipeStage, isPipeElement, nextCode, parentCodeOf, type LaidOutComponent, type StructureActivityDto, type StructureDto, type WorkElementDto, type WorkElementType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -8,6 +8,7 @@ import { AuditService } from '../common/audit.service';
 import { progressRollup } from '../common/progress';
 import { dateOnly, dec, money } from '../common/serialize';
 import { weightOf } from '../planning/planning.service';
+import { ProjectTypesService } from '../templates/project-types.service';
 import { CreateWorkElementDto, ImportWorkElementsDto, PlanLineDto, ReorderWorkElementsDto, UpdateWorkElementDto } from './structure.dto';
 
 const D = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v);
@@ -31,7 +32,14 @@ const cleanSpecs = (specs: Record<string, unknown> | null | undefined): Prisma.I
  */
 @Injectable()
 export class StructureService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private types: ProjectTypesService) {}
+
+  /** A component kind the company has (item 134): its kind of work is the kind's, whatever the form sent. */
+  private async kindFor(organizationId: string, kindCode: string) {
+    const kind = (await this.types.kinds(organizationId)).find((k) => k.code === kindCode);
+    if (!kind) throw new BadRequestException(`Component kind ${kindCode} is not in the company's library; choose another kind`);
+    return kind;
+  }
 
   async get(user: RequestUser, projectId: string): Promise<StructureDto> {
     await this.access.assertCanAccessProject(user, projectId);
@@ -87,6 +95,7 @@ export class StructureService {
       code: e.code,
       name: e.name,
       elementType: e.elementType,
+      kindCode: e.kindCode,
       specs: (e.specs as Record<string, number> | null) ?? null,
       weightPct: e.weightPct?.toString() ?? null,
       effectiveWeightPct: weights.get(e.id) ?? 0,
@@ -152,56 +161,89 @@ export class StructureService {
   async createElement(user: RequestUser, projectId: string, dto: CreateWorkElementDto): Promise<StructureDto> {
     await this.access.assertCanAccessProject(user, projectId);
     const parent = await this.parentFor(projectId, dto.parentId);
-    const siblings = await this.prisma.workElement.findMany({ where: { projectId }, select: { code: true, parentId: true, sortOrder: true } });
+    const lines = dto.activities ?? [];
+    this.checkPlan(lines);
+    const kind = dto.kindCode ? await this.kindFor(user.organizationId, dto.kindCode) : null;
+    const made = await this.prisma.$transaction((tx) => this.insertElement(tx, user, projectId, parent, { ...dto, elementType: kind?.elementType ?? dto.elementType, kindCode: kind?.code ?? null }, lines));
+    await this.audit.log(user, 'WORK_ELEMENT', made.id, 'CREATED', `${made.code} ${dto.name.trim()}${lines.length ? `, ${lines.length} activities` : ''}`);
+    return this.get(user, projectId);
+  }
+
+  /**
+   * The components a new project lays out from its type's starting breakdown (item 134, `layOutBreakdown`), each with its
+   * kind's activities. Runs inside the project's creation, so no access check: the creator may not be on the project.
+   */
+  async layOutUnchecked(user: RequestUser, projectId: string, components: LaidOutComponent[], db: Prisma.TransactionClient = this.prisma): Promise<number> {
+    const made = new Map<string, { id: string; code: string }>();
+    let activities = 0;
+    for (const c of components) {
+      const parent = c.parentKey ? made.get(c.parentKey) ?? null : null;
+      if (c.parentKey && !parent) continue;
+      const lines = c.activities.map((l) => ({ key: l.key, parentKey: l.parentKey, name: l.name, unit: l.unit, weightPct: String(l.weightPct), plannedQty: l.qty !== null ? String(l.qty) : null }));
+      const row = await this.insertElement(db, user, projectId, parent, { name: c.name, elementType: c.elementType, kindCode: c.kind, specs: c.specs, weightPct: c.weightPct !== null ? String(c.weightPct) : null }, lines);
+      made.set(c.key, row);
+      activities += lines.length;
+    }
+    if (made.size)
+      await db.auditLog.create({
+        data: { organizationId: user.organizationId, entityType: 'PROJECT', entityId: projectId, action: 'BREAKDOWN_LAID_OUT', actorId: user.id, note: `${made.size} components, ${activities} activities from the project type` },
+      });
+    return made.size;
+  }
+
+  /** One component or sub-component with its plan's activities: numbered after its siblings, activities after the project's last. */
+  private async insertElement(
+    tx: Prisma.TransactionClient,
+    user: RequestUser,
+    projectId: string,
+    parent: { id: string; code: string } | null,
+    dto: { code?: string; name: string; elementType: WorkElementType; kindCode: string | null; specs?: Record<string, unknown> | null; weightPct?: string | null },
+    lines: PlanLineDto[],
+  ): Promise<{ id: string; code: string }> {
+    const siblings = await tx.workElement.findMany({ where: { projectId }, select: { code: true, parentId: true, sortOrder: true } });
     const code = dto.code?.trim() || nextCode(parent?.code ?? null, siblings.map((s) => s.code));
     if (siblings.some((s) => s.code === code)) throw new ConflictException(`Number ${code} is already used in this breakdown`);
     const sortOrder = Math.max(0, ...siblings.filter((s) => s.parentId === (parent?.id ?? null)).map((s) => s.sortOrder + 1));
-    const lines = dto.activities ?? [];
-    this.checkPlan(lines);
-    const lastActivity = await this.prisma.activity.aggregate({ where: { projectId }, _max: { sortOrder: true } });
+    const lastActivity = await tx.activity.aggregate({ where: { projectId }, _max: { sortOrder: true } });
     const firstSort = (lastActivity._max.sortOrder ?? 0) + 1;
-
-    const elementId = await this.prisma.$transaction(async (tx) => {
-      const element = await tx.workElement.create({
+    const element = await tx.workElement.create({
+      data: {
+        organizationId: user.organizationId,
+        projectId,
+        parentId: parent?.id ?? null,
+        level: parent ? 'SUB_COMPONENT' : 'COMPONENT',
+        code,
+        name: dto.name.trim(),
+        elementType: dto.elementType,
+        kindCode: dto.kindCode,
+        specs: cleanSpecs(dto.specs),
+        weightPct: weightOf(dto.weightPct),
+        sortOrder,
+      },
+    });
+    const idOf = new Map<string, string>();
+    // Activities first, then their sub-activities, so every parent exists when its parts are made.
+    const ordered = [...lines.filter((l) => !l.parentKey), ...lines.filter((l) => l.parentKey)];
+    for (const line of ordered) {
+      const row = await tx.activity.create({
         data: {
           organizationId: user.organizationId,
           projectId,
-          parentId: parent?.id ?? null,
-          level: parent ? 'SUB_COMPONENT' : 'COMPONENT',
-          code,
-          name: dto.name.trim(),
-          elementType: dto.elementType,
-          specs: cleanSpecs(dto.specs),
-          weightPct: weightOf(dto.weightPct),
-          sortOrder,
+          workElementId: element.id,
+          parentActivityId: line.parentKey ? idOf.get(line.parentKey)! : null,
+          name: line.name.trim(),
+          unit: line.unit.trim(),
+          plannedQty: line.plannedQty ? D(line.plannedQty) : D(0),
+          weightPct: weightOf(line.weightPct),
+          // A pipe zone's or main's stages (item 126): its lines name a segment of the zone's network.
+          pipeStage: isPipeElement(dto.elementType) ? guessPipeStage(line.name) : null,
+          sortOrder: firstSort + lines.indexOf(line),
         },
+        select: { id: true },
       });
-      const idOf = new Map<string, string>();
-      // Activities first, then their sub-activities, so every parent exists when its parts are made.
-      const ordered = [...lines.filter((l) => !l.parentKey), ...lines.filter((l) => l.parentKey)];
-      for (const line of ordered) {
-        const row = await tx.activity.create({
-          data: {
-            organizationId: user.organizationId,
-            projectId,
-            workElementId: element.id,
-            parentActivityId: line.parentKey ? idOf.get(line.parentKey)! : null,
-            name: line.name.trim(),
-            unit: line.unit.trim(),
-            plannedQty: line.plannedQty ? D(line.plannedQty) : D(0),
-            weightPct: weightOf(line.weightPct),
-            // A pipe zone's or main's stages (item 126): its lines name a segment of the zone's network.
-            pipeStage: isPipeElement(dto.elementType) ? guessPipeStage(line.name) : null,
-            sortOrder: firstSort + lines.indexOf(line),
-          },
-          select: { id: true },
-        });
-        idOf.set(line.key, row.id);
-      }
-      return element.id;
-    });
-    await this.audit.log(user, 'WORK_ELEMENT', elementId, 'CREATED', `${code} ${dto.name.trim()}${lines.length ? `, ${lines.length} activities` : ''}`);
-    return this.get(user, projectId);
+      idOf.set(line.key, row.id);
+    }
+    return { id: element.id, code };
   }
 
   /** Keys are unique, a sub-activity's activity is in the plan and is not itself a sub-activity, quantities are not negative. */
@@ -235,6 +277,11 @@ export class StructureService {
     }
     if (dto.name !== undefined) data.name = dto.name.trim();
     if (dto.elementType !== undefined) data.elementType = dto.elementType;
+    if (dto.kindCode !== undefined) {
+      const kind = dto.kindCode ? await this.kindFor(user.organizationId, dto.kindCode) : null;
+      data.kindCode = kind?.code ?? null;
+      if (kind) data.elementType = kind.elementType;
+    }
     if (dto.specs !== undefined) data.specs = cleanSpecs(dto.specs);
     if (dto.weightPct !== undefined) data.weightPct = weightOf(dto.weightPct);
     await this.prisma.workElement.update({ where: { id }, data });

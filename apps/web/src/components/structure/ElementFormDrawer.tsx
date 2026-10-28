@@ -3,23 +3,13 @@
 import React, { useEffect, useRef } from 'react';
 import { App, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ELEMENT_SPEC_FIELDS,
-  ELEMENT_TYPES_FOR,
-  WORK_ELEMENT_TYPES,
-  WORK_ELEMENT_TYPE_LABELS,
-  elementPlan,
-  type ElementActivityLine,
-  type ProjectType,
-  type StructureDto,
-  type WorkElementDto,
-  type WorkElementType,
-} from '@erp/shared';
+import { kindPlan, type ComponentKindDto, type ElementActivityLine, type StructureDto, type WorkElementDto, type WorkElementType } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { QuantityInput } from '@/components/form/inputs';
+import { useComponentKinds, useProjectTypes } from '@/lib/queries';
 
 interface PlanLine extends ElementActivityLine {
   /** What the planner typed; starts from the template's quantity */
@@ -29,7 +19,8 @@ interface PlanLine extends ElementActivityLine {
 interface FormValues {
   parentId?: string | null;
   name: string;
-  elementType: WorkElementType;
+  /** The company's component kind (item 134) */
+  kindCode: string;
   code?: string;
   weightPct?: number | null;
   specs?: Record<string, number | null>;
@@ -37,15 +28,20 @@ interface FormValues {
   lines?: PlanLine[];
 }
 
-/** Kinds a project of this type usually has first, then the rest. */
-const typeOptions = (projectType: ProjectType) => {
-  const first = ELEMENT_TYPES_FOR[projectType] ?? [];
-  const rest = WORK_ELEMENT_TYPES.filter((t) => !first.includes(t));
+/** The project type's kinds first, then the rest of the company's library (archived ones only where already chosen). */
+const kindOptions = (kinds: ComponentKindDto[], first: string[], current: string | undefined) => {
+  const offered = kinds.filter((k) => k.active || k.code === current);
+  const opt = (k: ComponentKindDto) => ({ value: k.code, label: k.active ? k.name : `${k.name} (archived)` });
+  const usual = first.map((c) => offered.find((k) => k.code === c)).filter((k): k is ComponentKindDto => !!k);
+  const rest = offered.filter((k) => !first.includes(k.code));
   return [
-    ...(first.length ? [{ label: 'Usual for this project', options: first.map((t) => ({ value: t, label: WORK_ELEMENT_TYPE_LABELS[t] })) }] : []),
-    { label: first.length ? 'Other kinds' : 'Kinds', options: rest.map((t) => ({ value: t, label: WORK_ELEMENT_TYPE_LABELS[t] })) },
+    ...(usual.length ? [{ label: 'Usual for this project', options: usual.map(opt) }] : []),
+    { label: usual.length ? 'Other kinds' : 'Kinds', options: rest.map(opt) },
   ];
 };
+
+/** A component made before item 134 has no kind code: its built-in kind's code is its element type. */
+const kindCodeOf = (e: Pick<WorkElementDto, 'kindCode' | 'elementType'>) => e.kindCode ?? (e.elementType as WorkElementType);
 
 /**
  * Adds or changes a component or sub-component (item 125). A new one can lay out its kind's activities and
@@ -55,7 +51,7 @@ export function ElementFormDrawer({
   open,
   onClose,
   projectId,
-  projectType,
+  typeCode,
   structure,
   element,
   parentId,
@@ -63,7 +59,8 @@ export function ElementFormDrawer({
   open: boolean;
   onClose: () => void;
   projectId: string;
-  projectType: ProjectType;
+  /** The project's type (item 134), whose component kinds are offered first */
+  typeCode: string | null;
   structure: StructureDto | undefined;
   element?: WorkElementDto | null;
   /** A new sub-component goes in this component */
@@ -74,6 +71,9 @@ export function ElementFormDrawer({
   const qc = useQueryClient();
   const isEdit = !!element;
   const typed = useRef(new Map<string, number | null>());
+  const { data: kinds } = useComponentKinds(open);
+  const { data: types } = useProjectTypes(open);
+  const typeKinds = types?.find((t) => t.code === typeCode)?.kinds ?? [];
 
   useEffect(() => {
     if (!open) return;
@@ -83,7 +83,7 @@ export function ElementFormDrawer({
       form.setFieldsValue({
         parentId: element.parentId,
         name: element.name,
-        elementType: element.elementType,
+        kindCode: kindCodeOf(element),
         code: element.code,
         weightPct: element.weightPct !== null ? Number(element.weightPct) : null,
         specs: element.specs ?? {},
@@ -93,20 +93,21 @@ export function ElementFormDrawer({
     }
   }, [open, element, parentId, form]);
 
-  const elementType = Form.useWatch('elementType', form);
+  const kindCode = Form.useWatch('kindCode', form);
+  const kind = kinds?.find((k) => k.code === kindCode);
   const specs = Form.useWatch('specs', form);
   const layOut = Form.useWatch('layOut', form);
   const specKey = JSON.stringify(specs ?? {});
 
   // The template's lines follow the kind and the specs; a quantity the planner typed stays.
   useEffect(() => {
-    if (!open || isEdit || !elementType) return;
-    const plan = elementPlan(elementType, (JSON.parse(specKey) as Record<string, number | null>) ?? {});
+    if (!open || isEdit || !kind) return;
+    const plan = kindPlan(kind, (JSON.parse(specKey) as Record<string, number | null>) ?? {});
     form.setFieldValue(
       'lines',
       plan.map((l) => ({ ...l, plannedQty: typed.current.has(l.key) ? typed.current.get(l.key)! : l.qty })),
     );
-  }, [open, isEdit, elementType, specKey, form]);
+  }, [open, isEdit, kind, specKey, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -114,7 +115,8 @@ export function ElementFormDrawer({
       const body = {
         parentId: v.parentId || null,
         name: v.name.trim(),
-        elementType: v.elementType,
+        elementType: kinds?.find((k) => k.code === v.kindCode)?.elementType,
+        kindCode: v.kindCode,
         code: v.code?.trim() || undefined,
         weightPct: v.weightPct !== null && v.weightPct !== undefined ? String(v.weightPct) : null,
         specs: Object.keys(cleanSpecs).length ? cleanSpecs : null,
@@ -146,7 +148,7 @@ export function ElementFormDrawer({
   });
 
   const components = (structure?.elements ?? []).filter((e) => e.level === 'COMPONENT' && e.id !== element?.id);
-  const fields = elementType ? ELEMENT_SPEC_FIELDS[elementType] : [];
+  const fields = kind?.specFields ?? [];
   const hasSubs = !!element && (structure?.elements ?? []).some((e) => e.parentId === element.id);
 
   return (
@@ -164,8 +166,8 @@ export function ElementFormDrawer({
       <Form form={form} layout="vertical">
         <FormSection title="Component">
           <FormGrid cols={2}>
-            <Form.Item name="elementType" label="Kind" rules={[{ required: true, message: 'Choose what it is, e.g. Overhead tank' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Overhead tank" options={typeOptions(projectType)} />
+            <Form.Item name="kindCode" label="Kind" rules={[{ required: true, message: 'Choose what it is, e.g. Overhead tank' }]} tooltip={isEdit ? 'Its activities stay as they are; the kind changes what it is counted as.' : undefined}>
+              <Select showSearch={{ optionFilterProp: 'label' }} loading={!kinds} placeholder="Overhead tank" options={kindOptions(kinds ?? [], typeKinds, element ? kindCodeOf(element) : undefined)} />
             </Form.Item>
             <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, min: 2, message: 'Name it, e.g. OHT 650 KL, Ward 4' }]}>
               <Input placeholder="OHT 650 KL, Ward 4" />
@@ -198,7 +200,7 @@ export function ElementFormDrawer({
             </FormGrid>
           ) : null}
         </FormSection>
-        {!isEdit && elementType ? (
+        {!isEdit && kind ? (
           <FormSection
             title="Activities"
             extra={

@@ -37,6 +37,7 @@ import type {
   NotificationType,
   ProjectStatus,
   ProjectType,
+  WorkLocation,
   ContractModel,
   PushPlatform,
   RoleKey,
@@ -172,7 +173,14 @@ export interface ProjectSummary {
   id: string;
   code: string;
   name: string;
+  /** The built-in kind of its type */
   type: ProjectType;
+  /** Its project type (item 134), the company's or a standard one; null for a store or plant */
+  typeCode: string | null;
+  typeName: string | null;
+  /** Where its work is located, and whether it has a pipe network, from its type (`projectFeatures`) */
+  locations: WorkLocation[];
+  pipeNetwork: boolean;
   status: ProjectStatus;
   /** Item rate, lump sum or EPC (item 125) */
   contractModel: ContractModel;
@@ -1332,7 +1340,11 @@ export interface DelaySuggestionDto {
 /* ---------- activity templates ---------- */
 
 export interface ActivityTemplateDto {
+  /** The type's built-in kind */
   projectType: ProjectType;
+  /** The project type (item 134) the list belongs to */
+  typeCode: string;
+  typeName: string;
   /** True while the organisation has not saved its own list for this type (the built-in one is shown). */
   isDefault: boolean;
   items: { name: string; unit: string; startDay: number; durationDays: number }[];

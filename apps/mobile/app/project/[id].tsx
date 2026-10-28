@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, canManageWorkers, canRecordAttendance, type ActivityDto, type ProjectDetail } from '@erp/shared';
+import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, canManageWorkers, canRecordAttendance, sectorStepOf, type ActivityDto, type ProjectDetail } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useFetch } from '../../src/api/hooks';
 import { Button, Card, EmptyState, ErrorState, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle, Stat } from '../../src/components';
@@ -30,6 +30,8 @@ export default function ProjectScreen() {
   if (!data) return null;
   const { project, activities } = data;
   const delayed = activities.filter((a) => a.isDelayed).length;
+  // Where the project's type places work (item 134): none for a type that is not located by place.
+  const sector = sectorStepOf(project);
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
@@ -40,7 +42,7 @@ export default function ProjectScreen() {
           <Pill text={t(PROJECT_STATUS_LABELS[project.status])} fg={project.status === 'ACTIVE' ? colors.success : colors.neutral} bg={project.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} icon={project.status === 'ACTIVE' ? 'play-circle-outline' : 'pause-circle-outline'} />
         </View>
         <Text style={typography.h2}>{project.name}</Text>
-        <Text style={typography.caption}>{t(PROJECT_TYPE_LABELS[project.type])}</Text>
+        <Text style={typography.caption}>{project.typeName && project.typeName !== PROJECT_TYPE_LABELS[project.type] ? project.typeName : t(PROJECT_TYPE_LABELS[project.type])}</Text>
         <ScheduleStatus project={project} />
         <View style={styles.bar}>
           <ProgressBar value={project.physicalProgressPct} height={12} />
@@ -70,7 +72,9 @@ export default function ProjectScreen() {
         <Button title={t('Roll call')} icon="checkbox-outline" variant="secondary" onPress={() => router.push(`/roll-call?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
       <Button title={t('Stock')} icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
-      <Button title={project.type === 'ROAD' || project.type === 'SEWERAGE' ? t('Progress by chainage') : project.type === 'BUILDING' ? t('Progress by floor') : t('Villages & pipeline')} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />
+      {sector ? (
+        <Button title={sector === 'chainage' ? t('Progress by chainage') : sector === 'floors' ? t('Progress by floor') : t('Villages & pipeline')} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />
+      ) : null}
       <Button title={t('Structure')} icon="git-network-outline" variant="secondary" onPress={() => router.push(`/structure?projectId=${project.id}`)} style={styles.attendance} />
       <Button title={t('Delays & risks')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
       {!user?.modulesOff?.includes('safety') ? (

@@ -21,6 +21,7 @@ export class CreateWorkElementDto {
   @ApiPropertyOptional({ description: 'Outline number, e.g. 3 or 3.2; the next free one when empty' }) @IsOptional() @IsString() @MaxLength(20) code?: string;
   @ApiProperty() @IsString() @MinLength(2) @MaxLength(120) name: string;
   @ApiProperty({ enum: WORK_ELEMENT_TYPES }) @IsIn(WORK_ELEMENT_TYPES as unknown as string[]) elementType: WorkElementType;
+  @ApiPropertyOptional({ description: "The company's component kind it was laid out from (item 134)", nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(40) kindCode?: string | null;
   @ApiPropertyOptional({ description: 'Numbers the template uses, e.g. { "capacityKl": 650, "stagingM": 16 }', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsObject() specs?: Record<string, number> | null;
   @ApiPropertyOptional({ description: 'Share of its parent or of the project, %; empty shares what is left by BOQ value', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() weightPct?: string | null;
   @ApiPropertyOptional({ type: [PlanLineDto], description: 'Activities to create under it (from its template)' })
@@ -37,6 +38,7 @@ export class UpdateWorkElementDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MinLength(1) @MaxLength(20) code?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MinLength(2) @MaxLength(120) name?: string;
   @ApiPropertyOptional({ enum: WORK_ELEMENT_TYPES }) @IsOptional() @IsIn(WORK_ELEMENT_TYPES as unknown as string[]) elementType?: WorkElementType;
+  @ApiPropertyOptional({ description: "The company's component kind (item 134); its kind of work is the kind's", nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(40) kindCode?: string | null;
   @ApiPropertyOptional({ nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsObject() specs?: Record<string, number> | null;
   @ApiPropertyOptional({ nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() weightPct?: string | null;
 }

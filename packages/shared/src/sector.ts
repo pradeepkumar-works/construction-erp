@@ -1,5 +1,5 @@
 /** Sector progress views (v4 item 41): road chainage strip, building floor matrix, water supply villages and pipeline stages. */
-import type { ProjectType } from './enums';
+import type { ProjectType, WorkLocation } from './enums';
 
 /** Structured location on a progress entry or a measurement. Chainage is in metres from the project's 0+000. */
 export interface SectorFields {
@@ -41,12 +41,25 @@ export const sectorLocation = (f: Partial<SectorFields>): string | null => {
   return parts.length ? parts.join(', ') : null;
 };
 
-/** Which structured location a project type asks for on progress and measurements. */
-export const sectorKinds = (type: ProjectType): { chainage: boolean; floor: boolean; village: boolean } => ({
-  chainage: type === 'ROAD' || type === 'WATER_SUPPLY' || type === 'SEWERAGE',
-  floor: type === 'BUILDING',
-  village: type === 'WATER_SUPPLY',
-});
+/** Where a project's work is located, by its built-in kind: what a project of no type of its own (Plant, Store, made before item 134) asks for. */
+export const LOCATIONS_OF_BASE: Record<ProjectType, WorkLocation[]> = {
+  ROAD: ['CHAINAGE'],
+  BUILDING: ['FLOOR'],
+  WATER_SUPPLY: ['CHAINAGE', 'VILLAGE'],
+  SEWERAGE: ['CHAINAGE'],
+  OTHER: [],
+  PLANT: [],
+  STORE: [],
+};
+
+/**
+ * Which structured location a project asks for on progress and measurements: its type's places (item 134, `locations`
+ * on the project from the API), else its built-in kind's.
+ */
+export const sectorKinds = (p: ProjectType | { type: ProjectType; locations?: WorkLocation[] | null }): { chainage: boolean; floor: boolean; village: boolean } => {
+  const places = typeof p === 'string' ? LOCATIONS_OF_BASE[p] : (p.locations ?? LOCATIONS_OF_BASE[p.type]);
+  return { chainage: places.includes('CHAINAGE'), floor: places.includes('FLOOR'), village: places.includes('VILLAGE') };
+};
 
 /** Floors a new building project starts with on its sector settings. */
 export const DEFAULT_FLOORS = ['Foundation', 'Plinth', 'Ground floor', 'First floor', 'Second floor', 'Terrace'];

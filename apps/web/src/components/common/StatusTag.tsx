@@ -23,12 +23,13 @@ export function ProjectStatusTag({ status }: { status: ProjectStatus }) {
   );
 }
 
-const TYPE_COLORS: Record<ProjectType, string> = { ROAD: 'geekblue', BUILDING: 'cyan', WATER_SUPPLY: 'blue', SEWERAGE: 'green', PLANT: 'purple', STORE: 'gold' };
+const TYPE_COLORS: Record<ProjectType, string> = { ROAD: 'geekblue', BUILDING: 'cyan', WATER_SUPPLY: 'blue', SEWERAGE: 'green', OTHER: 'default', PLANT: 'purple', STORE: 'gold' };
 
-export function ProjectTypeTag({ type }: { type: ProjectType }) {
+/** `name` is the company's own type (a Bridge on the road kind); the colour stays the built-in kind's. */
+export function ProjectTypeTag({ type, name }: { type: ProjectType; name?: string | null }) {
   return (
     <AppTag color={TYPE_COLORS[type] ?? 'default'} variant="outlined" dot={false} style={{ margin: 0 }}>
-      {PROJECT_TYPE_LABELS[type] ?? type}
+      {name || PROJECT_TYPE_LABELS[type] || type}
     </AppTag>
   );
 }

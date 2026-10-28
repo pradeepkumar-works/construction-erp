@@ -50,7 +50,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
         </div>
       ),
     },
-    { card: 'meta', cardText: (p) => [p.code, p.clientName, p.location].filter(Boolean).join(' · '), title: 'Type', dataIndex: 'type', width: 150, defaultFrom: 1600, render: (t) => <ProjectTypeTag type={t} />, ...sort('type') },
+    { card: 'meta', cardText: (p) => [p.code, p.clientName, p.location].filter(Boolean).join(' · '), title: 'Type', dataIndex: 'type', width: 150, defaultFrom: 1600, render: (t, p) => <ProjectTypeTag type={t} name={p.typeName} />, ...sort('type') },
     { card: 'status', title: 'Status', dataIndex: 'status', width: 110, render: (s) => <ProjectStatusTag status={s} />, ...sort('status') },
     { key: 'projectManagerName', title: 'PM', label: 'Project manager', dataIndex: 'projectManagerName', width: 140, defaultFrom: 1400, render: (v) => v ?? <Sub>Unassigned</Sub> },
     {

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  sectorKinds,
   coveredLength,
   isPipeItem,
   pipelineStageOf,
@@ -11,6 +12,7 @@ import {
   type VillagePipeline,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProjectTypesService } from '../templates/project-types.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import type { RequestUser } from '../common/current-user';
 import { dateOnly, dec } from '../common/serialize';
@@ -42,11 +44,12 @@ export class SectorService {
   constructor(
     private prisma: PrismaService,
     private access: ProjectAccessService,
+    private types: ProjectTypesService,
   ) {}
 
   async get(user: RequestUser, projectId: string): Promise<SectorProgressDto> {
     await this.access.assertCanAccessProject(user, projectId);
-    const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true, type: true, chainageStart: true, chainageEnd: true, floors: true, villages: true } });
+    const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true, organizationId: true, type: true, typeCode: true, chainageStart: true, chainageEnd: true, floors: true, villages: true } });
     if (!project) throw new NotFoundException('Project not found');
     const [activities, rows] = await Promise.all([
       this.prisma.activity.findMany({ where: { projectId }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], select: { id: true, name: true, unit: true, plannedQty: true } }),
@@ -62,10 +65,14 @@ export class SectorService {
     const approvedSum = (es: Entry[]) => sum(es.filter((e) => e.status === 'APPROVED').map((e) => e.quantity));
     const executed = new Map(activities.map((a) => [a.id, approvedSum(byActivity.get(a.id) ?? [])]));
 
-    const water = project.type === 'WATER_SUPPLY';
+    // What the views draw follows the project's type (item 134): its places and its pipe network.
+    const features = (await this.types.featuresOf(project.organizationId, [project])).get(project.id)!;
+    const k = sectorKinds({ type: project.type, locations: features.locations });
+    const water = k.village;
     const hasRange = project.chainageStart !== null && project.chainageEnd !== null;
     let strip: ChainageLayer[] | null = null;
-    if (project.type === 'ROAD' || ((water || project.type === 'SEWERAGE') && hasRange)) {
+    // A road-like type draws its strip from the start; a pipeline once its chainage range is set.
+    if (k.chainage && (hasRange || !features.pipeNetwork)) {
       strip = activities
         .filter((a) => {
           const placed = (byActivity.get(a.id) ?? []).some((e) => e.chainageFrom !== null);
@@ -94,7 +101,7 @@ export class SectorService {
     }
 
     let matrix: SectorMatrix | null = null;
-    if (project.type === 'BUILDING' || water) {
+    if (k.floor || water) {
       const key = (e: Entry) => (water ? e.village : e.floor);
       const listed = water ? project.villages : project.floors;
       const extra = [...new Set(entries.map(key).filter((k): k is string => !!k && !listed.includes(k)))].sort();
@@ -125,7 +132,7 @@ export class SectorService {
     }
 
     let pipeline: SectorProgressDto['pipeline'] = null;
-    if (water) {
+    if (features.pipeNetwork && project.type === 'WATER_SUPPLY') {
       const stage = new Map(activities.map((a) => [a.id, pipelineStageOf(a)]));
       const laidActs = activities.filter((a) => stage.get(a.id) === 'LAID');
       const approvedOf = (s: 'LAID' | 'TESTED') => entries.filter((e) => e.status === 'APPROVED' && stage.get(e.activityId) === s);
