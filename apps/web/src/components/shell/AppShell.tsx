@@ -429,8 +429,8 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
               </>
             ) : (
               <>
-                {/* Below the widest screens the two switchers share the room the project one had, so the trail keeps some. */}
-                <CompanySwitcher user={user} compact={!roomy} maxWidth={spacious ? 220 : 180} />
+                {/* Below the widest screens the company is an icon (the sidebar names it), so the trail keeps its room. */}
+                <CompanySwitcher user={user} compact={!spacious} maxWidth={220} />
                 {!guest && (
                   <span data-tour="project" style={{ flexShrink: 0 }}>
                     <ProjectSwitcher width={roomy ? (companyMenu && !spacious ? 200 : 240) : 200} />

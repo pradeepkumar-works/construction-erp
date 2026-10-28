@@ -14,6 +14,7 @@ async function newCompany(stamp: number) {
   return { email, token: signed.accessToken, name: `E2E Builders ${stamp}` };
 }
 
+// The header names the company in its title; below 1600 px wide the button is an icon.
 const switcher = (page: Page) => page.locator('[data-tour="company"]');
 
 /**
@@ -60,13 +61,13 @@ test('an admin makes a group with a lab, and a colleague moves between the two o
   await page.context().clearCookies();
   await page.evaluate(() => window.localStorage.clear());
   await signIn(page, colleague);
-  await expect(switcher(page)).toContainText(co.name);
+  await expect(switcher(page)).toHaveAttribute('title', co.name);
   await switcher(page).click();
   await menuSettled(page);
   // The switch loads Home afresh in the lab.
   await Promise.all([page.waitForEvent('load'), page.getByRole('menuitem', { name: new RegExp(lab) }).click()]);
   await expect(homeHeading(page)).toBeVisible();
-  await expect(switcher(page)).toContainText(lab);
+  await expect(switcher(page)).toHaveAttribute('title', lab);
   // A lab starts without tenders; the construction company has them.
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Tenders', exact: true })).toHaveCount(0);
 
@@ -74,7 +75,7 @@ test('an admin makes a group with a lab, and a colleague moves between the two o
   await page.context().clearCookies();
   await page.evaluate(() => window.localStorage.clear());
   await signIn(page, colleague);
-  await expect(switcher(page)).toContainText(lab);
+  await expect(switcher(page)).toHaveAttribute('title', lab);
 });
 
 /** The demo group: the QA/QC engineer works in the construction company and the lab, so the header offers both. */
