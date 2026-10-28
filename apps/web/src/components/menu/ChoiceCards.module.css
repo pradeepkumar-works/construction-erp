@@ -34,6 +34,7 @@
 
 .card.card > :global(.ant-radio) {
   position: absolute;
+  z-index: 1;
   top: calc(var(--ant-padding-sm) + 6px);
   right: calc(var(--ant-padding-sm) + 6px);
 }

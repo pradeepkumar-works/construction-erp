@@ -185,9 +185,11 @@ function ModuleNav({ menu, place, mobile, inBar }: { menu: NavMenuModule[]; plac
   useEffect(() => {
     const list = subs.current;
     const on = list?.querySelector<HTMLElement>(`.${s.on}`);
-    if (!list || !on || list.scrollWidth <= list.clientWidth) return;
-    list.scrollLeft = on.offsetLeft - (list.clientWidth - on.offsetWidth) / 2;
-  }, [at, module.key]);
+    if (!list || !on) return;
+    const box = list.getBoundingClientRect();
+    const it = on.getBoundingClientRect();
+    list.scrollLeft = Math.max(0, list.scrollLeft + it.left - box.left - (box.width - it.width) / 2);
+  }, [at, module.key, mobile, fit]);
   const go = (node: NavNode) => {
     const href = hrefOf(node, projectId);
     if (href) router.push(href);

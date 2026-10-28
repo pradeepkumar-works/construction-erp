@@ -63,7 +63,7 @@
 .waiting {
   padding: 0 8px;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--brand-pending) 12%, transparent);
+  background: var(--ant-color-warning-bg);
   color: var(--ant-color-warning-text);
   font-size: var(--ant-font-size-sm);
   font-weight: 600;
