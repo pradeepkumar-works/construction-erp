@@ -13,6 +13,7 @@ import {
   lineLocation,
   segmentCapProblem,
   segmentLabel,
+  typeCodeOf,
   workSummary,
   type PipeStage,
   type SegmentStage,
@@ -47,15 +48,13 @@ import { DprFormsService } from '../templates/dpr-forms.service';
 import { ProjectTypesService } from '../templates/project-types.service';
 
 const include = {
-  project: { select: { name: true } },
+  project: { select: { name: true, type: true, typeCode: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
   _count: { select: { lines: true } },
 } satisfies Prisma.DailyReportInclude;
 type Row = Prisma.DailyReportGetPayload<{ include: typeof include }>;
-/** One report: also its project's type, for its form. */
-const oneInclude = { ...include, project: { select: { name: true, type: true, typeCode: true } } } satisfies Prisma.DailyReportInclude;
 
 /** Where an activity sits in the work breakdown (item 125): its component and sub-component. */
 const PLACE = { select: { code: true, name: true, level: true, elementType: true, parent: { select: { code: true, name: true } } } } as const;
@@ -143,6 +142,7 @@ export class DprService {
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       formId: r.dprFormConfigId,
+      typeCode: typeCodeOf(r.project),
       extra: extraOf(r.extra),
       createdAt: iso(r.createdAt)!,
       updatedAt: iso(r.updatedAt)!,
@@ -172,7 +172,7 @@ export class DprService {
   }
 
   async get(user: RequestUser, id: string): Promise<DailyReportDto> {
-    const row = await this.prisma.dailyReport.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: oneInclude });
+    const row = await this.prisma.dailyReport.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
     if (!row) throw new NotFoundException('Daily report not found');
     const [lines, form] = await Promise.all([this.lineDtos(row.id, row.date), this.forms.ofReport(row.organizationId, row.dprFormConfigId, row.project)]);
     return { ...this.toDto(row), lines, form };
@@ -544,6 +544,13 @@ export class DprService {
         }),
       })),
     );
+  }
+
+  /** The form a new report on the project is made on (item 134 part 2): its type's latest. */
+  async formFor(user: RequestUser, projectId: string) {
+    await this.access.assertCanAccessProject(user, projectId);
+    const project = await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { type: true, typeCode: true } });
+    return this.forms.forProject(user.organizationId, project);
   }
 
   /** One DPR per project per day (a rejected one may be replaced). */

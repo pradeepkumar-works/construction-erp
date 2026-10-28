@@ -1,22 +1,25 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { WEATHER_LABELS, crewCheck, dprActivityLabel, groupLines, lineLocation, type DailyReportDto } from '@erp/shared';
+import { STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, filledExtra, groupLines, lineLocation, ownFieldLabel, ownFieldsOf, type DailyReportDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, PhotoChecks, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, fmtQty } from '../../src/utils/format';
-import { useT } from '../../src/i18n/LanguageContext';
+import { useLanguage, useT } from '../../src/i18n/LanguageContext';
 
 export default function DprDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
+  const { language } = useLanguage();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<DailyReportDto>((api) => api.get(`/dpr/${id}`), [id], { enabled: !!id });
 
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
+  // The company's own fields of the form it was made on (item 134 part 2), in the phone's language.
+  const def = data.form?.def ?? STANDARD_DPR_FORM;
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
@@ -24,6 +27,9 @@ export default function DprDetailScreen() {
       <Card title={t('Site')}>
         <KeyValue label={t('Weather')} value={data.weather ? t(WEATHER_LABELS[data.weather]) : null} />
         <KeyValue label={t('Site condition')} value={data.siteCondition} />
+        {filledExtra(ownFieldsOf(def, 'DAY'), data.extra).map((x) => (
+          <KeyValue key={x.field.key} label={ownFieldLabel(x.field, language)} value={x.text === 'Yes' || x.text === 'No' ? t(x.text) : x.text} />
+        ))}
       </Card>
       <Card title={t('Manpower')} right={<Text style={styles.total}>{t('Total {n}', { n: data.totalManpower })}</Text>}>
         {data.manpower.length === 0 ? <Text style={typography.caption}>{t('No manpower recorded')}</Text> : data.manpower.map((m, i) => <KeyValue key={`${m.category}-${i}`} label={t(m.category)} value={String(m.count)} />)}
@@ -45,6 +51,14 @@ export default function DprDetailScreen() {
                   </Text>
                   {l.labour.length ? <Text style={typography.caption}>{l.labour.map((m) => `${t(m.category)} ${m.count}`).join(', ')}</Text> : null}
                   {l.materials.length ? <Text style={typography.caption}>{l.materials.map((m) => `${m.itemName} ${fmtQty(m.quantity)} ${m.unit}`).join(', ')}</Text> : null}
+                  {filledExtra(ownFieldsOf(def, 'LINE'), l.extra).length ? (
+                    <Text style={typography.caption}>
+                      {filledExtra(ownFieldsOf(def, 'LINE'), l.extra)
+                        .map((x) => `${ownFieldLabel(x.field, language)}: ${x.text === 'Yes' || x.text === 'No' ? t(x.text) : x.text}`)
+                        .join(', ')}
+                    </Text>
+                  ) : null}
+                  {l.attachments.length ? <AttachmentGallery attachments={l.attachments} /> : null}
                 </View>
               ))}
             </View>

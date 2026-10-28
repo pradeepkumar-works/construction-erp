@@ -8,14 +8,15 @@ import { LIST_SORT_FIELDS } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useDprList, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
-import { DPR_EXPORT } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable } from '@/components/list/DataTable';
 import { DateRangeFilter } from '@/components/list/DateRangeFilter';
-import { exportSelected, useBulkApprove } from '@/components/list/bulk';
+import { useBulkApprove } from '@/components/list/bulk';
+import { DownloadOutlined } from '@/components/common/icons';
+import { dprExportColumns } from './dprExport';
 import { useListFrame } from '@/components/list/useListFrame';
 import { dprColumns } from './DprTable';
 import { DprDrawer } from './DprDrawer';
@@ -51,7 +52,7 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
 
   const exportRows = async () => {
     const rows = await fetchAllPages<DailyReportDto>('/dpr', { ...filters });
-    await downloadXlsx(exportFileName('dpr'), 'dpr', DPR_EXPORT, rows);
+    await downloadXlsx(exportFileName('dpr'), 'dpr', await dprExportColumns(rows), rows);
     return rows.length;
   };
 
@@ -98,7 +99,7 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         loading={isLoading || isFetching}
         table={page.tableProps<DailyReportDto>(data?.total)}
         onOpen={setOpenId}
-        bulk={[...(approve ? [approve] : []), exportSelected<DailyReportDto>('dpr', 'dpr', DPR_EXPORT)]}
+        bulk={[...(approve ? [approve] : []), { key: 'export', label: 'Export', icon: <DownloadOutlined />, run: async (rows: DailyReportDto[]) => downloadXlsx(exportFileName('dpr'), 'dpr', await dprExportColumns(rows), rows) }]}
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}

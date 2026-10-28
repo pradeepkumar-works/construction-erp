@@ -9,6 +9,7 @@ import {
   typeCodeOf,
   type DprFormDef,
   type DprFormDto,
+  type DprFormVersionsDto,
   type ProjectType,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,15 +21,6 @@ import { ProjectTypesService } from './project-types.service';
 type Db = Prisma.TransactionClient;
 const include = { createdBy: { select: { fullName: true } } } satisfies Prisma.DprFormConfigInclude;
 type Row = Prisma.DprFormConfigGetPayload<{ include: typeof include }>;
-
-export interface DprFormVersionDto {
-  id: string;
-  version: number;
-  createdAt: string;
-  createdByName: string | null;
-  /** Reports made on it */
-  reports: number;
-}
 
 /**
  * The DPR form of each project type (item 134 part 2, ARCHITECTURE "DPR form per project type"). A save adds a version
@@ -67,6 +59,13 @@ export class DprFormsService {
     return this.standard(typeCodeOf(project) ?? '', project.type);
   }
 
+  /** Saved versions by id (a DPR export reads the fields of the reports' forms). */
+  async byIds(organizationId: string, ids: string[]): Promise<DprFormDto[]> {
+    if (!ids.length) return [];
+    const rows = await this.prisma.dprFormConfig.findMany({ where: { id: { in: ids.slice(0, 200) }, organizationId }, include });
+    return rows.map((r) => this.dto(r));
+  }
+
   /**
    * The version a phone filled offline, when it is one of the project type's: the API takes the fields of that
    * version, so a report typed before the form changed still goes in. Anything else is the type's latest.
@@ -80,7 +79,7 @@ export class DprFormsService {
   }
 
   /** A type's form and its saved versions, newest first, with how many reports each holds. */
-  async versions(user: RequestUser, code: string): Promise<{ form: DprFormDto; versions: DprFormVersionDto[]; progressFromDpr: boolean }> {
+  async versions(user: RequestUser, code: string): Promise<DprFormVersionsDto> {
     const type = await this.types.type(user.organizationId, code);
     if (!type) throw new NotFoundException('Project type not found');
     const [rows, org] = await Promise.all([

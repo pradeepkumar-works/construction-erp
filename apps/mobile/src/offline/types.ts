@@ -12,6 +12,8 @@ export interface OutboxPhoto {
   type: string;
   /** Set once the photo has been uploaded; a retry never uploads it again. */
   attachmentId?: string;
+  /** A DPR work line's photo (item 134 part 2): the line's id, so the send puts it on that line */
+  line?: string;
 }
 
 /** One site entry waiting on this phone to be sent to the API. `id` becomes the server id. */

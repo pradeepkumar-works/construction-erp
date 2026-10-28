@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { Alert, AutoComplete, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
-import type { AiDraftDto, AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
-import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
+import type { AiDraftDto, AttachmentDto, DailyReportDto, DprBuiltInKey, DprFormDef, Weather } from '@erp/shared';
+import { STANDARD_DPR_FORM, WEATHER_LABELS, WEATHER_OPTIONS, dprLabel, dprMissing, dprRequires, dprSectionFields, dprShows, ownFieldsOf } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
@@ -19,6 +19,7 @@ import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { DprLinesField, copiedLine, followNorms, lineValues, linesBody, type DprLineValues } from './DprLinesField';
+import { OwnFieldItems, extraBody } from './OwnFields';
 
 interface FormValues {
   projectId: string;
@@ -36,6 +37,8 @@ interface FormValues {
   photos?: AttachmentDto[];
   /** The work done, line by line (item 127) */
   lines?: DprLineValues[];
+  /** The day's fields of the company's own (item 134 part 2), by key */
+  extra?: Record<string, unknown>;
 }
 
 /** Create a DPR, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
@@ -60,6 +63,14 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
   const full = useDpr(open && entry && !entry.lines ? entry.id : undefined).data;
   const withLines = entry?.lines ? entry : full;
   const linesReady = !editing || !!withLines;
+  // The project type's form (item 134 part 2): a new report takes the type's latest, an edit keeps its own.
+  const formDto = editing ? (withLines?.form ?? entry?.form) : options?.form;
+  const def: DprFormDef = formDto?.def ?? STANDARD_DPR_FORM;
+  const shows = (key: DprBuiltInKey) => dprShows(def, key, { progressFromDpr: options?.progressFromDpr });
+  const field = (key: DprBuiltInKey) => ({
+    label: dprLabel(def, key),
+    rules: dprRequires(def, key) && key !== 'photos' ? [{ required: true, whitespace: true, message: dprMissing(def, key) }] : undefined,
+  });
   // The edit's lines go in once they are known: with the entry (opened from its page) or when the full report loads. The
   // reset below fills them too, as it empties the form after this effect has run.
   const linesFor = useRef<string | null>(null);
@@ -145,6 +156,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         issues: entry.issues ?? undefined,
         nextDayPlan: entry.nextDayPlan ?? undefined,
         photos: entry.attachments,
+        extra: { ...entry.extra },
       });
     } else {
       form.setFieldsValue({
@@ -155,6 +167,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         manpower: [],
         machinery: [],
         lines: [],
+        extra: {},
       });
       if (prefill) {
         const v = prefill.values as Partial<Omit<FormValues, 'date'>> & { date?: string };
@@ -171,6 +184,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           safetyObservations: v.safetyObservations,
           issues: v.issues,
           nextDayPlan: v.nextDayPlan,
+          extra: v.extra ?? {},
         });
       }
     }
@@ -194,6 +208,9 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         issues: v.issues || blank,
         nextDayPlan: v.nextDayPlan || blank,
         attachmentIds: (v.photos ?? []).map((p) => p.id),
+        extra: extraBody(v.extra),
+        // A new report says the form version it was filled on; an edit keeps the report's own.
+        ...(editing ? {} : { formId: options?.form.id ?? undefined }),
         submit: true,
       };
       return entry ? (await api.patch(`/dpr/${entry.id}`, body)).data : (await api.post('/dpr', { projectId: v.projectId, ...body })).data;
@@ -238,29 +255,37 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the report' }]} {...aiFlagItem(draft, 'date', watchedDate)}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
-            <Form.Item name="weather" label="Weather">
-              <Select options={WEATHER_OPTIONS.map((w) => ({ value: w, label: WEATHER_LABELS[w] }))} />
-            </Form.Item>
-            <Form.Item name="siteCondition" label="Site condition">
-              <Input placeholder="Workable / Waterlogged" />
-            </Form.Item>
+            {dprSectionFields(def, 'DAY').map((key) =>
+              key === 'weather' ? (
+                <Form.Item key={key} name="weather" {...field(key)}>
+                  <Select options={WEATHER_OPTIONS.map((w) => ({ value: w, label: WEATHER_LABELS[w] }))} />
+                </Form.Item>
+              ) : (
+                <Form.Item key={key} name="siteCondition" {...field(key)}>
+                  <Input placeholder="Workable / Waterlogged" />
+                </Form.Item>
+              ),
+            )}
+            <OwnFieldItems fields={ownFieldsOf(def, 'DAY')} path={['extra']} />
           </FormGrid>
         </FormSection>
 
         <FormSection
           title="Work done"
           extra={
-            !editing && previousFull?.lines?.length ? (
+            !editing && shows('lines') && previousFull?.lines?.length ? (
               <Button type="link" size="small" onClick={copyLines} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
                 Copy {previousFull.lines.length} lines from {formatDate(previousFull.date)}
               </Button>
             ) : null
           }
         >
-          <Typography.Paragraph type="secondary">
-            One line for each activity worked on: where, how much today, and its crew and material. Activities planned for this week come first.
-          </Typography.Paragraph>
-          <DprLinesField options={options} headCount={headCount} />
+          {shows('lines') ? (
+            <>
+              <Typography.Paragraph type="secondary">One line for each activity worked on: where and how much today, and what else the form asks for each. Activities planned for this week come first.</Typography.Paragraph>
+              <DprLinesField options={options} headCount={headCount} def={def} />
+            </>
+          ) : null}
           <Form.Item
             name="workExecuted"
             label={watchedLines?.some((l) => l?.activityId) ? 'Other work and notes' : 'Work executed'}
@@ -279,124 +304,141 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           </Form.Item>
         </FormSection>
 
-        <FormSection
-          title="Manpower and machinery"
-          extra={
-            !editing && attendanceSheet ? (
-              filledFrom === attendanceSheet.id && !manpowerEdited ? (
-                <Typography.Text type="success" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                  From attendance: {attendanceSheet.totalWorkers} workers recorded by {attendanceSheet.recordedByName}
+        {shows('manpower') || shows('machinery') ? (
+          <FormSection
+            title="Manpower and machinery"
+            extra={
+              !editing && attendanceSheet ? (
+                filledFrom === attendanceSheet.id && !manpowerEdited ? (
+                  <Typography.Text type="success" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    From attendance: {attendanceSheet.totalWorkers} workers recorded by {attendanceSheet.recordedByName}
+                  </Typography.Text>
+                ) : (
+                  <Button type="link" size="small" onClick={applyAttendance} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
+                    Use attendance ({attendanceSheet.totalWorkers} workers)
+                  </Button>
+                )
+              ) : !editing && attendance.data && !attendanceSheet ? (
+                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  No attendance recorded for this day yet
                 </Typography.Text>
-              ) : (
-                <Button type="link" size="small" onClick={applyAttendance} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
-                  Use attendance ({attendanceSheet.totalWorkers} workers)
-                </Button>
-              )
-            ) : !editing && attendance.data && !attendanceSheet ? (
-              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                No attendance recorded for this day yet
-              </Typography.Text>
-            ) : null
-          }
-        >
-          {copiedFrom && !editing ? (
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title={`Copied from the DPR of ${formatDate(copiedFrom.date)}: check the numbers for today`}
-              action={
-                <Button type="link" size="small" onClick={clearCopied} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
-                  Clear
-                </Button>
-              }
-            />
-          ) : null}
-          <FormGrid cols={2}>
-            <Form.Item label="Manpower" required={false}>
-              <LineTable
-                name="manpower"
-                label="Manpower"
-                addText="Add category"
-                newLine={() => ({ count: 1 })}
-                columns={[
-                  {
-                    key: 'category',
-                    title: 'Category',
-                    render: (f) => (
-                      <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: '' }]}>
-                        <Select style={{ width: '100%', minWidth: 120 }} placeholder="Category" aria-label={`Manpower category ${f.name + 1}`} options={MANPOWER_CATEGORIES.map((c) => ({ value: c, label: c }))} />
-                      </Form.Item>
-                    ),
-                  },
-                  {
-                    key: 'count',
-                    title: 'Nos',
-                    width: 90,
-                    align: 'right',
-                    render: (f) => (
-                      <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
-                        <InputNumber min={0} precision={0} placeholder="Nos" inputMode="numeric" aria-label={`Number of manpower category ${f.name + 1}`} style={{ width: '100%' }} />
-                      </Form.Item>
-                    ),
-                  },
-                ]}
+              ) : null
+            }
+          >
+            {copiedFrom && !editing ? (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 12 }}
+                title={`Copied from the DPR of ${formatDate(copiedFrom.date)}: check the numbers for today`}
+                action={
+                  <Button type="link" size="small" onClick={clearCopied} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
+                    Clear
+                  </Button>
+                }
               />
-            </Form.Item>
-            <Form.Item label="Machinery">
-              <LineTable
-                name="machinery"
-                label="Machinery"
-                addText="Add machine"
-                newLine={() => ({ hours: 8 })}
-                columns={[
-                  {
-                    key: 'name',
-                    title: 'Equipment',
-                    render: (f) => (
-                      <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: '' }]}>
-                        <Input placeholder="Equipment" aria-label={`Equipment ${f.name + 1}`} style={{ minWidth: 120 }} />
-                      </Form.Item>
-                    ),
-                  },
-                  {
-                    key: 'hours',
-                    title: 'Hours',
-                    width: 90,
-                    align: 'right',
-                    render: (f) => (
-                      <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: '' }]}>
-                        <InputNumber min={0} max={24} placeholder="Hrs" inputMode="decimal" aria-label={`Hours of equipment ${f.name + 1}`} style={{ width: '100%' }} />
-                      </Form.Item>
-                    ),
-                  },
-                ]}
-              />
-            </Form.Item>
-          </FormGrid>
-        </FormSection>
+            ) : null}
+            <FormGrid cols={2}>
+              {shows('manpower') ? (
+                <Form.Item label={dprLabel(def, 'manpower')} required={dprRequires(def, 'manpower')}>
+                  <LineTable
+                    name="manpower"
+                    label="Manpower"
+                    addText="Add category"
+                    newLine={() => ({ count: 1 })}
+                    columns={[
+                      {
+                        key: 'category',
+                        title: 'Category',
+                        render: (f) => (
+                          <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: '' }]}>
+                            <Select style={{ width: '100%', minWidth: 120 }} placeholder="Category" aria-label={`Manpower category ${f.name + 1}`} options={def.lines.crewCategories.map((c) => ({ value: c, label: c }))} />
+                          </Form.Item>
+                        ),
+                      },
+                      {
+                        key: 'count',
+                        title: 'Nos',
+                        width: 90,
+                        align: 'right',
+                        render: (f) => (
+                          <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
+                            <InputNumber min={0} precision={0} placeholder="Nos" inputMode="numeric" aria-label={`Number of manpower category ${f.name + 1}`} style={{ width: '100%' }} />
+                          </Form.Item>
+                        ),
+                      },
+                    ]}
+                  />
+                </Form.Item>
+              ) : null}
+              {shows('machinery') ? (
+                <Form.Item label={dprLabel(def, 'machinery')} required={dprRequires(def, 'machinery')}>
+                  <LineTable
+                    name="machinery"
+                    label="Machinery"
+                    addText="Add machine"
+                    newLine={() => ({ hours: 8 })}
+                    columns={[
+                      {
+                        key: 'name',
+                        title: 'Equipment',
+                        render: (f) => (
+                          <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: '' }]}>
+                            <AutoComplete placeholder="Equipment" aria-label={`Equipment ${f.name + 1}`} options={def.lines.machineNames.map((m) => ({ value: m }))} style={{ width: '100%', minWidth: 120 }} />
+                          </Form.Item>
+                        ),
+                      },
+                      {
+                        key: 'hours',
+                        title: 'Hours',
+                        width: 90,
+                        align: 'right',
+                        render: (f) => (
+                          <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: '' }]}>
+                            <InputNumber min={0} max={24} placeholder="Hrs" inputMode="decimal" aria-label={`Hours of equipment ${f.name + 1}`} style={{ width: '100%' }} />
+                          </Form.Item>
+                        ),
+                      },
+                    ]}
+                  />
+                </Form.Item>
+              ) : null}
+            </FormGrid>
+          </FormSection>
+        ) : null}
 
         <FormSection title="Notes">
           <FormGrid cols={2}>
-            <Form.Item name="materialReceived" label="Material received" {...aiFlagItem(draft, 'materialReceived', now?.materialReceived)}>
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Form.Item name="testsConducted" label="Tests conducted" {...aiFlagItem(draft, 'testsConducted', now?.testsConducted)}>
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Form.Item name="safetyObservations" label="Safety observations" {...aiFlagItem(draft, 'safetyObservations', now?.safetyObservations)}>
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Form.Item name="issues" label="Issues / hindrances" {...aiFlagItem(draft, 'issues', now?.issues)}>
-              <Input.TextArea rows={2} />
-            </Form.Item>
+            {dprSectionFields(def, 'NOTES')
+              .filter((key) => key !== 'photos')
+              .map((key) => (
+                <Form.Item key={key} name={key} {...field(key)} {...aiFlagItem(draft, key, now?.[key as keyof FormValues] as string | undefined)}>
+                  <Input.TextArea rows={2} />
+                </Form.Item>
+              ))}
           </FormGrid>
-          <Form.Item name="nextDayPlan" label="Next day plan" {...aiFlagItem(draft, 'nextDayPlan', now?.nextDayPlan)}>
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="photos" label="Site photos" extra="Photos of the work done today; they go with the report.">
-            <PhotoUpload />
-          </Form.Item>
+          {shows('photos') ? (
+            <Form.Item
+              name="photos"
+              label={dprLabel(def, 'photos')}
+              required={def.minPhotos > 0}
+              extra={def.minPhotos ? `At least ${def.minPhotos} photo${def.minPhotos === 1 ? '' : 's'} of the work done today; they go with the report.` : 'Photos of the work done today; they go with the report.'}
+              rules={
+                def.minPhotos
+                  ? [
+                      {
+                        validator: (_, v: AttachmentDto[] | undefined) =>
+                          (v?.length ?? 0) + (watchedLines ?? []).reduce((n, l) => n + (l?.photos?.length ?? 0), 0) >= def.minPhotos
+                            ? Promise.resolve()
+                            : Promise.reject(new Error(def.minPhotos === 1 ? 'Add a site photo' : `Add at least ${def.minPhotos} site photos`)),
+                      },
+                    ]
+                  : undefined
+              }
+            >
+              <PhotoUpload max={Math.max(6, def.minPhotos)} />
+            </Form.Item>
+          ) : null}
         </FormSection>
       </Form>
     </FormShell>

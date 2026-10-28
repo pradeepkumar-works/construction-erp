@@ -128,6 +128,22 @@ export interface DprFormDto {
   createdByName: string | null;
 }
 
+/** A saved version of a type's form, with how many reports were made on it. */
+export interface DprFormVersionDto {
+  id: string;
+  version: number;
+  createdAt: string;
+  createdByName: string | null;
+  reports: number;
+}
+
+/** A type's DPR form tab: the form new reports take, its saved versions newest first, and the company's setting. */
+export interface DprFormVersionsDto {
+  form: DprFormDto;
+  versions: DprFormVersionDto[];
+  progressFromDpr: boolean;
+}
+
 export const MAX_OWN_FIELDS = 20;
 export const MAX_CHOICE_OPTIONS = 20;
 export const MAX_PHOTOS_REQUIRED = 10;
@@ -435,10 +451,13 @@ export interface DprFilled {
   photos: number;
 }
 
+/** What to say when a required built-in field is empty: its own words, or "Fill in …" under the name the form gives it. */
+export const dprMissing = (def: DprFormDef, key: DprBuiltInKey): string => (dprSetting(def, key).label ? `Fill in ${dprSetting(def, key).label}` : DPR_BUILT_INS[key].missing);
+
 /** The required built-in fields a report sent for approval leaves empty, in words that say what to do. */
 export function dprRequiredProblems(def: DprFormDef, r: DprFilled, opts: { progressFromDpr?: boolean } = {}): string[] {
   const out: string[] = [];
-  const missing = (key: DprBuiltInKey) => (dprSetting(def, key).label ? `Fill in ${dprSetting(def, key).label}` : DPR_BUILT_INS[key].missing);
+  const missing = (key: DprBuiltInKey) => dprMissing(def, key);
   for (const f of def.fields) {
     if (f.key === 'photos' || !dprShows(def, f.key, opts) || !f.required) continue;
     const v = r[f.key];

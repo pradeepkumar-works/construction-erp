@@ -359,6 +359,8 @@ export interface DailyReportDto extends SubmissionBase {
   lines?: DprLineDto[];
   /** The version of its type's DPR form it was made on (item 134); null for the type's standard form */
   formId: string | null;
+  /** The project's type (item 134): with `formId` null, the report was made on this type's standard form */
+  typeCode: string | null;
   /** Values of the form's own fields for the day, by key */
   extra: DprExtra;
   /** The form it was made on; on the single report */

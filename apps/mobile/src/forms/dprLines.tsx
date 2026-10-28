@@ -1,21 +1,35 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import {
-  MANPOWER_CATEGORIES,
+  PICK_OUTSIDE,
+  PICK_WHOLE,
   PIPE_NODE_KIND_LABELS,
   PIPE_STAGE_LABELS,
+  activitiesFor,
   comparePipeCodes,
+  componentChoices,
   componentLabel,
+  componentPickOf,
   crewCheck,
   dprActivityLabel,
+  dprLineShows,
+  formatChainage,
+  linePick,
+  ownFieldsOf,
+  parseChainage,
   segmentLabel,
+  subComponentChoices,
+  subPickOf,
   suggestMaterials,
+  type DprFormDef,
   type DprLineDto,
   type DprLineInput,
   type DprWorkOptionsDto,
   type ManpowerLine,
 } from '@erp/shared';
-import { Button, IconButton, Input, Select } from '../components';
+import { Button, IconButton, Input, PhotoPicker, Select, type LocalPhoto } from '../components';
+import { attachmentsToPhotos } from './edit';
+import { OwnFieldInputs, ownPayload, ownProblems, ownValuesFrom, type OwnValues } from './ownFields';
 import { useT } from '../i18n/LanguageContext';
 import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../theme';
 
@@ -30,13 +44,25 @@ export interface DprLineRow {
   subPick: string | null;
   quantity: string;
   location: string;
+  /** Where by the project's places (item 134): chainage as km+m text, floor, village */
+  chainageFrom: string;
+  chainageTo: string;
+  floor: string | null;
+  village: string | null;
   /** The pipe segment, or for a valve line the valve, the work was on (item 126) */
   pipeSegmentId: string | null;
   pipeNodeId: string | null;
   crew: { key: string; category: string | null; count: string }[];
+  machines: { key: string; name: string; hours: string }[];
   materials: { key: string; itemId: string | null; quantity: string }[];
   /** Changed by hand, so the norms no longer fill it */
   materialsEdited: boolean;
+  workOrderId: string | null;
+  remarks: string;
+  /** The line's fields of the company's own (item 134 part 2) */
+  extra: OwnValues;
+  /** The line's photos; they go to the outbox with the line's id */
+  photos: LocalPhoto[];
 }
 
 const newKey = () => Math.random().toString(36).slice(2, 9);
@@ -50,79 +76,66 @@ export const newLineRow = (id: string, over: Partial<DprLineRow> = {}): DprLineR
   subPick: null,
   quantity: '',
   location: '',
+  chainageFrom: '',
+  chainageTo: '',
+  floor: null,
+  village: null,
   pipeSegmentId: null,
   pipeNodeId: null,
   crew: [],
+  machines: [],
   materials: [],
   materialsEdited: false,
+  workOrderId: null,
+  remarks: '',
+  extra: {},
+  photos: [],
   ...over,
 });
+
+const chainageText = (m: number | null | undefined) => (m === null || m === undefined ? '' : formatChainage(m));
 
 /** A saved or queued line back into the form. */
 export const lineRowFrom = (l: DprLineDto | DprLineInput, id: string): DprLineRow =>
   newLineRow(l.id ?? id, {
     activityId: l.activityId,
     quantity: l.quantity ? qty(l.quantity) : '',
-    location: l.location ?? '',
+    // A saved line's place was written into its location; the fields hold it now.
+    location: 'attachments' in l && l.location && (l.chainageFrom !== null || l.floor || l.village) ? '' : (l.location ?? ''),
+    chainageFrom: chainageText(l.chainageFrom),
+    chainageTo: l.chainageTo !== l.chainageFrom ? chainageText(l.chainageTo) : '',
+    floor: l.floor ?? null,
+    village: l.village ?? null,
     pipeSegmentId: l.pipeSegmentId ?? null,
     pipeNodeId: l.pipeNodeId ?? null,
     crew: (l.labour ?? []).map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })),
+    machines: (l.machines ?? []).map((m) => ({ key: newKey(), name: m.name, hours: String(m.hours) })),
     materials: (l.materials ?? []).map((m) => ({ key: newKey(), itemId: m.itemId, quantity: qty(m.quantity) })),
     materialsEdited: true,
+    workOrderId: l.workOrderId ?? null,
+    remarks: l.remarks ?? '',
+    extra: ownValuesFrom(l.extra),
+    photos: 'attachments' in l ? attachmentsToPhotos(l.attachments) : [],
   });
 
 /** Yesterday's line as a start for today: the same work, place and crew; today's quantity and material to fill. */
 export const copiedRow = (l: DprLineDto, id: string): DprLineRow =>
-  newLineRow(id, { activityId: l.activityId, location: l.location ?? '', pipeSegmentId: l.pipeSegmentId, crew: l.labour.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })) });
+  newLineRow(id, {
+    activityId: l.activityId,
+    location: l.chainageFrom !== null || l.floor || l.village ? '' : (l.location ?? ''),
+    floor: l.floor,
+    village: l.village,
+    pipeSegmentId: l.pipeSegmentId,
+    crew: l.labour.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })),
+    machines: l.machines.map((m) => ({ key: newKey(), name: m.name, hours: String(m.hours) })),
+    workOrderId: l.workOrderId,
+  });
 
-type ActivityOption = DprWorkOptionsDto['activities'][number];
-/** An activity outside the breakdown, and one on the component itself rather than a sub-component */
-const OUTSIDE = '~';
-const WHOLE = '=';
-const componentKey = (a: ActivityOption) => a.componentCode ?? OUTSIDE;
-const subKey = (a: ActivityOption) => a.subComponentCode ?? WHOLE;
-const byCode = (x: string, y: string) => Number(x === OUTSIDE) - Number(y === OUTSIDE) || x.localeCompare(y, undefined, { numeric: true });
-
-/** The components the project's activities sit in, in code order, outside the breakdown last; empty with no breakdown. */
-export function componentChoices(options: DprWorkOptionsDto | null) {
-  const acts = options?.activities ?? [];
-  if (!acts.some((a) => a.componentCode)) return [];
-  const seen = new Map<string, { key: string; name: string | null; count: number }>();
-  for (const a of acts) {
-    const k = componentKey(a);
-    const c = seen.get(k) ?? { key: k, name: a.componentName, count: 0 };
-    c.count += 1;
-    seen.set(k, c);
-  }
-  return [...seen.values()].sort((x, y) => byCode(x.key, y.key));
-}
-
-/** The sub-components of a component, and the component as a whole when activities sit on it directly; empty with none. */
-export function subComponentChoices(options: DprWorkOptionsDto | null, component: string | null) {
-  const acts = (options?.activities ?? []).filter((a) => component !== null && componentKey(a) === component);
-  if (!acts.some((a) => a.subComponentCode)) return [];
-  const seen = new Map<string, { key: string; name: string | null; count: number }>();
-  for (const a of acts) {
-    const k = subKey(a);
-    const c = seen.get(k) ?? { key: k, name: a.subComponentName, count: 0 };
-    c.count += 1;
-    seen.set(k, c);
-  }
-  return [...seen.values()].sort((x, y) => Number(x.key === WHOLE) - Number(y.key === WHOLE) || x.key.localeCompare(y.key, undefined, { numeric: true }));
-}
-
-/** Where a line stands in the breakdown: the activity's own place once chosen, else what was picked. */
-export function linePlace(row: DprLineRow, activity: ActivityOption | undefined) {
-  return activity ? { component: componentKey(activity), sub: subKey(activity) } : { component: row.componentPick, sub: row.subPick };
-}
-
-/** The activities a line may take, narrowed by the component and sub-component picked. */
-export function activitiesFor(options: DprWorkOptionsDto | null, component: string | null, sub: string | null): ActivityOption[] {
-  return (options?.activities ?? []).filter((a) => (component === null || componentKey(a) === component) && (sub === null || subKey(a) === sub));
-}
-
-/** The lines as the API takes them. */
-export const linesPayload = (rows: DprLineRow[]): DprLineInput[] =>
+/**
+ * The lines as the API takes them. A line's photos go separately: their ids once uploaded (`linePhotoIds`), or through
+ * the outbox, which puts them on the line by its id.
+ */
+export const linesPayload = (rows: DprLineRow[], def: DprFormDef): DprLineInput[] =>
   rows
     .filter((r) => r.activityId)
     .map((r) => ({
@@ -130,10 +143,18 @@ export const linesPayload = (rows: DprLineRow[]): DprLineInput[] =>
       activityId: r.activityId!,
       quantity: r.quantity.trim(),
       location: r.location.trim() || null,
+      chainageFrom: parseChainage(r.chainageFrom) ?? null,
+      chainageTo: parseChainage(r.chainageTo) ?? null,
+      floor: r.floor,
+      village: r.village,
       pipeSegmentId: r.pipeSegmentId,
       pipeNodeId: r.pipeNodeId,
       labour: r.crew.filter((c) => c.category && /^\d+$/.test(c.count.trim()) && Number(c.count) > 0).map((c) => ({ category: c.category!, count: Number(c.count) })),
+      machines: r.machines.filter((m) => m.name.trim()).map((m) => ({ name: m.name.trim(), hours: Number(m.hours) || 0 })),
       materials: r.materials.filter((m) => m.itemId && Number(m.quantity) > 0).map((m) => ({ itemId: m.itemId!, quantity: m.quantity.trim() })),
+      workOrderId: r.workOrderId,
+      remarks: r.remarks.trim() || null,
+      extra: ownPayload(ownFieldsOf(def, 'LINE'), r.extra),
     }));
 
 /** Why the lines cannot be sent, in words that say what to do; null when they can. */
@@ -146,7 +167,7 @@ export function pipeChoices(options: DprWorkOptionsDto | null, activityId: strin
   return { stage: a.pipeStage, segments, valves };
 }
 
-export function linesProblem(rows: DprLineRow[], t: ReturnType<typeof useT>, options: DprWorkOptionsDto | null = null): string | null {
+export function linesProblem(rows: DprLineRow[], t: ReturnType<typeof useT>, options: DprWorkOptionsDto | null, def: DprFormDef, language: 'en' | 'hi'): string | null {
   for (const [i, r] of rows.entries()) {
     const n = i + 1;
     if (!r.activityId) {
@@ -160,49 +181,68 @@ export function linesProblem(rows: DprLineRow[], t: ReturnType<typeof useT>, opt
     if (pipe.segments.length && !r.pipeSegmentId) return t('Line {n}: choose the pipe segment the work was on', { n });
     if (r.crew.some((c) => c.count.trim() && !/^\d+$/.test(c.count.trim()))) return t('Line {n}: enter the crew as whole numbers', { n });
     if (r.materials.some((m) => m.quantity.trim() && Number.isNaN(Number(m.quantity)))) return t('Line {n}: enter material used as a number', { n });
+    if (r.machines.some((m) => m.hours.trim() && Number.isNaN(Number(m.hours)))) return t('Line {n}: enter machine hours as a number', { n });
+    if ((r.chainageFrom.trim() && parseChainage(r.chainageFrom) === null) || (r.chainageTo.trim() && parseChainage(r.chainageTo) === null)) return t('Line {n}: give the chainage like 14+200', { n });
+    const own = ownProblems(ownFieldsOf(def, 'LINE'), r.extra, t, language, `${t('Line {n}', { n })}: `);
+    if (own) return own;
   }
   return null;
 }
 
 /**
- * The DPR's work done, line by line (item 127): the activity or sub-activity, where, how much today, the crew and the
- * material used (filled from the norms until changed). Activities planned this week come first in the picker.
+ * The DPR's work done, line by line (item 127), as the project type's form asks (item 134 part 2): the activity (picked
+ * component by component, or from one list), where by the project's places, how much today, and what else the form
+ * takes: crew, machines, material used (filled from the norms until changed), work order, remark, photo and the
+ * company's own line fields. Activities planned this week come first in the picker.
  */
 export function DprLinesEditor({
   rows,
   onChange,
   options,
+  def,
   headCount,
   newId,
   error,
 }: {
   rows: DprLineRow[];
-  onChange: (rows: DprLineRow[]) => void;
+  /** The form's state setter: a line's photos change as they upload, after the render that started them */
+  onChange: React.Dispatch<React.SetStateAction<DprLineRow[]>>;
   options: DprWorkOptionsDto | null;
+  def: DprFormDef;
   headCount: ManpowerLine[];
   newId: () => string;
   error?: string | null;
 }) {
   const t = useT();
-  const byId = useMemo(() => new Map((options?.activities ?? []).map((a) => [a.id, a])), [options]);
-  const components = useMemo(() => componentChoices(options), [options]);
+  const activities = useMemo(() => options?.activities ?? [], [options]);
+  const byId = useMemo(() => new Map(activities.map((a) => [a.id, a])), [activities]);
+  const components = useMemo(() => (def.lines.picker === 'CASCADE' ? componentChoices(activities) : []), [activities, def.lines.picker]);
   const componentOptions = useMemo(
     () =>
       components.map((c) => ({
         value: c.key,
-        label: c.key === OUTSIDE ? t('Outside the breakdown') : `${c.key} ${c.name ?? ''}`.trim(),
+        label: c.key === PICK_OUTSIDE ? t('Outside the breakdown') : `${c.key} ${c.name ?? ''}`.trim(),
         hint: c.count === 1 ? t('1 activity') : t('{n} activities', { n: c.count }),
       })),
     [components, t],
   );
   const activityOptions = (component: string | null, sub: string | null) =>
-    activitiesFor(options, component, sub).map((a) => ({
-      value: a.id,
-      label: dprActivityLabel(a),
-      hint: `${a.lookAhead ? `${t('Planned this week')} · ` : ''}${component === null ? `${componentLabel(a) === 'Outside the breakdown' ? t('Outside the breakdown') : componentLabel(a)} · ` : ''}${t('{done} of {planned} {unit} done', { done: qty(a.doneQty), planned: qty(a.plannedQty), unit: a.unit })}`,
-    }));
+    activitiesFor(activities, component, sub)
+      .slice()
+      .sort((x, y) => Number(y.lookAhead) - Number(x.lookAhead))
+      .map((a) => ({
+        value: a.id,
+        label: dprActivityLabel(a),
+        hint: `${a.lookAhead ? `${t('Planned this week')} · ` : ''}${component === null ? `${componentLabel(a) === 'Outside the breakdown' ? t('Outside the breakdown') : componentLabel(a)} · ` : ''}${t('{done} of {planned} {unit} done', { done: qty(a.doneQty), planned: qty(a.plannedQty), unit: a.unit })}`,
+      }));
   const itemOptions = useMemo(() => (options?.items ?? []).map((i) => ({ value: i.id, label: `${i.name} (${i.unit})` })), [options]);
-  const categoryOptions = useMemo(() => MANPOWER_CATEGORIES.map((c) => ({ value: c, label: t(c) })), [t]);
+  const categoryOptions = useMemo(() => def.lines.crewCategories.map((c) => ({ value: c, label: t(c) })), [def.lines.crewCategories, t]);
+  const machineOptions = useMemo(() => def.lines.machineNames.map((m) => ({ value: m, label: m })), [def.lines.machineNames]);
+  const workOrderOptions = useMemo(() => (options?.workOrders ?? []).map((w) => ({ value: w.id, label: w.woNo, hint: w.vendorName })), [options]);
+  const shows = (p: Parameters<typeof dprLineShows>[1]) => dprLineShows(def, p);
+  const own = ownFieldsOf(def, 'LINE');
+  const sector = options?.sector;
+  const places = sector?.locations ?? [];
   const check = crewCheck(
     rows.map((r) => ({ labour: r.crew.filter((c) => c.category && Number(c.count) > 0).map((c) => ({ category: c.category!, count: Number(c.count) })) })),
     headCount,
@@ -227,6 +267,7 @@ export function DprLinesEditor({
         return next;
       }),
     );
+  const pickList = (list: string[]) => list.map((x) => ({ value: x, label: x }));
 
   return (
     <View>
@@ -234,8 +275,9 @@ export function DprLinesEditor({
         const a = byId.get(r.activityId ?? '');
         const n = i + 1;
         const pipe = pipeChoices(options, r.activityId);
-        const place = linePlace(r, a);
-        const subs = subComponentChoices(options, place.component);
+        const place = linePick({ component: r.componentPick, sub: r.subPick }, a);
+        const subs = components.length ? subComponentChoices(activities, place.component) : [];
+        const byPlace = !pipe.segments.length && !pipe.valves.length && places.length > 0;
         return (
           <View key={r.key} style={styles.line}>
             <View style={styles.head}>
@@ -250,7 +292,7 @@ export function DprLinesEditor({
                 value={place.component}
                 options={componentOptions}
                 searchable
-                onChange={(v) => update(r.key, { componentPick: v, subPick: null, ...(a && componentKey(a) !== v ? { activityId: null } : {}) })}
+                onChange={(v) => update(r.key, { componentPick: v, subPick: null, ...(a && componentPickOf(a) !== v ? { activityId: null } : {}) })}
                 placeholder={t('Choose the component')}
               />
             ) : null}
@@ -260,11 +302,11 @@ export function DprLinesEditor({
                 value={place.sub}
                 options={subs.map((c) => ({
                   value: c.key,
-                  label: c.key === WHOLE ? t('The component as a whole') : `${c.key} ${c.name ?? ''}`.trim(),
+                  label: c.key === PICK_WHOLE ? t('The component as a whole') : `${c.key} ${c.name ?? ''}`.trim(),
                   hint: c.count === 1 ? t('1 activity') : t('{n} activities', { n: c.count }),
                 }))}
                 searchable
-                onChange={(v) => update(r.key, { componentPick: place.component, subPick: v, ...(a && subKey(a) !== v ? { activityId: null } : {}) })}
+                onChange={(v) => update(r.key, { componentPick: place.component, subPick: v, ...(a && subPickOf(a) !== v ? { activityId: null } : {}) })}
                 placeholder={t('Choose the sub-component')}
               />
             ) : null}
@@ -272,10 +314,10 @@ export function DprLinesEditor({
               label={t('Activity')}
               required
               value={r.activityId}
-              options={activityOptions(place.component, subs.length ? place.sub : null)}
+              options={activityOptions(components.length ? place.component : null, subs.length ? place.sub : null)}
               onChange={(v) => {
                 const picked = byId.get(v);
-                update(r.key, { activityId: v, componentPick: picked ? componentKey(picked) : r.componentPick, subPick: picked ? subKey(picked) : r.subPick });
+                update(r.key, { activityId: v, componentPick: picked ? componentPickOf(picked) : r.componentPick, subPick: picked ? subPickOf(picked) : r.subPick });
               }}
               placeholder={options ? t('Choose activity') : t('Loading activities…')}
               disabled={!options}
@@ -308,6 +350,26 @@ export function DprLinesEditor({
               />
             ) : null}
             {a?.holdPoint ? <Text style={styles.hold}>{t('Hold point: approved after a passed inspection here')}</Text> : null}
+            {byPlace && places.includes('CHAINAGE') ? (
+              <View style={styles.row}>
+                <Input label={t('Chainage from')} value={r.chainageFrom} onChangeText={(v) => update(r.key, { chainageFrom: v })} placeholder={sector?.chainageStart !== null && sector?.chainageStart !== undefined ? formatChainage(sector.chainageStart) : '14+200'} keyboardType="numbers-and-punctuation" containerStyle={styles.grow} />
+                <Input label={t('Chainage to')} value={r.chainageTo} onChangeText={(v) => update(r.key, { chainageTo: v })} placeholder="14+600" keyboardType="numbers-and-punctuation" containerStyle={styles.grow} />
+              </View>
+            ) : null}
+            {byPlace && places.includes('FLOOR') ? (
+              sector?.floors.length ? (
+                <Select label={t('Floor')} value={r.floor} options={pickList(sector.floors)} onChange={(v) => update(r.key, { floor: v })} placeholder={t('Which floor')} />
+              ) : (
+                <Input label={t('Floor')} value={r.floor ?? ''} onChangeText={(v) => update(r.key, { floor: v || null })} />
+              )
+            ) : null}
+            {byPlace && places.includes('VILLAGE') ? (
+              sector?.villages.length ? (
+                <Select label={t('Village')} value={r.village} options={pickList(sector.villages)} searchable onChange={(v) => update(r.key, { village: v })} placeholder={t('Which village')} />
+              ) : (
+                <Input label={t('Village')} value={r.village ?? ''} onChangeText={(v) => update(r.key, { village: v || null })} />
+              )
+            ) : null}
             <View style={styles.row}>
               <Input
                 label={a ? t('Today ({unit})', { unit: a.unit }) : t('Today')}
@@ -317,63 +379,112 @@ export function DprLinesEditor({
                 keyboardType="decimal-pad"
                 containerStyle={styles.qty}
               />
-              <Input label={t('Where')} value={r.location} onChangeText={(v) => update(r.key, { location: v })} placeholder={t('e.g. Lift 4, J-12 to J-13')} containerStyle={styles.grow} />
+              <Input label={byPlace ? t('Note') : t('Where')} value={r.location} onChangeText={(v) => update(r.key, { location: v })} placeholder={byPlace ? t('Optional') : t('e.g. Lift 4, J-12 to J-13')} containerStyle={styles.grow} />
             </View>
 
-            <Text style={typography.label}>{t('Crew')}</Text>
-            {r.crew.map((c) => (
-              <View key={c.key} style={styles.row}>
-                <View style={styles.grow}>
-                  <Select value={c.category} options={categoryOptions} onChange={(v) => update(r.key, { crew: r.crew.map((x) => (x.key === c.key ? { ...x, category: v } : x)) })} placeholder={t('Category')} />
-                </View>
-                <Input
-                  value={c.count}
-                  onChangeText={(v) => update(r.key, { crew: r.crew.map((x) => (x.key === c.key ? { ...x, count: v } : x)) })}
-                  keyboardType="number-pad"
-                  placeholder="Nos"
-                  accessibilityLabel={c.category ? t('Number of {category}', { category: t(c.category) }) : t('Number of workers')}
-                  containerStyle={styles.small}
-                />
-                <IconButton icon="close" size={20} color={colors.textMuted} onPress={() => update(r.key, { crew: r.crew.filter((x) => x.key !== c.key) })} accessibilityLabel={t('Remove row')} style={styles.remove} />
-              </View>
-            ))}
-            <Button title={t('Add trade')} variant="ghost" size="sm" icon="add" onPress={() => update(r.key, { crew: [...r.crew, { key: newKey(), category: null, count: '' }] })} />
-
-            <Text style={typography.label}>{t('Material used')}</Text>
-            {a && !a.norms.length && !r.materials.length ? <Text style={styles.note}>{t('No norms for this activity; add what was used.')}</Text> : null}
-            {r.materials.map((m) => {
-              const unit = options?.items.find((x) => x.id === m.itemId)?.unit;
-              return (
-                <View key={m.key} style={styles.row}>
-                  <View style={styles.grow}>
-                    <Select value={m.itemId} options={itemOptions} searchable onChange={(v) => update(r.key, { materialsEdited: true, materials: r.materials.map((x) => (x.key === m.key ? { ...x, itemId: v } : x)) })} placeholder={t('Item')} />
+            {shows('crew') ? (
+              <>
+                <Text style={typography.label}>{t('Crew')}</Text>
+                {r.crew.map((c) => (
+                  <View key={c.key} style={styles.row}>
+                    <View style={styles.grow}>
+                      <Select value={c.category} options={categoryOptions} onChange={(v) => update(r.key, { crew: r.crew.map((x) => (x.key === c.key ? { ...x, category: v } : x)) })} placeholder={t('Category')} />
+                    </View>
+                    <Input
+                      value={c.count}
+                      onChangeText={(v) => update(r.key, { crew: r.crew.map((x) => (x.key === c.key ? { ...x, count: v } : x)) })}
+                      keyboardType="number-pad"
+                      placeholder="Nos"
+                      accessibilityLabel={c.category ? t('Number of {category}', { category: t(c.category) }) : t('Number of workers')}
+                      containerStyle={styles.small}
+                    />
+                    <IconButton icon="close" size={20} color={colors.textMuted} onPress={() => update(r.key, { crew: r.crew.filter((x) => x.key !== c.key) })} accessibilityLabel={t('Remove row')} style={styles.remove} />
                   </View>
-                  <Input
-                    value={m.quantity}
-                    onChangeText={(v) => update(r.key, { materialsEdited: true, materials: r.materials.map((x) => (x.key === m.key ? { ...x, quantity: v } : x)) })}
-                    keyboardType="decimal-pad"
-                    placeholder={unit ?? t('Qty')}
-                    accessibilityLabel={t('Quantity used')}
-                    containerStyle={styles.small}
-                  />
-                  <IconButton
-                    icon="close"
-                    size={20}
-                    color={colors.textMuted}
-                    onPress={() => update(r.key, { materialsEdited: true, materials: r.materials.filter((x) => x.key !== m.key) })}
-                    accessibilityLabel={t('Remove row')}
-                    style={styles.remove}
-                  />
-                </View>
-              );
-            })}
-            <Button title={t('Add material')} variant="ghost" size="sm" icon="add" onPress={() => update(r.key, { materialsEdited: true, materials: [...r.materials, { key: newKey(), itemId: null, quantity: '' }] })} />
+                ))}
+                <Button title={t('Add trade')} variant="ghost" size="sm" icon="add" onPress={() => update(r.key, { crew: [...r.crew, { key: newKey(), category: null, count: '' }] })} />
+              </>
+            ) : null}
+
+            {shows('machines') ? (
+              <>
+                <Text style={typography.label}>{t('Machines')}</Text>
+                {r.machines.map((m) => (
+                  <View key={m.key} style={styles.row}>
+                    <View style={styles.grow}>
+                      {machineOptions.length ? (
+                        <Select value={m.name || null} options={m.name && !machineOptions.some((o) => o.value === m.name) ? [...machineOptions, { value: m.name, label: m.name }] : machineOptions} onChange={(v) => update(r.key, { machines: r.machines.map((x) => (x.key === m.key ? { ...x, name: v } : x)) })} placeholder={t('Machine')} />
+                      ) : (
+                        <Input value={m.name} onChangeText={(v) => update(r.key, { machines: r.machines.map((x) => (x.key === m.key ? { ...x, name: v } : x)) })} placeholder={t('e.g. Excavator')} accessibilityLabel={t('Machine')} />
+                      )}
+                    </View>
+                    <Input
+                      value={m.hours}
+                      onChangeText={(v) => update(r.key, { machines: r.machines.map((x) => (x.key === m.key ? { ...x, hours: v } : x)) })}
+                      keyboardType="decimal-pad"
+                      placeholder={t('Hrs')}
+                      accessibilityLabel={m.name.trim() ? t('Hours worked by {machine}', { machine: m.name.trim() }) : t('Hours worked')}
+                      containerStyle={styles.small}
+                    />
+                    <IconButton icon="close" size={20} color={colors.textMuted} onPress={() => update(r.key, { machines: r.machines.filter((x) => x.key !== m.key) })} accessibilityLabel={t('Remove row')} style={styles.remove} />
+                  </View>
+                ))}
+                <Button title={t('Add machine')} variant="ghost" size="sm" icon="add" onPress={() => update(r.key, { machines: [...r.machines, { key: newKey(), name: '', hours: '8' }] })} />
+              </>
+            ) : null}
+
+            {shows('material') ? (
+              <>
+                <Text style={typography.label}>{t('Material used')}</Text>
+                {a && !a.norms.length && !r.materials.length ? <Text style={styles.note}>{t('No norms for this activity; add what was used.')}</Text> : null}
+                {r.materials.map((m) => {
+                  const unit = options?.items.find((x) => x.id === m.itemId)?.unit;
+                  return (
+                    <View key={m.key} style={styles.row}>
+                      <View style={styles.grow}>
+                        <Select value={m.itemId} options={itemOptions} searchable onChange={(v) => update(r.key, { materialsEdited: true, materials: r.materials.map((x) => (x.key === m.key ? { ...x, itemId: v } : x)) })} placeholder={t('Item')} />
+                      </View>
+                      <Input
+                        value={m.quantity}
+                        onChangeText={(v) => update(r.key, { materialsEdited: true, materials: r.materials.map((x) => (x.key === m.key ? { ...x, quantity: v } : x)) })}
+                        keyboardType="decimal-pad"
+                        placeholder={unit ?? t('Qty')}
+                        accessibilityLabel={t('Quantity used')}
+                        containerStyle={styles.small}
+                      />
+                      <IconButton
+                        icon="close"
+                        size={20}
+                        color={colors.textMuted}
+                        onPress={() => update(r.key, { materialsEdited: true, materials: r.materials.filter((x) => x.key !== m.key) })}
+                        accessibilityLabel={t('Remove row')}
+                        style={styles.remove}
+                      />
+                    </View>
+                  );
+                })}
+                <Button title={t('Add material')} variant="ghost" size="sm" icon="add" onPress={() => update(r.key, { materialsEdited: true, materials: [...r.materials, { key: newKey(), itemId: null, quantity: '' }] })} />
+              </>
+            ) : null}
+
+            {shows('workOrder') && workOrderOptions.length ? (
+              <Select label={t('Work order')} value={r.workOrderId} options={workOrderOptions} onChange={(v) => update(r.key, { workOrderId: v })} placeholder={t('Done by our own crew')} />
+            ) : null}
+            {shows('remarks') ? <Input label={t('Remark')} value={r.remarks} onChangeText={(v) => update(r.key, { remarks: v })} multiline maxLength={500} /> : null}
+            <OwnFieldInputs fields={own} values={r.extra} onChange={(extra) => update(r.key, { extra })} />
+            {shows('photo') ? (
+              <PhotoPicker
+                label={t('Photo of this work')}
+                photos={r.photos}
+                max={4}
+                onChange={(next) => onChange((prev) => prev.map((x) => (x.key === r.key ? { ...x, photos: typeof next === 'function' ? next(x.photos) : next } : x)))}
+              />
+            ) : null}
           </View>
         );
       })}
       {error ? <Text style={styles.err}>{error}</Text> : null}
       <Button title={t('Add work line')} variant="ghost" icon="add" onPress={() => onChange([...rows, newLineRow(newId())])} />
-      {rows.some((r) => r.activityId) && check.headCount !== null ? (
+      {shows('crew') && rows.some((r) => r.activityId) && check.headCount !== null ? (
         <Text style={styles.note}>
           {check.difference === 0
             ? t('All {n} on site are on a work line', { n: check.headCount })

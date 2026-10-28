@@ -1,5 +1,5 @@
-import type { DailyReportDto, DprLineDto } from '@erp/shared';
-import { PIPE_STAGE_LABELS, SEGMENT_STAGES, WEATHER_LABELS, crewCheck, dprActivityLabel, lineLocation, materialUsed, linesSummary, pipelineSummary } from '@erp/shared';
+import type { DailyReportDto, DprBuiltInKey, DprFormDef, DprLineDto } from '@erp/shared';
+import { PIPE_STAGE_LABELS, SEGMENT_STAGES, STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, dprLabel, dprShows, filledExtra, lineLocation, materialUsed, linesSummary, ownFieldsOf, pipelineSummary } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
@@ -17,11 +17,14 @@ const para = (v: string | null | undefined) => (v ? esc(v).replace(/\n/g, '<br/>
  * The work lines in the site's DPR layout (item 127): S.No, component, sub-component, activity, unit, scope, up to
  * previous, today, cumulative, %, balance and remark.
  */
-function workTable(lines: DprLineDto[]): string {
+function workTable(lines: DprLineDto[], def: DprFormDef): string {
+  const own = ownFieldsOf(def, 'LINE');
   const rows = lines
     .map((l, i) => {
       const where = [lineLocation(l), l.workOrderNo].filter(Boolean).join(' · ');
-      const remark = [where, l.remarks].filter(Boolean).join('. ');
+      // The line's own fields (item 134 part 2) go with its remark.
+      const extra = filledExtra(own, l.extra).map((x) => `${x.field.label}: ${x.text}`).join(', ');
+      const remark = [where, l.remarks, extra].filter(Boolean).join('. ');
       return `<tr><td class="num">${i + 1}</td><td>${esc(l.componentName ?? '-')}</td><td>${esc(l.subComponentName ?? '-')}</td><td>${esc(dprActivityLabel({ name: l.activityName, parentActivityName: l.parentActivityName }))}</td><td>${esc(l.unit)}</td><td class="num">${esc(formatQty(l.scope))}</td><td class="num">${esc(formatQty(l.previous))}</td><td class="num"><b>${esc(formatQty(l.quantity))}</b></td><td class="num">${esc(formatQty(l.cumulative))}</td><td class="num">${l.pct === null ? '-' : esc(formatPct(l.pct))}</td><td class="num">${esc(formatQty(l.balance))}</td><td>${esc(remark)}</td></tr>`;
     })
     .join('');
@@ -54,10 +57,13 @@ function pipeTable(lines: DprLineDto[]): string {
 
 export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
   const lines = d.lines ?? [];
+  const def = d.form?.def ?? STANDARD_DPR_FORM;
+  // A field the form hides prints only when the report has something in it.
+  const note = (key: DprBuiltInKey, v: string | null) => (dprShows(def, key) || v ? `<h2>${esc(dprLabel(def, key))}</h2><p>${para(v)}</p>` : '');
   const crew = lines.length ? crewCheck(lines, d.manpower) : null;
   const manpowerRows = d.manpower.map((m) => `<tr><td>${esc(m.category)}</td><td class="num">${esc(m.count)}</td></tr>`).join('');
   const machineryRows = d.machinery.map((m) => `<tr><td>${esc(m.name)}</td><td class="num">${esc(m.hours)}</td></tr>`).join('');
-  const photos = d.attachments
+  const photos = [...d.attachments, ...lines.flatMap((l) => l.attachments)]
     .filter((a) => a.mimeType?.startsWith('image/'))
     .map((a) => `<figure><img src="${esc(fileUrl(a.url))}" alt="${esc(a.fileName)}"/><figcaption>${esc(a.fileName)}</figcaption></figure>`)
     .join('');
@@ -109,9 +115,12 @@ ${PRINT_FONT_LINKS}
     <div><b>Submitted at</b>${esc(formatDateTime(d.submittedAt))}</div>
     <div><b>Reviewed by</b>${esc(d.reviewedByName ?? '-')}</div>
     <div><b>Total manpower</b>${esc(d.totalManpower)}${crew ? ` (${esc(crew.onLines)} on the work lines)` : ''}</div>
+    ${filledExtra(ownFieldsOf(def, 'DAY'), d.extra)
+      .map((x) => `<div><b>${esc(x.field.label)}</b>${esc(x.text)}</div>`)
+      .join('')}
   </div>
 
-  ${lines.length ? workTable(lines) : `<h2>Work executed</h2>
+  ${lines.length ? workTable(lines, def) : `<h2>Work executed</h2>
   <p>${para(d.workExecuted)}</p>`}
   ${lines.length && d.workExecuted && d.workExecuted !== linesSummary(lines) ? `<h2>Work executed</h2><p>${para(d.workExecuted)}</p>` : ''}
 
@@ -128,11 +137,11 @@ ${PRINT_FONT_LINKS}
     </div>
   </div>
 
-  <h2>Material received</h2><p>${para(d.materialReceived)}</p>
-  <h2>Tests conducted</h2><p>${para(d.testsConducted)}</p>
-  <h2>Safety observations</h2><p>${para(d.safetyObservations)}</p>
-  <h2>Issues / hindrances</h2><p>${para(d.issues)}</p>
-  <h2>Next day plan</h2><p>${para(d.nextDayPlan)}</p>
+  ${note('materialReceived', d.materialReceived)}
+  ${note('testsConducted', d.testsConducted)}
+  ${note('safetyObservations', d.safetyObservations)}
+  ${note('issues', d.issues)}
+  ${note('nextDayPlan', d.nextDayPlan)}
   ${d.reviewNote ? `<h2>Review note</h2><p>${para(d.reviewNote)}</p>` : ''}
   ${photos ? `<h2>Site photos</h2><div class="photos">${photos}</div>` : ''}
 

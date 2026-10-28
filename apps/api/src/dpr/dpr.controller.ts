@@ -3,12 +3,16 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DprService } from './dpr.service';
 import { CreateDprDto, DprWorkOptionsQuery, ListDprQuery, UpdateDprDto } from './dpr.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
+import { DprFormsService } from '../templates/dpr-forms.service';
 
 @ApiTags('dpr')
 @ApiBearerAuth()
 @Controller('dpr')
 export class DprController {
-  constructor(private dpr: DprService) {}
+  constructor(
+    private dpr: DprService,
+    private forms: DprFormsService,
+  ) {}
 
   @Get()
   list(@CurrentUser() user: RequestUser, @Query() q: ListDprQuery) {
@@ -17,11 +21,17 @@ export class DprController {
 
   @ApiOperation({
     summary: "What a project's DPR form offers (item 127)",
-    description: 'The activities and sub-activities that take progress (look-ahead ones first), each with its component, scope, quantity done and material norms; the store items; the open work orders; and whether the company records progress only in the DPR.',
+    description: "The project type's DPR form (item 134 part 2) and the project's places; the activities and sub-activities that take progress (look-ahead ones first), each with its component, scope, quantity done and material norms; the store items; the open work orders; and whether the company records progress only in the DPR.",
   })
   @Get('work-options')
   workOptions(@CurrentUser() user: RequestUser, @Query() q: DprWorkOptionsQuery) {
     return this.dpr.workOptions(user, q);
+  }
+
+  @ApiOperation({ summary: 'DPR form versions by id (item 134 part 2)', description: 'The forms the reports of a list were made on, so an export can name their own fields. `ids` is comma-separated; up to 200.' })
+  @Get('forms')
+  formsById(@CurrentUser() user: RequestUser, @Query('ids') ids?: string) {
+    return this.forms.byIds(user.organizationId, (ids ?? '').split(',').map((x) => x.trim()).filter((x) => /^[0-9a-f-]{36}$/i.test(x)));
   }
 
   @Get(':id')

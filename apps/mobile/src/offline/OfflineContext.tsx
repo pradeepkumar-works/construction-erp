@@ -17,7 +17,7 @@ export interface EnqueueInput {
   id?: string;
   type: OutboxType;
   payload: Record<string, unknown>;
-  photos: { uri: string; name: string; type: string; attachmentId?: string }[];
+  photos: { uri: string; name: string; type: string; attachmentId?: string; line?: string }[];
   title: string;
   subtitle: string;
 }
@@ -125,7 +125,14 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         item.photos = [...photos];
         await save({ ...item });
       }
-      const body = item.type === 'ATTENDANCE' ? { ...item.payload, id: item.id } : { ...item.payload, id: item.id, attachmentIds: photos.map((p) => p.attachmentId).filter((x): x is string => !!x) };
+      const ids = (list: OutboxPhoto[]) => list.map((p) => p.attachmentId).filter((x): x is string => !!x);
+      // A DPR line's photos go on the line they were taken for (item 134 part 2); the rest on the entry.
+      const lines = item.payload.lines as { id?: string }[] | undefined;
+      const payload =
+        Array.isArray(lines) && photos.some((p) => p.line)
+          ? { ...item.payload, lines: lines.map((l) => (photos.some((p) => p.line && p.line === l.id) ? { ...l, attachmentIds: ids(photos.filter((p) => p.line === l.id)) } : l)) }
+          : item.payload;
+      const body = item.type === 'ATTENDANCE' ? { ...payload, id: item.id } : { ...payload, id: item.id, attachmentIds: ids(photos.filter((p) => !p.line)) };
       await request(OUTBOX_PATH[item.type], { method: 'POST', body, token: tok });
       await removePhotos(photos);
       await remove(item.id);
@@ -206,7 +213,8 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
       const photos: OutboxPhoto[] = [];
       for (let i = 0; i < input.photos.length; i++) {
         const p = input.photos[i];
-        photos.push(p.attachmentId ? { uri: p.uri, name: p.name, type: p.type, attachmentId: p.attachmentId } : await persistPhoto(id, i, p));
+        const kept = p.attachmentId ? { uri: p.uri, name: p.name, type: p.type, attachmentId: p.attachmentId } : await persistPhoto(id, i, p);
+        photos.push(p.line ? { ...kept, line: p.line } : kept);
       }
       const item: OutboxItem = {
         id,
