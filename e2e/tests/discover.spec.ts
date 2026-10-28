@@ -40,7 +40,7 @@ test('a site engineer asks for Correspondence from Discover, and the admin decli
   await expect(drawer.getByText('Letters', { exact: true })).toBeVisible();
   await drawer.getByRole('button', { name: 'Request access' }).click();
   const ask = page.getByRole('dialog', { name: 'Request access to Correspondence' });
-  await ask.getByLabel('What do you need it for?').fill('To see the client's letters about my site');
+  await ask.getByLabel('What do you need it for?').fill('To see the letters about my site');
   await ask.getByRole('button', { name: 'Send request' }).click();
   await expect(ask).toBeHidden();
   await expect(drawer.getByRole('button', { name: 'Requested' })).toBeDisabled();
@@ -56,7 +56,7 @@ test('a site engineer asks for Correspondence from Discover, and the admin decli
   await page.goto('/home-tiles');
   await expect(page.getByRole('heading', { level: 1, name: 'Home tiles' })).toBeVisible();
   const row = page.getByRole('listitem').filter({ hasText: 'asks to open Correspondence' }).filter({ has: page.getByRole('button', { name: 'Decline' }) });
-  await expect(row).toContainText('To see the client's letters about my site');
+  await expect(row).toContainText('To see the letters about my site');
   await row.getByRole('button', { name: 'Decline' }).click();
   const decline = page.getByRole('dialog', { name: /^Decline Correspondence for / });
   await decline.getByRole('button', { name: 'Decline' }).click();
