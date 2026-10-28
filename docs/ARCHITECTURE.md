@@ -738,8 +738,8 @@ commissioned, with valves fixed at their points.
 
 A company's project types say what a new project of each type starts with. A type (`ProjectTypeDef`,
 `packages/shared/src/project-types.ts`) has a code, a name, the built-in kind it is built on (`baseType`: road,
-building, water supply, sewerage or other works; it is `Project.type` of its projects, so the project code, reports,
-the DPR form for now and every `project.type` check keep working), the places its work is located by (`locations`:
+building, water supply, sewerage or other works; it is `Project.type` of its projects, so the project code, reports
+and every `project.type` check keep working), the places its work is located by (`locations`:
 chainage, floor, village), whether it has a pipe network (water supply and sewerage only), its usual contract, the
 component kinds offered first, a starting breakdown and its loose activities.
 
@@ -786,6 +786,48 @@ consecutive share of what is left, the last one ending with the project. `Templa
 in a transaction and audits `SCHEDULED_FROM_TEMPLATE`; `ContractsService.update` calls it when a contract first
 brings a start date, and `ProjectsService.update` when the project itself gets one. An activity that already has
 dates is never moved.
+
+### DPR form per project type (item 134 part 2)
+
+Each project type has a DPR form (`DprFormDef`, `packages/shared/src/dpr-form.ts`): which built-in fields show, which
+are required and what they are called (`DPR_BUILT_INS`: weather, manpower, machinery, materials, hindrances, notes,
+the plan for the next day and so on; a field that cannot be hidden says so with `canHide: false`), how many photos a
+report needs (`minPhotos`), the work lines (the picker, cascading component, sub-component and activity or one grouped
+list; the parts a line shows: crew, machines, material, work order, remarks, photo; the crew categories and machine
+names offered) and up to `MAX_OWN_FIELDS` (20) fields of the company's own. An own field has a camelCase `key` (made by
+`ownFieldKey` from its name and fixed once saved), an English label, an optional Hindi one for the phone, a kind (short
+or long text, number with unit and range, yes or no, a choice of up to 20, date, time), a scope (`DAY` for the report,
+`LINE` for each work line) and `required`. The standard forms are data, `STANDARD_DPR_FORMS` by standard type code (the
+road asks for rain hours and traffic diversion, a building for the cube sets cast, a pipe type for the trench left
+open, and so on), and
+`standardDprForm(code, baseType)` gives an own type the form of the type it is built on.
+
+A company's form is `DprFormConfig` (`tenant_isolation`), one row per saved version that never changes. `DprFormsService`
+(`apps/api/src/templates`) reads the latest (`latest`, `forProject`) or a report's own (`ofReport`, `byIds` for
+`GET /dpr/forms?ids=`), and saves for admin and management (`canManageTemplates`, audited `DPR_FORM`) through
+`GET`/`PUT`/`DELETE /project-types/:code/dpr-form`: `normaliseDprForm`, then `dprFormProblems` (limits, names, ranges,
+choices) and `dprFormChangeProblems` against the standard form and every earlier version,
+which refuses a changed kind or scope for a key, so the values kept under it always mean the same. Reset saves the
+standard form as a new version ('RESET'); copying a type copies its latest form; deleting an own type removes only
+versions no report is on.
+
+A report stores `DailyReport.dprFormConfigId` (null: the type's standard form, version 0) and the own values as JSON
+(`DailyReport.extra`, and `ProgressEntry.extra` for a line's). A new report takes the type's latest version, or through
+`chosen` the version a phone filled offline when it is one of the type's, so a report typed before a change still goes
+in; an edited report keeps its own version. `readExtra` reads the values against the form (numbers and yes or no from
+text, choices from their list, ranges, `dprExtraProblems`); required built-in and own fields are checked only when the
+report is sent (`dprRequiredProblems` over `dprMissing`, on create unless `submit: false`, and in `submit` against the
+stored report through `assertComplete`), the type and range checks always. A line's photo comes as `attachmentIds` and
+is linked to its progress entry.
+
+The web DPR form (`DprFormModal`, `DprLinesField`), its record, print (`dprPrint.ts`) and the phone (`app/dpr/new.tsx`,
+`src/forms/ownFields.tsx`, `src/forms/dprLines.tsx`) all read the report's form through `dprShows`, `dprRequires`,
+`dprLabel`, `dprLineShows` and `ownFieldsOf`; the cascade's choices are `componentChoices` and `subComponentChoices`
+in `dpr-lines.ts`, and where a line is placed (chainage, floor, village) follows the type's `locations`. A DPR export
+adds a column for each number field of the day (`dprExportColumns`). Ask Nirmaan's and WhatsApp's `draft_dpr` fill own
+fields of the day by their names (`extraByLabel`), read through the same `readExtra`. Web: the type's DPR form tab
+(`/project-types/:code?tab=dpr-form`) shows the form as the web and the phone draw it, its versions with the reports on
+each, and the editor. `dpr-form-test.ts` checks the standard forms, keys, the change rules and the readers.
 
 ### Linking activities to BOQ items (v6 item 125, finding 11 of the October review)
 

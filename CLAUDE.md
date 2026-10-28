@@ -178,6 +178,12 @@ and the pre-delivery checklist.
   screen reads a project's places and pipe network from `project.locations` / `project.pipeNetwork` (`sectorKinds(project)`),
   never `project.type === 'WATER_SUPPLY'`; a kind's steps are laid out only by `kindPlan`, a new project's breakdown only by
   `layOutBreakdown`. Keep `src/scripts/project-types-test.ts` passing.
+- DPR form per type (item 134 part 2, `apps/api/src/templates/dpr-forms.service.ts`, ARCHITECTURE "DPR form per project
+  type"): a screen shows, requires and names a DPR field only through `dprShows` / `dprRequires` / `dprLabel` /
+  `ownFieldsOf` (`@erp/shared/dpr-form.ts`) over the report's own form, never a `project.type` check; a form is saved only
+  as a new `DprFormConfig` version through `DprFormsService.save` (`dprFormChangeProblems` keeps a key's kind and scope),
+  and own values are read only by `readExtra`. A new built-in field is a key in `DPR_BUILT_INS`. Keep
+  `src/scripts/dpr-form-test.ts` passing.
 - Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line

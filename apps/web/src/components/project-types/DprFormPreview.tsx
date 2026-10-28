@@ -57,18 +57,18 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
         return (
           <Form.Item key={key} label={dprLabel(def, key)} required={dprRequires(def, key)}>
             <div style={{ border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, borderRadius: token.borderRadius, padding: token.paddingSM }}>
-              <Flex vertical={phone} gap={token.marginXS}>
+              <Flex vertical={phone} wrap gap={token.marginXS}>
                 {def.lines.picker === 'CASCADE' ? (
                   <>
-                    <Select aria-label="Component" placeholder="Component" style={{ flex: 1 }} />
-                    <Select aria-label="Sub-component" placeholder="Sub-component" style={{ flex: 1 }} />
-                    <Select aria-label="Activity" placeholder="Activity" style={{ flex: 1.4 }} />
+                    <Select aria-label="Component" placeholder="Component" style={{ flex: '1 1 160px' }} />
+                    <Select aria-label="Sub-component" placeholder="Sub-component" style={{ flex: '1 1 160px' }} />
+                    <Select aria-label="Activity" placeholder="Activity" style={{ flex: '1.4 1 200px' }} />
                   </>
                 ) : (
-                  <Select aria-label="Activity" placeholder="Activity (this week's first, then by component)" style={{ flex: 2 }} />
+                  <Select aria-label="Activity" placeholder="Activity (this week's first, then by component)" style={{ flex: '2 1 240px' }} />
                 )}
-                <Input aria-label="Where" placeholder={where} style={{ flex: 1 }} />
-                <InputNumber aria-label="Quantity today" placeholder="Today" style={{ flex: 0.7, width: phone ? '100%' : undefined }} />
+                <Input aria-label="Where" placeholder={where} style={{ flex: '1 1 160px' }} />
+                <InputNumber aria-label="Quantity today" placeholder="Today" style={{ flex: '0.7 1 110px', width: phone ? '100%' : undefined }} />
               </Flex>
               <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXS}px 0 0` }}>
                 {parts.length || lineOwn.length ? `Each line also takes ${[...parts, ...lineOwn.map((f) => f.label + (f.required ? ' (required)' : ''))].join(', ')}.` : 'Each line takes the activity, where and how much only.'}
