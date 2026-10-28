@@ -1691,9 +1691,13 @@ group, so a company can join or leave one without its records moving.
   run when awaited, so the query must be awaited inside the callback (`withoutTenant(async () => await …)`); one returned
   unawaited runs later under the request's company and RLS hides the other companies' rows.
 - **Tested.** `src/scripts/group-companies-test.ts` (CI runs it) checks the rules; `e2e/tests/group-companies.spec.ts`
-  makes a group, adds a lab, gives a colleague a place and switches. The demo seed's group is Demo Infra Group: Demo Infra
-  Projects and Demo Quality Labs (a quality lab with one project, `LAB-01`); `admin@demo.com` runs the group and
-  `qaqc@demo.com` works in both. `lab@demo.com` works only in the lab.
+  makes a group, adds a lab, gives a colleague a place and switches. The demo seed's group is Demo Infra Group (`prisma/seed-group.ts`):
+  Demo Infra Holdings (holding) above Demo Infra Projects, Demo Buildcon (construction), Demo Design Consultants
+  (consultancy) and Demo Quality Labs (quality lab), each with its own people, projects, DPRs, purchases, stores, staff
+  and bills. They work on each other's projects as phase 1 allows, as client and vendor in each company's own records: a
+  sister is a project's client in one company and a vendor in the other (a work order, the RA bill held as a vendor bill).
+  `admin@demo.com` runs the group, `md@demo.com` is in all five, `qaqc@demo.com` works in the construction company and
+  the lab; `buildcon@`, `design@`, `lab@` and `cfo@demo.com` work in one company each.
 - **Later phases** (ROADMAP "Group companies"): work one company does for another (a lab's tests on a sister's project)
   as inter-company orders and bills, group reports across companies, and shared masters.
 

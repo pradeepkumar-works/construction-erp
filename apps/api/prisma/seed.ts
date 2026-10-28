@@ -12,6 +12,7 @@ import { seedTownStock } from './seed-stock';
 import { seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
 import { seedOm } from './seed-om';
+import { seedDemoGroup, seedGroupCompanies } from './seed-group';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, type MarkupPoint, type PpeKind, type TakeoffKind } from '@erp/shared';
@@ -138,7 +139,7 @@ async function main() {
     });
     users.set(u.email, row.id);
   }
-  await seedGroup(org.id, passwordHash);
+  await seedDemoGroup(prisma, org.id, passwordHash);
 
   const already = await prisma.project.count({ where: { organizationId: org.id } });
   if (already > 0) {
@@ -215,6 +216,7 @@ async function main() {
     await seedOm(prisma, org.id);
     await seedProjectTypes(prisma, org.id);
     await seedComments(org.id);
+    await seedGroupCompanies(prisma, org.id, passwordHash);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -432,83 +434,10 @@ async function main() {
   await seedOm(prisma, org.id);
   await seedProjectTypes(prisma, org.id);
   await seedComments(org.id);
+  await seedGroupCompanies(prisma, org.id, passwordHash);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
-}
-
-/**
- * Group companies (phase 1): the demo company heads Demo Infra Group with a sister quality lab. admin@demo.com runs the
- * group and is the lab's admin too, the demo company's QA/QC engineer also tests for the lab, and lab@demo.com works only
- * in the lab. The lab has one engagement: third-party testing on the demo company's road. Safe to run again.
- */
-async function seedGroup(organizationId: string, passwordHash: string) {
-  let { groupId } = await prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { groupId: true } });
-  if (!groupId) {
-    groupId = (await prisma.companyGroup.create({ data: { name: 'Demo Infra Group' } })).id;
-    await prisma.organization.update({
-      where: { id: organizationId },
-      data: { groupId, kind: 'CONSTRUCTION', legalName: 'Demo Infra Projects Private Limited', pan: 'AABCD1234E', cin: 'U45200OR2012PTC015678', gstin: `21AABCD1234E1Z${gstinCheckChar('21AABCD1234E1Z')}` },
-    });
-  }
-  const admin = await prisma.login.findUniqueOrThrow({ where: { email: 'admin@demo.com' } });
-  await prisma.groupAdmin.upsert({ where: { groupId_loginId: { groupId, loginId: admin.id } }, update: {}, create: { groupId, loginId: admin.id } });
-  const lab = await prisma.organization.upsert({
-    where: { code: 'DEMOLAB' },
-    update: { groupId },
-    create: {
-      code: 'DEMOLAB',
-      name: 'Demo Quality Labs Pvt Ltd',
-      groupId,
-      kind: 'QUALITY_LAB',
-      legalName: 'Demo Quality Labs Private Limited',
-      pan: 'AABCQ5678F',
-      cin: 'U74200OR2019PTC031245',
-      gstin: `21AABCQ5678F1Z${gstinCheckChar('21AABCQ5678F1Z')}`,
-      modulesOff: [...COMPANY_KIND_INFO.QUALITY_LAB.modulesOff],
-      paymentsNeedRequest: true,
-      progressFromDpr: true,
-    },
-  });
-  const roles = new Map<string, string>();
-  for (const [key, name] of ROLES) {
-    const r = await prisma.role.upsert({ where: { organizationId_key: { organizationId: lab.id, key } }, update: { name }, create: { organizationId: lab.id, key, name } });
-    roles.set(key, r.id);
-  }
-  const people: { email: string; name: string; role: string; phone: string }[] = [
-    { email: 'admin@demo.com', name: 'Arun Sharma', role: 'ADMIN', phone: '9800000001' },
-    { email: 'qaqc@demo.com', name: 'Sneha Iyer', role: 'QA_QC_ENGINEER', phone: '9800000011' },
-    { email: 'lab@demo.com', name: 'Dr. Meera Sahoo', role: 'MANAGEMENT', phone: '9800000018' },
-  ];
-  const ids = new Map<string, string>();
-  for (const p of people) {
-    const login = await prisma.login.upsert({ where: { email: p.email }, update: {}, create: { email: p.email, passwordHash } });
-    const u = await prisma.user.upsert({
-      where: { organizationId_email: { organizationId: lab.id, email: p.email } },
-      update: { fullName: p.name, roleId: roles.get(p.role)!, isActive: true, loginId: login.id },
-      create: { organizationId: lab.id, email: p.email, fullName: p.name, phone: p.phone, roleId: roles.get(p.role)!, loginId: login.id },
-    });
-    ids.set(p.email, u.id);
-  }
-  if (!(await prisma.project.count({ where: { organizationId: lab.id } }))) {
-    await prisma.project.create({
-      data: {
-        organizationId: lab.id,
-        code: 'LAB-01',
-        name: 'Third-party testing, Kusmi road',
-        type: 'ROAD',
-        status: 'ACTIVE',
-        clientName: 'Demo Infra Projects Pvt Ltd',
-        location: 'Kusmi, Odisha',
-        description: 'Soil, aggregate, bitumen and concrete tests for the sister company’s road package.',
-        projectManagerId: ids.get('lab@demo.com')!,
-        startDate: day(-60),
-        endDate: day(300),
-        contractValue: '1850000.00',
-        members: { create: [{ userId: ids.get('qaqc@demo.com')! }] },
-      },
-    });
-  }
 }
 
 /**

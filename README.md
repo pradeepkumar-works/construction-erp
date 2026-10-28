@@ -202,7 +202,17 @@ All passwords are `password123`.
 | client@demo.com | Client's Engineer (guest) | client portal for the road project: certifies bills, attends inspections |
 | pmc@demo.com | Consultant / PMC (guest) | client portal for the building project |
 | supplier@demo.com | Supplier (portal) | supplier portal for Kalinga Bitumen & Aggregates: quotes, accepts orders, sends dispatch notes and invoices, sees payments |
-| lab@demo.com | Management | Demo Quality Labs only, the group's quality lab (admin@demo.com runs the group; qaqc@demo.com works in both companies) |
+| lab@demo.com | Management | Demo Quality Labs only, the group's quality lab (qaqc@demo.com also tests there) |
+| buildcon@demo.com | Management | Demo Buildcon only, the group's building company (team: bc.pm, bc.pm2, bc.engineer, bc.engineer2, bc.store, bc.qs, bc.purchase, bc.accounts @demo.com) |
+| design@demo.com | Management | Demo Design Consultants only, the group's consultancy (team: dc.pm, dc.re, dc.engineer, dc.design, dc.qs, dc.accounts @demo.com) |
+| cfo@demo.com | Management | Demo Infra Holdings, the parent: its books, investments and guarantees |
+
+The group (Demo Infra Group, `prisma/seed-group.ts`): Demo Infra Holdings above Demo Infra Projects, Demo Buildcon, Demo
+Design Consultants and Demo Quality Labs. admin@demo.com runs the group and is the admin in all five; md@demo.com chairs the
+holding and sits on every board, so the company switcher offers all five. The companies work for each other: Demo Buildcon
+does the hospital block's finishes on a work order from Demo Infra Projects, Demo Design Consultants designs its water
+scheme, and the lab tests on all three sisters' sites (the lab's other people: lab.pm, lab.tech, lab.tech2, lab.accounts
+@demo.com). Each one's bills to a sister are in that sister's vendor bills.
 
 Suggested demo flow: log in to the mobile app as `engineer@demo.com`, submit a progress entry
 with a photo and today's DPR; log in to the web as `pm@demo.com`, open Approvals, approve them,
