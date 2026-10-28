@@ -24,7 +24,9 @@ test('each module has a screen with its tiles, figures and what waits', async ({
   const money = await api<ModuleHome>(accounts, '/dashboard/modules/accounts');
   expect(money.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['payable', 'payableOverdue']));
   const quality = await api<ModuleHome>(pm, '/dashboard/modules/quality');
-  expect(quality.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['openNcrs', 'incidents']));
+  expect(quality.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['openNcrs']));
+  const safety = await api<ModuleHome>(pm, '/dashboard/modules/safety');
+  expect(safety.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['incidents']));
   const accountsSite = await api<ModuleHome>(accounts, '/dashboard/modules/site');
   expect(accountsSite.figures.map((f) => f.key)).not.toContain('dprToday');
   await expect(api(pm, '/dashboard/modules/nowhere')).rejects.toThrow(/404/);
