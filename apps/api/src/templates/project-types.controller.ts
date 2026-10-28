@@ -1,20 +1,46 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ProjectTypesService } from './project-types.service';
 import { DprFormsService } from './dpr-forms.service';
-import { NewComponentKindDto, NewProjectTypeDto, SaveComponentKindDto, SaveDprFormDto, SaveProjectTypeDto } from './project-types.dto';
+import { TypeBundleService } from './type-bundle.service';
+import { ImportFileDto, ImportPickDto, NewComponentKindDto, NewProjectTypeDto, SaveComponentKindDto, SaveDprFormDto, SaveProjectTypeDto } from './project-types.dto';
 
 @ApiTags('project types')
 @ApiBearerAuth()
 @Controller()
 export class ProjectTypesController {
-  constructor(private types: ProjectTypesService, private forms: DprFormsService) {}
+  constructor(private types: ProjectTypesService, private forms: DprFormsService, private bundles: TypeBundleService) {}
 
   @ApiOperation({ summary: "The company's project types (item 134)", description: 'The standard types (or the company’s copies of them) and its own, each with its starting breakdown, loose activities and how many projects use it.' })
   @Get('project-types')
   list(@CurrentUser() user: RequestUser) {
     return this.types.list(user);
+  }
+
+  @ApiOperation({ summary: 'What importing a project types file would do, item by item (admin, management)', description: 'New, replaces the company’s own (as a new version), the same, or cannot import, with the checks the editors run. Nothing is saved.' })
+  @Post('project-types/import/preview')
+  async importPreview(@CurrentUser() user: RequestUser, @Body() dto: ImportFileDto) {
+    const { bundle: _b, ...preview } = await this.bundles.preview(user, dto.file);
+    return preview;
+  }
+
+  @ApiOperation({ summary: 'Import the picked types and kinds from a project types file (admin, management)', description: 'Kinds first, then types with their DPR forms, each through the editor’s checks. Projects keep what they have until Update projects.' })
+  @Post('project-types/import')
+  importFile(@CurrentUser() user: RequestUser, @Body() dto: ImportPickDto) {
+    return this.bundles.import(user, dto.file, dto.picks);
+  }
+
+  @ApiOperation({ summary: 'A project types file of one type, with its DPR form and the kinds it uses that the company changed (admin, management)' })
+  @Get('project-types/:code/export')
+  exportType(@CurrentUser() user: RequestUser, @Param('code') code: string) {
+    return this.bundles.exportType(user, code);
+  }
+
+  @ApiOperation({ summary: 'A project types file of the component kinds the company made or changed, or of those named (admin, management)' })
+  @Get('component-kinds/export')
+  exportKinds(@CurrentUser() user: RequestUser, @Query('codes') codes?: string) {
+    return this.bundles.exportKinds(user, codes ? codes.split(',').map((c) => c.trim()).filter(Boolean) : undefined);
   }
 
   @Get('project-types/:code')

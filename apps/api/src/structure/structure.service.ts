@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { compareCodes, effectiveWeights, guessPipeStage, isPipeElement, nextCode, parentCodeOf, type LaidOutComponent, type StructureActivityDto, type StructureDto, type WorkElementDto, type WorkElementType } from '@erp/shared';
+import { compareCodes, effectiveWeights, guessPipeStage, isPipeElement, nextCode, parentCodeOf, type LaidOutComponent, type ProjectUpdatePlan, type StructureActivityDto, type StructureDto, type WorkElementDto, type WorkElementType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -189,6 +189,52 @@ export class StructureService {
         data: { organizationId: user.organizationId, entityType: 'PROJECT', entityId: projectId, action: 'BREAKDOWN_LAID_OUT', actorId: user.id, note: `${made.size} components, ${activities} activities from the project type` },
       });
     return made.size;
+  }
+
+  /**
+   * What a project gains from its type or a kind (item 134 part 3, `projectUpdatePlan`): new components, each with its
+   * kind's activities, sub-components under the project's own components, and new steps under them. It only adds; an
+   * update run's caller checks the admin's rights and writes the audit. Returns how many components and activities it made.
+   */
+  async addFromPlanUnchecked(user: RequestUser, projectId: string, plan: ProjectUpdatePlan, db: Prisma.TransactionClient): Promise<{ components: number; activities: number }> {
+    const made = new Map<string, { id: string; code: string }>();
+    let activities = 0;
+    for (const c of plan.components) {
+      const parent = c.parentId ? await db.workElement.findFirst({ where: { id: c.parentId, projectId, level: 'COMPONENT' }, select: { id: true, code: true } }) : c.parentKey ? made.get(c.parentKey) ?? null : null;
+      if ((c.parentId || c.parentKey) && !parent) continue;
+      const lines = c.activities.map((l) => ({ key: l.key, parentKey: l.parentKey, name: l.name, unit: l.unit, weightPct: String(l.weightPct), plannedQty: l.qty !== null ? String(l.qty) : null }));
+      made.set(c.key, await this.insertElement(db, user, projectId, parent, { name: c.name, elementType: c.elementType, kindCode: c.kind, specs: c.specs, weightPct: c.weightPct !== null ? String(c.weightPct) : null }, lines));
+      activities += lines.length;
+    }
+    const last = await db.activity.aggregate({ where: { projectId }, _max: { sortOrder: true } });
+    let sortOrder = (last._max.sortOrder ?? 0) + 1;
+    const newIds = new Map<string, string>();
+    const elements = new Map((await db.workElement.findMany({ where: { projectId, id: { in: [...new Set(plan.activities.map((a) => a.elementId))] } }, select: { id: true, elementType: true } })).map((e) => [e.id, e]));
+    // Activities first, then their sub-activities, so every parent exists when its parts are made.
+    for (const a of [...plan.activities.filter((x) => !x.parentKey), ...plan.activities.filter((x) => x.parentKey)]) {
+      const element = elements.get(a.elementId);
+      const parentActivityId = a.parentKey ? newIds.get(`${a.elementId}:${a.parentKey}`) : a.parentActivityId;
+      if (!element || (a.parentKey && !parentActivityId)) continue;
+      if (parentActivityId && !a.parentKey && !(await db.activity.findFirst({ where: { id: parentActivityId, projectId, workElementId: a.elementId }, select: { id: true } }))) continue;
+      const row = await db.activity.create({
+        data: {
+          organizationId: user.organizationId,
+          projectId,
+          workElementId: a.elementId,
+          parentActivityId: parentActivityId ?? null,
+          name: a.name.trim(),
+          unit: a.unit.trim(),
+          plannedQty: a.qty !== null ? D(a.qty) : D(0),
+          weightPct: weightOf(a.weightPct !== null ? String(a.weightPct) : null),
+          pipeStage: isPipeElement(element.elementType) ? guessPipeStage(a.name) : null,
+          sortOrder: sortOrder++,
+        },
+        select: { id: true },
+      });
+      newIds.set(`${a.elementId}:${a.key}`, row.id);
+      activities++;
+    }
+    return { components: made.size, activities };
   }
 
   /** One component or sub-component with its plan's activities: numbered after its siblings, activities after the project's last. */

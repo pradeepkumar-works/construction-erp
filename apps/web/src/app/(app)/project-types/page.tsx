@@ -3,19 +3,21 @@
 import React, { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Typography, theme } from 'antd';
+import { App, Button, Card, Typography, theme } from 'antd';
 import { PROJECT_TYPE_LABELS, WORK_ELEMENT_TYPE_LABELS, canManageTemplates, type ComponentKindDto, type ProjectTypeDto } from '@erp/shared';
-import { PlusOutlined } from '@/components/common/icons';
+import { DownloadOutlined, ImportOutlined, PlusOutlined } from '@/components/common/icons';
 import { AppTabs } from '@/components/common/AppTabs';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
+import { ImportTypes, saveBundle } from '@/components/project-types/ImportTypes';
 import { KindEditor } from '@/components/project-types/KindEditor';
 import { NewKindForm, NewTypeForm } from '@/components/project-types/TypeForms';
 import { TypeStateTag } from '@/components/project-types/TypeStateTag';
+import { UpdateProjects } from '@/components/project-types/UpdateProjects';
 import { useAuth } from '@/lib/auth';
-import { useComponentKinds, useProjectTypes } from '@/lib/queries';
+import { exportComponentKinds, useComponentKinds, useProjectTypes } from '@/lib/queries';
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
@@ -100,7 +102,7 @@ function KindsTab({ kinds, onOpen }: { kinds: ComponentKindDto[]; onOpen: (k: Co
   return (
     <>
       <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
-        What a component is made of: the specs the planner fills in and the steps that become its activities. Changing a kind changes new components only.
+        What a component is made of: the specs the planner fills in and the steps that become its activities. Changing a kind changes new components; Update projects in the kind gives its new steps to those laid out before.
       </Typography.Paragraph>
       <DataTable<ComponentKindDto & { id: string }>
         columns={columns}
@@ -130,12 +132,42 @@ function ProjectTypes() {
   const kinds = useComponentKinds();
   const [making, setMaking] = useState<'type' | 'kind' | null>(null);
   const [openKind, setOpenKind] = useState<string | null>(null);
+  const [updatingKind, setUpdatingKind] = useState<ComponentKindDto | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const { message } = App.useApp();
   const editable = !!user && canManageTemplates(user.roleKey);
   const setTab = (k: string) => router.replace(k === 'kinds' ? `${pathname}?tab=kinds` : pathname, { scroll: false });
+  const edited = kinds.data?.some((k) => k.edited);
   const newButton = editable ? (
-    <Button type="primary" icon={<PlusOutlined />} onClick={() => setMaking(tab === 'kinds' ? 'kind' : 'type')}>
-      {tab === 'kinds' ? 'New component kind' : 'New project type'}
-    </Button>
+    <>
+      {tab === 'kinds' ? (
+        <Button
+          icon={<DownloadOutlined />}
+          loading={exporting}
+          disabled={!edited}
+          title={edited ? 'The kinds your company made or changed' : 'Every kind is the built-in one'}
+          onClick={async () => {
+            setExporting(true);
+            try {
+              saveBundle(await exportComponentKinds(), 'component-kinds');
+            } catch {
+              message.error('The file could not be made. Try again in a moment.');
+            } finally {
+              setExporting(false);
+            }
+          }}
+        >
+          Export kinds
+        </Button>
+      ) : null}
+      <Button icon={<ImportOutlined />} onClick={() => setImporting(true)}>
+        Import
+      </Button>
+      <Button type="primary" icon={<PlusOutlined />} onClick={() => setMaking(tab === 'kinds' ? 'kind' : 'type')}>
+        {tab === 'kinds' ? 'New component kind' : 'New project type'}
+      </Button>
+    </>
   ) : null;
   const failed = types.error ?? kinds.error;
 
@@ -173,7 +205,17 @@ function ProjectTypes() {
           setOpenKind(code);
         }}
       />
-      <KindEditor kind={kinds.data?.find((k) => k.code === openKind) ?? null} editable={editable} onClose={() => setOpenKind(null)} />
+      <KindEditor
+        kind={kinds.data?.find((k) => k.code === openKind) ?? null}
+        editable={editable}
+        onClose={() => setOpenKind(null)}
+        onUpdateProjects={(k) => {
+          setOpenKind(null);
+          setUpdatingKind(k);
+        }}
+      />
+      {editable ? <ImportTypes open={importing} onClose={() => setImporting(false)} /> : null}
+      {updatingKind ? <UpdateProjects what="kind" code={updatingKind.code} name={updatingKind.name} open onClose={() => setUpdatingKind(null)} /> : null}
     </div>
   );
 }
