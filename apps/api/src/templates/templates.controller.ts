@@ -1,11 +1,8 @@
-import { Body, Controller, Get, Param, ParseEnumPipe, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PROJECT_TYPES, type ProjectType } from '@erp/shared';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { TemplatesService } from './templates.service';
 import { ApplyTemplateDto, SaveTemplateDto } from './templates.dto';
-
-const typePipe = new ParseEnumPipe(Object.fromEntries(PROJECT_TYPES.map((t) => [t, t])));
 
 @ApiTags('activity templates')
 @ApiBearerAuth()
@@ -13,21 +10,21 @@ const typePipe = new ParseEnumPipe(Object.fromEntries(PROJECT_TYPES.map((t) => [
 export class TemplatesController {
   constructor(private templates: TemplatesService) {}
 
-  @ApiOperation({ summary: 'Activity templates for every project type', description: '`isDefault` means the organisation has not saved its own and the built-in list applies.' })
+  @ApiOperation({ summary: 'Loose activities of every project type', description: '`isDefault` means the company has not saved its own and the standard type\'s list applies. Also part of GET /project-types.' })
   @Get('activity-templates')
   list(@CurrentUser() user: RequestUser) {
     return this.templates.list(user);
   }
 
-  @Get('activity-templates/:projectType')
-  get(@CurrentUser() user: RequestUser, @Param('projectType', typePipe) projectType: ProjectType) {
-    return this.templates.get(user, projectType);
+  @Get('activity-templates/:typeCode')
+  get(@CurrentUser() user: RequestUser, @Param('typeCode') typeCode: string) {
+    return this.templates.get(user, typeCode);
   }
 
-  @ApiOperation({ summary: 'Replace the template for a project type (admin, management)', description: 'Send the whole list in order. An empty list goes back to the built-in one.' })
-  @Put('activity-templates/:projectType')
-  save(@CurrentUser() user: RequestUser, @Param('projectType', typePipe) projectType: ProjectType, @Body() dto: SaveTemplateDto) {
-    return this.templates.save(user, projectType, dto);
+  @ApiOperation({ summary: 'Replace the loose activities of a project type (admin, management)', description: 'Send the whole list in order. An empty list goes back to the built-in one.' })
+  @Put('activity-templates/:typeCode')
+  save(@CurrentUser() user: RequestUser, @Param('typeCode') typeCode: string, @Body() dto: SaveTemplateDto) {
+    return this.templates.save(user, typeCode, dto);
   }
 
   @ApiOperation({

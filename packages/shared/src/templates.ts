@@ -63,6 +63,8 @@ export const DEFAULT_ACTIVITY_TEMPLATES: Record<ProjectType, ActivityTemplateIte
     { name: 'Road restoration', unit: 'Sqm', startDay: 120, durationDays: 300 },
     { name: 'Trial run and commissioning', unit: 'LS', startDay: 390, durationDays: 60 },
   ],
+  // Other works (item 134) start empty: the company's own type lists its activities.
+  OTHER: [],
   // An RMC plant runs, it is not built; its schedule is the day's orders (v6 item 104).
   PLANT: [],
   // A central store holds stock; it has no works to schedule (v6 item 106).

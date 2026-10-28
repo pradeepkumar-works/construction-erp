@@ -11,6 +11,7 @@ export const PROJECT_CODE_PREFIXES: Record<ProjectType, string> = {
   BUILDING: 'BL',
   WATER_SUPPLY: 'WS',
   SEWERAGE: 'SW',
+  OTHER: 'OW',
   PLANT: 'PL',
   STORE: 'ST',
 };

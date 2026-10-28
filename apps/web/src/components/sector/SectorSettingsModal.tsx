@@ -22,7 +22,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const k = sectorKinds(project.type);
+  const k = sectorKinds(project);
 
   useEffect(() => {
     if (!open) return;
@@ -58,7 +58,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
       <Form form={form} layout="vertical">
         {k.chainage ? (
           <>
-            <Typography.Paragraph type="secondary">{project.type === 'ROAD' ? 'The stretch of road in the contract.' : 'The length of the main the strip chart draws (optional).'}</Typography.Paragraph>
+            <Typography.Paragraph type="secondary">{project.pipeNetwork ? 'The length of the main the strip chart draws (optional).' : `The stretch of ${project.type === 'ROAD' ? 'road' : 'work'} in the contract.`}</Typography.Paragraph>
             <FormGrid cols={2}>
               <Form.Item name="chainageStart" label="Chainage from" rules={[chainageRule]}>
                 <Input placeholder="12+000" />

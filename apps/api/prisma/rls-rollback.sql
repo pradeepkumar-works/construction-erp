@@ -560,5 +560,11 @@ DROP POLICY IF EXISTS tenant_isolation ON "ServiceLevelDay";
 ALTER TABLE "OmChemicalNorm" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "OmChemicalNorm" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "OmChemicalNorm";
+ALTER TABLE "ProjectTypeConfig" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ProjectTypeConfig" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ProjectTypeConfig";
+ALTER TABLE "ComponentKind" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ComponentKind" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ComponentKind";
 
 DROP FUNCTION IF EXISTS app_current_org();

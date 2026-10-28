@@ -1,7 +1,11 @@
 /** String-literal unions that mirror the Prisma enums in apps/api. Keep both in sync. */
 
-export const PROJECT_TYPES = ['ROAD', 'BUILDING', 'WATER_SUPPLY', 'SEWERAGE', 'PLANT', 'STORE'] as const;
+export const PROJECT_TYPES = ['ROAD', 'BUILDING', 'WATER_SUPPLY', 'SEWERAGE', 'OTHER', 'PLANT', 'STORE'] as const;
 export type ProjectType = (typeof PROJECT_TYPES)[number];
+
+/** Where a project type's work is located on progress and measurements (item 134): chainage, floor, village. */
+export const WORK_LOCATIONS = ['CHAINAGE', 'FLOOR', 'VILLAGE'] as const;
+export type WorkLocation = (typeof WORK_LOCATIONS)[number];
 
 /** How the contract pays (item 125): measured BOQ quantities, a lump sum paid in stages, or design and build. */
 export const CONTRACT_MODELS = ['ITEM_RATE', 'LUMP_SUM', 'EPC'] as const;

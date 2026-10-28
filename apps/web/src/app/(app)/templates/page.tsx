@@ -1,32 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import React from 'react';
-import { Card } from 'antd';
-import { AppTabs } from '@/components/common/AppTabs';
-import { PROJECT_TYPE_LABELS, canManageTemplates } from '@erp/shared';
-import { useAuth } from '@/lib/auth';
-import { useActivityTemplates } from '@/lib/queries';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { TemplateEditor } from '@/components/templates/TemplateEditor';
-
+/** Activity templates became part of Project types (item 134); old links and bookmarks land there. */
 export default function Page() {
-  const { user } = useAuth();
-  const { data, isLoading, error, refetch } = useActivityTemplates();
-  const editable = !!user && canManageTemplates(user.roleKey);
-  return (
-    <div className="page-container">
-      <PageHeader
-        title="Activity templates"
-        subtitle={`Standard activities for each project type, added when a project is created (or later from its Activities tab).${editable ? '' : ' Admin and management can change them.'}`}
-      />
-      {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {isLoading ? <PageSkeleton header={false} /> : null}
-      {data ? (
-        <Card size="small">
-          <AppTabs items={data.map((t) => ({ key: t.projectType, label: PROJECT_TYPE_LABELS[t.projectType], children: <TemplateEditor template={t} editable={editable} /> }))} />
-        </Card>
-      ) : null}
-    </div>
-  );
+  redirect('/project-types');
 }

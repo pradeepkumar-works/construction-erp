@@ -759,6 +759,20 @@ quality checking). Research and design in the Claude Doc "Group and child compan
      Phase 3 (M): group reports across companies (receivables, payables, cash, headcount) for the group's admins and
      management, and masters shared across the group (vendors, items, rates) where the companies want them.
 
+## Project types (item 134)
+
+Asked by Pradeep on 28 Oct 2026: project types, each type's activities and its DPR form configurable by the company,
+with default templates for each type. Plan in the artifact "Configurable project types, activities and DPR forms".
+
+134. **Project types.** ~~Part 1 (L):~~ Done: the company's project types (the six standard ones, its copies and its
+     own, each built on a kind of work) with their places, pipe network, usual contract, starting breakdown and loose
+     activities; a library of component kinds (specs and steps as data, the twenty built-in kinds included); New project
+     picks the type and how many of each starting component; the Structure tab offers the type's kinds first.
+     ARCHITECTURE "Project types".
+     Part 2 (L): the DPR form per type: which sections a site report has, and fields of the company's own.
+     Part 3 (M): pushing a type's or kind's changes to live projects as a reviewed preview, and export and import of
+     types and kinds between companies.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

@@ -41,7 +41,7 @@ const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(16
 export function SectorInputs({ projectId }: { projectId?: string }) {
   const { data: project } = useProject(projectId);
   if (!project) return null;
-  const k = sectorKinds(project.type);
+  const k = sectorKinds(project);
   const range = project.chainageStart !== null && project.chainageEnd !== null ? ` (${formatChainage(project.chainageStart)} to ${formatChainage(project.chainageEnd)})` : '';
   const pick = (list: string[], placeholder: string) =>
     list.length ? <Select allowClear showSearch placeholder={placeholder} options={list.map((x) => ({ value: x, label: x }))} /> : <AutoComplete allowClear placeholder={placeholder} />;

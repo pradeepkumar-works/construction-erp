@@ -146,6 +146,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/wbs-rollup-test.js
+      - name: Project types and component kinds lay out what they say, the standard ones as before, and are checked
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/project-types-test.js
       - name: DPR work lines add up to previous, cumulative and balance, suggest material and check the crew
         if: matrix.suite == 'flows'
         working-directory: apps/api

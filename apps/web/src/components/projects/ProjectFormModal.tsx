@@ -5,12 +5,12 @@ import { App, Button, Checkbox, Flex, Form, Input, InputNumber, Select, Typograp
 import { DatePicker } from '@/components/common/DatePicker';
 import { AimOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
-import type { ContractModel, ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
-import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, STANDARD_TERMS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, readNumber, readText, workOrderEnd } from '@erp/shared';
+import type { BreakdownPick, ContractModel, ProjectDetail, ProjectStatus, ProjectType, ProjectTypeDto } from '@erp/shared';
+import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, MAX_COMPONENT_COUNT, STANDARD_TERMS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, defaultPicks, readNumber, readText, typeCodeOf, workOrderEnd } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivityTemplates, useNextProjectCode } from '@/lib/queries';
+import { useActivityTemplates, useNextProjectCode, useProjectTypes } from '@/lib/queries';
 import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useAuth } from '@/lib/auth';
@@ -24,7 +24,10 @@ import { ClientFormModal } from '@/components/clients/ClientFormModal';
 interface FormValues {
   code: string;
   name: string;
-  type: ProjectType;
+  /** A project type's code (item 134), or `kind:PLANT` / `kind:STORE` for the built-in kinds that have no type */
+  typeChoice: string;
+  /** New projects: how many of each top-level component of the type's starting breakdown (0 leaves it out) */
+  breakdown?: Record<string, number | null>;
   status?: ProjectStatus;
   contractModel?: ContractModel;
   clientId?: string | null;
@@ -47,6 +50,18 @@ interface FormValues {
   siteLng?: number | null;
   siteRadiusM?: number | null;
   siteCheckInStrict?: boolean;
+}
+
+/** Built-in kinds that are not a project type: a plant and a store have no breakdown or DPR of their own. */
+const KIND_CHOICES = ['PLANT', 'STORE'] as const satisfies readonly ProjectType[];
+const kindChoice = (t: ProjectType) => `kind:${t}`;
+
+/** The built-in kind behind a choice, and its project type when it has one. */
+function typeOfChoice(choice: string | undefined, types: ProjectTypeDto[] | undefined): { type: ProjectType | undefined; def: ProjectTypeDto | undefined } {
+  if (!choice) return { type: undefined, def: undefined };
+  if (choice.startsWith('kind:')) return { type: choice.slice(5) as ProjectType, def: undefined };
+  const def = types?.find((t) => t.code === choice);
+  return { type: def?.baseType, def };
 }
 
 /** Who can manage a project. */
@@ -73,8 +88,12 @@ export function ProjectFormModal({
   const isEdit = !!project;
   const { user } = useAuth();
   const { data: templates } = useActivityTemplates(open && !project);
-  const type = Form.useWatch('type', form);
-  const template = templates?.find((t) => t.projectType === type);
+  const { data: types } = useProjectTypes(open);
+  const typeChoice = Form.useWatch('typeChoice', form);
+  const { type, def: typeDef } = typeOfChoice(typeChoice, types);
+  const template = typeDef ? templates?.find((t) => t.typeCode === typeDef.code) : undefined;
+  // What a change of type filled in (the contract, the breakdown picks, the activities box), so a box someone set stays.
+  const typeFilled = useRef<{ contractModel?: ContractModel; applyTemplate?: boolean }>({});
   // The next code in the company's series (finding 17 of the October review); `filledCode` keeps the one we filled in,
   // so a code typed by hand is never written over, and a change of type moves our own suggestion along.
   const mayCreate = !!user && (MANAGER_ROLES as readonly string[]).includes(user.roleKey);
@@ -115,7 +134,7 @@ export function ProjectFormModal({
       form.setFieldsValue({
         code: project.code,
         name: project.name,
-        type: project.type,
+        typeChoice: project.type === 'PLANT' || project.type === 'STORE' ? kindChoice(project.type) : (project.typeCode ?? typeCodeOf(project) ?? undefined),
         status: project.status,
         contractModel: project.contractModel,
         clientId: project.clientId,
@@ -135,15 +154,31 @@ export function ProjectFormModal({
     } else {
       form.resetFields();
       filledCode.current = null;
+      typeFilled.current = {};
       // A project manager making a project manages it, or would not see it once made.
       form.setFieldsValue({
         status: initialType === 'STORE' ? 'ACTIVE' : 'PLANNED',
-        type: initialType ?? 'ROAD',
+        typeChoice: initialType === 'STORE' || initialType === 'PLANT' ? kindChoice(initialType) : typeCodeOf({ type: initialType ?? 'ROAD' }) ?? undefined,
         applyTemplate: initialType !== 'STORE',
         projectManagerId: user?.roleKey === 'PROJECT_MANAGER' ? user.id : undefined,
       });
     }
   }, [open, project, form, initialType, user]);
+
+  // A new project's type fills the usual contract, its starting breakdown and whether to add its loose activities
+  // (off when it has components, whose activities are laid out with them); a box someone changed keeps their choice.
+  const typeKey = typeDef ? `${typeDef.code}:${typeDef.version}` : (typeChoice ?? '');
+  useEffect(() => {
+    if (!open || isEdit || !typeDef) return;
+    const was = typeFilled.current;
+    const now = form.getFieldsValue(['contractModel', 'applyTemplate']) as Pick<FormValues, 'contractModel' | 'applyTemplate'>;
+    const next: Partial<FormValues> = { breakdown: Object.fromEntries(defaultPicks(typeDef).map((p) => [p.key, p.count])) };
+    if (!now.contractModel || now.contractModel === was.contractModel) next.contractModel = typeDef.contractModel;
+    if (now.applyTemplate === undefined || now.applyTemplate === was.applyTemplate) next.applyTemplate = typeDef.breakdown.length === 0;
+    typeFilled.current = { contractModel: next.contractModel ?? was.contractModel, applyTemplate: next.applyTemplate ?? was.applyTemplate };
+    form.setFieldsValue(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per type (and version), not on every refetch
+  }, [open, isEdit, typeKey, form]);
 
   useEffect(() => {
     if (!open || isEdit || !nextCode?.code) return;
@@ -158,7 +193,10 @@ export function ProjectFormModal({
       const body = {
         code: values.code.trim(),
         name: values.name.trim(),
-        type: values.type,
+        ...(() => {
+          const t = typeOfChoice(values.typeChoice, types);
+          return { type: t.type, typeCode: t.def?.code ?? null };
+        })(),
         status: values.status,
         contractModel: values.contractModel,
         // Without a client from the master an older free-text client name is left as it is.
@@ -173,7 +211,15 @@ export function ProjectFormModal({
         endDate: values.dates?.[1] ? values.dates[1].format('YYYY-MM-DD') : undefined,
         contractValue: values.contractValue !== null && values.contractValue !== undefined ? String(values.contractValue) : undefined,
         projectManagerId: values.projectManagerId || undefined,
-        ...(isEdit ? {} : { applyTemplate: !!values.applyTemplate && values.type !== 'STORE', copyFromProjectId: values.copyFromProjectId || undefined }),
+        ...(isEdit
+          ? {}
+          : {
+              applyTemplate: !!values.applyTemplate && !values.typeChoice.startsWith('kind:'),
+              copyFromProjectId: values.copyFromProjectId || undefined,
+              breakdown: Object.entries(values.breakdown ?? {})
+                .filter(([, n]) => (n ?? 0) > 0)
+                .map(([key, count]): BreakdownPick => ({ key, count: count! })),
+            }),
         siteLat: values.siteLat ?? (isEdit ? null : undefined),
         siteLng: values.siteLng ?? (isEdit ? null : undefined),
         siteRadiusM: values.siteRadiusM ?? (isEdit ? null : undefined),
@@ -239,8 +285,15 @@ export function ProjectFormModal({
             </Form.Item>
           </FormGrid>
           <FormGrid cols={3}>
-            <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Choose the type' }]}>
-              <Select options={PROJECT_TYPES.map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))} />
+            <Form.Item name="typeChoice" label="Type" rules={[{ required: true, message: 'Choose the type, e.g. Road' }]} extra={typeDef?.description || undefined}>
+              <Select
+                showSearch={{ optionFilterProp: 'label' }}
+                loading={!types}
+                options={[
+                  ...(types ?? []).filter((t) => t.active || t.code === typeChoice).map((t) => ({ value: t.code, label: t.name })),
+                  ...KIND_CHOICES.map((k) => ({ value: kindChoice(k), label: PROJECT_TYPE_LABELS[k] })),
+                ]}
+              />
             </Form.Item>
             <Form.Item name="status" label="Status">
               <Select options={PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))} />
@@ -294,9 +347,14 @@ export function ProjectFormModal({
               <Select options={CONTRACT_MODELS.map((m) => ({ value: m, label: CONTRACT_MODEL_LABELS[m] }))} placeholder="Item rate" />
             </Form.Item>
           </FormGrid>
-          {!isEdit && type !== 'STORE' ? (
-            <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity templates.">
-              <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? inSentence(PROJECT_TYPE_LABELS[type as ProjectType]) : ''} activities</Checkbox>
+          {!isEdit && typeDef ? (
+            <Form.Item
+              name="applyTemplate"
+              valuePropName="checked"
+              style={{ marginBottom: 0 }}
+              extra={`Scheduled across the start and end dates; planned quantities are filled in later. ${typeDef.breakdown.length ? 'Off by default: the components below bring their own activities. ' : ''}Set them under Project types.`}
+            >
+              <Checkbox>Add the {template ? `${template.items.length} ` : ''}{inSentence(typeDef.name)} activities</Checkbox>
             </Form.Item>
           ) : null}
           {!isEdit && type !== 'STORE' ? (
@@ -310,6 +368,25 @@ export function ProjectFormModal({
             </Form.Item>
           ) : null}
         </FormSection>
+        {!isEdit && typeDef && typeDef.breakdown.some((b) => !b.parentKey) ? (
+          <FormSection title="Starting components">
+            <Typography.Paragraph type="secondary">
+              Laid out on the Structure tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.
+            </Typography.Paragraph>
+            <FormGrid cols={3}>
+              {typeDef.breakdown
+                .filter((b) => !b.parentKey)
+                .map((b) => {
+                  const subs = typeDef.breakdown.filter((x) => x.parentKey === b.key).length;
+                  return (
+                    <Form.Item key={b.key} name={['breakdown', b.key]} label={b.name} extra={subs ? `With ${subs} sub-component${subs === 1 ? '' : 's'}` : undefined}>
+                      <InputNumber min={0} max={MAX_COMPONENT_COUNT} precision={0} style={{ width: '100%' }} />
+                    </Form.Item>
+                  );
+                })}
+            </FormGrid>
+          </FormSection>
+        ) : null}
         <FormSection title="Site location for check-in">
           <Typography.Paragraph type="secondary">Staff check-ins record where the phone is; one further from the site than the radius is flagged.</Typography.Paragraph>
           <FormGrid cols={3}>

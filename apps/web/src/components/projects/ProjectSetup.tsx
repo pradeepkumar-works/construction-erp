@@ -43,7 +43,7 @@ function stepText(s: SetupStepDto, project: ProjectDetail, setup: ProjectSetupDt
     case 'budget':
       return { title: 'Set the budget', detail: 'Material, labour, machinery, subcontract and expenses, for cost against budget.' };
     case 'sector': {
-      const kind = sectorStepOf(project.type);
+      const kind = sectorStepOf(project);
       return { title: kind === 'chainage' ? 'Set the chainage' : kind === 'floors' ? 'List the floors' : 'Add the villages', detail: 'So progress and measurements can say where the work is.' };
     }
     case 'norms':

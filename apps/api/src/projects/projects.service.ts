@@ -13,6 +13,8 @@ import {
   type ProjectType,
   type RoleKey,
   type SortOrder,
+  STANDARD_TYPE_FOR,
+  layOutBreakdown,
 } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { physicalProgress } from '../common/progress';
@@ -21,6 +23,8 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { TemplatesService } from '../templates/templates.service';
+import { ProjectTypesService } from '../templates/project-types.service';
+import { StructureService } from '../structure/structure.service';
 import { dateOnly, iso, money, parseDate, pct } from '../common/serialize';
 import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
 
@@ -54,6 +58,8 @@ export class ProjectsService {
     private access: ProjectAccessService,
     private audit: AuditService,
     private templates: TemplatesService,
+    private types: ProjectTypesService,
+    private structure: StructureService,
     private notifications: NotificationsService,
   ) {}
 
@@ -89,11 +95,13 @@ export class ProjectsService {
     const pending = new Map<string, number>();
     for (const g of [...progress, ...dprs, ...mrs]) pending.set(g.projectId, (pending.get(g.projectId) ?? 0) + g._count._all);
     const varied = new Map(variations.map((v) => [v.projectId, v._sum.approvedAmount]));
+    const types = await this.types.featuresOf(rows[0]?.organizationId ?? '', rows);
     return rows.map((p) => ({
       id: p.id,
       code: p.code,
       name: p.name,
       type: p.type,
+      ...types.get(p.id)!,
       status: p.status,
       contractModel: p.contractModel,
       clientName: p.clientName,
@@ -208,6 +216,28 @@ export class ProjectsService {
     if (strict && lat === null) throw new BadRequestException('Set the site location before refusing check-ins from outside it');
   }
 
+  /**
+   * The project's type (item 134): a code of the company's types sets `type` to the type's built-in kind and records
+   * the version. Without a code, `type` alone gives the standard type of that kind, as before.
+   */
+  private async withType(user: RequestUser, dto: CreateProjectDto | UpdateProjectDto, data: Prisma.ProjectUpdateInput) {
+    if (dto.typeCode === undefined || dto.typeCode === null) {
+      if (dto.typeCode === null) {
+        data.typeCode = null;
+        data.typeVersion = null;
+      }
+      return dto.type ? this.types.type(user.organizationId, STANDARD_TYPE_FOR[dto.type] ?? '') : null;
+    }
+    const all = await this.types.list(user);
+    const t = all.find((x) => x.code === dto.typeCode);
+    if (!t) throw new BadRequestException('Choose one of the company’s project types');
+    if (!t.active && 'applyTemplate' in dto) throw new BadRequestException(`${t.name} is archived; choose another type, or bring it back in Admin › Project types`);
+    data.type = t.baseType;
+    data.typeCode = t.code;
+    data.typeVersion = t.version;
+    return t;
+  }
+
   /** A client from the master sets the project's client name too; null unlinks it and keeps the name as text. */
   private async withClient(user: RequestUser, dto: CreateProjectDto | UpdateProjectDto, data: Prisma.ProjectUpdateInput) {
     if (dto.clientId === undefined) return;
@@ -238,9 +268,14 @@ export class ProjectsService {
     const data = this.toData(dto) as Prisma.ProjectCreateInput;
     await this.withClient(user, dto, data);
     if (dto.clientId === null) delete data.client;
+    const type = await this.withType(user, dto, data);
     const terms = await this.startingTerms(user, dto);
     const row = await this.prisma.project.create({ data: { ...data, ...terms, organization: { connect: { id: user.organizationId } } }, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'CREATED');
+    if (type && dto.breakdown?.length) {
+      const kinds = await this.types.kinds(user.organizationId);
+      await this.structure.layOutUnchecked(user, row.id, layOutBreakdown(type, kinds, dto.breakdown));
+    }
     if (dto.applyTemplate) await this.templates.applyUnchecked(user, row.id);
     if (dto.copyFromProjectId) {
       await this.joinTeam(user, row.id, await this.teamOf(dto.copyFromProjectId, row.projectManagerId));
@@ -307,6 +342,8 @@ export class ProjectsService {
     }
     const data = this.toData(dto);
     await this.withClient(user, dto, data);
+    // A new built-in kind with no type named leaves the old type, whose kind it no longer is.
+    await this.withType(user, dto.type !== undefined && dto.typeCode === undefined ? { ...dto, typeCode: null } : dto, data);
     const before = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { startDate: true } });
     const row = await this.prisma.project.update({ where: { id }, data, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'UPDATED');

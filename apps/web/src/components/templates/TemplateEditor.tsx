@@ -7,7 +7,7 @@ import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from
 import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ActivityTemplateDto, ActivityTemplateItem } from '@erp/shared';
-import { MAX_TEMPLATE_DAYS, MAX_TEMPLATE_ITEMS, PROJECT_TYPE_LABELS, templateSpan } from '@erp/shared';
+import { MAX_TEMPLATE_DAYS, MAX_TEMPLATE_ITEMS, templateSpan } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { TimelineBar } from './TimelineBar';
@@ -18,8 +18,11 @@ type Row = ActivityTemplateItem & { key: number };
 let seq = 0;
 const withKeys = (items: ActivityTemplateItem[]): Row[] => items.map((i) => ({ ...i, key: ++seq }));
 
-/** Edit one project type's standard activities: name, unit, start day and duration, in order. */
-export function TemplateEditor({ template, editable }: { template: ActivityTemplateDto; editable: boolean }) {
+/**
+ * Edit one project type's loose activities (the ones not under a component): name, unit, start day and duration, in
+ * order. `standard` is a standard type, whose list can go back to the standard one.
+ */
+export function TemplateEditor({ template, editable, standard = true }: { template: ActivityTemplateDto; editable: boolean; standard?: boolean }) {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const [rows, setRows] = useState<Row[]>(() => withKeys(template.items));
@@ -45,9 +48,9 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
   };
 
   const save = useMutation({
-    mutationFn: async (items: ActivityTemplateItem[]) => (await api.put<ActivityTemplateDto>(`/activity-templates/${template.projectType}`, { items })).data,
+    mutationFn: async (items: ActivityTemplateItem[]) => (await api.put<ActivityTemplateDto>(`/activity-templates/${template.typeCode}`, { items })).data,
     onSuccess: (t) => {
-      message.success(t.isDefault ? 'Back to the standard list' : 'Template saved');
+      message.success(t.isDefault && standard ? 'Back to the standard list' : 'Activities saved');
       qc.invalidateQueries({ queryKey: ['activity-templates'] });
     },
     meta: FAIL_NOTICE,
@@ -117,12 +120,13 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <Typography.Text type="secondary">
-          {template.isDefault ? <AppTag tone="info">Standard list</AppTag> : <AppTag tone="success">Your list</AppTag>}
-          {rows.length} activities for a {inSentence(PROJECT_TYPE_LABELS[template.projectType])} project. When a project has start and end dates the schedule is stretched or squeezed to fit them.
+          {standard && template.isDefault ? <AppTag tone="info">Standard list</AppTag> : null}
+          {standard && !template.isDefault ? <AppTag tone="success">Your list</AppTag> : null}
+          {rows.length} activities for a {inSentence(template.typeName)} project, besides those of its components. When a project has start and end dates the schedule is stretched or squeezed to fit them.
         </Typography.Text>
         {editable ? (
           <Space>
-            {!template.isDefault ? (
+            {standard && !template.isDefault ? (
               <Popconfirm title="Go back to the standard list?" description="Your changes to this type are removed." okText="Go back to standard" okButtonProps={{ danger: true }} onConfirm={() => save.mutate([])}>
                 <Button>Reset to standard</Button>
               </Popconfirm>

@@ -154,6 +154,8 @@ import type {
   RiskStatus,
   RiskSummaryDto,
   ActivityTemplateDto,
+  ComponentKindDto,
+  ProjectTypeDto,
   ApprovalMatrixDto,
   AuthOptionsDto,
   MeasurementSheetDto,
@@ -283,6 +285,9 @@ import type {
   UserSummary,
   ProjectStatus,
   ProjectType,
+  ProjectTypeDef,
+  WorkElementType,
+  ComponentKindDef,
   RoleKey,
   SortOrder,
   TallyExportDto,
@@ -1154,6 +1159,40 @@ export const useApprovalMatrix = (enabled = true) =>
 
 export const useActivityTemplates = (enabled = true) =>
   useQuery({ queryKey: ['activity-templates'], queryFn: async () => (await api.get<ActivityTemplateDto[]>('/activity-templates')).data, enabled });
+
+/* Project types and component kinds (item 134): a save changes what New project, the Structure tab and the templates offer. */
+const useTypeChange = <V, R>(fn: (v: V) => Promise<R>) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['project-types'] });
+      qc.invalidateQueries({ queryKey: ['component-kinds'] });
+      qc.invalidateQueries({ queryKey: ['activity-templates'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+};
+
+export const useProjectTypes = (enabled = true) =>
+  useQuery({ queryKey: ['project-types'], queryFn: async () => (await api.get<ProjectTypeDto[]>('/project-types')).data, enabled, staleTime: 60_000 });
+
+export const useComponentKinds = (enabled = true) =>
+  useQuery({ queryKey: ['component-kinds'], queryFn: async () => (await api.get<ComponentKindDto[]>('/component-kinds')).data, enabled, staleTime: 60_000 });
+
+export type NewProjectTypeInput = { code: string; name: string; baseType: ProjectType; description?: string; copyFrom?: string };
+export type SaveProjectTypeInput = Omit<ProjectTypeDef, 'code' | 'activities'> & { activities?: ProjectTypeDef['activities'] };
+export type NewComponentKindInput = { code: string; name: string; elementType: WorkElementType; copyFrom?: string };
+export type SaveComponentKindInput = Omit<ComponentKindDef, 'code'>;
+
+export const useCreateProjectType = () => useTypeChange(async (v: NewProjectTypeInput) => (await api.post<ProjectTypeDto>('/project-types', v)).data);
+export const useSaveProjectType = () =>
+  useTypeChange(async ({ code, ...v }: SaveProjectTypeInput & { code: string }) => (await api.put<ProjectTypeDto>(`/project-types/${code}`, v)).data);
+export const useRemoveProjectType = () => useTypeChange(async (code: string) => (await api.delete<{ reset: boolean }>(`/project-types/${code}`)).data);
+export const useCreateComponentKind = () => useTypeChange(async (v: NewComponentKindInput) => (await api.post<ComponentKindDto[]>('/component-kinds', v)).data);
+export const useSaveComponentKind = () =>
+  useTypeChange(async ({ code, ...v }: SaveComponentKindInput & { code: string }) => (await api.put<ComponentKindDto[]>(`/component-kinds/${code}`, v)).data);
+export const useRemoveComponentKind = () => useTypeChange(async (code: string) => (await api.delete<ComponentKindDto[]>(`/component-kinds/${code}`)).data);
 
 /** The code to offer a new project of this type (finding 17 of the October review). */
 export const useNextProjectCode = (type: ProjectType | undefined, enabled = true) =>

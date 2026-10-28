@@ -68,11 +68,34 @@ export const RCC_PARTS: { suffix: string; name: string; unit: string; weightPct:
 /** At most this many lifts are laid out for one wall, staging or steining. */
 export const MAX_LIFTS = 20;
 
-type Step =
+/** A part of an RCC step (item 134): the company may split RCC its own way; RCC_PARTS when not. */
+export interface RccPart {
+  name: string;
+  unit: string;
+  weightPct: number;
+}
+
+/** A sub-activity of a group step: a quantity from a spec, one lump sum, or filled in by the planner. */
+export interface StepPart {
+  name: string;
+  unit: string;
+  weightPct: number;
+  qtyFrom?: string;
+  lumpSum?: boolean;
+}
+
+/**
+ * One step of a component kind (item 134, ARCHITECTURE "Project types"): what the kind lays out, in order. The built-in
+ * kinds are these steps as data, and a company edits its own copy in Admin › Component kinds.
+ */
+export type ComponentStep =
   | { kind: 'plain'; name: string; unit: string; weightPct: number; qtyFrom?: string; lumpSum?: boolean }
-  | { kind: 'rcc'; name: string; weightPct: number }
-  /** RCC in lifts: `over` (a spec) ÷ the lift height, each lift its own RCC activity sharing the weight */
-  | { kind: 'lifts'; name: string; weightPct: number; over: string };
+  | { kind: 'rcc'; name: string; weightPct: number; parts?: RccPart[] }
+  /** RCC in lifts: `over` (a spec) ÷ the lift height (the `liftM` spec, else 3 m), each lift its own RCC activity sharing the weight */
+  | { kind: 'lifts'; name: string; weightPct: number; over: string; parts?: RccPart[] }
+  /** An activity with sub-activities of its own, which share its weight */
+  | { kind: 'group'; name: string; unit: string; weightPct: number; subs: StepPart[] };
+type Step = ComponentStep;
 
 const plain = (name: string, unit: string, weightPct: number, extra: { qtyFrom?: string; lumpSum?: boolean } = {}): Step => ({ kind: 'plain', name, unit, weightPct, ...extra });
 const rcc = (name: string, weightPct: number): Step => ({ kind: 'rcc', name, weightPct });
@@ -207,31 +230,47 @@ export const liftCount = (height: number | null | undefined, liftM: number | nul
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
 
 /** Fills each spec's default where it was left empty. */
-export const specsWithDefaults = (type: WorkElementType, specs: ElementSpecs | null | undefined): ElementSpecs => {
+export const fieldsWithDefaults = (fields: ElementSpecField[], specs: ElementSpecs | null | undefined): ElementSpecs => {
   const out: ElementSpecs = { ...(specs ?? {}) };
-  for (const f of ELEMENT_SPEC_FIELDS[type]) if ((out[f.key] === null || out[f.key] === undefined) && f.default !== undefined) out[f.key] = f.default;
+  for (const f of fields) if ((out[f.key] === null || out[f.key] === undefined) && f.default !== undefined) out[f.key] = f.default;
   return out;
+};
+export const specsWithDefaults = (type: WorkElementType, specs: ElementSpecs | null | undefined): ElementSpecs => fieldsWithDefaults(ELEMENT_SPEC_FIELDS[type], specs);
+
+/** What `kindPlan` needs of a component kind: its spec fields and its steps. */
+export interface KindSteps {
+  specFields: ElementSpecField[];
+  steps: ComponentStep[];
+}
+
+/** A step's quantity: one for a lump sum, the spec it is read from, else left for the planner. */
+const stepQty = (step: { qtyFrom?: string; lumpSum?: boolean }, specs: ElementSpecs) => {
+  const fromSpec = step.qtyFrom ? specs[step.qtyFrom] : null;
+  return step.lumpSum ? 1 : fromSpec && fromSpec > 0 ? round3(fromSpec) : null;
 };
 
 /**
- * The activities and sub-activities a component of this kind starts with. Top-level weights add up to 100, and so do
- * each RCC activity's three parts. A run of lifts shares its weight equally (a remainder goes to the last lift so the
- * sum stays exact).
+ * The activities and sub-activities a component of this kind starts with (item 134: the kind is data, the company's
+ * own or a built-in one). Top-level weights add up to 100, and so do each RCC activity's parts and each group's
+ * sub-activities. A run of lifts shares its weight equally (a remainder goes to the last lift so the sum stays exact).
  */
-export function elementPlan(type: WorkElementType, rawSpecs?: ElementSpecs | null): ElementActivityLine[] {
-  const specs = specsWithDefaults(type, rawSpecs);
+export function kindPlan(kind: KindSteps, rawSpecs?: ElementSpecs | null): ElementActivityLine[] {
+  const specs = fieldsWithDefaults(kind.specFields, rawSpecs);
   const lines: ElementActivityLine[] = [];
-  const addRcc = (key: string, name: string, weightPct: number) => {
+  const addRcc = (key: string, name: string, weightPct: number, parts: RccPart[] | undefined) => {
     lines.push({ key, parentKey: null, name, unit: 'Cum', weightPct, qty: null });
-    for (const p of RCC_PARTS) lines.push({ key: `${key}.${p.suffix}`, parentKey: key, name: `${name}: ${p.name.toLowerCase()}`, unit: p.unit, weightPct: p.weightPct, qty: null });
+    if (parts?.length) parts.forEach((p, j) => lines.push({ key: `${key}.${j + 1}`, parentKey: key, name: `${name}: ${p.name.toLowerCase()}`, unit: p.unit, weightPct: p.weightPct, qty: null }));
+    else for (const p of RCC_PARTS) lines.push({ key: `${key}.${p.suffix}`, parentKey: key, name: `${name}: ${p.name.toLowerCase()}`, unit: p.unit, weightPct: p.weightPct, qty: null });
   };
-  TEMPLATES[type].forEach((step, i) => {
+  kind.steps.forEach((step, i) => {
     const key = String(i + 1);
     if (step.kind === 'plain') {
-      const fromSpec = step.qtyFrom ? specs[step.qtyFrom] : null;
-      lines.push({ key, parentKey: null, name: step.name, unit: step.unit, weightPct: step.weightPct, qty: step.lumpSum ? 1 : fromSpec && fromSpec > 0 ? round3(fromSpec) : null });
+      lines.push({ key, parentKey: null, name: step.name, unit: step.unit, weightPct: step.weightPct, qty: stepQty(step, specs) });
     } else if (step.kind === 'rcc') {
-      addRcc(key, step.name, step.weightPct);
+      addRcc(key, step.name, step.weightPct, step.parts);
+    } else if (step.kind === 'group') {
+      lines.push({ key, parentKey: null, name: step.name, unit: step.unit, weightPct: step.weightPct, qty: null });
+      step.subs.forEach((s, j) => lines.push({ key: `${key}.${j + 1}`, parentKey: key, name: s.name, unit: s.unit, weightPct: s.weightPct, qty: stepQty(s, specs) }));
     } else {
       const isFloors = step.over === 'floors';
       const n = liftCount(specs[step.over], specs.liftM, isFloors);
@@ -239,12 +278,19 @@ export function elementPlan(type: WorkElementType, rawSpecs?: ElementSpecs | nul
       for (let k = 1; k <= n; k++) {
         const weight = k === n ? round3(step.weightPct - each * (n - 1)) : each;
         const name = isFloors ? `${step.name}: ${FLOOR_NAMES[k - 1] ?? `Floor ${k - 1}`}` : n === 1 ? step.name : `${step.name} lift ${k}`;
-        addRcc(`${key}-${k}`, name, weight);
+        addRcc(`${key}-${k}`, name, weight, step.parts);
       }
     }
   });
   return lines;
 }
+
+/** The built-in steps of each kind, as data (item 134): what a company starts from in Admin › Component kinds. */
+export const STANDARD_STEPS: Record<WorkElementType, ComponentStep[]> = TEMPLATES;
+
+/** The built-in plan of a kind; a company's own kind goes through `kindPlan`. */
+export const elementPlan = (type: WorkElementType, rawSpecs?: ElementSpecs | null): ElementActivityLine[] =>
+  kindPlan({ specFields: ELEMENT_SPEC_FIELDS[type], steps: TEMPLATES[type] }, rawSpecs);
 
 /** Element kinds a project type usually has, offered first when adding a component. */
 export const ELEMENT_TYPES_FOR: Record<string, WorkElementType[]> = {

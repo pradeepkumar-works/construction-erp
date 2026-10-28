@@ -64,7 +64,7 @@ export default function MyWorkPage() {
         </div>
       ),
     },
-    { title: 'Type', dataIndex: 'type', key: 'type', width: 150, render: (t) => <ProjectTypeTag type={t} /> },
+    { title: 'Type', dataIndex: 'type', key: 'type', width: 150, render: (t, p) => <ProjectTypeTag type={t} name={p.typeName} /> },
     { title: 'Status', dataIndex: 'status', key: 'status', width: 100, render: (s) => <ProjectStatusTag status={s} /> },
     { title: 'Project manager', dataIndex: 'projectManagerName', key: 'pm', width: 150, render: (v) => v ?? <span className="text-muted">Unassigned</span> },
     {

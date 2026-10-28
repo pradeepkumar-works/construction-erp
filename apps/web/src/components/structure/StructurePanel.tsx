@@ -298,7 +298,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
           open={!!form}
           onClose={() => setForm(null)}
           projectId={project.id}
-          projectType={project.type}
+          typeCode={project.typeCode}
           structure={data}
           element={form?.element ?? null}
           parentId={form?.parentId ?? null}

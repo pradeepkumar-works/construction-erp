@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
-import { CONTRACT_MODELS, type ContractModel, MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
+import { Transform, Type } from 'class-transformer';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { CONTRACT_MODELS, MAX_BREAKDOWN, MAX_COMPONENT_COUNT, type ContractModel, MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 
 /** `q` matches code, name, client, location and work order no. */
@@ -14,6 +14,12 @@ export class ListProjectsQuery extends PageQuery {
 /** The type of project a suggested code is for. */
 export class NextProjectCodeQuery {
   @ApiProperty({ enum: PROJECT_TYPES }) @IsIn(PROJECT_TYPES as unknown as string[]) type: ProjectType;
+}
+
+/** A component of the starting breakdown, and how many of it (item 134). */
+export class BreakdownPickDto {
+  @ApiProperty({ example: '7' }) @IsString() @MaxLength(20) key: string;
+  @ApiProperty({ example: 2 }) @IsInt() @Min(1) @Max(MAX_COMPONENT_COUNT) count: number;
 }
 
 export class CreateProjectDto {
@@ -61,13 +67,26 @@ export class CreateProjectDto {
   @IsOptional()
   @IsBoolean()
   applyTemplate?: boolean;
+  @ApiPropertyOptional({ description: "The company's project type (item 134, GET /project-types); sets `type` to its built-in kind", nullable: true })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(40)
+  typeCode?: string | null;
+  @ApiPropertyOptional({ type: [BreakdownPickDto], description: "Lay out these components of the type's starting breakdown (top-level keys and how many of each)" })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_BREAKDOWN)
+  @ValidateNested({ each: true })
+  @Type(() => BreakdownPickDto)
+  breakdown?: BreakdownPickDto[];
   @ApiPropertyOptional({ description: "Copy the team and the contract terms (deductions, GST, LD, periods) from this project; else the client's usual terms, else the standard ones" })
   @IsOptional()
   @IsUUID()
   copyFromProjectId?: string;
 }
 
-export class UpdateProjectDto extends PartialType(OmitType(CreateProjectDto, ['applyTemplate', 'copyFromProjectId'] as const)) {}
+export class UpdateProjectDto extends PartialType(OmitType(CreateProjectDto, ['applyTemplate', 'copyFromProjectId', 'breakdown'] as const)) {}
 
 /** One person (`userId`) or several at once (`userIds`). */
 export class AddMemberDto {

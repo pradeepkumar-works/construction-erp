@@ -14,6 +14,7 @@ export * from './risk';
 export * from './templates';
 export * from './boq-links';
 export * from './element-templates';
+export * from './project-types';
 export * from './wbs';
 export * from './approvals';
 export * from './onboarding';

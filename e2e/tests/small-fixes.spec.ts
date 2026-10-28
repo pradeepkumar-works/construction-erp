@@ -29,7 +29,7 @@ test('a new project, vendor and user are offered what the company already knows'
   const projectForm = page.getByRole('dialog', { name: 'New project' });
   await expect(projectForm.getByLabel('Project code')).toHaveValue(`RD-${year}-03`);
   await projectForm.getByLabel('Type', { exact: true }).click();
-  await page.getByTitle('Water Supply').click();
+  await page.getByTitle('Town water scheme').click();
   await expect(projectForm.getByLabel('Project code')).toHaveValue(`WS-${year}-03`);
   // A code typed by hand stands, whatever the type says next.
   await projectForm.getByLabel('Project code').fill('OWN-7');

@@ -6,7 +6,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@/components/common/icons';
-import type { ActivityNormDto, FrontFlag, MaterialNormDto, ProjectType, ReconciliationItemDto, ReconciliationLineDto, ReconciliationStatus, UnreconciledItemDto } from '@erp/shared';
+import type { ActivityNormDto, FrontFlag, MaterialNormDto, ReconciliationItemDto, ReconciliationLineDto, ReconciliationStatus, UnreconciledItemDto } from '@erp/shared';
 import { FRONT_FLAG_HINTS, FRONT_FLAG_LABELS, RECONCILIATION_STATUS_HINTS, RECONCILIATION_STATUS_LABELS, RECONCILIATION_UNDER_PCT, canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useUrlTab } from '@/lib/url-state';
@@ -98,13 +98,12 @@ type View = (typeof VIEWS)[number];
  * A project's material reconciliation (v4, extended in v5 item 92 and item 128): materials against the work and the DPR,
  * per component, per pipe size and per house-connection kit, the day's exceptions, each subcontractor's issues against
  * their measured work, stock written off by reason, and the estimate built from the rate analysis. Pipe and kits are
- * on water supply and sewerage projects. The open view is `?sub=` in the URL.
+ * on projects whose type has a pipe network. The open view is `?sub=` in the URL.
  */
-export function ReconciliationPanel({ projectId, projectType }: { projectId: string; projectType?: ProjectType }) {
+export function ReconciliationPanel({ projectId, network = false }: { projectId: string; network?: boolean }) {
   const { user } = useAuth();
   const [view, setView] = useUrlTab<View>(VIEWS, 'materials');
   const cost = !!user && canViewCost(user.roleKey);
-  const network = projectType === 'WATER_SUPPLY' || projectType === 'SEWERAGE';
   return (
     <AppTabs
       activeKey={view}

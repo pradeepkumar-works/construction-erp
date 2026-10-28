@@ -26,7 +26,7 @@ export function useSectorInputs(projectId: string | null) {
   const [floor, setFloor] = useState<string | null>(null);
   const [village, setVillage] = useState<string | null>(null);
   const p = project.data && project.data.id === projectId ? project.data : null;
-  const k = p ? sectorKinds(p.type) : { chainage: false, floor: false, village: false };
+  const k = p ? sectorKinds(p) : { chainage: false, floor: false, village: false };
 
   /** Adds messages for bad values to `e`. */
   const validate = (e: Record<string, string>) => {

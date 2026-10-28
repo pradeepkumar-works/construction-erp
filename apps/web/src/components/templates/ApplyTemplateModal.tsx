@@ -16,7 +16,7 @@ export function ApplyTemplateModal({ open, onClose, project, existing }: { open:
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: templates } = useActivityTemplates(open);
-  const template = templates?.find((t) => t.projectType === project.type);
+  const template = project.typeCode ? templates?.find((t) => t.typeCode === project.typeCode) : undefined;
   const have = useMemo(() => new Set(existing.map((n) => n.trim().toLowerCase())), [existing]);
   const rows = useMemo(() => (template ? scheduleTemplate(template.items, project.startDate, project.endDate) : []), [template, project.startDate, project.endDate]);
   const [picked, setPicked] = useState<string[]>([]);
@@ -39,7 +39,7 @@ export function ApplyTemplateModal({ open, onClose, project, existing }: { open:
     <Modal
       open={open}
       onCancel={onClose}
-      title={`Add ${inSentence(PROJECT_TYPE_LABELS[project.type])} activities from the template`}
+      title={`Add ${inSentence(project.typeName ?? PROJECT_TYPE_LABELS[project.type])} activities from the template`}
       okText={`Add ${picked.length} activit${picked.length === 1 ? 'y' : 'ies'}`}
       okButtonProps={{ disabled: !picked.length }}
       confirmLoading={apply.isPending}
