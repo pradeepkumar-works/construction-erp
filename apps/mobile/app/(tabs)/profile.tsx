@@ -3,15 +3,17 @@ import { Alert, Appearance, Linking, Platform, StyleSheet, Text, View } from 're
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { reloadAppAsync } from 'expo';
-import { ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf } from '@erp/shared';
+import { COMPANY_KIND_LABELS, ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf, type CompanyChoiceDto } from '@erp/shared';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useNotifications } from '../../src/notifications/NotificationsContext';
 import { MessagingCard } from '../../src/notifications/MessagingCard';
-import { Button, Card, KeyValue, Screen, Touchable } from '../../src/components';
+import { Button, Card, KeyValue, Screen, Touchable, useSnackbar } from '../../src/components';
+import { useOffline } from '../../src/offline/OfflineContext';
 import { API_URL } from '../../src/config';
 import { LANGUAGES, useLanguage, useT } from '../../src/i18n/LanguageContext';
 import { formatNumber } from '../../src/utils/format';
-import { APPEARANCE_CHOICES, appearance, colors, saveAppearance, spacing, touch, typography, type AppearanceChoice } from '../../src/theme';
+import { APPEARANCE_CHOICES, appearance, colors, maxFontScale, saveAppearance, spacing, touch, typography, type AppearanceChoice } from '../../src/theme';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -48,6 +50,7 @@ export default function ProfileScreen() {
         <KeyValue label={t('Organisation')} value={user.organizationName} />
         <KeyValue label={t('Can approve')} value={approvalRightsLine(user, t)} />
       </Card>
+      <CompanyCard />
       <Card title={t('Notifications')}>
         <KeyValue label={t('Push to this device')} value={t(push ? (push.status === 'ready' ? 'On' : push.status === 'off' ? 'Off' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…')} />
         {push && push.status !== 'ready' && push.reason ? <Text style={typography.caption}>{t(push.reason)}</Text> : null}
@@ -86,9 +89,78 @@ const styles = StyleSheet.create({
   api: { ...typography.bodyStrong, flex: 1 },
   choiceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: touch.heightSm, gap: spacing.sm },
   choiceOff: { opacity: 0.55 },
+  companyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: touch.heightSm, gap: spacing.sm, paddingVertical: spacing.xs },
+  companyText: { flex: 1, minWidth: 0 },
   note: { marginTop: spacing.xs },
   version: { textAlign: 'center', marginTop: spacing.md },
 });
+
+/**
+ * Group companies: the companies the person works in, when there is more than one. Each company keeps its own outbox, so
+ * entries saved here wait for this company and send when the person comes back to it.
+ */
+function CompanyCard() {
+  const { user, switchCompany } = useAuth();
+  const { pendingCount, failedCount } = useOffline();
+  const snackbar = useSnackbar();
+  const router = useRouter();
+  const t = useT();
+  const [busy, setBusy] = useState<string | null>(null);
+  if (!user?.companies || user.companies.length < 2) return null;
+  const waiting = pendingCount + failedCount;
+  const go = async (c: CompanyChoiceDto) => {
+    setBusy(c.id);
+    try {
+      await switchCompany(c.id);
+      router.replace('/');
+      snackbar.show(t('You are now working in {company}', { company: c.name }), { tone: 'success' });
+    } catch (e) {
+      Alert.alert(t('Could not switch company'), e instanceof Error ? e.message : t('Try again'));
+    } finally {
+      setBusy(null);
+    }
+  };
+  const pick = (c: CompanyChoiceDto) => {
+    if (c.current || busy) return;
+    if (!waiting) return void go(c);
+    Alert.alert(
+      t('Entries waiting to send'),
+      t('{count} entries saved in {here} are still waiting to send. They stay on this phone and send when you come back to {here}.', { count: String(waiting), here: user.organizationName }),
+      [
+        { text: t('Stay here'), style: 'cancel' },
+        { text: t('Switch anyway'), onPress: () => void go(c) },
+      ],
+    );
+  };
+  return (
+    <Card title={t('Company')}>
+      {user.companies.map((c) => (
+        <Touchable
+          key={c.id}
+          onPress={() => pick(c)}
+          disabled={!!busy}
+          style={styles.companyRow}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: c.current, busy: busy === c.id }}
+          accessibilityLabel={`${c.name}, ${t(COMPANY_KIND_LABELS[c.kind])}, ${t(c.roleName)}`}
+        >
+          <View style={styles.companyText}>
+            <Text style={c.current ? typography.bodyStrong : typography.body} maxFontSizeMultiplier={maxFontScale}>
+              {c.name}
+            </Text>
+            <Text style={typography.caption} maxFontSizeMultiplier={maxFontScale}>
+              {t(COMPANY_KIND_LABELS[c.kind])} · {t(c.roleName)}
+            </Text>
+          </View>
+          <Ionicons name={c.current ? 'checkmark-circle' : busy === c.id ? 'sync-outline' : 'ellipse-outline'} size={22} color={c.current ? colors.primary : colors.borderStrong} />
+        </Touchable>
+      ))}
+      <Text style={[typography.caption, styles.note]} maxFontSizeMultiplier={maxFontScale}>
+        {t('One sign-in for every company of your group. Each company has its own projects, entries and outbox.')}
+      </Text>
+    </Card>
+  );
+}
 
 /** The phone's language until the user picks another here; the choice stays on this phone. */
 function LanguageCard() {

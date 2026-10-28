@@ -11,6 +11,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { ProjectPick } from '@/components/launcher/TileGrid';
 import { BrandMark, Wordmark } from './BrandMark';
 import { ProjectSwitcher } from './ProjectSwitcher';
+import { CompanyName, CompanySwitcher } from './CompanySwitcher';
 import { TreeIcon } from './nav-icons';
 import type { MenuPlace } from './menu';
 import s from './TopBar.module.css';
@@ -71,9 +72,7 @@ export function TopBar({ user, look, mobile, menu, place, pendingCount, tools, o
               {!inBar && <Wordmark size={17} />}
             </Link>
             {look !== 'BAR' && (
-              <span className={s.org} title={user.organizationName} translate="no">
-                {user.organizationName}
-              </span>
+              <CompanyName user={user} className={s.org} />
             )}
             {inBar ? <ModuleNav menu={menu} place={place} inBar /> : <TopLinks user={user} pendingCount={pendingCount} />}
           </>
@@ -85,6 +84,8 @@ export function TopBar({ user, look, mobile, menu, place, pendingCount, tools, o
           </span>
         )}
         {inBar && pin}
+        {/* The one-bar look has no company name beside the brand: its company menu sits with the tools. */}
+        {look === 'BAR' && !mobile && <CompanySwitcher user={user} compact maxWidth={0} />}
         <span className={s.tools}>{tools}</span>
       </header>
       {place && !inBar && (

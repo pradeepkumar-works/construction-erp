@@ -5,6 +5,8 @@ import type { LucideIcon } from 'lucide-react';
 import {
   ArchiveIcon,
   ArrowDownIcon,
+  ArrowLeftRightIcon,
+  Building2Icon,
   ArrowLeftIcon,
   MergeIcon,
   ArrowRightIcon,
@@ -211,6 +213,8 @@ export const ArrowRightOutlined = lucide(ArrowRightIcon, 'arrow-right');
 export const ArrowUpOutlined = lucide(ArrowUpIcon, 'arrow-up');
 export const AuditOutlined = lucide(ClipboardCheckIcon, 'audit');
 export const BankOutlined = lucide(LandmarkIcon, 'bank');
+/** A company (group companies) */
+export const BuildOutlined = lucide(Building2Icon, 'build');
 export const BellOutlined = lucide(BellIcon, 'bell');
 export const BgColorsOutlined = lucide(PaletteIcon, 'bg-colors');
 export const BookOutlined = lucide(BookIcon, 'book');
@@ -318,6 +322,7 @@ export const ScheduleOutlined = lucide(CalendarClockIcon, 'schedule');
 export const SearchOutlined = lucide(SearchIcon, 'search');
 export const SendOutlined = lucide(SendIcon, 'send');
 export const SettingOutlined = lucide(SettingsIcon, 'setting');
+export const SwapOutlined = lucide(ArrowLeftRightIcon, 'swap');
 export const ShopOutlined = lucide(StoreIcon, 'shop');
 export const ShoppingCartOutlined = lucide(ShoppingCartIcon, 'shopping-cart');
 export const SlidersOutlined = lucide(SlidersHorizontalIcon, 'sliders');

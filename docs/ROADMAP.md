@@ -454,7 +454,7 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     and `TOUR` leave counted present and paid, overtime from check-out waits for the site manager or HR (`/staff/overtime`)
     and payroll pays approved overtime only. `expo-location` needs the next store build. ARCHITECTURE "Attendance extras".
 
-Later, when a customer asks: group companies under one login, head-office overheads to projects, leads and tendering,
+Later, when a customer asks: ~~group companies under one login~~ (item 133), head-office overheads to projects, leads and tendering,
 TDS payable summary, a terms and conditions library, scrap sale bills, client dues reminders, multi-currency.
 
 ## v6 – HR, payroll, books, RMC, supplier portal and biometrics
@@ -744,6 +744,20 @@ test report.
      Excel (Monthly MIS, project profit and loss, work in progress, receivables and payables ageing, procurement spend,
      labour and attendance, stock position, approvals waiting). The phone, a scheduled MIS email and the My work card for
      work not billed wait. ARCHITECTURE "Management dashboard and reports".
+
+## Group companies (item 133)
+
+Asked by Pradeep on 28 Oct 2026: a parent company with child companies of different kinds (construction, consultancy,
+quality checking). Research and design in the Claude Doc "Group and child companies: research and design".
+
+133. **Group companies.** ~~Phase 1 (L):~~ Done: a group above companies, one sign-in across them with a company switcher
+     (web header, account menu on a phone, Profile in the app), company kinds that set the modules a new company starts
+     with, legal details per company, and Admin › Group companies for the group's admins to add companies and give people
+     places. ARCHITECTURE "Group companies".
+     Phase 2 (L): work between sister companies, such as a lab's tests or a consultancy's supervision on a sister's
+     project, as an inter-company order and bill that post to both companies' books.
+     Phase 3 (M): group reports across companies (receivables, payables, cash, headcount) for the group's admins and
+     management, and masters shared across the group (vendors, items, rates) where the companies want them.
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

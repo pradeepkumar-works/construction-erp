@@ -595,6 +595,47 @@ enum PushPlatform {
 
 // ---------- Tenancy, users, roles ----------
 
+/// A parent company and the companies under it (group companies, phase 1). Not a tenant: each company keeps its own data,
+/// roles, books and menu, and a person moves between them with the company switcher.
+model CompanyGroup {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companies Organization[]
+  admins    GroupAdmin[]
+}
+
+/// Someone who runs the group: makes its companies and gives people a place in them
+model GroupAdmin {
+  id        String       @id @default(uuid())
+  groupId   String
+  group     CompanyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  loginId   String
+  login     Login        @relation(fields: [loginId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@unique([groupId, loginId])
+}
+
+/// One person's sign-in (group companies, phase 1): an email and password across every company they have a place in.
+/// Their place in each company (role, projects, alerts) is a `User` row of that company. No organisation of its own.
+model Login {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  passwordHash       String
+  /// Sessions signed in before this are refused (finding 5 of the October review): set when the password changes or is reset
+  tokensValidAfter   DateTime?
+  /// The company signed in to last: sign-in goes back to it
+  lastOrganizationId String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  users       User[]
+  groupAdmins GroupAdmin[]
+}
+
 model Organization {
   id        String   @id @default(uuid())
   name      String
@@ -628,22 +669,22 @@ model Organization {
   billingRemindedFor String?
 
   /// Ask Nirmaan (AI item 67): switched on by an admin; off until then
-  aiEnabled           Boolean     @default(false)
+  aiEnabled           Boolean       @default(false)
   /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
   aiMonthlyCapInr     Int?
   /// Roles besides admins that may use Ask Nirmaan (AI item 77); empty = all staff
-  aiRoles             String[]    @default([])
+  aiRoles             String[]      @default([])
   /// Payment requests (v5 item 90): accounts may pay a bill only against an approved payment request. Off for companies
   /// made before item 90, on for new sign-ups.
-  paymentsNeedRequest Boolean     @default(false)
+  paymentsNeedRequest Boolean       @default(false)
   /// Progress from the DPR only (item 127): progress is recorded as the DPR's work lines, not on its own. Off for
   /// companies made before item 127, on for new sign-ups.
-  progressFromDpr     Boolean     @default(false)
+  progressFromDpr     Boolean       @default(false)
   /// Module switches (v6 item 117): the switchable modules (SWITCHABLE_MODULES in @erp/shared) an admin turned off.
   /// Their data stays; turning one on again brings it back.
-  modulesOff          String[]    @default([])
+  modulesOff          String[]      @default([])
   /// Launcher phase 3: Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
-  discoverLocked      Boolean     @default(true)
+  discoverLocked      Boolean       @default(true)
   /// The plan's module set, set from the Nirmaan console; null = every module
   moduleTier          ModuleTier?
   /// Menu and names (NavSettingsDto in @erp/shared): the menu down the side or across the top, the top bar's look,
@@ -654,6 +695,16 @@ model Organization {
   navNames            Json         @default("{}")
   /// People may choose their own look (User.navLook)
   navPersonalLook     Boolean      @default(false)
+  /// Group companies (phase 1): the group the company belongs to, if any, and what kind of company it is. The kind sets
+  /// the modules a new company starts with (COMPANY_KIND_MODULES_OFF in @erp/shared); it changes nothing afterwards.
+  groupId             String?
+  group               CompanyGroup? @relation(fields: [groupId], references: [id])
+  kind                CompanyKind   @default(CONSTRUCTION)
+  /// Legal details, kept for the group's list of companies and, later, consolidation
+  legalName           String?
+  pan                 String?
+  cin                 String?
+  gstin               String?
 
   users                User[]
   roles                Role[]
@@ -909,30 +960,31 @@ model ApprovalEscalation {
 }
 
 model User {
-  id               String       @id @default(uuid())
-  organizationId   String
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  roleId           String
-  role             Role         @relation(fields: [roleId], references: [id])
-  email            String
-  passwordHash     String
-  /// Sessions signed in before this are refused (finding 5 of the October review): set when the password changes or is reset
-  tokensValidAfter DateTime?
-  fullName         String
-  phone            String?
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  roleId         String
+  role           Role         @relation(fields: [roleId], references: [id])
+  /// The person's sign-in (group companies, phase 1): the same login has a user in each company of a group they work in.
+  /// The password and the sessions live on the login; `email` is always the login's.
+  loginId        String
+  login          Login        @relation(fields: [loginId], references: [id])
+  email          String
+  fullName       String
+  phone          String?
   /// The user's own opt-in for alerts on WhatsApp and by SMS (WhatsApp first, SMS as the fallback).
-  whatsappAlerts   Boolean      @default(false)
-  smsAlerts        Boolean      @default(false)
+  whatsappAlerts Boolean      @default(false)
+  smsAlerts      Boolean      @default(false)
   /// Email for what waits on the user (hand-offs and send-backs, e2e review fix 2); on unless they switch it off
-  emailAlerts      Boolean      @default(true)
+  emailAlerts    Boolean      @default(true)
   /// The user's own opt-in for a three-line morning brief from Ask Nirmaan (AI item 74).
-  morningBrief     Boolean      @default(false)
+  morningBrief   Boolean      @default(false)
   /// WhatsApp entries (AI item 120): the user's number, normalised (919876543210), while they have them switched on.
   /// Messages from it are read as this user; one number belongs to one user across all companies.
-  captureFrom      String?      @unique
-  isActive         Boolean      @default(true)
+  captureFrom    String?      @unique
+  isActive       Boolean      @default(true)
   /// Set when invited; cleared once the user chooses a password.
-  invitedAt        DateTime?
+  invitedAt      DateTime?
   /// A supplier-portal login (role SUPPLIER, v6 item 105): the vendor it acts for. Null for everyone else.
   vendorId         String?
   /// The top bar's look this person chose (Profile › Appearance), used when their company lets people choose
@@ -1101,6 +1153,7 @@ model User {
   drawingTakeoffs       DrawingTakeoff[]           @relation("DrawingTakeoffCreator")
 
   @@unique([organizationId, email])
+  @@index([loginId])
   @@index([organizationId])
 }
 
@@ -7541,6 +7594,15 @@ model Comment {
 
   @@index([organizationId, entityType, entityId])
   @@index([parentId])
+}
+
+/// What a company does (group companies, phase 1): COMPANY_KINDS in @erp/shared
+enum CompanyKind {
+  CONSTRUCTION
+  CONSULTANCY
+  QUALITY_LAB
+  PLANT
+  HOLDING
 }
 
 /// The plans' module sets (v6 item 117): MODULE_TIER_MODULES in @erp/shared

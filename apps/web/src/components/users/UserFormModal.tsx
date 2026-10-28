@@ -5,6 +5,7 @@ import { App, Button, Form, Input, Radio, Select, Switch } from 'antd';
 import { MIN_PASSWORD_LENGTH, ROLE_LABELS, isCompanyWide, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useRoles } from '@/lib/queries';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -33,6 +34,7 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
   const how = Form.useWatch('how', form);
   const roleKey = Form.useWatch('roleKey', form);
   // A company-wide role sees every project, so there is nothing to pick; the rest see only the projects they are on.
+  const inGroup = !!useAuth().user?.group;
   const perProject = !!roleKey && roleKey !== 'SUPPLIER' && !isCompanyWide(roleKey);
 
   useEffect(() => {
@@ -68,7 +70,9 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
     onSuccess: (data, v) => {
       const created = data as CreateUserResultDto;
       const teams = !isEdit && perProject && v.projectIds?.length ? `, on ${v.projectIds.length} project${v.projectIds.length === 1 ? '' : 's'}` : '';
-      message.success(isEdit ? 'User updated' : created.invite ? `User invited${teams}` : `User created${teams}`);
+      // Someone who already signs in to a sister company keeps that sign-in: no invite, their own password.
+      const sister = !isEdit && created.alsoIn?.length ? `; they sign in as they do for ${created.alsoIn.join(', ')}` : '';
+      message.success(isEdit ? 'User updated' : sister ? `User added${teams}${sister}` : created.invite ? `User invited${teams}` : `User created${teams}`);
       if (!isEdit && created.invite) onInvited?.(created);
       qc.invalidateQueries({ queryKey: ['users'] });
     },
@@ -110,7 +114,7 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
           </Form.Item>
         )}
         {!isEdit && (
-          <Form.Item name="how" label="How will they sign in?">
+          <Form.Item name="how" label="How will they sign in?" extra={inGroup ? 'Someone who already signs in to a company of your group keeps that sign-in and password.' : undefined}>
             <Radio.Group
               options={[
                 { value: 'invite', label: 'Send an invite link (they choose a password)' },

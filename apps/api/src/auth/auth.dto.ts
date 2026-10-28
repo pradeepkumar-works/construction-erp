@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { MIN_PASSWORD_LENGTH } from '@erp/shared';
 
 export class LoginDto {
@@ -40,4 +40,8 @@ export class ForgotPasswordDto {
 export class SetPasswordDto {
   @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(200) token: string;
   @ApiProperty() @IsString() @MinLength(MIN_PASSWORD_LENGTH) @MaxLength(100) password: string;
+}
+
+export class SwitchCompanyDto {
+  @ApiProperty() @IsUUID() organizationId: string;
 }

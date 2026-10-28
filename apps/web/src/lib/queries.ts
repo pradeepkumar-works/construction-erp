@@ -2,6 +2,8 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  GroupCompanyInput,
+  GroupStateDto,
   ManagementReportDto,
   ManagementReportKey,
   PortfolioDto,
@@ -3747,6 +3749,24 @@ export function useSaveNavSettings() {
 
 /** A person's own look for the top bar (null follows the company's); the caller refreshes the signed-in user. */
 export const useSaveOwnLook = () => useMutation({ mutationFn: async (look: NavLook | null) => (await api.put<{ look: NavLook | null }>('/nav-settings/own-look', { look })).data });
+
+/* Group companies (phase 1): the group's companies and its people, for the group's admins. Every change answers with the
+   whole group; the caller refreshes the signed-in user when their own companies change (the switcher reads them). */
+const GROUP_KEY = ['group'] as const;
+export const useGroup = (enabled: boolean) => useQuery({ queryKey: GROUP_KEY, queryFn: async () => (await api.get<GroupStateDto>('/group')).data, enabled });
+
+function useGroupChange<V>(send: (v: V) => Promise<GroupStateDto>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: send, onSuccess: (data) => qc.setQueryData(GROUP_KEY, data), meta: FAIL_NOTICE });
+}
+export const useMakeGroup = () => useGroupChange(async (name: string) => (await api.post<GroupStateDto>('/group', { name })).data);
+export const useAddGroupCompany = () => useGroupChange(async (v: GroupCompanyInput) => (await api.post<GroupStateDto>('/group/companies', v)).data);
+export const useUpdateGroupCompany = () =>
+  useGroupChange(async ({ id, ...v }: Partial<GroupCompanyInput> & { id: string }) => (await api.patch<GroupStateDto>(`/group/companies/${id}`, v)).data);
+export const useGivePlace = () =>
+  useGroupChange(async (v: { loginId: string; organizationId: string; roleKey: RoleKey }) => (await api.post<GroupStateDto>('/group/places', v)).data);
+export const useSetGroupAdmin = () =>
+  useGroupChange(async ({ loginId, admin }: { loginId: string; admin: boolean }) => (await api.put<GroupStateDto>(`/group/admins/${loginId}`, { admin })).data);
 
 /* Launcher Home (phase 2): pins and Recent from the server, badges by tile. Pin, move and unpin change the screen at once
    and roll back if the server refuses. */

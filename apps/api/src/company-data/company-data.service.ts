@@ -38,8 +38,11 @@ const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 const q = (s: string) => `"${s.replace(/"/g, '""')}"`;
 const scalar = (f: Field) => f.kind === 'scalar' || f.kind === 'enum';
 
-/** Tables that belong to no company (`AuthAttempt`): never exported, never purged with one. */
-const PLATFORM_TABLES = new Set(['AuthAttempt']);
+/**
+ * Tables that belong to no company (`AuthAttempt`), or sit above the companies of a group (the group, its admins and
+ * people's sign-ins): never exported. A sign-in or group left with no company is removed when the last one is erased.
+ */
+const PLATFORM_TABLES = new Set(['AuthAttempt', 'CompanyGroup', 'GroupAdmin', 'Login']);
 
 function buildScopes(): TableScope[] {
   const models = Prisma.dmmf.datamodel.models;
@@ -304,6 +307,9 @@ export class CompanyDataService {
           left = blocked;
         }
         await tx.$executeRawUnsafe(`DELETE FROM "Organization" WHERE "id" = $1`, orgId);
+        // Sign-ins left with no company (group companies), and a group left with none, go with it.
+        await tx.$executeRawUnsafe(`DELETE FROM "Login" l WHERE NOT EXISTS (SELECT 1 FROM "User" u WHERE u."loginId" = l."id")`);
+        await tx.$executeRawUnsafe(`DELETE FROM "CompanyGroup" g WHERE NOT EXISTS (SELECT 1 FROM "Organization" o WHERE o."groupId" = g."id")`);
       },
       { timeout: 120_000, maxWait: 10_000 },
     );

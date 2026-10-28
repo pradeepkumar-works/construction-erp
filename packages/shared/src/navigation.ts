@@ -10,6 +10,7 @@ import { canSeeLeakage } from './leakage';
 import { canSeeCashForecast } from './cash-forecast';
 import { canSeeAttendanceCheck } from './attendance-check';
 import { canSeeManagement } from './management';
+import { canSeeGroupCompanies, type AuthGroupDto } from './group';
 import { canManageModules, pathIsOff } from './module-switches';
 
 /**
@@ -88,6 +89,8 @@ export interface NavUser {
   billing?: unknown;
   /** The company's modules turned off (v6 item 117): their pages leave the menu, Home and Search. */
   modulesOff?: readonly string[];
+  /** Group companies (phase 1): the company's group and whether the person runs it */
+  group?: AuthGroupDto;
 }
 
 const onSite = (u: NavUser) => P.canReportSafety(u.roleKey);
@@ -161,6 +164,7 @@ export const NAV_ACCESS = {
   modules: (u: NavUser) => canManageModules(u.roleKey),
   rmc: (u: NavUser) => P.canViewRmc(u.roleKey),
   rmcBills: (u: NavUser) => P.canSellRmc(u.roleKey) || P.canBillRmc(u.roleKey),
+  groupCompanies: (u: NavUser) => canSeeGroupCompanies(u),
 } satisfies Record<string, (u: NavUser) => boolean>;
 export type NavAccessKey = keyof typeof NAV_ACCESS;
 
@@ -348,6 +352,7 @@ export const NAV_TREE: NavNode[] = [
 
   // ── Admin ─────────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'admin.users', parent: 'admin', label: 'Users', icon: 'user-cog', route: '/users', access: 'users', status: 'live', description: 'Invite people and set their role.', keywords: 'invite roles access' },
+  { id: 'admin.group', parent: 'admin', label: 'Group companies', icon: 'network', route: '/group', access: 'groupCompanies', status: 'live', description: "The group's companies, their kind and legal details, and who works in which.", keywords: 'parent subsidiary sister company switch holding consultancy lab' },
   { id: 'admin.rules', parent: 'admin', label: 'Approval rules', icon: 'git-branch', route: '/approval-rules', access: 'users', status: 'live', description: 'Who approves what, levels, limits and escalation.', keywords: 'matrix limits', concord: ['p7-workflow'] },
   { id: 'admin.modules', parent: 'admin', label: 'Modules', icon: 'toggle-right', route: '/company-modules', access: 'modules', status: 'live', description: 'Turn off the modules the company does not use; their data is kept.', keywords: 'switch on off turn features plan hide' },
   { id: 'admin.menu', parent: 'admin', label: 'Menu and names', icon: 'panels-top-left', route: '/menu-and-names', access: 'modules', status: 'live', newUntil: '2027-03-31', description: 'Menu in the top bar or a sidebar, its look, and what each module is called.', keywords: 'navigation menu top bar sidebar rename module names look layout departments' },

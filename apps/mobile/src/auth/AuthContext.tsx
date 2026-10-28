@@ -52,6 +52,8 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  /** Moves to the person's place in another company of the group. Each company keeps its own outbox and saved screens. */
+  switchCompany: (organizationId: string) => Promise<void>;
   /** Run before the session is cleared (e.g. to unregister the push token). Returns an unsubscribe. */
   addSignOutListener: (fn: SignOutListener) => () => void;
 }
@@ -130,9 +132,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await storage.set(USER_KEY, JSON.stringify(fresh));
   }, [token]);
 
+  const switchCompany = useCallback(
+    async (organizationId: string) => {
+      if (!token) return;
+      const res = await request<LoginResponse>('/auth/switch', { method: 'POST', body: { organizationId }, token });
+      setToken(res.accessToken);
+      setUser(res.user);
+      await Promise.all([storage.set(TOKEN_KEY, res.accessToken), storage.set(USER_KEY, JSON.stringify(res.user))]);
+    },
+    [token],
+  );
+
   const value = useMemo<AuthState>(
-    () => ({ user, token, ready, signIn, signOut, refreshUser, addSignOutListener }),
-    [user, token, ready, signIn, signOut, refreshUser, addSignOutListener],
+    () => ({ user, token, ready, signIn, signOut, refreshUser, switchCompany, addSignOutListener }),
+    [user, token, ready, signIn, signOut, refreshUser, switchCompany, addSignOutListener],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

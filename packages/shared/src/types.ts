@@ -1,5 +1,6 @@
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
+import type { AuthGroupDto, CompanyChoiceDto } from './group';
 import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
 import type { OmBillDto } from './om';
 import type { EmployeePrivateDto, EmploymentType } from './hr';
@@ -16,6 +17,7 @@ import type { PoLineRateCheckDto } from './leakage';
 import type { SupplierDispatchStatus, SupplierNoticeEntity } from './supplier';
 import type { SwitchableModule } from './module-switches';
 import type {
+  CompanyKind,
   FuelNormUnit,
   LdPeriod,
   BillStage,
@@ -82,6 +84,12 @@ export interface AuthUser {
   navigation?: NavSettingsDto;
   /** The look this person chose for themselves (used when the company lets people choose) */
   ownLook?: NavLook;
+  /** Group companies (phase 1): the companies the person can switch to, when there are two or more */
+  companies?: CompanyChoiceDto[];
+  /** The group the company belongs to, if any */
+  group?: AuthGroupDto;
+  /** The kind of company (group companies, phase 1) */
+  companyKind?: CompanyKind;
 }
 
 /** Where a company stands with its subscription. READ_ONLY: trial over and nothing paid, so it can read but not write. */
@@ -127,6 +135,8 @@ export interface PasswordLinkDto {
 /** POST /users: the new user, plus the invite link when no password was given. */
 export interface CreateUserResultDto extends UserSummary {
   invite: PasswordLinkDto | null;
+  /** Group companies: the person already signs in to these companies of the group, so no invite was needed */
+  alsoIn?: string[];
 }
 
 /** What the sign-in screens may offer (public). */

@@ -19,6 +19,17 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2027-02-group-companies',
+    date: '2027-02-22',
+    title: 'A parent company and its child companies',
+    points: [
+      'Admins can make a group in Admin › Group companies and add its companies: a construction company, a consultancy, a quality lab, a plant. Each keeps its own projects, people, books and menu.',
+      "A company's kind sets the modules it starts with; a quality lab, for one, starts without tenders, RMC or site cash. Its legal name, PAN, CIN and GSTIN sit with it.",
+      'People sign in once. Someone who works in more than one company picks it from the header (from the account menu on a phone, and Profile in the app), and the next sign-in opens where they were last.',
+      "The group's admins give a person a place in another company on the sign-in they already have, with the role they hold there.",
+    ],
+  },
+  {
     id: '2027-02-requests-to-order',
     date: '2027-02-18',
     title: 'Purchase has its own list of requests to order',

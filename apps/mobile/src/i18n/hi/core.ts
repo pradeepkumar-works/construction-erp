@@ -480,4 +480,20 @@ export const CORE: Record<string, string> = {
   'Building block': 'भवन ब्लॉक',
   'Road stretch': 'सड़क का हिस्सा',
   Crossing: 'क्रॉसिंग',
+  // Group companies (phase 1)
+  Company: 'कंपनी',
+  Construction: 'निर्माण',
+  Consultancy: 'परामर्श',
+  'Quality lab': 'गुणवत्ता प्रयोगशाला',
+  'Plant or RMC': 'प्लांट या RMC',
+  Holding: 'होल्डिंग',
+  'You are now working in {company}': 'अब आप {company} में काम कर रहे हैं',
+  'Could not switch company': 'कंपनी नहीं बदल सकी',
+  'Entries waiting to send': 'भेजने के लिए रुकी प्रविष्टियाँ',
+  '{count} entries saved in {here} are still waiting to send. They stay on this phone and send when you come back to {here}.':
+    '{here} में सहेजी गई {count} प्रविष्टियाँ अभी भेजी जानी हैं। वे इसी फ़ोन पर रहेंगी और {here} में लौटने पर भेजी जाएँगी।',
+  'Stay here': 'यहीं रहें',
+  'Switch anyway': 'फिर भी बदलें',
+  'One sign-in for every company of your group. Each company has its own projects, entries and outbox.':
+    'आपके समूह की हर कंपनी के लिए एक ही साइन-इन। हर कंपनी के अपने प्रोजेक्ट, प्रविष्टियाँ और आउटबॉक्स हैं।',
 };
