@@ -740,7 +740,7 @@ export class SupplierService {
     this.access.assertCanManageSupplierLogins(user);
     const v = await this.vendorOf(user, vendorId);
     if (!v.isActive) throw new BadRequestException(`${v.name} is inactive in the vendor master`);
-    const taken = await withoutTenant(() => this.prisma.user.findFirst({ where: { email: dto.email }, select: { id: true } }));
+    const taken = await withoutTenant(() => this.prisma.login.findUnique({ where: { email: dto.email }, select: { id: true } }));
     if (taken) throw new ConflictException('A user with this email already exists');
     const role = await this.prisma.role.upsert({
       where: { organizationId_key: { organizationId: user.organizationId, key: 'SUPPLIER' } },
@@ -755,7 +755,8 @@ export class SupplierService {
         phone: dto.phone ?? null,
         roleId: role.id,
         vendorId: v.id,
-        passwordHash: await bcrypt.hash(randomBytes(24).toString('base64url'), 10),
+        // Its own sign-in, with a password nobody knows until the invite link is used.
+        loginId: (await this.prisma.login.create({ data: { email: dto.email, passwordHash: await bcrypt.hash(randomBytes(24).toString('base64url'), 10) } })).id,
         invitedAt: new Date(),
       },
       select: loginSelect,

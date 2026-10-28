@@ -262,6 +262,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/module-switches-test.js
+      - name: Group companies land a sign-in in the right company, share it only within a group, and keep an admin
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/group-companies-test.js
       - name: Launcher pins sort, Discover shows each role New, never opened and modules to ask for, and who may ask
         if: matrix.suite == 'flows'
         working-directory: apps/api

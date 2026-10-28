@@ -844,6 +844,13 @@ kbd {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A crumb's link is a 24 px target (WCAG 2.5.8) even where the header is narrow and its neighbours sit close. */
+.ant-breadcrumb.header-crumbs ol a {
+  display: inline-block;
+  height: 24px;
+  line-height: 24px;
+  vertical-align: top;
+}
 
 /*
  * Links look like links (UX item 81, WCAG 1.4.1): the reset at the top makes every <a> inherit its colour, so links in

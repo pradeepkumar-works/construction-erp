@@ -223,6 +223,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     description: 'Users, approval rules, modules, the menu and the subscription.',
     subs: [
       sub('users', 'Users', 'admin.users'),
+      sub('group', 'Group companies', 'admin.group'),
       sub('rules', 'Approval rules', 'admin.rules'),
       sub('modules', 'Modules and menu', 'admin.modules', 'admin.menu', 'admin.home'),
       sub('data', 'Data and privacy', 'admin.data'),

@@ -150,3 +150,6 @@ the project thread with the phone model and Android version.
 12. Sign out with an entry waiting, then sign in as `engineer2@demo.com`: the first user's entry is not shown
     and not sent. Sign back in as `engineer@demo.com`: it sends.
 13. Leave an entry waiting overnight with the phone offline. Next morning it still sends, with its photos.
+14. Group companies: as `qaqc@demo.com` (works in Demo Infra Projects and Demo Quality Labs), save an entry offline, then
+    open Profile > Company and pick the lab. The card says one entry is waiting; switch anyway. The lab's Home shows only
+    the lab's project and the entry is not sent. Switch back: it sends. Leave the phone in Demo Infra Projects.

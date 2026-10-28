@@ -40,14 +40,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         email: true,
         fullName: true,
         vendorId: true,
-        tokensValidAfter: true,
+        login: { select: { tokensValidAfter: true } },
         role: { select: { key: true } },
         organization: { select: { code: true, trialEndsAt: true, paidUntil: true, modulesOff: true, moduleTier: true } },
       },
     });
     if (!user) throw new UnauthorizedException();
     // Signed in before the password last changed: that session has ended (finding 5 of the October review).
-    if (user.tokensValidAfter && payload.iat !== undefined && payload.iat < Math.floor(user.tokensValidAfter.getTime() / 1000))
+    const validAfter = user.login.tokensValidAfter;
+    if (validAfter && payload.iat !== undefined && payload.iat < Math.floor(validAfter.getTime() / 1000))
       throw new UnauthorizedException('Your password was changed. Sign in again.');
     // A supplier's login acts only for its vendor; one without a vendor cannot act at all.
     if (user.role.key === 'SUPPLIER' && !user.vendorId) throw new UnauthorizedException();

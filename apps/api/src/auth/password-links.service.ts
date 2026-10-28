@@ -94,9 +94,11 @@ export class PasswordLinksService {
     const passwordHash = await bcrypt.hash(password, 10);
     const done = await this.prisma.passwordToken.updateMany({ where: { id: r.id, usedAt: null }, data: { usedAt: new Date() } });
     if (done.count === 0) throw new BadRequestException('This link has already been used.');
+    const { loginId } = await this.prisma.user.findUniqueOrThrow({ where: { id: r.userId }, select: { loginId: true } });
     await this.prisma.$transaction([
-      // Sessions signed in with the old password end (finding 5 of the October review).
-      this.prisma.user.update({ where: { id: r.userId }, data: { passwordHash, invitedAt: null, tokensValidAfter: new Date() } }),
+      // Sessions signed in with the old password end (finding 5 of the October review), in every company of the sign-in.
+      this.prisma.login.update({ where: { id: loginId }, data: { passwordHash, tokensValidAfter: new Date() } }),
+      this.prisma.user.updateMany({ where: { loginId, invitedAt: { not: null } }, data: { invitedAt: null } }),
       this.prisma.passwordToken.updateMany({ where: { userId: r.userId, usedAt: null }, data: { usedAt: new Date() } }),
     ]);
     return r.userId;

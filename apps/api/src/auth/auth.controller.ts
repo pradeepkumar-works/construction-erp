@@ -3,7 +3,7 @@ import type { Request } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { clientIp } from './login-guard.service';
-import { ChangePasswordDto, ForgotPasswordDto, LoginDto, SetPasswordDto, SignupDto } from './auth.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, SetPasswordDto, SignupDto, SwitchCompanyDto } from './auth.dto';
 import { GuestAllowed, Public } from '../common/decorators';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { AllowWhenUnpaid } from '../common/billing';
@@ -70,5 +70,13 @@ export class AuthController {
   @Post('change-password')
   changePassword(@CurrentUser() user: RequestUser, @Body() dto: ChangePasswordDto) {
     return this.auth.changePassword(user, dto.currentPassword, dto.newPassword);
+  }
+
+  @ApiOperation({ summary: 'Switch to another company of the group (group companies)', description: 'A new session for your place in that company; the company is remembered for the next sign-in.' })
+  @ApiBearerAuth()
+  @HttpCode(200)
+  @Post('switch')
+  switchCompany(@CurrentUser() user: RequestUser, @Body() dto: SwitchCompanyDto) {
+    return this.auth.switchCompany(user, dto.organizationId);
   }
 }

@@ -26,6 +26,7 @@ import { HelpButton, dialogOpen, isTyping, useHelpMenu } from './HelpMenu';
 import { MessageBar } from './MessageBar';
 import { NewMenu } from './NewMenu';
 import { ProjectSwitcher } from './ProjectSwitcher';
+import { CompanySwitcher, useCompanyMenu } from './CompanySwitcher';
 import { navFor, navTrail } from './nav';
 import { TreeIcon } from './nav-icons';
 import { PageTrailProvider } from './page-trail';
@@ -203,9 +204,12 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     },
   });
 
+  const companyMenu = useCompanyMenu(user);
   const userMenu: MenuProps['items'] = [
     { key: 'info', icon: <UserOutlined />, label: `${user.email}`, disabled: true },
     { type: 'divider' },
+    // A phone's header has no room for the company switcher: the companies are listed here (a submenu would open off screen).
+    ...(isMobile && companyMenu ? [{ key: 'company', type: 'group' as const, label: 'Company', children: companyMenu.items }, { type: 'divider' as const }] : []),
     // A phone's header has room for search, New, the bell and the account only (UX item 84): Ask and Help live here.
     ...(isMobile
       ? [
@@ -425,12 +429,14 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
               </>
             ) : (
               <>
+                {/* Below the widest screens the company is an icon (the sidebar names it), so the trail keeps its room. */}
+                <CompanySwitcher user={user} compact={!spacious} maxWidth={220} />
                 {!guest && (
                   <span data-tour="project" style={{ flexShrink: 0 }}>
-                    <ProjectSwitcher width={roomy ? 240 : 200} />
+                    <ProjectSwitcher width={roomy ? (companyMenu && !spacious ? 200 : 240) : 200} />
                   </span>
                 )}
-                {/* The company is in the sidebar; the header says where you are. */}
+                {/* The header says where you are. */}
                 {trail && (
                   <Breadcrumb
                     className="header-crumbs"

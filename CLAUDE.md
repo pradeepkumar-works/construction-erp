@@ -291,6 +291,12 @@ and the pre-delivery checklist.
   and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
   filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`
   (tested in `src/scripts/supplier-test.ts`, CI runs it); web pages under `app/(app)/supplier`, the company's side at `/supplier-inbox`.
+- Group companies (item 133, `apps/api/src/group`, ARCHITECTURE "Group companies"): each child company is a full
+  `Organization` in a `CompanyGroup`; a person has one `User` per company on one `Login` (email, password), and a session
+  is in one company (`POST /auth/switch`). Who signs in where, whose email is a sister's and who may get a place are pure in
+  `group-rules.ts`; keep `src/scripts/group-companies-test.ts` passing. A new company kind is a `CompanyKind` (schema +
+  shared + label + Hindi) and its `COMPANY_KIND_INFO`. Reading across companies is `withoutTenant(async () => await …)`:
+  a Prisma query returned unawaited from the callback runs later under the request's company, where RLS hides the rest.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.
@@ -299,7 +305,7 @@ and the pre-delivery checklist.
   Overview checklist is `setupSteps` over `ProjectSetupService.facts`, so a new step is a key in `SETUP_STEPS`, a fact and
   its words in `ProjectSetup.tsx`. Keep `src/scripts/project-setup-test.ts` passing.
 - Security (ARCHITECTURE "Signing in and headers"): sign-in and reset requests go through `LoginGuardService` (rules in
-  `auth/login-guard-rules.ts`, keep `src/scripts/login-guard-test.ts` passing); a password change sets `User.tokensValidAfter`.
+  `auth/login-guard-rules.ts`, keep `src/scripts/login-guard-test.ts` passing); a password change sets `Login.tokensValidAfter`.
   The web's CSP is in `next.config.ts`: a page that loads from a new outside service adds it there.
 - Input checks (ARCHITECTURE "Measurement book", Other input checks): a quantity field is `@IsQuantity()` (`src/common/quantity.ts`),
   a day's record calls `assertNotAfterToday`, and a web date field is `DatePicker` from `components/common/DatePicker` (it reads

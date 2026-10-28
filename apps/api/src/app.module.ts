@@ -77,6 +77,7 @@ import { MaterialApprovalsModule } from './material-approvals/material-approvals
 import { CommentsModule } from './comments/comments.module';
 import { ModuleSwitchesModule } from './module-switches/module-switches.module';
 import { NavSettingsModule } from './nav-settings/nav-settings.module';
+import { GroupModule } from './group/group.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
@@ -146,6 +147,7 @@ import { VitalsController } from './vitals.controller';
     CommentsModule,
     ModuleSwitchesModule,
     NavSettingsModule,
+    GroupModule,
     SupplierModule,
     CostModule,
     ReconciliationModule,

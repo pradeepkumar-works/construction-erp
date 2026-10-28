@@ -21,8 +21,9 @@ shapes of every API response, so web, mobile and API agree on one contract.
 
 - Every tenant-scoped table has `organizationId`. All queries filter by the caller's organisation,
   taken from the JWT, never from the request body.
-- Users belong to exactly one organisation today, but membership is a normal foreign key so it can
-  become a join table without a data migration of the business tables.
+- A `User` belongs to one organisation. A person who works in several companies of a group has one `User` per company,
+  all on one `Login` (email, password, `tokensValidAfter`): see "Group companies". The JWT names the user, so a session
+  is always in one company.
 - Roles are rows per organisation (`Role.key` is a system key such as `PROJECT_MANAGER`). Each new
   organisation is seeded with the default role set; later, tenants can rename or add roles without
   code changes. Permissions derive from the key in `packages/shared/src/permissions.ts`.
@@ -38,7 +39,8 @@ shapes of every API response, so web, mobile and API agree on one contract.
 - New organisations come from `POST /auth/signup` (off unless `ORG_SIGNUP=open`), which creates the
   organisation, the standard roles and the first admin in one transaction. Users join by invite: a
   one-time `PasswordToken` link (SHA-256 stored, invalidated when a newer link is made or one is used).
-  Emails are unique across organisations because sign-in is by email alone.
+  Emails are unique across organisations because sign-in is by email alone (`Login.email`); only the companies of one
+  group share a sign-in.
 - Not built yet, on purpose: subscriptions, plan limits, branding.
 
 ## Access model
@@ -63,7 +65,7 @@ shapes of every API response, so web, mobile and API agree on one contract.
   hop) hold it off. Both answer 429 with when to try again. A good password clears the email's failures. Reset links:
   5 an hour per email and 20 per address, past which nothing is sent and the answer is the same. Rules pure in
   `auth/login-guard-rules.ts`, tested in `src/scripts/login-guard-test.ts`.
-- **Sessions.** `User.tokensValidAfter` is set when the password changes (own change, reset link, admin) and the JWT
+- **Sessions.** `Login.tokensValidAfter` is set when the password changes (own change, reset link, admin) and the JWT
   strategy refuses a token issued before it, so a leaked session ends with the password. `POST /auth/change-password`
   returns a fresh `accessToken` for the session that made the change. Tokens still last `JWT_EXPIRES_IN` (7 days): the
   phone's outbox works offline for days, so a short token with refresh is left for when the phone stores a refresh
@@ -1614,6 +1616,52 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   the app layout shows `ModuleOff` on a page of a module that is off, the project's Safety tab goes, and the make check on
   orders is not asked. Admin > Modules (`/company-modules`) has a switch per module, grouped by sidebar section; the
   console's company drawer has the plan. **Phone:** the Submit tiles and the project's Safety button follow the same list.
+
+## Group companies (phase 1)
+
+A parent company and its child companies (a construction company, a consultancy, a quality lab, a plant) run from one
+sign-in. Each child stays a full company, an `Organization` with its own projects, people, roles, approval rules, books,
+module switches and row-level security; a `CompanyGroup` sits above them. Nothing in a company's data knows about the
+group, so a company can join or leave one without its records moving.
+
+- **Tables.** `CompanyGroup` (name), `GroupAdmin` (group, login) and `Login` (email, `passwordHash`, `tokensValidAfter`,
+  `lastOrganizationId`) are platform tables (no `organizationId`, no RLS policy, in `PLATFORM_TABLES` of company data;
+  purging a company removes logins and groups left with nobody). `Organization` has `groupId`, `kind` (`CompanyKind`:
+  construction, consultancy, quality lab, plant or RMC, holding) and its legal details (`legalName`, `pan`, `cin`,
+  `gstin`). `User.loginId` ties each of a person's users to their sign-in; the password and email live on the login.
+- **Signing in.** `POST /auth/login` finds the login by email, checks the password once and lands on the place picked by
+  `pickPlace` (`apps/api/src/group/group-rules.ts`): the company used last if it is still open, else the first place
+  made. The JWT stays `{ sub: userId, org }`. `AuthUser.companies` lists the person's companies (only with two or more),
+  `group` says whether they run it, `companyKind` the company's kind.
+- **Switching.** `POST /auth/switch { organizationId }` issues a token for the same login's active user in another
+  company of the same group (404 otherwise; a support session cannot switch) and records it as the company used last.
+  The web's switcher (`components/shell/CompanySwitcher.tsx`: in the header, in the account menu on a phone) reloads the
+  app at Home, so every list, filter and cache starts in the new company; records opened lately are forgotten. The phone's
+  Profile has a Company card; its outbox, saved screens and project choice are kept per user, so an entry saved in one
+  company waits on the phone and sends when the person comes back to that company (the card says how many are waiting).
+- **Kinds.** `COMPANY_KIND_INFO` (`packages/shared/src/group.ts`) gives each kind the switchable modules a new company of
+  that kind starts with off (a lab: no RMC, machine loans, subcontract enquiries, tenders, imprest or biometric). Its admin
+  turns them on from Admin > Modules; changing the kind later leaves the modules alone. A new company copies the plan
+  (`moduleTier`, trial and paid dates) of the company it was made from.
+- **Group admins.** `GET /group` (the group's admins; a company admin with no group gets `canMakeGroup`), `POST /group`
+  (make one, the maker's login its first admin), `POST /group/companies` (add a company with the standard roles; the
+  maker is its admin on the same login), `PATCH /group/companies/:id` (name, kind, legal details), `POST /group/places`
+  (give someone of the group a place in another company with a staff role, on their sign-in, no invite; a switched-off
+  place is switched on again) and `PUT /group/admins/:loginId { admin }` (the group keeps one admin). Each is audited in
+  the caller's company (`GROUP_*`). Admin > Group companies (`/group`) has the companies and the people tabs.
+- **Users pages.** A company's Users page adding an email that already signs in to a sister company gives that person a
+  place on their sign-in (no invite, their password kept; `CreateUserResultDto.alsoIn` names the other companies); an
+  email of a company outside the group is refused as before (`emailUse`). An email or password shared with another company
+  cannot be changed from one company's Users page (`sharedLoginProblem`): the person resets their own password.
+- **Across companies in code.** The group service and sign-in read across companies with `withoutTenant`. Prisma queries
+  run when awaited, so the query must be awaited inside the callback (`withoutTenant(async () => await …)`); one returned
+  unawaited runs later under the request's company and RLS hides the other companies' rows.
+- **Tested.** `src/scripts/group-companies-test.ts` (CI runs it) checks the rules; `e2e/tests/group-companies.spec.ts`
+  makes a group, adds a lab, gives a colleague a place and switches. The demo seed's group is Demo Infra Group: Demo Infra
+  Projects and Demo Quality Labs (a quality lab with one project, `LAB-01`); `admin@demo.com` runs the group and
+  `qaqc@demo.com` works in both. `lab@demo.com` works only in the lab.
+- **Later phases** (ROADMAP "Group companies"): work one company does for another (a lab's tests on a sister's project)
+  as inter-company orders and bills, group reports across companies, and shared masters.
 
 ## Material reconciliation
 

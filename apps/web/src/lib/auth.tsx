@@ -14,6 +14,8 @@ interface AuthContextValue {
   signIn: (resp: LoginResponse) => void;
   logout: () => void;
   refresh: () => Promise<void>;
+  /** Moves this browser to the person's place in another company of the group, and opens its Home. */
+  switchCompany: (organizationId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -65,7 +67,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace('/login');
   }, [router]);
 
-  const value = useMemo(() => ({ user, loading, login, signIn, logout, refresh }), [user, loading, login, signIn, logout, refresh]);
+  const switchCompany = useCallback(async (organizationId: string) => {
+    const { data } = await api.post<LoginResponse>('/auth/switch', { organizationId });
+    // Records opened lately belong to the company left; a full load starts every list, filter and cache afresh.
+    forgetRecentRecords();
+    setToken(data.accessToken);
+    window.location.assign('/');
+  }, []);
+
+  const value = useMemo(() => ({ user, loading, login, signIn, logout, refresh, switchCompany }), [user, loading, login, signIn, logout, refresh, switchCompany]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
