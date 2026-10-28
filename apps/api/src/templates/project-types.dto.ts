@@ -113,3 +113,11 @@ export class SaveDprFormDto {
   @IsObject()
   definition: Record<string, unknown>;
 }
+
+export class ImportFileDto {
+  @ApiProperty({ description: 'The project types file, as exported (nirmaan.project-types)', type: Object }) @IsObject() file: Record<string, unknown>;
+}
+
+export class ImportPickDto extends ImportFileDto {
+  @ApiProperty({ type: [String], description: 'What to import: TYPE:<code> and KIND:<code>' }) @IsArray() @ArrayMaxSize(120) @IsString({ each: true }) @MaxLength(60, { each: true }) picks: string[];
+}

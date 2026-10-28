@@ -184,6 +184,12 @@ and the pre-delivery checklist.
   as a new `DprFormConfig` version through `DprFormsService.save` (`dprFormChangeProblems` keeps a key's kind and scope),
   and own values are read only by `readExtra`. A new built-in field is a key in `DPR_BUILT_INS`. Keep
   `src/scripts/dpr-form-test.ts` passing.
+- Updating projects and types files (item 134 part 3, ARCHITECTURE "Updating projects from their type", "Export and import
+  of project types"): what a running project gains from its type or a kind is only `projectUpdatePlan`
+  (`@erp/shared/type-updates.ts`), applied by `TypeUpdatesService` through `StructureService.addFromPlanUnchecked` and
+  `TemplatesService.applyUnchecked`; it only adds, new work beside weighted work has no weight. A types file is read only
+  by `readBundle` and imported only through `TypeBundleService` (the editors' checks, new versions, nothing deleted);
+  group sharing goes through it too. Keep `src/scripts/type-updates-test.ts` passing.
 - Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line

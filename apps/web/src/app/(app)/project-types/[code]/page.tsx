@@ -13,19 +13,21 @@ import {
   type ProjectTypeDto,
   type StartComponent,
 } from '@erp/shared';
-import { DeleteOutlined, EditOutlined } from '@/components/common/icons';
+import { DeleteOutlined, DownloadOutlined, EditOutlined, SyncOutlined } from '@/components/common/icons';
 import { AppTabs } from '@/components/common/AppTabs';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ResultMark } from '@/components/common/ResultMark';
 import { DprFormTab } from '@/components/project-types/DprFormTab';
+import { saveBundle } from '@/components/project-types/ImportTypes';
 import { TypeEditor } from '@/components/project-types/TypeEditor';
 import { TypeStateTag } from '@/components/project-types/TypeStateTag';
+import { UpdateProjects } from '@/components/project-types/UpdateProjects';
 import { TemplateEditor } from '@/components/templates/TemplateEditor';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
-import { useActivityTemplates, useComponentKinds, useProjectTypes, useRemoveProjectType } from '@/lib/queries';
+import { exportProjectType, useActivityTemplates, useComponentKinds, useProjectTypes, useRemoveProjectType } from '@/lib/queries';
 
 type Row = StartComponent & { children?: Row[] };
 
@@ -80,6 +82,8 @@ export default function Page() {
   const templates = useActivityTemplates();
   const remove = useRemoveProjectType();
   const [editing, setEditing] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const editable = !!user && canManageTemplates(user.roleKey);
   const type = types.data?.find((t) => t.code === code);
   const template = templates.data?.find((t) => t.typeCode === code);
@@ -124,6 +128,27 @@ export default function Page() {
             Delete
           </Button>
         </ConfirmDelete>
+      ) : null}
+      <Button
+        icon={<DownloadOutlined />}
+        loading={exporting}
+        onClick={async () => {
+          setExporting(true);
+          try {
+            saveBundle(await exportProjectType(type.code), type.name);
+          } catch {
+            message.error('The file could not be made. Try again in a moment.');
+          } finally {
+            setExporting(false);
+          }
+        }}
+      >
+        Export
+      </Button>
+      {type.projects > 0 ? (
+        <Button icon={<SyncOutlined />} onClick={() => setUpdating(true)}>
+          Update projects
+        </Button>
       ) : null}
       <Button type="primary" icon={<EditOutlined />} onClick={() => setEditing(true)}>
         Edit
@@ -191,6 +216,7 @@ export default function Page() {
         />
       </Card>
       {editable ? <TypeEditor type={type} kinds={kinds.data} open={editing} onClose={() => setEditing(false)} /> : null}
+      {editable && type.projects > 0 ? <UpdateProjects what="type" code={type.code} name={type.name} open={updating} onClose={() => setUpdating(false)} /> : null}
     </div>
   );
 }

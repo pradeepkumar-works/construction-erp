@@ -829,6 +829,57 @@ fields of the day by their names (`extraByLabel`), read through the same `readEx
 (`/project-types/:code?tab=dpr-form`) shows the form as the web and the phone draw it, its versions with the reports on
 each, and the editor. `dpr-form-test.ts` checks the standard forms, keys, the change rules and the readers.
 
+### Updating projects from their type (item 134 part 3)
+
+A change to a type or a kind reaches new projects at once and running ones only through Update projects. What a
+project would gain is `projectUpdatePlan` (`packages/shared/src/type-updates.ts`, pure, so the preview is the change):
+for each top-level entry of the type's breakdown with no copy in the project (its name, any case, or its name and a
+number: "Pier 3", `copiesOf`) the copies and their sub-components; for a copy it has, the sub-components it lacks;
+for every component laid out from a kind (`kindCode`; one made by hand or before item 134 names none and is left
+alone) the steps of the kind it has no activity of that name for, with their sub-activities, and the sub-activities a
+step it has split into lacks (a step it keeps as one line is not split, which would move its progress); and the type's
+loose activities whose name no activity of the project has. A kind's own Update projects (`only`) gives the steps
+alone. It only adds: nothing the project has changes, and what joins existing work comes in with no weight
+(`siblingWeights` gives it no share beside weighted siblings), so progress stays where it is until the planner weighs
+it; a new component's own activities keep the kind's weights inside it.
+
+`TypeUpdatesService` (`apps/api/src/type-updates`, admin and management through `canManageTemplates`) serves
+`GET`/`POST /project-types/:code/updates` and `/component-kinds/:code/updates`. The projects of a type are those with
+its `typeCode`, and for a standard type those made before item 134 of its kind; of a kind, those with a component
+laid out from it (up to `MAX_UPDATE_PROJECTS`). Each row carries the plan and progress now and after (`rollUp`, the
+new work at nothing done). Apply takes the projects and, per project, the items left out (`componentItemKey`,
+`activityItemKey`, `looseItemKey`, read by `withoutItems`, which drops a sub-component or sub-activity with its new
+parent), works the plan out again so a project changed since the preview gets only what it still lacks, and adds it in
+one transaction per project: components and their activities through `StructureService.addFromPlanUnchecked`, loose
+activities through `TemplatesService.applyUnchecked`, and for a type `Project.typeVersion` set to its version. Each
+project is audited `TYPE_UPDATE_APPLIED`, the run `PROJECTS_UPDATED`. Web: Update projects on the type's page and in a
+kind's editor (`components/project-types/UpdateProjects.tsx`): every project with what it gets, progress now and
+after, and its items to leave out; a project made before project types starts unticked.
+
+### Export and import of project types (item 134 part 3)
+
+A types file (`TypeBundle`, `packages/shared/src/type-bundle.ts`: `format` `nirmaan.project-types`, `version`, the
+company it came from) holds types, each with its loose activities and DPR form (`BundleType.dprForm`, null for the
+standard one), and component kinds. `GET /project-types/:code/export` writes a type and the kinds it uses that the
+company made or changed (built-in ones are the same everywhere); `GET /component-kinds/export?codes=` the edited kinds
+or those named. Reading is strict and pure: `readBundle` refuses another file, a newer version or an empty one in
+words, and `normaliseTypeDef` / `normaliseKindDef` keep only what a type or kind has, within the editors' limits.
+
+`TypeBundleService` (`apps/api/src/templates`) previews (`POST /project-types/import/preview`) and imports
+(`POST /project-types/import` with `picks`, `TYPE:CODE` / `KIND:CODE`). Each item gets an `ImportAction`
+(`importAction`): new, replacing yours (a new version; its projects keep what they have until Update projects), the
+same as yours (`sameDef`, key order aside), or refused where what it is built on differs and projects or components use
+yours. Every item goes through the editors' checks (`componentKindProblems`, `projectTypeProblems` against the kinds
+the company has and the file brings, `DprFormsService.check` with the change rules for a form), so a file can never
+save what an admin could not have typed. Import writes kinds first, then types (`ProjectTypesService.putKind` /
+`putType`, audited `IMPORTED` / `IMPORTED_OVER`), then a form that differs as a new version ('IMPORTED'); nothing is
+deleted. Web: Export on the type's page and Export kinds on Component kinds, Import on Project types
+(`components/project-types/ImportTypes.tsx`).
+
+Group sharing (item 133 phase 2) is to use the same path: the parent's `exportType` file handed to
+`TypeBundleService.import` as an admin of the child company, so the child's own checks and versions apply and nothing
+new writes types.
+
 ### Linking activities to BOQ items (v6 item 125, finding 11 of the October review)
 
 A BOQ import and a template both name the same work in their own words, so the activities and the BOQ items

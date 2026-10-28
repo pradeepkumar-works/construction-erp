@@ -773,8 +773,10 @@ with default templates for each type. Plan in the artifact "Configurable project
      photos, the work lines' picker and parts, and up to 20 fields of the company's own (for the day or each line,
      with a Hindi label); saved as versions, each report keeping the one it was made on; web, phone, record, print,
      export and Ask Nirmaan follow it. ARCHITECTURE "DPR form per project type".
-     Part 3 (M): pushing a type's or kind's changes to live projects as a reviewed preview, and export and import of
-     types and kinds between companies.
+     ~~Part 3 (M):~~ Done: Update projects on a type or a kind, a preview per project of what it would gain (only
+     additions, new work with no weight so progress stays) with items to leave out; export and import of types (with
+     their DPR forms) and kinds as a file, previewed item by item through the editors' checks. ARCHITECTURE "Updating
+     projects from their type" and "Export and import of project types".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

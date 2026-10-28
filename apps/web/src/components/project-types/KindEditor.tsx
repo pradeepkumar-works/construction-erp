@@ -18,7 +18,7 @@ import {
   type ElementSpecField,
   type WorkElementType,
 } from '@erp/shared';
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@/components/common/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined, SyncOutlined } from '@/components/common/icons';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
@@ -198,7 +198,7 @@ function StepCard({ field, index, count, specs, onMove, onRemove }: { field: For
  * Change a component kind (item 134): its specs (what the planner fills in, such as the staging height) and its steps,
  * which become a new component's activities and sub-activities. Components already laid out keep theirs.
  */
-export function KindEditor({ kind, editable, onClose }: { kind: ComponentKindDto | null; editable: boolean; onClose: () => void }) {
+export function KindEditor({ kind, editable, onClose, onUpdateProjects }: { kind: ComponentKindDto | null; editable: boolean; onClose: () => void; onUpdateProjects?: (kind: ComponentKindDto) => void }) {
   const [form] = Form.useForm<Values>();
   const { message } = App.useApp();
   const save = useSaveComponentKind();
@@ -246,7 +246,7 @@ export function KindEditor({ kind, editable, onClose }: { kind: ComponentKindDto
       onSubmit={async (v) => {
         if (!kind) return;
         await save.mutateAsync({ code: kind.code, name: v.name.trim(), elementType: v.elementType, active: v.active, specFields: fieldsOf(v.specFields), steps: stepsOf(v.steps) });
-        message.success(`${v.name.trim()} saved. New components take its steps; those laid out before keep theirs.`);
+        message.success(`${v.name.trim()} saved. New components take its steps; give them to older ones with Update projects.`);
       }}
     >
       <Form form={form} layout="vertical" disabled={!editable}>
@@ -267,6 +267,20 @@ export function KindEditor({ kind, editable, onClose }: { kind: ComponentKindDto
             </Form.Item>
           </FormGrid>
         </FormSection>
+        {editable && kind?.components && onUpdateProjects ? (
+          <Typography.Paragraph type="secondary">
+            {kind.components} component{kind.components === 1 ? ' was' : 's were'} laid out from it, and keep the steps they had.{' '}
+            <Button
+              size="small"
+              icon={<SyncOutlined />}
+              disabled={form.isFieldsTouched()}
+              title={form.isFieldsTouched() ? 'Save your changes first' : undefined}
+              onClick={() => onUpdateProjects(kind)}
+            >
+              Update projects
+            </Button>
+          </Typography.Paragraph>
+        ) : null}
         <FormSection title="Specs">
           <Typography.Paragraph type="secondary">What the planner fills in for each component, such as the staging height. A step&apos;s quantity or its lifts are read from them. Up to {MAX_SPEC_FIELDS}.</Typography.Paragraph>
           <LineTable

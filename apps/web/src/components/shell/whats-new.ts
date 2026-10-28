@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-03-update-projects-from-type',
+    date: '2027-03-02',
+    title: 'Bring running projects up to their type',
+    points: [
+      'Update projects on a project type lists each running project with the components, steps and activities it would gain from the type as it is now, and its progress before and after.',
+      'It only adds. Nothing a project has is changed or removed, and new work comes in with no weight, so progress does not move until the planner weighs it. Leave out any project or item before you update.',
+      'A component kind has its own Update projects, which gives the components laid out from it the steps it has gained.',
+      'Export a project type, with its DPR form and the kinds it uses, as a file, and import it in another company. The import shows what is new, what replaces yours and what cannot come in, before anything is saved.',
+    ],
+  },
+  {
     id: '2027-02-dpr-form-per-type',
     date: '2027-02-26',
     title: 'A DPR form for each project type',

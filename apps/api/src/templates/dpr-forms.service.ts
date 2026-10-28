@@ -106,16 +106,24 @@ export class DprFormsService {
     const type = await this.types.type(user.organizationId, code);
     if (!type) throw new NotFoundException('Project type not found');
     const def = normaliseDprForm(definition);
-    const [org, earlier] = await Promise.all([
-      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { progressFromDpr: true } }),
-      this.prisma.dprFormConfig.findMany({ where: { organizationId: user.organizationId, typeCode: code }, select: { version: true, definition: true }, orderBy: { version: 'desc' } }),
-    ]);
-    const before = [normaliseDprForm(standardDprForm(code, type.baseType)), ...earlier.map((e) => normaliseDprForm(e.definition))];
-    const problems = [...dprFormProblems(def, { progressFromDpr: org.progressFromDpr }), ...new Set(before.flatMap((b) => dprFormChangeProblems(b, def)))];
+    const { problems, last } = await this.check(user.organizationId, code, type.baseType, def);
     if (problems.length) throw new BadRequestException(problems.join('. '));
-    const row = await this.write(user.organizationId, code, def, (earlier[0]?.version ?? 0) + 1, user.id);
+    const row = await this.write(user.organizationId, code, def, last + 1, user.id);
     await this.audit.log(user, 'DPR_FORM', code, note, `${type.name}: version ${row.version}, ${def.own.length} fields of the company's own`);
     return row;
+  }
+
+  /**
+   * What is wrong with a form for a type, before it is saved: the editor's checks, and a field kept to its kind and place
+   * over the standard form and every earlier version. Also the import's check (item 134 part 3), where the type may be new.
+   */
+  async check(organizationId: string, code: string, baseType: ProjectType, def: DprFormDef): Promise<{ problems: string[]; last: number }> {
+    const [org, earlier] = await Promise.all([
+      this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { progressFromDpr: true } }),
+      this.prisma.dprFormConfig.findMany({ where: { organizationId, typeCode: code }, select: { version: true, definition: true }, orderBy: { version: 'desc' } }),
+    ]);
+    const before = [normaliseDprForm(standardDprForm(code, baseType)), ...earlier.map((e) => normaliseDprForm(e.definition))];
+    return { problems: [...dprFormProblems(def, { progressFromDpr: org.progressFromDpr }), ...new Set(before.flatMap((b) => dprFormChangeProblems(b, def)))], last: earlier[0]?.version ?? 0 };
   }
 
   private async write(organizationId: string, typeCode: string, def: DprFormDef, version: number, createdById: string | null, db: Db = this.prisma): Promise<DprFormDto> {

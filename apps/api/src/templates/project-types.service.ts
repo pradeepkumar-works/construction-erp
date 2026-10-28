@@ -250,6 +250,21 @@ export class ProjectTypesService {
   }
 
   /**
+   * A type from a file (item 134 part 3, `TypeBundleService`): a new one, or a new version of the company's own. It goes
+   * through the editor's checks against `kinds` (the company's, with the file's being imported); the caller has decided
+   * it may (`importAction`).
+   */
+  async putType(user: RequestUser, def: ProjectTypeDef, kinds: Pick<ComponentKindDef, 'code'>[]) {
+    this.assertManage(user);
+    const problems = projectTypeProblems(def, kinds);
+    if (problems.length) throw new BadRequestException(`${def.name || def.code}: ${problems.join('. ')}`);
+    const types = await this.typeRows(user.organizationId);
+    const current = types.find((t) => t.code === def.code);
+    await this.write(user, def, current?.row?.sortOrder ?? (current ? types.indexOf(current) + 1 : types.length + 1), current?.row?.version);
+    await this.audit.log(user, 'PROJECT_TYPE', def.code, current ? 'IMPORTED_OVER' : 'IMPORTED', `${def.name}: ${def.breakdown.length} components, ${def.activities.length} activities`);
+  }
+
+  /**
    * A standard type goes back to the standard one (the company's copy and activities removed). A type of the company's
    * own is deleted while no project uses it; once one does, it can only be archived.
    */
@@ -320,6 +335,21 @@ export class ProjectTypesService {
     });
     await this.audit.log(user, 'COMPONENT_KIND', code, 'UPDATED', `${def.name}: ${def.steps.length} steps`);
     return this.listKinds(user);
+  }
+
+  /** A component kind from a file (item 134 part 3): a new one, or a new version of the company's copy or its own. */
+  async putKind(user: RequestUser, def: ComponentKindDef) {
+    this.assertManage(user);
+    const problems = componentKindProblems(def);
+    if (problems.length) throw new BadRequestException(`${def.name || def.code}: ${problems.join('. ')}`);
+    const kinds = await this.kinds(user.organizationId);
+    const current = kinds.find((k) => k.code === def.code);
+    await this.prisma.componentKind.upsert({
+      where: { organizationId_code: { organizationId: user.organizationId, code: def.code } },
+      create: { organizationId: user.organizationId, ...this.kindData(def), sortOrder: current ? kinds.indexOf(current) + 1 : kinds.length + 1, updatedById: user.id },
+      update: { ...this.kindData(def), version: (current?.row?.version ?? 1) + 1, updatedById: user.id },
+    });
+    await this.audit.log(user, 'COMPONENT_KIND', def.code, current ? 'IMPORTED_OVER' : 'IMPORTED', `${def.name}: ${def.steps.length} steps`);
   }
 
   /** A built-in kind goes back to the built-in steps; a kind of the company's own is deleted while no component or type uses it. */

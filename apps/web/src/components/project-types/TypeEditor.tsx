@@ -133,7 +133,7 @@ export function TypeEditor({ type, kinds, open, onClose }: { type: ProjectTypeDt
           breakdown: breakdownOf(v.breakdown),
           active: v.active,
         });
-        message.success(`${v.name.trim()} saved. New projects take it; projects made before keep theirs.`);
+        message.success(`${v.name.trim()} saved. New projects take it; bring older ones up to it with Update projects.`);
       }}
     >
       <Form form={form} layout="vertical">

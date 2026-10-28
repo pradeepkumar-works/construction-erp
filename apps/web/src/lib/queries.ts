@@ -378,6 +378,10 @@ import type {
   CaptureSetupDto,
   InboundMessageDto,
   InboundState,
+  ApplyUpdatesResultDto,
+  ImportRowDto,
+  ProjectUpdatesDto,
+  TypeBundle,
 } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
@@ -1196,6 +1200,50 @@ export const useCreateComponentKind = () => useTypeChange(async (v: NewComponent
 export const useSaveComponentKind = () =>
   useTypeChange(async ({ code, ...v }: SaveComponentKindInput & { code: string }) => (await api.put<ComponentKindDto[]>(`/component-kinds/${code}`, v)).data);
 export const useRemoveComponentKind = () => useTypeChange(async (code: string) => (await api.delete<ComponentKindDto[]>(`/component-kinds/${code}`)).data);
+
+/* Update projects, export and import (item 134 part 3): what running projects would gain, adding it, and the types file. */
+export const useTypeUpdates = (what: 'type' | 'kind', code: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['type-updates', what, code],
+    queryFn: async () => (await api.get<ProjectUpdatesDto>(`/${what === 'type' ? 'project-types' : 'component-kinds'}/${code}/updates`)).data,
+    enabled: enabled && !!code,
+  });
+
+export const useApplyTypeUpdates = (what: 'type' | 'kind', code: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (projects: { projectId: string; skip: string[] }[]) =>
+      (await api.post<ApplyUpdatesResultDto>(`/${what === 'type' ? 'project-types' : 'component-kinds'}/${code}/updates`, { projects })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['type-updates'] });
+      qc.invalidateQueries({ queryKey: ['activities'] });
+      qc.invalidateQueries({ queryKey: ['project-types'] });
+      qc.invalidateQueries({ queryKey: ['component-kinds'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+};
+
+export const exportProjectType = async (code: string) => (await api.get<TypeBundle>(`/project-types/${code}/export`)).data;
+export const exportComponentKinds = async (codes?: string[]) => (await api.get<TypeBundle>('/component-kinds/export', { params: codes?.length ? { codes: codes.join(',') } : {} })).data;
+
+export const useImportPreview = () =>
+  useMutation({ mutationFn: async (file: unknown) => (await api.post<TypeImportPreviewDto>('/project-types/import/preview', { file })).data, meta: FAIL_NOTICE });
+export const useImportTypes = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { file: unknown; picks: string[] }) => (await api.post<TypeImportResultDto>('/project-types/import', v)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['project-types'] });
+      qc.invalidateQueries({ queryKey: ['component-kinds'] });
+      qc.invalidateQueries({ queryKey: ['activity-templates'] });
+      qc.invalidateQueries({ queryKey: ['dpr-form'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+};
+export type TypeImportPreviewDto = { from: string; exportedAt: string; rows: ImportRowDto[] };
+export type TypeImportResultDto = { imported: number; skipped: string[] };
 
 /* A type's DPR form (item 134 part 2): a save is a new version, which the next report on its projects takes. */
 export const useDprForm = (code: string | undefined) =>
