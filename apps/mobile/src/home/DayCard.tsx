@@ -177,7 +177,7 @@ export function DayCard({ refreshKey }: { refreshKey?: number }) {
 
       {linked && data ? (
         <View style={styles.hr}>
-          <HrTile first icon="calendar-outline" label={t('Attendance')} value={days(data.monthPresent)} onPress={() => router.push('/staff')} />
+          <HrTile first icon="calendar-outline" label={t('Attendance')} value={data.monthPresent != null ? days(data.monthPresent) : '—'} onPress={() => router.push('/staff')} />
           <HrTile icon="airplane-outline" label={t('Leave')} value={t('{days} left', { days: days(leaveLeft) })} onPress={() => router.push('/staff')} />
           <HrTile icon="wallet-outline" label={t('Payslips')} value={slip ? formatMonth(slip.month) : t('None yet')} onPress={() => router.push('/payslips')} />
           {decides ? (
