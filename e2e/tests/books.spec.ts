@@ -23,12 +23,13 @@ test('the modules post into balanced books, and a hand-made voucher counts once 
   await api(accounts, '/books/post', { method: 'POST' });
   const chart = await api<Account[]>(accounts, '/books/accounts');
   expect(sum(chart.map((a) => a.debit))).toBe(sum(chart.map((a) => a.credit)));
-  const purchases = await api<Page<Voucher>>(accounts, '/books/day-book?source=PURCHASE&pageSize=5');
+  const purchases = await api<Page<Voucher>>(accounts, '/books/day-book?source=PURCHASE&pageSize=50');
   expect(purchases.total).toBeGreaterThan(0);
-  const bill = purchases.items[0];
+  // A bill for goods, hire or repairs (the sister companies' fees go to a site expense head instead)
+  const bill = purchases.items.find((v) => v.lines.some((l) => l.accountName === 'Purchase of Materials' || l.accountName === 'Machinery Hire Charges' || l.accountName === 'Repairs to Machinery'))!;
+  expect(bill).toBeDefined();
   expect(bill.type).toBe('PURCHASE');
   expect(sum(bill.lines.map((l) => l.debit))).toBe(sum(bill.lines.map((l) => l.credit)));
-  expect(bill.lines.some((l) => l.accountName === 'Purchase of Materials' || l.accountName === 'Machinery Hire Charges' || l.accountName === 'Repairs to Machinery')).toBe(true);
 
   const bank = chart.find((a) => a.key === 'BANK')!;
   const rent = chart.find((a) => a.name === 'Office Rent')!;

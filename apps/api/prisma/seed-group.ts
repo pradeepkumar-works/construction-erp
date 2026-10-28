@@ -1032,11 +1032,13 @@ async function mirrorBill(prisma: PrismaClient, buyerOrg: string, buyerProject: 
   const last = await prisma.vendorBill.findFirst({ where: { organizationId: buyerOrg, billNo: { startsWith: `VB-${year}-` } }, orderBy: { billNo: 'desc' }, select: { billNo: true } });
   const vbNo = `VB-${year}-${String((last ? parseInt(last.billNo.slice(8), 10) : 0) + 1).padStart(4, '0')}`;
   // Received the day after the sister sent it
-  const ago = Math.max(0, Math.round((day(0).getTime() - ra.billDate.getTime()) / 86_400_000) - 1);
+  const received = Math.max(0, Math.round((day(0).getTime() - ra.billDate.getTime()) / 86_400_000) - 1);
+  // One still waiting was entered and sent for approval in the last few days, not left for weeks
+  const ago = approved ? received : Math.min(received, 3);
   const paid = paidAgo === null ? null : day(-paidAgo);
   const bill = await prisma.vendorBill.create({
     data: {
-      organizationId: buyerOrg, projectId: project.id, vendorId: vendor.id, kind: 'OTHER', expenseCategory: 'OTHER', billNo: vbNo, invoiceNo, invoiceDate: ra.billDate, dueDate: day(-ago + 30), subtotal, gstAmount, total,
+      organizationId: buyerOrg, projectId: project.id, vendorId: vendor.id, kind: 'OTHER', expenseCategory: 'OTHER', billNo: vbNo, invoiceNo, invoiceDate: ra.billDate, dueDate: day(-received + 30), subtotal, gstAmount, total,
       matched: true, exceptions: [], remarks: `${seller === 'DEMOLAB' ? 'Testing' : 'Design'} charges of our sister company, RA bill ${billNo}`,
       status: approved ? 'APPROVED' : 'SUBMITTED', submittedById: accounts, submittedAt: day(-ago), reviewedById: approved ? approver : null, reviewedAt: approved ? day(-ago + 2) : null,
       // Settled by the payment and the TDS on it, as payables count it
