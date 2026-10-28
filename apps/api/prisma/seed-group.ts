@@ -1036,7 +1036,7 @@ async function mirrorBill(prisma: PrismaClient, buyerOrg: string, buyerProject: 
   const paid = paidAgo === null ? null : day(-paidAgo);
   const bill = await prisma.vendorBill.create({
     data: {
-      organizationId: buyerOrg, projectId: project.id, vendorId: vendor.id, kind: 'SERVICE', billNo: vbNo, invoiceNo, invoiceDate: ra.billDate, dueDate: day(-ago + 30), subtotal, gstAmount, total,
+      organizationId: buyerOrg, projectId: project.id, vendorId: vendor.id, kind: 'OTHER', expenseCategory: 'OTHER', billNo: vbNo, invoiceNo, invoiceDate: ra.billDate, dueDate: day(-ago + 30), subtotal, gstAmount, total,
       matched: true, exceptions: [], remarks: `${seller === 'DEMOLAB' ? 'Testing' : 'Design'} charges of our sister company, RA bill ${billNo}`,
       status: approved ? 'APPROVED' : 'SUBMITTED', submittedById: accounts, submittedAt: day(-ago), reviewedById: approved ? approver : null, reviewedAt: approved ? day(-ago + 2) : null,
       // Settled by the payment and the TDS on it, as payables count it
@@ -1260,7 +1260,7 @@ async function seedDesign(prisma: PrismaClient, co: Co) {
   const gst = r2(amount.mul(18).div(100));
   const sb = await prisma.vendorBill.create({
     data: {
-      organizationId: co.id, projectId: roads.id, vendorId: surveyor.id, kind: 'SERVICE', billNo: co.no('VB'), invoiceNo: 'UGS/26-27/077', invoiceDate: day(-4), dueDate: day(26),
+      organizationId: co.id, projectId: roads.id, vendorId: surveyor.id, kind: 'OTHER', expenseCategory: 'OTHER', billNo: co.no('VB'), invoiceNo: 'UGS/26-27/077', invoiceDate: day(-4), dueDate: day(26),
       subtotal: amount, gstAmount: gst, total: amount.add(gst), matched: true, exceptions: [], status: 'SUBMITTED', submittedById: co.users.get('dc.accounts@demo.com')!, submittedAt: day(-3), createdAt: day(-3),
       lines: { create: [{ description: 'DGPS control and total station survey, roads 1 and 2', unit: 'km', quantity: D(23), rate: D(11200), gstRate: D(18), amount, gstAmount: gst, sortOrder: 0 }] },
     },
