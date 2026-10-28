@@ -54,6 +54,7 @@ function RootNavigator() {
         <Stack.Screen name="submissions" options={{ title: t('My Submissions') }} />
         <Stack.Screen name="my-work" options={{ title: t('My work') }} />
         <Stack.Screen name="module/[key]" options={{ title: t('Module') }} />
+        <Stack.Screen name="find" options={{ title: t('Search') }} />
         <Stack.Screen name="notifications" options={{ title: t('Notifications') }} />
         <Stack.Screen name="outbox" options={{ title: t('Outbox') }} />
         <Stack.Screen name="attendance" options={{ title: t('Attendance') }} />

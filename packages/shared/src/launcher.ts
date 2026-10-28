@@ -2,7 +2,7 @@
  * The launcher Home (phase 2, ARCHITECTURE "Launcher Home"): pins and Recent, kept per user on the server so they follow
  * them to every browser and the phone. The tiles themselves come from the navigation tree (`navigation.ts`).
  */
-import type { AccessRequestStatus, NavPinKind, NavVisitKind, RoleKey } from './enums';
+import type { AccessRequestStatus, NavPinKind, NavVisitKind, RoleKey, SubmissionType } from './enums';
 import { NAV_TREE, canSeeNav, type NavNode, type NavUser } from './navigation';
 import { pathIsOff } from './module-switches';
 
@@ -90,6 +90,8 @@ export interface HomeTilesDto {
 /** `GET /launcher/badges`: counts waiting on the user, by node id. Only nodes with something waiting are listed. */
 export interface LauncherBadgesDto {
   nodes: Record<string, number>;
+  /** The approvals waiting on the user by type, so a module of the company's menu counts its own (`menuWaiting`) */
+  approvals?: { type: SubmissionType; count: number }[];
 }
 
 /** `POST /launcher/import`: the old Home's favourites and recent pages from one browser, sent once. */

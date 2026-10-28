@@ -16,6 +16,7 @@ import {
   canSeeNav,
   cleanNavNames,
   isDefaultNav,
+  menuWaiting,
   navMenuFor,
   navMenuPlace,
   navNamesProblem,
@@ -120,6 +121,19 @@ test('a person’s own look counts only when the company lets people choose', ()
   assert.equal(navSettingsOf({ navigation, ownLook: 'BAR' }).look, 'NAVY');
   assert.equal(navSettingsOf({ navigation: { ...navigation, personalLook: true }, ownLook: 'BAR' }).look, 'BAR');
   assert.equal(navSettingsOf({}).layout, 'SIDEBAR');
+});
+
+test('what waits in a module: approvals whose list is one of its pages, and the queues on its pages', () => {
+  for (const settings of [DEFAULT_NAV_SETTINGS, { ...DEFAULT_NAV_SETTINGS, ...departments }]) {
+    const menu = navMenuFor(admin, settings);
+    const waiting = menuWaiting(menu, [{ type: 'DPR', count: 3 }], { 'purchases.toOrder': 2, approvals: 5, 'my-work': 9 });
+    const holding = (id: string) => menu.filter((m) => m.subs.some((s) => s.nodes.some((n) => (n.shortcutOf ?? n.id) === id))).map((m) => m.key);
+    const dpr = holding('site.dpr');
+    const toOrder = holding('purchases.toOrder');
+    assert.ok(dpr.length && toOrder.length, `${settings.moduleSet}: Daily reports and Requests to order have a module`);
+    for (const m of menu) assert.equal(waiting[m.key] ?? 0, (dpr.includes(m.key) ? 3 : 0) + (toOrder.includes(m.key) ? 2 : 0), `${settings.moduleSet} › ${m.key}`);
+  }
+  assert.deepEqual(menuWaiting(navMenuFor(engineer, DEFAULT_NAV_SETTINGS), undefined, undefined), {});
 });
 
 let failed = 0;

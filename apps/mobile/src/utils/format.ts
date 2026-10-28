@@ -60,6 +60,19 @@ export function formatDate(value: string | null | undefined): string {
   return `${Number(m[3])} ${monthName(Number(m[2]) - 1)} ${m[1]}`;
 }
 
+/** "2026-11-08" -> "8 Nov" (Hindi: "8 नव॰"): a date this year, where space is short (Home's HR row). */
+export function formatDayMonth(value: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? '');
+  return m ? `${Number(m[3])} ${monthName(Number(m[2]) - 1)}` : '—';
+}
+
+/** "Wed 28 Oct": today's date on Home, its weekday first. */
+export function formatWeekdayDayMonth(value: string): string {
+  if (!isIsoDate(value.slice(0, 10))) return formatDate(value);
+  const d = new Date(`${value.slice(0, 10)}T00:00:00`);
+  return `${(WEEKDAYS[language] ?? WEEKDAYS.en)[d.getDay()]} ${formatDayMonth(value)}`;
+}
+
 /** "Tue, 13 Oct 2026": a date with its weekday, for the date fields. */
 export function formatDayDate(value: string | null | undefined): string {
   if (!value || !isIsoDate(value.slice(0, 10))) return formatDate(value);

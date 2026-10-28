@@ -332,13 +332,15 @@ export class StaffService {
     const holidays = holidayRows.map((h) => this.toHolidayDto(h));
     const todayHoliday = holidays.find((h) => h.date === today)?.name ?? null;
     const todayOff = todayHoliday ?? (isWeeklyOff(today) ? 'Sunday' : null);
-    if (!e) return { employee: null, today: null, todayOff, year, balances: [], leave: [], holidays, site: null };
-    const [att, leave, balances, site] = await Promise.all([
+    if (!e) return { employee: null, today: null, todayOff, year, balances: [], leave: [], holidays, site: null, monthPresent: '0' };
+    const [att, leave, balances, site, month] = await Promise.all([
       this.prisma.staffAttendance.findUnique({ where: { employeeId_date: { employeeId: e.id, date: parseDate(today) } }, include: attendanceInclude }),
       this.prisma.leaveRequest.findMany({ where: { employeeId: e.id }, include: leaveInclude, orderBy: [{ fromDate: 'desc' }, { createdAt: 'desc' }], take: 20 }),
       this.balancesFor(e.id, e.projectId, year),
       e.projectId ? this.prisma.project.findUnique({ where: { id: e.projectId }, select: siteSelect }) : null,
+      this.prisma.staffAttendance.groupBy({ by: ['status'], where: { employeeId: e.id, date: { gte: parseDate(`${today.slice(0, 7)}-01`), lte: parseDate(today) }, status: { in: ['PRESENT', 'HALF_DAY'] } }, _count: true }),
     ]);
+    const present = month.reduce((n, r) => n + (r.status === 'HALF_DAY' ? r._count / 2 : r._count), 0);
     return {
       employee: this.toEmployeeDto(e, user),
       today: att ? this.toAttendanceDto(att, user) : null,
@@ -348,6 +350,7 @@ export class StaffService {
       leave: leave.map((l) => this.toLeaveDto(l, user, today)),
       holidays,
       site: this.toSite(site),
+      monthPresent: String(present),
     };
   }
 
