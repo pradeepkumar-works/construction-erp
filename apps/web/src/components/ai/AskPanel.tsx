@@ -16,7 +16,7 @@ import { api, errorMessage } from '@/lib/api';
 import { streamAsk } from '@/lib/ai';
 import { useProjectScope } from '@/lib/project-scope';
 import { useAiFeedback, useAiThreads, useDeleteAiThread, useProjects } from '@/lib/queries';
-import { APP_HEADER_HEIGHT } from '@/lib/sticky';
+import { useStickyTop } from '@/lib/sticky';
 import { askShortcutLabel } from '@/lib/shortcuts';
 import { SparkleIcon } from './SparkleIcon';
 import { suggestionsFor } from './suggestions';
@@ -94,6 +94,7 @@ export default function AskPanel({
   const [busy, setBusy] = useState(false);
   const abort = useRef<AbortController | null>(null);
   const dock = useRef<HTMLElement>(null);
+  const headerTop = useStickyTop();
   const threads = useAiThreads(open && view === 'history');
   const deleteThread = useDeleteAiThread();
   const feedback = useAiFeedback();
@@ -388,8 +389,8 @@ export default function AskPanel({
           flex: `0 0 ${DOCK_WIDTH}px`,
           width: DOCK_WIDTH,
           position: 'sticky',
-          top: APP_HEADER_HEIGHT,
-          height: `calc(100vh - ${APP_HEADER_HEIGHT}px)`,
+          top: headerTop,
+          height: `calc(100vh - ${headerTop}px)`,
           background: token.colorBgContainer,
           borderLeft: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
         }}

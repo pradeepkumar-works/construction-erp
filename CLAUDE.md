@@ -129,6 +129,10 @@ and the pre-delivery checklist.
   Fields side by side go in `FormGrid`; amounts are `MoneyInput`, quantities `QuantityInput unit=…`, phones/emails/GSTINs use
   `PHONE_INPUT`/`EMAIL_INPUT`/`CODE_INPUT` and their rules (`components/form/inputs.tsx`). Error messages say how to fix
   ("Choose the project"), never just "Required".
+- Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
+  is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
+  over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep
+  `src/scripts/nav-menu-test.ts` passing.
 - Home (`app/(app)/page.tsx`) is the launcher (`components/launcher/HomeLauncher.tsx`, ARCHITECTURE "Launcher Home"): search over
   the navigation tree, Pinned, Recent and the module tiles. Pins and visits are the user's (`apps/api/src/launcher`, `NavPin`,
   `NavVisit`), never localStorage; a tile's menu comes from `usePins(user).tileMenu`, and a tile badge is a key of

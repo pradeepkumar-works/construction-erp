@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-menu-and-names',
+    date: '2027-02-20',
+    title: 'Your menu, your names',
+    points: [
+      'Admins can move the menu into a bar across the top in Admin › Menu and names. Home then opens on your modules, and a module opens with its sub-modules in a bar under the top one.',
+      'Three looks for the top bar: a navy bar, a light frame round the page, or one white bar. Admins can let each person choose their own from the account menu.',
+      'Modules can follow your departments (project management, purchase, stores, contractors, machinery, accounts and so on), and each can carry the name your people use.',
+    ],
+  },
+  {
     id: '2027-02-requests-to-order',
     date: '2027-02-18',
     title: 'Purchase has its own list of requests to order',

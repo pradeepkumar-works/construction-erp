@@ -5,8 +5,8 @@
  */
 import type React from 'react';
 import { AppstoreOutlined, AuditOutlined, ContactsOutlined, ContainerOutlined, FileTextOutlined, ProjectOutlined, QuestionCircleOutlined, WalletOutlined } from '@/components/common/icons';
-import type { AuthUser, ModuleKey, NavNode, NavSidebarLink } from '@erp/shared';
-import { isGuest, isModuleKey, isSupplier, navSidebar } from '@erp/shared';
+import type { AuthUser, ModuleKey, NavNode, NavSettingsDto, NavSidebarLink } from '@erp/shared';
+import { isGuest, isModuleKey, isSupplier, moduleScreenHref, navMenuFor, navPageLink, navSettingsOf, navSidebar } from '@erp/shared';
 import { navIcon } from './nav-icons';
 
 export type NavIcon = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
@@ -71,21 +71,47 @@ export function navFor(user: AuthUser): NavSection[] {
       },
     ];
   }
-  return navSidebar(user).map((sec) => ({
-    key: sec.key,
-    title: sec.module?.label,
-    icon: sec.module && navIcon(sec.module.icon),
-    module: sec.module && isModuleKey(sec.module.id) ? sec.module.id : undefined,
-    items: sec.links.map((l) => ({
-      href: l.href,
-      label: l.label,
-      icon: iconOf(l),
-      keywords: l.overview ? `module home summary dashboard ${l.node.keywords ?? ''}`.trim() : l.node.keywords,
-      approvals: l.node.badge === 'approvals' || undefined,
-      overview: l.overview,
-      node: l.node,
-    })),
-  }));
+  const settings = navSettingsOf(user);
+  const sidebar = navSidebar(user);
+  const linkItem = (l: NavSidebarLink, title?: string): NavItem => ({
+    href: l.href,
+    label: l.overview && title ? `${title} overview` : l.label,
+    icon: iconOf(l),
+    keywords: l.overview ? `module home summary dashboard ${l.node.keywords ?? ''}`.trim() : l.node.keywords,
+    approvals: l.node.badge === 'approvals' || undefined,
+    overview: l.overview,
+    node: l.node,
+  });
+  if (settings.moduleSet === 'DEPARTMENTS') return departmentSections(user, settings, sidebar.filter((sec) => !sec.module).map((sec) => ({ key: sec.key, items: sec.links.map((l) => linkItem(l)) })));
+  // The tree's own modules, under the company's names.
+  return sidebar.map((sec) => {
+    const title = sec.module && (settings.names[sec.module.id] || sec.module.label);
+    return {
+      key: sec.key,
+      title,
+      icon: sec.module && navIcon(sec.module.icon),
+      module: sec.module && isModuleKey(sec.module.id) ? sec.module.id : undefined,
+      items: sec.links.map((l) => linkItem(l, title)),
+    };
+  });
+}
+
+/** The department modules (Menu and names): the top links as ever, then each module with its screen and its pages, a page
+ *  listed once, under the first module that has it. */
+function departmentSections(user: AuthUser, settings: NavSettingsDto, top: NavSection[]): NavSection[] {
+  const seen = new Set(top.flatMap((sec) => sec.items.map((i) => i.href)));
+  const sections: NavSection[] = [...top];
+  for (const m of navMenuFor(user, settings)) {
+    const items: NavItem[] = [{ href: moduleScreenHref(m.key), label: `${m.label} overview`, icon: navIcon('layout-dashboard'), keywords: `module home summary ${m.defaultLabel}`, overview: true }];
+    for (const n of m.subs.flatMap((x) => x.nodes)) {
+      const link = navPageLink(n);
+      if (!link || seen.has(link.href)) continue;
+      seen.add(link.href);
+      items.push({ href: link.href, label: link.label, icon: navIcon(n.icon), keywords: n.keywords, node: n });
+    }
+    sections.push({ key: m.key, title: m.label, icon: navIcon(m.icon), items });
+  }
+  return sections;
 }
 
 /** The nav link a path belongs to: "/" only for the dashboard, otherwise the link whose path is the first segment. */

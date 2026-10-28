@@ -1,0 +1,383 @@
+/* The top bar (Menu and names) in its three looks. Colours are the theme's CSS variables (lib/theme.ts), so each look
+   follows light and dark. Navy: a blueprint-navy bar over a white module bar. Frame: one tint round the page, the page
+   sits on it as a sheet. Bar: one white bar holding the module and its menu. */
+
+.top {
+  --tb-bg: var(--ant-color-bg-container);
+  --tb-fg: var(--ant-color-text);
+  --tb-muted: var(--ant-color-text-secondary);
+  --tb-hover: color-mix(in srgb, var(--ant-color-text) 6%, transparent);
+  --tb-rule: var(--ant-color-border-secondary);
+  --row-bg: var(--ant-color-bg-container);
+  --sub-on: var(--ant-color-primary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.lookNavy {
+  --tb-bg: var(--brand-ink);
+  --tb-fg: var(--brand-on-accent);
+  --tb-muted: color-mix(in srgb, var(--ant-color-white) 66%, transparent);
+  --tb-hover: color-mix(in srgb, var(--ant-color-white) 10%, transparent);
+  --tb-rule: transparent;
+}
+
+.lookFrame {
+  --tb-bg: color-mix(in srgb, var(--ant-color-text) 6%, var(--ant-color-bg-layout));
+  --row-bg: var(--tb-bg);
+  --tb-rule: transparent;
+  --sub-on: var(--ant-color-text);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--ant-margin-xs);
+  height: 56px;
+  padding: 0 var(--ant-padding) 0 var(--ant-padding-lg);
+  background: var(--tb-bg);
+  color: var(--tb-fg);
+  border-bottom: var(--ant-line-width) solid var(--tb-rule);
+}
+
+.lookBar .bar {
+  height: 60px;
+}
+
+.mobile .bar {
+  height: 56px;
+  padding: 0 var(--ant-padding-xs);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  min-height: 32px;
+  color: var(--tb-fg);
+  text-decoration: none;
+}
+
+.brand:hover {
+  color: var(--tb-fg);
+}
+
+.brand:focus-visible,
+.link:focus-visible,
+.sub:focus-visible,
+.switch:focus-visible {
+  outline: 2px solid var(--ant-color-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.lookNavy .brand :global(.wordmark) {
+  color: var(--brand-on-accent);
+}
+
+.org {
+  max-width: 180px;
+  margin: 0 var(--ant-margin-xs) 0 var(--ant-margin-xxs);
+  padding-left: var(--ant-padding-sm);
+  border-left: var(--ant-line-width) solid color-mix(in srgb, currentColor 20%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--tb-muted);
+  font-size: var(--ant-font-size-sm);
+}
+
+.spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.tools,
+.project {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+/* Home's links: Modules, My work, Approvals */
+
+.links ul {
+  display: flex;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ant-margin-xs);
+  height: 36px;
+  padding: 0 var(--ant-padding-sm);
+  border-radius: 8px;
+  color: var(--tb-fg);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.link:hover {
+  background: var(--tb-hover);
+  color: var(--tb-fg);
+}
+
+.link.on {
+  background: var(--tb-hover);
+}
+
+.lookBar .link.on {
+  background: var(--brand-accent-soft);
+  color: var(--ant-color-link);
+}
+
+:global(html[data-theme='dark']) .lookBar .link.on {
+  background: var(--brand-night-accent-soft);
+}
+
+.count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--brand-pending);
+  color: var(--brand-on-accent);
+  font-size: var(--ant-font-size-sm);
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* The module bar: under the top bar in the navy and frame looks (and on a phone), inside it in the one-bar look */
+
+.row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ant-margin-xs);
+  height: 48px;
+  padding: 0 var(--ant-padding) 0 var(--ant-padding-lg);
+  background: var(--row-bg);
+  border-bottom: var(--ant-line-width) solid var(--ant-color-border-secondary);
+}
+
+.lookFrame .row {
+  border-bottom: 0;
+}
+
+.mobile .row {
+  height: 44px;
+  padding: 0;
+}
+
+.row .project {
+  align-self: center;
+}
+
+.module {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.moduleInBar {
+  align-self: stretch;
+  margin-left: var(--ant-margin-xs);
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ant-margin-xs);
+  flex: none;
+  padding: 0 var(--ant-padding-sm) 0 0;
+  margin-right: var(--ant-margin-xs);
+  border: 0;
+  border-right: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  background: none;
+  color: var(--ant-color-text);
+  font: inherit;
+  font-size: var(--ant-font-size-lg);
+  cursor: pointer;
+}
+
+.lookFrame .switch {
+  border-right-color: color-mix(in srgb, var(--ant-color-text) 14%, transparent);
+}
+
+.moduleInBar .switch {
+  padding-left: var(--ant-padding-sm);
+  border-left: var(--ant-line-width) solid var(--ant-color-border-secondary);
+}
+
+.mobile .switch {
+  padding: 0 var(--ant-padding-sm);
+  margin-right: 0;
+}
+
+.switch > :first-child {
+  color: var(--ant-color-primary);
+}
+
+.switchName {
+  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
+  font-stretch: 88%;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chevron {
+  font-size: var(--ant-font-size-sm);
+  color: var(--ant-color-text-tertiary);
+}
+
+.subs {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.subs::-webkit-scrollbar {
+  display: none;
+}
+
+.subs li {
+  display: flex;
+  flex: none;
+}
+
+.sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 var(--ant-padding-sm);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ant-color-text-secondary);
+  font: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sub:hover {
+  color: var(--ant-color-text);
+}
+
+.sub.on {
+  color: var(--ant-color-text);
+  font-weight: 600;
+  border-bottom-color: var(--sub-on);
+}
+
+/* One bar: the sub-modules are pills in the bar, the chosen one in the pale blue */
+.moduleInBar .subs {
+  align-items: center;
+}
+
+.moduleInBar .sub {
+  height: 38px;
+  border-bottom: 0;
+  border-radius: 8px;
+}
+
+.moduleInBar .sub:hover {
+  background: var(--tb-hover);
+}
+
+.moduleInBar .sub.on {
+  background: var(--brand-accent-soft);
+  color: var(--ant-color-link);
+}
+
+:global(html[data-theme='dark']) .moduleInBar .sub.on {
+  background: var(--brand-night-accent-soft);
+}
+
+.pin {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* The navy bar's own controls (search, Ask, help, the bell, the account) read white on the navy. Only what sits in the
+   bar: their menus and drawers open on the page's own surfaces. */
+.lookNavy .bar :global(.ant-btn-variant-text),
+.lookNavy .bar :global(.ant-btn-variant-filled) {
+  color: color-mix(in srgb, var(--ant-color-white) 88%, transparent);
+}
+
+.lookNavy .bar :global(.ant-btn-variant-filled) {
+  background: color-mix(in srgb, var(--ant-color-white) 8%, transparent);
+  border-color: color-mix(in srgb, var(--ant-color-white) 16%, transparent);
+}
+
+.lookNavy .bar :global(.ant-btn-variant-text:not(:disabled):hover),
+.lookNavy .bar :global(.ant-btn-variant-filled:not(:disabled):hover) {
+  color: var(--brand-on-accent);
+  background: color-mix(in srgb, var(--ant-color-white) 12%, transparent);
+}
+
+.lookNavy .bar :global(.ant-btn-variant-filled .ant-typography),
+.lookNavy .bar :global(.ant-btn-variant-filled kbd),
+.lookNavy .bar :global(.text-muted) {
+  color: color-mix(in srgb, var(--ant-color-white) 70%, transparent);
+}
+
+.lookNavy .bar :global(.ant-btn .ant-badge) {
+  color: inherit;
+}
+
+.lookNavy .bar :global(.ant-btn-variant-filled kbd) {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--ant-color-white) 22%, transparent);
+}
+
+@media (pointer: coarse) {
+  .link,
+  .sub,
+  .switch {
+    min-height: 44px;
+  }
+}
+
+/* Frame: the page sits on the frame's tint as a sheet, the bar and the module bar part of the frame */
+.frameBody {
+  background: color-mix(in srgb, var(--ant-color-text) 6%, var(--ant-color-bg-layout));
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  margin: 0 var(--ant-margin-xs) var(--ant-margin-xs);
+  border: var(--ant-line-width) solid color-mix(in srgb, var(--ant-color-text) 10%, transparent);
+  border-radius: 16px;
+  background: var(--ant-color-bg-layout);
+  overflow: clip;
+}
+
+@media (pointer: coarse) {
+  .brand {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+}

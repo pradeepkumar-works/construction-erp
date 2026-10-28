@@ -15,12 +15,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '@/lib/page-title';
 import { GettingStartedCard, useGettingStarted } from '@/components/dashboard/GettingStartedCard';
 import { TreeIcon } from '@/components/shell/nav-icons';
+import { useNavMenu } from '@/components/shell/menu';
 import { requestSearch } from '@/components/shell/search-request';
 import { TileGrid, tileEntries } from './TileGrid';
 import { pinEntry, usePins } from './pins';
 import { EditPins } from './EditPins';
 import { DiscoverSection } from './Discover';
 import { WaitingForYou } from './WaitingForYou';
+import { MenuModules, useMenuWaiting } from './MenuModules';
 import s from './HomeLauncher.module.css';
 
 const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
@@ -128,7 +130,14 @@ export function HomeLauncher() {
   useImportOnce(user);
   usePageTitle('Home');
 
-  const modules = useMemo(() => (user ? navTilesFor(user, null) : []), [user]);
+  const { settings, menu } = useNavMenu(user);
+  const waiting = useMenuWaiting(user, menu);
+  const topBar = settings.layout === 'TOP_BAR' && menu.length > 0;
+  // The sidebar with the work-area set keeps Home's tiles as they were (pages at the top of the tree too), under the
+  // company's names; anything else shows the company's modules.
+  const treeTiles = settings.layout === 'SIDEBAR' && settings.moduleSet === 'AREAS';
+  const modules = useMemo(() => (user && treeTiles ? navTilesFor(user, null) : []), [user, treeTiles]);
+  const moduleCount = treeTiles ? modules.length : menu.length;
   const all = useMemo(() => (user ? searchable(user) : []), [user]);
   const found = useMemo(() => matches(all, query), [all, query]);
   const suggestions = useMemo(
@@ -157,7 +166,7 @@ export function HomeLauncher() {
           {greeting(new Date().getHours())}, <span translate="no">{first}</span>
         </h1>
         <Typography.Text type="secondary">
-          {formatLongDay(new Date())}. {modules.length} modules you can open.
+          {formatLongDay(new Date())}. {moduleCount} modules you can open.
         </Typography.Text>
       </div>
       <div className={s.search}>
@@ -199,6 +208,15 @@ export function HomeLauncher() {
         </section>
       ) : (
         <>
+          {topBar && (
+            <section aria-labelledby="home-modules" className={s.section}>
+              <h2 id="home-modules" className={s.sectionTitle}>
+                Modules
+              </h2>
+              <MenuModules menu={menu} look={settings.look} waiting={waiting} label="Modules" menuFor={tileMenu} />
+            </section>
+          )}
+
           <WaitingForYou user={user} />
 
           <section aria-labelledby="home-pinned" className={s.section}>
@@ -253,12 +271,18 @@ export function HomeLauncher() {
 
           <DiscoverSection user={user} launcher={launcher} />
 
-          <section aria-labelledby="home-modules" className={s.section}>
-            <h2 id="home-modules" className={s.sectionTitle}>
-              All modules
-            </h2>
-            <TileGrid entries={tileEntries(modules, badges?.nodes)} label="All modules" menu={tileMenu} />
-          </section>
+          {!topBar && (
+            <section aria-labelledby="home-modules" className={s.section}>
+              <h2 id="home-modules" className={s.sectionTitle}>
+                All modules
+              </h2>
+              {treeTiles ? (
+                <TileGrid entries={tileEntries(modules, badges?.nodes).map((e) => ({ ...e, label: settings.names[e.key]?.trim() || undefined }))} label="All modules" menu={tileMenu} />
+              ) : (
+                <MenuModules menu={menu} look="SIDEBAR" waiting={waiting} label="All modules" menuFor={tileMenu} />
+              )}
+            </section>
+          )}
         </>
       )}
     </div>

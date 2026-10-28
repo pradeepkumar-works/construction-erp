@@ -286,6 +286,8 @@ export const NAV: Record<string, string> = {
   'Who approves what, levels, limits and escalation.': 'कौन क्या मंज़ूर करता है, स्तर, सीमाएँ और एस्केलेशन।',
   Modules: 'मॉड्यूल',
   'Turn off the modules the company does not use; their data is kept.': 'जो मॉड्यूल कंपनी इस्तेमाल नहीं करती उन्हें बंद करें; उनका डेटा रखा रहता है।',
+  'Menu and names': 'मेनू और नाम',
+  'Menu in the top bar or a sidebar, its look, and what each module is called.': 'मेनू ऊपर की पट्टी में या साइडबार में, उसका रूप, और हर मॉड्यूल का नाम।',
   'Home tiles': 'होम टाइल',
   'Mark modules as new or featured, and answer requests for access.': 'मॉड्यूल को नया या ख़ास चिह्नित करें, और एक्सेस के अनुरोधों का जवाब दें।',
   'Data and privacy': 'डेटा और गोपनीयता',

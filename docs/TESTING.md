@@ -22,6 +22,9 @@ Playwright tests of the main web flows:
 - `launcher.spec.ts`: Home's module tiles and badges, pins that follow the user to another browser (reorder, unpin and
   Undo), Recent and the search box, and Home drawing within a second. `signIn` waits for Home's greeting (`homeHeading`);
   a test about My work opens `/my-work` itself.
+- `menu-and-names.spec.ts`: an admin moves the menu to the top bar with the department modules and a name of the company's
+  own; Home opens on the modules and a module carries its sub-modules; a site engineer sees only their modules. It puts the
+  shipped sidebar back after each test.
 - `discover.spec.ts`: Discover on Home (New, Featured and a greyed module to ask for), a request for access through to the
   admin's decline and the person's notification, the Discover switch, and Home tiles being admins' only. It resets the
   company's marks and waiting requests through the API first.

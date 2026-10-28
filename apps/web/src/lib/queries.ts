@@ -10,6 +10,8 @@ import type {
   DprWorkOptionsDto,
   CommentKind,
   ModuleSwitchesDto,
+  NavSettingsDto,
+  NavLook,
   ModuleTier,
   SwitchableModule,
   CommentThreadsDto,
@@ -3730,6 +3732,22 @@ export function useSetModuleSwitch() {
     },
   });
 }
+/** Menu and names: the company's menu, its look and its module names (admins). */
+export const useNavSettings = (enabled: boolean) =>
+  useQuery({ queryKey: ['nav-settings'], queryFn: async () => (await api.get<NavSettingsDto>('/nav-settings')).data, enabled });
+
+/** Save the company's menu; the caller refreshes the signed-in user so the shell follows. */
+export function useSaveNavSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: NavSettingsDto) => (await api.put<NavSettingsDto>('/nav-settings', d)).data,
+    onSuccess: (data) => qc.setQueryData(['nav-settings'], data),
+  });
+}
+
+/** A person's own look for the top bar (null follows the company's); the caller refreshes the signed-in user. */
+export const useSaveOwnLook = () => useMutation({ mutationFn: async (look: NavLook | null) => (await api.put<{ look: NavLook | null }>('/nav-settings/own-look', { look })).data });
+
 /* Launcher Home (phase 2): pins and Recent from the server, badges by tile. Pin, move and unpin change the screen at once
    and roll back if the server refuses. */
 const LAUNCHER_KEY = ['launcher'] as const;

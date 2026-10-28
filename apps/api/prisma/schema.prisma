@@ -646,6 +646,14 @@ model Organization {
   discoverLocked      Boolean     @default(true)
   /// The plan's module set, set from the Nirmaan console; null = every module
   moduleTier          ModuleTier?
+  /// Menu and names (NavSettingsDto in @erp/shared): the menu down the side or across the top, the top bar's look,
+  /// how pages are grouped into modules, and the company's own names for modules (by module key)
+  navLayout           NavLayout    @default(SIDEBAR)
+  navLook             NavLook      @default(NAVY)
+  navModuleSet        NavModuleSet @default(AREAS)
+  navNames            Json         @default("{}")
+  /// People may choose their own look (User.navLook)
+  navPersonalLook     Boolean      @default(false)
 
   users                User[]
   roles                Role[]
@@ -927,6 +935,8 @@ model User {
   invitedAt        DateTime?
   /// A supplier-portal login (role SUPPLIER, v6 item 105): the vendor it acts for. Null for everyone else.
   vendorId         String?
+  /// The top bar's look this person chose (Profile › Appearance), used when their company lets people choose
+  navLook          NavLook?
   vendor           Vendor?      @relation("VendorPortalLogins", fields: [vendorId], references: [id])
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
@@ -7538,6 +7548,23 @@ enum ModuleTier {
   ESSENTIALS
   BUSINESS
   ENTERPRISE
+}
+
+/// Menu and names: NAV_LAYOUTS, NAV_LOOKS and NAV_MODULE_SETS in @erp/shared
+enum NavLayout {
+  SIDEBAR
+  TOP_BAR
+}
+
+enum NavLook {
+  NAVY
+  FRAME
+  BAR
+}
+
+enum NavModuleSet {
+  AREAS
+  DEPARTMENTS
 }
 
 /// Pinned on Home (launcher phase 2): a tile of the navigation tree (NAV_TREE in @erp/shared) or a project,

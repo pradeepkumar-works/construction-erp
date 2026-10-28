@@ -65,6 +65,7 @@ import Landmark from 'lucide-react-native/icons/landmark';
 import Layers from 'lucide-react-native/icons/layers';
 import LayoutDashboard from 'lucide-react-native/icons/layout-dashboard';
 import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import PanelsTopLeft from 'lucide-react-native/icons/panels-top-left';
 import Library from 'lucide-react-native/icons/library';
 import ListChecks from 'lucide-react-native/icons/list-checks';
 import ListTodo from 'lucide-react-native/icons/list-todo';
@@ -183,6 +184,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'layers': Layers,
   'layout-dashboard': LayoutDashboard,
   'layout-grid': LayoutGrid,
+  'panels-top-left': PanelsTopLeft,
   'library': Library,
   'list-checks': ListChecks,
   'list-todo': ListTodo,

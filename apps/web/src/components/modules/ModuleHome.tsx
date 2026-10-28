@@ -19,6 +19,7 @@ import { newEntriesFor } from '@/components/shell/NewMenu';
 import { HrDashboard } from '@/components/staff/HrDashboard';
 import { TileGrid, tileEntries } from '@/components/launcher/TileGrid';
 import { usePins } from '@/components/launcher/pins';
+import { useNavMenu } from '@/components/shell/menu';
 import { ResultMark } from '@/components/common/ResultMark';
 
 const days = (n: number) => (n === 0 ? 'today' : `${n} day${n === 1 ? '' : 's'}`);
@@ -106,6 +107,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
   const { data, isLoading, error, refetch } = useModuleHome(moduleKey, projectId, visible && tiles.length > 1);
   const screens = Grid.useBreakpoint();
   const { tileMenu } = usePins(visible ? user : null);
+  const { settings } = useNavMenu(user);
 
   // One page only: no screen of one tile, that page opens instead.
   const only = tiles.length === 1 ? navDestination(tiles[0]) : null;
@@ -119,11 +121,12 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
     return (
       <div className="page-container">
         <PageHeader title="Module" docTitle="Module not found" />
-        <Result icon={<ResultMark kind="not-found" />} title="This module is not in your menu" subTitle="Your role does not use it. Choose a page from the menu on the left." />
+        <Result icon={<ResultMark kind="not-found" />} title="This module is not in your menu" subTitle="Your role does not use it. Choose a module from Home." />
       </div>
     );
   const key: ModuleKey = moduleKey;
-  const label = MODULE_LABELS[key];
+  // The company's name for the module (Menu and names), else its own
+  const label = settings.names[key]?.trim() || MODULE_LABELS[key];
   const paths = new Set(tiles.map(navDestination).flatMap((d) => (d?.kind === 'page' ? [d.href.split('?')[0]] : [])));
   const starts = newEntriesFor(user)
     .flat()

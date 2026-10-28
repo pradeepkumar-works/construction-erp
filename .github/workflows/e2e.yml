@@ -266,6 +266,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/launcher-test.js
+      - name: Menu and names place every page in a module, show each user their own, and keep the company's names
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/nav-menu-test.js
       - name: Measures on drawings scale right, add up lines, areas and counts, and make measurement book lines
         if: matrix.suite == 'flows'
         working-directory: apps/api

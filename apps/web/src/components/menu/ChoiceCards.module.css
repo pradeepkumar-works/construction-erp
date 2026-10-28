@@ -1,0 +1,142 @@
+/* Menu and names: a choice drawn as cards, each with a small picture of the menu it gives. */
+/* Doubled classes: antd's own radio styles load after these. */
+.cards.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--ant-margin-sm);
+  width: 100%;
+}
+
+.card:global(.ant-radio-wrapper) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ant-margin-xs);
+  margin: 0;
+  padding: var(--ant-padding-sm);
+  border: var(--ant-line-width) solid var(--ant-color-border);
+  border-radius: var(--ant-border-radius-lg);
+  background: var(--ant-color-bg-container);
+}
+
+.card:global(.ant-radio-wrapper)::after {
+  display: none;
+}
+
+.card:global(.ant-radio-wrapper-checked) {
+  border-color: var(--ant-color-primary);
+  box-shadow: 0 0 0 1px var(--ant-color-primary);
+}
+
+.card:global(.ant-radio-wrapper-disabled) {
+  opacity: 0.6;
+}
+
+.card.card > :global(.ant-radio) {
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--ant-padding-sm) + 6px);
+  right: calc(var(--ant-padding-sm) + 6px);
+}
+
+.card {
+  position: relative;
+}
+
+.card.card > :global(.ant-radio-label) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.desc {
+  color: var(--ant-color-text-secondary);
+  font-size: var(--ant-font-size-sm);
+  line-height: 1.45;
+}
+
+/* The pictures: a page 168 by 76, the menu drawn in the look's own colours. */
+.pic {
+  position: relative;
+  height: 76px;
+  margin-bottom: 4px;
+  border: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  border-radius: 8px;
+  background: var(--ant-color-bg-layout);
+  overflow: hidden;
+}
+
+.pic i {
+  position: absolute;
+  display: block;
+}
+
+.side {
+  inset: 0 auto 0 0;
+  width: 34px;
+  background: var(--brand-ink);
+}
+
+.navy {
+  inset: 0 0 auto 0;
+  height: 14px;
+  background: var(--brand-ink);
+}
+
+.row {
+  inset: 14px 0 auto 0;
+  height: 11px;
+  background: var(--ant-color-bg-container);
+  border-bottom: var(--ant-line-width) solid var(--ant-color-border-secondary);
+}
+
+.frame {
+  inset: 0;
+  background: color-mix(in srgb, var(--ant-color-text) 8%, var(--ant-color-bg-layout));
+}
+
+.sheet {
+  inset: 25px 6px 6px 6px;
+  border-radius: 6px;
+  background: var(--ant-color-bg-layout);
+  border: var(--ant-line-width) solid color-mix(in srgb, var(--ant-color-text) 10%, transparent);
+}
+
+.white {
+  inset: 0 0 auto 0;
+  height: 18px;
+  background: var(--ant-color-bg-container);
+  border-bottom: var(--ant-line-width) solid var(--ant-color-border-secondary);
+}
+
+.pill {
+  top: 5px;
+  left: 30px;
+  width: 26px;
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ant-color-primary) 30%, transparent);
+}
+
+.tab {
+  top: 22px;
+  left: 30px;
+  width: 22px;
+  height: 2px;
+  background: var(--ant-color-primary);
+}
+
+.block {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ant-color-text) 10%, transparent);
+}
+
+.pillOff {
+  left: 62px;
+  background: color-mix(in srgb, var(--ant-color-text) 10%, transparent);
+}

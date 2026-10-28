@@ -346,3 +346,12 @@ export type NavVisitKind = (typeof NAV_VISIT_KINDS)[number];
  *  turning the module on) or declines it. */
 export const ACCESS_REQUEST_STATUSES = ['OPEN', 'GRANTED', 'DECLINED'] as const;
 export type AccessRequestStatus = (typeof ACCESS_REQUEST_STATUSES)[number];
+
+/** Menu and names (`nav-menu.ts`): where a company's menu sits, how the top bar looks, and how its pages are grouped into
+ *  modules. Each company's own, set by an admin; a person may pick their own look when the company lets them. */
+export const NAV_LAYOUTS = ['SIDEBAR', 'TOP_BAR'] as const;
+export type NavLayout = (typeof NAV_LAYOUTS)[number];
+export const NAV_LOOKS = ['NAVY', 'FRAME', 'BAR'] as const;
+export type NavLook = (typeof NAV_LOOKS)[number];
+export const NAV_MODULE_SETS = ['AREAS', 'DEPARTMENTS'] as const;
+export type NavModuleSet = (typeof NAV_MODULE_SETS)[number];
