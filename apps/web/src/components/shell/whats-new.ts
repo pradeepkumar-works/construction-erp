@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-02-dpr-form-per-type',
+    date: '2027-02-26',
+    title: 'A DPR form for each project type',
+    points: [
+      'Each project type now has a DPR form tab: choose which sections a site report shows, which are required and what they are called, and how many photos it needs.',
+      'Add up to 20 fields of your own, for the day or for each work line: text, numbers with a unit and range, yes or no, a choice, a date or a time, each with a Hindi name for the phone.',
+      'Work lines pick the component, sub-component and activity in turn, are placed by chainage, floor or village as the type says, and can carry their own photo.',
+      'Every change is saved as a version. Reports made already keep the form they were made on, and a report typed offline on the phone still goes in after the form changes.',
+    ],
+  },
+  {
     id: '2027-02-project-types',
     date: '2027-02-24',
     title: 'Project types of your own',

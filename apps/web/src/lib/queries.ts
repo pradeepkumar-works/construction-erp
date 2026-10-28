@@ -156,6 +156,9 @@ import type {
   ActivityTemplateDto,
   ComponentKindDto,
   ProjectTypeDto,
+  DprFormDef,
+  DprFormDto,
+  DprFormVersionsDto,
   ApprovalMatrixDto,
   AuthOptionsDto,
   MeasurementSheetDto,
@@ -1193,6 +1196,25 @@ export const useCreateComponentKind = () => useTypeChange(async (v: NewComponent
 export const useSaveComponentKind = () =>
   useTypeChange(async ({ code, ...v }: SaveComponentKindInput & { code: string }) => (await api.put<ComponentKindDto[]>(`/component-kinds/${code}`, v)).data);
 export const useRemoveComponentKind = () => useTypeChange(async (code: string) => (await api.delete<ComponentKindDto[]>(`/component-kinds/${code}`)).data);
+
+/* A type's DPR form (item 134 part 2): a save is a new version, which the next report on its projects takes. */
+export const useDprForm = (code: string | undefined) =>
+  useQuery({ queryKey: ['dpr-form', code], queryFn: async () => (await api.get<DprFormVersionsDto>(`/project-types/${code}/dpr-form`)).data, enabled: !!code });
+
+const useDprFormChange = <V,>(fn: (v: V) => Promise<DprFormDto>) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (form) => {
+      qc.invalidateQueries({ queryKey: ['dpr-form', form.typeCode] });
+      // The DPR form's options carry the form.
+      qc.invalidateQueries({ queryKey: ['activities'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+};
+export const useSaveDprForm = () => useDprFormChange(async ({ code, definition }: { code: string; definition: DprFormDef }) => (await api.put<DprFormDto>(`/project-types/${code}/dpr-form`, { definition })).data);
+export const useResetDprForm = () => useDprFormChange(async (code: string) => (await api.delete<DprFormDto>(`/project-types/${code}/dpr-form`)).data);
 
 /** The code to offer a new project of this type (finding 17 of the October review). */
 export const useNextProjectCode = (type: ProjectType | undefined, enabled = true) =>

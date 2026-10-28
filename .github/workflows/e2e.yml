@@ -150,6 +150,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/project-types-test.js
+      - name: Each project type's DPR form reads whole, is checked, keeps a used field's kind and reads the company's own fields
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/dpr-form-test.js
       - name: DPR work lines add up to previous, cumulative and balance, suggest material and check the crew
         if: matrix.suite == 'flows'
         working-directory: apps/api

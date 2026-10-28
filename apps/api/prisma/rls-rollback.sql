@@ -566,5 +566,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "ProjectTypeConfig";
 ALTER TABLE "ComponentKind" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "ComponentKind" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "ComponentKind";
+ALTER TABLE "DprFormConfig" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "DprFormConfig" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "DprFormConfig";
 
 DROP FUNCTION IF EXISTS app_current_org();

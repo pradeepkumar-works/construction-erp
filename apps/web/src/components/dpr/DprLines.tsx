@@ -1,18 +1,21 @@
 'use client';
 
 import React from 'react';
-import { Flex, Table, Typography } from 'antd';
+import { Flex, Image, Table, Typography } from 'antd';
 import {
   PIPE_STAGE_LABELS,
   SEGMENT_STAGES,
   crewCheck,
   dprActivityLabel,
+  filledExtra,
   groupLines,
   lineLocation,
   machineHours,
   materialUsed,
+  ownFieldsOf,
   pipelineSummary,
   type DailyReportDto,
+  type DprFormDef,
   type DprLineDto,
   type DprMaterialDto,
   type MachineryLine,
@@ -27,9 +30,11 @@ const material = (l: DprLineDto) => l.materials.map((m) => `${m.itemName} ${form
 
 /**
  * A DPR's work lines (item 127), grouped by component › sub-component, in the shape of the site's DPR: activity and
- * where, today, up to previous, cumulative against scope, %, balance, then the crew, machines and material.
+ * where, today, up to previous, cumulative against scope, %, balance, then the crew, machines and material. With the
+ * report's form (item 134 part 2), each line's own fields and its photos too.
  */
-export function DprWorkLines({ lines }: { lines: DprLineDto[] }) {
+export function DprWorkLines({ lines, def }: { lines: DprLineDto[]; def?: DprFormDef }) {
+  const own = def ? ownFieldsOf(def, 'LINE') : [];
   if (!lines.length) return null;
   return (
     <Flex vertical gap={12}>
@@ -54,6 +59,20 @@ export function DprWorkLines({ lines }: { lines: DprLineDto[] }) {
                       </Typography.Text>
                     ) : null}
                     {l.remarks ? <div>{l.remarks}</div> : null}
+                    {filledExtra(own, l.extra).map((x) => (
+                      <div key={x.field.key}>
+                        <Typography.Text type="secondary">{x.field.label}:</Typography.Text> <span translate="no">{x.text}</span>
+                      </div>
+                    ))}
+                    {l.attachments.length ? (
+                      <Image.PreviewGroup>
+                        <Flex gap={4} wrap style={{ marginTop: 4 }}>
+                          {l.attachments.map((a, i) => (
+                            <Image key={a.id} src={a.url} width={48} height={48} style={{ objectFit: 'cover', borderRadius: 4 }} alt={`Photo ${i + 1} of ${l.activityName}`} />
+                          ))}
+                        </Flex>
+                      </Image.PreviewGroup>
+                    ) : null}
                   </>
                 ),
               },

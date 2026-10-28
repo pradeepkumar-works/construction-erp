@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { App, Button, Card, Descriptions, Popconfirm, Result, Table, Typography } from 'antd';
 import {
   CONTRACT_MODEL_LABELS,
@@ -19,6 +19,7 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ResultMark } from '@/components/common/ResultMark';
+import { DprFormTab } from '@/components/project-types/DprFormTab';
 import { TypeEditor } from '@/components/project-types/TypeEditor';
 import { TypeStateTag } from '@/components/project-types/TypeStateTag';
 import { TemplateEditor } from '@/components/templates/TemplateEditor';
@@ -66,10 +67,12 @@ function Breakdown({ type, kinds }: { type: ProjectTypeDto; kinds: ComponentKind
   );
 }
 
-/** One project type (item 134): its settings and starting breakdown, and its loose activities. */
+/** One project type (item 134): its settings and starting breakdown, its loose activities and its DPR form. */
 export default function Page() {
   const { code } = useParams<{ code: string }>();
   const router = useRouter();
+  // ?tab=dpr-form opens the DPR form (the link from a DPR's record).
+  const tab = useSearchParams().get('tab') ?? undefined;
   const { message } = App.useApp();
   const { user } = useAuth();
   const types = useProjectTypes();
@@ -146,6 +149,7 @@ export default function Page() {
       <Card size="small">
         <AppTabs
           variant="page"
+          defaultActiveKey={tab}
           items={[
             {
               key: 'breakdown',
@@ -177,6 +181,11 @@ export default function Page() {
               count: type.activities.length,
               countLabel: 'activities',
               children: template ? <TemplateEditor template={template} editable={editable} standard={type.standard} /> : null,
+            },
+            {
+              key: 'dpr-form',
+              label: 'DPR form',
+              children: <DprFormTab type={type} editable={editable} />,
             },
           ]}
         />

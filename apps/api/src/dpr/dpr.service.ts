@@ -5,16 +5,21 @@ import {
   activityPipeStage,
   compareCodes,
   crewTotal,
+  dprExtraProblems,
+  dprRequiredProblems,
   dprLineProblem,
   isLengthUnit,
   lineFigures,
   lineLocation,
   segmentCapProblem,
   segmentLabel,
+  typeCodeOf,
   workSummary,
   type PipeStage,
   type SegmentStage,
   type DailyReportDto,
+  type DprExtra,
+  type DprFormDef,
   type DprActivityOptionDto,
   type DprLineDto,
   type DprSortField,
@@ -39,9 +44,11 @@ import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/pa
 import { CreateDprDto, DprLineInputDto, DprWorkOptionsQuery, ListDprQuery, UpdateDprDto } from './dpr.dto';
 import { AttendanceService } from '../attendance/attendance.service';
 import { heldOnSegments } from '../pipe-network/pipe-network.service';
+import { DprFormsService } from '../templates/dpr-forms.service';
+import { ProjectTypesService } from '../templates/project-types.service';
 
 const include = {
-  project: { select: { name: true } },
+  project: { select: { name: true, type: true, typeCode: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
@@ -65,9 +72,14 @@ const lineInclude = {
   pipeNode: { select: { code: true } },
   workOrder: { select: { woNo: true } },
   materials: { include: { item: { select: { name: true, unit: true } } }, orderBy: { sortOrder: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.ProgressEntryInclude;
 
 type Tx = Prisma.TransactionClient;
+
+/** Own-field values as stored: an object of the form's keys (item 134 part 2). */
+const extraOf = (v: Prisma.JsonValue | null | undefined): DprExtra => (v && typeof v === 'object' && !Array.isArray(v) ? (v as DprExtra) : {});
+const manpowerTotal = (lines: { count?: number | null }[] | null | undefined) => (lines ?? []).reduce((s, m) => s + (Number(m.count) || 0), 0);
 
 const ORDER: Record<DprSortField, (o: SortOrder) => Prisma.DailyReportOrderByWithRelationInput[]> = {
   date: (o) => [{ date: o }, { createdAt: o }],
@@ -88,6 +100,8 @@ export class DprService {
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
     private attendance: AttendanceService,
+    private forms: DprFormsService,
+    private types: ProjectTypesService,
   ) {
     // A DPR's work lines (item 127) are submitted, approved and sent back with it.
     lifecycle.onStatus('DPR', (_user, id, status) => this.syncLines(id, status));
@@ -116,7 +130,7 @@ export class DprService {
       safetyObservations: r.safetyObservations,
       issues: r.issues,
       nextDayPlan: r.nextDayPlan,
-      totalManpower: manpower.reduce((s, m) => s + (Number(m.count) || 0), 0),
+      totalManpower: manpowerTotal(manpower),
       lineCount: r._count.lines,
       status: r.status,
       submittedById: r.submittedById,
@@ -127,6 +141,9 @@ export class DprService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
+      formId: r.dprFormConfigId,
+      typeCode: typeCodeOf(r.project),
+      extra: extraOf(r.extra),
       createdAt: iso(r.createdAt)!,
       updatedAt: iso(r.updatedAt)!,
     };
@@ -157,7 +174,8 @@ export class DprService {
   async get(user: RequestUser, id: string): Promise<DailyReportDto> {
     const row = await this.prisma.dailyReport.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
     if (!row) throw new NotFoundException('Daily report not found');
-    return { ...this.toDto(row), lines: await this.lineDtos(row.id, row.date) };
+    const [lines, form] = await Promise.all([this.lineDtos(row.id, row.date), this.forms.ofReport(row.organizationId, row.dprFormConfigId, row.project)]);
+    return { ...this.toDto(row), lines, form };
   }
 
   /**
@@ -195,6 +213,8 @@ export class DprService {
       workOrderId: r.workOrderId,
       workOrderNo: r.workOrder?.woNo ?? null,
       remarks: r.remarks,
+      extra: extraOf(r.extra),
+      attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       pipeStage: activityPipeStage({ pipeStage: r.activity.pipeStage, name: r.activity.name, elementType: r.activity.workElement?.elementType }),
       pipeSegmentId: r.pipeSegmentId,
       segmentLabel: r.pipeSegment ? segmentLabel({ code: r.pipeSegment.code, fromCode: r.pipeSegment.fromNode.code, toCode: r.pipeSegment.toNode.code }) : null,
@@ -214,8 +234,9 @@ export class DprService {
     await this.access.assertCanAccessProject(user, q.projectId);
     const day = parseDate(q.date ?? todayIn());
     const weekOn = new Date(day.getTime() + 7 * 86_400_000);
-    const [org, activities, done, items, workOrders, segments, valves] = await Promise.all([
+    const [org, project, activities, done, items, workOrders, segments, valves] = await Promise.all([
       this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { progressFromDpr: true } }),
+      this.prisma.project.findUniqueOrThrow({ where: { id: q.projectId }, select: { id: true, type: true, typeCode: true, chainageStart: true, chainageEnd: true, floors: true, villages: true } }),
       this.prisma.activity.findMany({
         where: { projectId: q.projectId, subActivities: { none: {} } },
         select: {
@@ -292,7 +313,10 @@ export class DprService {
     const fixed = valveIds.length
       ? new Set((await this.prisma.progressEntry.findMany({ where: { pipeNodeId: { in: valveIds }, status: 'APPROVED' }, select: { pipeNodeId: true }, distinct: ['pipeNodeId'] })).map((e) => e.pipeNodeId))
       : new Set<string | null>();
+    const [form, features] = await Promise.all([this.forms.forProject(user.organizationId, project), this.types.featuresOf(user.organizationId, [project])]);
     return {
+      form,
+      sector: { locations: features.get(project.id)!.locations, chainageStart: project.chainageStart, chainageEnd: project.chainageEnd, floors: project.floors, villages: project.villages },
       activities: options.map(({ order: _order, ...o }) => o),
       items,
       workOrders: workOrders.map((w) => ({ id: w.id, woNo: w.woNo, title: w.title, vendorName: w.vendor.name })),
@@ -307,8 +331,16 @@ export class DprService {
   /**
    * Saves the report's work lines (item 127) as its progress entries: the complete list, so lines left out are removed.
    * Each line takes the report's day, status and submitter, its crew total as the entry's manpower and its material.
+   * `extras` are the lines' own-field values, already read against the report's form. Returns each entry with the
+   * photos sent for it, which are linked once the transaction is in.
    */
-  private async saveLines(tx: Tx, user: RequestUser, dpr: { id: string; projectId: string; date: Date; status: SubmissionStatus; submittedById: string; submittedAt: Date | null }, lines: DprLineInputDto[]) {
+  private async saveLines(
+    tx: Tx,
+    user: RequestUser,
+    dpr: { id: string; projectId: string; date: Date; status: SubmissionStatus; submittedById: string; submittedAt: Date | null },
+    lines: DprLineInputDto[],
+    extras: DprExtra[],
+  ): Promise<{ id: string; attachmentIds: string[] | undefined }[]> {
     lines.forEach((l, i) => {
       const problem = dprLineProblem(l, i + 1);
       if (problem) throw new BadRequestException(problem);
@@ -341,6 +373,7 @@ export class DprService {
     const kept = new Set(lines.flatMap((l) => (l.id && mine.has(l.id) ? [l.id] : [])));
     const gone = existing.filter((e) => !kept.has(e.id)).map((e) => e.id);
     if (gone.length) await tx.progressEntry.deleteMany({ where: { id: { in: gone } } });
+    const saved: { id: string; attachmentIds: string[] | undefined }[] = [];
     for (const [i, l] of lines.entries()) {
       const sector = await resolveSector(this.prisma, dpr.projectId, l);
       const labour = (l.labour ?? []).filter((m) => m.category?.trim() && m.count > 0);
@@ -350,6 +383,7 @@ export class DprService {
         date: dpr.date,
         quantity: new Prisma.Decimal(l.quantity),
         remarks: l.remarks?.trim() || null,
+        extra: Object.keys(extras[i] ?? {}).length ? (extras[i] as Prisma.InputJsonValue) : Prisma.DbNull,
         location: locationOr(l.location, sector) ?? null,
         chainageFrom: sector.chainageFrom ?? null,
         chainageTo: sector.chainageTo ?? null,
@@ -386,7 +420,51 @@ export class DprService {
         await tx.progressMaterial.createMany({
           data: materials.map((m, k) => ({ organizationId: user.organizationId, progressEntryId: entryId, itemId: m.itemId, quantity: new Prisma.Decimal(m.quantity), sortOrder: k })),
         });
+      saved.push({ id: entryId, attachmentIds: l.attachmentIds });
     }
+    return saved;
+  }
+
+  /** Each line's photos, after the lines are saved (a line sent with none listed keeps what it has). */
+  private async linkLinePhotos(user: RequestUser, saved: { id: string; attachmentIds: string[] | undefined }[]) {
+    for (const s of saved) await this.attachments.sync(user, 'progressEntryId', s.id, s.attachmentIds);
+  }
+
+  /**
+   * The report's own-field values read against its form (item 134 part 2): wrong values are refused always, empty
+   * required ones only when `required` (the report is going for approval).
+   */
+  private readExtra(def: DprFormDef, day: unknown, lines: { extra?: unknown }[], required: boolean) {
+    const r = dprExtraProblems(def, { day, lines: lines.map((l) => l.extra) }, { required });
+    if (r.problems.length) throw new BadRequestException(r.problems.join('. '));
+    return r;
+  }
+
+  /** What the form requires, checked when a report goes for approval: its required fields and the photos it needs. */
+  private async assertRequired(organizationId: string, def: DprFormDef, filled: Parameters<typeof dprRequiredProblems>[1]) {
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { progressFromDpr: true } });
+    const problems = dprRequiredProblems(def, filled, { progressFromDpr: org.progressFromDpr });
+    if (problems.length) throw new BadRequestException(problems.join('. '));
+  }
+
+  /** A stored report against its own form, before it goes for approval. */
+  private async assertComplete(organizationId: string, r: DailyReportDto) {
+    const def = r.form!.def;
+    const lines = r.lines ?? [];
+    this.readExtra(def, r.extra, lines, true);
+    await this.assertRequired(organizationId, def, {
+      weather: r.weather,
+      siteCondition: r.siteCondition,
+      lines: lines.length,
+      manpower: r.totalManpower,
+      machinery: r.machinery.length,
+      materialReceived: r.materialReceived,
+      testsConducted: r.testsConducted,
+      safetyObservations: r.safetyObservations,
+      issues: r.issues,
+      nextDayPlan: r.nextDayPlan,
+      photos: r.attachments.length + lines.reduce((n, l) => n + l.attachments.length, 0),
+    });
   }
 
   /**
@@ -468,6 +546,13 @@ export class DprService {
     );
   }
 
+  /** The form a new report on the project is made on (item 134 part 2): its type's latest. */
+  async formFor(user: RequestUser, projectId: string) {
+    await this.access.assertCanAccessProject(user, projectId);
+    const project = await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { type: true, typeCode: true } });
+    return this.forms.forProject(user.organizationId, project);
+  }
+
   /** One DPR per project per day (a rejected one may be replaced). */
   private async assertNoDuplicate(projectId: string, date: Date, excludeId?: string) {
     const dup = await this.prisma.dailyReport.findFirst({
@@ -494,7 +579,29 @@ export class DprService {
     const manpower = dto.manpower?.length ? dto.manpower : ((await this.attendance.manpowerFor(dto.projectId, parseDate(dto.date))) ?? []);
     const text = dto.workExecuted?.trim() ?? '';
     if (!text && !dto.lines?.length) throw new BadRequestException('Say what work was done today, or add a work line');
+    // The form of the project's type (item 134 part 2), checked before anything is written: a retry of the same
+    // client id returns the draft without sending it again.
+    const project = await this.prisma.project.findUniqueOrThrow({ where: { id: dto.projectId }, select: { type: true, typeCode: true } });
+    const form = await this.forms.chosen(user.organizationId, project, dto.formId);
+    const submitting = dto.submit !== false;
+    const lines = dto.lines ?? [];
+    const extra = this.readExtra(form.def, dto.extra, lines, submitting);
+    if (submitting)
+      await this.assertRequired(user.organizationId, form.def, {
+        weather: dto.weather,
+        siteCondition: dto.siteCondition,
+        lines: lines.length,
+        manpower: manpowerTotal(manpower),
+        machinery: (dto.machinery ?? []).length,
+        materialReceived: dto.materialReceived,
+        testsConducted: dto.testsConducted,
+        safetyObservations: dto.safetyObservations,
+        issues: dto.issues,
+        nextDayPlan: dto.nextDayPlan,
+        photos: (dto.attachmentIds?.length ?? 0) + lines.reduce((n, l) => n + (l.attachmentIds?.length ?? 0), 0),
+      });
     let row: { id: string };
+    let saved: { id: string; attachmentIds: string[] | undefined }[] = [];
     try {
       row = await this.prisma.$transaction(async (tx) => {
         const created = await tx.dailyReport.create({
@@ -513,13 +620,15 @@ export class DprService {
             safetyObservations: dto.safetyObservations ?? null,
             issues: dto.issues ?? null,
             nextDayPlan: dto.nextDayPlan ?? null,
+            dprFormConfigId: form.id,
+            extra: extra.day as Prisma.InputJsonValue,
             submittedById: user.id,
             status: 'DRAFT',
           },
           select: { id: true, projectId: true, date: true, status: true, submittedById: true, submittedAt: true },
         });
-        if (dto.lines?.length) {
-          await this.saveLines(tx, user, created, dto.lines);
+        if (lines.length) {
+          saved = await this.saveLines(tx, user, created, lines, extra.lines);
           if (!text) await tx.dailyReport.update({ where: { id: created.id }, data: { workExecuted: await this.summaryOf(tx, created.id) } });
         }
         return created;
@@ -532,16 +641,24 @@ export class DprService {
       throw e;
     }
     await this.attachments.link(user, 'dailyReportId', row.id, dto.attachmentIds);
+    await this.linkLinePhotos(user, saved);
     await this.audit.log(user, 'DPR', row.id, 'CREATED');
-    if (dto.submit !== false) await this.lifecycle.submit(user, 'DPR', row.id);
+    if (submitting) await this.lifecycle.submit(user, 'DPR', row.id);
     return this.get(user, row.id);
   }
 
   async update(user: RequestUser, id: string, dto: UpdateDprDto): Promise<DailyReportDto> {
     const row = await this.lifecycle.load(user, 'DPR', id);
     await this.lifecycle.assertEditable(user, row);
-    const current = await this.prisma.dailyReport.findUniqueOrThrow({ where: { id }, select: { date: true, workExecuted: true, submittedAt: true } });
+    const current = await this.prisma.dailyReport.findUniqueOrThrow({
+      where: { id },
+      select: { date: true, workExecuted: true, submittedAt: true, dprFormConfigId: true, project: { select: { type: true, typeCode: true } } },
+    });
+    // An edited report keeps the form it was made on.
+    const form = await this.forms.ofReport(user.organizationId, current.dprFormConfigId, current.project);
+    const extra = this.readExtra(form.def, dto.extra, dto.lines ?? [], false);
     const data: Prisma.DailyReportUncheckedUpdateInput = {};
+    if (dto.extra !== undefined) data.extra = extra.day as Prisma.InputJsonValue;
     if (dto.date !== undefined) {
       assertNotAfterToday(dto.date, 'DPR');
       await this.assertNoDuplicate(row.projectId, parseDate(dto.date), id);
@@ -557,13 +674,15 @@ export class DprService {
     if (dto.safetyObservations !== undefined) data.safetyObservations = dto.safetyObservations;
     if (dto.issues !== undefined) data.issues = dto.issues;
     if (dto.nextDayPlan !== undefined) data.nextDayPlan = dto.nextDayPlan;
+    let saved: { id: string; attachmentIds: string[] | undefined }[] = [];
     await this.prisma.$transaction(async (tx) => {
       // Text written from the lines is written again when they change; text of the user's own stays.
       const before = await this.summaryOf(tx, id);
       const auto = data.workExecuted === undefined ? current.workExecuted === before : data.workExecuted === '' || data.workExecuted === before;
       await tx.dailyReport.update({ where: { id }, data });
       const date = (data.date as Date | undefined) ?? current.date;
-      if (dto.lines !== undefined) await this.saveLines(tx, user, { id, projectId: row.projectId, date, status: row.status, submittedById: row.submittedById, submittedAt: current.submittedAt }, dto.lines);
+      if (dto.lines !== undefined)
+        saved = await this.saveLines(tx, user, { id, projectId: row.projectId, date, status: row.status, submittedById: row.submittedById, submittedAt: current.submittedAt }, dto.lines, extra.lines);
       else if (data.date) await tx.progressEntry.updateMany({ where: { dailyReportId: id }, data: { date } });
       const lines = await tx.progressEntry.count({ where: { dailyReportId: id } });
       if (auto && lines) await tx.dailyReport.update({ where: { id }, data: { workExecuted: await this.summaryOf(tx, id) } });
@@ -571,14 +690,19 @@ export class DprService {
         throw new BadRequestException('Say what work was done today, or add a work line');
     });
     await this.attachments.sync(user, 'dailyReportId', id, dto.attachmentIds);
+    await this.linkLinePhotos(user, saved);
     await this.audit.log(user, 'DPR', id, 'UPDATED');
     if (dto.submit) await this.submit(user, id);
     return this.get(user, id);
   }
 
-  /** (Re)submit for approval. A rejected DPR may have been replaced by a newer one for the same day, so re-check. */
+  /**
+   * (Re)submit for approval: the report must have what its form requires. A rejected DPR may have been replaced by a
+   * newer one for the same day, so re-check.
+   */
   async submit(user: RequestUser, id: string) {
     const current = await this.get(user, id);
+    await this.assertComplete(user.organizationId, current);
     if (current.status === 'REJECTED') await this.assertNoDuplicate(current.projectId, parseDate(current.date), id);
     await this.lifecycle.submit(user, 'DPR', id);
     return this.get(user, id);

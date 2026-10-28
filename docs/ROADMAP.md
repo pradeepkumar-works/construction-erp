@@ -769,7 +769,10 @@ with default templates for each type. Plan in the artifact "Configurable project
      activities; a library of component kinds (specs and steps as data, the twenty built-in kinds included); New project
      picks the type and how many of each starting component; the Structure tab offers the type's kinds first.
      ARCHITECTURE "Project types".
-     Part 2 (L): the DPR form per type: which sections a site report has, and fields of the company's own.
+     ~~Part 2 (L):~~ Done: the DPR form per type: which built-in fields show, are required and what they are called,
+     photos, the work lines' picker and parts, and up to 20 fields of the company's own (for the day or each line,
+     with a Hindi label); saved as versions, each report keeping the one it was made on; web, phone, record, print,
+     export and Ask Nirmaan follow it. ARCHITECTURE "DPR form per project type".
      Part 3 (M): pushing a type's or kind's changes to live projects as a reviewed preview, and export and import of
      types and kinds between companies.
 

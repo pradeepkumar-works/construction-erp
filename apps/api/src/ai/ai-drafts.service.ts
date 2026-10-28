@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type { AiDraftDto, AiDraftKind, ProjectSummary } from '@erp/shared';
-import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, GST_RATES, MANPOWER_CATEGORIES, MATERIAL_PRIORITIES, PAYMENT_MODES, WEATHER_OPTIONS, itemSimilarity, normUnit } from '@erp/shared';
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, GST_RATES, MANPOWER_CATEGORIES, MATERIAL_PRIORITIES, PAYMENT_MODES, WEATHER_OPTIONS, extraByLabel, itemSimilarity, normUnit, ownFieldsOf, readExtra } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { todayIn } from '../notifications/time';
 import { ProjectsService } from '../projects/projects.service';
@@ -198,6 +198,13 @@ export class AiDraftsService {
       .filter((m): m is { name: string; hours: number } => !!m.name && m.hours >= 0 && m.hours <= 24)
       .slice(0, 20);
     const weather = pick(i.weather, WEATHER_OPTIONS);
+    // Figures the notes give for the form's own fields (item 134 part 2), by the names the form gives them.
+    const form = await this.dpr.formFor(user, project.id);
+    const named = i.ownFields && typeof i.ownFields === 'object' && !Array.isArray(i.ownFields) ? (i.ownFields as Record<string, unknown>) : {};
+    const dayFields = ownFieldsOf(form.def, 'DAY');
+    const { values: extra, problems } = readExtra(dayFields, extraByLabel(dayFields, named));
+    for (const p of problems) flags.push({ field: 'extra', note: p });
+    for (const name of Object.keys(named)) if (!Object.keys(extraByLabel(dayFields, { [name]: true })).length) flags.push({ field: 'extra', note: `${name} is not a field of this project's DPR form` });
     const values = {
       date: d,
       weather,
@@ -210,6 +217,7 @@ export class AiDraftsService {
       safetyObservations: text(i.safetyObservations, 2000),
       issues: text(i.issues, 2000),
       nextDayPlan: text(i.nextDayPlan, 2000),
+      extra: Object.keys(extra).length ? extra : undefined,
     };
     const people = manpower.reduce((s, m) => s + m.count, 0);
     return this.draft('dpr', project, `DPR for ${project.name}, ${longDate(d)}${people ? `: ${plural(people, 'worker')}` : ''}`, values, flags);

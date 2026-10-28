@@ -17,6 +17,7 @@ import {
   BookIcon,
   BookTextIcon,
   CalculatorIcon,
+  CameraIcon,
   CalendarCheckIcon,
   CalendarClockIcon,
   CarIcon,
@@ -221,6 +222,7 @@ export const BookOutlined = lucide(BookIcon, 'book');
 export const BorderOuterOutlined = lucide(SquareDashedIcon, 'border-outer');
 export const BorderOutlined = lucide(SquareIcon, 'border');
 export const CalculatorOutlined = lucide(CalculatorIcon, 'calculator');
+export const CameraOutlined = lucide(CameraIcon, 'camera');
 export const CarOutlined = lucide(CarIcon, 'car');
 export const CaretDownOutlined = lucide(ChevronDownIcon, 'caret-down');
 export const CaretRightOutlined = lucide(ChevronRightIcon, 'caret-right');

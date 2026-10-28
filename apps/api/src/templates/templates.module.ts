@@ -3,7 +3,8 @@ import { TemplatesController } from './templates.controller';
 import { TemplatesService } from './templates.service';
 import { ProjectTypesController } from './project-types.controller';
 import { ProjectTypesService } from './project-types.service';
+import { DprFormsService } from './dpr-forms.service';
 
-/** Project types, component kinds and their loose activities (item 134). */
-@Module({ controllers: [TemplatesController, ProjectTypesController], providers: [TemplatesService, ProjectTypesService], exports: [TemplatesService, ProjectTypesService] })
+/** Project types, component kinds, their loose activities and DPR forms (item 134). */
+@Module({ controllers: [TemplatesController, ProjectTypesController], providers: [TemplatesService, ProjectTypesService, DprFormsService], exports: [TemplatesService, ProjectTypesService, DprFormsService] })
 export class TemplatesModule {}

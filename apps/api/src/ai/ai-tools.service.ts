@@ -521,6 +521,11 @@ export class AiToolsService {
               safetyObservations: { type: 'string' },
               issues: { type: 'string', description: 'Hold-ups and problems' },
               nextDayPlan: { type: 'string' },
+              ownFields: {
+                type: 'object',
+                description: "Figures or notes the user gave that the company's DPR form asks for besides the fields above, by the name the site uses for them, e.g. { \"Rain hours\": 2.5, \"Cube sets cast\": 3 }. They fill the project's form fields of the same name; anything else is flagged.",
+                additionalProperties: true,
+              },
             },
             required: ['workExecuted'],
           },

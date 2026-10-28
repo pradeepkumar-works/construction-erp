@@ -34,9 +34,9 @@ export function attachmentIds(photos: LocalPhoto[]): string[] {
   return photos.map((p) => p.attachmentId).filter((id): id is string => !!id);
 }
 
-/** Everything the outbox needs to upload (or reuse) each photo when the entry is sent. */
-export function toOutboxPhotos(photos: LocalPhoto[]): OutboxPhoto[] {
-  return photos.filter((p) => !p.error).map((p) => ({ uri: p.uri, name: p.name, type: p.type, attachmentId: p.attachmentId }));
+/** Everything the outbox needs to upload (or reuse) each photo when the entry is sent; `line` for a DPR line's photos. */
+export function toOutboxPhotos(photos: LocalPhoto[], line?: string): OutboxPhoto[] {
+  return photos.filter((p) => !p.error).map((p) => ({ uri: p.uri, name: p.name, type: p.type, attachmentId: p.attachmentId, ...(line ? { line } : {}) }));
 }
 
 /** Full-screen success state shown after a submission is created. */

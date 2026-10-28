@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { App, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
-import { WEATHER_LABELS, canReviewHindrances, linesSummary } from '@erp/shared';
+import type { DailyReportDto, DprBuiltInKey, ManpowerLine, MachineryLine } from '@erp/shared';
+import { STANDARD_DPR_FORM, WEATHER_LABELS, canManageTemplates, canReviewHindrances, dprLabel, dprShows, filledExtra, linesSummary, ownFieldsOf } from '@erp/shared';
 import { useDpr } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
@@ -45,6 +46,25 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
   const { user } = useAuth();
   const { message } = App.useApp();
 
+  const def = data?.form?.def ?? STANDARD_DPR_FORM;
+  // A field the form hides shows only when the report has something in it (made before it was hidden).
+  const note = (key: DprBuiltInKey, value: string | null) => (dprShows(def, key) || value ? <Note key={key} title={dprLabel(def, key)}>{value}</Note> : null);
+  const form = data?.form;
+  const formFact = form
+    ? {
+        key: 'form',
+        label: 'DPR form',
+        children:
+          user && canManageTemplates(user.roleKey) && form.typeCode ? (
+            <Link href={`/project-types/${form.typeCode}?tab=dpr-form`}>{form.standard ? 'Standard' : `Version ${form.version}`}</Link>
+          ) : form.standard ? (
+            'Standard'
+          ) : (
+            `Version ${form.version}`
+          ),
+      }
+    : null;
+
   const print = () => {
     if (!data) return;
     if (!openDprPrint(data, user?.organizationName ?? '')) message.warning('Pop-up blocked. Allow pop-ups to print the DPR.');
@@ -72,6 +92,8 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
             { key: 'weather', label: 'Weather', children: data.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[data.weather]}</AppTag> : '-' },
             { key: 'cond', label: 'Site condition', children: data.siteCondition ?? '-' },
             { key: 'mp', label: 'Total manpower', children: data.totalManpower },
+            ...filledExtra(ownFieldsOf(def, 'DAY'), data.extra).map((x) => ({ key: `own-${x.field.key}`, label: x.field.label, children: <span translate="no">{x.text}</span> })),
+            ...(formFact ? [formFact] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],
           lifecycle: submissionLifecycle(data),
@@ -83,7 +105,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
                   children: (
                     <>
                       <DprPipelineSummary lines={data.lines} />
-                      <DprWorkLines lines={data.lines} />
+                      <DprWorkLines lines={data.lines} def={def} />
                       {data.workExecuted && data.workExecuted !== linesSummary(data.lines) ? (
                         <div style={{ marginTop: 12 }}>
                           <Note title="Work executed">{data.workExecuted}</Note>
@@ -148,12 +170,12 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
               title: 'Site notes',
               children: (
                 <>
-                  <Note title="Material received">{data.materialReceived}</Note>
-                  <Note title="Tests conducted">{data.testsConducted}</Note>
-                  <Note title="Safety observations">{data.safetyObservations}</Note>
-                  <Note title="Issues / hindrances">{data.issues}</Note>
+                  {note('materialReceived', data.materialReceived)}
+                  {note('testsConducted', data.testsConducted)}
+                  {note('safetyObservations', data.safetyObservations)}
+                  {note('issues', data.issues)}
                   {mode !== 'pane' && data.issues && data.status !== 'DRAFT' && user && canReviewHindrances(user.roleKey) ? <DprHindrance dprId={data.id} /> : null}
-                  <Note title="Next day plan">{data.nextDayPlan}</Note>
+                  {note('nextDayPlan', data.nextDayPlan)}
                 </>
               ),
             },

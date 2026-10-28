@@ -142,7 +142,7 @@ export function TypeEditor({ type, kinds, open, onClose }: { type: ProjectTypeDt
             <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name, e.g. Bridge' }]}>
               <Input maxLength={80} />
             </Form.Item>
-            <Form.Item name="baseType" label="Built on" tooltip={type.projects ? 'Projects use this type, so this stays; make a new type instead.' : 'Sets the project code, the reports a project of it appears in, and its DPR form for now.'}>
+            <Form.Item name="baseType" label="Built on" tooltip={type.projects ? 'Projects use this type, so this stays; make a new type instead.' : 'Sets the project code, the reports a project of it appears in, and the DPR form it starts with.'}>
               <Select disabled={type.projects > 0} options={TYPE_BASES.map((b) => ({ value: b, label: PROJECT_TYPE_LABELS[b] }))} />
             </Form.Item>
             <Form.Item name="active" label="In use" valuePropName="checked" tooltip="Archived, it is no longer offered in New project; its projects stay as they are.">
