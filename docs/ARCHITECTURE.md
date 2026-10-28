@@ -222,6 +222,35 @@ it with a reason; the person gets an `ACCESS_REQUEST` notification (entity `ACCE
 each tile New (optionally until a day) or Featured, or back to as shipped (`PUT /launcher/flags/:nodeId`). Changes are
 audited on the company. `LauncherFlag` and `AccessRequest` are tenant tables (migration `20261206090000_launcher_discover`).
 
+### Menu and names (the top bar)
+
+A company chooses its menu in Admin › Menu and names (`/menu-and-names`, `GET`/`PUT /nav-settings`, admins through
+`canManageModules`, audited as `MENU` on the company):
+
+- **Where it sits** (`Organization.navLayout`): `SIDEBAR` (the default, as before) or `TOP_BAR`. With the top bar, Home's
+  first section is the company's modules; a module's screen and every page in it carry the module's bar under the top bar:
+  the module's name (a menu of every module), Overview, then its sub-modules, a sub-module of several pages opening as a
+  menu of them. Sub-modules that do not fit go under More on a wide screen; a phone's bar scrolls sideways.
+- **The look** (`navLook`): `NAVY` (a navy bar over a white module bar, the default), `FRAME` (a light frame round the page,
+  Home listing each module with its sub-modules) or `BAR` (one white bar holding the module and its menu, Home grouping the
+  modules by `navMenuGroup`). `navPersonalLook` lets each person pick their own (`User.navLook`, the account menu's Top bar
+  look, `PUT /nav-settings/own-look`); `navSettingsOf(user)` decides which applies.
+- **The modules** (`navModuleSet`): `AREAS`, the tree's own modules (`AREA_MODULES`, built from `NAV_TREE`), or
+  `DEPARTMENTS`, the twelve a contractor's departments run (`DEPARTMENT_MODULES`: project management, planning and
+  estimation, purchase, store and inventory, contractors, machinery, plant, accounts, labour, HR and payroll, reports and
+  MIS, administration), each a list of sub-modules naming tree nodes. A department module's screen is `DepartmentHome` at
+  `/modules/<key>` (keys are kept forever, names hang on them).
+- **The names** (`navNames`, by module key, at most `NAV_NAME_MAX` characters, checked by `navNamesProblem` and tidied by
+  `cleanNavNames`): the sidebar, the top bar, Home and the module's screen show the company's name.
+
+Everything is in `@erp/shared/nav-menu.ts` and pure: `navMenuFor(user, settings)` is the menu one user sees (only the nodes
+`canSeeNav` lets them open; a sub-module or module with none is left out), `navNodeForPath` finds the page on screen and
+`navMenuPlace` its module and sub-module (a page in two modules stays in the one the user came from). The signed-in user
+carries `navigation` (left out while it is the default) and `ownLook`, so the shell draws without another request. The web
+reads it through `components/shell/menu.ts` (`useNavMenu`, `useMenuPlace`, `moduleWaiting` for a module's count) and draws
+it in `TopBar.tsx`; the sidebar's sections follow the same set and names in `navFor`. A page added to the tree needs a place
+in `DEPARTMENT_MODULES`: `src/scripts/nav-menu-test.ts` (CI) fails on a live page with none. The phone keeps its launcher.
+
 ### The launcher on the phone (launcher phase 4)
 
 The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the launcher too, from the same tree:

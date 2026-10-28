@@ -8,14 +8,14 @@ import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout
 import { AppTag } from '@/components/common/AppTag';
 import type { MenuProps } from 'antd';
 import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, UserOutlined } from '@/components/common/icons';
-import type { AuthUser } from '@erp/shared';
-import { PRODUCT_NAME, canUseAi, isGuest, mayApprove } from '@erp/shared';
+import type { AuthUser, NavLook } from '@erp/shared';
+import { NAV_LOOKS, NAV_LOOK_LABELS, PRODUCT_NAME, canUseAi, isGuest, isSupplier, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
 import { ProjectScopeProvider } from '@/lib/project-scope';
 import { readPref, writePref } from '@/lib/prefs';
 import { askShortcutLabel, isAskShortcut, singleKeysOn } from '@/lib/shortcuts';
-import { useAiStatus, usePendingApprovals, useProjects } from '@/lib/queries';
+import { useAiStatus, usePendingApprovals, useProjects, useSaveOwnLook } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import { AskContext } from '@/lib/ask';
@@ -33,6 +33,10 @@ import { useShellPins } from './pins';
 import { SEARCH_REQUEST } from './search-request';
 import { PREF_RAIL, Sidebar, searchShortcut } from './Sidebar';
 import { ProductTour, shouldAutoStartTour } from './ProductTour';
+import { PinButton, TopBar, topBarHeight } from './TopBar';
+import { useMenuPlace, useNavMenu } from './menu';
+import { StickyTopContext } from '@/lib/sticky';
+import t from './TopBar.module.css';
 import s from './Sidebar.module.css';
 
 const { Header, Content } = Layout;
@@ -51,7 +55,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
 
 function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, refresh } = useAuth();
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
   // Below xl the header drops the words beside its icons.
@@ -67,6 +71,15 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   const { data: pending } = usePendingApprovals(approver);
   const pendingCount = approver ? (pending?.length ?? 0) : 0;
   const sections = useMemo(() => navFor(user), [user]);
+  // Menu and names: the company's menu across the top (Home holds the modules, a module's page its sub-modules) or down the side.
+  const { settings: navSettings, menu } = useNavMenu(user);
+  const topBar = navSettings.layout === 'TOP_BAR' && !isGuest(user.roleKey) && !isSupplier(user.roleKey);
+  const menuPlace = useMenuPlace(topBar ? menu : []);
+  const look = navSettings.look;
+  const compactTools = topBar && look === 'BAR' && !!menuPlace;
+  const ownLook = useSaveOwnLook();
+  // On the navy bar the search box and Ask's mark take the bar's own colours (TopBar.module.css).
+  const navyBar = topBar && look === 'NAVY';
   const trail = useMemo(() => navTrail(sections, pathname), [sections, pathname]);
   const guest = isGuest(user.roleKey);
   const { data: projects } = useProjects(!guest);
@@ -171,7 +184,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
 
   // The page's last crumb (a record's kind, a project's code) joins the header's trail, so there is one breadcrumb.
   const [trailTail, setTrailTail] = useState<string | null>(null);
-  const headerTrail = !isMobile && !!trail;
+  const headerTrail = !isMobile && !!trail && !topBar;
   const pageTrail = useMemo(() => ({ shown: headerTrail, setTail: setTrailTail }), [headerTrail]);
 
   const openSearch = guest
@@ -223,6 +236,22 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         onClick: () => setPrefs({ density }),
       })),
     },
+    // Menu and names: a person's own look for the top bar, where the company lets people choose.
+    ...(topBar && navSettings.personalLook
+      ? [
+          {
+            key: 'look',
+            icon: <TreeIcon name="panels-top-left" />,
+            label: 'Top bar look',
+            children: ([[null, `Your company’s (${NAV_LOOK_LABELS[user.navigation?.look ?? 'NAVY']})`], ...NAV_LOOKS.map((l) => [l, NAV_LOOK_LABELS[l]])] as [NavLook | null, string][]).map(([l, label]) => ({
+              key: `look-${l ?? 'company'}`,
+              label,
+              icon: (user.ownLook ?? null) === l ? <CheckOutlined /> : <span className="menu-check-gap" />,
+              onClick: () => ownLook.mutate(l, { onSuccess: () => void refresh() }),
+            })),
+          },
+        ]
+      : []),
     { type: 'divider' },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Sign out', onClick: logout },
   ];
@@ -233,6 +262,119 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+  // The right of the header: search, Ask, New, Help, the bell and the account; the top bar's module look has room for icons only.
+  const toolsRoomy = roomy && !compactTools;
+  const toolsSpacious = spacious && !compactTools;
+  const tools = (
+    <Space size={token.marginXXS} style={{ flexShrink: 0 }}>
+      {openSearch &&
+        (isMobile || !toolsRoomy ? (
+          <Tooltip title={isMobile ? undefined : `Search  ${searchShortcut()}`}>
+            <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages and projects" data-tour="search" />
+          </Tooltip>
+        ) : (
+          <Button
+            color="default"
+            variant="filled"
+            icon={<SearchOutlined />}
+            onClick={openSearch}
+            aria-keyshortcuts="Control+K Meta+K"
+            data-tour="search"
+            style={{ width: toolsSpacious || !askVisible ? 260 : 220, justifyContent: 'flex-start', color: navyBar ? undefined : token.colorTextTertiary }}
+          >
+            <span style={{ flex: 1, textAlign: 'left' }}>Search or jump to…</span>
+            <Typography.Text keyboard type="secondary" style={{ fontSize: token.fontSizeSM }}>
+              {searchShortcut()}
+            </Typography.Text>
+          </Button>
+        ))}
+      {askVisible && !isMobile && (
+        <Tooltip title={`Ask ${PRODUCT_NAME}  ${askShortcutLabel()}`}>
+          <Button
+            type="text"
+            icon={<SparkleIcon style={{ color: navyBar ? BRAND.colors.accentLight : token.colorPrimary }} />}
+            onClick={() => (askOpen ? setAskOpen(false) : openAsk())}
+            aria-label={toolsSpacious ? undefined : `Ask ${PRODUCT_NAME}`}
+            aria-keyshortcuts="Alt+J Meta+J"
+            aria-expanded={askOpen}
+            data-tour="ask"
+          >
+            {toolsSpacious ? 'Ask' : null}
+          </Button>
+        </Tooltip>
+      )}
+      <span style={{ marginInline: token.marginXXS }}>
+        <NewMenu user={user} compact={isMobile || !toolsRoomy} />
+      </span>
+      {isMobile ? null : <HelpButton items={help.items} unseen={help.unseen} />}
+      <span data-tour="notifications">
+        <NotificationBell />
+      </span>
+      <Dropdown menu={{ items: userMenu }} trigger={['click']}>
+        <Button type="text" style={{ height: 40, padding: `0 ${token.paddingXS}px` }} data-tour="account" aria-label={toolsRoomy ? undefined : `${user.fullName}, account`}>
+          <Space>
+            {isMobile && help.unseen ? (
+              <Badge dot offset={[-2, 2]}>
+                <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
+                  {initials}
+                </Avatar>
+              </Badge>
+            ) : (
+            <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
+              {initials}
+            </Avatar>
+            )}
+            {toolsRoomy && (
+              <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
+                <span style={{ fontWeight: 600, fontSize: token.fontSize }} translate="no">
+                  {user.fullName}
+                </span>
+                <span className="text-muted" style={{ fontSize: token.fontSizeSM }}>
+                  {user.roleName}
+                </span>
+              </span>
+            )}
+          </Space>
+        </Button>
+      </Dropdown>
+    </Space>
+  );
+
+  const body = (
+    <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
+      <Content id="main-content" tabIndex={-1} style={{ outline: 'none', flex: 1, minWidth: 0 }}>
+        <MessageBar user={user} />
+        <PageTrailProvider value={pageTrail}>
+          <AskContext.Provider value={askContext}>{children}</AskContext.Provider>
+        </PageTrailProvider>
+      </Content>
+      {help.dialogs}
+      {askVisible && askLoaded && <AskPanel open={askOpen} onClose={() => setAskOpen(false)} user={user} status={aiStatus} mobile={isMobile} question={askQuestion} onQuestionTaken={takeAskQuestion} />}
+    </div>
+  );
+
+  if (topBar) {
+    const pin = pinnable && <PinButton pinned={isPinned} onToggle={togglePin} />;
+    return (
+      <StickyTopContext.Provider value={topBarHeight(look, isMobile, !!menuPlace)}>
+        <Layout style={{ minHeight: '100vh' }} className={look === 'FRAME' ? t.frameBody : undefined}>
+          <a href="#main-content" className="skip-link">
+            Skip to content
+          </a>
+          {isMobile && (
+            <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: BRAND.colors.ink } }}>
+              <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
+            </Drawer>
+          )}
+          {!guest && <CommandPalette open={searchOpen} onClose={closeSearch} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} initialQuery={searchQuery} />}
+          <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
+          <TopBar user={user} look={look} mobile={isMobile} menu={menu} place={menuPlace} pendingCount={pendingCount} tools={tools} onOpenMenu={() => setMobileOpen(true)} pin={pin || undefined} />
+          {look === 'FRAME' && !isMobile ? <div className={t.sheet}>{body}</div> : body}
+        </Layout>
+      </StickyTopContext.Provider>
+    );
+  }
 
   return (
     <Layout hasSider style={{ minHeight: '100vh' }}>
@@ -320,90 +462,10 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
               </>
             )}
           </Flex>
-          <Space size={token.marginXXS} style={{ flexShrink: 0 }}>
-            {openSearch &&
-              (isMobile || !roomy ? (
-                <Tooltip title={isMobile ? undefined : `Search  ${searchShortcut()}`}>
-                  <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages and projects" data-tour="search" />
-                </Tooltip>
-              ) : (
-                <Button
-                  color="default"
-                  variant="filled"
-                  icon={<SearchOutlined />}
-                  onClick={openSearch}
-                  aria-keyshortcuts="Control+K Meta+K"
-                  data-tour="search"
-                  style={{ width: spacious || !askVisible ? 260 : 220, justifyContent: 'flex-start', color: token.colorTextTertiary }}
-                >
-                  <span style={{ flex: 1, textAlign: 'left' }}>Search or jump to…</span>
-                  <Typography.Text keyboard type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                    {searchShortcut()}
-                  </Typography.Text>
-                </Button>
-              ))}
-            {askVisible && !isMobile && (
-              <Tooltip title={`Ask ${PRODUCT_NAME}  ${askShortcutLabel()}`}>
-                <Button
-                  type="text"
-                  icon={<SparkleIcon style={{ color: token.colorPrimary }} />}
-                  onClick={() => (askOpen ? setAskOpen(false) : openAsk())}
-                  aria-label={spacious ? undefined : `Ask ${PRODUCT_NAME}`}
-                  aria-keyshortcuts="Alt+J Meta+J"
-                  aria-expanded={askOpen}
-                  data-tour="ask"
-                >
-                  {spacious ? 'Ask' : null}
-                </Button>
-              </Tooltip>
-            )}
-            <span style={{ marginInline: token.marginXXS }}>
-              <NewMenu user={user} compact={isMobile || !roomy} />
-            </span>
-            {isMobile ? null : <HelpButton items={help.items} unseen={help.unseen} />}
-            <span data-tour="notifications">
-              <NotificationBell />
-            </span>
-            <Dropdown menu={{ items: userMenu }} trigger={['click']}>
-              <Button type="text" style={{ height: 40, padding: `0 ${token.paddingXS}px` }} data-tour="account" aria-label={roomy ? undefined : `${user.fullName}, account`}>
-                <Space>
-                  {isMobile && help.unseen ? (
-                    <Badge dot offset={[-2, 2]}>
-                      <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
-                        {initials}
-                      </Avatar>
-                    </Badge>
-                  ) : (
-                  <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
-                    {initials}
-                  </Avatar>
-                  )}
-                  {roomy && (
-                    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
-                      <span style={{ fontWeight: 600, fontSize: token.fontSize }} translate="no">
-                        {user.fullName}
-                      </span>
-                      <span className="text-muted" style={{ fontSize: token.fontSizeSM }}>
-                        {user.roleName}
-                      </span>
-                    </span>
-                  )}
-                </Space>
-              </Button>
-            </Dropdown>
-          </Space>
+          {tools}
         </Header>
         {/* Ask Nirmaan opens as a column beside the page on a wide screen, so the page narrows instead of being covered. */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
-          <Content id="main-content" tabIndex={-1} style={{ outline: 'none', flex: 1, minWidth: 0 }}>
-            <MessageBar user={user} />
-            <PageTrailProvider value={pageTrail}>
-              <AskContext.Provider value={askContext}>{children}</AskContext.Provider>
-            </PageTrailProvider>
-          </Content>
-          {help.dialogs}
-          {askVisible && askLoaded && <AskPanel open={askOpen} onClose={() => setAskOpen(false)} user={user} status={aiStatus} mobile={isMobile} question={askQuestion} onQuestionTaken={takeAskQuestion} />}
-        </div>
+        {body}
       </Layout>
     </Layout>
   );

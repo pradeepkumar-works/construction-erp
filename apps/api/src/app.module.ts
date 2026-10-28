@@ -76,6 +76,7 @@ import { MeetingsModule } from './meetings/meetings.module';
 import { MaterialApprovalsModule } from './material-approvals/material-approvals.module';
 import { CommentsModule } from './comments/comments.module';
 import { ModuleSwitchesModule } from './module-switches/module-switches.module';
+import { NavSettingsModule } from './nav-settings/nav-settings.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
@@ -144,6 +145,7 @@ import { VitalsController } from './vitals.controller';
     MaterialApprovalsModule,
     CommentsModule,
     ModuleSwitchesModule,
+    NavSettingsModule,
     SupplierModule,
     CostModule,
     ReconciliationModule,

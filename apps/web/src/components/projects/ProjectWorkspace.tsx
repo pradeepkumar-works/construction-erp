@@ -4,7 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Flex, Segmented, Tabs, Typography, theme } from 'antd';
 import { AppstoreOutlined, CheckSquareOutlined, InboxOutlined, ScheduleOutlined, ToolOutlined, WalletOutlined } from '@/components/common/icons';
 import { readPref, writePref } from '@/lib/prefs';
-import { APP_HEADER_HEIGHT, StickyTopContext } from '@/lib/sticky';
+import { StickyTopContext, useStickyTop } from '@/lib/sticky';
 
 /** The project page's groups (UI roadmap item 56): six at the top, the old tabs as a second level inside. */
 export const WORKSPACE_GROUPS = [
@@ -49,6 +49,7 @@ export function ProjectWorkspace({
   const { token } = theme.useToken();
   const barRef = useRef<HTMLDivElement>(null);
   const [bar, setBar] = useState({ height: 0, width: 0 });
+  const headerTop = useStickyTop();
   const [collapsed, setCollapsed] = useState(false);
   const current = tabs.find((t) => t.key === active) ?? tabs[0];
   const groups = WORKSPACE_GROUPS.filter((g) => tabs.some((t) => t.group === g.key));
@@ -69,10 +70,10 @@ export function ProjectWorkspace({
   useEffect(() => {
     const el = headerRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([e]) => setCollapsed(!e.isIntersecting), { rootMargin: `-${APP_HEADER_HEIGHT}px 0px 0px 0px` });
+    const io = new IntersectionObserver(([e]) => setCollapsed(!e.isIntersecting), { rootMargin: `-${headerTop}px 0px 0px 0px` });
     io.observe(el);
     return () => io.disconnect();
-  }, [headerRef]);
+  }, [headerRef, headerTop]);
 
   const openGroup = (group: string) => {
     const remembered = readPref<string | null>(lastInGroupKey(group as WorkspaceGroup), null);
@@ -81,13 +82,13 @@ export function ProjectWorkspace({
   };
 
   return (
-    <StickyTopContext.Provider value={APP_HEADER_HEIGHT + bar.height}>
+    <StickyTopContext.Provider value={headerTop + bar.height}>
       <div
         ref={barRef}
         data-testid="project-workspace-bar"
         style={{
           position: 'sticky',
-          top: APP_HEADER_HEIGHT,
+          top: headerTop,
           zIndex: 5,
           background: token.colorBgContainer,
           borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,

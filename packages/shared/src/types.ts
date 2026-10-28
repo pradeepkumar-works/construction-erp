@@ -1,3 +1,4 @@
+import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
 import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
 import type { OmBillDto } from './om';
@@ -49,6 +50,7 @@ import type {
   DebitNoteReason,
   StockAdjustmentReason,
   PipeMaterial,
+  NavLook,
 } from './enums';
 
 /** API response shapes. Decimal columns are serialised as strings to preserve precision. */
@@ -76,6 +78,10 @@ export interface AuthUser {
   vendor?: { id: string; name: string };
   /** The modules the company does not use (v6 item 117): turned off by an admin or left out of its plan. Empty when all are on. */
   modulesOff?: SwitchableModule[];
+  /** Menu and names: the company's menu, when it chose anything other than the default (`DEFAULT_NAV_SETTINGS`). */
+  navigation?: NavSettingsDto;
+  /** The look this person chose for themselves (used when the company lets people choose) */
+  ownLook?: NavLook;
 }
 
 /** Where a company stands with its subscription. READ_ONLY: trial over and nothing paid, so it can read but not write. */

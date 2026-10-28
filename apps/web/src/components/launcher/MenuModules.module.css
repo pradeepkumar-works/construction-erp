@@ -1,0 +1,121 @@
+/* Home's modules in the light frame look: each module with its sub-modules, two columns on a wide screen. */
+.directory {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border-top: var(--ant-line-width) solid var(--ant-color-border-secondary);
+}
+
+@media (min-width: 992px) {
+  .directory {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--ant-margin-xl);
+  }
+}
+
+.entry {
+  display: flex;
+  gap: var(--ant-margin-sm);
+  padding: var(--ant-padding) 0;
+  border-bottom: var(--ant-line-width) solid var(--ant-color-border-secondary);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 20px;
+}
+
+.body {
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ant-margin-xs);
+  flex-wrap: wrap;
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
+  font-stretch: 88%;
+  font-size: var(--ant-font-size-lg);
+  font-weight: 700;
+  color: var(--ant-color-text);
+  text-decoration: none;
+}
+
+.name:hover {
+  color: var(--ant-color-link);
+}
+
+.waiting {
+  padding: 0 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand-pending) 12%, transparent);
+  color: var(--ant-color-warning-text);
+  font-size: var(--ant-font-size-sm);
+  font-weight: 600;
+  line-height: 20px;
+}
+
+/* A dot before each sub-module; the first of each line has its dot in the clipped margin, so no line starts with one. */
+.subs {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 2px 0 0 -14px;
+  padding: 0;
+  list-style: none;
+  clip-path: inset(-4px -4px -4px 10px);
+}
+
+.subs li::before {
+  content: '·';
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  color: var(--ant-color-text-tertiary);
+}
+
+.subs li {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sub {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: var(--ant-color-text-secondary);
+  text-decoration: none;
+}
+
+.sub:hover {
+  color: var(--ant-color-link);
+  text-decoration: underline;
+}
+
+.name:focus-visible,
+.sub:focus-visible {
+  outline: 2px solid var(--ant-color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (pointer: coarse) {
+  .name,
+  .sub {
+    min-height: 44px;
+  }
+}

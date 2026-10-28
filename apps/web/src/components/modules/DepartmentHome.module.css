@@ -1,0 +1,98 @@
+/* A department module's screen: its sub-modules as cards, each listing its pages. */
+.subs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: var(--ant-margin);
+  align-items: start;
+}
+
+.sub {
+  padding: var(--ant-padding-sm) var(--ant-padding-xs) var(--ant-padding-xs);
+  border: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  border-radius: var(--ant-border-radius-lg);
+  background: var(--ant-color-bg-container);
+}
+
+.subTitle {
+  margin: 0 0 var(--ant-margin-xxs);
+  padding: 0 var(--ant-padding-xs);
+  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
+  font-stretch: 88%;
+  font-size: var(--ant-font-size-lg);
+  font-weight: 700;
+}
+
+.pages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page {
+  display: flex;
+  align-items: center;
+  gap: var(--ant-margin-sm);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--ant-padding-xs);
+  border: 0;
+  border-radius: var(--ant-border-radius);
+  background: none;
+  color: var(--ant-color-text);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.page:hover {
+  background: var(--ant-control-item-bg-hover);
+  color: var(--ant-color-text);
+}
+
+.page:focus-visible {
+  outline: 2px solid var(--ant-color-primary);
+  outline-offset: -2px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 19px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.desc {
+  color: var(--ant-color-text-secondary);
+  font-size: var(--ant-font-size-sm);
+  line-height: 1.4;
+}
+
+.badge {
+  flex: none;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 11px;
+  background: var(--brand-pending);
+  color: var(--brand-on-accent);
+  font-size: var(--ant-font-size-sm);
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}

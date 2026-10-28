@@ -32,6 +32,8 @@ export interface TileEntry {
   onOpen?: () => void;
   /** Greyed: the user's role cannot open it (Discover offers Request access). */
   locked?: boolean;
+  /** The heading it sits under, instead of its node's group (a module's sub-module); null for none. */
+  group?: string | null;
 }
 
 /** A tile's menu (Pin to Home, Unpin, Move left…): drawn as ⋮ on the tile, and opened by right-click, a long press or Shift F10. */
@@ -108,7 +110,7 @@ function TileMenuButton({ label, items, open, onOpenChange }: { label: string; i
 }
 
 /** Asks which project a project-tab tile should open, then opens it there. */
-function ProjectPick({ node, onClose }: { node: NavNode | null; onClose: () => void }) {
+export function ProjectPick({ node, onClose }: { node: NavNode | null; onClose: () => void }) {
   const router = useRouter();
   const [, setScope] = useProjectScope();
   const [form] = Form.useForm<{ projectId: string }>();
@@ -149,7 +151,7 @@ const MOVES: Record<string, number | 'row-up' | 'row-down' | 'first' | 'last'> =
  * between tiles (Up and Down by row, as laid out), Home and End to the ends, Enter opens. Grouped tiles (Accounts) sit under
  * their headings, still one grid for the keys.
  */
-export function TileGrid({ entries, label, menu, compact }: { entries: TileEntry[]; label: string; menu?: TileMenu; compact?: boolean }) {
+export function TileGrid({ entries, label, menu, compact, headingLevel = 2 }: { entries: TileEntry[]; label: string; menu?: TileMenu; compact?: boolean; headingLevel?: 2 | 3 }) {
   const [active, setActive] = useState(0);
   const [menuAt, setMenuAt] = useState<number | null>(null);
   const [picking, setPicking] = useState<NavNode | null>(null);
@@ -157,7 +159,7 @@ export function TileGrid({ entries, label, menu, compact }: { entries: TileEntry
   const groups = useMemo(() => {
     const out: { title?: string; items: { entry: TileEntry; index: number }[] }[] = [];
     entries.forEach((entry, index) => {
-      const title = entry.node?.group;
+      const title = entry.group !== undefined ? (entry.group ?? undefined) : entry.node?.group;
       const last = out[out.length - 1];
       if (last && last.title === title) last.items.push({ entry, index });
       else out.push({ title, items: [{ entry, index }] });
@@ -165,6 +167,7 @@ export function TileGrid({ entries, label, menu, compact }: { entries: TileEntry
     return out;
   }, [entries]);
   const current = Math.min(active, entries.length - 1);
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (menu && ((e.shiftKey && e.key === 'F10') || e.key === 'ContextMenu')) {
@@ -206,7 +209,7 @@ export function TileGrid({ entries, label, menu, compact }: { entries: TileEntry
     <div ref={root} role="group" aria-label={label}>
       {groups.map((g, gi) => (
         <section key={g.title ?? gi} aria-label={g.title} style={{ marginTop: gi ? 'var(--ant-margin-lg)' : undefined }}>
-          {g.title && <h2 className={s.groupTitle}>{g.title}</h2>}
+          {g.title && <Heading className={s.groupTitle}>{g.title}</Heading>}
           <ul className={compact ? `${s.grid} ${s.compact}` : s.grid}>
             {g.items.map(({ entry, index }) => {
               const items = menu?.(entry, index);
