@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import { insightKeysFor, watchListKinds } from '@erp/shared';
-import { headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
+import { CUBE_7DAY_SHARE, cubeEarly, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -71,6 +71,35 @@ test('Q1: the margin warning goes to those who see cost and approve', () => {
   assert.ok(watchListKinds('PROJECT_MANAGER').includes('MARGIN_FADE'));
   assert.ok(!watchListKinds('STORE_MANAGER').includes('MARGIN_FADE'));
   assert.ok(!watchListKinds('SITE_ENGINEER').includes('MARGIN_FADE'));
+});
+
+// ── Q2: cubes weak at 7 days ───────────────────────────────────────────────────────────────────────────────────────
+const cube = (at7: number | null, at28: number | null = null) => [{ label: '7 days', value: at7 }, { label: '28 days', value: at28 }];
+
+test('Q2: a 7-day result pointing under the mark warns, with the projection and the shortfall', () => {
+  const e = cubeEarly(cube(16.2), 25);
+  assert.ok(e);
+  assert.equal(CUBE_7DAY_SHARE, 0.67);
+  assert.equal(e.projected, 24.2);
+  assert.equal(e.shortBy, 0.8);
+});
+test('Q2: a 7-day result on course does not warn', () => {
+  assert.equal(cubeEarly(cube(17.6), 25), null, '17.6 points to 26.3');
+  assert.equal(cubeEarly(cube(22.4), 30), null, '22.4 points to 33.4');
+});
+test('Q2: nothing to say before the 7-day result or after the 28-day one', () => {
+  assert.equal(cubeEarly(cube(null), 25), null);
+  assert.equal(cubeEarly(cube(16.1, 23.8), 25), null, 'the test is judged by its 28-day result now');
+  assert.equal(cubeEarly(cube(16.2), null), null, 'no mark to judge against');
+});
+test('Q2: the demo history bears the share out', () => {
+  // 7-day and 28-day pairs from the demo sites: each 28-day result is within 2 N/mm² of the 7-day one ÷ 0.67.
+  for (const [at7, at28] of [[18.9, 28.6], [18.8, 27.8], [19.6, 31.2], [20.1, 29.4], [16.1, 23.8]]) assert.ok(Math.abs(at7 / CUBE_7DAY_SHARE - at28) < 2, `${at7} → ${at28}`);
+});
+test('Q2: the cube warning goes to QA/QC and the approvers', () => {
+  assert.ok(watchListKinds('QA_QC_ENGINEER').includes('CUBE_7DAY_LOW'));
+  assert.ok(watchListKinds('PROJECT_MANAGER').includes('CUBE_7DAY_LOW'));
+  assert.ok(!watchListKinds('ACCOUNTS_MANAGER').includes('CUBE_7DAY_LOW'));
 });
 
 let failed = 0;

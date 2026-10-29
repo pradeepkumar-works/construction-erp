@@ -305,13 +305,13 @@ test('superseded copies: only those out past the recall period warn, one per doc
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW']);
   assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE']);
   assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH', 'LOAN_EMI']);
   assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR', 'RATE_ABOVE', 'PACKAGE_LATE']);
   assert.deepEqual(watchListKinds('SITE_ENGINEER'), []);
-  assert.deepEqual(watchListKinds('QA_QC_ENGINEER'), ['TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE']);
+  assert.deepEqual(watchListKinds('QA_QC_ENGINEER'), ['TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'CUBE_7DAY_LOW']);
   assert.deepEqual(watchListKinds('DOCUMENT_CONTROLLER'), ['DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE']);
 });
 

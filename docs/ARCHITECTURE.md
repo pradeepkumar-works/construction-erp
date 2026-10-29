@@ -3596,6 +3596,11 @@ export; the client portal and the phone app show the amount.
   2 points or more from the earliest month in the last three to the latest, and the latest is the lowest. The heads behind
   it (`headsBehind`) are what each head spent since (`CostService.compute`) against its budget (`BudgetService.forecasts`)
   for the share earned since, worst two. The key moves with the month and every 2 points lost (`marginStep`).
+- **Q2 Cubes weak at 7 days.** A watch list kind, `CUBE_7DAY_LOW`, for QA/QC and the approvers (`canManageQaPlan`). Cube
+  tests sampled in the last 35 days with no 28-day result yet (`QualityService.listTests` with the caller) are read by
+  `cubeEarly`: the 7-day result ÷ `CUBE_7DAY_SHARE` (0.67, ordinary Portland cement) against the test's specification, else
+  the grade's fck; under it warns, so the next lift and the striking of props wait for the 28-day result. The key is the
+  test and its 7-day value. The demo's columns C1 to C8 set reads 16.2 at 7 days to show it.
 
 ## Money and quantities
 

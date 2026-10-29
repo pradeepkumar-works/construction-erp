@@ -25,7 +25,10 @@ import {
   BOQ_GAP_PCT,
   COST_HEAD_LABELS,
   COST_HEADS,
+  MAX_PAGE_SIZE,
   boqContractGap,
+  concreteGrade,
+  gradeFck,
   canResumeWarningKind,
   canSeeCashForecast,
   fuelNormText,
@@ -49,6 +52,7 @@ import { monthSpan } from '../leakage/leakage-rules';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
 import { QaService } from '../qa/qa.service';
 import { QaRegistersService } from '../qa/registers.service';
+import { QualityService } from '../quality/quality.service';
 import { DrawingScheduleService } from '../design/drawing-schedule.service';
 import { DesignSubmissionsService } from '../design/design-submissions.service';
 import { DesignControlService } from '../design/design-control.service';
@@ -72,7 +76,9 @@ import {
   MIN_BREAKDOWN_HOURS,
   REJECT_SHARE,
   TESTS_SHORT_MIN,
+  CUBE_7DAY_SHARE,
   calibrationWarns,
+  cubeEarly,
   lateReportGroups,
   lateDrawingGroups,
   lateDesignReviews,
@@ -170,6 +176,7 @@ export class WarningsService {
     private earnedValue: EarnedValueService,
     private budget: BudgetService,
     private cost: CostService,
+    private quality: QualityService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -313,6 +320,7 @@ export class WarningsService {
         if (k === 'COPY_RECALL_LATE') return today === todayIn() ? this.copyRecalls(user) : Promise.resolve([]);
         // Margin fade (intelligence quick win Q1): earned value's month ends, as of today.
         if (k === 'MARGIN_FADE') return today === todayIn() ? this.marginFades(user, active) : Promise.resolve([]);
+        if (k === 'CUBE_7DAY_LOW') return today === todayIn() ? this.cubesEarly(user, today) : Promise.resolve([]);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -1083,6 +1091,51 @@ export class WarningsService {
         projectId: p.id,
         projectName: p.name,
       };
+    });
+  }
+
+  /**
+   * Cube sets whose 7-day result points to a 28-day one below the mark while the 28-day result is still to come
+   * (intelligence quick win Q2, `cubeEarly`), read through `QualityService.listTests` with the caller. Sampled in the last
+   * 35 days, so a 28-day result long overdue does not keep warning here (the tests due list chases that).
+   */
+  private async cubesEarly(user: RequestUser, today: string): Promise<Draft[]> {
+    const from = dateOnly(new Date(Date.parse(`${today}T00:00:00Z`) - 35 * 86_400_000))!;
+    const tests = await this.quality.listTests(user, { kind: 'CONCRETE_CUBE', result: 'PENDING', from, page: 1, pageSize: MAX_PAGE_SIZE });
+    return tests.items.flatMap((t) => {
+      const grade = concreteGrade(t.title);
+      const needed = t.specMin !== null ? Number(t.specMin) : grade ? gradeFck(grade) : null;
+      const early = cubeEarly(t.readings.map((r) => ({ label: r.label, value: r.value === null ? null : Number(r.value) })), needed);
+      if (!early) return [];
+      const r28 = t.readings.find((r) => /^28\s*days?$/i.test(r.label.trim()));
+      const where = t.location ?? t.activityName ?? t.title;
+      return [
+        {
+          key: `cube7:${t.id}:${early.at7}`,
+          kind: 'CUBE_7DAY_LOW' as const,
+          title: `${t.testNo} ${t.title}: ${early.at7} N/mm² at 7 days points to about ${early.projected} at 28, under ${early.needed}`,
+          detail: `${where}${t.pourNo ? ` (pour ${t.pourNo})` : ''}. The 28-day result is due ${r28?.dueOn ? day(r28.dueOn) : 'later'}; until then whatever is built on this concrete stands on a likely failure.`,
+          action: 'Hold the next lift and the striking of props under it until the 28-day result, and ask the lab to test the spare cubes early',
+          impact: { text: `${early.shortBy} N/mm² short at 28 days`, inr: null, days: null },
+          working: [
+            `7-day result ${early.at7} N/mm² ÷ ${CUBE_7DAY_SHARE} (the share of its 28-day strength ordinary Portland cement concrete usually has at 7 days) = about ${early.projected} N/mm² at 28 days`,
+            `Needed at 28 days: ${early.needed} N/mm² (${t.specMin !== null ? 'the test\'s specification' : `the characteristic strength of ${grade}`})`,
+            'Blended cements (PPC, slag) gain strength more slowly; with them a low 7-day figure is a question for the mix, not yet a failure',
+          ],
+          facts: [
+            { label: '7 days', value: `${early.at7} N/mm²` },
+            { label: 'Points to', value: `${early.projected} N/mm²` },
+            { label: 'Needed', value: `${early.needed} N/mm²` },
+            ...(r28?.dueOn ? [{ label: '28-day due', value: day(r28.dueOn) }] : []),
+          ],
+          links: [
+            { label: 'Test', href: `/inspections?tab=tests&id=${t.id}` },
+            ...(t.pourId ? [{ label: 'Pour register', href: `/pours?projectId=${t.projectId}` }] : []),
+          ],
+          projectId: t.projectId,
+          projectName: t.projectName,
+        },
+      ];
     });
   }
 
