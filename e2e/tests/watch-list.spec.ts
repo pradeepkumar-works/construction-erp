@@ -58,7 +58,7 @@ test('the MD sees warnings with their action and working, dismisses one as Known
 
 test('the store manager sees only stock, machines, fuel and idle hire; a site engineer has no watch list', async ({ page }) => {
   const store = await api<WatchList>(await apiToken('store@demo.com'), '/warnings');
-  const kinds = ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE'];
+  const kinds = ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE', 'FUEL_TANK'];
   expect(store.kinds).toEqual(kinds);
   expect(store.open.every((w) => kinds.includes(w.kind))).toBe(true);
 
