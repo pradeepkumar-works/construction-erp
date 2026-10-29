@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-06-purchase-controls',
+    date: '2027-06-28',
+    title: 'Purchase controls on the watch list',
+    points: [
+      'Management and accounts now see three checks on purchasing: orders split to stay under an approver’s limit, goods received by the person who ordered them, and a payment soon after a vendor’s bank details changed.',
+      'They show only on your own watch list.',
+    ],
+  },
+  {
     id: '2027-06-vendor-record',
     date: '2027-06-21',
     title: 'Each vendor’s record on the comparative statement',

@@ -5,7 +5,7 @@ import { canApprove, canEditProjects, canManageDocuments, canManageMachineLoans,
  * Early warnings (AI roadmap item 73): plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
-export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW'] as const;
+export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW', 'PURCHASE_CONTROL'] as const;
 export type WarningKind = (typeof WARNING_KINDS)[number];
 
 export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
@@ -34,7 +34,15 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
   COPY_RECALL_LATE: 'Superseded drawings on site',
   MARGIN_FADE: 'Margin falling',
   CUBE_7DAY_LOW: 'Cubes weak at 7 days',
+  PURCHASE_CONTROL: 'Purchase control',
 };
+
+/**
+ * Purchase controls (intelligence quick win Q6): orders split under an approval limit, goods received by the person who
+ * ordered them, a payment soon after a vendor's bank details changed. Management, accounts and the admin; each sees them on
+ * their own watch list, never in a shared place.
+ */
+export const canSeePurchaseControls = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT' || role === 'ACCOUNTS_MANAGER';
 
 /** The warning kinds a role sees: each is the business of the role that can act on it. */
 export function watchListKinds(role: RoleKey): WarningKind[] {
@@ -70,6 +78,8 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   if (canViewCost(role) && canApprove(role)) out.push('MARGIN_FADE');
   // Cubes weak at 7 days (Q2): QA/QC and the approvers, who can hold the next lift.
   if (canManageQaPlan(role)) out.push('CUBE_7DAY_LOW');
+  // Purchase controls (Q6): the owners of the money only, never the buyers or approvers whose work they look at.
+  if (canSeePurchaseControls(role)) out.push('PURCHASE_CONTROL');
   return out;
 }
 
@@ -119,6 +129,7 @@ export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
   COPY_RECALL_LATE: 'CHECKED',
   MARGIN_FADE: 'LIKELY',
   CUBE_7DAY_LOW: 'LIKELY',
+  PURCHASE_CONTROL: 'CHECKED',
 };
 
 /**

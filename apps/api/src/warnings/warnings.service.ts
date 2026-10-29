@@ -38,6 +38,7 @@ import {
 } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
+import { ApprovalRightsService } from '../common/approval-rights.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { dateOnly, parseDate } from '../common/serialize';
 import { PrismaService } from '../prisma/prisma.service';
@@ -77,8 +78,13 @@ import {
   REJECT_SHARE,
   TESTS_SHORT_MIN,
   CUBE_7DAY_SHARE,
+  BANK_CHANGE_DAYS,
+  SPLIT_WINDOW_DAYS,
   calibrationWarns,
   cubeEarly,
+  paidAfterBankChange,
+  selfReceived,
+  splitOrders,
   lateReportGroups,
   lateDrawingGroups,
   lateDesignReviews,
@@ -177,6 +183,7 @@ export class WarningsService {
     private budget: BudgetService,
     private cost: CostService,
     private quality: QualityService,
+    private approvalRights: ApprovalRightsService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -321,6 +328,7 @@ export class WarningsService {
         // Margin fade (intelligence quick win Q1): earned value's month ends, as of today.
         if (k === 'MARGIN_FADE') return today === todayIn() ? this.marginFades(user, active) : Promise.resolve([]);
         if (k === 'CUBE_7DAY_LOW') return today === todayIn() ? this.cubesEarly(user, today) : Promise.resolve([]);
+        if (k === 'PURCHASE_CONTROL') return this.purchaseControls(user, projects, today);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -1137,6 +1145,110 @@ export class WarningsService {
         },
       ];
     });
+  }
+
+  /**
+   * Purchase controls (intelligence quick win Q6) over the last 90 days of the caller's projects: orders split under the
+   * approver's limit (`splitOrders`, the limit from the approval matrix), goods received by the person who raised the
+   * order (`selfReceived`), and payments soon after the vendor's bank details changed (`paidAfterBankChange`, from the
+   * vendor's BANK_CHANGED audit lines). Each is a fact to look at, not a finding of wrongdoing.
+   */
+  private async purchaseControls(user: RequestUser, projects: Project[], today: string): Promise<Draft[]> {
+    if (!projects.length) return [];
+    const since = addDays(today, -90);
+    const projectIds = projects.map((p) => p.id);
+    const names = new Map(projects.map((p) => [p.id, p.name]));
+    const [orders, rules, changes, payments] = await Promise.all([
+      this.prisma.purchaseOrder.findMany({
+        where: { organizationId: user.organizationId, projectId: { in: projectIds }, status: 'APPROVED', poDate: { gte: parseDate(since), lte: parseDate(today) } },
+        select: { id: true, poNo: true, vendorId: true, projectId: true, poDate: true, total: true, submittedById: true, submittedBy: { select: { fullName: true } }, reviewedById: true, reviewedBy: { select: { fullName: true, role: { select: { key: true } } } }, vendor: { select: { name: true } } },
+      }),
+      this.approvalRights.rules(user.organizationId),
+      this.prisma.auditLog.findMany({ where: { organizationId: user.organizationId, entityType: 'VENDOR', action: 'BANK_CHANGED', createdAt: { gte: parseDate(addDays(since, -BANK_CHANGE_DAYS)) } }, select: { entityId: true, createdAt: true, note: true, actor: { select: { fullName: true } } } }),
+      this.prisma.vendorPayment.findMany({
+        where: { organizationId: user.organizationId, projectId: { in: projectIds }, paymentDate: { gte: parseDate(since), lte: parseDate(today) } },
+        select: { id: true, vendorId: true, projectId: true, paymentDate: true, amount: true, reference: true, vendor: { select: { name: true } } },
+      }),
+    ]);
+    const limitOf = (role: string | undefined) => {
+      if (!role || role === 'ADMIN') return null;
+      const r = rules.find((x) => x.roleKey === role && x.type === 'PURCHASE_ORDER' && x.level === 1);
+      return r?.maxAmount ? Number(r.maxAmount) : null;
+    };
+    const receipts = orders.length
+      ? await this.prisma.stockEntry.findMany({ where: { organizationId: user.organizationId, type: 'RECEIPT', purchaseOrderId: { in: orders.map((o) => o.id) } }, select: { purchaseOrderId: true, entryNo: true, date: true, createdById: true } })
+      : [];
+    const byId = new Map(orders.map((o) => [o.id, o]));
+    const out: Draft[] = [];
+
+    for (const g of splitOrders(orders.map((o) => ({ id: o.id, poNo: o.poNo, vendorId: o.vendorId, projectId: o.projectId, date: dateOnly(o.poDate)!, total: n(o.total), reviewedById: o.reviewedById, limit: limitOf(o.reviewedBy?.role.key) })))) {
+      const first = byId.get(g.orders[0].id)!;
+      const approver = first.reviewedBy?.fullName ?? 'the approver';
+      out.push({
+        key: `split:${g.orders.map((o) => o.id).join(',')}`,
+        kind: 'PURCHASE_CONTROL',
+        title: `${first.vendor.name}: ${g.orders.length} orders in ${SPLIT_WINDOW_DAYS} days add to ${rupees(g.total)}, each within ${approver}'s ${rupees(g.limit)} limit`,
+        detail: `${g.orders.map((o) => `${o.poNo} of ${day(o.date)}, ${rupees(o.total)}`).join('; ')}. Together they are above the limit, so as one order they would have gone to a higher approver.`,
+        action: 'See whether this was one purchase split under the approval limit, and if so take the next one to the higher approver',
+        impact: { text: `${rupees(g.total - g.limit)} above the limit together`, inr: Math.round(g.total - g.limit), days: null },
+        working: [
+          ...g.orders.map((o) => `${o.poNo}: ${day(o.date)}, ${rupees(o.total)}, approved by ${approver}`),
+          `${approver}'s limit on a purchase order: ${rupees(g.limit)} (Approval rules)`,
+          `Flagged when two or more orders to one vendor on one project, approved by the same person within ${SPLIT_WINDOW_DAYS} days, are each within the limit and together above it`,
+        ],
+        facts: [
+          { label: 'Orders', value: String(g.orders.length) },
+          { label: 'Together', value: rupees(g.total) },
+          { label: 'Limit', value: rupees(g.limit) },
+        ],
+        links: g.orders.slice(0, 3).map((o) => ({ label: o.poNo, href: `/purchase-orders/${o.id}` })),
+        projectId: first.projectId,
+        projectName: names.get(first.projectId) ?? null,
+      });
+    }
+
+    for (const { order, entryNo } of selfReceived(orders.map((o) => ({ id: o.id, poNo: o.poNo, raisedById: o.submittedById })), receipts.map((r) => ({ purchaseOrderId: r.purchaseOrderId!, entryNo: r.entryNo, createdById: r.createdById })))) {
+      const o = byId.get(order.id)!;
+      out.push({
+        key: `selfgrn:${o.id}:${entryNo}`,
+        kind: 'PURCHASE_CONTROL',
+        title: `${o.poNo}: ordered and received by ${o.submittedBy.fullName}`,
+        detail: `${o.submittedBy.fullName} raised the order to ${o.vendor.name} (${rupees(n(o.total))}) and made its receipt ${entryNo}. With no second person between the order and the gate, what came is only their word.`,
+        action: 'Have the store check the receipt against the challan, and keep ordering and receiving with different people',
+        impact: { text: rupees(n(o.total)), inr: Math.round(n(o.total)), days: null },
+        working: [`${o.poNo} raised by ${o.submittedBy.fullName} on ${day(dateOnly(o.poDate)!)}`, `${entryNo} made by the same person`],
+        facts: [
+          { label: 'Order', value: o.poNo },
+          { label: 'Receipt', value: entryNo },
+          { label: 'Value', value: rupees(n(o.total)) },
+        ],
+        links: [{ label: o.poNo, href: `/purchase-orders/${o.id}` }],
+        projectId: o.projectId,
+        projectName: names.get(o.projectId) ?? null,
+      });
+    }
+
+    const changed = changes.map((c) => ({ vendorId: c.entityId, date: dateOnly(c.createdAt)!, note: c.note, by: c.actor.fullName }));
+    for (const { payment: p, change, days } of paidAfterBankChange(changed, payments.map((p) => ({ ...p, date: dateOnly(p.paymentDate)! })))) {
+      const by = changed.find((c) => c === change)?.by;
+      out.push({
+        key: `bankpay:${p.id}`,
+        kind: 'PURCHASE_CONTROL',
+        title: `${p.vendor.name}: ${rupees(n(p.amount))} paid ${days === 0 ? 'the day' : `${plural(days, 'day')} after`} its bank details changed`,
+        detail: `${change.note ?? 'Bank details changed'} on ${day(change.date)}${by ? ` by ${by}` : ''}; paid ${day(p.date)}${p.reference ? ` (${p.reference})` : ''}. A changed account just before a payment is the usual way a payment is diverted.`,
+        action: `Confirm the new account with ${p.vendor.name} on a phone number you already had, not one in the request`,
+        impact: { text: rupees(n(p.amount)), inr: Math.round(n(p.amount)), days: null },
+        working: [`Bank details changed ${day(change.date)}`, `Paid ${day(p.date)}, ${plural(days, 'day')} later`, `Flagged for payments within ${BANK_CHANGE_DAYS} days after a change`],
+        facts: [
+          { label: 'Paid', value: rupees(n(p.amount)) },
+          { label: 'Changed', value: day(change.date) },
+        ],
+        links: [{ label: 'Vendor', href: `/vendors?q=${encodeURIComponent(p.vendor.name)}` }, { label: 'Payables', href: '/payables' }],
+        projectId: p.projectId,
+        projectName: names.get(p.projectId) ?? null,
+      });
+    }
+    return out;
   }
 
   private async boqGaps(projects: Project[]): Promise<Draft[]> {
