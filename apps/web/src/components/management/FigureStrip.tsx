@@ -6,7 +6,7 @@ import { DISPLAY_FONT } from '@/lib/theme';
 
 export interface StripFigure {
   key: string;
-  label: string;
+  label: React.ReactNode;
   value: React.ReactNode;
   note?: React.ReactNode;
   /** Bad news (a loss, money overdue) in the danger colour, good news in the success colour. */

@@ -114,6 +114,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/purchase-award-test.js
+      - name: Intelligence quick wins (insights, margin fade, cube strength, DPR, vendors, purchase controls, stages, bids)
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/intelligence-test.js
       - name: BOQ sections offer their activities' links, and dates arriving spread the undated activities
         if: matrix.suite == 'flows'
         working-directory: apps/api
