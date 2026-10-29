@@ -1,7 +1,7 @@
 import type { Reading } from './outbox';
 import type { Settings } from './state';
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.3.0';
 
 /** The server refused the token: the Connector was removed or paired again elsewhere. */
 export class NotPairedError extends Error {}

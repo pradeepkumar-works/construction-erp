@@ -55,7 +55,17 @@ seconds; the next weight waits until the bridge has been empty again. Each one r
 minute, where the store puts it on the truck's ticket. Readings wait in the outbox like any other while the internet is
 down. When the indicator says nothing for ten minutes, the log says so once.
 
+## Batching plant
+
+A **Batching plant** connection (Administration › Connections, item 149) has the Connector read the batch reports a
+batching plant's controller writes to a folder on its control room computer. Set the controller to export each batch
+(or the day's batches) as CSV or text, and type the folder in full (`D:\Batch Reports`, or a share such as
+`\\PLANT-PC\Reports`). The first time, reports changed in the last two days are read (set it from 1 to 30); after that
+a file is read again only when it changes, and each row is sent once, so a report rewritten through the day is fine.
+Rows reach RMC plant › From the batcher within a minute or two, where the plant matches the report's columns once and
+makes each batch's challan. A file over 5 MB is left and named in the log.
+
 ## A new kind of device
 
 A kind's reader is one entry in `READERS` (`src/readers.ts`) that returns readings; the server reads the payload in its
-handler for the kind (`apps/api/src/integrations`). `npm test` checks the outbox and the weighbridge frames.
+handler for the kind (`apps/api/src/integrations`). `npm test` checks the outbox, the weighbridge frames and the batch reports.

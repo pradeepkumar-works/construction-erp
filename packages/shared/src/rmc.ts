@@ -131,6 +131,8 @@ export interface RmcBatchDto {
   cubeTestId: string | null;
   cubeTestNo: string | null;
   cubeResult: string | null;
+  /** The plant controller's batch number, when the challan was made from its batch report (item 149) */
+  plantBatchNo: string | null;
   lines: RmcBatchLineDto[];
   canDeliver: boolean;
   canTakeCubes: boolean;

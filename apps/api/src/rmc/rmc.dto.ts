@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 import { PAYMENT_MODES, RMC_BATCH_STATUSES, RMC_GRADES, RMC_ORDER_STATUSES, type PaymentMode, type RmcBatchStatus, type RmcOrderStatus } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 
@@ -89,6 +89,7 @@ export class DispatchBatchDto {
   @ApiPropertyOptional({ example: 110 }) @IsOptional() @opt() @IsInt() @Min(0) @Max(300) slumpMm?: number | null;
   @ApiPropertyOptional({ type: [BatchLineInput], description: 'Weighed quantities where they differ from the design' }) @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({ each: true }) @Type(() => BatchLineInput) lines?: BatchLineInput[];
   @ApiPropertyOptional() @IsOptional() @trim() @opt() @IsString() @MaxLength(500) note?: string | null;
+  @ApiPropertyOptional({ description: 'The batch from the plant controller this challan is for (item 149): its weights are the lines' }) @IsOptional() @IsUUID() plantRowId?: string;
 }
 
 export class DeliverBatchDto {
@@ -136,4 +137,18 @@ export class CreateRmcReceiptDto {
 
 export class RmcReceiptQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() clientId?: string;
+}
+
+export class PlantBatchQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() plantId?: string;
+}
+
+export class PlantColumnsDto {
+  @ApiProperty({ description: 'What the report\'s columns mean: { fields: { BATCH_NO, DATE, TIME, QUANTITY, MIX, TRUCK, ORDER }, materials: [{ column, itemId, perUnit }] }' })
+  @IsObject()
+  columns: Record<string, unknown>;
+}
+
+export class DismissPlantRowDto {
+  @ApiProperty({ example: 'Wash-out after the pump line was cleaned' }) @trim() @IsString() @IsNotEmpty({ message: 'Say why the batch has no challan' }) @MaxLength(300) reason: string;
 }

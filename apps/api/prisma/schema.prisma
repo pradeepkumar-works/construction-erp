@@ -551,6 +551,8 @@ enum IntegrationKind {
   FUEL_DISPENSER
   /// A site's weighbridge indicator, read by the Connector: each weight it holds steady (item 148)
   WEIGHBRIDGE
+  /// A batching plant's controller, its batch reports read from their folder by the Connector (item 149)
+  BATCHING_PLANT
 }
 
 enum IntegrationDirection {
@@ -920,6 +922,7 @@ model Organization {
   fuelDispenses        FuelDispense[]
   weighings            Weighing[]
   weighTickets         WeighTicket[]
+  plantBatchRows       PlantBatchRow[]
   ledgerAccounts       LedgerAccount[]
   bookVouchers         BookVoucher[]
   bookLines            BookLine[]
@@ -1484,6 +1487,7 @@ model Project {
   machineDays        MachineDay[]
   weighings          Weighing[]
   weighTickets       WeighTicket[]
+  plantBatchRows     PlantBatchRow[]
   bookVouchers       BookVoucher[]
   bookLines          BookLine[]
   mixDesigns         MixDesign[]
@@ -7257,36 +7261,37 @@ model RmcOrder {
 /// One truck of concrete: the batch made at the plant and its delivery challan. Dispatching it issues the materials
 /// from the plant's stock (`stockEntryId`).
 model RmcBatch {
-  id             String         @id @default(uuid())
+  id             String          @id @default(uuid())
   organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   /// DC-2026-0001, also the challan number
   batchNo        String
   plantId        String
-  plant          Project        @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  plant          Project         @relation(fields: [plantId], references: [id], onDelete: Cascade)
   orderId        String
-  order          RmcOrder       @relation(fields: [orderId], references: [id])
+  order          RmcOrder        @relation(fields: [orderId], references: [id])
   mixDesignId    String
-  mixDesign      MixDesign      @relation(fields: [mixDesignId], references: [id])
-  date           DateTime       @db.Date
+  mixDesign      MixDesign       @relation(fields: [mixDesignId], references: [id])
+  date           DateTime        @db.Date
   dispatchedAt   DateTime
-  quantity       Decimal        @db.Decimal(18, 3)
+  quantity       Decimal         @db.Decimal(18, 3)
   truck          String?
   driver         String?
-  pumped         Boolean        @default(false)
+  pumped         Boolean         @default(false)
   slumpMm        Int?
-  status         RmcBatchStatus @default(DISPATCHED)
+  status         RmcBatchStatus  @default(DISPATCHED)
   deliveredAt    DateTime?
   receivedBy     String?
   note           String?
-  stockEntryId   String?        @unique
-  stockEntry     StockEntry?    @relation(fields: [stockEntryId], references: [id], onDelete: SetNull)
+  stockEntryId   String?         @unique
+  stockEntry     StockEntry?     @relation(fields: [stockEntryId], references: [id], onDelete: SetNull)
   invoiceId      String?
-  invoice        RmcInvoice?    @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  invoice        RmcInvoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   createdById    String
-  createdBy      User           @relation("RmcBatchCreator", fields: [createdById], references: [id])
-  createdAt      DateTime       @default(now())
+  createdBy      User            @relation("RmcBatchCreator", fields: [createdById], references: [id])
+  createdAt      DateTime        @default(now())
   lines          RmcBatchLine[]
+  plantRows      PlantBatchRow[]
   cubeTest       QualityTest?
 
   @@unique([organizationId, batchNo])
@@ -8719,10 +8724,11 @@ model IntegrationConnection {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  events        IntegrationEvent[]
-  deviceLinks   DeviceLink[]
-  fuelDispenses FuelDispense[]
-  weighings     Weighing[]
+  events         IntegrationEvent[]
+  deviceLinks    DeviceLink[]
+  fuelDispenses  FuelDispense[]
+  weighings      Weighing[]
+  plantBatchRows PlantBatchRow[]
 
   @@index([organizationId])
 }
@@ -8964,4 +8970,34 @@ model WeighTicket {
   @@unique([organizationId, ticketNo])
   @@index([projectId, createdAt])
   @@index([purchaseOrderId])
+}
+
+/// A row of a batching plant controller's batch report, as the Connector read it from the controller's folder (item 149):
+/// its cells by column name, read through the plant's column map (the connection's config). A challan dispatched from it
+/// ties it to its RmcBatch; a test batch or a wash-out is set aside with a reason.
+model PlantBatchRow {
+  id             String                @id @default(uuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  connectionId   String
+  connection     IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  plantId        String
+  plant          Project               @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  /// The Connector's key for the row: its file and its text, so the same row read again is one row
+  rowKey         String
+  file           String?
+  line           Int?
+  fields         Json
+  /// The controller's batch number through the column map, kept so a batch written twice shows once
+  batchNo        String?
+  rmcBatchId     String?
+  rmcBatch       RmcBatch?             @relation(fields: [rmcBatchId], references: [id], onDelete: SetNull)
+  dismissedAt    DateTime?
+  dismissReason  String?
+  takenAt        DateTime              @default(now())
+
+  @@unique([connectionId, rowKey])
+  @@index([plantId, takenAt])
+  @@index([connectionId, batchNo])
+  @@index([rmcBatchId])
 }

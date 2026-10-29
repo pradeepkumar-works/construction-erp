@@ -3738,6 +3738,45 @@ Connector's frame reading is pure in `apps/connector/src/weight.ts` (tested in `
 - **Not yet.** A camera's number plate read at the bridge, an outgoing truck's ticket against a dispatch or an RMC
   delivery, and the bill checked against the weighed quantity rather than the GRN.
 
+## Batching plant controller
+
+Item 149, on the integration layer. An RMC plant's batching controller writes a report of each batch it makes (its
+number, time, recipe, cubic metres, truck and the kilograms of each material weighed) to a folder on its control room
+computer. A `BATCHING_PLANT` connection has the Connector there read that folder; each batch waits on RMC plant › From the
+batcher until the plant makes its challan, and the challan's materials leave the store at the batch's own weights. The
+Connector's file reading is in `apps/connector/src/csv.ts` and `batch-folder.ts` (tested in `csv-test.ts`), the API's checks
+in `apps/api/src/rmc/batching-rules.ts`, and reading a row, the first column map and the order a batch was for in
+`@erp/shared/batching.ts` (both tested in `src/scripts/batching-test.ts`).
+
+- **The folder.** The connection names its plant (a `PLANT` project), the folder (`D:\Batch Reports`, a share
+  `\\PLANT-PC\Reports` or a Linux path, in full) and how many days of old reports to read the first time (2 unless set);
+  `readBatchingConfig` checks them, and keeps the column map already matched when an admin changes the folder. The
+  Connector reads CSV, TXT and TSV files (the delimiter sniffed; the header is the first line of two or more cells that
+  are not all figures, a repeated header skipped), reads a file again only when its size or time changes, and sends each
+  row once, as `{ key, file, line, fields }`, its key a hash of the file's name and the row's text, so a row read twice
+  is one reading. A file over 5 MB is skipped and named in the log; up to 400 rows go each run.
+- **Rows.** `IntegrationsService.takeIn` hands each to `PlantBatchesService.take` after `readPlantRow`, which keeps it as a
+  `PlantBatchRow` (tenant table, RLS; unique per connection and key) with its columns as text. What the columns mean is
+  read only at read time, so a map saved later reads the rows already in.
+- **The column map.** Matched once by the plant from a real report (`PUT /rmc/batcher/:connectionId/columns`, for
+  `canRunRmcPlant`): which column is the batch number and the cubic metres (both needed), the date, time, mix, truck and
+  order, and which are materials, each to its item and the column's figure for one of the item's units (50 kg for a bag
+  of cement, about 1,600 kg for a cum of sand: `defaultPerUnit` fills what the unit says). The form starts from
+  `guessColumns` over the newest report's headers and the plant's mix design items, shows the newest batch as it reads,
+  and `columnMapProblem` checks it on both sides. Saving recomputes each row's batch number.
+- **The board.** `GET /rmc/batcher` shows the plant's controllers with their state, the rows of the last 30 days with no
+  challan (each read through the map by `readBatchRow`: cubic metres 0 to 20, the materials in their items' units, what
+  keeps it from a challan in words), the order each looks to be for (`suggestOrder`: the order its order column names,
+  else the only confirmed order of its mix with room, else the only one with room) and the last 7 days' rows on a
+  challan or set aside. A row made more than `BATCH_NO_CHALLAN_HOURS` ago with no challan is marked and counted on the tab.
+- **The challan.** Dispatch opens the normal dispatch form with the batch's cubic metres, truck and weights filled in;
+  `RmcService.dispatch` takes `plantRowId`, refuses a row with problems, takes the row's materials as the weighed lines
+  unless the form sent its own, and ties the row to the new batch inside the same transaction (only while it has none),
+  so one controller batch makes one challan. The challan shows the controller's batch number.
+- **Set aside.** A trial batch, a washout or a load that never left is set aside with why
+  (`POST /rmc/batcher/rows/:id/dismiss`); nothing is issued for it.
+- **Not yet.** Reading a controller's own database or its serial printer port, and the plant's moisture correction.
+
 ## Intelligence quick wins
 
 - **What they are.** Ten small checks from the ideas page "Nirmaan intelligence map" (ROADMAP "Intelligence quick wins"),

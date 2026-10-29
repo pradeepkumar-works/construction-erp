@@ -7,7 +7,7 @@ import type { RoleKey } from './enums';
  * it. The API's `integration-rules.ts` holds the secrets, pairing codes and health; this holds the labels and shapes.
  */
 
-export const INTEGRATION_KINDS = ['GENERIC_WEBHOOK', 'CONNECTOR_CHECK', 'MACHINE_FEED', 'GPS_TRACKER', 'FUEL_DISPENSER', 'WEIGHBRIDGE'] as const;
+export const INTEGRATION_KINDS = ['GENERIC_WEBHOOK', 'CONNECTOR_CHECK', 'MACHINE_FEED', 'GPS_TRACKER', 'FUEL_DISPENSER', 'WEIGHBRIDGE', 'BATCHING_PLANT'] as const;
 export type IntegrationKind = (typeof INTEGRATION_KINDS)[number];
 
 /** How a kind's messages reach Nirmaan: posted to its web address, read on site by a paired Connector, or asked for by Nirmaan. */
@@ -60,6 +60,13 @@ export const INTEGRATION_KIND_INFO: Record<IntegrationKind, IntegrationKindInfo>
     transport: 'CONNECTOR',
     description:
       "The Connector reads the weighbridge's indicator on its serial port or network address and sends each weight it holds steady. The store makes each truck's ticket from its two weights, and the net weight fills the GRN.",
+    quietAfterMin: 2 * 24 * 60,
+  },
+  BATCHING_PLANT: {
+    label: 'Batching plant',
+    transport: 'CONNECTOR',
+    description:
+      "The Connector reads the batch reports the plant's controller writes to a folder on its computer. Each batch, with the materials it weighed, waits on the RMC page to become a truck's challan at those weights.",
     quietAfterMin: 2 * 24 * 60,
   },
 };
