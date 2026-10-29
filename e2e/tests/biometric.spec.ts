@@ -80,3 +80,51 @@ test('device punches mark attendance, and HR matches the numbers it does not kno
   await page.getByRole('button', { name: 'How to set up Gate terminal' }).click();
   await expect(page.getByRole('dialog', { name: 'Set up Gate terminal' }).getByText(GATE_SN)).toBeVisible();
 });
+
+type Command = { kind: string; pin: string | null; status: string; note: string | null };
+type BioUser = { pin: string; onDevices: number; commandsWaiting: number };
+
+/**
+ * Biometric device commands (item 150): HR puts a person on the gate terminal from the page and takes them off; the
+ * terminal is handed each command when it asks, and its answer closes it, done or refused. Only HR and the like may.
+ */
+test('HR puts a person on the gate terminal and takes them off, and the terminal answers each command', async ({ page }) => {
+  const hr = await apiToken('hr@demo.com');
+  const engineer = await apiToken('engineer@demo.com');
+  const ask = async () => (await (await fetch(`${ORIGIN}/iclock/getrequest?SN=${GATE_SN}`)).text()).split('\n').filter((l) => l.startsWith('C:'));
+  const answer = (lines: string[], code = 0) =>
+    fetch(`${ORIGIN}/iclock/devicecmd?SN=${GATE_SN}`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: lines.map((l) => `ID=${l.split(':')[1]}&Return=${code}&CMD=DATA`).join('\n') });
+  // Whatever already waits (its clock, set once a day when it says hello) is done first.
+  await answer(await ask());
+
+  // On the page: Deepak Kumar (EMP-010, user number 10) goes on the devices under his name.
+  await signIn(page, 'hr@demo.com');
+  await page.goto('/biometric?tab=users');
+  await page.getByRole('button', { name: 'More for user number 10', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Put on the devices' }).click();
+  const put = formPanel(page, 'Put Deepak Kumar on the devices');
+  await expect(put.getByLabel('Name on the device')).toHaveValue('Deepak Kumar');
+  await put.getByRole('button', { name: 'Put on the devices' }).click();
+  await expect(page.getByText('User number 10 goes on 1 device when it next calls')).toBeVisible();
+
+  const handed = await ask();
+  expect(handed).toEqual([expect.stringMatching(/^C:\d+:DATA UPDATE USERINFO PIN=10\tName=Deepak Kumar\tPri=0$/)]);
+  expect(await ask()).toEqual([]); // handed once, not again before it answers
+  expect(await (await answer(handed)).text()).toBe('OK');
+  const ten = (await api<BioUser[]>(hr, '/biometric/users')).find((u) => u.pin === '10')!;
+  expect(ten.onDevices).toBeGreaterThanOrEqual(1);
+  expect(ten.commandsWaiting).toBe(0);
+
+  // Taken off: the terminal refuses, and the command says so.
+  await api(hr, '/biometric/users/10/remove-from-devices', { method: 'POST', body: {} });
+  const off = await ask();
+  expect(off).toEqual([expect.stringMatching(/^C:\d+:DATA DELETE USERINFO PIN=10$/)]);
+  await answer(off, -1);
+  const [last] = await api<Command[]>(hr, '/biometric/commands');
+  expect(last).toMatchObject({ kind: 'REMOVE_USER', pin: '10', status: 'FAILED' });
+  expect(last.note).toMatch(/refused it \(code -1\)/);
+
+  await expect(api(hr, '/biometric/users/W7/add-to-devices', { method: 'POST', body: {} })).rejects.toThrow(/up to 9 digits/);
+  await expect(api(engineer, '/biometric/commands')).rejects.toThrow(/403/);
+  expect((await fetch(`${ORIGIN}/iclock/getrequest?SN=NOTREGISTERED1`)).status).toBe(401);
+});

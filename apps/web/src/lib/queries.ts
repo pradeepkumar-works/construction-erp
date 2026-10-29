@@ -274,6 +274,7 @@ import type {
   EmployeeEventType,
   HrDashboardDto,
   PayrollSettingsDto,
+  BiometricCommandDto,
   BiometricDeviceDto,
   ConnectorAgentDto,
   DeviceLinkDto,
@@ -2281,6 +2282,10 @@ export const useBiometricDevices = (enabled = true) =>
 
 export const useBiometricUsers = (enabled = true) =>
   useQuery({ queryKey: ['biometric', 'users'], queryFn: async () => (await api.get<BiometricUserDto[]>('/biometric/users')).data, enabled });
+
+/** Commands for the ADMS devices (item 150), newest first; the devices pick them up when they next call. */
+export const useBiometricCommands = (enabled = true) =>
+  useQuery({ queryKey: ['biometric', 'commands'], queryFn: async () => (await api.get<BiometricCommandDto[]>('/biometric/commands')).data, enabled, refetchInterval: 30_000 });
 
 export const useBiometricPunches = (filters: { date: string; deviceId?: string; result?: BiometricPunchResult; pin?: string }) =>
   useQuery({

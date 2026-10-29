@@ -21,7 +21,7 @@ import { setTenant, withoutTenant } from '../prisma/tenant-context';
 import { todayIn } from '../notifications/time';
 import { AttendanceService } from '../attendance/attendance.service';
 import { WorkersService } from '../workers/workers.service';
-import { cleanPin, codeNumber, dayFromPunches, localToUtc, parseAdmsAttlog, parsePunchFile, webhookLocal, type RawPunch } from './biometric-rules';
+import { cleanPin, codeNumber, dayFromPunches, userCommandState, localToUtc, parseAdmsAttlog, parsePunchFile, webhookLocal, type RawPunch } from './biometric-rules';
 import type { CreateDeviceDto, ImportPunchesDto, PunchQuery, UpdateDeviceDto, WebhookPunchesDto } from './biometric.dto';
 
 type Device = Prisma.BiometricDeviceGetPayload<{ include: { project: { select: { name: true } } } }>;
@@ -49,7 +49,7 @@ export class BiometricService {
 
   /* ---------- devices ---------- */
 
-  private toDeviceDto(d: Device, today: number): BiometricDeviceDto {
+  private toDeviceDto(d: Device, today: number, cmd: { waiting: number; failed: number; clockSetAt: Date | null } = { waiting: 0, failed: 0, clockSetAt: null }): BiometricDeviceDto {
     return {
       id: d.id,
       name: d.name,
@@ -65,17 +65,27 @@ export class BiometricService {
       lastPunchAt: iso(d.lastPunchAt),
       punchesToday: today,
       createdAt: d.createdAt.toISOString(),
+      commandsWaiting: cmd.waiting,
+      commandsFailed: cmd.failed,
+      clockSetAt: iso(cmd.clockSetAt),
     };
   }
 
   async devices(user: RequestUser): Promise<BiometricDeviceDto[]> {
     this.assertManage(user);
-    const [rows, today] = await Promise.all([
-      this.prisma.biometricDevice.findMany({ where: { organizationId: user.organizationId }, include: { project: { select: { name: true } } }, orderBy: { name: 'asc' } }),
-      this.prisma.biometricPunch.groupBy({ by: ['deviceId'], where: { organizationId: user.organizationId, date: parseDate(todayIn()) }, _count: { _all: true } }),
+    const org = user.organizationId;
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+    const [rows, today, waiting, failed, clocks] = await Promise.all([
+      this.prisma.biometricDevice.findMany({ where: { organizationId: org }, include: { project: { select: { name: true } } }, orderBy: { name: 'asc' } }),
+      this.prisma.biometricPunch.groupBy({ by: ['deviceId'], where: { organizationId: org, date: parseDate(todayIn()) }, _count: { _all: true } }),
+      this.prisma.biometricCommand.groupBy({ by: ['deviceId'], where: { organizationId: org, status: { in: ['QUEUED', 'SENT'] } }, _count: { _all: true } }),
+      this.prisma.biometricCommand.groupBy({ by: ['deviceId'], where: { organizationId: org, status: 'FAILED', createdAt: { gte: weekAgo } }, _count: { _all: true } }),
+      this.prisma.biometricCommand.groupBy({ by: ['deviceId'], where: { organizationId: org, kind: 'SET_CLOCK', status: 'DONE' }, _max: { doneAt: true } }),
     ]);
-    const n = new Map(today.map((t) => [t.deviceId, t._count._all]));
-    return rows.map((d) => this.toDeviceDto(d, n.get(d.id) ?? 0));
+    const count = (g: { deviceId: string; _count: { _all: number } }[]) => new Map(g.map((t) => [t.deviceId, t._count._all]));
+    const [n, w, f] = [count(today), count(waiting), count(failed)];
+    const clock = new Map(clocks.map((c) => [c.deviceId, c._max.doneAt]));
+    return rows.map((d) => this.toDeviceDto(d, n.get(d.id) ?? 0, { waiting: w.get(d.id) ?? 0, failed: f.get(d.id) ?? 0, clockSetAt: clock.get(d.id) ?? null }));
   }
 
   private async deviceFor(user: RequestUser, id: string) {
@@ -162,16 +172,22 @@ export class BiometricService {
   async users(user: RequestUser): Promise<BiometricUserDto[]> {
     this.assertManage(user);
     const since = parseDate(addDays(todayIn(), -30));
-    const [maps, seen, open, last] = await Promise.all([
+    const [maps, seen, open, last, commands] = await Promise.all([
       this.prisma.biometricUser.findMany({
         where: { organizationId: user.organizationId },
-        include: { employee: { select: { employeeCode: true, fullName: true } }, worker: { select: { workerNo: true, name: true } } },
+        include: { employee: { select: { employeeCode: true, fullName: true, isActive: true } }, worker: { select: { workerNo: true, name: true, isActive: true } } },
       }),
       this.prisma.biometricPunch.groupBy({ by: ['pin'], where: { organizationId: user.organizationId, date: { gte: since } }, _count: { _all: true } }),
       this.prisma.biometricPunch.groupBy({ by: ['pin'], where: { organizationId: user.organizationId, result: 'UNMATCHED' }, _count: { _all: true } }),
       this.prisma.biometricPunch.groupBy({ by: ['pin'], where: { organizationId: user.organizationId }, _max: { punchedAt: true } }),
+      this.prisma.biometricCommand.findMany({
+        where: { organizationId: user.organizationId, pin: { not: null }, status: { not: 'CANCELLED' } },
+        select: { pin: true, deviceId: true, kind: true, status: true },
+        orderBy: { createdAt: 'asc' },
+      }),
     ]);
-    const pins = new Set([...maps.map((m) => m.pin), ...last.map((l) => l.pin)]);
+    const onDevice = userCommandState(commands);
+    const pins = new Set([...maps.map((m) => m.pin), ...last.map((l) => l.pin), ...onDevice.keys()]);
     const map = new Map(maps.map((m) => [m.pin, m]));
     const count = (rows: { pin: string; _count: { _all: number } }[]) => new Map(rows.map((r) => [r.pin, r._count._all]));
     const seenN = count(seen);
@@ -191,6 +207,8 @@ export class BiometricService {
           punches: seenN.get(pin) ?? 0,
           unmatched: openN.get(pin) ?? 0,
           lastPunchAt: iso(lastAt.get(pin) ?? null),
+          left: !!(m?.employee && !m.employee.isActive) || !!(m?.worker && !m.worker.isActive),
+          ...(onDevice.get(pin) ?? { onDevices: 0, commandsWaiting: 0, commandsFailed: 0 }),
         };
       })
       .sort((a, b) => Number(!!a.employeeId || !!a.workerId) - Number(!!b.employeeId || !!b.workerId) || a.pin.localeCompare(b.pin, 'en', { numeric: true }));

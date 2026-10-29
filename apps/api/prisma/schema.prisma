@@ -537,6 +537,28 @@ enum BiometricProtocol {
   FILE
 }
 
+/// Biometric device commands (item 150): what Nirmaan asks an ADMS device to do when it next calls
+enum BiometricCommandKind {
+  /// Put a user number and its name on the device, for the person to enrol a finger or face under
+  ADD_USER
+  /// Take a user number off the device, so the person can no longer punch on it
+  REMOVE_USER
+  /// Set the device's clock to the right time
+  SET_CLOCK
+}
+
+enum BiometricCommandStatus {
+  /// Waiting for the device to call
+  QUEUED
+  /// Handed to the device; its answer has not come yet
+  SENT
+  DONE
+  /// The device refused it, or never answered it
+  FAILED
+  /// Taken back before the device called
+  CANCELLED
+}
+
 /// What an outside system is (item 139, ARCHITECTURE "Integration layer"); each kind has its reader in integrations
 enum IntegrationKind {
   /// Any outside service that posts JSON to the connection's own web address
@@ -913,6 +935,7 @@ model Organization {
   biometricDevices     BiometricDevice[]
   biometricUsers       BiometricUser[]
   biometricPunches     BiometricPunch[]
+  biometricCommands    BiometricCommand[]
   integrations         IntegrationConnection[]
   connectorAgents      ConnectorAgent[]
   integrationEvents    IntegrationEvent[]
@@ -1230,6 +1253,7 @@ model User {
   payrollPaid           PayrollRun[]               @relation("PayrollPayer")
   settlementsPrepared   FinalSettlement[]          @relation("SettlementPreparer")
   biometricDevices      BiometricDevice[]          @relation("BiometricDeviceCreator")
+  biometricCommands     BiometricCommand[]         @relation("BiometricCommandCreator")
   integrationsMade      IntegrationConnection[]    @relation("IntegrationConnectionCreator")
   weighTicketsMade      WeighTicket[]              @relation("WeighTicketCreator")
   connectorsMade        ConnectorAgent[]           @relation("ConnectorAgentCreator")
@@ -6906,8 +6930,40 @@ model BiometricDevice {
   punches          BiometricPunch[]
   staffAttendance  StaffAttendance[]
   workerAttendance WorkerAttendance[]
+  commands         BiometricCommand[]
 
   @@index([organizationId])
+}
+
+/// A command for an ADMS device (item 150), handed over when it next asks (`GET /iclock/getrequest`) and closed by its
+/// answer (`POST /iclock/devicecmd`). The text is made when it is sent, so a clock is set to the time it goes.
+model BiometricCommand {
+  id             String                 @id @default(uuid())
+  /// The number the device answers with (ADMS command ids are numbers), the next on its device
+  cmdNo          Int
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  deviceId       String
+  device         BiometricDevice        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  kind           BiometricCommandKind
+  /// ADD_USER and REMOVE_USER: the user number
+  pin            String?
+  /// ADD_USER: the name the device shows
+  name           String?
+  status         BiometricCommandStatus @default(QUEUED)
+  attempts       Int                    @default(0)
+  sentAt         DateTime?
+  doneAt         DateTime?
+  /// The device's answer: 0 done, anything else refused
+  returnCode     Int?
+  note           String?
+  createdById    String
+  createdBy      User                   @relation("BiometricCommandCreator", fields: [createdById], references: [id])
+  createdAt      DateTime               @default(now())
+
+  @@unique([deviceId, cmdNo])
+  @@index([deviceId, status])
+  @@index([organizationId, pin])
 }
 
 /// A user number on the company's devices (the same number on every device it is enrolled on), matched to one employee or

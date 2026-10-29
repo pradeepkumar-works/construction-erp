@@ -1,11 +1,27 @@
 /**
  * Biometric attendance's tests (v6 item 101): reading ADMS uploads, webhook times and punch files, and a person's day
- * from their punches, with no database. CI runs it after the build:
+ * from their punches; and the commands handed to an ADMS device and its answers (item 150), with no database. CI runs it after the build:
  *
  *   node dist/scripts/biometric-test.js
  */
 import assert from 'node:assert/strict';
-import { cleanPin, codeNumber, dayFromPunches, localToUtc, parseAdmsAttlog, parsePunchFile, utcToLocal, webhookLocal } from '../biometric/biometric-rules';
+import {
+  admsCommandLine,
+  cleanPin,
+  codeNumber,
+  commandsToSend,
+  dayFromPunches,
+  devicePinProblem,
+  deviceUserName,
+  localToUtc,
+  parseAdmsAttlog,
+  parseAdmsReplies,
+  parsePunchFile,
+  userCommandState,
+  utcToLocal,
+  webhookLocal,
+  zkDeviceTime,
+} from '../biometric/biometric-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -76,6 +92,56 @@ test('user numbers from codes: EMP-014 is 14, W-0007 is 7; cleanPin keeps letter
   assert.equal(codeNumber('HO'), null);
   assert.equal(cleanPin(' 00120 '), '120');
   assert.equal(cleanPin('A12'), 'A12');
+});
+
+test("commands for an ADMS device: a user's number and name, taking it off, and the clock in the device's own count", () => {
+  const now = new Date('2026-10-29T02:45:30Z'); // 08:15:30 in India
+  assert.equal(admsCommandLine({ cmdNo: 7, kind: 'ADD_USER', pin: '14', name: 'Sneha\tIyer' }, now, 330), 'C:7:DATA UPDATE USERINFO PIN=14\tName=Sneha Iyer\tPri=0');
+  assert.equal(admsCommandLine({ cmdNo: 8, kind: 'REMOVE_USER', pin: '14', name: null }, now, 330), 'C:8:DATA DELETE USERINFO PIN=14');
+  assert.equal(zkDeviceTime('2026-10-29 08:15:30'), 862_215_330);
+  assert.equal(admsCommandLine({ cmdNo: 9, kind: 'SET_CLOCK', pin: null, name: null }, now, 330), 'C:9:SET OPTION DateTime=862215330');
+  assert.equal(deviceUserName('  Rénuka  Pradhan-Mohapatra (Site Engineer) '), 'Renuka Pradhan-Mohapatra');
+  assert.equal(deviceUserName('रमेश'), '');
+  assert.equal(devicePinProblem('14'), null);
+  assert.match(devicePinProblem('W7')!, /up to 9 digits/);
+  assert.match(devicePinProblem('1234567890')!, /up to 9 digits/);
+});
+
+test("the device's answers: a line each, done at 0 and refused otherwise; lines that do not read are left out", () => {
+  assert.deepEqual(parseAdmsReplies('ID=7&Return=0&CMD=DATA\nID=8&Return=-1&CMD=DATA\r\nnonsense\nID=x&Return=0\nID=9&Return=0&CMD=SET OPTION\n'), [
+    { cmdNo: 7, code: 0, cmd: 'DATA' },
+    { cmdNo: 8, code: -1, cmd: 'DATA' },
+    { cmdNo: 9, code: 0, cmd: 'SET OPTION' },
+  ]);
+});
+
+test('what a device is handed: queued oldest first, sent ones again after ten quiet minutes, given up after three tries', () => {
+  const now = new Date('2026-10-29T10:00:00Z');
+  const at = (min: number) => new Date(now.getTime() - min * 60_000);
+  const rows = [
+    { id: 'b', status: 'QUEUED' as const, attempts: 0, sentAt: null, createdAt: at(5) },
+    { id: 'a', status: 'QUEUED' as const, attempts: 0, sentAt: null, createdAt: at(30) },
+    { id: 'fresh', status: 'SENT' as const, attempts: 1, sentAt: at(3), createdAt: at(40) },
+    { id: 'again', status: 'SENT' as const, attempts: 1, sentAt: at(12), createdAt: at(50) },
+    { id: 'dead', status: 'SENT' as const, attempts: 3, sentAt: at(15), createdAt: at(60) },
+  ];
+  assert.deepEqual(commandsToSend(rows, now), { send: ['again', 'a', 'b'], giveUp: ['dead'] });
+  const many = Array.from({ length: 14 }, (_, i) => ({ id: `q${i}`, status: 'QUEUED' as const, attempts: 0, sentAt: null, createdAt: at(100 - i) }));
+  assert.equal(commandsToSend(many, now).send.length, 10);
+});
+
+test('where a user number stands: on the devices its last finished command added it to, waiting, or failed', () => {
+  const c = (pin: string, deviceId: string, kind: string, status: string) => ({ pin, deviceId, kind, status });
+  const state = userCommandState([
+    c('14', 'gate', 'ADD_USER', 'DONE'),
+    c('14', 'yard', 'ADD_USER', 'DONE'),
+    c('14', 'yard', 'REMOVE_USER', 'DONE'),
+    c('14', 'office', 'ADD_USER', 'FAILED'),
+    c('22', 'gate', 'ADD_USER', 'QUEUED'),
+    c('22', 'yard', 'ADD_USER', 'CANCELLED'),
+  ]);
+  assert.deepEqual(state.get('14'), { onDevices: 1, commandsWaiting: 0, commandsFailed: 1 });
+  assert.deepEqual(state.get('22'), { onDevices: 0, commandsWaiting: 1, commandsFailed: 0 });
 });
 
 let failed = 0;

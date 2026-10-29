@@ -21,6 +21,42 @@ export const BIOMETRIC_PUNCH_RESULT_LABELS: Record<BiometricPunchResult, string>
   SKIPPED: 'Not marked',
 };
 
+/** Biometric device commands (item 150): what an ADMS device is asked to do when it next calls. */
+export const BIOMETRIC_COMMAND_KINDS = ['ADD_USER', 'REMOVE_USER', 'SET_CLOCK'] as const;
+export type BiometricCommandKind = (typeof BIOMETRIC_COMMAND_KINDS)[number];
+export const BIOMETRIC_COMMAND_KIND_LABELS: Record<BiometricCommandKind, string> = {
+  ADD_USER: 'Put on the device',
+  REMOVE_USER: 'Take off the device',
+  SET_CLOCK: 'Set the clock',
+};
+export const BIOMETRIC_COMMAND_STATUSES = ['QUEUED', 'SENT', 'DONE', 'FAILED', 'CANCELLED'] as const;
+export type BiometricCommandStatus = (typeof BIOMETRIC_COMMAND_STATUSES)[number];
+export const BIOMETRIC_COMMAND_STATUS_LABELS: Record<BiometricCommandStatus, string> = {
+  QUEUED: 'Waiting for the device',
+  SENT: 'Sent, no answer yet',
+  DONE: 'Done',
+  FAILED: 'Failed',
+  CANCELLED: 'Cancelled',
+};
+/** The longest name most devices show */
+export const DEVICE_NAME_MAX = 24;
+
+export interface BiometricCommandDto {
+  id: string;
+  deviceId: string;
+  deviceName: string;
+  kind: BiometricCommandKind;
+  pin: string | null;
+  name: string | null;
+  status: BiometricCommandStatus;
+  attempts: number;
+  createdAt: string;
+  createdByName: string;
+  sentAt: string | null;
+  doneAt: string | null;
+  note: string | null;
+}
+
 export interface BiometricDeviceDto {
   id: string;
   name: string;
@@ -37,6 +73,11 @@ export interface BiometricDeviceDto {
   lastPunchAt: string | null;
   punchesToday: number;
   createdAt: string;
+  /** ADMS: commands waiting for the device, and the last ones it refused or never answered (item 150) */
+  commandsWaiting: number;
+  commandsFailed: number;
+  /** ADMS: when its clock was last set */
+  clockSetAt: string | null;
 }
 
 /** A user number seen on the devices or matched by HR, with who it is. */
@@ -52,6 +93,12 @@ export interface BiometricUserDto {
   punches: number;
   unmatched: number;
   lastPunchAt: string | null;
+  /** The matched person has left (an employee or worker no longer active) */
+  left: boolean;
+  /** ADMS devices the number was last added to, commands for it still waiting, and devices whose last one failed (item 150) */
+  onDevices: number;
+  commandsWaiting: number;
+  commandsFailed: number;
 }
 
 export interface BiometricPunchDto {

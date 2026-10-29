@@ -64,3 +64,22 @@ export class WebhookPunchesDto {
   @Type(() => WebhookPunchDto)
   punches: WebhookPunchDto[];
 }
+
+/** Put a user number on the ADMS devices (item 150): the name they show, and the devices (all of them when none are chosen). */
+export class AddToDevicesDto {
+  @ApiPropertyOptional({ example: 'Sneha Iyer', description: 'The name the device shows; the matched person’s name when empty' })
+  @IsOptional()
+  @trim()
+  @IsString()
+  @MaxLength(80)
+  name?: string | null;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayMaxSize(50) @IsUUID('all', { each: true }) deviceIds?: string[];
+}
+
+export class RemoveFromDevicesDto {
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayMaxSize(50) @IsUUID('all', { each: true }) deviceIds?: string[];
+}
+
+export class CommandQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() deviceId?: string;
+}
