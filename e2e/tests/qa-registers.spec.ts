@@ -54,7 +54,7 @@ test('labs, samples at them and the calibration register follow their rules', as
   await expect(page.getByRole('heading', { name: 'Calibration register', level: 1 })).toBeVisible();
   await expect(page.getByRole('row').filter({ hasText: name })).toBeVisible();
   await page.goto(`/lab-samples?labId=${nabl!.id}`);
-  await expect(page.getByRole('heading', { name: 'Samples at labs', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Samples sent out', level: 1 })).toBeVisible();
   await expect(page.getByRole('row').filter({ hasText: test.testNo })).toBeVisible();
   await page.goto('/test-certificates');
   await expect(page.getByRole('heading', { name: 'Test certificates', level: 1 })).toBeVisible();

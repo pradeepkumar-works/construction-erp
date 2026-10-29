@@ -44,9 +44,8 @@ export function SamplesPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Samples at labs"
+        title="Samples sent out"
         subtitle={`Samples sent to the labs, the oldest wait first. A report is late after ${LAB_REPORT_DAYS} days, counted from the last test day.`}
-        crumbs={[{ title: 'Quality', href: '/modules/quality' }, { title: 'Samples at labs' }]}
       />
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
       <Flex gap={token.marginLG} wrap style={{ marginBottom: token.margin }}>

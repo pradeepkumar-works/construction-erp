@@ -275,7 +275,7 @@ export class QaRegistersService {
       items,
       overdue: all.filter((i) => i.state === 'OVERDUE').length,
       dueSoon: all.filter((i) => i.state === 'DUE_SOON').length,
-      outOfUse: all.filter((i) => i.state === 'OUT_OF_USE' && i.active).length,
+      outOfUse: all.filter((i) => i.state === 'OUT_OF_USE').length,
     };
   }
 
