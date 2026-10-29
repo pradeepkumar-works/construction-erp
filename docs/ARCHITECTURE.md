@@ -652,6 +652,25 @@ A staff day already marked keeps the earlier check-in and the later check-out of
 same site takes the punches' times. Only `canManageBiometric` (admin, management, HR) sees the Biometric
 devices page.
 
+**Device commands (item 150).** An ADMS device asks for commands each time it calls (`GET /iclock/getrequest`) and
+answers them (`POST /iclock/devicecmd`, a line each: `ID=12&Return=0&CMD=DATA`). A `BiometricCommand` (tenant table,
+RLS) is one thing asked of one device: `ADD_USER` (the user number and the name the device shows, for the person to enrol
+a finger or face under it there), `REMOVE_USER` (so someone who has left can no longer punch) or `SET_CLOCK`. Its number
+(`cmdNo`) is the next on its device, under an advisory lock; its text is made when it is handed over
+(`admsCommandLine`: `DATA UPDATE USERINFO PIN=…\tName=…\tPri=0`, `DATA DELETE USERINFO PIN=…`,
+`SET OPTION DateTime=` in the device's own count of seconds by `zkDeviceTime`), so a clock is set to the moment it goes.
+`commandsToSend` hands a device up to ten waiting commands oldest first, again after ten minutes with no answer, and gives
+one up after three tries; an answer of 0 is DONE and anything else FAILED with the code (`parseAdmsReplies`,
+`replyNote`). Names go to the device as plain letters of up to 24 (`deviceUserName`) and user numbers must be up to nine
+digits (`devicePinProblem`). HR puts a user number on the devices or takes it off from its row on People on devices
+(`POST /api/biometric/users/:pin/add-to-devices`, `…/remove-from-devices`, every ADMS device switched on unless some are
+chosen; a later command for the same number replaces one still waiting), and sets a device's clock from Devices
+(`…/devices/:id/set-clock`); a device's clock is also set when it says hello and has not been set for a day
+(`CLOCK_EVERY_HOURS`). `userCommandState` says where each number stands (on how many devices, waiting, failed), and a
+person who has left is marked so HR takes them off. A command not handed over yet can be cancelled. All of it is in
+`BiometricCommandsService`, with its rules in `biometric-rules.ts` (tested in `src/scripts/biometric-test.ts`). Not yet:
+reading the users and fingerprints back from a device, and copying a fingerprint from one device to another.
+
 ### Payroll (v6 item 100)
 
 Salaries are `SalaryStructure` rows per employee from a date (basic, DA, HRA, conveyance, special, other a month; PF, ESI

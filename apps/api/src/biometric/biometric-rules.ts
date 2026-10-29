@@ -168,3 +168,136 @@ export const codeNumber = (code: string): string | null => {
   const m = /(\d+)\s*$/.exec(code);
   return m ? String(BigInt(m[1])) : null;
 };
+
+/* ---------- device commands over ADMS (item 150) ---------- */
+
+/** A command handed to the device and not answered is handed again after this long, up to `COMMAND_TRIES` times. */
+export const COMMAND_RESEND_MINUTES = 10;
+export const COMMAND_TRIES = 3;
+/** Commands handed to a device in one answer to `getrequest` */
+export const COMMANDS_PER_CALL = 10;
+/** A device's clock is set again when it calls once this long has passed since it was last set */
+export const CLOCK_EVERY_HOURS = 24;
+
+/** What the device should hold as a user number: digits only, up to 9 (what ZKTeco and eSSL devices take). */
+export function devicePinProblem(pin: string): string | null {
+  return /^\d{1,9}$/.test(pin) ? null : `The devices take user numbers of up to 9 digits; ${pin} is not one`;
+}
+
+/** A name as the device can show it: plain letters (accents dropped), no tabs or line breaks, up to 24 characters. */
+export function deviceUserName(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^\x20-\x7e]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 24)
+    .trim();
+}
+
+/** The device's own count of seconds for a time on its clock ("YYYY-MM-DD HH:mm:ss"), as `SET OPTION DateTime` takes it. */
+export function zkDeviceTime(local: string): number {
+  const m = LOCAL.exec(local)!;
+  const [y, mo, d, h, mi, s] = m.slice(1).map(Number);
+  return ((y - 2000) * 12 * 31 + (mo - 1) * 31 + (d - 1)) * 86_400 + (h * 60 + mi) * 60 + s;
+}
+
+export interface CommandToSend {
+  cmdNo: number;
+  kind: 'ADD_USER' | 'REMOVE_USER' | 'SET_CLOCK';
+  pin: string | null;
+  name: string | null;
+}
+
+/** One line of the answer to `getrequest`: `C:<number>:<command>`, the command made now (a clock set to this instant). */
+export function admsCommandLine(c: CommandToSend, now: Date, offsetMin: number): string {
+  const text =
+    c.kind === 'ADD_USER'
+      ? `DATA UPDATE USERINFO PIN=${c.pin}\tName=${deviceUserName(c.name ?? '')}\tPri=0`
+      : c.kind === 'REMOVE_USER'
+        ? `DATA DELETE USERINFO PIN=${c.pin}`
+        : `SET OPTION DateTime=${zkDeviceTime(utcToLocal(now, offsetMin))}`;
+  return `C:${c.cmdNo}:${text}`;
+}
+
+export interface CommandReply {
+  cmdNo: number;
+  code: number;
+  cmd: string | null;
+}
+
+/** The device's answers posted to `devicecmd`: a line each, `ID=12&Return=0&CMD=DATA`. Lines that do not read are left out. */
+export function parseAdmsReplies(body: string): CommandReply[] {
+  const out: CommandReply[] = [];
+  for (const line of body.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const f = new URLSearchParams(line.trim());
+    const id = f.get('ID');
+    const ret = f.get('Return');
+    if (!id || !/^\d+$/.test(id) || ret === null || !/^-?\d+$/.test(ret.trim())) continue;
+    out.push({ cmdNo: Number(id), code: Number(ret), cmd: f.get('CMD') });
+  }
+  return out;
+}
+
+export interface WaitingCommand {
+  id: string;
+  status: 'QUEUED' | 'SENT';
+  attempts: number;
+  sentAt: Date | null;
+  createdAt: Date;
+}
+
+/**
+ * Which waiting commands to hand a device that calls now, oldest first and at most `COMMANDS_PER_CALL`: the queued ones,
+ * and the sent ones with no answer after `COMMAND_RESEND_MINUTES`; one sent `COMMAND_TRIES` times with no answer is given up.
+ */
+export function commandsToSend(rows: WaitingCommand[], now: Date): { send: string[]; giveUp: string[] } {
+  const giveUp: string[] = [];
+  const due: WaitingCommand[] = [];
+  for (const r of rows) {
+    const unanswered = r.status === 'SENT' && (!r.sentAt || now.getTime() - r.sentAt.getTime() >= COMMAND_RESEND_MINUTES * 60_000);
+    if (r.status === 'QUEUED') due.push(r);
+    else if (unanswered && r.attempts >= COMMAND_TRIES) giveUp.push(r.id);
+    else if (unanswered) due.push(r);
+  }
+  due.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return { send: due.slice(0, COMMANDS_PER_CALL).map((r) => r.id), giveUp };
+}
+
+/** What a device's answer says, in words: done, or refused with its code. */
+export function replyNote(code: number): string | null {
+  if (code === 0) return null;
+  return `The device refused it (code ${code}). Check the user number fits the device, or restart it and try again`;
+}
+
+/**
+ * Where each user number stands on the devices, from its commands oldest first (cancelled ones left out): on the devices
+ * whose last finished command for it added it, waiting where one is not answered yet, failed where the last one failed.
+ */
+export function userCommandState(
+  commands: { pin: string | null; deviceId: string; kind: string; status: string }[],
+): Map<string, { onDevices: number; commandsWaiting: number; commandsFailed: number }> {
+  const last = new Map<string, Map<string, { kind: string; status: string }>>();
+  const waiting = new Map<string, number>();
+  for (const c of commands) {
+    if (!c.pin || c.status === 'CANCELLED') continue;
+    if (c.status === 'QUEUED' || c.status === 'SENT') {
+      waiting.set(c.pin, (waiting.get(c.pin) ?? 0) + 1);
+      continue;
+    }
+    if (!last.has(c.pin)) last.set(c.pin, new Map());
+    last.get(c.pin)!.set(c.deviceId, c);
+  }
+  const out = new Map<string, { onDevices: number; commandsWaiting: number; commandsFailed: number }>();
+  for (const pin of new Set([...last.keys(), ...waiting.keys()])) {
+    const ends = [...(last.get(pin)?.values() ?? [])];
+    out.set(pin, {
+      onDevices: ends.filter((e) => e.status === 'DONE' && e.kind === 'ADD_USER').length,
+      commandsWaiting: waiting.get(pin) ?? 0,
+      commandsFailed: ends.filter((e) => e.status === 'FAILED').length,
+    });
+  }
+  return out;
+}

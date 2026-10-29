@@ -653,5 +653,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "WeighTicket";
 ALTER TABLE "PlantBatchRow" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "PlantBatchRow" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "PlantBatchRow";
+ALTER TABLE "BiometricCommand" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "BiometricCommand" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "BiometricCommand";
 
 DROP FUNCTION IF EXISTS app_current_org();

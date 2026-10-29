@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Segmented, Select, Space, Table, Typography } from 'antd';
+import { App, Button, Dropdown, Form, Input, Segmented, Select, Space, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { BiometricUserDto } from '@erp/shared';
@@ -10,6 +10,8 @@ import { useBiometricAction, useBiometricUsers, useEmployees, useWorkers } from 
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
+import { MoreOutlined } from '@/components/common/icons';
+import { DeviceUserForm, OnDevicesTag } from './DeviceCommands';
 
 interface Values {
   pin: string;
@@ -72,7 +74,10 @@ export function DeviceUsers() {
   const { data, isLoading, error, refetch } = useBiometricUsers();
   const act = useBiometricAction<{ matched: number; marked: number }>();
   const [matching, setMatching] = useState<{ user: BiometricUserDto | null } | null>(null);
+  const [onDevices, setOnDevices] = useState<{ user: BiometricUserDto; removing: boolean } | null>(null);
   const open = (data ?? []).filter((u) => !u.employeeId && !u.workerId).length;
+  const leftOn = (data ?? []).filter((u) => u.left && (u.onDevices > 0 || u.punches > 0)).length;
+  const digits = (u: BiometricUserDto) => /^\d{1,9}$/.test(u.pin);
 
   const columns: TableProps<BiometricUserDto>['columns'] = [
     { title: 'User number', dataIndex: 'pin', width: 120, render: (v: string) => <span translate="no">{v}</span> },
@@ -88,17 +93,44 @@ export function DeviceUsers() {
           <AppTag tone="pending">Not matched</AppTag>
         ),
     },
+    {
+      title: 'On the devices',
+      key: 'on',
+      width: 200,
+      render: (_, u) => (
+        <Space size={4} wrap>
+          {u.left ? <AppTag tone="danger">Has left</AppTag> : null}
+          <OnDevicesTag u={u} />
+        </Space>
+      ),
+    },
     { title: 'Punches, 30 days', dataIndex: 'punches', width: 140, align: 'right' },
     { title: 'Waiting to mark', dataIndex: 'unmatched', width: 140, align: 'right', render: (v: number) => (v ? <strong>{v}</strong> : '-') },
     { title: 'Last punch', dataIndex: 'lastPunchAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : '-') },
     {
       title: '',
       key: 'x',
-      width: 110,
+      width: 140,
       render: (_, u) => (
-        <Button size="small" type={u.employeeId || u.workerId ? 'default' : 'primary'} onClick={() => setMatching({ user: u })} aria-label={`${u.employeeId || u.workerId ? 'Change' : 'Match'} user number ${u.pin}`}>
-          {u.employeeId || u.workerId ? 'Change' : 'Match'}
-        </Button>
+        <Space size={4}>
+          <Button size="small" type={u.employeeId || u.workerId ? 'default' : 'primary'} onClick={() => setMatching({ user: u })} aria-label={`${u.employeeId || u.workerId ? 'Change' : 'Match'} user number ${u.pin}`}>
+            {u.employeeId || u.workerId ? 'Change' : 'Match'}
+          </Button>
+          {digits(u) ? (
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  ...(u.left ? [] : [{ key: 'add', label: 'Put on the devices' }]),
+                  { key: 'remove', label: 'Take off the devices', danger: true },
+                ],
+                onClick: ({ key }) => setOnDevices({ user: u, removing: key === 'remove' }),
+              }}
+            >
+              <Button size="small" type="text" icon={<MoreOutlined />} aria-label={`More for user number ${u.pin}`} />
+            </Dropdown>
+          ) : null}
+        </Space>
       ),
     },
   ];
@@ -108,6 +140,7 @@ export function DeviceUsers() {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 640 }}>
           {open ? `${open} user ${open === 1 ? 'number is' : 'numbers are'} not matched yet; their punches are kept and marked once matched.` : 'Every user number seen on the devices is matched.'} Enrolling people under their code number (14 for EMP-014) lets Match by code do it in one go.
+          {leftOn ? ` ${leftOn} ${leftOn === 1 ? 'person who has' : 'people who have'} left may still be on the devices: take them off from their row’s menu.` : ''}
         </Typography.Paragraph>
         <Space wrap>
           <Button
@@ -127,9 +160,10 @@ export function DeviceUsers() {
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
-        <Table<BiometricUserDto> rowKey="pin" size="small" loading={isLoading} columns={columns} dataSource={data ?? []} pagination={false} scroll={{ x: 820 }} locale={{ emptyText: 'No user numbers yet. They show here once a device sends punches.' }} />
+        <Table<BiometricUserDto> rowKey="pin" size="small" loading={isLoading} columns={columns} dataSource={data ?? []} pagination={false} scroll={{ x: 1050 }} locale={{ emptyText: 'No user numbers yet. They show here once a device sends punches.' }} />
       )}
       <MatchModal key={matching?.user?.pin ?? 'new'} open={!!matching} onClose={() => setMatching(null)} user={matching?.user ?? null} />
+      <DeviceUserForm key={onDevices ? `${onDevices.user.pin}-${onDevices.removing}` : 'none'} user={onDevices?.user ?? null} removing={!!onDevices?.removing} onClose={() => setOnDevices(null)} />
     </div>
   );
 }

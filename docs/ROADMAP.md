@@ -894,7 +894,10 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
      row kept and read through the plant's column map (matched once from a real report), RMC plant › From the batcher with
      the order each batch looks to be for, the challan made from the batch with its own weights (one batch, one challan),
      and trial batches set aside. ARCHITECTURE "Batching plant controller".
-150. **Biometric device commands** (S): users added and removed and the clock set over ADMS.
+150. ~~**Biometric device commands** (S).~~ Done: an ADMS device handed commands when it asks (`getrequest`) and its answers
+     read (`devicecmd`); HR puts a user number and name on the devices or takes it off (people who have left marked),
+     a device's clock set from Devices and once a day when it says hello, and each command's state on Devices.
+     ARCHITECTURE "Biometric attendance", Device commands.
 151. **Bank statement feed** (M).
 152. **Bank account check** (S).
 153. **Vendor, subcontractor and salary payouts** (L).

@@ -5,7 +5,8 @@ import type { Request } from 'express';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Public, ModuleSwitch } from '../common/decorators';
 import { BiometricService } from './biometric.service';
-import { CreateDeviceDto, ImportPunchesDto, MatchUserDto, PunchQuery, UpdateDeviceDto, WebhookPunchesDto } from './biometric.dto';
+import { BiometricCommandsService } from './biometric-commands.service';
+import { AddToDevicesDto, CommandQuery, CreateDeviceDto, ImportPunchesDto, MatchUserDto, PunchQuery, RemoveFromDevicesDto, UpdateDeviceDto, WebhookPunchesDto } from './biometric.dto';
 
 /** Biometric attendance (v6 item 101): devices, the user numbers on them, punches, punch files, and the webhook. */
 @ApiTags('biometric')
@@ -13,7 +14,10 @@ import { CreateDeviceDto, ImportPunchesDto, MatchUserDto, PunchQuery, UpdateDevi
 @ModuleSwitch('biometric')
 @Controller('biometric')
 export class BiometricController {
-  constructor(private bio: BiometricService) {}
+  constructor(
+    private bio: BiometricService,
+    private commands: BiometricCommandsService,
+  ) {}
 
   @ApiOperation({ summary: 'Registered devices with when each was last heard from and its punches today' })
   @Get('devices')
@@ -60,6 +64,36 @@ export class BiometricController {
     return this.bio.matchByCode(user);
   }
 
+  @ApiOperation({ summary: 'Put a user number and its name on the ADMS devices (item 150), for the person to enrol a finger or face under' })
+  @Post('users/:pin/add-to-devices')
+  addToDevices(@CurrentUser() user: RequestUser, @Param('pin') pin: string, @Body() dto: AddToDevicesDto) {
+    return this.commands.addUser(user, pin, dto);
+  }
+
+  @ApiOperation({ summary: 'Take a user number off the ADMS devices, so the person can no longer punch on them' })
+  @Post('users/:pin/remove-from-devices')
+  removeFromDevices(@CurrentUser() user: RequestUser, @Param('pin') pin: string, @Body() dto: RemoveFromDevicesDto) {
+    return this.commands.removeUser(user, pin, dto);
+  }
+
+  @ApiOperation({ summary: "Set an ADMS device's clock when it next calls" })
+  @Post('devices/:id/set-clock')
+  setClock(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.commands.setClock(user, id);
+  }
+
+  @ApiOperation({ summary: 'Commands for the ADMS devices, newest first' })
+  @Get('commands')
+  commandList(@CurrentUser() user: RequestUser, @Query() q: CommandQuery) {
+    return this.commands.list(user, q.deviceId);
+  }
+
+  @ApiOperation({ summary: 'Take back a command the device has not been handed yet' })
+  @Post('commands/:id/cancel')
+  cancelCommand(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.commands.cancel(user, id);
+  }
+
   @ApiOperation({ summary: "A day's punches (today unless a date is given), newest first" })
   @Get('punches')
   punches(@CurrentUser() user: RequestUser, @Query() q: PunchQuery) {
@@ -89,13 +123,17 @@ export class BiometricController {
 @Public()
 @Controller('iclock')
 export class IclockController {
-  constructor(private bio: BiometricService) {}
+  constructor(
+    private bio: BiometricService,
+    private commands: BiometricCommandsService,
+  ) {}
 
   @ApiOperation({ summary: 'ADMS handshake: the device asks for its options' })
   @Get('cdata')
   @Header('Content-Type', 'text/plain')
   async options(@Query('SN') sn: string) {
-    await this.bio.admsDevice(sn);
+    const d = await this.bio.admsDevice(sn);
+    await this.commands.onHandshake(d);
     return [
       `GET OPTION FROM: ${sn}`,
       'ATTLOGStamp=None',
@@ -125,19 +163,22 @@ export class IclockController {
     return `OK: ${r.received}`;
   }
 
-  @ApiOperation({ summary: 'ADMS: the device asks for commands; there are none' })
+  @ApiOperation({ summary: 'ADMS: the device asks for commands (item 150): users to add or remove and its clock, a line each, or OK' })
   @Get('getrequest')
   @Header('Content-Type', 'text/plain')
   async getRequest(@Query('SN') sn: string) {
-    await this.bio.admsDevice(sn);
-    return 'OK';
+    const d = await this.bio.admsDevice(sn);
+    return this.commands.handOut(d);
   }
 
+  @ApiOperation({ summary: 'ADMS: the device answers its commands, a line each (ID=12&Return=0&CMD=DATA)' })
   @Post('devicecmd')
   @HttpCode(200)
   @Header('Content-Type', 'text/plain')
-  async deviceCmd(@Query('SN') sn: string) {
-    await this.bio.admsDevice(sn);
+  async deviceCmd(@Query('SN') sn: string, @Req() req: RawBodyRequest<Request>) {
+    const d = await this.bio.admsDevice(sn);
+    const body = req.rawBody ? req.rawBody.toString('utf8') : typeof req.body === 'string' ? req.body : '';
+    await this.commands.takeReplies(d, body);
     return 'OK';
   }
 }

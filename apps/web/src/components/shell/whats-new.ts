@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-09-biometric-commands',
+    date: '2027-09-06',
+    title: 'People put on the biometric devices from Nirmaan',
+    points: [
+      'On Biometric devices, People on devices, a person’s menu puts their user number and name on every device that sends by itself (ZKTeco, eSSL), ready to enrol a finger or face, and takes someone who has left off them.',
+      'A device’s clock is set from Devices, and by itself once a day when the device calls. Devices lists each command and whether the device did it.',
+    ],
+  },
+  {
     id: '2027-08-batching-plant',
     date: '2027-08-30',
     title: 'Batches from the batching plant',

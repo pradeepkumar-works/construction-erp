@@ -13,6 +13,7 @@ import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { DeviceCommands } from './DeviceCommands';
 
 interface Values {
   name: string;
@@ -155,9 +156,24 @@ export function Devices() {
     { title: 'Punches today', dataIndex: 'punchesToday', width: 120, align: 'right' },
     { title: 'State', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag tone="success">On</AppTag> : <AppTag>Off</AppTag>) },
     {
+      title: 'Commands',
+      key: 'commands',
+      width: 200,
+      render: (_, d) =>
+        d.protocol !== 'ADMS' ? (
+          '-'
+        ) : (
+          <div>
+            {d.commandsFailed ? <AppTag tone="danger">{`${d.commandsFailed} failed`}</AppTag> : null}
+            {d.commandsWaiting ? <AppTag tone="pending">{`${d.commandsWaiting} waiting`}</AppTag> : null}
+            <div className="text-muted">{d.clockSetAt ? `Clock set ${formatDateTime(d.clockSetAt)}` : 'Clock not set yet'}</div>
+          </div>
+        ),
+    },
+    {
       title: '',
       key: 'x',
-      width: 250,
+      width: 340,
       render: (_, d) => (
         <Space size={4} wrap>
           <Button size="small" onClick={() => setSetup(d.id)} aria-label={`How to set up ${d.name}`}>
@@ -169,6 +185,11 @@ export function Devices() {
           <Button size="small" onClick={() => run(act.mutateAsync({ method: 'patch', path: `/biometric/devices/${d.id}`, body: { isActive: !d.isActive } }), d.isActive ? `${d.name} switched off` : `${d.name} switched on`)} aria-label={`${d.isActive ? 'Switch off' : 'Switch on'} ${d.name}`}>
             {d.isActive ? 'Switch off' : 'Switch on'}
           </Button>
+          {d.protocol === 'ADMS' && d.isActive ? (
+            <Button size="small" onClick={() => run(act.mutateAsync({ path: `/biometric/devices/${d.id}/set-clock` }), `${d.name}'s clock is set when it next calls`)} aria-label={`Set the clock of ${d.name}`}>
+              Set the clock
+            </Button>
+          ) : null}
         </Space>
       ),
     },
@@ -187,8 +208,9 @@ export function Devices() {
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
-        <Table<BiometricDeviceDto> rowKey="id" size="small" loading={isLoading} columns={columns} dataSource={data ?? []} pagination={false} scroll={{ x: 1180 }} locale={{ emptyText: 'No devices yet. Register the first one.' }} />
+        <Table<BiometricDeviceDto> rowKey="id" size="small" loading={isLoading} columns={columns} dataSource={data ?? []} pagination={false} scroll={{ x: 1600 }} locale={{ emptyText: 'No devices yet. Register the first one.' }} />
       )}
+      {data?.some((d) => d.protocol === 'ADMS') ? <DeviceCommands /> : null}
       <DeviceForm open={!!editing} onClose={() => setEditing(null)} device={editing?.device ?? null} onSaved={(d) => !editing?.device && d.protocol !== 'FILE' && setSetup(d.id)} />
       <Modal
         open={!!shown}
@@ -221,7 +243,7 @@ export function Devices() {
                 type={shown.lastSeenAt ? 'success' : 'info'}
                 showIcon
                 title={shown.lastSeenAt ? `Last heard from ${formatDateTime(shown.lastSeenAt)}` : 'Not heard from yet'}
-                description="Enrol each person on the device under a user number, then match the numbers on the People on devices tab. Punches that arrive before a number is matched are kept and marked once it is."
+                description={shown.protocol === 'ADMS' ? 'Put people on the device from the People on devices tab (or enrol them on the device under a user number and match it there), then enrol their finger or face on the device. Punches that arrive before a number is matched are kept and marked once it is.' : 'Enrol each person on the device under a user number, then match the numbers on the People on devices tab. Punches that arrive before a number is matched are kept and marked once it is.'}
               />
             )}
           </Space>
