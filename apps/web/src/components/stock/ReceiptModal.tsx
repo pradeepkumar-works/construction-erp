@@ -5,8 +5,8 @@ import { Alert, App, Empty, Flex, Form, Input, InputNumber, Select, Table, Typog
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto } from '@erp/shared';
-import { MATERIAL_PRIORITY_LABELS, itemSimilarity, matchLines, readNumber, readText } from '@erp/shared';
+import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto, WeighTicketDto } from '@erp/shared';
+import { MATERIAL_PRIORITY_LABELS, itemSimilarity, kgToUnit, matchLines, readNumber, readText } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useReceivable, useReceivableOrders } from '@/lib/queries';
@@ -68,12 +68,15 @@ export function ReceiptModal({
   projectId,
   materialRequestId,
   purchaseOrderId,
+  weighTicket,
 }: {
   open: boolean;
   onClose: () => void;
   projectId?: string;
   materialRequestId?: string;
   purchaseOrderId?: string;
+  /** A weighed truck (item 148): the GRN is drafted at its net weight, with its challan and truck */
+  weighTicket?: WeighTicketDto;
 }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
@@ -105,11 +108,26 @@ export function ReceiptModal({
     if (!open) return;
     form.resetFields();
     form.setFieldsValue({ projectId, source: purchaseOrderId ? `po:${purchaseOrderId}` : materialRequestId ? `mr:${materialRequestId}` : undefined, date: dayjs() });
+    if (weighTicket) {
+      const s = weighTicket.short;
+      const typed = weighTicket.first.typed || weighTicket.second?.typed;
+      form.setFieldsValue({
+        challanNo: weighTicket.challanNo ?? undefined,
+        vehicleNo: weighTicket.vehicleNo,
+        date: dayjs(weighTicket.second?.at ?? weighTicket.first.at),
+        remarks: [
+          `Weighed on ${weighTicket.ticketNo}: net ${formatQty(weighTicket.netQty ?? weighTicket.netKg)} ${weighTicket.netQty !== null ? weighTicket.unit : 'kg'}${typed ? ' (a weight typed)' : ''}`,
+          s?.short ? `${formatQty(kgToUnit(s.shortKg, weighTicket.unit) ?? s.shortKg)} ${weighTicket.unit} short of the challan's ${formatQty(weighTicket.challanQty)}` : null,
+        ]
+          .filter(Boolean)
+          .join(', '),
+      });
+    }
     setQty({});
     setReadState(null);
     setReadLines(null);
     pendingQty.current = null;
-  }, [open, projectId, materialRequestId, purchaseOrderId, form]);
+  }, [open, projectId, materialRequestId, purchaseOrderId, weighTicket, form]);
 
   // Pre-fill each line with its pending quantity when a source is picked.
   useEffect(() => {
@@ -117,8 +135,12 @@ export function ReceiptModal({
     const read = pendingQty.current?.key === request.key ? pendingQty.current.qty : null;
     pendingQty.current = null;
     form.setFieldValue('dispatchId', undefined);
-    setQty(read ?? Object.fromEntries(request.lines.map((l) => [l.id, Number(l.pending) > 0 ? l.pending : null])));
-  }, [request, form]);
+    // From the weighbridge: the ticket's line at its net weight (no more than is still to come), the others left empty.
+    const weighed = weighTicket && request.key === `po:${weighTicket.purchaseOrderId}` && weighTicket.netQty !== null ? weighTicket : null;
+    const fill = (l: (typeof request.lines)[number]) =>
+      weighed ? (l.id === weighed.purchaseOrderLineId ? String(Math.min(Number(weighed.netQty), Number(l.pending))) : null) : Number(l.pending) > 0 ? l.pending : null;
+    setQty((weighed ? null : read) ?? Object.fromEntries(request.lines.map((l) => [l.id, fill(l)])));
+  }, [request, form, weighTicket]);
 
   /** Picking the supplier's dispatch note fills the quantities on it, its challan and vehicle numbers. */
   const pickDispatch = (id: string | undefined) => {
@@ -191,6 +213,7 @@ export function ReceiptModal({
         remarks: v.remarks?.trim() || null,
         attachmentIds: (v.photos ?? []).map((p) => p.id),
         ...(po && v.dispatchId ? { supplierDispatchId: v.dispatchId } : {}),
+        ...(po && weighTicket && request.id === weighTicket.purchaseOrderId ? { weighTicketId: weighTicket.id } : {}),
         lines,
       };
       return (await api.post<StockEntryDto>('/stock/receipts', body)).data;
@@ -207,13 +230,30 @@ export function ReceiptModal({
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={760} title="Receive material (GRN)" okText="Save GRN" okDisabled={!request} onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
-        {!readState ? (
+        {weighTicket ? (
+          <Alert
+            type={weighTicket.short?.short ? 'warning' : 'info'}
+            showIcon
+            style={{ marginBottom: 16 }}
+            title={`From weighbridge ticket ${weighTicket.ticketNo}: ${weighTicket.vehicleNo}, net ${formatQty(weighTicket.netKg)} kg (${formatQty(weighTicket.grossKg)} less ${formatQty(weighTicket.tareKg)})`}
+            description={
+              weighTicket.short?.short
+                ? `${formatQty(weighTicket.short.shortKg)} kg short of the challan. The GRN takes the weighed quantity; the bill is checked against it.`
+                : weighTicket.netQty === null
+                  ? `${weighTicket.unit ?? 'The item'} is not a weight: type the quantity received.`
+                  : Number(weighTicket.netQty) > Number(request?.lines.find((l) => l.id === weighTicket.purchaseOrderLineId)?.pending ?? Infinity)
+                    ? 'The net weight is more than is still to come on the order: the line takes what is left.'
+                    : undefined
+            }
+          />
+        ) : null}
+        {!readState && !weighTicket ? (
           <Flex justify="flex-end" style={{ marginBottom: 8 }}>
             <ReadDocumentButton kind="challan" label="Fill from challan" onRead={applyRead} disabled={loading} />
           </Flex>
-        ) : (
+        ) : readState ? (
           <ReadPreview state={readState} active={activeRead} kept={keepChallan.kept} onClear={() => setReadState(null)} />
-        )}
+        ) : null}
         {projectId ? null : (
           <Form.Item name="projectId" label="Project">
             <Select
@@ -309,7 +349,7 @@ export function ReceiptModal({
           </Form.Item>
           {request?.kind === 'PO' ? (
             <Form.Item label="Supplier">
-              <Input value={request.vendorName ?? ''} disabled />
+              <Input value={request.vendorName ?? ''} disabled aria-label="Supplier" />
             </Form.Item>
           ) : (
             <Form.Item name="supplier" label="Supplier">

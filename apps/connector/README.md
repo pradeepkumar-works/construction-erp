@@ -37,7 +37,25 @@ Its files are in `%ProgramData%\Nirmaan Connector` on Windows and `~/.nirmaan-co
 (`NIRMAAN_CONNECTOR_HOME` to choose): `pairing.json` (its token: keep the folder to administrators), `settings.json`,
 `outbox.jsonl` and `connector.log` (rolled over at 5 MB).
 
+## Weighbridge
+
+A **Weighbridge** connection (Administration › Connections, item 148) has the Connector read the weighbridge's
+indicator, which most models send continuously several times a second (`ST,GS,+0026420kg`, `  26420`, STX/ETX frames,
+weights in kg or t):
+
+- **Serial port**: the indicator's RS-232 output to the computer, directly or through a USB-serial cable. Type the port
+  as the computer names it (`COM3` on Windows, `/dev/ttyUSB0` on Linux) and the indicator's baud rate (often 9600 or
+  2400); the Connector sets the port to 8 bits, no parity, 1 stop bit with `mode` or `stty`. Close the weighbridge
+  vendor's own software first if it holds the port, or put a serial splitter on the cable.
+- **Network address**: an indicator with a network port, or its serial output through a serial-to-network box on the
+  site's network (`192.168.1.50`, port `4001`). The Connector connects to it; it still opens nothing to the internet.
+
+A weight counts once it is above the empty bridge (200 kg unless set) and holds within the indicator's step for three
+seconds; the next weight waits until the bridge has been empty again. Each one reaches Stock › Weighbridge within a
+minute, where the store puts it on the truck's ticket. Readings wait in the outbox like any other while the internet is
+down. When the indicator says nothing for ten minutes, the log says so once.
+
 ## A new kind of device
 
 A kind's reader is one entry in `READERS` (`src/readers.ts`) that returns readings; the server reads the payload in its
-handler for the kind (`apps/api/src/integrations`). `npm test` checks the outbox.
+handler for the kind (`apps/api/src/integrations`). `npm test` checks the outbox and the weighbridge frames.

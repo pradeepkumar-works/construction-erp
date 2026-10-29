@@ -35,11 +35,16 @@ import {
   revisedCompletion,
   watchListKinds,
   isClientSide,
+  WEIGH_SHORT_DAYS,
+  WEIGH_SHORT_LOADS,
+  WEIGH_SHORT_TOLERANCE_KG,
+  WEIGH_SHORT_TOLERANCE_PCT,
 } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { TelematicsService } from '../telematics/telematics.service';
+import { WeighbridgeService } from '../weighbridge/weighbridge.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { dateOnly, parseDate } from '../common/serialize';
 import { PrismaService } from '../prisma/prisma.service';
@@ -110,6 +115,7 @@ import {
   fuelStep,
   fuelTankCheck,
   FUEL_TANK_DAYS,
+  weighShortCheck,
   leadDays,
   machineTrend,
   materialOveruse,
@@ -188,6 +194,7 @@ export class WarningsService {
     private quality: QualityService,
     private approvalRights: ApprovalRightsService,
     private telematics: TelematicsService,
+    private weighbridge: WeighbridgeService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -334,6 +341,7 @@ export class WarningsService {
         if (k === 'CUBE_7DAY_LOW') return today === todayIn() ? this.cubesEarly(user, today) : Promise.resolve([]);
         if (k === 'PURCHASE_CONTROL') return this.purchaseControls(user, projects, today);
         if (k === 'FUEL_TANK') return this.fuelTank(projects, today);
+        if (k === 'WEIGH_SHORT') return this.weighShort(projects, today);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -707,6 +715,49 @@ export class WarningsService {
       });
     }
     return out.sort((a, b) => b.litres - a.litres).map(({ litres: _l, ...w }) => w);
+  }
+
+  /**
+   * Weighbridge (item 148): each supplier's loads received over the last WEIGH_SHORT_DAYS days against their challans,
+   * through the weighbridge service; short loads are `shortSupply`'s and the count is pure in `weighShortCheck`.
+   */
+  private async weighShort(projects: Project[], today: string): Promise<Draft[]> {
+    const tickets = await this.weighbridge.receivedSince(projects.map((p) => p.id), parseDate(addDays(today, -(WEIGH_SHORT_DAYS - 1))));
+    const byVendor = new Map<string, typeof tickets>();
+    for (const t of tickets) if (t.vendorId) byVendor.set(t.vendorId, [...(byVendor.get(t.vendorId) ?? []), t]);
+    const tonnes = (kg: number) => `${qty(kg / 1000)} t`;
+    const out: (Draft & { kg: number })[] = [];
+    for (const [vendorId, ts] of byVendor) {
+      const c = weighShortCheck(
+        ts.map((t) => ({ ticketNo: t.ticketNo, date: (t.second?.at ?? t.createdAt).slice(0, 10), shortKg: t.short?.shortKg ?? null, shortPct: t.short?.shortPct ?? null, short: !!t.short?.short })),
+        WEIGH_SHORT_LOADS,
+      );
+      if (!c) continue;
+      const v = ts[0].vendorName ?? 'A supplier';
+      const shortOnes = ts.filter((t) => c.tickets.includes(t.ticketNo));
+      const p = shortOnes[shortOnes.length - 1];
+      out.push({
+        key: `weigh-short:${vendorId}:${c.last}:${c.shortLoads}`,
+        kind: 'WEIGH_SHORT',
+        title: `${v}: ${c.shortLoads} of ${c.loads} loads short at the weighbridge, ${tonnes(c.shortKg)} in all`,
+        detail: `In the last ${WEIGH_SHORT_DAYS} days ${c.shortLoads} trucks from ${v} weighed less than their challans by more than the allowance (the larger of ${WEIGH_SHORT_TOLERANCE_PCT}% and ${WEIGH_SHORT_TOLERANCE_KG} kg), up to ${c.worstPct}% short.`,
+        action: `Raise a debit note or hold ${v}'s bill to the weighed quantity, and take it up with them before the next load`,
+        impact: { text: tonnes(c.shortKg), inr: null, days: null },
+        working: shortOnes.map(
+          (t) => `${t.ticketNo}, ${day(t.second?.at.slice(0, 10) ?? t.createdAt.slice(0, 10))}: ${t.vehicleNo} weighed ${tonnes(Number(t.netKg))} net against ${tonnes(t.short!.challanKg)} on challan ${t.challanNo ?? ''}`.replace(/ $/, '') + ` (${t.short!.shortPct}% short)`,
+        ),
+        facts: [
+          { label: 'Short loads', value: `${c.shortLoads} of ${c.loads}` },
+          { label: 'Short in all', value: tonnes(c.shortKg) },
+          { label: 'Worst', value: `${c.worstPct}%` },
+        ],
+        links: [{ label: 'Weighbridge', href: `/stock?sub=weighbridge${p ? `&projectId=${p.projectId}` : ''}` }],
+        projectId: p?.projectId ?? null,
+        projectName: p?.projectName ?? null,
+        kg: c.shortKg,
+      });
+    }
+    return out.sort((a, b) => b.kg - a.kg).map(({ kg: _k, ...w }) => w);
   }
 
   /** Machine loans (v6 item 108): an EMI unpaid past its date, most overdue first. Company-wide, as the loans are. */

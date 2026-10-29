@@ -365,6 +365,12 @@ and the pre-delivery checklist.
   burnt is `fuelUsedOf`, and a day's tank is set against its slips only by `fuelSlipGap` (`@erp/shared/telematics.ts`). A
   dispenser's fill becomes a slip only through `FuelDispenseService` over `StockService.fuelIssue`, never a stock write of
   its own. Keep `src/scripts/telematics-test.ts` passing.
+- Weighbridge (item 148, `apps/api/src/weighbridge`, ARCHITECTURE "Weighbridge"): the indicator is read only by the Connector
+  (`readWeighbridge` over the pure `weight.ts`: `splitFrames`, `readFrame`, `WeightWatch`), never a port opened to it from
+  outside; a weighing comes in only through `IntegrationsService.takeIn` and `WeighbridgeService.take` (`readWeighing`). A
+  ticket's net is only `weighNet`, a weight's unit only `kgPerUnit` / `kgToUnit`, short supply only `shortSupply`
+  (`@erp/shared/weighbridge.ts`), and a ticket becomes stock only as a GRN through `StockService.receiveAgainstPo` with
+  `weighTicketId` (one ticket, one GRN). Keep `src/scripts/weighbridge-test.ts` and the Connector's `npm test` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

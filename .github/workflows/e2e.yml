@@ -230,7 +230,11 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/telematics-test.js
-      - name: The Connector's outbox keeps readings through a power cut and takes a sent batch off
+      - name: Weighbridge weighings, net weights, short supply against the challan and the watch list's short loads
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/weighbridge-test.js
+      - name: The Connector's outbox keeps readings through a power cut, and it reads a weighbridge indicator's frames into weighings
         if: matrix.suite == 'flows'
         working-directory: apps/connector
         run: npm test

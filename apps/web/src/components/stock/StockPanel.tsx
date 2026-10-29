@@ -29,6 +29,7 @@ import { StockCountModal } from "./StockCountModal";
 import { StockValuation } from "./StockValuation";
 import { IncomingTransfers } from "./IncomingTransfers";
 import { DeliveriesExpected, seesDeliveries } from "./DeliveriesExpected";
+import { Weighbridge } from "./Weighbridge";
 
 type Action =
   | "receipt"
@@ -144,7 +145,7 @@ export function StockPanel({
   // The open tab is `?sub=` in the URL (UX item 84), so a reload or a link keeps it.
   const tabs = [
     "balances",
-    ...(receiver ? ["deliveries"] : []),
+    ...(receiver ? ["deliveries", "weighbridge"] : []),
     "register",
     ...(valuer ? ["valuation"] : []),
     ...(projectId ? [] : ["items", "units"]),
@@ -177,6 +178,11 @@ export function StockPanel({
                   key: "deliveries",
                   label: "Deliveries expected",
                   children: <DeliveriesExpected projectId={projectId} />,
+                },
+                {
+                  key: "weighbridge",
+                  label: "Weighbridge",
+                  children: <Weighbridge projectId={projectId} />,
                 },
               ]
             : []),

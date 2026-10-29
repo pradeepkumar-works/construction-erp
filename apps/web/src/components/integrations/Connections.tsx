@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Descriptions, Form, Input, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
-import type { ConnectionHealth, FeedAuth, FeedPollResultDto, IntegrationConnectionDto, IntegrationKind, IntegrationSecretDto } from '@erp/shared';
-import { CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO } from '@erp/shared';
+import type { ConnectionHealth, FeedAuth, FeedPollResultDto, IntegrationConnectionDto, IntegrationKind, IntegrationSecretDto, WeighbridgeSource } from '@erp/shared';
+import { CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO, WEIGH_BAUDS, WEIGH_MIN_KG, WEIGH_STABLE_SECONDS, WEIGHBRIDGE_SOURCES, WEIGHBRIDGE_SOURCE_LABELS } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
 import { useConnectorAgents, useIntegrationAction, useIntegrationConnections, useStockItems } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
@@ -30,6 +30,14 @@ interface Values {
   scope?: string;
   /** A fuel dispenser (item 147): the fuel it pours */
   itemId?: string;
+  /** A weighbridge (item 148): where the Connector reads its indicator, and when a weight counts */
+  source?: WeighbridgeSource;
+  port?: string;
+  baud?: number;
+  host?: string;
+  tcpPort?: number | null;
+  minKg?: number | null;
+  stableSeconds?: number | null;
 }
 
 const CREDENTIAL_LABEL: Record<FeedAuth, string> = { BEARER: 'API key', BASIC: 'User name and password, as user:password', OAUTH: 'Client secret' };
@@ -50,6 +58,8 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
   const viaConnector = kind ? INTEGRATION_KIND_INFO[kind].transport === 'CONNECTOR' : false;
   const polled = kind ? INTEGRATION_KIND_INFO[kind].transport === 'POLL' : false;
   const dispenser = kind === 'FUEL_DISPENSER';
+  const bridge = kind === 'WEIGHBRIDGE';
+  const source = (Form.useWatch('source', form) ?? str(connection?.config.source) ?? 'SERIAL') as WeighbridgeSource;
   const fuels = useStockItems({ fuel: true, pageSize: 100 }, open && dispenser);
   const auth = (Form.useWatch('auth', form) ?? str(connection?.config.auth) ?? 'BEARER') as FeedAuth;
   const liveAgents = (agents.data ?? []).filter((a) => a.state !== 'REVOKED');
@@ -69,7 +79,14 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           ? { url: v.url?.trim(), auth: v.auth ?? 'BEARER', ...(v.auth === 'OAUTH' ? { tokenUrl: v.tokenUrl?.trim(), clientId: v.clientId?.trim(), scope: v.scope?.trim() || undefined } : {}) }
           : dispenser
             ? { itemId: v.itemId }
-            : undefined;
+            : bridge
+              ? {
+                  source: v.source ?? 'SERIAL',
+                  ...(v.source === 'TCP' ? { host: v.host?.trim(), tcpPort: v.tcpPort } : { port: v.port?.trim(), baud: v.baud ?? 9600 }),
+                  minKg: v.minKg ?? WEIGH_MIN_KG,
+                  stableSeconds: v.stableSeconds ?? WEIGH_STABLE_SECONDS,
+                }
+              : undefined;
         if (connection) {
           await act.mutateAsync({
             method: 'patch',
@@ -97,8 +114,15 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                 clientId: str(connection.config.clientId),
                 scope: str(connection.config.scope),
                 itemId: str(connection.config.itemId),
+                source: (str(connection.config.source) ?? 'SERIAL') as WeighbridgeSource,
+                port: str(connection.config.port),
+                baud: typeof connection.config.baud === 'number' ? connection.config.baud : 9600,
+                host: str(connection.config.host),
+                tcpPort: typeof connection.config.tcpPort === 'number' ? connection.config.tcpPort : null,
+                minKg: typeof connection.config.minKg === 'number' ? connection.config.minKg : WEIGH_MIN_KG,
+                stableSeconds: typeof connection.config.stableSeconds === 'number' ? connection.config.stableSeconds : WEIGH_STABLE_SECONDS,
               }
-            : { kind: 'GENERIC_WEBHOOK', auth: 'BEARER' }
+            : { kind: 'GENERIC_WEBHOOK', auth: 'BEARER', source: 'SERIAL', baud: 9600, minKg: WEIGH_MIN_KG, stableSeconds: WEIGH_STABLE_SECONDS }
         }
       >
         <Form.Item name="kind" label="What it connects to" extra={kind ? INTEGRATION_KIND_INFO[kind].description : undefined}>
@@ -110,6 +134,10 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           </Form.Item>
           {dispenser ? (
             <Form.Item name="projectId" label="Site" extra="Its fills are issued from this site's store" rules={[{ required: true, message: 'Choose the site whose store the dispenser pours from' }]}>
+              <ProjectSelect placeholder="Choose the site" style={{ width: '100%' }} aria-label="Site" />
+            </Form.Item>
+          ) : bridge ? (
+            <Form.Item name="projectId" label="Site" extra="Its weights go to this site's store" rules={[{ required: true, message: 'Choose the site the weighbridge is at' }]}>
               <ProjectSelect placeholder="Choose the site" style={{ width: '100%' }} aria-label="Site" />
             </Form.Item>
           ) : (
@@ -137,6 +165,40 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           >
             <Select loading={agents.isLoading} options={liveAgents.map((a) => ({ value: a.id, label: a.hostname ? `${a.name} (${a.hostname})` : a.name }))} placeholder="Choose a Connector" />
           </Form.Item>
+        )}
+        {bridge && (
+          <>
+            <Form.Item name="source" label="How the Connector reads the indicator">
+              <Select options={WEIGHBRIDGE_SOURCES.map((x) => ({ value: x, label: WEIGHBRIDGE_SOURCE_LABELS[x] }))} />
+            </Form.Item>
+            {source === 'TCP' ? (
+              <FormGrid cols={2}>
+                <Form.Item name="host" label="Address on the site's network" rules={[{ required: true, whitespace: true, message: "Type the indicator's address, e.g. 192.168.1.50" }]}>
+                  <Input maxLength={253} placeholder="192.168.1.50" translate="no" />
+                </Form.Item>
+                <Form.Item name="tcpPort" label="Port" rules={[{ required: true, message: 'Type the port it sends on, e.g. 4001' }]}>
+                  <InputNumber<number> min={1} max={65535} precision={0} controls={false} placeholder="4001" style={{ width: '100%' }} />
+                </Form.Item>
+              </FormGrid>
+            ) : (
+              <FormGrid cols={2}>
+                <Form.Item name="port" label="Serial port" extra="As the computer names it" rules={[{ required: true, whitespace: true, message: 'Type the port, e.g. COM3 or /dev/ttyUSB0' }]}>
+                  <Input maxLength={64} placeholder="COM3" translate="no" />
+                </Form.Item>
+                <Form.Item name="baud" label="Baud rate" extra="From the indicator's settings">
+                  <Select options={WEIGH_BAUDS.map((b) => ({ value: b, label: String(b) }))} />
+                </Form.Item>
+              </FormGrid>
+            )}
+            <FormGrid cols={2}>
+              <Form.Item name="minKg" label="A truck from" extra="Below this the bridge is empty">
+                <InputNumber<number> min={20} max={20000} precision={0} controls={false} suffix="kg" style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item name="stableSeconds" label="Weight holds for" extra="Before it is taken">
+                <InputNumber<number> min={1} max={30} precision={0} controls={false} suffix="s" style={{ width: '100%' }} />
+              </Form.Item>
+            </FormGrid>
+          </>
         )}
         {polled && (
           <>
@@ -168,7 +230,8 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             )}
           </>
         )}
-        <Form.Item
+        {bridge ? null : (
+          <Form.Item
           name="credential"
           label={
             polled
@@ -181,7 +244,8 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           rules={polled && !connection?.secretLast4 ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }] : undefined}
         >
           <Input.Password maxLength={2000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />
-        </Form.Item>
+          </Form.Item>
+        )}
       </Form>
     </FormShell>
   );

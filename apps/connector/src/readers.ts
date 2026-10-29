@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import type { Reading } from './outbox';
 import type { Connection } from './state';
 import { VERSION } from './client';
+import { readWeighbridge } from './weighbridge';
 
 export interface ReaderContext {
   waiting: number;
@@ -19,4 +20,6 @@ const reading = (conn: Connection, payload: Record<string, unknown>): Reading =>
 export const READERS: Record<string, Reader> = {
   /** One reading a run, so the log shows the Connector working before any device is set up. */
   CONNECTOR_CHECK: async (conn, ctx) => [reading(conn, { deviceId: hostname(), deviceName: hostname(), version: VERSION, uptimeMin: Math.round(uptime() / 60), waiting: ctx.waiting })],
+  /** Each weight the weighbridge's indicator held steady (item 148), read from its serial port or network address. */
+  WEIGHBRIDGE: (conn) => readWeighbridge(conn),
 };

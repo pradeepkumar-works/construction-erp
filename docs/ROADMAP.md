@@ -886,7 +886,10 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
      tab and Engine hours, litres an hour against the norm (the FUEL_NORM check reads the sensor first), FUEL_TANK on the
      watch list, and a site's fuel dispenser posting each fill, made a fuel slip through `StockService.fuelIssue` once its
      tag is matched. ARCHITECTURE "Fuel sensors and dispensers".
-148. **Weighbridge** (M): the indicator read by the Connector, a GRN drafted at the net weight, short supply checked.
+148. ~~**Weighbridge** (M).~~ Done: the indicator read by the Connector over its serial port or the site's network, each
+     stable weight a weighing, a truck's ticket from its two weights on Stock › Weighbridge, the GRN drafted at the net
+     weight (one ticket, one GRN), short supply against the challan beyond 0.5% or 20 kg, and WEIGH_SHORT on the watch list
+     for a supplier's repeated short loads. ARCHITECTURE "Weighbridge".
 149. **Batching plant controller** (M): batch records to the RMC batches' actual quantities.
 150. **Biometric device commands** (S): users added and removed and the clock set over ADMS.
 151. **Bank statement feed** (M).

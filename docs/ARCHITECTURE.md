@@ -3699,6 +3699,45 @@ the slip, rate and norm rules the screens share are `fuelSlipGap`, `litresPerHou
 - **Not yet.** A dispenser read through the Connector on the site's network (a serial or Modbus reader), the model reading
   a fill slip's photo against the dispenser, and alerts as a drain happens (the watch list is daily).
 
+## Weighbridge
+
+Item 148, on the integration layer. A site's weighbridge is a `WEIGHBRIDGE` connection read by the Connector on a computer
+beside the indicator; the store puts each truck's two weights on a ticket, and the net weight drafts the GRN. The
+Connector's frame reading is pure in `apps/connector/src/weight.ts` (tested in `weight-test.ts`), the API's checks in
+`apps/api/src/weighbridge/weighbridge-rules.ts` and the net, units and short supply in `@erp/shared/weighbridge.ts`
+(both tested in `src/scripts/weighbridge-test.ts`).
+
+- **Reading the indicator.** The connection names the indicator's serial port (`COM3`, `/dev/ttyUSB0`, with its baud
+  rate) or a network address on the site (the indicator's own, or a serial-to-network box), a truck's least weight
+  (`minKg`, below it the bridge is empty) and how long a weight must hold (`stableSeconds`); `readWeighbridgeConfig`
+  checks them and the connection must name its site. The Connector keeps the port or connection open between runs
+  (`readWeighbridge`), cuts the stream into lines (`splitFrames`: CR, LF or ETX, after any STX) and reads each
+  (`readFrame`: the last number on the line in kg, t or lb, an ST or US/MO flag where the indicator sends one, an
+  overload as nothing). `WeightWatch` takes a weight once it holds within the larger of 10 kg and 0.1% for its seconds,
+  and not again until the bridge has been empty, so a truck standing for minutes is one weighing. Nothing listens on a
+  port; a stopped port is reported once and opened again, and ten quiet minutes are reported once.
+- **Weighings.** `IntegrationsService.takeIn` hands each to `WeighbridgeService.take`, which keeps it as a `Weighing`
+  (tenant table, RLS) after `readWeighing` (200 kg to 150 t, not over 7 days old or ahead of the clock).
+- **Tickets.** A `WeighTicket` (tenant table, RLS; `WB-YYYY-NNNN` by `nextTicketNo`, under an advisory lock) is a truck:
+  its number, the order line it brings and the challan's quantity, a first and a second weight, each a weighing from the
+  bridge (used once, unique) or typed (marked so). Gross is the heavier and tare the lighter, so a truck weighed empty
+  first gives the same net (`weighNet`); a second weight from before the first, or within 200 kg of it, is refused
+  (`weighStepProblem`). Stock › Weighbridge shows weighings on no ticket, tickets waiting for the second weight, weighed
+  ones with their GRN to make and the week's done ones (`GET /api/weighbridge`, for whoever keeps stock or manages the
+  store; writes through `assertCanKeepStock`).
+- **The GRN.** Make the GRN opens the normal receipt (`ReceiptModal` with the ticket) against the ticket's order, its line
+  at the net weight in the line's unit where that is a weight (kg, MT, quintal: `kgPerUnit`), no more than is still to
+  come, with the challan, truck and date. `StockService.receiveAgainstPo` takes `weighTicketId`, checks the ticket is this
+  order's, weighed, not cancelled and not received, and ties it to the GRN in the same transaction (only while it has
+  none), so one ticket makes one GRN. A GRN booked above the net beyond the allowance is named on the ticket
+  (`grnAboveNet`).
+- **Short supply.** A load is short when its net weight is under its challan by more than the larger of 0.5% and 20 kg
+  (`shortSupply`); the ticket and the GRN's remarks say so. The watch list's `WEIGH_SHORT` (store and purchase,
+  `canManageStore` or `canPurchase`) names a supplier with two or more short loads in the last 30 days
+  (`weighShortCheck` in `warning-rules.ts`), keyed by supplier, its last short day and the count.
+- **Not yet.** A camera's number plate read at the bridge, an outgoing truck's ticket against a dispatch or an RMC
+  delivery, and the bill checked against the weighed quantity rather than the GRN.
+
 ## Intelligence quick wins
 
 - **What they are.** Ten small checks from the ideas page "Nirmaan intelligence map" (ROADMAP "Intelligence quick wins"),

@@ -47,6 +47,8 @@ import {
 } from './integration-rules';
 import { TelematicsService } from '../telematics/telematics.service';
 import { FuelDispenseService } from '../telematics/fuel-dispense.service';
+import { WeighbridgeService } from '../weighbridge/weighbridge.service';
+import { readWeighbridgeConfig, readWeighing } from '../weighbridge/weighbridge-rules';
 import { FEED_MAX_PAGES, FEED_TIMEOUT_MS, feedDue, feedHttpProblem, readDispense, readFeedConfig, readFeedMachine, readFeedPage, readTracker, type ReadResult } from '../telematics/telematics-rules';
 import type { ConnectorReadingsDto, CreateAgentDto, CreateConnectionDto, EventQuery, MatchDeviceDto, PairConnectorDto, UpdateConnectionDto } from './integrations.dto';
 
@@ -89,6 +91,7 @@ export class IntegrationsService {
     private audit: AuditService,
     private telematics: TelematicsService,
     private fuel: FuelDispenseService,
+    private weighbridge: WeighbridgeService,
   ) {}
 
   /** OAuth tokens for makers' feeds, by connection, until they run out. */
@@ -108,7 +111,26 @@ export class IntegrationsService {
     GPS_TRACKER: (c, payload, at, ctx) => this.machineReading(c, readTracker(payload, at), ctx),
     MACHINE_FEED: (c, payload, at, ctx) => this.machineReading(c, readFeedMachine(payload, at), ctx),
     FUEL_DISPENSER: (c, payload, at, ctx) => this.dispense(c, payload, at, ctx),
+    WEIGHBRIDGE: (c, payload) => this.weighing(c, payload),
   };
+
+  /** A weight the site's weighbridge held, read by the Connector: kept for the store to put on a ticket (item 148). */
+  private async weighing(c: { id: string; organizationId: string; projectId: string | null }, payload: unknown): Promise<HandlerResult> {
+    // Checked against the clock now: a reading's own time is the weighing's, which the outbox may hold for a day.
+    const read = readWeighing(payload, new Date());
+    if (!read.weighing) return { status: 'FAILED', summary: read.problem };
+    const w = read.weighing;
+    await this.weighbridge.take(c, w);
+    return { status: 'OK', summary: `${w.weightKg.toLocaleString('en-IN')} kg${w.stableSeconds !== null ? `, held ${w.stableSeconds} s` : ''}. Put it on a ticket in Stock, Weighbridge` };
+  }
+
+  /** A weighbridge's settings, checked before they are saved: the site whose store it weighs for, and how the Connector reads it. */
+  private weighbridgeConfig(projectId: string | null | undefined, config: unknown): Record<string, unknown> {
+    if (!projectId) throw new BadRequestException('Choose the site the weighbridge is at');
+    const r = readWeighbridgeConfig(config);
+    if (r.problem) throw new BadRequestException(r.problem);
+    return { ...r.config };
+  }
 
   /** A dispenser's fill: its tag listed under Devices, the fill kept once and issued as a slip when the tag is matched (item 147). */
   private async dispense(c: { id: string; organizationId: string }, payload: unknown, at: Date, ctx: HandlerContext): Promise<HandlerResult> {
@@ -228,6 +250,7 @@ export class IntegrationsService {
     await this.checkRefs(user, dto.projectId, info.transport === 'CONNECTOR' ? dto.agentId : null);
     if (info.transport === 'POLL') dto.config = this.feedConfig(dto.config, !!dto.credential);
     if (dto.kind === 'FUEL_DISPENSER') dto.config = await this.fuel.checkConfig(user, dto.projectId, dto.config);
+    if (dto.kind === 'WEIGHBRIDGE') dto.config = this.weighbridgeConfig(dto.projectId, dto.config);
     const secret = info.transport === 'HOOK' ? newSecret() : null;
     const row = await this.prisma.integrationConnection.create({
       data: {
@@ -261,6 +284,8 @@ export class IntegrationsService {
     }
     if (c.kind === 'FUEL_DISPENSER' && (dto.config !== undefined || dto.projectId !== undefined))
       dto.config = await this.fuel.checkConfig(user, dto.projectId === undefined ? c.projectId : dto.projectId, dto.config ?? c.config);
+    if (c.kind === 'WEIGHBRIDGE' && (dto.config !== undefined || dto.projectId !== undefined))
+      dto.config = this.weighbridgeConfig(dto.projectId === undefined ? c.projectId : dto.projectId, dto.config ?? c.config);
     const data: Prisma.IntegrationConnectionUncheckedUpdateInput = {
       name: dto.name,
       projectId: dto.projectId,
