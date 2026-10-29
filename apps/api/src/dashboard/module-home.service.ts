@@ -51,6 +51,7 @@ import { moduleOn } from '../common/module-switch.guard';
 import { ProjectsService } from '../projects/projects.service';
 import { plannedProgress } from './dashboard.service';
 import { CorrespondenceService } from '../correspondence/correspondence.service';
+import { DesignControlService } from '../design/design-control.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -81,6 +82,7 @@ export class ModuleHomeService {
     private statements: StatementsService,
     private projects: ProjectsService,
     private letters: CorrespondenceService,
+    private designControl: DesignControlService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -204,6 +206,8 @@ export class ModuleHomeService {
         return this.safety(user, today, projectId);
       case 'correspondence':
         return this.correspondence(user);
+      case 'documents':
+        return this.design(user, projectId);
       case 'materials':
         return this.materials(user, projectId);
       case 'plant':
@@ -219,7 +223,7 @@ export class ModuleHomeService {
       case 'people':
         return this.people(user, today, projectId);
       default:
-        // Projects, Design and drawings, Subcontracts, Payroll, Reports and Admin show their pages and what waits, no figures yet.
+        // Projects, Subcontracts, Payroll, Reports and Admin show their pages and what waits, no figures yet.
         return [];
     }
   }
@@ -277,6 +281,31 @@ export class ModuleHomeService {
     const monthStart = parseDate(`${today.slice(0, 7)}-01`);
     const incidents = await this.prisma.safetyIncident.count({ where: { ...this.where(user, projectId), date: { gte: monthStart, lte: parseDate(today) } } });
     return [count('incidents', 'Safety incidents this month', incidents, '/safety', { tone: incidents ? 'danger' : 'default', note: incidents ? 'Reported since the 1st' : 'None since the 1st' })];
+  }
+
+  /** The design dashboard's totals (`DesignControlService.dashboard`), each linking to its list. */
+  private async design(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {
+    if (isGuest(user.roleKey)) return [];
+    const t = (await this.designControl.dashboard(user, projectId)).totals;
+    const scope = projectId ? `&projectId=${projectId}` : '';
+    return [
+      count('drawingsLate', 'Drawings late', t.drawingsLate, `/drawing-schedule?state=LATE${scope}`, {
+        tone: t.drawingsLate ? 'danger' : 'default',
+        note: t.drawingsAwaited ? `${t.drawingsAwaited} awaited in all` : 'None awaited',
+      }),
+      count('reviewsLate', 'Approvals past the reply date', t.reviewsLate, `/design-submissions?status=LATE${scope}`, {
+        tone: t.reviewsLate ? 'warning' : 'default',
+        note: t.underReview ? `${t.underReview} with the reviewer` : 'Nothing with a reviewer',
+      }),
+      count('commentsToAnswer', 'Review comments to answer', t.commentsToAnswer, `/design-submissions?status=WITH_US${scope}`, {
+        tone: t.commentsToAnswer ? 'warning' : 'default',
+        note: t.withUs ? `${t.withUs} submission${t.withUs === 1 ? '' : 's'} to revise` : 'Before the next submission',
+      }),
+      count('copiesToRecall', 'Superseded copies to recall', t.copiesToRecall, `/controlled-copies?state=TO_RECALL${scope}`, {
+        tone: t.recallsLate ? 'danger' : t.copiesToRecall ? 'warning' : 'default',
+        note: t.recallsLate ? `${t.recallsLate} out longer than a week` : t.copiesToRecall ? 'Old prints still on site' : 'Every copy on site is current',
+      }),
+    ];
   }
 
   private async correspondence(user: RequestUser): Promise<ModuleFigureDto[]> {

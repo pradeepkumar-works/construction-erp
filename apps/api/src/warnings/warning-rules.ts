@@ -515,3 +515,19 @@ export function lateDrawingGroups<N extends { projectId: string; source: string;
 export function lateDesignReviews<R extends { status: string; daysLate: number | null }>(rows: R[]): (R & { daysLate: number })[] {
   return rows.filter((r): r is R & { daysLate: number } => r.status === 'UNDER_REVIEW' && (r.daysLate ?? 0) > 0).sort((a, b) => b.daysLate - a.daysLate);
 }
+
+/**
+ * Controlled copies of a superseded revision still out past the recall period (item 138 part 3), one warning per document
+ * and the revision that superseded them, the longest out first: site may be building from the old print.
+ */
+export function lateRecalls<C extends { documentId: string; currentRevision: string | null; recallLate: boolean; recallDays: number | null }>(copies: C[]): { documentId: string; revision: string; copies: C[]; longest: number }[] {
+  const groups = new Map<string, C[]>();
+  for (const c of copies) {
+    if (!c.recallLate || !c.currentRevision) continue;
+    const key = `${c.documentId}:${c.currentRevision}`;
+    groups.set(key, [...(groups.get(key) ?? []), c]);
+  }
+  return [...groups.values()]
+    .map((cs) => ({ documentId: cs[0].documentId, revision: cs[0].currentRevision!, copies: cs, longest: Math.max(...cs.map((c) => c.recallDays ?? 0)) }))
+    .sort((a, b) => b.longest - a.longest);
+}

@@ -620,5 +620,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "DesignComment";
 ALTER TABLE "DesignSubmissionRound" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "DesignSubmissionRound" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "DesignSubmissionRound";
+ALTER TABLE "ControlledCopy" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ControlledCopy" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ControlledCopy";
 
 DROP FUNCTION IF EXISTS app_current_org();

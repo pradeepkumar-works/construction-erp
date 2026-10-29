@@ -396,7 +396,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -1611,6 +1611,47 @@ export function useDesignSubmissionAction<T = DesignSubmissionDetailDto>() {
       void qc.invalidateQueries({ queryKey: ['documents'] });
       void qc.invalidateQueries({ queryKey: ['letters'] });
       void qc.invalidateQueries({ queryKey: ['risks'] });
+    },
+  });
+}
+
+export interface ControlledCopyFilters extends PageParams {
+  projectId?: string;
+  documentId?: string;
+  state?: CopyState | 'LATE';
+}
+
+export const useControlledCopies = (filters?: ControlledCopyFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['documents', 'copies', clean(filters)],
+    queryFn: async () => (await api.get<ControlledCopyListDto>('/design/copies', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useRevisionImpact = (documentId: string | null | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'impact', documentId],
+    queryFn: async () => (await api.get<RevisionImpactDto>(`/design/revision-impact/${documentId}`)).data,
+    enabled: !!documentId,
+  });
+
+export const useDesignDashboard = (projectId?: string) =>
+  useQuery({
+    queryKey: ['documents', 'design-dashboard', projectId ?? null],
+    queryFn: async () => (await api.get<DesignDashboardDto>('/design/dashboard', { params: clean({ projectId }) })).data,
+  });
+
+/** Issue, give the new revision, take back or delete controlled copies; the register, the dashboard and the lists follow. */
+export function useCopyAction<T = unknown>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api.post<T>(path, body ?? {})).data,
+    meta: FAIL_NOTICE,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['documents'] });
+      void qc.invalidateQueries({ queryKey: ['watch-list'] });
     },
   });
 }

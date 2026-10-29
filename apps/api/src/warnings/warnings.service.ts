@@ -2,6 +2,8 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from '@prisma/client';
 import type { WarningDto, WarningKind, WarningOutcome, WarningRecordDto, WatchListDto } from '@erp/shared';
 import {
+  RECALL_DAYS,
+  copyLabel,
   DEFAULT_CLIENT_PAYMENT_DAYS,
   DEFAULT_PORT_TO_SITE_DAYS,
   PACKAGE_STAGE_LABELS,
@@ -47,6 +49,7 @@ import { QaService } from '../qa/qa.service';
 import { QaRegistersService } from '../qa/registers.service';
 import { DrawingScheduleService } from '../design/drawing-schedule.service';
 import { DesignSubmissionsService } from '../design/design-submissions.service';
+import { DesignControlService } from '../design/design-control.service';
 import { noticeClock } from '../hindrance/hindrance-rules';
 import { packageStatus } from '../epc/epc-rules';
 import { loadMonths, loadOm } from '../om/om-load';
@@ -68,6 +71,7 @@ import {
   lateReportGroups,
   lateDrawingGroups,
   lateDesignReviews,
+  lateRecalls,
   testsShort,
   PACKAGE_GRACE_DAYS,
   SLIP_GRACE_DAYS,
@@ -152,6 +156,7 @@ export class WarningsService {
     private qaRegisters: QaRegistersService,
     private drawingSchedule: DrawingScheduleService,
     private designSubmissions: DesignSubmissionsService,
+    private designControl: DesignControlService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -292,6 +297,7 @@ export class WarningsService {
         // Design and drawings (item 138): the schedule's late drawings, through its own service.
         if (k === 'DRAWING_LATE') return today === todayIn() ? this.drawings(user) : Promise.resolve([]);
         if (k === 'DESIGN_REVIEW_LATE') return today === todayIn() ? this.designReviews(user) : Promise.resolve([]);
+        if (k === 'COPY_RECALL_LATE') return today === todayIn() ? this.copyRecalls(user) : Promise.resolve([]);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -922,6 +928,30 @@ export class WarningsService {
         links: [{ label: 'Drawing schedule', href: `/drawing-schedule?projectId=${g.projectId}&state=LATE` }],
         projectId: g.projectId,
         projectName: n.projectName,
+      };
+    });
+  }
+
+  /** Superseded controlled copies out past the recall period, one warning per document and new revision (`lateRecalls`). */
+  private async copyRecalls(user: RequestUser): Promise<Draft[]> {
+    return lateRecalls(await this.designControl.copiesToRecall(user)).map((g) => {
+      const c = g.copies[0];
+      const holders = g.copies.map((x) => `${copyLabel(x.copyNo)} ${x.holder} (${x.revision})`);
+      return {
+        key: `copy-recall:${g.documentId}:${g.revision}`,
+        kind: 'COPY_RECALL_LATE' as const,
+        title: `${c.docNo}: ${g.copies.length === 1 ? '1 superseded copy' : `${g.copies.length} superseded copies`} still out`,
+        detail: `${c.docNo} ${c.title} went to ${g.revision} on ${day(c.supersededOn!)}; ${holders.join(', ')} ${g.copies.length === 1 ? 'has' : 'have'} not come back in ${RECALL_DAYS} days.`,
+        action: 'Collect the old prints or have them stamped superseded and destroyed, and give the holders the current revision',
+        impact: { text: `${plural(g.longest, 'day')} out`, inr: null, days: g.longest },
+        working: [`Superseded ${day(c.supersededOn!)}, recall within ${RECALL_DAYS} days`],
+        facts: [
+          { label: 'Copies out', value: String(g.copies.length) },
+          { label: 'Current revision', value: g.revision },
+        ],
+        links: [{ label: `${c.docNo} copies`, href: `/controlled-copies?documentId=${g.documentId}` }],
+        projectId: c.projectId,
+        projectName: c.projectName,
       };
     });
   }

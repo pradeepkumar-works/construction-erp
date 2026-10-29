@@ -27,9 +27,13 @@ test('LD terms on the contract give the exposure for a late project', async ({ p
     await modal.getByLabel('LD rate (% of contract value)').fill('0.1');
     // A click while the dropdown is still opening can be lost, so pick again until the field shows the choice.
     const period = modal.locator('.ant-form-item').filter({ has: page.getByText('For each', { exact: true }) });
+    // The option is looked for in this field's own list, since one just closed can still be fading out.
+    const field = modal.getByLabel('For each');
     await expect(async () => {
-      await modal.getByLabel('For each').click();
-      await page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').getByText('day', { exact: true }).click();
+      if ((await field.getAttribute('aria-expanded')) !== 'true') await field.click({ timeout: 2000 });
+      const list = await field.getAttribute('aria-controls');
+      const dropdown = page.locator('.ant-select-dropdown').filter({ has: page.locator(`[id="${list}"]`) });
+      await dropdown.locator('.ant-select-item-option').filter({ visible: true }).getByText('day', { exact: true }).click({ timeout: 2000 });
       await expect(period.getByTitle('day', { exact: true })).toBeVisible({ timeout: 1000 });
     }).toPass();
     await modal.getByLabel('LD cap (% of contract value)').fill('5');

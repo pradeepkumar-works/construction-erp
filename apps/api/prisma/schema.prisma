@@ -862,6 +862,7 @@ model Organization {
   drawingNeeds         DrawingNeed[]
   designSubmissions    DesignSubmission[]
   designComments       DesignComment[]
+  controlledCopies     ControlledCopy[]
   designRounds         DesignSubmissionRound[]
   qaAuditFindings      QaAuditFinding[]
   documents            Document[]
@@ -1146,6 +1147,8 @@ model User {
   drawingNeeds          DrawingNeed[]              @relation("DrawingNeedBy")
   designSubmissions     DesignSubmission[]         @relation("DesignSubmissionBy")
   designRounds          DesignSubmissionRound[]    @relation("DesignRoundBy")
+  copiesIssued          ControlledCopy[]           @relation("ControlledCopyIssuer")
+  copiesTakenBack       ControlledCopy[]           @relation("ControlledCopyDisposer")
   designReplies         DesignComment[]            @relation("DesignCommentReplier")
   ncrsRaised            Ncr[]                      @relation("NcrRaiser")
   ncrsToAct             Ncr[]                      @relation("NcrActionBy")
@@ -1422,6 +1425,7 @@ model Project {
   qaAudits           QaAudit[]
   drawingNeeds       DrawingNeed[]
   designSubmissions  DesignSubmission[]
+  controlledCopies   ControlledCopy[]
   documents          Document[]
   drawingMarkups     DrawingMarkup[]
   transmittals       Transmittal[]
@@ -4845,6 +4849,7 @@ model Document {
   deliverables   EngineeringDeliverable[]
   needs          DrawingNeed[]
   designDocs     DesignSubmissionDoc[]
+  copies         ControlledCopy[]
   designComments DesignComment[]
 
   @@unique([projectId, docNo])
@@ -4870,6 +4875,7 @@ model DocumentRevision {
   attachments  Attachment[]
   transmittals TransmittalItem[]
   designRounds DesignRoundItem[]
+  copies       ControlledCopy[]
   currentOf    Document?         @relation("CurrentRevision")
   markups      DrawingMarkup[]
   takeoffs     DrawingTakeoff[]
@@ -5007,7 +5013,8 @@ model Transmittal {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  items TransmittalItem[]
+  items  TransmittalItem[]
+  copies ControlledCopy[]
 
   @@unique([organizationId, transmittalNo])
   @@index([projectId, sentOn])
@@ -8583,4 +8590,37 @@ model DesignComment {
 
   @@unique([submissionId, commentNo])
   @@index([organizationId])
+}
+
+/// A controlled copy of a drawing (item 138 part 3): a numbered print of one revision in a holder's hands. When a later
+/// revision supersedes it, it is recalled until returned, destroyed or reported lost.
+model ControlledCopy {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentId     String
+  document       Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  revisionId     String
+  revision       DocumentRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  /// CC-03 on the sheet; a holder keeps its number from one revision to the next
+  copyNo         Int
+  holder         String
+  issuedOn       DateTime         @db.Date
+  issuedById     String
+  issuedBy       User             @relation("ControlledCopyIssuer", fields: [issuedById], references: [id])
+  transmittalId  String?
+  transmittal    Transmittal?     @relation(fields: [transmittalId], references: [id], onDelete: SetNull)
+  /// RETURNED | DESTROYED | LOST
+  disposal       String?
+  disposedOn     DateTime?        @db.Date
+  disposalNote   String?
+  disposedById   String?
+  disposedBy     User?            @relation("ControlledCopyDisposer", fields: [disposedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime         @default(now())
+
+  @@unique([revisionId, copyNo])
+  @@index([organizationId, projectId])
+  @@index([documentId])
 }

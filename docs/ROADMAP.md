@@ -823,6 +823,10 @@ such as P07/OUT/26-27/042; bar bending schedules later.
      letter, the reviewer's code A to D moving the register's revisions and the EPC deliverables, the comment resolution
      sheet with our replies (a resubmission waits for them), vetting fees and certificates, late reviews on the watch list
      and as delays. ARCHITECTURE "Design and drawings".
+     Part 3 done: controlled copies numbered to their holders and recalled when a revision supersedes them (the watch list
+     shows copies out past a week), what a new revision changes (copies, approvals, take-offs, marks, RFIs, EPC
+     deliverables) in the document drawer, and the design dashboard by project, also on the module screen. Bar bending
+     schedules and design screens on the phone follow as items of their own.
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

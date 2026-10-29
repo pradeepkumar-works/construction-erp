@@ -23,5 +23,7 @@ import { CorrespondenceModule } from '../correspondence/correspondence.module';
 import { HomeService } from './home.service';
 import { ModuleHomeService } from './module-home.service';
 
-@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule, StaffModule, PayrollModule, BooksModule, StatementsModule, MeetingsModule, CorrespondenceModule, QaModule], controllers: [DashboardController], providers: [DashboardService, HomeService, ModuleHomeService], exports: [DashboardService, HomeService] })
+import { DesignModule } from '../design/design.module';
+
+@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule, StaffModule, PayrollModule, BooksModule, StatementsModule, MeetingsModule, CorrespondenceModule, QaModule, DesignModule], controllers: [DashboardController], providers: [DashboardService, HomeService, ModuleHomeService], exports: [DashboardService, HomeService] })
 export class DashboardModule {}
