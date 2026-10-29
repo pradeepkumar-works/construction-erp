@@ -396,7 +396,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -1547,6 +1547,34 @@ export const useQaReport = (month: string, projectId?: string) =>
     queryKey: ['quality', 'qa', 'report', month, projectId ?? null],
     queryFn: async () => (await api.get<QaReportDto>('/qa/report', { params: clean({ month, projectId }) })).data,
     placeholderData: keepPreviousData,
+  });
+
+export interface DrawingScheduleFilters extends PageParams {
+  projectId?: string;
+  state?: DrawingNeedState | 'LATE' | 'SOON';
+  discipline?: DocumentDiscipline;
+  source?: DrawingSource;
+}
+
+export const useDrawingSchedule = (filters?: DrawingScheduleFilters) =>
+  useQuery({
+    queryKey: ['documents', 'schedule', clean(filters)],
+    queryFn: async () => (await api.get<DrawingScheduleDto>('/design/schedule', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useDrawingNeed = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'schedule', 'detail', id],
+    queryFn: async () => (await api.get<DrawingNeedDto>(`/design/schedule/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useAsBuiltDue = (projectId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['documents', 'as-built-due', projectId ?? null],
+    queryFn: async () => (await api.get<AsBuiltDueDto[]>('/design/as-built-due', { params: clean({ projectId }) })).data,
+    enabled,
   });
 
 export interface DocumentFilters extends PageParams {

@@ -310,6 +310,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/qa-audits-test.js
+      - name: The drawing schedule finds late drawings, numbers new ones and words the reminder
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/drawing-schedule-test.js
       - name: Measures on drawings scale right, add up lines, areas and counts, and make measurement book lines
         if: matrix.suite == 'flows'
         working-directory: apps/api

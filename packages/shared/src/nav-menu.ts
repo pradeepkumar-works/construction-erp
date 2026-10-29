@@ -97,9 +97,10 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     label: 'Design and drawings',
     icon: 'drafting-compass',
     family: 'work',
-    description: 'Drawings and documents with their revisions, the drawing viewer, transmittals and RFIs.',
+    description: 'Drawings and documents with their revisions, the drawing schedule, the drawing viewer, transmittals and RFIs.',
     subs: [
       sub('register', 'Drawings and documents', 'documents.register'),
+      sub('schedule', 'Drawing schedule', 'documents.schedule'),
       sub('transmittals', 'Transmittals', 'documents.transmittals'),
       sub('rfis', 'RFIs', 'documents.rfis'),
     ],

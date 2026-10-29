@@ -815,6 +815,10 @@ such as P07/OUT/26-27/042; bar bending schedules later.
 138. **Design and drawings** (L): drawing schedule with late drawings as delays and reminder letters, design submissions and
      comment replies on every project, vetting, controlled copies, numbering, revision impact, the as-built check, the
      design dashboard. Bar bending schedules follow as an item of their own.
+     Part 1 done: the drawing schedule per project (from whom, needed by, the work it holds up) matched to the register by
+     number, late and due-soon drawings, a reminder letter drafted for each party with what it owes, a late drawing from
+     the client's side recorded as a delay toward an extension of time, the watch list's drawings awaited, the next
+     drawing number in the company's scheme and the as-built check. ARCHITECTURE "Design and drawings".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

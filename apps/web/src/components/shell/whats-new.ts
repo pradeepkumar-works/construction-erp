@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-05-drawing-schedule',
+    date: '2027-05-03',
+    title: 'The drawing schedule',
+    points: [
+      'List the drawings each project needs, from whom and by when, and the work each one holds up. Add a whole list at once.',
+      'Each line follows the document register by its number: awaited, received, then good for construction. Late ones come first.',
+      'Write reminder letter drafts one letter to the consultant or client for everything they owe on the project that is late or due within a week.',
+      'Record a late drawing from the client’s side as a delay, so the days count toward an extension of time. The watch list shows drawings awaited.',
+      'Next number on a new document gives the next drawing number in your scheme, and As-built check lists the drawings still without an as-built revision.',
+    ],
+  },
+  {
     id: '2027-04-qa-audits',
     date: '2027-04-16',
     title: 'Audits, visits and the quality report',
