@@ -3578,6 +3578,45 @@ export; the client portal and the phone app show the amount.
   entry in `MANAGEMENT_REPORTS`, a builder in `ManagementReportsService`, and a node under Reports in the navigation tree.
 - **Not yet.** The phone, a scheduled email of the MIS, and a budget for the company as a whole.
 
+## Integration layer
+
+Item 139, decided in ADR-001 ("How site devices and machine data reach Nirmaan"). Every outside system that sends to
+Nirmaan or that Nirmaan sends to is a **connection** (`IntegrationConnection`) on Administration › Connections, and every
+message is a line in its **log** (`IntegrationEvent`). Kinds, labels and shapes are in `@erp/shared/integrations.ts`;
+secrets, pairing codes, health and batches are pure in `apps/api/src/integrations/integration-rules.ts` (tested in
+`src/scripts/integrations-test.ts`, CI runs it).
+
+- **Two ways in, both calling Nirmaan.** A vendor's cloud (a GPS tracker's, a telematics portal) posts JSON to the
+  connection's own web address, `POST /api/hooks/<kind>/<secret>` (`HooksController`, public). A device on a site's
+  network (a weighbridge, a batching plant, a meter) is read by the **Nirmaan Connector** (`apps/connector`) on a computer
+  there, which only calls out: it pairs once and then asks for its settings every minute and posts readings. Nothing
+  calls in to a site and no port is opened on its router; Tally's port is never put on the internet. Polling a vendor's
+  API from the server (an AEMP feed) is a daily or hourly job of the kind that needs it.
+- **Secrets.** A web address secret, a Connector's token (`nct_…`) and a pairing code are kept only as their sha256 and
+  shown once; a web address is shown afterwards as its last four characters, and New web address replaces it. A key or
+  password for the outside system is sealed with AES-256-GCM under `INTEGRATION_KEY` (`v1:iv:tag:data`), shown as its
+  last four, and handed only to the Connector that reads that connection.
+- **Pairing.** Add a Connector gives a code (XXXX-XXXX, no 0/O or 1/I/L, good for 30 minutes). `POST /api/connector/pair`
+  trades it for a token, once. A new code makes the old token stop working; Remove ends it for good and its connections
+  wait for another Connector. `GET /api/connector/config` is its heartbeat: online when seen in the last three minutes.
+- **Readings.** `POST /api/connector/readings` takes up to 500 `{ id, connectionId, at, payload }`; a reading may be a
+  week old and not more than five minutes ahead. Each id is counted once (`@@unique([connectionId, externalId])`), so a
+  batch sent twice changes nothing; a webhook's id is its `X-Event-Id` header or an `id` in the body. The Connector keeps
+  readings in its outbox file until the server has answered for them.
+- **Handling.** `IntegrationsService.takeIn` runs the kind's handler (`handlers`), logs what it made of the message (taken
+  in, failed with why, or not used) with the body cut to about 4 KB, and moves the connection's health on: Waiting for
+  the first message, Working, Failing (the last thing failed), Quiet (nothing for the kind's `quietAfterMin`) or Switched
+  off. A handler makes drafts and checks through the modules' own services, never an approved record.
+- **Devices.** A message that names a device (deviceId, imei or serial) lists it as a `DeviceLink` the first time it is
+  heard from; an admin matches it to a machine and a site on the Devices tab. The kinds that follow (telematics, fuel,
+  weighbridges, batching plants) read the match to put a reading on the right machine or site.
+- **A new kind** is an `IntegrationKind` (schema + `INTEGRATION_KINDS` + `INTEGRATION_KIND_INFO`), a handler in
+  `IntegrationsService.handlers`, and for a site device a reader in the Connector's `READERS` (`apps/connector/src/readers.ts`).
+  Item 139 ships two: a web address for any service (`GENERIC_WEBHOOK`) and the Connector's own check (`CONNECTOR_CHECK`).
+- **Who.** Admins and management (`canManageIntegrations`); every change is in the audit log.
+- **Not yet.** A queue of outgoing jobs with retries (it comes with Tally live sync, item 140), pruning of an old log, and
+  a watch list warning for a connection that is failing or quiet.
+
 ## Intelligence quick wins
 
 - **What they are.** Ten small checks from the ideas page "Nirmaan intelligence map" (ROADMAP "Intelligence quick wins"),

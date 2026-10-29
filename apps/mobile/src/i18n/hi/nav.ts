@@ -320,6 +320,8 @@ export const NAV: Record<string, string> = {
   'Who approves what, levels, limits and escalation.': 'कौन क्या मंज़ूर करता है, स्तर, सीमाएँ और एस्केलेशन।',
   Modules: 'मॉड्यूल',
   'Turn off the modules the company does not use; their data is kept.': 'जो मॉड्यूल कंपनी इस्तेमाल नहीं करती उन्हें बंद करें; उनका डेटा रखा रहता है।',
+  Connections: 'कनेक्शन',
+  'Outside systems joined to the company: web addresses for their services, Connectors on site computers, their devices and the log.': 'कंपनी से जुड़े बाहरी सिस्टम: उनकी सेवाओं के लिए वेब पते, साइट के कंप्यूटरों पर कनेक्टर, उनके डिवाइस और लॉग।',
   'Menu and names': 'मेनू और नाम',
   'Menu in the top bar or a sidebar, its look, and what each module is called.': 'मेनू ऊपर की पट्टी में या साइडबार में, उसका रूप, और हर मॉड्यूल का नाम।',
   'Home tiles': 'होम टाइल',

@@ -537,6 +537,28 @@ enum BiometricProtocol {
   FILE
 }
 
+/// What an outside system is (item 139, ARCHITECTURE "Integration layer"); each kind has its reader in integrations
+enum IntegrationKind {
+  /// Any outside service that posts JSON to the connection's own web address
+  GENERIC_WEBHOOK
+  /// The Nirmaan Connector's own check: one reading a minute from the computer it runs on
+  CONNECTOR_CHECK
+}
+
+enum IntegrationDirection {
+  /// Into Nirmaan: a webhook, a poll or a reading from the Connector
+  IN
+  /// Out of Nirmaan: an export or a push to an outside system
+  OUT
+}
+
+enum IntegrationEventStatus {
+  OK
+  FAILED
+  /// Read but not used (switched off, nothing in it, or not for this connection)
+  IGNORED
+}
+
 /// What became of a punch
 enum BiometricPunchResult {
   /// Set the person's attendance for the day
@@ -881,6 +903,10 @@ model Organization {
   biometricDevices     BiometricDevice[]
   biometricUsers       BiometricUser[]
   biometricPunches     BiometricPunch[]
+  integrations         IntegrationConnection[]
+  connectorAgents      ConnectorAgent[]
+  integrationEvents    IntegrationEvent[]
+  deviceLinks          DeviceLink[]
   ledgerAccounts       LedgerAccount[]
   bookVouchers         BookVoucher[]
   bookLines            BookLine[]
@@ -1188,6 +1214,8 @@ model User {
   payrollPaid           PayrollRun[]               @relation("PayrollPayer")
   settlementsPrepared   FinalSettlement[]          @relation("SettlementPreparer")
   biometricDevices      BiometricDevice[]          @relation("BiometricDeviceCreator")
+  integrationsMade      IntegrationConnection[]    @relation("IntegrationConnectionCreator")
+  connectorsMade        ConnectorAgent[]           @relation("ConnectorAgentCreator")
   vouchersPrepared      BookVoucher[]              @relation("BookVoucherPreparer")
   vouchersApproved      BookVoucher[]              @relation("BookVoucherApprover")
   settlementsApproved   FinalSettlement[]          @relation("SettlementApprover")
@@ -1436,6 +1464,9 @@ model Project {
   employeeEventsTo   EmployeeEvent[]          @relation("EmployeeEventTo")
   payrollRuns        PayrollRun[]
   biometricDevices   BiometricDevice[]
+  integrations       IntegrationConnection[]
+  connectorAgents    ConnectorAgent[]
+  deviceLinks        DeviceLink[]
   bookVouchers       BookVoucher[]
   bookLines          BookLine[]
   mixDesigns         MixDesign[]
@@ -3189,6 +3220,7 @@ model Equipment {
   drivers         Driver[]
   vendorBills     VendorBill[]
   loans           EquipmentLoan[]
+  deviceLinks     DeviceLink[]
 
   @@unique([organizationId, code])
   @@index([organizationId, projectId])
@@ -8623,4 +8655,114 @@ model ControlledCopy {
   @@unique([revisionId, copyNo])
   @@index([organizationId, projectId])
   @@index([documentId])
+}
+
+/// An outside system the company has connected (item 139, ARCHITECTURE "Integration layer"): a vendor cloud that
+/// posts to /api/hooks/<kind>/<secret>, or a device on a site's network read by a paired Nirmaan Connector.
+model IntegrationConnection {
+  id              String          @id @default(uuid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  kind            IntegrationKind
+  name            String
+  /// The site its readings belong to, when they do not say
+  projectId       String?
+  project         Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// The Connector that reads it, for a device on a site's network
+  agentId         String?
+  agent           ConnectorAgent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  /// The kind's own settings (port, folder, field names…); never a password
+  config          Json            @default("{}")
+  /// A key or password for the outside system, AES-256-GCM under INTEGRATION_KEY (v1:iv:tag:data)
+  secretEnc       String?
+  secretLast4     String?
+  /// sha256 of the secret in the connection's web address; the secret itself is shown once
+  hookSecretHash  String?         @unique
+  hookSecretLast4 String?
+  isActive        Boolean         @default(true)
+  lastEventAt     DateTime?
+  lastSuccessAt   DateTime?
+  lastErrorAt     DateTime?
+  lastError       String?
+  createdById     String
+  createdBy       User            @relation("IntegrationConnectionCreator", fields: [createdById], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  events      IntegrationEvent[]
+  deviceLinks DeviceLink[]
+
+  @@index([organizationId])
+}
+
+/// A Nirmaan Connector on a computer at a site or office: paired once with a code, then it calls out with its token.
+model ConnectorAgent {
+  id                String       @id @default(uuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  name              String
+  projectId         String?
+  project           Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// sha256 of the pairing code (XXXX-XXXX), cleared once paired
+  pairCodeHash      String?      @unique
+  pairCodeExpiresAt DateTime?
+  /// sha256 of the token the Connector sends; the token itself never leaves the Connector after pairing
+  tokenHash         String?      @unique
+  pairedAt          DateTime?
+  lastSeenAt        DateTime?
+  version           String?
+  hostname          String?
+  revokedAt         DateTime?
+  createdById       String
+  createdBy         User         @relation("ConnectorAgentCreator", fields: [createdById], references: [id])
+  createdAt         DateTime     @default(now())
+
+  connections IntegrationConnection[]
+  events      IntegrationEvent[]
+
+  @@index([organizationId])
+}
+
+/// One message in or out: what came, what was made of it, or why it failed.
+model IntegrationEvent {
+  id             String                 @id @default(uuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  connectionId   String?
+  connection     IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  agentId        String?
+  agent          ConnectorAgent?        @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  direction      IntegrationDirection   @default(IN)
+  status         IntegrationEventStatus
+  /// The sender's id for the message (a reading's id from the Connector); a repeat is counted once
+  externalId     String?
+  summary        String
+  /// What was sent, cut to a few kilobytes, for the log
+  detail         Json?
+  createdAt      DateTime               @default(now())
+
+  @@unique([connectionId, externalId])
+  @@index([organizationId, createdAt])
+}
+
+/// A device an outside system reports on (a tracker, a meter, a weighbridge), matched by hand to a machine or a site.
+model DeviceLink {
+  id             String                @id @default(uuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  connectionId   String
+  connection     IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  /// The id the outside system gives it (IMEI, serial number, its own id)
+  externalId     String
+  label          String?
+  equipmentId    String?
+  equipment      Equipment?            @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  firstSeenAt    DateTime              @default(now())
+  lastSeenAt     DateTime              @default(now())
+  readings       Int                   @default(0)
+
+  @@unique([connectionId, externalId])
+  @@index([organizationId])
 }

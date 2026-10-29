@@ -9,6 +9,7 @@ contractors after the first client is live.
 | API | `apps/api` | NestJS 11, Prisma 6, PostgreSQL 16 | 4000 |
 | Web ERP | `apps/web` | Next.js 15, React 19, Ant Design 6 | 3000 |
 | Site mobile app | `apps/mobile` | Expo SDK 57, React Native, expo-router | Expo Go |
+| Site connector | `apps/connector` | Node.js 20, no dependencies | runs on a site computer, see its README |
 | Shared | `packages/shared` | Enums, labels, permissions, API types | - |
 
 The public product page is `/welcome` in the web app; signed-out visitors to `/` land there. Its copy is in

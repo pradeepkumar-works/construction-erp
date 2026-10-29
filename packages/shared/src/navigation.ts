@@ -13,6 +13,7 @@ import { canSeeManagement } from './management';
 import { canSeeGroupCompanies, type AuthGroupDto } from './group';
 import { canManageModules, pathIsOff } from './module-switches';
 import { MASTER_LISTS, canManageMaster } from './masters';
+import { canManageIntegrations } from './integrations';
 
 /**
  * The navigation tree (launcher, phase 1): one list of every module and every page in it. The sidebar, its rail, quick-jump
@@ -164,6 +165,7 @@ export const NAV_ACCESS = {
   enquiries: (u: NavUser) => P.canRunSubcontractEnquiries(u.roleKey),
   funds: (u: NavUser) => P.canRequestFunds(u.roleKey) || P.canViewPaymentRequests(u.roleKey),
   modules: (u: NavUser) => canManageModules(u.roleKey),
+  integrations: (u: NavUser) => canManageIntegrations(u.roleKey),
   rmc: (u: NavUser) => P.canViewRmc(u.roleKey),
   rmcBills: (u: NavUser) => P.canSellRmc(u.roleKey) || P.canBillRmc(u.roleKey),
   groupCompanies: (u: NavUser) => canSeeGroupCompanies(u),
@@ -391,6 +393,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'admin.menu', parent: 'admin', label: 'Menu and names', icon: 'panels-top-left', route: '/menu-and-names', access: 'modules', status: 'live', newUntil: '2027-03-31', description: 'Menu in the top bar or a sidebar, its look, and what each module is called.', keywords: 'navigation menu top bar sidebar rename module names look layout departments' },
   { id: 'admin.home', parent: 'admin', label: 'Home tiles', icon: 'layout-grid', route: '/home-tiles', access: 'users', status: 'live', description: 'Mark modules as new or featured, and answer requests for access.', keywords: 'discover new featured request access' },
   { id: 'admin.masters', parent: 'admin', label: 'Masters', icon: 'library-big', route: '/masters', access: 'masters', status: 'live', newUntil: '2027-03-31', description: 'Every list the company keeps (items, vendors, trades, categories…), by department.', keywords: 'master data lists setup categories trades designations departments' },
+  { id: 'admin.connections', parent: 'admin', label: 'Connections', icon: 'plug', route: '/connections', access: 'integrations', status: 'live', newUntil: '2027-06-30', description: 'Outside systems joined to the company: web addresses for their services, Connectors on site computers, their devices and the log.', keywords: 'integration iot webhook api connector device gps tracker telematics sensor weighbridge tally hook pair' },
   { id: 'admin.data', parent: 'admin', label: 'Data and privacy', icon: 'database', route: '/company-data', access: 'companyData', status: 'live', description: 'Export or delete company data.', keywords: 'export delete' },
   { id: 'admin.ai', parent: 'admin', label: `Ask ${PRODUCT_NAME}`, icon: 'sparkles', route: '/ai-settings', access: 'ai', status: 'live', description: 'Who may ask, allowance and the conversation log.', keywords: 'ai assistant chat allowance' },
   { id: 'admin.billing', parent: 'admin', label: 'Subscription', icon: 'credit-card', route: '/billing', access: 'subscription', status: 'live', description: 'Plan, invoices and renewal.', keywords: 'billing plan invoice pay renew' },

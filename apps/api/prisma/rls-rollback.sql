@@ -623,5 +623,17 @@ DROP POLICY IF EXISTS tenant_isolation ON "DesignSubmissionRound";
 ALTER TABLE "ControlledCopy" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "ControlledCopy" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "ControlledCopy";
+ALTER TABLE "IntegrationConnection" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "IntegrationConnection" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "IntegrationConnection";
+ALTER TABLE "ConnectorAgent" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ConnectorAgent" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ConnectorAgent";
+ALTER TABLE "IntegrationEvent" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "IntegrationEvent" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "IntegrationEvent";
+ALTER TABLE "DeviceLink" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "DeviceLink" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "DeviceLink";
 
 DROP FUNCTION IF EXISTS app_current_org();

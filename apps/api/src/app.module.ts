@@ -73,6 +73,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { StaffModule } from './staff/staff.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { BiometricModule } from './biometric/biometric.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 import { BooksModule } from './books/books.module';
 import { StatementsModule } from './statements/statements.module';
 import { RmcModule } from './rmc/rmc.module';
@@ -146,6 +147,7 @@ import { VitalsController } from './vitals.controller';
     StaffModule,
     PayrollModule,
     BiometricModule,
+    IntegrationsModule,
     BooksModule,
     StatementsModule,
     RmcModule,

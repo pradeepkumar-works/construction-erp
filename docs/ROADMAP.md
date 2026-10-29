@@ -859,6 +859,47 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
   against the one before, cost, what clients owe and what is not billed, the year's margin, what needs action), on the
   page, in print and in Excel.
 
+## Integrations (items 139 to 166)
+
+Asked by Pradeep on 28 Oct 2026: which IoT, Tally and other integrations Nirmaan can have. The design is the Claude Doc
+"Integrations for Nirmaan: IoT, Tally and more (design)" and the decision on how site devices reach Nirmaan is ADR-001.
+One integration layer first, then Tally and GST, then the machine and site devices, then money and documents; cameras,
+drones, sensors and the rest when a customer asks. The machine and site devices (146 to 150) come right after 139.
+
+139. ~~**Integration layer and the Nirmaan Connector** (L).~~ Done: Administration › Connections with a web address per
+     connection (`/api/hooks/<kind>/<secret>`, secrets hashed and shown once), keys sealed under `INTEGRATION_KEY`, the
+     log of every message, devices matched to machines and sites, and the Connector (`apps/connector`): paired with a code,
+     calling out only, an outbox that keeps readings while the internet is down, a Windows start-up task. ARCHITECTURE
+     "Integration layer".
+140. **Tally live two-way sync** (L).
+141. **E-invoice (IRN), GSTIN check and e-way bills on dispatch** (M).
+142. **E-way bill for transfers, returns and machine moves** (S).
+143. **GSTR-2B download and match** (M).
+144. **Weather by site** (S).
+145. **WhatsApp documents to outsiders** (M).
+146. **Machine telematics** (L): AEMP 2.0 (ISO 15143-3) feeds and tracker webhooks to machine hours, drafted machine logs,
+     the hire-hours check and service due.
+147. **Fuel sensors and dispensers** (M): refills with no slip, drains with the engine off, litres per hour against the norm.
+148. **Weighbridge** (M): the indicator read by the Connector, a GRN drafted at the net weight, short supply checked.
+149. **Batching plant controller** (M): batch records to the RMC batches' actual quantities.
+150. **Biometric device commands** (S): users added and removed and the clock set over ADMS.
+151. **Bank statement feed** (M).
+152. **Bank account check** (S).
+153. **Vendor, subcontractor and salary payouts** (L).
+154. **Aadhaar eSign** (M).
+155. **Email inbox for bills and letters** (M).
+156. **TDS returns and Form 16** (M).
+157. **Site and gate cameras** (L).
+158. **Drone survey import** (M).
+159. **Concrete maturity import** (S).
+160. **Water works meters and SCADA** (L).
+161. **DigiLocker at joining** (S).
+162. **Maps** (S).
+163. **Sign in with Google or Microsoft** (S).
+164. **Vehicle papers lookup** (S).
+165. **Reading `.mpp` schedules** (M).
+166. **Client collections by link or UPI** (M).
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test
