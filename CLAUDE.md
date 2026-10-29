@@ -152,6 +152,9 @@ and the pre-delivery checklist.
   is only `drawingNeedState` over the register's revisions, matched by `drawingNoKey`; a reminder is a letter drafted through
   `CorrespondenceService.create` (`reminderLetter`), a delay a risk through `RisksService.create`, and a new drawing number
   comes only from `nextDrawingNo` (`@erp/shared/drawing-schedule.ts`). Keep `src/scripts/drawing-schedule-test.ts` passing.
+  A design submission's rounds go only through `DesignSubmissionsService.submit` and `recordCode` (`designSubmitProblem`,
+  `designCodeProblem`, `revisionStatusAfter`, `commentsClosedBy` in `@erp/shared/design-submissions.ts`); the register's
+  revisions move only through `DocumentsService.updateRevision`. Keep `src/scripts/design-submissions-test.ts` passing.
 - Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
   over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep

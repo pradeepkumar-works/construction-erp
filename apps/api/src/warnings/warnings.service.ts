@@ -46,6 +46,7 @@ import { CashForecastService } from '../cash-forecast/cash-forecast.service';
 import { QaService } from '../qa/qa.service';
 import { QaRegistersService } from '../qa/registers.service';
 import { DrawingScheduleService } from '../design/drawing-schedule.service';
+import { DesignSubmissionsService } from '../design/design-submissions.service';
 import { noticeClock } from '../hindrance/hindrance-rules';
 import { packageStatus } from '../epc/epc-rules';
 import { loadMonths, loadOm } from '../om/om-load';
@@ -66,6 +67,7 @@ import {
   calibrationWarns,
   lateReportGroups,
   lateDrawingGroups,
+  lateDesignReviews,
   testsShort,
   PACKAGE_GRACE_DAYS,
   SLIP_GRACE_DAYS,
@@ -149,6 +151,7 @@ export class WarningsService {
     private qa: QaService,
     private qaRegisters: QaRegistersService,
     private drawingSchedule: DrawingScheduleService,
+    private designSubmissions: DesignSubmissionsService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -288,6 +291,7 @@ export class WarningsService {
         if (k === 'LAB_REPORT_LATE') return today === todayIn() ? this.labReports(user) : Promise.resolve([]);
         // Design and drawings (item 138): the schedule's late drawings, through its own service.
         if (k === 'DRAWING_LATE') return today === todayIn() ? this.drawings(user) : Promise.resolve([]);
+        if (k === 'DESIGN_REVIEW_LATE') return today === todayIn() ? this.designReviews(user) : Promise.resolve([]);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -918,6 +922,33 @@ export class WarningsService {
         links: [{ label: 'Drawing schedule', href: `/drawing-schedule?projectId=${g.projectId}&state=LATE` }],
         projectId: g.projectId,
         projectName: n.projectName,
+      };
+    });
+  }
+
+  /** Design submissions with the reviewer past their reply-by date, one warning each (`lateDesignReviews`). */
+  private async designReviews(user: RequestUser): Promise<Draft[]> {
+    return lateDesignReviews(await this.designSubmissions.lateReviews(user)).map((r) => {
+      const clientSide = isClientSide(r.source);
+      return {
+        key: `design-review:${r.id}:${r.revision}`,
+        kind: 'DESIGN_REVIEW_LATE' as const,
+        title: `${r.title}: ${r.purpose === 'VETTING' ? 'vetting' : 'approval'} ${plural(r.daysLate, 'day')} late`,
+        detail: `${r.submissionNo} R${r.revision} went to ${r.toParty} on ${day(r.submittedOn!)} with ${plural(r.documents, 'document')}; the reply was asked by ${day(r.replyBy!)}.`,
+        action: clientSide
+          ? r.riskId
+            ? 'Write to the reviewer again; the delay is recorded'
+            : 'Write to the reviewer and record the wait as a delay, so the notice and the extension of time run from it'
+          : 'Call the institution and agree a date for the certificate',
+        impact: { text: `${plural(r.daysLate, 'day')} late`, inr: null, days: r.daysLate },
+        working: [`Submitted ${day(r.submittedOn!)}, reply asked by ${day(r.replyBy!)}, ${plural(r.daysOutstanding ?? 0, 'day')} with the reviewer${r.riskNo ? `, delay ${r.riskNo}` : ''}`],
+        facts: [
+          { label: 'With the reviewer', value: plural(r.daysOutstanding ?? 0, 'day') },
+          { label: 'Documents', value: String(r.documents) },
+        ],
+        links: [{ label: r.submissionNo, href: `/design-submissions/${r.id}` }],
+        projectId: r.projectId,
+        projectName: r.projectName,
       };
     });
   }

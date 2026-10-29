@@ -819,6 +819,10 @@ such as P07/OUT/26-27/042; bar bending schedules later.
      number, late and due-soon drawings, a reminder letter drafted for each party with what it owes, a late drawing from
      the client's side recorded as a delay toward an extension of time, the watch list's drawings awaited, the next
      drawing number in the company's scheme and the as-built check. ARCHITECTURE "Design and drawings".
+     Part 2 done: design submissions for approval or vetting round by round, the documents' revisions sent, a covering
+     letter, the reviewer's code A to D moving the register's revisions and the EPC deliverables, the comment resolution
+     sheet with our replies (a resubmission waits for them), vetting fees and certificates, late reviews on the watch list
+     and as delays. ARCHITECTURE "Design and drawings".
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

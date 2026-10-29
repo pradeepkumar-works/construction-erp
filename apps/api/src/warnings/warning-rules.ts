@@ -507,3 +507,11 @@ export function lateDrawingGroups<N extends { projectId: string; source: string;
     .map((xs) => ({ projectId: xs[0].projectId, party: (xs[0].fromParty ?? xs[0].source).trim(), needs: xs.sort((a, b) => (b.daysLate ?? 0) - (a.daysLate ?? 0)), longest: Math.max(...xs.map((x) => x.daysLate ?? 0)) }))
     .sort((a, b) => b.longest - a.longest);
 }
+
+/**
+ * Design submissions with the reviewer past the day the reply was asked by (item 138 part 2), longest first. One warning
+ * each: the key moves with the round, so a resubmission is a new warning.
+ */
+export function lateDesignReviews<R extends { status: string; daysLate: number | null }>(rows: R[]): (R & { daysLate: number })[] {
+  return rows.filter((r): r is R & { daysLate: number } => r.status === 'UNDER_REVIEW' && (r.daysLate ?? 0) > 0).sort((a, b) => b.daysLate - a.daysLate);
+}

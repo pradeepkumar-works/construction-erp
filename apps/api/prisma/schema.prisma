@@ -860,6 +860,9 @@ model Organization {
   qaCalibrations       QaCalibration[]
   qaAudits             QaAudit[]
   drawingNeeds         DrawingNeed[]
+  designSubmissions    DesignSubmission[]
+  designComments       DesignComment[]
+  designRounds         DesignSubmissionRound[]
   qaAuditFindings      QaAuditFinding[]
   documents            Document[]
   drawingMarkups       DrawingMarkup[]
@@ -1141,6 +1144,9 @@ model User {
   qaCalibrations        QaCalibration[]            @relation("CalibrationBy")
   qaAudits              QaAudit[]                  @relation("QaAuditBy")
   drawingNeeds          DrawingNeed[]              @relation("DrawingNeedBy")
+  designSubmissions     DesignSubmission[]         @relation("DesignSubmissionBy")
+  designRounds          DesignSubmissionRound[]    @relation("DesignRoundBy")
+  designReplies         DesignComment[]            @relation("DesignCommentReplier")
   ncrsRaised            Ncr[]                      @relation("NcrRaiser")
   ncrsToAct             Ncr[]                      @relation("NcrActionBy")
   ncrsClosed            Ncr[]                      @relation("NcrCloser")
@@ -1415,6 +1421,7 @@ model Project {
   qaInstruments      QaInstrument[]
   qaAudits           QaAudit[]
   drawingNeeds       DrawingNeed[]
+  designSubmissions  DesignSubmission[]
   documents          Document[]
   drawingMarkups     DrawingMarkup[]
   transmittals       Transmittal[]
@@ -3357,12 +3364,13 @@ model Risk {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  attachments Attachment[]
-  letters     Letter[]
-  hindrances  HindranceCheck[]
-  rfis        Rfi[]
-  clientInput Milestone?
-  drawingNeed DrawingNeed?
+  attachments      Attachment[]
+  letters          Letter[]
+  hindrances       HindranceCheck[]
+  rfis             Rfi[]
+  clientInput      Milestone?
+  drawingNeed      DrawingNeed?
+  designSubmission DesignSubmission?
 
   @@unique([organizationId, riskNo])
   @@index([projectId, status])
@@ -4188,6 +4196,8 @@ model Attachment {
   qaCalibration      QaCalibration?     @relation(fields: [qaCalibrationId], references: [id], onDelete: Cascade)
   qaAuditId          String?
   qaAudit            QaAudit?           @relation(fields: [qaAuditId], references: [id], onDelete: Cascade)
+  designSubmissionId String?
+  designSubmission   DesignSubmission?  @relation(fields: [designSubmissionId], references: [id], onDelete: Cascade)
   variationId        String?
   variation          Variation?         @relation(fields: [variationId], references: [id], onDelete: Cascade)
   safetyIncidentId   String?
@@ -4827,13 +4837,15 @@ model Document {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
-  revisions    DocumentRevision[]       @relation("DocumentRevisions")
-  rfis         Rfi[]
-  markups      DrawingMarkup[]
-  scales       DrawingScale[]
-  takeoffs     DrawingTakeoff[]
-  deliverables EngineeringDeliverable[]
-  needs        DrawingNeed[]
+  revisions      DocumentRevision[]       @relation("DocumentRevisions")
+  rfis           Rfi[]
+  markups        DrawingMarkup[]
+  scales         DrawingScale[]
+  takeoffs       DrawingTakeoff[]
+  deliverables   EngineeringDeliverable[]
+  needs          DrawingNeed[]
+  designDocs     DesignSubmissionDoc[]
+  designComments DesignComment[]
 
   @@unique([projectId, docNo])
   @@index([organizationId, kind])
@@ -4857,6 +4869,7 @@ model DocumentRevision {
 
   attachments  Attachment[]
   transmittals TransmittalItem[]
+  designRounds DesignRoundItem[]
   currentOf    Document?         @relation("CurrentRevision")
   markups      DrawingMarkup[]
   takeoffs     DrawingTakeoff[]
@@ -5092,6 +5105,7 @@ model Letter {
   attachments      Attachment[]
   marks            LetterMark[]
   drawingReminders DrawingNeed[]
+  designRounds     DesignSubmissionRound[]
 
   @@unique([organizationId, letterNo])
   @@index([projectId, letterDate])
@@ -8445,5 +8459,128 @@ model DrawingNeed {
 
   @@index([projectId, neededBy])
   @@index([documentId])
+  @@index([organizationId])
+}
+
+/// A design submission (item 138 part 2): drawings or a design report sent to the client's side for approval, or to an
+/// outside institution for vetting, each sending a round (R0, R1…) that comes back with a code (A to D) and comments.
+model DesignSubmission {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// DSN-2026-0001 per organisation
+  submissionNo   String
+  title          String
+  /// DRAWINGS | DESIGN_BASIS | CALCULATIONS | SHOP_DRAWINGS | VENDOR_DRAWINGS | METHOD_STATEMENT | OTHER
+  kind           String       @default("DRAWINGS")
+  /// APPROVAL | VETTING
+  purpose        String       @default("APPROVAL")
+  /// Addressed to, as written
+  toParty        String
+  /// The reviewer's side (`DRAWING_SOURCES`): a late review by the client's side can be recorded as a delay
+  source         String       @default("CLIENT")
+  /// When the reviewer is asked to answer the current round by
+  replyBy        DateTime?    @db.Date
+  /// DRAFT | UNDER_REVIEW | APPROVED | APPROVED_AS_NOTED | REVISE_RESUBMIT | REJECTED | WITHDRAWN
+  status         String       @default("DRAFT")
+  /// The current round: 0 for the first submission
+  revision       Int          @default(0)
+  note           String?
+  /// Vetting: the institution's fee and its certificate
+  fee            Decimal?     @db.Decimal(18, 2)
+  certificateNo  String?
+  /// The delay recorded for a late review
+  riskId         String?      @unique
+  risk           Risk?        @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User         @relation("DesignSubmissionBy", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  docs        DesignSubmissionDoc[]
+  rounds      DesignSubmissionRound[]
+  comments    DesignComment[]
+  attachments Attachment[]
+
+  @@unique([organizationId, submissionNo])
+  @@index([organizationId, projectId, status])
+}
+
+/// A drawing or document of the register in a design submission.
+model DesignSubmissionDoc {
+  id           String           @id @default(uuid())
+  submissionId String
+  submission   DesignSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  documentId   String
+  document     Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sortOrder    Int              @default(0)
+
+  @@unique([submissionId, documentId])
+  @@index([documentId])
+}
+
+/// One round of a design submission: what was sent, and the code that came back.
+model DesignSubmissionRound {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  submissionId   String
+  submission     DesignSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  revision       Int
+  submittedOn    DateTime         @db.Date
+  submittedById  String
+  submittedBy    User             @relation("DesignRoundBy", fields: [submittedById], references: [id])
+  submitNote     String?
+  /// The covering letter, drafted in Correspondence
+  letterId       String?
+  letter         Letter?          @relation(fields: [letterId], references: [id], onDelete: SetNull)
+  /// A | B | C | D
+  code           String?
+  reviewedOn     DateTime?        @db.Date
+  reviewerName   String?
+  reviewRef      String?
+  createdAt      DateTime         @default(now())
+
+  items DesignRoundItem[]
+
+  @@unique([submissionId, revision])
+  @@index([organizationId])
+}
+
+/// A register revision sent in a round.
+model DesignRoundItem {
+  id         String                @id @default(uuid())
+  roundId    String
+  round      DesignSubmissionRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  revisionId String
+  revision   DocumentRevision      @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+
+  @@unique([roundId, revisionId])
+  @@index([revisionId])
+}
+
+/// A reviewer's comment on a design submission and our reply: the comment resolution sheet.
+model DesignComment {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  submissionId   String
+  submission     DesignSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  commentNo      Int
+  /// The round it was made on
+  round          Int
+  documentId     String?
+  document       Document?        @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  text           String
+  reply          String?
+  repliedOn      DateTime?        @db.Date
+  repliedById    String?
+  repliedBy      User?            @relation("DesignCommentReplier", fields: [repliedById], references: [id], onDelete: SetNull)
+  closedOn       DateTime?        @db.Date
+  createdAt      DateTime         @default(now())
+
+  @@unique([submissionId, commentNo])
   @@index([organizationId])
 }

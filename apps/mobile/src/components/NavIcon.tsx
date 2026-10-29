@@ -45,6 +45,7 @@ import FileStack from 'lucide-react-native/icons/file-stack';
 import FileText from 'lucide-react-native/icons/file-text';
 import FingerprintPattern from 'lucide-react-native/icons/fingerprint-pattern';
 import FlaskConical from 'lucide-react-native/icons/flask-conical';
+import Stamp from 'lucide-react-native/icons/stamp';
 import TestTubes from 'lucide-react-native/icons/test-tubes';
 import FlaskRound from 'lucide-react-native/icons/flask-round';
 import FolderKanban from 'lucide-react-native/icons/folder-kanban';
@@ -175,6 +176,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'file-text': FileText,
   'fingerprint-pattern': FingerprintPattern,
   'flask-conical': FlaskConical,
+  'stamp': Stamp,
   'test-tubes': TestTubes,
   'flask-round': FlaskRound,
   'folder-kanban': FolderKanban,

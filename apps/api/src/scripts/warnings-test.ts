@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict';
 import type { RoleKey } from '@erp/shared';
 import { PAUSE_MIN_OUTCOMES, PAUSE_WINDOW_DAYS, PAUSE_WRONG_SHARE, WARNING_KINDS, trackRecordText, watchListKinds } from '@erp/shared';
-import { OM_MISSING_DAYS, TESTS_SHORT_MIN, calibrationWarns, lateDrawingGroups, lateReportGroups, omSlip, packageLate, testsShort } from '../warnings/warning-rules';
+import { OM_MISSING_DAYS, TESTS_SHORT_MIN, calibrationWarns, lateDesignReviews, lateDrawingGroups, lateReportGroups, omSlip, packageLate, testsShort } from '../warnings/warning-rules';
 import { packageStatus } from '../epc/epc-rules';
 import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, planFinishLate, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
@@ -289,18 +289,24 @@ test('drawings: late ones group by project and the party that owes them, in any 
   assert.deepEqual(g[1].needs.map((x) => x.daysLate), [11, 4]);
 });
 
+test('design reviews: only one under review and past its reply-by date warns, the longest first', () => {
+  const r = (id: string, status: string, daysLate: number | null) => ({ id, status, daysLate });
+  const late = lateDesignReviews([r('a', 'UNDER_REVIEW', 3), r('b', 'UNDER_REVIEW', null), r('c', 'REVISE_RESUBMIT', 9), r('d', 'UNDER_REVIEW', 12)]);
+  assert.deepEqual(late.map((x) => x.id), ['d', 'a']);
+});
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE']);
-  assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE', 'DRAWING_LATE']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE']);
+  assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE']);
   assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH', 'LOAN_EMI']);
   assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR', 'RATE_ABOVE', 'PACKAGE_LATE']);
   assert.deepEqual(watchListKinds('SITE_ENGINEER'), []);
-  assert.deepEqual(watchListKinds('QA_QC_ENGINEER'), ['TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE']);
-  assert.deepEqual(watchListKinds('DOCUMENT_CONTROLLER'), ['DRAWING_LATE']);
+  assert.deepEqual(watchListKinds('QA_QC_ENGINEER'), ['TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE']);
+  assert.deepEqual(watchListKinds('DOCUMENT_CONTROLLER'), ['DRAWING_LATE', 'DESIGN_REVIEW_LATE']);
 });
 
 // ---------------------------------------------------------------------------------------------------------------------

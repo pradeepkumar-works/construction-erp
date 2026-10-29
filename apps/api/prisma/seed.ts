@@ -17,6 +17,7 @@ import { seedQa } from './seed-qa';
 import { seedQaRegisters } from './seed-qa-registers';
 import { seedQaAudits } from './seed-qa-audits';
 import { seedDrawingSchedule } from './seed-drawing-schedule';
+import { seedDesignSubmissions } from './seed-design-submissions';
 import { seedDemoGroup, seedGroupCompanies } from './seed-group';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
@@ -179,6 +180,7 @@ async function main() {
     await seedQaRegisters(prisma, org.id);
     await seedQaAudits(prisma, org.id);
     await seedDrawingSchedule(prisma, org.id);
+    await seedDesignSubmissions(prisma, org.id);
     await seedContractDocuments(org.id);
     await seedStaff(org.id);
     await seedAttendanceExtras(org.id);
@@ -402,6 +404,7 @@ async function main() {
   await seedQaRegisters(prisma, org.id);
   await seedQaAudits(prisma, org.id);
   await seedDrawingSchedule(prisma, org.id);
+  await seedDesignSubmissions(prisma, org.id);
   await seedContractDocuments(org.id);
   await seedStaff(org.id);
   await seedAttendanceExtras(org.id);

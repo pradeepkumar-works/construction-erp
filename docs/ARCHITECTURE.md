@@ -439,6 +439,33 @@ The rules are pure in `@erp/shared/drawing-schedule.ts`, tested in `src/scripts/
 - **Clients.** Web: `/drawing-schedule` (Schedule and As-built check tabs, `?projectId=`, `?state=LATE`, `?id=`). The phone
   reads drawings from the register; the schedule on the phone is later.
 
+**Design submissions (part 2).** Drawings and designs sent to the client's side for approval, or to an institution for
+vetting, round by round (`DesignSubmissionsService`, `/design/submissions`; rules pure in `@erp/shared/design-submissions.ts`,
+tested in `src/scripts/design-submissions-test.ts`, CI runs it).
+
+- **A submission.** `DesignSubmission` (`DSN-<year>-NNNN`): project, title, kind (`DESIGN_SUBMISSION_KINDS`: drawings, design
+  basis, calculations, shop drawings, vendor drawings, method statement), purpose (`APPROVAL` or `VETTING`, which always goes to
+  a design consultant's side), to whom as a letter is addressed, the reviewer's side (`DRAWING_SOURCES`), the register's
+  documents it sends (`DesignSubmissionDoc`), and for vetting the fee and the certificate number. `canManageDocuments` keeps
+  them; anyone in the company with the project reads them.
+- **Rounds.** `POST /design/submissions/:id/submit` records a `DesignSubmissionRound` (R0, R1…) of the documents' current
+  revisions (`DesignRoundItem`), asks for a reply by `replyByFor` (14 days unless given) and can draft the covering letter
+  through `CorrespondenceService.create` (`coveringLetter`, category "Drawing and design"). `designSubmitProblem` refuses a
+  resubmission while a comment is unanswered, and the service refuses one whose every drawing is the revision already sent.
+  A revision sent in a submission cannot be deleted from the register.
+- **Codes.** `POST /design/submissions/:id/code` records the reviewer's code on the round (`DESIGN_CODES`, as on EPC
+  deliverables: A approved, B approved with comments, C revise and resubmit, D rejected; for vetting "vetted"). B, C and D
+  come with comments (`designCodeProblem`). An A or B closes the comments already answered (`commentsClosedBy`). For approval,
+  the sent revisions that were for approval move in the register by `revisionStatusAfter` (through
+  `DocumentsService.updateRevision`), and the project's EPC deliverables follow the round (`EpcService.followDesignRound`).
+- **Comment resolution sheet.** `DesignComment`: numbered per submission, the round and drawing it is on, our reply, closed when
+  the reviewer accepts it (`commentState`: open, answered, closed). Printed from the record.
+- **Late review.** Under review past its reply date (`reviewDaysLate`): the watch list's `DESIGN_REVIEW_LATE` for the roles that
+  `canManageDocuments`, and `POST /design/submissions/:id/delay` records the wait through `RisksService.create` as a design delay
+  from the day after the reply date, the client responsible (for `canRaiseRisk`).
+- **Clients.** Web: `/design-submissions` (late first, `?projectId=`, `?status=LATE|WITH_US`) and `/design-submissions/:id`.
+  The phone reads them later.
+
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 
 The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the person's day and then a menu, as a phone's home
