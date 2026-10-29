@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import type { AiDraftDto } from '@erp/shared';
 
 /** What the header's "+ New" menu can start, and Ask Nirmaan can draft. */
-export type NewKind = 'dpr' | 'progress' | 'material-request' | 'expense' | 'risk' | 'purchase-order' | 'ra-bill' | 'letter' | 'letter-in' | 'payment-request' | 'fund-request' | 'voucher' | 'rmc-order' | 'machine-loan' | 'tender' | 'subcontract-enquiry' | 'meeting' | 'material-approval' | 'design-submission';
+export type NewKind = 'dpr' | 'progress' | 'material-request' | 'expense' | 'risk' | 'purchase-order' | 'ra-bill' | 'letter' | 'letter-in' | 'payment-request' | 'fund-request' | 'voucher' | 'rmc-order' | 'machine-loan' | 'tender' | 'subcontract-enquiry' | 'meeting' | 'material-approval' | 'design-submission' | 'controlled-copy';
 
 type Open = (draft?: AiDraftDto) => void;
 const listeners = new Map<NewKind, Set<Open>>();

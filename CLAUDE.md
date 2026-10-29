@@ -155,6 +155,9 @@ and the pre-delivery checklist.
   A design submission's rounds go only through `DesignSubmissionsService.submit` and `recordCode` (`designSubmitProblem`,
   `designCodeProblem`, `revisionStatusAfter`, `commentsClosedBy` in `@erp/shared/design-submissions.ts`); the register's
   revisions move only through `DocumentsService.updateRevision`. Keep `src/scripts/design-submissions-test.ts` passing.
+  A controlled copy is issued only through `DesignControlService.issue` (`issueCopiesProblem`, `copyNumbersFor`) and stands
+  by `copyState`; what a revision changes is only `revisionImpact`, and the dashboard reads the schedule and submissions
+  through their services (`@erp/shared/design-control.ts`). Keep `src/scripts/design-control-test.ts` passing.
 - Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
   over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep

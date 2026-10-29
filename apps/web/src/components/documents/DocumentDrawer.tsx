@@ -18,6 +18,7 @@ import { RevisionFormModal } from './RevisionFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { RevisionImpactPanel } from '@/components/design/RevisionImpact';
 
 /** A drawing or document: its current revision first, every revision with its files and transmittals, and the history. */
 export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }: { id: string | null; open: boolean; onClose: () => void; onSend?: (projectId: string, revisionIds: string[]) => void; onOpenTransmittal?: (id: string) => void }) {
@@ -108,6 +109,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
               ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 2 }] : []),
             ]}
           />
+          <RevisionImpactPanel documentId={data.id} projectId={data.projectId} manage={manage} buildable={!!cur && isBuildable(cur.status)} />
           <Divider titlePlacement="start" plain>
             Revisions ({data.revisions.length})
           </Divider>

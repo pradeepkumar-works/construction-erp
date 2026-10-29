@@ -466,6 +466,28 @@ tested in `src/scripts/design-submissions-test.ts`, CI runs it).
 - **Clients.** Web: `/design-submissions` (late first, `?projectId=`, `?status=LATE|WITH_US`) and `/design-submissions/:id`.
   The phone reads them later.
 
+**Controlled copies, revision impact and the dashboard (part 3).** `DesignControlService` (`/design/copies`,
+`/design/revision-impact/:documentId`, `/design/dashboard`); rules pure in `@erp/shared/design-control.ts`, tested in
+`src/scripts/design-control-test.ts` (CI runs it).
+
+- **Controlled copies.** `ControlledCopy`: a numbered print (`copyLabel`, CC-03) of one revision in a holder's hands, issued
+  on a day, optionally on a transmittal. Only the current revision, and only one site may build from (`issueCopiesProblem`
+  over `BUILDABLE_STATUSES`); a holder keeps its number from one revision to the next (`copyNumbersFor`). `copyState`: in
+  force, to recall once a later revision is current, closed once returned, destroyed or reported lost (`disposeCopyProblem`).
+  `recallDays` counts from the day the superseding revision was issued; past `RECALL_DAYS` (7) it is late. Reissue gives the
+  holder the current revision under the same number; the old print stays to recall until taken back. A document or revision
+  with copies cannot be deleted from the register.
+- **Revision impact.** `revisionImpact` over the facts `DesignControlService` loads for a document's current revision: copies of
+  earlier revisions to recall, design submissions approved (or under review) at an earlier revision, quantity take-offs and
+  open marks on earlier revisions, open RFIs, and the EPC deliverables that follow it. Shown in the document drawer with its
+  copies, and on the dashboard for the revisions of the last 30 days.
+- **Design dashboard.** `/design-dashboard` and the Design and drawings module screen (`ModuleHomeService`): per project, the
+  drawings awaited and late (from `DrawingScheduleService.list`), submissions with the reviewer, late and back with us and
+  comments to answer (from `DesignSubmissionsService.list`), copies to recall, as-builts due and open RFIs, added up by
+  `designTotals` and noted by `designNotes`.
+- **Watch list.** `COPY_RECALL_LATE` (`lateRecalls`): superseded copies still out past the recall period, one warning per
+  document and revision, for the roles that `canManageDocuments`.
+
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 
 The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the person's day and then a menu, as a phone's home

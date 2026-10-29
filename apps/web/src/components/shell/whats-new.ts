@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-05-controlled-copies',
+    date: '2027-05-17',
+    title: 'Controlled copies and the design dashboard',
+    points: [
+      'Issue numbered controlled copies of a drawing good for construction to the site office, gangs and subcontractors. A holder keeps its number from one revision to the next.',
+      'When a new revision comes in, the old copies show as to recall until they are returned or destroyed. The watch list shows those out longer than a week.',
+      'A drawing now says what its new revision changes: copies to recall, approvals to ask again, quantities to check, open marks and RFIs.',
+      'The design dashboard shows each project’s late drawings, approvals, comments, copies to recall and as-builts due, and what each recent revision changes.',
+    ],
+  },
+  {
     id: '2027-05-design-submissions',
     date: '2027-05-10',
     title: 'Design submissions',

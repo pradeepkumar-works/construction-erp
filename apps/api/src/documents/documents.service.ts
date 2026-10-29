@@ -287,6 +287,8 @@ export class DocumentsService {
       throw new BadRequestException('This document was sent on a transmittal; add a revision marked Withdrawn instead of deleting it');
     if (await this.prisma.designRoundItem.count({ where: { revision: { documentId: id } } }))
       throw new BadRequestException('This document was sent in a design submission; add a revision marked Withdrawn instead of deleting it');
+    if (await this.prisma.controlledCopy.count({ where: { documentId: id } }))
+      throw new BadRequestException('Controlled copies of this document were issued; add a revision marked Withdrawn instead of deleting it');
     await this.prisma.document.delete({ where: { id } });
     await this.audit.log(user, 'DOCUMENT', id, 'DELETED', cur.docNo);
     return { ok: true };
@@ -368,6 +370,7 @@ export class DocumentsService {
     const { rev } = await this.loadRevision(user, id, revisionId);
     if (await this.prisma.transmittalItem.count({ where: { revisionId } })) throw new BadRequestException(`Revision ${rev.revision} was sent on a transmittal and stays on record`);
     if (await this.prisma.designRoundItem.count({ where: { revisionId } })) throw new BadRequestException(`Revision ${rev.revision} was sent in a design submission and stays on record`);
+    if (await this.prisma.controlledCopy.count({ where: { revisionId } })) throw new BadRequestException(`Controlled copies of revision ${rev.revision} were issued, so it stays on record`);
     await this.prisma.$transaction(async (tx) => {
       await tx.document.updateMany({ where: { id, currentRevisionId: revisionId }, data: { currentRevisionId: null } });
       await tx.documentRevision.delete({ where: { id: revisionId } });
