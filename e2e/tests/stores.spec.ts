@@ -24,9 +24,16 @@ test('a transfer leaves one store and is received at the other', async ({ page }
 
   await signIn(page, 'pm@demo.com');
   await page.goto(`/projects/${road.id}?tab=stock`);
-  await page.getByRole('button', { name: /More/ }).click();
-  await page.getByRole('menuitem', { name: 'Transfer to a site or store' }).click();
   const modal = page.locator('.ant-modal').filter({ hasText: 'Transfer to a site or store' });
+  // A click while the menu is still opening can be lost, so open it and pick again until the form is up.
+  await expect(async () => {
+    if (!(await modal.isVisible())) {
+      const item = page.getByRole('menuitem', { name: 'Transfer to a site or store' });
+      if (!(await item.isVisible())) await page.getByRole('button', { name: /More/ }).click({ timeout: 2000 });
+      await item.click({ timeout: 2000 });
+    }
+    await expect(modal.getByLabel('To site or store')).toBeVisible({ timeout: 3000 });
+  }).toPass();
   await chooseOption(modal.getByLabel('To site or store'), 'WS-2026-03');
   await chooseOption(modal.locator('.stock-move-line').first().getByRole('combobox'), 'Aggregate');
   await modal.locator('.stock-move-line').first().getByLabel('Quantity').fill('3');
