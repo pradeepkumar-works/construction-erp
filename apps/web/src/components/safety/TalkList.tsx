@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Button, Flex, Space, Typography, theme } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ToolboxTalkDto } from '@erp/shared';
-import { canEditSafetyRecord, canReportSafety } from '@erp/shared';
+import type { ToolboxTalkDraftDto, ToolboxTalkDto } from '@erp/shared';
+import { canEditSafetyRecord, canReportSafety, talkText } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -22,6 +22,7 @@ import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { TalkFormModal } from './TalkFormModal';
+import { TodaysTalk } from './TodaysTalk';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const EXPORT: ExportColumn<ToolboxTalkDto>[] = [
@@ -51,6 +52,12 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ToolboxTalkDto | null>(null);
+  const [talkOpen, setTalkOpen] = useState(false);
+  const [prefill, setPrefill] = useState<{ projectId: string; topic: string; notes: string } | null>(null);
+  const record = (d: ToolboxTalkDraftDto) => {
+    setTalkOpen(false);
+    setPrefill({ projectId: d.projectId, topic: d.topic, notes: talkText(d, 'en').slice(0, 2000) });
+  };
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/safety/talks/${id}`)).data,
     onSuccess: () => {
@@ -138,6 +145,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
                 return rows.length;
               }}
             />
+            {user && canReportSafety(user.roleKey) ? <Button onClick={() => setTalkOpen(true)}>Today&apos;s talk</Button> : null}
             {newButton}
           </>
         }
@@ -170,14 +178,17 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
         emptyAction={newButton}
       />
       <TalkFormModal
-        open={formOpen || !!editing}
+        open={formOpen || !!editing || !!prefill}
         talk={editing}
         projectId={fixedProject}
+        prefill={prefill}
         onClose={() => {
           setFormOpen(false);
           setEditing(null);
+          setPrefill(null);
         }}
       />
+      <TodaysTalk open={talkOpen} onClose={() => setTalkOpen(false)} projectId={fixedProject ?? frame.projectId} onRecord={record} />
     </>
   );
 }

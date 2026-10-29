@@ -853,7 +853,8 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
   approved and not measured, stages done) and its worth by the month end at the pace of the last 30 days.
 - ~~**Q4 Bid intelligence** (S).~~ Done: Past openings beside a tender's pricing: where L1 landed against the SOR on the
   last three years' openings of the same client and kind of work, and how many of them the quote now would have led.
-- **Q8 Toolbox talk in Hindi** (S): today's five-minute talk written from the day's activities, permits and past incidents.
+- ~~**Q8 Toolbox talk in Hindi** (S).~~ Done: Today's talk on the toolbox talks list (web) and the talk form (phone): five
+  minutes in Hindi and English from today's permits, the project's recent incidents and the work going on, recorded as a talk.
 - **Q9 MIS commentary** (S): the Monthly MIS opens with a paragraph written from its own figures.
 
 ## Definition of done for every item

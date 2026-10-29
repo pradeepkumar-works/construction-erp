@@ -27,8 +27,23 @@ interface FormValues {
   photos?: AttachmentDto[];
 }
 
-/** Record a toolbox talk (topic, who gave it, how many attended, the signed sheet), or change one. */
-export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolean; onClose: () => void; projectId?: string; talk?: ToolboxTalkDto | null }) {
+/**
+ * Record a toolbox talk (topic, who gave it, how many attended, the signed sheet), or change one. `prefill` starts a new
+ * one from today's talk (its project, topic and points).
+ */
+export function TalkFormModal({
+  open,
+  onClose,
+  projectId,
+  talk,
+  prefill,
+}: {
+  open: boolean;
+  onClose: () => void;
+  projectId?: string;
+  talk?: ToolboxTalkDto | null;
+  prefill?: { projectId: string; topic: string; notes: string } | null;
+}) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -51,8 +66,15 @@ export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolea
         notes: talk.notes ?? undefined,
         photos: talk.attachments,
       });
-    else form.setFieldsValue({ projectId: projectId as string, date: dayjs(), conductedBy: user?.fullName, durationMinutes: 15 });
-  }, [open, talk, projectId, user, form]);
+    else
+      form.setFieldsValue({
+        projectId: (prefill?.projectId ?? projectId) as string,
+        date: dayjs(),
+        conductedBy: user?.fullName,
+        durationMinutes: prefill ? 5 : 15,
+        ...(prefill ? { topic: prefill.topic, notes: prefill.notes } : {}),
+      });
+  }, [open, talk, projectId, prefill, user, form]);
 
   const save = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -80,7 +102,7 @@ export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolea
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={680} title={talk ? `Change ${talk.talkNo}` : 'Record toolbox talk'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!talk}>
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!talk || !!prefill}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'What was it about?' }]}>

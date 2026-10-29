@@ -3635,6 +3635,14 @@ export; the client portal and the phone app show the amount.
   and `bidLevel` reads the median, lowest and highest L1 from the strongest basis with 2 openings, with how many the
   tender's own quote would have led. The tender page shows it under Pricing. The demo's Khurda road has three of the Works
   Department's road openings, L1 near 10% below.
+- **Q8 Toolbox talk in Hindi.** `GET /safety/talks/today?projectId=` (`SafetyService.talkForToday`, anyone who can open the
+  project; nothing saved) loads the activities reported in the last `TALK_RECENT_DAYS` (3) and those planned for today, the
+  permits requested or issued for today and the project's incidents of the last `TALK_INCIDENT_DAYS` (180). The talk is pure
+  in `@erp/shared/toolbox-talk.ts`: `hazardsIn` reads hazards from whole words, `toolboxTalk` ranks them (a permit's hazard
+  100, an incident's 10, an activity's 1; `TALK_HAZARDS` = 3, else the general one) and words each from `TALK_HAZARDS_INFO`,
+  fixed points in Hindi and English, never a model's, with the two latest incidents and what changed after them. The web's
+  Today's talk drawer (toolbox talks list) and the phone's card on the talk form fill the talk's topic and points
+  (`talkText`) for the supervisor to record.
 
 ## Money and quantities
 

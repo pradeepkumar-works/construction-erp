@@ -5,7 +5,7 @@
  *   node dist/scripts/intelligence-test.js
  */
 import assert from 'node:assert/strict';
-import { bidLevel, bidMatch, pickOpenings, workKindOf, billDateFor, canSeeDprChecks, canSeePurchaseControls, insightKeysFor, nextBill, stagesUnbilled, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
+import { bidLevel, bidMatch, hazardsIn, pickOpenings, talkText, toolboxTalk, workKindOf, billDateFor, canSeeDprChecks, canSeePurchaseControls, insightKeysFor, nextBill, stagesUnbilled, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
 import { copied, crewKeyOf, noCrew, noMaterial, reusedPhotos } from '../dpr/dpr-check-rules';
 import { CUBE_7DAY_SHARE, cubeEarly, paidAfterBankChange, selfReceived, splitOrders, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
 
@@ -270,6 +270,35 @@ test('Q4: the level is read from the strongest basis with two openings, and the 
   // One of the client's own is too few: the kind's openings join it.
   assert.deepEqual(bidLevel([o[0], o[3]], null), { basis: 'KIND', count: 2, median: -5.9, low: -9.8, high: -2, wouldLead: null });
   assert.equal(bidLevel([o[0], { match: 'KIND', l1Pct: null }], null), null);
+});
+
+// ── Q8: toolbox talk in Hindi ──────────────────────────────────────────────────────────────────────────────────────
+test('Q8: hazards come from whole words in a name, a bridge or a slab bringing up its own', () => {
+  assert.deepEqual(hazardsIn('RCC M25 slab casting, first floor'), ['HEIGHT', 'CONCRETE']);
+  assert.deepEqual(hazardsIn('Excavation for DI pipe trench'), ['EXCAVATION']);
+  assert.deepEqual(hazardsIn('Barbed wire fencing'), []);
+});
+test("Q8: today's permits head the talk, then the incidents' hazards, then the activities' most named", () => {
+  // The incident names steel and a crane (10 each); the bar bending adds 1 to steel.
+  const t = toolboxTalk({
+    date: '2026-10-29',
+    activities: ['Excavation for footings', 'PCC in footings', 'Trench for the rising main', 'Bar bending for columns'],
+    permits: [{ permitNo: 'PTW-2026-0004', type: 'HOT_WORK', location: 'Pump house', description: 'Welding the header' }],
+    incidents: [{ incidentNo: 'INC-2026-0002', type: 'NEAR_MISS', date: '2026-10-12', description: 'A bundle of steel slipped from the crane sling', correctiveAction: 'Slings checked every morning' }],
+  });
+  assert.deepEqual(t.sections.map((s) => s.hazard), ['HOT_WORK', 'REBAR', 'LIFTING']);
+  assert.equal(t.sections[0].why, 'Permit PTW-2026-0004');
+  assert.equal(t.topic, 'Hot work and fire prevention');
+  assert.ok(t.opening.hi.startsWith('आज का काम: Excavation for footings'));
+  assert.ok(t.incidents[0].en.startsWith('On 12 Oct we had a near miss: A bundle of steel slipped from the crane sling. Since then: Slings checked every morning.'));
+  assert.ok(t.incidents[0].hi.includes('बाल-बाल बचे'));
+});
+test('Q8: with nothing that names a hazard, the talk is the general one on safety gear', () => {
+  const t = toolboxTalk({ date: '2026-10-29', activities: [], permits: [], incidents: [] });
+  assert.deepEqual(t.sections.map((s) => s.hazard), ['GENERAL']);
+  assert.equal(t.topic, 'PPE: helmet, shoes, gloves, reflective jacket');
+  assert.ok(talkText(t, 'hi').includes('हेलमेट'));
+  assert.equal(talkText(t, 'en').split('\n').length, 1 + 4 + 1);
 });
 
 let failed = 0;
