@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-06-cubes-at-7-days',
+    date: '2027-06-07',
+    title: 'Weak cubes, three weeks early',
+    points: [
+      'The watch list now warns when a set of cubes is weak at 7 days: what the 28-day result is likely to be, what it must reach, and to hold the next lift until it is in.',
+    ],
+  },
+  {
     id: '2027-05-margin-falling',
     date: '2027-05-31',
     title: 'Margin falling, on the watch list',

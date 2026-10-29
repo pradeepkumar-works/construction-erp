@@ -840,7 +840,8 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
   attendance cross-check, and Ask Nirmaan while it is off (admins), at the top of the watch list.
 - ~~**Q1 Margin fade** (S).~~ Done: the watch list's Margin falling, when the forecast margin at completion drops 2 points
   or more within three months, with the cost heads that ran over their budget for the work earned.
-- **Q2 Cube strength at 7 days** (S): a 7-day cube result below what its grade needs by then, before the next lift.
+- ~~**Q2 Cube strength at 7 days** (S).~~ Done: the watch list's Cubes weak at 7 days, when a 7-day result ÷ 0.67 falls
+  under the 28-day mark while the 28-day result is still to come, so the next lift waits.
 - **Q3 DPR credibility** (S): work reported with no crew, no material issued for it, numbers copied day after day, a photo used twice.
 - **Q5 Vendor scorecard at L1** (S): on time, rejections and rates against the median on the comparative statement.
 - **Q6 Purchase controls** (S): orders split under an approval limit, the same person raising and receiving, a bank account

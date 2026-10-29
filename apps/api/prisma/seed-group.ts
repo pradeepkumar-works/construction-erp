@@ -857,7 +857,7 @@ const LAB_TESTS: LabTest[] = [
   ['LAB-01', 'Aggregate tests', 'AGGREGATE', 'Combined flakiness and elongation, 20 mm', 'Crusher stockpile, Km 16+400', 9, 'Not more than 35% (MoRTH 500)', '%', null, '35', [['Result', 1, '27.8']]],
   ['LAB-01', 'Marshall tests', 'BITUMEN', 'DBM bitumen content, first day of paving', 'Hot mix plant, Km 18', 3, 'Between 4.5% and 5.0% by weight of mix (job mix formula)', '%', '4.5', '5.0', [['Result', 1, '4.7']]],
   ['LAB-02', 'Cube tests', 'CONCRETE_CUBE', 'M25 cubes, GF slab bays 1 to 4', 'Ground floor slab', 34, 'Not less than 25 N/mm² at 28 days (IS 456)', 'N/mm²', '25', null, [['7 days', 7, '18.9'], ['28 days', 28, '28.6']]],
-  ['LAB-02', 'Cube tests', 'CONCRETE_CUBE', 'M25 cubes, columns C1 to C8', 'Columns, ground to first floor', 10, 'Not less than 25 N/mm² at 28 days (IS 456)', 'N/mm²', '25', null, [['7 days', 7, '17.6'], ['28 days', 28, null]]],
+  ['LAB-02', 'Cube tests', 'CONCRETE_CUBE', 'M25 cubes, columns C1 to C8', 'Columns, ground to first floor', 10, 'Not less than 25 N/mm² at 28 days (IS 456)', 'N/mm²', '25', null, [['7 days', 7, '16.2'], ['28 days', 28, null]]],
   ['LAB-02', 'Steel tests', 'STEEL', 'TMT Fe500D 12 mm, heat 6614', 'Steel yard, gate 2', 16, 'Tensile strength not less than 565 N/mm², elongation 16% (IS 1786)', 'N/mm²', '565', null, [['Result', 2, '612']]],
   ['LAB-02', 'Masonry unit tests', 'BRICK', 'Fly ash bricks, lot 3', 'Stack at gate 2', 6, 'Compressive strength not less than 3.5 N/mm² (IS 1077)', 'N/mm²', '3.5', null, [['Result', 3, '2.9']]],
   ['LAB-03', 'Cube tests', 'CONCRETE_CUBE', 'M25 cubes, Block A first floor slab', 'Block A, first floor slab', 33, 'Not less than 25 N/mm² at 28 days (IS 456)', 'N/mm²', '25', null, [['7 days', 7, '16.1'], ['28 days', 28, '23.8']]],

@@ -5,7 +5,7 @@ import { canApprove, canEditProjects, canManageDocuments, canManageMachineLoans,
  * Early warnings (AI roadmap item 73): plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
-export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE'] as const;
+export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW'] as const;
 export type WarningKind = (typeof WARNING_KINDS)[number];
 
 export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
@@ -33,6 +33,7 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
   DESIGN_REVIEW_LATE: 'Design approval late',
   COPY_RECALL_LATE: 'Superseded drawings on site',
   MARGIN_FADE: 'Margin falling',
+  CUBE_7DAY_LOW: 'Cubes weak at 7 days',
 };
 
 /** The warning kinds a role sees: each is the business of the role that can act on it. */
@@ -67,6 +68,8 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   if (canManageDocuments(role)) out.push('DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE');
   // Margin fade (intelligence quick win Q1): those who see cost and approve, the PM up to the MD.
   if (canViewCost(role) && canApprove(role)) out.push('MARGIN_FADE');
+  // Cubes weak at 7 days (Q2): QA/QC and the approvers, who can hold the next lift.
+  if (canManageQaPlan(role)) out.push('CUBE_7DAY_LOW');
   return out;
 }
 
@@ -115,6 +118,7 @@ export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
   DESIGN_REVIEW_LATE: 'CHECKED',
   COPY_RECALL_LATE: 'CHECKED',
   MARGIN_FADE: 'LIKELY',
+  CUBE_7DAY_LOW: 'LIKELY',
 };
 
 /**

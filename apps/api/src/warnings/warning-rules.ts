@@ -621,3 +621,37 @@ export function headsBehind<H extends string>(heads: { head: H; spent: number; b
     .sort((a, b) => b.over - a.over)
     .slice(0, max);
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Cube strength at 7 days (intelligence quick win Q2)
+
+/**
+ * The share of its 28-day strength ordinary Portland cement concrete usually has at 7 days. Blended cements (PPC, slag)
+ * gain more slowly, so for them a low 7-day figure is a question to ask rather than a likely failure.
+ */
+export const CUBE_7DAY_SHARE = 0.67;
+
+export interface CubeEarly {
+  /** The 7-day result, N/mm² */
+  at7: number;
+  /** What the 28-day result must reach: the test's own specification, else the grade's fck */
+  needed: number;
+  /** The 28-day result the 7-day one points to, one decimal */
+  projected: number;
+  /** How far the projection falls short, one decimal */
+  shortBy: number;
+}
+
+/**
+ * A cube set's 7-day result pointing to a 28-day one below what the set needs, while the 28-day result is still to come.
+ * Null when there is no 7-day result yet, the 28-day one is in (the test is judged), or the projection reaches the mark.
+ */
+export function cubeEarly(readings: { label: string; value: number | null }[], needed: number | null): CubeEarly | null {
+  if (!needed || needed <= 0) return null;
+  const at7 = readings.find((r) => /^7\s*days?$/i.test(r.label.trim()))?.value ?? null;
+  const at28 = readings.find((r) => /^28\s*days?$/i.test(r.label.trim()));
+  if (at7 === null || at7 <= 0 || !at28 || at28.value !== null) return null;
+  const projected = Math.round((at7 / CUBE_7DAY_SHARE) * 10) / 10;
+  if (projected >= needed) return null;
+  return { at7, needed, projected, shortBy: Math.round((needed - projected) * 10) / 10 };
+}
