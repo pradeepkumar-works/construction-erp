@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-07-mis-commentary',
+    date: '2027-07-26',
+    title: 'The Monthly MIS opens with what it says',
+    points: [
+      'The Monthly MIS now starts with a paragraph written from its own figures: the month against the one before, cost against billing, what clients owe and what is not billed, the year’s margin and the projects that need action. It prints and goes to Excel with the report.',
+    ],
+  },
+  {
     id: '2027-07-todays-talk',
     date: '2027-07-19',
     title: "Today's toolbox talk, in Hindi",

@@ -67,6 +67,7 @@ export function buildManagementReportHtml(r: ManagementReportDto, organizationNa
   .neg { color: ${BRAND.colors.danger}; }
   .fig span.neg { color: ${BRAND.colors.danger}; }
   .muted { color: ${BRAND.colors.muted}; }
+  .commentary { font-size: 12px; line-height: 1.5; margin: 0 0 10px; color: ${BRAND.colors.ink}; }
   .notes { margin-top: 14px; color: ${BRAND.colors.muted}; }
   .notes p { margin: 0 0 3px; }
   @media screen { body { max-width: ${wide ? 1180 : 860}px; margin: 0 auto; } }
@@ -76,6 +77,7 @@ export function buildManagementReportHtml(r: ManagementReportDto, organizationNa
     <div><div class="brand">${esc(organizationName)}</div><h1>${esc(r.title)}</h1>${r.projectName ? `<div class="org">${esc(r.projectName)}</div>` : '<div class="org">Every contract project</div>'}</div>
     <div class="period"><b>${esc(r.period)}</b>Made ${esc(formatDateTime(r.generatedAt))}</div>
   </div>
+  ${r.commentary ? `<p class="commentary">${esc(r.commentary)}</p>` : ''}
   ${figures ? `<div class="figs">${figures}</div>` : ''}
   ${r.sections.map(sectionHtml).join('')}
   ${r.notes.length ? `<div class="notes">${r.notes.map((n) => `<p>${esc(n)}</p>`).join('')}</div>` : ''}
@@ -96,13 +98,14 @@ export function openManagementReportPrint(r: ManagementReportDto, organizationNa
 
 type Row = Record<string, string | number | null>;
 
-/** The report as a workbook: a summary sheet (period, figures, notes) and a sheet per section with its total. */
+/** The report as a workbook: a summary sheet (period, commentary, figures, notes) and a sheet per section with its total. */
 export async function exportManagementReport(r: ManagementReportDto) {
   const summaryRows: Row[] = [
     { a: 'Report', b: r.title },
     { a: 'Period', b: r.period },
     { a: 'Projects', b: r.projectName ?? 'Every contract project' },
     { a: 'Made', b: formatDateTime(r.generatedAt) },
+    ...(r.commentary ? [{ a: '', b: '' }, { a: r.commentary, b: '' }] : []),
     { a: '', b: '' },
     ...r.figures.map((f) => ({
       a: f.label,

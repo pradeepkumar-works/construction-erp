@@ -267,3 +267,81 @@ export const billedMarginPct = (billed: number, cost: number): number | null => 
 
 /** A share in %, one decimal; null when the base is nil. */
 export const pctOf = (part: number, whole: number): number | null => (whole > 0 ? round1((part / whole) * 100) : null);
+
+// ---------------------------------------------------------------------------------------------------------------------
+// MIS commentary (intelligence quick win Q9)
+
+/** Rupees in words a board reads: "₹2.45 crore", "₹38.2 lakh", "₹42,500". */
+export function inrWords(n: number): string {
+  const a = Math.abs(n);
+  const sign = n < 0 ? '−' : '';
+  if (a >= 1e7) return `${sign}₹${(a / 1e7).toLocaleString('en-IN', { maximumFractionDigits: 2 })} crore`;
+  if (a >= 1e5) return `${sign}₹${(a / 1e5).toLocaleString('en-IN', { maximumFractionDigits: 1 })} lakh`;
+  return `${sign}₹${Math.round(a).toLocaleString('en-IN')}`;
+}
+
+/** A change within this share reads as "about the same". */
+export const MIS_SAME_PCT = 5;
+
+export interface MisFlow {
+  workDone: number;
+  billed: number;
+  received: number;
+  cost: number;
+}
+
+export interface MisFacts {
+  /** "October 2026" */
+  month: string;
+  /** "September", or "the same days of September" while the month is still running */
+  previous: string;
+  projects: number;
+  inMonth: MisFlow;
+  /** The same figures for the month before (its same days while this one runs); null when there is none */
+  before: MisFlow | null;
+  year: { billed: number; cost: number };
+  /** Today, across the projects */
+  unbilled: number;
+  outstanding: number;
+  /** The project with the most work not billed, and the one whose client owes most */
+  mostUnbilled: { name: string; amount: number } | null;
+  mostOwed: { name: string; amount: number } | null;
+  /** Projects with a reason to act now, worst first, and how many more are to watch */
+  actNow: { name: string; text: string }[];
+  watch: number;
+}
+
+const change = (now: number, then: number) => {
+  const pct = ((now - then) / then) * 100;
+  return Math.abs(pct) < MIS_SAME_PCT ? 'about the same as' : `${Math.round(Math.abs(pct))}% ${pct > 0 ? 'more' : 'less'} than`;
+};
+const names = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+
+/**
+ * The paragraph the Monthly MIS opens with, written only from its own figures: the month's work, billing and collection
+ * against the month before, billing against cost, what is owed and not billed today and where most of it sits, the
+ * year's margin on billing, and what needs action now. Rules, never a model, so every figure in it is one of the report's.
+ */
+export function misCommentary(f: MisFacts): string {
+  const m = f.inMonth;
+  const out: string[] = [];
+  if (m.workDone === 0 && m.billed === 0 && m.received === 0 && m.cost === 0) out.push(`Nothing was done, billed, received or spent on the ${f.projects} projects in ${f.month}.`);
+  else {
+    const work = m.workDone > 0 ? `${inrWords(m.workDone)} of work${f.before && f.before.workDone > 0 ? `, ${change(m.workDone, f.before.workDone)} in ${f.previous}` : ''}` : 'no work at BOQ rates';
+    out.push(`In ${f.month} the ${f.projects} project${f.projects === 1 ? '' : 's'} did ${work}; ${m.billed > 0 ? `${inrWords(m.billed)} was billed` : 'nothing was billed'} and ${m.received > 0 ? `${inrWords(m.received)} received` : 'nothing received'}.`);
+    const gap = m.billed - m.cost;
+    if (m.cost > 0)
+      out.push(m.billed === 0 ? `Cost was ${inrWords(m.cost)}, with nothing billed against it.` : gap >= 0 ? `Cost was ${inrWords(m.cost)}, so billing ran ${inrWords(gap)} ahead of it.` : `Cost was ${inrWords(m.cost)}, ${inrWords(-gap)} more than was billed.`);
+  }
+  if (f.outstanding > 0) out.push(`Today clients owe ${inrWords(f.outstanding)}${f.mostOwed && f.mostOwed.amount > 0 ? `, the most on ${f.mostOwed.name} (${inrWords(f.mostOwed.amount)})` : ''}.`);
+  if (unbilledMatters(f.unbilled, null)) out.push(`${inrWords(f.unbilled)} of work done is not billed yet${f.mostUnbilled && f.mostUnbilled.amount > 0 ? `, the most on ${f.mostUnbilled.name} (${inrWords(f.mostUnbilled.amount)})` : ''}.`);
+  const ym = billedMarginPct(f.year.billed, f.year.cost);
+  if (f.year.billed > 0) out.push(`For the year so far ${inrWords(f.year.billed)} is billed against ${inrWords(f.year.cost)} of cost${ym === null ? '' : `, a margin of ${ym}% on billing`}.`);
+  if (f.actNow.length) {
+    const first = f.actNow[0];
+    out.push(
+      `${f.actNow.length} project${f.actNow.length === 1 ? ' needs' : 's need'} action now (${names(f.actNow.slice(0, 3).map((a) => a.name))}${f.actNow.length > 3 ? ' and more' : ''}), first ${first.name}: ${first.text.charAt(0).toLowerCase()}${first.text.slice(1).replace(/\.$/, '')}.${f.watch ? ` ${f.watch} more ${f.watch === 1 ? 'is' : 'are'} to watch.` : ''}`,
+    );
+  } else out.push(f.watch ? `No project needs action now; ${f.watch} ${f.watch === 1 ? 'is' : 'are'} to watch.` : 'No project needs action now.');
+  return out.join(' ');
+}
