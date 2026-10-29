@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { CronGuard } from '../notifications/cron.guard';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Public } from '../common/decorators';
 import { IntegrationsService } from './integrations.service';
@@ -33,6 +34,24 @@ export class IntegrationsController {
   @Post('connections/:id/new-address')
   newAddress(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.svc.newHookSecret(user, id);
+  }
+
+  @ApiOperation({ summary: "Read a maker's feed now (it is read every hour by itself)" })
+  @HttpCode(200)
+  @Post('connections/:id/poll')
+  pollNow(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.svc.pollNow(user, id);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({
+    summary: "Reads every makers' feed that is due (item 146) and removes machine readings past 90 days. Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the daily digest runs it too. Auth: Authorization: Bearer <CRON_SECRET>.",
+  })
+  @Get('jobs/machine-feeds')
+  pollFeeds() {
+    return this.svc.pollDue();
   }
 
   @Delete('connections/:id')

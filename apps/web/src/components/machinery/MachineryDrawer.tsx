@@ -4,7 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { Typography } from 'antd';
 import type { MachineryLogDto } from '@erp/shared';
-import { EQUIPMENT_OWNERSHIP_LABELS } from '@erp/shared';
+import { EQUIPMENT_OWNERSHIP_LABELS, distanceText, hoursAboveEngine } from '@erp/shared';
+import { AppTag } from '@/components/common/AppTag';
 import { useMachineryLog } from '@/lib/queries';
 import { formatDate, formatQty, toNumber, inSentence } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -17,6 +18,23 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeFontSize } from '@/lib/theme';
 
 const h = (v: string) => `${formatQty(v)} h`;
+
+/** What the machine's tracker read that day (item 146), and a flag when the log's hours are above it. */
+function EngineFact({ log }: { log: MachineryLogDto }) {
+  const e = log.engine!;
+  const above = hoursAboveEngine(toNumber(log.hoursWorked) + toNumber(log.idleHours), toNumber(e.engineHours));
+  return (
+    <span>
+      {`${h(e.engineHours)}${e.idleHours !== null ? `, ${h(e.idleHours)} idle` : ''}${e.meterStart !== null ? `, meter ${formatQty(e.meterStart)} → ${formatQty(e.meterEnd ?? e.meterStart)}` : ''}`}
+      {above !== null || (e.outsideSite && e.farthestM !== null) ? (
+        <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+          {above !== null ? <AppTag tone="danger">{`Log ${formatQty(above)} h above the engine`}</AppTag> : null}
+          {e.outsideSite && e.farthestM !== null ? <AppTag tone="pending">{`${distanceText(e.farthestM)} from the site`}</AppTag> : null}
+        </span>
+      ) : null}
+    </span>
+  );
+}
 
 interface RecordProps {
   id: string | null;
@@ -59,6 +77,7 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
               label: 'Hour meter',
               children: data.meterStart === null && data.meterEnd === null ? '-' : `${data.meterStart ?? '?'} → ${data.meterEnd ?? '?'}${meterRun !== null ? ` (${formatQty(meterRun)})` : ''}`,
             },
+            ...(data.engine ? [{ key: 'engine', label: 'Engine (tracker)', children: <EngineFact log={data} /> }] : []),
             { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
             ...(data.vendorBillId ? [{ key: 'bill', label: 'Billed on', children: <Link href={`/vendor-bills/${data.vendorBillId}`} className="mono">{data.vendorBillNo}</Link> }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),

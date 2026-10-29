@@ -7,11 +7,11 @@ import type { RoleKey } from './enums';
  * it. The API's `integration-rules.ts` holds the secrets, pairing codes and health; this holds the labels and shapes.
  */
 
-export const INTEGRATION_KINDS = ['GENERIC_WEBHOOK', 'CONNECTOR_CHECK'] as const;
+export const INTEGRATION_KINDS = ['GENERIC_WEBHOOK', 'CONNECTOR_CHECK', 'MACHINE_FEED', 'GPS_TRACKER'] as const;
 export type IntegrationKind = (typeof INTEGRATION_KINDS)[number];
 
-/** How a kind's messages reach Nirmaan: posted to its web address, or read on site by a paired Connector. */
-export type IntegrationTransport = 'HOOK' | 'CONNECTOR';
+/** How a kind's messages reach Nirmaan: posted to its web address, read on site by a paired Connector, or asked for by Nirmaan. */
+export type IntegrationTransport = 'HOOK' | 'CONNECTOR' | 'POLL';
 
 export interface IntegrationKindInfo {
   label: string;
@@ -34,7 +34,50 @@ export const INTEGRATION_KIND_INFO: Record<IntegrationKind, IntegrationKindInfo>
     description: 'The Connector sends one reading a minute from the computer it runs on, to show it is working.',
     quietAfterMin: 10,
   },
+  MACHINE_FEED: {
+    label: "Machine maker's feed (AEMP)",
+    transport: 'POLL',
+    description:
+      "The fleet feed a maker gives its machines' owners (AEMP 2.0, ISO 15143-3: CAT, Komatsu, JCB, Volvo, Tata Hitachi and others). Nirmaan asks it every hour for each machine's hour meter, idle hours, fuel and position.",
+    quietAfterMin: 3 * 60,
+  },
+  GPS_TRACKER: {
+    label: 'GPS tracker service',
+    transport: 'HOOK',
+    description:
+      "A tracker's service posts each reading as JSON: deviceId (or imei), time, latitude and longitude, ignition, and the hour meter (engineHours) where the tracker reads one. Traccar's event forwarding works as it is.",
+    quietAfterMin: 6 * 60,
+  },
 };
+
+/** How Nirmaan signs in to a maker's feed: a key it is given, a user and password, or OAuth client credentials. */
+export const FEED_AUTHS = ['BEARER', 'BASIC', 'OAUTH'] as const;
+export type FeedAuth = (typeof FEED_AUTHS)[number];
+export const FEED_AUTH_LABELS: Record<FeedAuth, string> = {
+  BEARER: 'API key (sent as a bearer token)',
+  BASIC: 'User name and password (user:password)',
+  OAUTH: 'OAuth client (client id and secret)',
+};
+
+/** A maker's feed's settings, kept in the connection's config; the key, password or client secret is its sealed credential. */
+export interface MachineFeedConfig {
+  /** The fleet snapshot's address, e.g. https://api.example.com/aemp/Fleet/1 */
+  url: string;
+  auth: FeedAuth;
+  /** OAUTH: where the token comes from, the client id and the scope if the maker asks for one */
+  tokenUrl?: string;
+  clientId?: string;
+  scope?: string;
+}
+
+/** What one read of a maker's feed did. */
+export interface FeedPollResultDto {
+  machines: number;
+  taken: number;
+  duplicates: number;
+  failed: number;
+  problem: string | null;
+}
 
 /** The kind in a connection's web address: GENERIC_WEBHOOK is /hooks/generic-webhook/<secret>. */
 export const integrationKindSlug = (kind: IntegrationKind) => kind.toLowerCase().replace(/_/g, '-');

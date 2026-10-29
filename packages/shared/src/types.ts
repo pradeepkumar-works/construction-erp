@@ -1,3 +1,4 @@
+import type { MachineEngineDto } from './telematics';
 import type { VendorRecordDto } from './vendor-score';
 import type { LetterAction, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
 import type { NavSettingsDto } from './nav-menu';
@@ -931,6 +932,8 @@ export interface MachineryLogDto extends SubmissionBase {
   /** The hire bill that billed it (v5 item 91); a billed log is locked */
   vendorBillId: string | null;
   vendorBillNo: string | null;
+  /** What the machine's tracker or maker's feed gave for the day (item 146), on the single log */
+  engine?: MachineEngineDto | null;
 }
 
 /* ---------- measurement book ---------- */

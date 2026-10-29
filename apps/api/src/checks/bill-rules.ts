@@ -17,6 +17,8 @@ export interface Check {
   links: Link[];
 }
 
+import { ENGINE_HOURS_TOLERANCE } from '@erp/shared';
+
 /** Rupee and quantity amounts within this much are the same (rounding on each line). */
 const MONEY_TOLERANCE = 1;
 const QTY_TOLERANCE = 0.0005;
@@ -164,6 +166,11 @@ export interface OtherVendorBillFacts {
     /** Diesel we issued to a machine the owner fuels, and what the bill recovers */
     fuelLitres: number;
     fuelRecovered: number;
+    /**
+     * The logs' days the machine's tracker or maker's feed read (item 146): hours logged (worked and idle) and what
+     * the engine ran on them (within 2% or half an hour), and days logged as working on which the engine did not run
+     */
+    engine?: { days: number; loggedHours: number; engineHours: number; deadDays: string[] } | null;
   } | null;
   service: { billed: number; recorded: number; jobs: Link[] } | null;
 }
@@ -178,6 +185,17 @@ export function otherVendorBillChecks(f: OtherVendorBillFacts): Check[] {
     h && h.fuelLitres > 0 && h.fuelRecovered <= 0
       ? [flag(`fuel:${fig(h.fuelLitres)}`, `${qty(h.fuelLitres)} litres of diesel we issued are not recovered`, `${h.machine}: the owner fuels it, so the diesel in its logs comes off the bill`)]
       : [];
+  const e = h?.engine;
+  const engine = !e || !e.days
+    ? []
+    : [
+        ...(e.loggedHours > e.engineHours + Math.max(ENGINE_HOURS_TOLERANCE, e.engineHours * 0.02)
+          ? [flag(`hire-engine:${fig(e.loggedHours)}:${fig(e.engineHours)}`, `${qty(e.loggedHours)} hours logged on ${e.days} tracked ${e.days === 1 ? 'day' : 'days'}; the engine ran ${qty(e.engineHours)}`, `${h!.machine}: from its tracker's hour meter`)]
+          : []),
+        ...(e.deadDays.length
+          ? [flag(`hire-dead:${e.deadDays.join(':')}`, `Logged as working on ${e.deadDays.length === 1 ? 'a day' : `${e.deadDays.length} days`} the engine did not run`, `${h!.machine}: ${listOf(e.deadDays)}`)]
+          : []),
+      ];
   const s = f.service;
   const service = s && s.billed > s.recorded + MONEY_TOLERANCE ? [flag(`service:${fig(s.billed)}:${fig(s.recorded)}`, `${inr(s.billed)} billed before GST; the job cards record ${inr(s.recorded)}`, null, s.jobs)] : [];
   const lineParts = f.lines.flatMap((l) => [
@@ -197,6 +215,7 @@ export function otherVendorBillChecks(f: OtherVendorBillFacts): Check[] {
       ? [
           ...rule('hire-second', 'No other bill for this machine and month', second),
           ...rule('hire-qty', 'Hours within the approved logs', hours),
+          ...(h.engine?.days ? rule('hire-engine', "Logged hours within the engine's", engine) : []),
           ...rule('hire-rate', 'Hire rate as agreed', rates),
           ...rule('fuel', 'Diesel we issued is recovered', fuel),
         ]

@@ -1,12 +1,13 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { dateOnly, dec } from '../common/serialize';
 import { serviceState, type ServiceStatusDto } from '@erp/shared';
+import { engineHoursOf } from '../telematics/telematics-rules';
 
 const RANK = { OVERDUE: 0, DUE_SOON: 1, OK: 2, NOT_SET: 3 } as const;
 
 /**
  * Service position of every active machine with a schedule that matches `where`: hours worked (logs that are not
- * rejected) and days since the last service, or since the machine was added when it was never serviced.
+ * rejected, or the hour meter through its tracker where that is more) and days since the last service, or since the machine was added when it was never serviced.
  * Shared by the maintenance summary and the daily machinery alert, which has no request user.
  */
 export async function serviceStatuses(prisma: PrismaClient | Prisma.TransactionClient, where: Prisma.EquipmentWhereInput, today: string): Promise<ServiceStatusDto[]> {
@@ -33,7 +34,15 @@ export async function serviceStatuses(prisma: PrismaClient | Prisma.TransactionC
       where: { equipmentId: m.id, status: { not: 'REJECTED' }, date: m.lastServiceDate ? { gt: since } : { gte: since } },
       _sum: { hoursWorked: true },
     });
-    const hoursSince = Number(hours._sum.hoursWorked ?? 0);
+    // The machine's own hour meter, through its tracker (item 146), where it read the days since; the larger counts.
+    const days = await prisma.machineDay.findMany({
+      where: { equipmentId: m.id, date: m.lastServiceDate ? { gt: since } : { gte: since } },
+      select: { meterStart: true, meterEnd: true, onSeconds: true },
+    });
+    const logged = Number(hours._sum.hoursWorked ?? 0);
+    const meter = days.reduce((t, d) => t + engineHoursOf({ meterStart: d.meterStart && Number(d.meterStart), meterEnd: d.meterEnd && Number(d.meterEnd), onSeconds: d.onSeconds }), 0);
+    const hoursFrom = days.length && meter > logged ? 'METER' : 'LOGS';
+    const hoursSince = hoursFrom === 'METER' ? meter : logged;
     const s = serviceState({ intervalHours: dec(m.serviceIntervalHours), intervalDays: m.serviceIntervalDays, since: dateOnly(since), hoursSince, today });
     out.push({
       equipmentId: m.id,
@@ -45,6 +54,7 @@ export async function serviceStatuses(prisma: PrismaClient | Prisma.TransactionC
       intervalDays: m.serviceIntervalDays,
       lastServiceDate: dateOnly(m.lastServiceDate),
       hoursSince: hoursSince.toFixed(1),
+      hoursFrom,
       ...s,
       openServiceJobId: m.maintenanceJobs[0]?.id ?? null,
     });

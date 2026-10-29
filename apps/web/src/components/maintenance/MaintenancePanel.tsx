@@ -112,7 +112,22 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       render: (_, r) => [r.intervalHours ? `${formatQty(r.intervalHours)} h` : null, r.intervalDays ? `${r.intervalDays} days` : null].filter(Boolean).join(' or '),
     },
     { title: 'Last service', dataIndex: 'lastServiceDate', width: 120, render: (v) => (v ? formatDate(v) : <span className="text-muted">not recorded</span>) },
-    { title: 'Worked since', dataIndex: 'hoursSince', width: 110, align: 'right', render: (v) => `${formatQty(v)} h` },
+    {
+      title: 'Worked since',
+      dataIndex: 'hoursSince',
+      width: 120,
+      align: 'right',
+      render: (v, r) => (
+        <span>
+          {`${formatQty(v)} h`}
+          {r.hoursFrom === 'METER' ? (
+            <span className="text-muted" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
+              hour meter
+            </span>
+          ) : null}
+        </span>
+      ),
+    },
     { title: 'Due', key: 'due', width: 220, render: (_, r) => <span className={r.state === 'OVERDUE' ? 'text-danger' : undefined}>{serviceLeft(r.hoursLeft, r.daysLeft)}</span> },
     { title: 'State', dataIndex: 'state', width: 100, render: (v) => <ServiceStateTag state={v} /> },
     ...(manager

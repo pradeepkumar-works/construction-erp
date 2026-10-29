@@ -7,17 +7,18 @@ import { MachineryList } from './MachineryList';
 import { EquipmentTable } from './EquipmentTable';
 import { FuelPanel } from './FuelPanel';
 import { UtilisationPanel } from './UtilisationPanel';
+import { EngineHoursPanel } from './EngineHoursPanel';
 import { MaintenancePanel } from '@/components/maintenance/MaintenancePanel';
 import { PapersPanel } from '@/components/maintenance/PapersPanel';
 import { useUrlTab } from '@/lib/url-state';
 
-const FLEET_TABS = ['logs', 'fuel', 'utilisation', 'maintenance', 'papers', 'equipment'] as const;
+const FLEET_TABS = ['logs', 'engine', 'fuel', 'utilisation', 'maintenance', 'papers', 'equipment'] as const;
 // Papers and drivers belong to the fleet, not to a project.
-const PROJECT_TABS = ['logs', 'fuel', 'utilisation', 'maintenance', 'equipment'] as const;
+const PROJECT_TABS = ['logs', 'engine', 'fuel', 'utilisation', 'maintenance', 'equipment'] as const;
 export type MachineryTab = (typeof FLEET_TABS)[number];
 
 /**
- * Daily logs, fuel, utilisation, maintenance, papers and drivers, and the equipment master, for one project (project tab) or the whole
+ * Daily logs, engine hours from trackers (item 146), fuel, utilisation, maintenance, papers and drivers, and the equipment master, for one project (project tab) or the whole
  * fleet (Machinery page). Papers and drivers belong to the fleet, so a project shows only its maintenance. The open tab
  * is `?sub=` in the URL (UX item 84).
  */
@@ -32,6 +33,7 @@ export function MachineryPanel({ projectId, initialTab, initialId }: { projectId
       variant="page"
       items={[
         { key: 'logs', label: 'Daily logs', children: <MachineryList projectId={projectId} /> },
+        { key: 'engine', label: 'Engine hours', children: <EngineHoursPanel projectId={projectId} /> },
         { key: 'fuel', label: 'Fuel', children: <FuelPanel projectId={projectId} /> },
         { key: 'utilisation', label: 'Utilisation', children: <UtilisationPanel projectId={projectId} /> },
         {

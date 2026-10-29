@@ -355,6 +355,11 @@ and the pre-delivery checklist.
   are stored only hashed, keys only sealed under `INTEGRATION_KEY` (`integration-rules.ts`). A new kind is an
   `IntegrationKind`, a handler and, for a site device, a reader in the Connector's `READERS`. Keep
   `src/scripts/integrations-test.ts` and the Connector's `npm test` passing.
+- Machine telematics (item 146, `apps/api/src/telematics`, ARCHITECTURE "Machine telematics"): a tracker's or a maker's feed's
+  reading reaches a machine only through `TelematicsService.record` (the kind's handler, after `HandlerContext.link`), and a
+  machine's day is only `foldReading` / `rollUpDay` (`telematics-rules.ts`); a feed is read only by `IntegrationsService.pollFeed`
+  over `readFeedConfig` (https on the internet, never a private address). Screens compare a log with the engine only by
+  `hoursAboveEngine` and fill a log only by `engineLogDraft` (`@erp/shared/telematics.ts`). Keep `src/scripts/telematics-test.ts` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

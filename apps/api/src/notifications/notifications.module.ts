@@ -1,3 +1,4 @@
+import { IntegrationsModule } from '../integrations/integrations.module';
 import { Global, Module } from '@nestjs/common';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
@@ -22,7 +23,7 @@ import { BillingController } from '../billing/billing.controller';
  */
 @Global()
 @Module({
-  imports: [PayablesModule, WarningsModule, BriefsModule, DocumentsModule],
+  imports: [PayablesModule, WarningsModule, BriefsModule, DocumentsModule, IntegrationsModule],
   controllers: [NotificationsController, MessagingController, CompanyDataController, BillingController],
   providers: [NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService, BillingService],
   exports: [NotificationsService, NotificationJobsService, EmailService, MessagingService],

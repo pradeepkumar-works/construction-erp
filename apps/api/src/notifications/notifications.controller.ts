@@ -6,6 +6,7 @@ import { JobQuery, ListNotificationsQuery, ReadAllNotificationsQuery, RegisterPu
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { GuestAllowed, Public } from '../common/decorators';
 import { CronGuard } from './cron.guard';
+import { IntegrationsService } from '../integrations/integrations.service';
 import { CompanyDataService } from '../company-data/company-data.service';
 import { BillingService } from '../billing/billing.service';
 import { AllowWhenUnpaid } from '../common/billing';
@@ -22,6 +23,7 @@ export class NotificationsController {
     private companyData: CompanyDataService,
     private billing: BillingService,
     private documentText: DocumentTextService,
+    private integrations: IntegrationsService,
   ) {}
 
   /** The current user's notifications, newest first, plus the unread count. */
@@ -115,6 +117,8 @@ export class NotificationsController {
     await this.companyData.purgeDue(q.date).catch(() => undefined);
     // ...and starting trials and billing reminders.
     await this.billing.daily(q.date).catch(() => undefined);
+    // ...and makers' machine feeds where nothing reads them hourly (item 146).
+    await this.integrations.pollDue().catch(() => undefined);
     // ...and reading filed PDFs no search has read yet (Ask the contract), for a minute at most.
     await this.documentText.readAllPending(60_000).catch(() => undefined);
     return digest;
