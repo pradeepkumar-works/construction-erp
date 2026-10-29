@@ -222,6 +222,14 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/biometric-test.js
+      - name: Integrations keep secrets hashed and keys sealed, read pairing codes, health and batches of readings
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/integrations-test.js
+      - name: The Connector's outbox keeps readings through a power cut and takes a sent batch off
+        if: matrix.suite == 'flows'
+        working-directory: apps/connector
+        run: npm test
       - name: Books check vouchers, number them by year and give every posted ledger a group
         if: matrix.suite == 'flows'
         working-directory: apps/api

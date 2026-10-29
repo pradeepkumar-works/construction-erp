@@ -106,7 +106,7 @@ export const MENU: Record<string, string> = {
   'Operations': 'संचालन',
   'Finance': 'वित्त',
   'Administration': 'प्रशासन',
-  'Users, approval rules, modules, the menu and the subscription.': 'यूज़र, मंज़ूरी के नियम, मॉड्यूल, मेन्यू और सब्सक्रिप्शन।',
+  'Users, approval rules, modules, the menu, connections and the subscription.': 'यूज़र, मंज़ूरी के नियम, मॉड्यूल, मेन्यू, कनेक्शन और सब्सक्रिप्शन।',
   'Modules and menu': 'मॉड्यूल और मेन्यू',
   'Console': 'कंसोल',
 };

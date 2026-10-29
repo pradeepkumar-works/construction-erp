@@ -8,6 +8,7 @@ approval state machine), `docs/DEPLOY.md` (hosting) and `docs/ROADMAP.md` (what 
 - `apps/api` NestJS 11 + Prisma 6 + PostgreSQL. Global prefix `/api`, Swagger at `/api/docs`.
 - `apps/web` Next.js 15 App Router + Ant Design 6 + TanStack Query. Root route group `src/app/(app)`.
 - `apps/mobile` Expo SDK 57 + expo-router, plain React Native components (no UI kit).
+- `apps/connector` Nirmaan Connector: a dependency-free Node program for a site computer that reads local devices and calls out to the API (item 139).
 - `packages/shared` enums, labels, permission helpers and API response types. Built to `dist`;
   run `pnpm --filter @erp/shared build` after changing it.
 
@@ -347,6 +348,13 @@ and the pre-delivery checklist.
   `group-rules.ts`; keep `src/scripts/group-companies-test.ts` passing. A new company kind is a `CompanyKind` (schema +
   shared + label + Hindi) and its `COMPANY_KIND_INFO`. Reading across companies is `withoutTenant(async () => await …)`:
   a Prisma query returned unawaited from the callback runs later under the request's company, where RLS hides the rest.
+- Integrations (item 139, `apps/api/src/integrations`, ARCHITECTURE "Integration layer"): every outside system is an
+  `IntegrationConnection` and every message an `IntegrationEvent`, taken in only through `IntegrationsService.takeIn`
+  (dedupe by id, the kind's handler, health); vendor clouds post to `/api/hooks/<kind>/<secret>`, site devices come through
+  the outbound-only Connector (`apps/connector`, paired by code), never a port opened on a site. Secrets, tokens and codes
+  are stored only hashed, keys only sealed under `INTEGRATION_KEY` (`integration-rules.ts`). A new kind is an
+  `IntegrationKind`, a handler and, for a site device, a reader in the Connector's `READERS`. Keep
+  `src/scripts/integrations-test.ts` and the Connector's `npm test` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

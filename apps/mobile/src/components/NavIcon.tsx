@@ -114,6 +114,7 @@ import ShoppingCart from 'lucide-react-native/icons/shopping-cart';
 import Siren from 'lucide-react-native/icons/siren';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import ToggleRight from 'lucide-react-native/icons/toggle-right';
+import Plug from 'lucide-react-native/icons/plug';
 import Tractor from 'lucide-react-native/icons/tractor';
 import TrendingUp from 'lucide-react-native/icons/trending-up';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
@@ -246,6 +247,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'siren': Siren,
   'sparkles': Sparkles,
   'toggle-right': ToggleRight,
+  'plug': Plug,
   'tractor': Tractor,
   'trending-up': TrendingUp,
   'triangle-alert': TriangleAlert,

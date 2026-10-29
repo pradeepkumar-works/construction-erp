@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-08-connections',
+    date: '2027-08-02',
+    title: 'Connections to outside systems and devices',
+    points: [
+      'Administration has a new Connections page. A service in the cloud, such as a GPS tracker’s, posts to a web address of its own; a device on a site’s network is read by the Nirmaan Connector on a computer there, paired with a code and calling out only.',
+      'Every message is kept in the log with what came of it, and each device heard from is listed to match to its machine. Machine hours, fuel, weighbridges and batching plants build on it next.',
+    ],
+  },
+  {
     id: '2027-07-mis-commentary',
     date: '2027-07-26',
     title: 'The Monthly MIS opens with what it says',

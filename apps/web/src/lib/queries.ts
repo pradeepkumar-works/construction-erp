@@ -270,6 +270,11 @@ import type {
   HrDashboardDto,
   PayrollSettingsDto,
   BiometricDeviceDto,
+  ConnectorAgentDto,
+  DeviceLinkDto,
+  IntegrationConnectionDto,
+  IntegrationEventDto,
+  IntegrationEventStatus,
   BookSource,
   BookVoucherDto,
   BookVoucherStatus,
@@ -2215,6 +2220,32 @@ export const useBiometricPunches = (filters: { date: string; deviceId?: string; 
     queryFn: async () => (await api.get<BiometricPunchDto[]>('/biometric/punches', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
   });
+
+/* ---------- connections (item 139) ---------- */
+
+export const useIntegrationConnections = () =>
+  useQuery({ queryKey: ['integrations', 'connections'], queryFn: async () => (await api.get<IntegrationConnectionDto[]>('/integrations/connections')).data });
+
+export const useConnectorAgents = () => useQuery({ queryKey: ['integrations', 'agents'], queryFn: async () => (await api.get<ConnectorAgentDto[]>('/integrations/agents')).data });
+
+export const useDeviceLinks = () => useQuery({ queryKey: ['integrations', 'devices'], queryFn: async () => (await api.get<DeviceLinkDto[]>('/integrations/devices')).data });
+
+export const useIntegrationEvents = (filters: { connectionId?: string; status?: IntegrationEventStatus }) =>
+  useQuery({
+    queryKey: ['integrations', 'events', clean(filters)],
+    queryFn: async () => (await api.get<IntegrationEventDto[]>('/integrations/events', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** Any write on connections, Connectors or devices; all of them are fetched again after it. */
+export function useIntegrationAction<T = unknown>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['integrations'] }),
+  });
+}
 
 /** Any biometric write; devices, users and punches are fetched again after it, and the staff register too. */
 export function useBiometricAction<T = unknown>() {
