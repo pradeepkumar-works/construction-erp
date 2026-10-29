@@ -120,7 +120,7 @@ export function TestsDuePage() {
             {data.withoutPlan.length ? (
               <Typography.Paragraph type="secondary" style={{ marginTop: token.margin, marginBottom: 0 }}>
                 {data.withoutPlan.length === 1 ? `${data.withoutPlan[0].name} has` : `${data.withoutPlan.length} projects have`} no quality plan yet, so nothing is counted for{' '}
-                {data.withoutPlan.length === 1 ? 'it' : 'them'}. <Link href="/quality-plan">Set up a quality plan</Link>
+                {data.withoutPlan.length === 1 ? 'it' : 'them'}. <Link href="/quality-plan" className="text-link">Set up a quality plan</Link>
               </Typography.Paragraph>
             ) : null}
           </>
