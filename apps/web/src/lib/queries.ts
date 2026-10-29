@@ -396,7 +396,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -1576,6 +1576,44 @@ export const useAsBuiltDue = (projectId?: string, enabled = true) =>
     queryFn: async () => (await api.get<AsBuiltDueDto[]>('/design/as-built-due', { params: clean({ projectId }) })).data,
     enabled,
   });
+
+export interface DesignSubmissionFilters extends PageParams {
+  projectId?: string;
+  status?: DesignSubmissionStatus | 'LATE' | 'WITH_US';
+  purpose?: DesignPurpose;
+  kind?: DesignSubmissionKind;
+  toAnswer?: boolean;
+}
+
+/** Design submissions (item 138 part 2): late reviews first, with the summary over the filter. */
+export const useDesignSubmissions = (filters?: DesignSubmissionFilters) =>
+  useQuery({
+    queryKey: ['documents', 'design-submissions', clean(filters)],
+    queryFn: async () => (await api.get<DesignSubmissionListDto>('/design/submissions', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useDesignSubmission = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'design-submissions', 'detail', id],
+    queryFn: async () => (await api.get<DesignSubmissionDetailDto>(`/design/submissions/${id}`)).data,
+    enabled: !!id,
+  });
+
+/** Any change to a design submission; the register, letters and risks it touches refresh too. */
+export function useDesignSubmissionAction<T = DesignSubmissionDetailDto>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'put' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    meta: FAIL_NOTICE,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['documents'] });
+      void qc.invalidateQueries({ queryKey: ['letters'] });
+      void qc.invalidateQueries({ queryKey: ['risks'] });
+    },
+  });
+}
 
 export interface DocumentFilters extends PageParams {
   projectId?: string;

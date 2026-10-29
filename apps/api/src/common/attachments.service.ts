@@ -8,7 +8,7 @@ import { RequestUser } from './current-user';
 /** The columns an attachment's DTO needs: never `data`, the file's bytes when they are kept in the database. */
 export const ATTACHMENT_FIELDS = { id: true, fileName: true, mimeType: true, size: true, storagePath: true, createdAt: true } satisfies Prisma.AttachmentSelect;
 
-type Parent = 'progressEntryId' | 'dailyReportId' | 'materialRequestId' | 'stockEntryId' | 'machineryLogId' | 'expenseId' | 'measurementId' | 'riskId' | 'raBillId' | 'purchaseOrderId' | 'vendorBillId' | 'workOrderId' | 'subcontractBillId' | 'inspectionId' | 'qualityTestId' | 'ncrId' | 'revisionId' | 'letterId' | 'qaCalibrationId' | 'qaAuditId' | 'variationId' | 'safetyIncidentId' | 'toolboxTalkId' | 'workPermitId' | 'maintenanceJobId' | 'equipmentDocId' | 'complianceDocId' | 'defectId' | 'handoverId' | 'rfiId' | 'paymentRequestId' | 'employeeId' | 'tenderId' | 'materialApprovalId';
+type Parent = 'progressEntryId' | 'dailyReportId' | 'materialRequestId' | 'stockEntryId' | 'machineryLogId' | 'expenseId' | 'measurementId' | 'riskId' | 'raBillId' | 'purchaseOrderId' | 'vendorBillId' | 'workOrderId' | 'subcontractBillId' | 'inspectionId' | 'qualityTestId' | 'ncrId' | 'revisionId' | 'letterId' | 'qaCalibrationId' | 'qaAuditId' | 'designSubmissionId' | 'variationId' | 'safetyIncidentId' | 'toolboxTalkId' | 'workPermitId' | 'maintenanceJobId' | 'equipmentDocId' | 'complianceDocId' | 'defectId' | 'handoverId' | 'rfiId' | 'paymentRequestId' | 'employeeId' | 'tenderId' | 'materialApprovalId';
 
 @Injectable()
 export class AttachmentsService {
@@ -22,7 +22,7 @@ export class AttachmentsService {
   async link(user: RequestUser, parent: Parent, parentId: string, attachmentIds: string[] | undefined) {
     if (!attachmentIds || attachmentIds.length === 0) return;
     await this.prisma.attachment.updateMany({
-      where: { id: { in: attachmentIds }, organizationId: user.organizationId, progressEntryId: null, dailyReportId: null, materialRequestId: null, stockEntryId: null, machineryLogId: null, expenseId: null, measurementId: null, riskId: null, raBillId: null, purchaseOrderId: null, vendorBillId: null, workOrderId: null, subcontractBillId: null, inspectionId: null, qualityTestId: null, ncrId: null, revisionId: null, letterId: null, qaCalibrationId: null, qaAuditId: null, variationId: null, safetyIncidentId: null, toolboxTalkId: null, workPermitId: null, maintenanceJobId: null, equipmentDocId: null, complianceDocId: null, defectId: null, handoverId: null, rfiId: null, paymentRequestId: null, employeeId: null, supplierInvoiceId: null, tenderId: null, materialApprovalId: null },
+      where: { id: { in: attachmentIds }, organizationId: user.organizationId, progressEntryId: null, dailyReportId: null, materialRequestId: null, stockEntryId: null, machineryLogId: null, expenseId: null, measurementId: null, riskId: null, raBillId: null, purchaseOrderId: null, vendorBillId: null, workOrderId: null, subcontractBillId: null, inspectionId: null, qualityTestId: null, ncrId: null, revisionId: null, letterId: null, qaCalibrationId: null, qaAuditId: null, designSubmissionId: null, variationId: null, safetyIncidentId: null, toolboxTalkId: null, workPermitId: null, maintenanceJobId: null, equipmentDocId: null, complianceDocId: null, defectId: null, handoverId: null, rfiId: null, paymentRequestId: null, employeeId: null, supplierInvoiceId: null, tenderId: null, materialApprovalId: null },
       data: { [parent]: parentId },
     });
   }

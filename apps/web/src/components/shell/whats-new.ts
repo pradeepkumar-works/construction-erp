@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-05-design-submissions',
+    date: '2027-05-10',
+    title: 'Design submissions',
+    points: [
+      'Send drawings, calculations, shop drawings or a method statement for approval, or to an institution for vetting, with a covering letter drafted in Correspondence.',
+      'Record the code each round comes back with. An approval moves the drawings’ revisions in the register.',
+      'Answer the reviewer’s comments on the comment resolution sheet and print it. A resubmission waits until every comment has a reply.',
+      'Reviews past their reply date come first and show on the watch list, and the wait can be recorded as a delay toward an extension of time.',
+    ],
+  },
+  {
     id: '2027-05-drawing-schedule',
     date: '2027-05-03',
     title: 'The drawing schedule',

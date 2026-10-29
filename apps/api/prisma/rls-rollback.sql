@@ -611,5 +611,14 @@ DROP POLICY IF EXISTS tenant_isolation ON "QaAuditFinding";
 ALTER TABLE "DrawingNeed" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "DrawingNeed" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "DrawingNeed";
+ALTER TABLE "DesignSubmission" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "DesignSubmission" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "DesignSubmission";
+ALTER TABLE "DesignComment" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "DesignComment" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "DesignComment";
+ALTER TABLE "DesignSubmissionRound" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "DesignSubmissionRound" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "DesignSubmissionRound";
 
 DROP FUNCTION IF EXISTS app_current_org();

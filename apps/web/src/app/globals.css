@@ -633,6 +633,7 @@ h4.ant-typography,
 @media print {
   aside,
   .ant-layout-header,
+  .no-print,
   [data-record-chrome] {
     display: none !important;
   }

@@ -226,6 +226,26 @@ export class EpcService {
     return this.get(user, projectId);
   }
 
+  /**
+   * A design submission's round went to the client or came back with its code (item 138 part 2): each deliverable that
+   * names one of its documents takes the day, the document's revision and the code, under the same status rule as an
+   * edit by hand. Returns how many followed.
+   */
+  async followDesignRound(user: RequestUser, projectId: string, sent: { documentId: string; revision: string }[], r: { submittedOn: string; code: string | null; reviewedOn: string | null }) {
+    const byDoc = new Map(sent.map((x) => [x.documentId, x.revision]));
+    const rows = await this.prisma.engineeringDeliverable.findMany({ where: { projectId, documentId: { in: [...byDoc.keys()] } }, select: { id: true, code: true, title: true, documentId: true, status: true } });
+    for (const d of rows) {
+      const approvedOn = r.code === 'A' || r.code === 'B' ? r.reviewedOn : null;
+      const status = deliverableStatus({ submittedOn: r.submittedOn, approvalCode: r.code, approvedOn });
+      await this.prisma.engineeringDeliverable.update({
+        where: { id: d.id },
+        data: { submittedOn: parseDate(r.submittedOn), revision: byDoc.get(d.documentId!) ?? null, approvalCode: r.code, approvedOn: approvedOn ? parseDate(approvedOn) : null, status },
+      });
+      await this.audit.log(user, 'ENGINEERING_DELIVERABLE', d.id, status === 'APPROVED' && d.status !== 'APPROVED' ? 'APPROVED' : 'UPDATED', `${d.code} ${d.title}, from a design submission`);
+    }
+    return rows.length;
+  }
+
   async removeDeliverable(user: RequestUser, projectId: string, id: string) {
     if (!canManageDeliverables(user.roleKey)) throw new ForbiddenException('Your role cannot change engineering deliverables');
     await this.access.assertCanAccessProject(user, projectId);
