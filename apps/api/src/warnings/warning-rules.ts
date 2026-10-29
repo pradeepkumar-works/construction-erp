@@ -492,3 +492,18 @@ export function lateReportGroups<S extends { projectId: string; labId: string; l
     .map((xs) => ({ projectId: xs[0].projectId, labId: xs[0].labId, samples: xs.sort((a, b) => (b.waitDays ?? 0) - (a.waitDays ?? 0)), longest: Math.max(...xs.map((x) => x.waitDays ?? 0)) }))
     .sort((a, b) => b.longest - a.longest);
 }
+
+/**
+ * Drawings still not buildable past their day (item 138), one warning per project and party that owes them, the longest
+ * wait first. The party is who issues them as written, else the kind of source.
+ */
+export function lateDrawingGroups<N extends { projectId: string; source: string; fromParty: string | null; overdue: boolean; daysLate: number | null }>(needs: N[]): { projectId: string; party: string; needs: N[]; longest: number }[] {
+  const groups = new Map<string, N[]>();
+  for (const n of needs.filter((x) => x.overdue)) {
+    const k = `${n.projectId}:${(n.fromParty ?? n.source).trim().toLowerCase()}`;
+    groups.set(k, [...(groups.get(k) ?? []), n]);
+  }
+  return [...groups.values()]
+    .map((xs) => ({ projectId: xs[0].projectId, party: (xs[0].fromParty ?? xs[0].source).trim(), needs: xs.sort((a, b) => (b.daysLate ?? 0) - (a.daysLate ?? 0)), longest: Math.max(...xs.map((x) => x.daysLate ?? 0)) }))
+    .sort((a, b) => b.longest - a.longest);
+}

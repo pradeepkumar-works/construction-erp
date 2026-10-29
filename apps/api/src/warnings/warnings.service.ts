@@ -27,6 +27,7 @@ import {
   fuelNormText,
   revisedCompletion,
   watchListKinds,
+  isClientSide,
 } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -44,6 +45,7 @@ import { monthSpan } from '../leakage/leakage-rules';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
 import { QaService } from '../qa/qa.service';
 import { QaRegistersService } from '../qa/registers.service';
+import { DrawingScheduleService } from '../design/drawing-schedule.service';
 import { noticeClock } from '../hindrance/hindrance-rules';
 import { packageStatus } from '../epc/epc-rules';
 import { loadMonths, loadOm } from '../om/om-load';
@@ -63,6 +65,7 @@ import {
   TESTS_SHORT_MIN,
   calibrationWarns,
   lateReportGroups,
+  lateDrawingGroups,
   testsShort,
   PACKAGE_GRACE_DAYS,
   SLIP_GRACE_DAYS,
@@ -145,6 +148,7 @@ export class WarningsService {
     private attendance: AttendanceCheckService,
     private qa: QaService,
     private qaRegisters: QaRegistersService,
+    private drawingSchedule: DrawingScheduleService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -282,6 +286,8 @@ export class WarningsService {
         if (k === 'TESTS_SHORT') return today === todayIn() ? this.testsShort(user) : Promise.resolve([]);
         if (k === 'CALIBRATION_DUE') return today === todayIn() ? this.calibration(user, today) : Promise.resolve([]);
         if (k === 'LAB_REPORT_LATE') return today === todayIn() ? this.labReports(user) : Promise.resolve([]);
+        // Design and drawings (item 138): the schedule's late drawings, through its own service.
+        if (k === 'DRAWING_LATE') return today === todayIn() ? this.drawings(user) : Promise.resolve([]);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -882,6 +888,36 @@ export class WarningsService {
         links: [{ label: 'Samples sent out', href: `/lab-samples?labId=${g.labId}&late=1` }],
         projectId: g.projectId,
         projectName: s.projectName,
+      };
+    });
+  }
+
+  /** Drawings past the day site needed them and still not buildable, one warning per project and party (`lateDrawingGroups`). */
+  private async drawings(user: RequestUser): Promise<Draft[]> {
+    return lateDrawingGroups(await this.drawingSchedule.overdue(user)).map((g) => {
+      const n = g.needs[0];
+      const names = g.needs.slice(0, 3).map((x) => [x.docNo, x.title].filter(Boolean).join(' '));
+      const delays = g.needs.filter((x) => x.riskId).length;
+      const clientSide = isClientSide(n.source);
+      return {
+        key: `drawings:${g.projectId}:${g.needs.map((x) => `${x.id}.${x.state}`).join(',')}`,
+        kind: 'DRAWING_LATE' as const,
+        title: `${plural(g.needs.length, 'drawing')} awaited from ${g.party}`,
+        detail: `${names.join('; ')}${g.needs.length > 3 ? ' and more' : ''}. The oldest was needed ${plural(g.longest, 'day')} ago, and work that depends on ${g.needs.length === 1 ? 'it' : 'them'} is held.`,
+        action: clientSide
+          ? delays < g.needs.length
+            ? 'Send a reminder letter and record the wait as a delay, so the notice and the extension of time run from it'
+            : 'Send a reminder letter; the delay is recorded'
+          : 'Chase the design team and agree a date',
+        impact: { text: `${plural(g.longest, 'day')} late`, inr: null, days: g.longest },
+        working: g.needs.map((x) => `${x.docNo ?? x.title}: needed ${day(x.neededBy)}, ${x.state === 'RECEIVED' ? `revision ${x.revision} not for construction` : 'not received'}${x.reminders ? `, ${plural(x.reminders, 'reminder')}` : ''}${x.riskNo ? `, delay ${x.riskNo}` : ''}`),
+        facts: [
+          { label: 'Awaited', value: String(g.needs.length) },
+          { label: 'Longest wait', value: plural(g.longest, 'day') },
+        ],
+        links: [{ label: 'Drawing schedule', href: `/drawing-schedule?projectId=${g.projectId}&state=LATE` }],
+        projectId: g.projectId,
+        projectName: n.projectName,
       };
     });
   }

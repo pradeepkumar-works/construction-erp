@@ -408,6 +408,37 @@ Part 2 (`QaRegistersService`, rules pure in `@erp/shared/qa-registers.ts`, teste
   quality plan.
 - The phone shows My work's audit findings card; QA/QC screens of its own on the phone are later.
 
+### Design and drawings (item 138)
+
+The drawings a project waits for, chased until they arrive, beside the document register (`DrawingScheduleService`,
+`apps/api/src/design`, routes under `/design`; its own module because `CorrespondenceModule` imports `DocumentsModule`).
+The rules are pure in `@erp/shared/drawing-schedule.ts`, tested in `src/scripts/drawing-schedule-test.ts` (CI runs it).
+
+- **Schedule.** `DrawingNeed`: the number it will carry (when known), title, discipline, who issues it (`DRAWING_SOURCES`:
+  client, consultant, architect, design consultant, own design team; `fromParty` as a letter is addressed), the day site
+  needs it good for construction, the activity it holds up and remarks. Many are added at once from a list
+  (`POST /design/schedule/lines`). `canManageDocuments` keeps the schedule; anyone in the company with the project reads it.
+- **Matched to the register.** A line finds its `Document` by number (`drawingNoKey`: case and everything but letters and digits ignored), or
+  names one when the numbers differ. `drawingNeedState`: awaited, received (a revision, not yet buildable), good for
+  construction (a `BUILDABLE_STATUSES` revision) or dropped. `drawingOverdue` past its day while not buildable,
+  `drawingDueSoon` within `DRAWING_SOON_DAYS` (7). `revisionDays` reads the first revision and the first buildable one.
+- **Chasing.** `POST /design/schedule/:id/remind` drafts an outward letter through `CorrespondenceService.create` (category
+  "Drawing and design", reply by in a week) listing every drawing the same party owes on the project that is late or due
+  soon (`reminderLetter`); it is signed and numbered like any other letter, and each line keeps its last letter and a count.
+  The own design team is never sent one (`remindsByLetter`).
+- **Delay.** A late drawing from the client's side (`isClientSide`) is recorded through `RisksService.create` as a DELAY in
+  the DESIGN category from the day after it was needed, the client responsible, so the days count toward an extension of
+  time (`POST /design/schedule/:id/delay`, for the roles that `canRaiseRisk`). A line chased or recorded as a delay cannot
+  be deleted.
+- **Numbers.** `nextDrawingNo(projectCode, discipline, existing)` gives `<project code>-<DISC>-NNN` over the register and the
+  schedule (`DISCIPLINE_CODES`); `GET /design/next-no`, the Next number button on a new document.
+- **As-built check.** `GET /design/as-built-due`: drawings whose current revision is buildable, so site built from them,
+  that have no as-built revision yet; what the handover still owes.
+- **Watch list.** `DRAWING_LATE` (drawings awaited past their day, one warning per project and party from `lateDrawingGroups`), for the
+  roles that `canManageDocuments`.
+- **Clients.** Web: `/drawing-schedule` (Schedule and As-built check tabs, `?projectId=`, `?state=LATE`, `?id=`). The phone
+  reads drawings from the register; the schedule on the phone is later.
+
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 
 The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the person's day and then a menu, as a phone's home

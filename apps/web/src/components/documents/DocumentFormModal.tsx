@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Flex, Form, Input, Select } from 'antd';
+import { App, Flex, Form, Input, Select, Space } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentDiscipline, DocumentKind, RevisionStatus } from '@erp/shared';
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, disciplineOf, readText } from '@erp/shared';
@@ -12,6 +12,7 @@ import { useProjects } from '@/lib/queries';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { ReadDocumentButton, ReadPreview, readDateReason, readFieldProps, useKeepReadFile, type ReadState } from '@/components/ai/ReadDocument';
 import { RevisionFields } from './RevisionFields';
+import { NextDrawingNo } from '@/components/design/NextDrawingNo';
 
 interface FormValues {
   projectId: string;
@@ -108,9 +109,20 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
             <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
           <FormGrid cols={2}>
-            <Form.Item name="docNo" label="Number" rules={[{ required: true, whitespace: true, message: 'Enter the number, e.g. STR-GA-101' }]} {...read('drawingNo')}>
-              <Input maxLength={60} placeholder="STR-GA-101" />
-            </Form.Item>
+            {editing ? (
+              <Form.Item name="docNo" label="Number" rules={[{ required: true, whitespace: true, message: 'Enter the number, e.g. STR-GA-101' }]} {...read('drawingNo')}>
+                <Input maxLength={60} placeholder="STR-GA-101" />
+              </Form.Item>
+            ) : (
+              <Form.Item label="Number" required {...read('drawingNo')}>
+                <Space.Compact style={{ width: '100%' }}>
+                  <Form.Item name="docNo" noStyle rules={[{ required: true, whitespace: true, message: 'Enter the number, or take the next one' }]}>
+                    <Input maxLength={60} placeholder="STR-GA-101" aria-label="Number" />
+                  </Form.Item>
+                  <NextDrawingNo form={form} projectId={projectId} />
+                </Space.Compact>
+              </Form.Item>
+            )}
             <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Enter the title' }]} {...read('title')}>
               <Input maxLength={200} placeholder="First floor slab reinforcement" />
             </Form.Item>

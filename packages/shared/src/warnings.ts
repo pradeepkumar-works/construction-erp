@@ -1,11 +1,11 @@
 import type { RoleKey } from './enums';
-import { canApprove, canEditProjects, canManageMachineLoans, canManagePackages, canManageQaPlan, canManageMaintenance, canManageOm, canManageStore, canPurchase, canRaiseRisk, canSetMaterialNorms, canViewCost } from './permissions';
+import { canApprove, canEditProjects, canManageDocuments, canManageMachineLoans, canManagePackages, canManageQaPlan, canManageMaintenance, canManageOm, canManageStore, canPurchase, canRaiseRisk, canSetMaterialNorms, canViewCost } from './permissions';
 
 /**
  * Early warnings (AI roadmap item 73): plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
-export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE'] as const;
+export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE'] as const;
 export type WarningKind = (typeof WARNING_KINDS)[number];
 
 export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
@@ -29,6 +29,7 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
   TESTS_SHORT: 'Tests short of the quality plan',
   CALIBRATION_DUE: 'Instrument out of calibration',
   LAB_REPORT_LATE: 'Lab reports late',
+  DRAWING_LATE: 'Drawings awaited',
 };
 
 /** The warning kinds a role sees: each is the business of the role that can act on it. */
@@ -59,6 +60,8 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   if (canViewCost(role) && canEditProjects(role)) out.push('BOQ_OFF_CONTRACT');
   // QA/QC (item 137): QA/QC and the managers who keep the quality plan.
   if (canManageQaPlan(role)) out.push('TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE');
+  // Design and drawings (item 138): whoever keeps the register chases the drawings and records the delay.
+  if (canManageDocuments(role)) out.push('DRAWING_LATE');
   return out;
 }
 
@@ -103,6 +106,7 @@ export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
   TESTS_SHORT: 'CHECKED',
   CALIBRATION_DUE: 'CHECKED',
   LAB_REPORT_LATE: 'CHECKED',
+  DRAWING_LATE: 'CHECKED',
 };
 
 /**

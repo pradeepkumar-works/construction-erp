@@ -859,6 +859,7 @@ model Organization {
   qaInstruments        QaInstrument[]
   qaCalibrations       QaCalibration[]
   qaAudits             QaAudit[]
+  drawingNeeds         DrawingNeed[]
   qaAuditFindings      QaAuditFinding[]
   documents            Document[]
   drawingMarkups       DrawingMarkup[]
@@ -1139,6 +1140,7 @@ model User {
   pours                 Pour[]                     @relation("PourCreator")
   qaCalibrations        QaCalibration[]            @relation("CalibrationBy")
   qaAudits              QaAudit[]                  @relation("QaAuditBy")
+  drawingNeeds          DrawingNeed[]              @relation("DrawingNeedBy")
   ncrsRaised            Ncr[]                      @relation("NcrRaiser")
   ncrsToAct             Ncr[]                      @relation("NcrActionBy")
   ncrsClosed            Ncr[]                      @relation("NcrCloser")
@@ -1412,6 +1414,7 @@ model Project {
   qaLabs             QaLab[]
   qaInstruments      QaInstrument[]
   qaAudits           QaAudit[]
+  drawingNeeds       DrawingNeed[]
   documents          Document[]
   drawingMarkups     DrawingMarkup[]
   transmittals       Transmittal[]
@@ -2260,6 +2263,7 @@ model Activity {
   successorLinks   ActivityLink[]         @relation("LinkPredecessor")
   predecessorLinks ActivityLink[]         @relation("LinkSuccessor")
   subActivities    Activity[]             @relation("ActivityTree")
+  drawingNeeds     DrawingNeed[]
 
   @@index([projectId])
   @@index([organizationId])
@@ -3358,6 +3362,7 @@ model Risk {
   hindrances  HindranceCheck[]
   rfis        Rfi[]
   clientInput Milestone?
+  drawingNeed DrawingNeed?
 
   @@unique([organizationId, riskNo])
   @@index([projectId, status])
@@ -4828,6 +4833,7 @@ model Document {
   scales       DrawingScale[]
   takeoffs     DrawingTakeoff[]
   deliverables EngineeringDeliverable[]
+  needs        DrawingNeed[]
 
   @@unique([projectId, docNo])
   @@index([organizationId, kind])
@@ -5083,8 +5089,9 @@ model Letter {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  attachments Attachment[]
-  marks       LetterMark[]
+  attachments      Attachment[]
+  marks            LetterMark[]
+  drawingReminders DrawingNeed[]
 
   @@unique([organizationId, letterNo])
   @@index([projectId, letterDate])
@@ -8396,4 +8403,47 @@ model QaAuditFinding {
   sortOrder      Int          @default(0)
 
   @@index([auditId])
+}
+
+/// A drawing the project needs (item 138 part 1, the drawing schedule): from whom and by when, matched to the register's
+/// document when it arrives (by number). One still not buildable past its day is chased by letter and can be recorded
+/// as a delay.
+model DrawingNeed {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The number it will carry, when known
+  docNo          String?
+  title          String
+  discipline     DocumentDiscipline @default(GENERAL)
+  /// CLIENT | CONSULTANT | ARCHITECT | DESIGN_CONSULTANT | OWN (`DRAWING_SOURCES`)
+  source         String             @default("CLIENT")
+  /// Who issues it, as a letter is addressed
+  fromParty      String?
+  neededBy       DateTime           @db.Date
+  /// The work it holds up
+  activityId     String?
+  activity       Activity?          @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  remarks        String?
+  /// No longer needed (design changed, scope dropped)
+  dropped        Boolean            @default(false)
+  documentId     String?
+  document       Document?          @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  /// The delay recorded for it
+  riskId         String?            @unique
+  risk           Risk?              @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  lastLetterId   String?
+  lastLetter     Letter?            @relation(fields: [lastLetterId], references: [id], onDelete: SetNull)
+  lastReminderOn DateTime?          @db.Date
+  reminders      Int                @default(0)
+  createdById    String
+  createdBy      User               @relation("DrawingNeedBy", fields: [createdById], references: [id])
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([projectId, neededBy])
+  @@index([documentId])
+  @@index([organizationId])
 }
