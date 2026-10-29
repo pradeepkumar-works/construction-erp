@@ -135,6 +135,8 @@ export const COMMERCIAL: Record<string, string> = {
   Activity: 'गतिविधि',
   'Work done': 'किया गया काम',
   'At this project': 'इसी प्रोजेक्ट पर',
+  'From the tracker: the engine ran {hours} h. Check it and change what is not right.': 'ट्रैकर से: इंजन {hours} घंटे चला। जाँच लें और जो सही न हो उसे बदल दें।',
+  'That is {hours} h more than the engine ran; the approver sees it.': 'यह इंजन के चलने से {hours} घंटे ज़्यादा है; अनुमोदक इसे देखेंगे।',
   'Yard / unassigned': 'यार्ड / कहीं नहीं लगी',
   'Choose a project': 'प्रोजेक्ट चुनें',
   'Choose project': 'प्रोजेक्ट चुनें',

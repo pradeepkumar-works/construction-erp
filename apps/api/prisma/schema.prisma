@@ -543,6 +543,10 @@ enum IntegrationKind {
   GENERIC_WEBHOOK
   /// The Nirmaan Connector's own check: one reading a minute from the computer it runs on
   CONNECTOR_CHECK
+  /// A machine maker's fleet feed (AEMP 2.0, ISO 15143-3), read by Nirmaan every hour (item 146)
+  MACHINE_FEED
+  /// A GPS tracker's service posting each position, ignition and hour meter (item 146)
+  GPS_TRACKER
 }
 
 enum IntegrationDirection {
@@ -907,6 +911,8 @@ model Organization {
   connectorAgents      ConnectorAgent[]
   integrationEvents    IntegrationEvent[]
   deviceLinks          DeviceLink[]
+  machineReadings      MachineReading[]
+  machineDays          MachineDay[]
   ledgerAccounts       LedgerAccount[]
   bookVouchers         BookVoucher[]
   bookLines            BookLine[]
@@ -1467,6 +1473,7 @@ model Project {
   integrations       IntegrationConnection[]
   connectorAgents    ConnectorAgent[]
   deviceLinks        DeviceLink[]
+  machineDays        MachineDay[]
   bookVouchers       BookVoucher[]
   bookLines          BookLine[]
   mixDesigns         MixDesign[]
@@ -3221,6 +3228,8 @@ model Equipment {
   vendorBills     VendorBill[]
   loans           EquipmentLoan[]
   deviceLinks     DeviceLink[]
+  readings        MachineReading[]
+  days            MachineDay[]
 
   @@unique([organizationId, code])
   @@index([organizationId, projectId])
@@ -8684,6 +8693,8 @@ model IntegrationConnection {
   lastSuccessAt   DateTime?
   lastErrorAt     DateTime?
   lastError       String?
+  /// When Nirmaan last asked a polled kind (a maker's feed) for its readings
+  lastPolledAt    DateTime?
   createdById     String
   createdBy       User            @relation("IntegrationConnectionCreator", fields: [createdById], references: [id])
   createdAt       DateTime        @default(now())
@@ -8763,6 +8774,74 @@ model DeviceLink {
   lastSeenAt     DateTime              @default(now())
   readings       Int                   @default(0)
 
+  machineReadings MachineReading[]
+
   @@unique([connectionId, externalId])
   @@index([organizationId])
+}
+
+/// One reading from a machine's tracker or its maker's feed (item 146): kept 90 days, rolled up into its MachineDay.
+model MachineReading {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  deviceLinkId   String
+  deviceLink     DeviceLink   @relation(fields: [deviceLinkId], references: [id], onDelete: Cascade)
+  /// Null until the device is matched to a machine under Devices
+  equipmentId    String?
+  equipment      Equipment?   @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  at             DateTime
+  /// The engine's hour meter and idle hours, cumulative
+  hourMeter      Decimal?     @db.Decimal(18, 2)
+  idleMeter      Decimal?     @db.Decimal(18, 2)
+  /// Fuel in the tank (% and litres) and fuel used since new (litres)
+  fuelPct        Decimal?     @db.Decimal(5, 2)
+  fuelLitres     Decimal?     @db.Decimal(18, 3)
+  fuelUsed       Decimal?     @db.Decimal(18, 3)
+  lat            Decimal?     @db.Decimal(9, 6)
+  lng            Decimal?     @db.Decimal(9, 6)
+  engineOn       Boolean?
+  createdAt      DateTime     @default(now())
+
+  @@unique([deviceLinkId, at])
+  @@index([equipmentId, at])
+  @@index([organizationId, at])
+}
+
+/// A machine's day from its readings (item 146): engine hours from the meter, idle, fuel used and how far from its site.
+model MachineDay {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  equipmentId     String
+  equipment       Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  /// The site the machine was deployed to that day
+  projectId       String?
+  project         Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  date            DateTime     @db.Date
+  firstAt         DateTime
+  lastAt          DateTime
+  readings        Int
+  meterStart      Decimal?     @db.Decimal(18, 2)
+  meterEnd        Decimal?     @db.Decimal(18, 2)
+  /// When the closing meter was read, so the next reading's jump can be checked against the time between
+  meterAt         DateTime?
+  idleStart       Decimal?     @db.Decimal(18, 2)
+  idleEnd         Decimal?     @db.Decimal(18, 2)
+  fuelUsedStart   Decimal?     @db.Decimal(18, 3)
+  fuelUsedEnd     Decimal?     @db.Decimal(18, 3)
+  /// Engine-on time from ignition, for a tracker with no hour meter
+  onSeconds       Int          @default(0)
+  lastEngineOn    Boolean?
+  /// Hour meter readings left out because they went back or jumped more than the time passed
+  meterRejected   Int          @default(0)
+  /// From the site's point: the farthest the machine was, and how many readings were outside its radius
+  farthestM       Int?
+  outsideReadings Int          @default(0)
+  lastLat         Decimal?     @db.Decimal(9, 6)
+  lastLng         Decimal?     @db.Decimal(9, 6)
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([equipmentId, date])
+  @@index([organizationId, date])
 }

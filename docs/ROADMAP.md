@@ -877,8 +877,10 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
 143. **GSTR-2B download and match** (M).
 144. **Weather by site** (S).
 145. **WhatsApp documents to outsiders** (M).
-146. **Machine telematics** (L): AEMP 2.0 (ISO 15143-3) feeds and tracker webhooks to machine hours, drafted machine logs,
-     the hire-hours check and service due.
+146. ~~**Machine telematics** (L).~~ Done: a maker's AEMP 2.0 feed (ISO 15143-3) read every hour and GPS trackers'
+     web addresses (Traccar too) to each machine's day (engine hours from the hour meter, idle, fuel used, how far from
+     its site); Machinery › Engine hours beside the logs, a new log filled from the tracker, hire bills checked against
+     the engine's hours and service due on the real meter. ARCHITECTURE "Machine telematics".
 147. **Fuel sensors and dispensers** (M): refills with no slip, drains with the engine off, litres per hour against the norm.
 148. **Weighbridge** (M): the indicator read by the Connector, a GRN drafted at the net weight, short supply checked.
 149. **Batching plant controller** (M): batch records to the RMC batches' actual quantities.

@@ -16,6 +16,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
+import { TelematicsService } from '../telematics/telematics.service';
 import { VendorsService } from '../vendors/vendors.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
@@ -79,6 +80,7 @@ export class MachineryService {
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
     private vendors: VendorsService,
+    private telematics: TelematicsService,
   ) {}
 
   /* ---------- equipment ---------- */
@@ -330,7 +332,8 @@ export class MachineryService {
   async get(user: RequestUser, id: string): Promise<MachineryLogDto> {
     const row = await this.prisma.machineryLog.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: logInclude });
     if (!row) throw new NotFoundException('Machinery log not found');
-    return this.toDto(row, await this.fuelIssued([row]));
+    const [fuel, engine] = await Promise.all([this.fuelIssued([row]), this.telematics.engineFor(row.equipmentId, row.date)]);
+    return { ...this.toDto(row, fuel), engine };
   }
 
   /** Logs may be back-dated but not set in the future (a day of slack covers time zones). */

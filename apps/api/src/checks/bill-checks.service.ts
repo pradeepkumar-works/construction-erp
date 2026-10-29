@@ -6,7 +6,8 @@ import { billsByStages, canRecordVendorBill, gstinChecksumOk } from '@erp/shared
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { ProjectAccessService } from '../common/project-access.service';
-import { dateOnly } from '../common/serialize';
+import { dateOnly, formatDay } from '../common/serialize';
+import { TelematicsService } from '../telematics/telematics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { VendorBillsService } from '../purchasing/vendor-bills.service';
@@ -59,6 +60,7 @@ export class BillChecksService {
     private expenses: ExpensesService,
     private raBills: RaBillsService,
     private attendance: AttendanceCheckService,
+    private telematics: TelematicsService,
   ) {}
 
   async get(user: RequestUser, kind: CheckKind, id: string): Promise<BillChecksDto> {
@@ -194,6 +196,19 @@ export class BillChecksService {
     return { type: 'VENDOR_BILL', projectId: dto.projectId, status: dto.status, label, checks };
   }
 
+  /** The billed logs against the machine's engine hours, on the days its tracker read (item 146). */
+  private async engineFacts(equipmentId: string, logs: { date: Date; hoursWorked: Prisma.Decimal; idleHours: Prisma.Decimal }[]) {
+    const engine = await this.telematics.engineHoursOn(equipmentId, logs.map((l) => l.date));
+    const tracked = logs.filter((l) => engine.has(dateOnly(l.date)!));
+    if (!tracked.length) return null;
+    return {
+      days: tracked.length,
+      loggedHours: tracked.reduce((s, l) => s + n(l.hoursWorked) + n(l.idleHours), 0),
+      engineHours: tracked.reduce((s, l) => s + engine.get(dateOnly(l.date)!)!, 0),
+      deadDays: tracked.filter((l) => n(l.hoursWorked) > 0 && engine.get(dateOnly(l.date)!)! < 0.1).map((l) => formatDay(dateOnly(l.date))),
+    };
+  }
+
   /** Duplicate invoices, then a hire bill against the machine's logs or a service bill against its job cards (v5 item 91). */
   private async otherVendorBillChecksOf(
     user: RequestUser,
@@ -210,7 +225,7 @@ export class BillChecksService {
     if (bill.kind === 'HIRE' && bill.equipmentId && bill.hireMonth) {
       const [eq, logs, others] = await Promise.all([
         this.prisma.equipment.findUniqueOrThrow({ where: { id: bill.equipmentId }, select: { code: true, rate: true, rateUnit: true } }),
-        this.prisma.machineryLog.findMany({ where: { vendorBillId: bill.id }, select: { hoursWorked: true } }),
+        this.prisma.machineryLog.findMany({ where: { vendorBillId: bill.id }, select: { date: true, hoursWorked: true, idleHours: true } }),
         this.prisma.vendorBill.findMany({ where: { kind: 'HIRE', equipmentId: bill.equipmentId, projectId: bill.projectId, hireMonth: bill.hireMonth, id: { not: bill.id }, ...notRejected }, select: { id: true, billNo: true } }),
       ]);
       const hireLine = bill.lines.find((l) => l.sortOrder === 0);
@@ -227,6 +242,7 @@ export class BillChecksService {
         otherBills: others.map((b) => ({ label: b.billNo, href: `/vendor-bills/${b.id}` })),
         fuelLitres: n(bill.fuelLitres),
         fuelRecovered: n(bill.fuelRecovery),
+        engine: await this.engineFacts(bill.equipmentId, logs),
       };
     }
     if (bill.kind === 'SERVICE') {

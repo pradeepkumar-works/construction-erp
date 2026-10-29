@@ -3617,6 +3617,47 @@ secrets, pairing codes, health and batches are pure in `apps/api/src/integration
 - **Not yet.** A queue of outgoing jobs with retries (it comes with Tally live sync, item 140), pruning of an old log, and
   a watch list warning for a connection that is failing or quiet.
 
+## Machine telematics
+
+Item 146, on the integration layer. A machine's hours come from its own hour meter, read by its GPS tracker or its
+maker's fleet feed, instead of only the operator's log. The readers, a feed's settings and a machine's day are pure in
+`apps/api/src/telematics/telematics-rules.ts` (tested in `src/scripts/telematics-test.ts`, CI runs it); what the screens
+share (the site radius, the hours-above rule, the log draft and the shapes) is `@erp/shared/telematics.ts`.
+
+- **Two kinds.** `GPS_TRACKER` is a web address kind: a tracker's service posts each reading as JSON (deviceId or imei,
+  time as ISO or seconds, latitude and longitude, ignition, and `engineHours` where the tracker reads the meter; field
+  names in any case), or Traccar's event forwarding as it is (`position.attributes.hours` in milliseconds).
+  `MACHINE_FEED` is the first kind Nirmaan reads itself (`transport: 'POLL'`): the maker's AEMP 2.0 fleet snapshot
+  (ISO 15143-3, JSON) at an https address on the internet (`feedUrlProblem` refuses private and local addresses), signed in
+  with an API key, a user and password, or OAuth client credentials (the token is kept until it runs out). Each page is
+  read, following `next` links on the same server up to 20 pages, and each machine is its own message whose id is its
+  serial number and the time of its latest figure, so a snapshot read twice is counted once.
+- **When.** `GET /api/integrations/jobs/machine-feeds` (CronGuard) reads every switched-on feed not read in the last hour
+  and removes readings past 90 days. Run it hourly from an external cron, or set `NOTIFICATION_JOBS_INPROCESS=true` on a
+  host that keeps the API running; the daily digest runs it too, so on Vercel Hobby a feed is read at least once a day.
+  Read now on the connection's Set up reads one at once. A feed that answered is Working even when no machine moved.
+- **Readings and days.** A reading's device is listed under Devices first (`HandlerContext.link`); the reading is kept as a
+  `MachineReading` (unique per device and time) and, once the device is matched to a machine, folds into the machine's
+  `MachineDay` (`foldReading`) in the company's time zone. The engine's hours are the hour meter's move over the day,
+  starting from the day before's closing meter; a meter that goes back or jumps more than the time passed is left out and
+  counted (`meterRejected`). A tracker with no meter counts ignition on between readings at most 15 minutes apart. Idle
+  hours and fuel used come from the feed's cumulative figures. Each position is held to the site's point and its radius,
+  never nearer than 2 km (`machineSiteRadius`), since a machine works across a site. A reading older than the day's last
+  rebuilds that day from its readings (`rollUpDay`, the same result); matching or rematching a device moves its kept
+  readings and rebuilds the days they fall on, for the machine it left and the one it joined.
+- **Where it shows.** Machinery › Engine hours (`EngineHoursPanel`, `GET /api/telematics/days`): each machine's day with
+  the log beside it, flagging a log whose worked and idle hours are more than half an hour above the engine's
+  (`hoursAboveEngine`), a day it ran with no log (Make the log opens the form filled), and a machine beyond its radius. A
+  new machinery log, web and phone, fills its hours and meter from `GET /api/telematics/day` through `engineLogDraft`,
+  only in boxes it filled itself, and says when what is typed is above the engine. The log's record shows the engine's
+  figures (`MachineryLogDto.engine`).
+- **Checks.** A hire bill's checks set the billed logs' worked and idle hours against the engine's on the days the tracker
+  read (within 2% or half an hour, `hire-engine`), and flag days logged as working on which the engine did not run
+  (`hire-dead`). Service falls due on the larger of the logged hours and the hour meter's (`serviceStatuses`,
+  `hoursFrom: 'METER'`).
+- **Not yet.** A route or a polygon for a linear site (a road or a pipeline is held to a point and a radius), a watch list
+  warning for a machine off site, AEMP 1.2 XML feeds, and fuel from the tank's sensor (item 147).
+
 ## Intelligence quick wins
 
 - **What they are.** Ten small checks from the ideas page "Nirmaan intelligence map" (ROADMAP "Intelligence quick wins"),

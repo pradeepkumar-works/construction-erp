@@ -145,6 +145,8 @@ export interface ServiceStatusDto {
   intervalDays: number | null;
   lastServiceDate: string | null;
   hoursSince: string;
+  /** Where the hours come from: the logs, or the machine's own hour meter through its tracker (item 146) */
+  hoursFrom?: 'LOGS' | 'METER';
   state: ServiceState;
   hoursLeft: number | null;
   daysLeft: number | null;

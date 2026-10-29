@@ -226,6 +226,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/integrations-test.js
+      - name: Telematics read trackers and makers' feeds and roll each machine's day up from its hour meter
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/telematics-test.js
       - name: The Connector's outbox keeps readings through a power cut and takes a sent batch off
         if: matrix.suite == 'flows'
         working-directory: apps/connector

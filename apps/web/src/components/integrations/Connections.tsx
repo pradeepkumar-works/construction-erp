@@ -5,8 +5,8 @@ import { Alert, App, Button, Descriptions, Form, Input, Modal, Popconfirm, Selec
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
-import type { ConnectionHealth, IntegrationConnectionDto, IntegrationKind, IntegrationSecretDto } from '@erp/shared';
-import { CONNECTION_HEALTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO } from '@erp/shared';
+import type { ConnectionHealth, FeedAuth, FeedPollResultDto, IntegrationConnectionDto, IntegrationKind, IntegrationSecretDto } from '@erp/shared';
+import { CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
 import { useConnectorAgents, useIntegrationAction, useIntegrationConnections } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
@@ -22,7 +22,21 @@ interface Values {
   projectId?: string | null;
   agentId?: string | null;
   credential?: string;
+  /** A maker's feed (item 146) */
+  url?: string;
+  auth?: FeedAuth;
+  tokenUrl?: string;
+  clientId?: string;
+  scope?: string;
 }
+
+const CREDENTIAL_LABEL: Record<FeedAuth, string> = { BEARER: 'API key', BASIC: 'User name and password, as user:password', OAUTH: 'Client secret' };
+const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
+
+/** What a connection's messages carry, for its web address. */
+const HOOK_BODY: Partial<Record<IntegrationKind, string>> = {
+  GPS_TRACKER: "JSON for each reading: deviceId (or imei), time, latitude and longitude, ignition, and engineHours where the tracker reads the hour meter. Traccar's event forwarding works as it is.",
+};
 
 function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolean; onClose: () => void; connection: IntegrationConnectionDto | null; onCreated: (r: IntegrationSecretDto) => void }) {
   const [form] = Form.useForm<Values>();
@@ -31,6 +45,8 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
   const agents = useConnectorAgents();
   const kind = Form.useWatch('kind', form) ?? connection?.kind;
   const viaConnector = kind ? INTEGRATION_KIND_INFO[kind].transport === 'CONNECTOR' : false;
+  const polled = kind ? INTEGRATION_KIND_INFO[kind].transport === 'POLL' : false;
+  const auth = (Form.useWatch('auth', form) ?? str(connection?.config.auth) ?? 'BEARER') as FeedAuth;
   const liveAgents = (agents.data ?? []).filter((a) => a.state !== 'REVOKED');
   return (
     <FormShell
@@ -44,21 +60,37 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
       okText={connection ? 'Save' : 'Connect'}
       onSubmit={async (v) => {
         const credential = v.credential?.trim() || undefined;
+        const config = polled ? { url: v.url?.trim(), auth: v.auth ?? 'BEARER', ...(v.auth === 'OAUTH' ? { tokenUrl: v.tokenUrl?.trim(), clientId: v.clientId?.trim(), scope: v.scope?.trim() || undefined } : {}) } : undefined;
         if (connection) {
           await act.mutateAsync({
             method: 'patch',
             path: `/integrations/connections/${connection.id}`,
-            body: { name: v.name, projectId: v.projectId ?? null, agentId: viaConnector ? v.agentId : undefined, credential },
+            body: { name: v.name, projectId: v.projectId ?? null, agentId: viaConnector ? v.agentId : undefined, credential, config },
           });
           message.success(`${v.name} saved`);
         } else {
-          const r = (await act.mutateAsync({ path: '/integrations/connections', body: { kind: v.kind, name: v.name, projectId: v.projectId ?? null, agentId: viaConnector ? v.agentId : null, credential } })) as IntegrationSecretDto;
+          const r = (await act.mutateAsync({ path: '/integrations/connections', body: { kind: v.kind, name: v.name, projectId: v.projectId ?? null, agentId: viaConnector ? v.agentId : null, credential, config } })) as IntegrationSecretDto;
           message.success(`${r.connection.name} connected`);
           onCreated(r);
         }
       }}
     >
-      <Form form={form} layout="vertical" initialValues={connection ? { kind: connection.kind, name: connection.name, projectId: connection.projectId, agentId: connection.agentId } : { kind: 'GENERIC_WEBHOOK' }}>
+      <Form form={form} layout="vertical" initialValues={
+          connection
+            ? {
+                kind: connection.kind,
+                name: connection.name,
+                projectId: connection.projectId,
+                agentId: connection.agentId,
+                url: str(connection.config.url),
+                auth: (str(connection.config.auth) ?? 'BEARER') as FeedAuth,
+                tokenUrl: str(connection.config.tokenUrl),
+                clientId: str(connection.config.clientId),
+                scope: str(connection.config.scope),
+              }
+            : { kind: 'GENERIC_WEBHOOK', auth: 'BEARER' }
+        }
+      >
         <Form.Item name="kind" label="What it connects to" extra={kind ? INTEGRATION_KIND_INFO[kind].description : undefined}>
           <Select disabled={!!connection} options={INTEGRATION_KINDS.map((k) => ({ value: k, label: INTEGRATION_KIND_INFO[k].label }))} />
         </Form.Item>
@@ -80,10 +112,47 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             <Select loading={agents.isLoading} options={liveAgents.map((a) => ({ value: a.id, label: a.hostname ? `${a.name} (${a.hostname})` : a.name }))} placeholder="Choose a Connector" />
           </Form.Item>
         )}
+        {polled && (
+          <>
+            <Form.Item
+              name="url"
+              label="Feed address"
+              extra="The fleet snapshot's address from the maker's portal (AEMP 2.0, ISO 15143-3), starting https://"
+              rules={[{ required: true, whitespace: true, message: "Enter the feed's address from the maker's portal" }]}
+            >
+              <Input maxLength={2000} placeholder="https://api.maker.example/aemp/Fleet/1" translate="no" />
+            </Form.Item>
+            <Form.Item name="auth" label="How Nirmaan signs in">
+              <Select options={FEED_AUTHS.map((a) => ({ value: a, label: FEED_AUTH_LABELS[a] }))} />
+            </Form.Item>
+            {auth === 'OAUTH' && (
+              <>
+                <Form.Item name="tokenUrl" label="Token address" rules={[{ required: true, whitespace: true, message: 'Enter the token address the maker gave you' }]}>
+                  <Input maxLength={2000} placeholder="https://login.maker.example/oauth/token" translate="no" />
+                </Form.Item>
+                <FormGrid cols={2}>
+                  <Form.Item name="clientId" label="Client id" rules={[{ required: true, whitespace: true, message: 'Enter the client id the maker gave you' }]}>
+                    <Input maxLength={200} translate="no" />
+                  </Form.Item>
+                  <Form.Item name="scope" label="Scope (if the maker asks for one)">
+                    <Input maxLength={200} translate="no" />
+                  </Form.Item>
+                </FormGrid>
+              </>
+            )}
+          </>
+        )}
         <Form.Item
           name="credential"
-          label={connection?.secretLast4 ? `Key or password (saved, ends ${connection.secretLast4})` : 'Key or password (optional)'}
-          extra="For a service that asks for one. It is saved sealed and shown only as its last four characters."
+          label={
+            polled
+              ? `${CREDENTIAL_LABEL[auth]}${connection?.secretLast4 ? ` (saved, ends ${connection.secretLast4})` : ''}`
+              : connection?.secretLast4
+                ? `Key or password (saved, ends ${connection.secretLast4})`
+                : 'Key or password (optional)'
+          }
+          extra={polled ? 'Saved sealed and shown only as its last four characters.' : 'For a service that asks for one. It is saved sealed and shown only as its last four characters.'}
+          rules={polled && !connection?.secretLast4 ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }] : undefined}
         >
           <Input.Password maxLength={2000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />
         </Form.Item>
@@ -105,7 +174,7 @@ function AddressShown({ shown, onClose }: { shown: IntegrationSecretDto | null; 
               {url}
             </Typography.Text>
           </Descriptions.Item>
-          <Descriptions.Item label="Body">JSON. A deviceId (or imei or serial) in it lists the device under Devices.</Descriptions.Item>
+          <Descriptions.Item label="Body">{(shown && HOOK_BODY[shown.connection.kind]) ?? 'JSON. A deviceId (or imei or serial) in it lists the device under Devices.'}</Descriptions.Item>
           <Descriptions.Item label="Sent twice">Send an id in the body or an X-Event-Id header and a repeat is counted once.</Descriptions.Item>
         </Descriptions>
       </Space>
@@ -116,7 +185,9 @@ function AddressShown({ shown, onClose }: { shown: IntegrationSecretDto | null; 
 function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; onClose: () => void; onAddress: (r: IntegrationSecretDto) => void }) {
   const { message } = App.useApp();
   const act = useIntegrationAction<IntegrationSecretDto>();
-  const viaConnector = c ? INTEGRATION_KIND_INFO[c.kind].transport === 'CONNECTOR' : false;
+  const poll = useIntegrationAction<FeedPollResultDto>();
+  const transport = c ? INTEGRATION_KIND_INFO[c.kind].transport : null;
+  const viaConnector = transport === 'CONNECTOR';
   const fail = (err: unknown) => message.error(errorMessage(err, 'That did not go through. Try again.'));
   return (
     <Modal
@@ -127,7 +198,25 @@ function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; 
       footer={
         c && (
           <Space wrap>
-            {!viaConnector && (
+            {transport === 'POLL' && (
+              <Button
+                loading={poll.isPending}
+                disabled={!c.isActive}
+                onClick={() =>
+                  poll
+                    .mutateAsync({ path: `/integrations/connections/${c.id}/poll` })
+                    .then((r) =>
+                      r.problem
+                        ? message.error(r.problem)
+                        : message.success(`${r.machines} machine${r.machines === 1 ? '' : 's'} read, ${r.taken} new reading${r.taken === 1 ? '' : 's'}${r.failed ? `, ${r.failed} could not be read (see the log)` : ''}`),
+                    )
+                    .catch(fail)
+                }
+              >
+                Read now
+              </Button>
+            )}
+            {transport === 'HOOK' && (
               <Popconfirm
                 title="Make a new web address?"
                 description="The old one stops working at once."
@@ -175,6 +264,15 @@ function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; 
           <Descriptions size="small" column={1} bordered>
             {viaConnector ? (
               <Descriptions.Item label="Read by">{c.agentName ?? 'No Connector: choose one with Edit'}</Descriptions.Item>
+            ) : transport === 'POLL' ? (
+              <Descriptions.Item label="Feed address">
+                <span translate="no" style={{ wordBreak: 'break-all' }}>
+                  {str(c.config.url) ?? '-'}
+                </span>
+                <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
+                  Nirmaan reads it every hour. Match each machine it reports on under Devices.
+                </Typography.Paragraph>
+              </Descriptions.Item>
             ) : (
               <Descriptions.Item label="Web address">
                 <span translate="no">{c.hookPathHint ? `${API_URL}${c.hookPathHint}` : '-'}</span>
@@ -216,7 +314,11 @@ export function Connections() {
     },
     { title: 'State', dataIndex: 'health', width: 200, render: (h: ConnectionHealth) => <AppTag tone={HEALTH_TONE[h]}>{CONNECTION_HEALTH_LABELS[h]}</AppTag> },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Any site' },
-    { title: 'Comes in by', key: 'by', width: 180, render: (_, c) => (INTEGRATION_KIND_INFO[c.kind].transport === 'CONNECTOR' ? (c.agentName ?? 'No Connector') : 'Its web address') },
+    { title: 'Comes in by', key: 'by', width: 180, render: (_, c) => {
+        const t = INTEGRATION_KIND_INFO[c.kind].transport;
+        return t === 'CONNECTOR' ? (c.agentName ?? 'No Connector') : t === 'POLL' ? 'Read every hour' : 'Its web address';
+      },
+    },
     { title: 'Last message', dataIndex: 'lastEventAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : 'None yet') },
     { title: 'Today', dataIndex: 'eventsToday', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
     { title: 'Devices', dataIndex: 'devices', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
@@ -253,7 +355,7 @@ export function Connections() {
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 680 }}>
-          A service in the cloud (a GPS tracker’s, a sensor’s) posts to its connection’s own web address. A device on a site’s network is read by a Connector on a computer there, which only calls out.
+          A service in the cloud (a GPS tracker’s, a sensor’s) posts to its connection’s own web address, and a machine maker’s feed is read by Nirmaan every hour. A device on a site’s network is read by a Connector on a computer there, which only calls out.
         </Typography.Paragraph>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({ c: null })}>
           New connection

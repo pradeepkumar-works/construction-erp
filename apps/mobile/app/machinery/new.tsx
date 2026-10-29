@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import type { ActivityDto, EquipmentDto, MachineryLogDto, Paginated } from '@erp/shared';
-import { MAX_PAGE_SIZE, machineryLogProblem } from '@erp/shared';
+import type { ActivityDto, EquipmentDto, MachineDayDto, MachineryLogDto, Paginated } from '@erp/shared';
+import { MAX_PAGE_SIZE, engineLogDraft, hoursAboveEngine, machineryLogProblem } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useT } from '../../src/i18n/LanguageContext';
@@ -11,7 +11,7 @@ import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, Phot
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
@@ -90,6 +90,31 @@ export default function NewMachineryLogScreen() {
     return [...here, ...other].map((e) => ({ value: e.id, label: `${e.code} · ${e.name}`, hint: e.projectId === projectId ? t('At this project') : e.projectName ?? t('Yard / unassigned') }));
   }, [fleet.data, projectId, t]);
   const machine = fleet.data?.items.find((e) => e.id === equipmentId) ?? null;
+
+  // What the machine's tracker read that day (item 146) fills the hours and meter for the operator to check; a box
+  // someone typed in is left as it is.
+  const tracker = useFetch<MachineDayDto | ''>((a) => a.get(`/telematics/day`, { equipmentId, date }), [equipmentId, date], {
+    enabled: !editId && online && !!equipmentId && isIsoDate(date),
+    refetchOnFocus: false,
+  });
+  const day = (!editId && equipmentId && tracker.data) || null;
+  const filled = useRef<Record<string, string>>({});
+  useEffect(() => {
+    if (editId) return;
+    const draft = day ? engineLogDraft(day) : null;
+    const fill = (key: string, set: React.Dispatch<React.SetStateAction<string>>, v: number | null | undefined) =>
+      set((cur) => {
+        if (cur && filled.current[key] !== cur) return cur;
+        const next = v === null || v === undefined ? '' : String(v);
+        filled.current[key] = next;
+        return next;
+      });
+    fill('worked', setWorked, draft?.hoursWorked);
+    fill('idle', setIdle, draft && draft.idleHours > 0 ? draft.idleHours : null);
+    fill('meterStart', setMeterStart, draft?.meterStart);
+    fill('meterEnd', setMeterEnd, draft?.meterEnd);
+  }, [day, editId]);
+  const above = day ? hoursAboveEngine(Number(worked || 0) + Number(idle || 0), Number(day.engineHours)) : null;
 
   const changeProject = (id: string) => {
     setProjectId(id);
@@ -244,6 +269,12 @@ export default function NewMachineryLogScreen() {
             <Input {...field()} label={t('Breakdown (h)')} value={down} onChangeText={setDown} keyboardType="decimal-pad" placeholder="0" error={errors.down} />
           </View>
         </View>
+        {day ? (
+          <Text style={typography.caption} maxFontSizeMultiplier={maxFontScale}>
+            {t('From the tracker: the engine ran {hours} h. Check it and change what is not right.', { hours: fmtQty(day.engineHours) })}
+            {above !== null ? ` ${t('That is {hours} h more than the engine ran; the approver sees it.', { hours: fmtQty(String(above)) })}` : ''}
+          </Text>
+        ) : null}
         {Number(down) > 0 ? <Input {...field()} label={t('What broke down')} required value={breakdownNote} onChangeText={setBreakdownNote} placeholder={t('e.g. Hydraulic hose burst')} /> : null}
       </Card>
       <Card title={t('Meter and diesel')}>

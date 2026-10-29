@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-08-engine-hours',
+    date: '2027-08-09',
+    title: 'Engine hours from trackers and makers’ feeds',
+    points: [
+      'Machinery has an Engine hours tab: each machine’s day from its GPS tracker or its maker’s feed (AEMP, read every hour), with the hour meter, idle, fuel used and how far it went from its site, beside the day’s log.',
+      'A new machinery log fills its hours and meter from the tracker for the operator to check. A log or a hire bill with more hours than the engine ran is flagged, and service falls due on the machine’s own hour meter.',
+    ],
+  },
+  {
     id: '2027-08-connections',
     date: '2027-08-02',
     title: 'Connections to outside systems and devices',

@@ -129,6 +129,8 @@ Each user's **Send a test** button shows whether a channel works end to end.
   Approval reminders and escalation (`jobs/approval-escalation`) run inside both daily crons; for hourly reminders
   point an external hourly cron (any uptime or cron service) at that endpoint with the same header, or on a host that
   keeps the API running set `NOTIFICATION_JOBS_INPROCESS=true`, which runs it on the hour.
+  Makers' machine feeds (item 146) are read by `GET /api/integrations/jobs/machine-feeds`, also inside the daily digest;
+  for hourly engine hours point the same external hourly cron at it, or `NOTIFICATION_JOBS_INPROCESS=true` reads them.
   Run a job by hand with `curl -H "Authorization: Bearer $CRON_SECRET" $API_URL/notifications/jobs/dpr-reminder`.
 - **Web on Vercel**: root directory `apps/web`; build command builds `packages/shared` then `next build`.
 - **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.

@@ -131,6 +131,17 @@ test('hire bill: diesel issued to an owner-fuelled machine not recovered', () =>
   f.hire!.fuelRecovered = 22200;
   assert.equal(flagged(otherVendorBillChecks(f), 'fuel:').length, 0);
 });
+test("hire bill: logged hours above the engine's, from the tracker (item 146)", () => {
+  const f = clone(hire);
+  f.hire!.engine = { days: 20, loggedHours: 180, engineHours: 171, deadDays: [] };
+  assert.equal(flagged(otherVendorBillChecks(f), 'hire-engine:')[0].title, "180 hours logged on 20 tracked days; the engine ran 171");
+  f.hire!.engine = { days: 20, loggedHours: 180, engineHours: 178, deadDays: [] };
+  assert.equal(flagged(otherVendorBillChecks(f), 'hire-engine').length, 0);
+  assert.ok(otherVendorBillChecks(f).some((c) => c.key === 'hire-engine' && c.ok));
+  f.hire!.engine = { days: 20, loggedHours: 180, engineHours: 178, deadDays: ['3 Oct 2026', '4 Oct 2026'] };
+  assert.equal(flagged(otherVendorBillChecks(f), 'hire-dead:')[0].title, 'Logged as working on 2 days the engine did not run');
+  assert.equal(otherVendorBillChecks(clone(hire)).filter((c) => c.key.startsWith('hire-engine')).length, 0);
+});
 test('service bill: billed above the job cards', () => {
   const f: OtherVendorBillFacts = { ...clone(hire), hire: null, subtotal: 324000, service: { billed: 324000, recorded: 300000, jobs: [{ label: 'MNT-2026-0004', href: '/machinery?tab=maintenance&id=j' }] } };
   const checks = otherVendorBillChecks(f);

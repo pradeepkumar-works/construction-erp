@@ -12,6 +12,8 @@ import {
   type ConnectorPairCodeDto,
   type ConnectorReadingResultDto,
   type DeviceLinkDto,
+  type FeedPollResultDto,
+  type MachineFeedConfig,
   type HookResultDto,
   type IntegrationConnectionDto,
   type IntegrationEventDto,
@@ -43,6 +45,8 @@ import {
   TOKEN_PREFIX,
   type RawReading,
 } from './integration-rules';
+import { TelematicsService } from '../telematics/telematics.service';
+import { FEED_MAX_PAGES, FEED_TIMEOUT_MS, feedDue, feedHttpProblem, readFeedConfig, readFeedMachine, readFeedPage, readTracker, type ReadResult } from '../telematics/telematics-rules';
 import type { ConnectorReadingsDto, CreateAgentDto, CreateConnectionDto, EventQuery, MatchDeviceDto, PairConnectorDto, UpdateConnectionDto } from './integrations.dto';
 
 type Connection = Prisma.IntegrationConnectionGetPayload<{
@@ -57,8 +61,21 @@ export interface HandlerResult {
   device?: { externalId: string; label: string | null } | null;
 }
 
-/** A kind's reader. Later kinds (trackers, fuel, weighbridges…) add theirs in `handlers`; each makes drafts, never approved records. */
-export type IntegrationHandler = (conn: { id: string; organizationId: string; projectId: string | null }, payload: unknown, at: Date) => Promise<HandlerResult>;
+/** The device a message is about, listed under Devices, with the machine and site it is matched to. */
+export interface LinkedDevice {
+  id: string;
+  equipmentId: string | null;
+  projectId: string | null;
+  equipment: { code: string } | null;
+}
+
+/** What a reader may do besides reading: list its device now, when it needs the match to act on the message. */
+export interface HandlerContext {
+  link(device: { externalId: string; label: string | null }): Promise<LinkedDevice>;
+}
+
+/** A kind's reader. Later kinds (fuel, weighbridges…) add theirs in `handlers`; each makes drafts, never approved records. */
+export type IntegrationHandler = (conn: { id: string; organizationId: string; projectId: string | null }, payload: unknown, at: Date, ctx: HandlerContext) => Promise<HandlerResult>;
 
 const connInclude = { project: { select: { name: true } }, agent: { select: { name: true } }, _count: { select: { deviceLinks: true } } } as const;
 const agentInclude = { project: { select: { name: true } }, _count: { select: { connections: true } } } as const;
@@ -69,7 +86,11 @@ export class IntegrationsService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private telematics: TelematicsService,
   ) {}
+
+  /** OAuth tokens for makers' feeds, by connection, until they run out. */
+  private tokens = new Map<string, { token: string; until: number }>();
 
   /** Each kind's reader; a generic message is kept in the log with the device it names. */
   private handlers: Record<IntegrationKind, IntegrationHandler> = {
@@ -82,7 +103,26 @@ export class IntegrationsService {
       // The computer itself is not a device to match, so nothing is listed under Devices.
       return { status: 'OK', summary: m.deviceId ? `Connector on ${m.deviceLabel ?? m.deviceId} is working` : 'Connector is working' };
     },
+    GPS_TRACKER: (c, payload, at, ctx) => this.machineReading(c, readTracker(payload, at), ctx),
+    MACHINE_FEED: (c, payload, at, ctx) => this.machineReading(c, readFeedMachine(payload, at), ctx),
   };
+
+  /** A tracker's or a feed's reading: its device listed, the reading kept, and the matched machine's day moved on (item 146). */
+  private async machineReading(c: { organizationId: string }, read: ReadResult, ctx: HandlerContext): Promise<HandlerResult> {
+    if (!read.reading) return { status: 'FAILED', summary: read.problem };
+    const r = read.reading;
+    const link = await ctx.link({ externalId: r.deviceId, label: r.label });
+    const out = await this.telematics.record(c.organizationId, link, r);
+    const name = `${r.label ?? r.deviceId}${link.equipment ? ` (${link.equipment.code})` : ''}`;
+    if (out.duplicate) return { status: 'IGNORED', summary: `${name}: this reading was taken in before` };
+    const what = [
+      r.hourMeter !== null ? `meter ${r.hourMeter} h` : null,
+      r.engineOn === null ? null : r.engineOn ? 'engine on' : 'engine off',
+      r.fuelPct !== null ? `fuel ${r.fuelPct}%` : null,
+      r.lat !== null ? 'position' : null,
+    ].filter(Boolean);
+    return { status: 'OK', summary: `${name}: ${what.join(', ')}${link.equipmentId ? '' : '. Match it to a machine under Devices'}` };
+  }
 
   private assertManage(user: RequestUser) {
     if (!canManageIntegrations(user.roleKey)) throw new ForbiddenException('Only an admin or management can manage connections');
@@ -151,6 +191,13 @@ export class IntegrationsService {
     }
   }
 
+  /** A maker's feed's settings, checked and trimmed before they are saved. */
+  private feedConfig(config: unknown, hasCredential: boolean): Record<string, unknown> {
+    const r = readFeedConfig(config, hasCredential);
+    if (r.problem) throw new BadRequestException(r.problem);
+    return { ...r.config };
+  }
+
   private sealed(credential: string) {
     const key = this.integrationKey();
     if (!key) throw new BadRequestException('Keys cannot be saved until INTEGRATION_KEY is set on the server (see DEPLOY.md)');
@@ -162,6 +209,7 @@ export class IntegrationsService {
     const info = INTEGRATION_KIND_INFO[dto.kind];
     if (info.transport === 'CONNECTOR' && !dto.agentId) throw new BadRequestException('Choose the Connector that reads it');
     await this.checkRefs(user, dto.projectId, info.transport === 'CONNECTOR' ? dto.agentId : null);
+    if (info.transport === 'POLL') dto.config = this.feedConfig(dto.config, !!dto.credential);
     const secret = info.transport === 'HOOK' ? newSecret() : null;
     const row = await this.prisma.integrationConnection.create({
       data: {
@@ -189,6 +237,10 @@ export class IntegrationsService {
     const connector = INTEGRATION_KIND_INFO[c.kind].transport === 'CONNECTOR';
     if (connector && dto.agentId === null) throw new BadRequestException('Choose the Connector that reads it');
     await this.checkRefs(user, dto.projectId, connector ? dto.agentId : null);
+    if (INTEGRATION_KIND_INFO[c.kind].transport === 'POLL' && (dto.config !== undefined || dto.credential !== undefined)) {
+      const hasCredential = dto.credential ? true : dto.credential === '' || dto.credential === null ? false : !!c.secretEnc;
+      dto.config = this.feedConfig(dto.config ?? c.config, hasCredential);
+    }
     const data: Prisma.IntegrationConnectionUncheckedUpdateInput = {
       name: dto.name,
       projectId: dto.projectId,
@@ -208,7 +260,7 @@ export class IntegrationsService {
   async newHookSecret(user: RequestUser, id: string): Promise<IntegrationSecretDto> {
     this.assertManage(user);
     const c = await this.connection(user, id);
-    if (INTEGRATION_KIND_INFO[c.kind].transport !== 'HOOK') throw new BadRequestException('This connection is read by a Connector and has no web address');
+    if (INTEGRATION_KIND_INFO[c.kind].transport !== 'HOOK') throw new BadRequestException('This connection has no web address of its own');
     const secret = newSecret();
     const row = await this.prisma.integrationConnection.update({ where: { id }, data: { hookSecretHash: hashSecret(secret), hookSecretLast4: last4(secret) }, include: connInclude });
     await this.audit.log(user, 'INTEGRATION', id, 'UPDATED', 'New web address');
@@ -326,7 +378,10 @@ export class IntegrationsService {
       if (!e) throw new BadRequestException('Choose a machine of this company');
     }
     await this.checkRefs(user, dto.projectId);
-    await this.prisma.deviceLink.update({ where: { id }, data: { equipmentId: dto.equipmentId, projectId: dto.projectId, label: dto.label } });
+    const row = await this.prisma.deviceLink.update({ where: { id }, data: { equipmentId: dto.equipmentId, projectId: dto.projectId, label: dto.label }, include: { connection: { select: { kind: true } } } });
+    // A tracker's kept readings follow the match, and the days they fall on are built again (item 146).
+    if (dto.equipmentId !== undefined && (row.connection.kind === 'GPS_TRACKER' || row.connection.kind === 'MACHINE_FEED'))
+      await this.telematics.rematch(user.organizationId, { id, projectId: row.projectId }, d.equipmentId, row.equipmentId);
     await this.audit.log(user, 'DEVICE_LINK', id, 'UPDATED', dto.equipmentId ? 'Matched to a machine' : dto.equipmentId === null ? 'Match cleared' : null);
     return (await this.devices(user)).find((x) => x.id === id)!;
   }
@@ -371,10 +426,20 @@ export class IntegrationsService {
       if (seen) return { status: 'DUPLICATE', summary: 'Already taken in' };
     }
     let result: HandlerResult;
+    let linked: LinkedDevice | null = null;
+    const ctx: HandlerContext = {
+      link: async (device) =>
+        (linked ??= await this.prisma.deviceLink.upsert({
+          where: { connectionId_externalId: { connectionId: conn.id, externalId: device.externalId } },
+          create: { organizationId: conn.organizationId, connectionId: conn.id, externalId: device.externalId, label: device.label, projectId: conn.projectId, readings: 1 },
+          update: { lastSeenAt: new Date(), readings: { increment: 1 } },
+          select: { id: true, equipmentId: true, projectId: true, equipment: { select: { code: true } } },
+        })),
+    };
     if (!conn.isActive) result = { status: 'IGNORED', summary: 'The connection is switched off' };
     else {
       try {
-        result = await this.handlers[conn.kind](conn, payload, opts.at);
+        result = await this.handlers[conn.kind](conn, payload, opts.at, ctx);
       } catch (e) {
         result = { status: 'FAILED', summary: (e as Error).message.slice(0, 300) || 'The message could not be read' };
       }
@@ -405,7 +470,7 @@ export class IntegrationsService {
         ...(result.status === 'FAILED' ? { lastErrorAt: now, lastError: result.summary } : {}),
       },
     });
-    if (result.device && result.status === 'OK') {
+    if (result.device && result.status === 'OK' && !linked) {
       await this.prisma.deviceLink.upsert({
         where: { connectionId_externalId: { connectionId: conn.id, externalId: result.device.externalId } },
         create: { organizationId: conn.organizationId, connectionId: conn.id, externalId: result.device.externalId, label: result.device.label, projectId: conn.projectId, readings: 1 },
@@ -495,5 +560,102 @@ export class IntegrationsService {
       else result.accepted++;
     }
     return result;
+  }
+
+  /* ---------- makers' feeds, read by Nirmaan (item 146) ---------- */
+
+  /** A failure that is not about one message (the feed would not answer): kept in the log, the connection shown failing. */
+  private async logFailure(c: { id: string; organizationId: string }, summary: string) {
+    const now = new Date();
+    await this.prisma.integrationEvent.create({ data: { organizationId: c.organizationId, connectionId: c.id, direction: 'IN', status: 'FAILED', summary: summary.slice(0, 300) } });
+    await this.prisma.integrationConnection.update({ where: { id: c.id }, data: { lastEventAt: now, lastErrorAt: now, lastError: summary.slice(0, 300) } });
+  }
+
+  private async fetchFeed(url: string, init: RequestInit, fetchImpl: typeof fetch, what: string) {
+    const res = await fetchImpl(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(FEED_TIMEOUT_MS) }).catch((e: Error) => {
+      throw new Error(e.name === 'TimeoutError' ? `The ${what} did not answer within ${FEED_TIMEOUT_MS / 1000} seconds` : `The ${what} could not be reached: ${e.message}`);
+    });
+    if (!res.ok) throw new Error(feedHttpProblem(res.status, what));
+    return res.json().catch(() => {
+      throw new Error(`The ${what} did not answer with JSON; check its address`);
+    }) as Promise<unknown>;
+  }
+
+  /** How Nirmaan signs in to the feed: the key, the user and password, or an OAuth token it fetches and keeps until it runs out. */
+  private async feedAuth(connectionId: string, config: MachineFeedConfig, credential: string, fetchImpl: typeof fetch): Promise<string> {
+    if (config.auth === 'BEARER') return `Bearer ${credential}`;
+    if (config.auth === 'BASIC') return `Basic ${Buffer.from(credential).toString('base64')}`;
+    const kept = this.tokens.get(connectionId);
+    if (kept && kept.until > Date.now()) return `Bearer ${kept.token}`;
+    const body = new URLSearchParams({ grant_type: 'client_credentials', client_id: config.clientId ?? '', client_secret: credential, ...(config.scope ? { scope: config.scope } : {}) });
+    const t = (await this.fetchFeed(config.tokenUrl!, { method: 'POST', body, headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' } }, fetchImpl, 'token address')) as {
+      access_token?: string;
+      expires_in?: number;
+    };
+    if (!t.access_token) throw new Error('The token address gave no access_token; check the client id and secret');
+    this.tokens.set(connectionId, { token: t.access_token, until: Date.now() + Math.max(60, (t.expires_in ?? 3600) - 60) * 1000 });
+    return `Bearer ${t.access_token}`;
+  }
+
+  /**
+   * Read one maker's feed: every page of its fleet snapshot (up to FEED_MAX_PAGES), each machine taken in as its own
+   * message whose id is its serial number and the time of its figures, so a snapshot read twice is counted once.
+   */
+  async pollFeed(c: { id: string; organizationId: string; projectId: string | null; kind: IntegrationKind; isActive: boolean; config: unknown; secretEnc: string | null }, fetchImpl: typeof fetch = fetch): Promise<FeedPollResultDto> {
+    const now = new Date();
+    const result: FeedPollResultDto = { machines: 0, taken: 0, duplicates: 0, failed: 0, problem: null };
+    await this.prisma.integrationConnection.update({ where: { id: c.id }, data: { lastPolledAt: now } });
+    const key = this.integrationKey();
+    const credential = c.secretEnc && key ? openSecret(c.secretEnc, key) : null;
+    const { config, problem } = readFeedConfig(c.config, !!credential);
+    try {
+      if (!config) throw new Error(c.secretEnc && !key ? 'The key cannot be opened until INTEGRATION_KEY is set on the server' : problem!);
+      const headers = { accept: 'application/iso15143-snapshot+json, application/json', authorization: await this.feedAuth(c.id, config, credential!, fetchImpl) };
+      let url: string | null = config.url;
+      for (let page = 0; url && page < FEED_MAX_PAGES; page++) {
+        const read = readFeedPage(await this.fetchFeed(url, { headers }, fetchImpl, 'feed'), url);
+        if (read.problem) throw new Error(read.problem);
+        for (const m of read.machines) {
+          result.machines++;
+          const id = readFeedMachine(m, now).externalId ?? null;
+          const out = await this.takeIn(c, m, { externalId: id, at: now });
+          if (out.status === 'DUPLICATE' || out.status === 'IGNORED') result.duplicates++;
+          else if (out.status === 'FAILED') result.failed++;
+          else result.taken++;
+        }
+        url = read.next;
+      }
+      // A feed that answered is working, even when its machines have not moved since the last read.
+      await this.prisma.integrationConnection.update({ where: { id: c.id }, data: { lastEventAt: new Date(), lastSuccessAt: new Date() } });
+    } catch (e) {
+      result.problem = (e as Error).message;
+      await this.logFailure(c, result.problem);
+    }
+    return result;
+  }
+
+  /** Read now (Admin, Connections): one feed, whether or not it is due. */
+  async pollNow(user: RequestUser, id: string): Promise<FeedPollResultDto> {
+    this.assertManage(user);
+    const c = await this.connection(user, id);
+    if (INTEGRATION_KIND_INFO[c.kind].transport !== 'POLL') throw new BadRequestException('Only a maker\'s feed is read by Nirmaan; this connection sends by itself');
+    if (!c.isActive) throw new BadRequestException('Switch the connection on first');
+    await this.audit.log(user, 'INTEGRATION', id, 'UPDATED', 'Read now');
+    return this.pollFeed(c);
+  }
+
+  /** The hourly job: every switched-on feed that is due, in every company, then readings past their keeping time removed. */
+  async pollDue(now = new Date()) {
+    const feeds = await withoutTenant(async () => await this.prisma.integrationConnection.findMany({ where: { kind: 'MACHINE_FEED', isActive: true } }));
+    const out = { feeds: 0, machines: 0, taken: 0, failed: 0, pruned: 0 };
+    for (const c of feeds.filter((f) => feedDue(f.lastPolledAt, now))) {
+      const r = await withoutTenant(() => this.pollFeed(c));
+      out.feeds++;
+      out.machines += r.machines;
+      out.taken += r.taken;
+      out.failed += r.failed + (r.problem ? 1 : 0);
+    }
+    out.pruned = await withoutTenant(() => this.telematics.prune(now));
+    return { job: 'MACHINE_FEEDS', ...out };
   }
 }

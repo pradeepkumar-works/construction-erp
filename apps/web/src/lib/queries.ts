@@ -150,6 +150,8 @@ import type {
   EquipmentDto,
   EquipmentPartsDto,
   FleetUtilisationDto,
+  MachineDayDto,
+  MachineDaysDto,
   FuelIssueDto,
   FuelPositionDto,
   EquipmentOwnership,
@@ -1108,6 +1110,23 @@ export const useFleetUtilisation = (q: { from?: string; to?: string; projectId?:
     queryKey: ['machinery', 'utilisation', clean(q)],
     queryFn: async () => (await api.get<FleetUtilisationDto>('/fleet/utilisation', { params: clean(q) })).data,
     placeholderData: keepPreviousData,
+  });
+
+/** Engine hours from trackers and makers' feeds (item 146): each machine's days, the last week by default. */
+export const useMachineDays = (q: { from?: string; to?: string; projectId?: string }) =>
+  useQuery({
+    queryKey: ['machinery', 'telematics', clean(q)],
+    queryFn: async () => (await api.get<MachineDaysDto>('/telematics/days', { params: clean(q) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** One machine's day from its tracker, for the log form to fill from; null when nothing was read. */
+export const useMachineDay = (equipmentId: string | undefined, date: string | undefined) =>
+  useQuery({
+    queryKey: ['machinery', 'telematics', 'day', equipmentId, date],
+    queryFn: async () => ((await api.get<MachineDayDto | ''>('/telematics/day', { params: { equipmentId, date } })).data || null) as MachineDayDto | null,
+    enabled: !!equipmentId && !!date,
+    staleTime: 60_000,
   });
 
 export interface FuelIssueInput {
