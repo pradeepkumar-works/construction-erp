@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-07-past-openings',
+    date: '2027-07-12',
+    title: 'Where L1 landed on past openings',
+    points: [
+      'A tender being priced now shows Past openings under its pricing: where the lowest bid landed against the SOR on the last three years’ openings of the same client and kind of work, and on how many of them your quote would have been the lowest.',
+    ],
+  },
+  {
     id: '2027-07-next-bill',
     date: '2027-07-05',
     title: 'What the next bill will be worth',

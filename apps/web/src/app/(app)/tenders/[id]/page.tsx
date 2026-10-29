@@ -41,6 +41,7 @@ import {
   TenderStatusTag,
 } from "@/components/tenders/tenderUi";
 import { TenderForm } from "@/components/tenders/TenderForm";
+import { PastOpenings } from "@/components/tenders/PastOpenings";
 import { TenderItemDrawer } from "@/components/tenders/TenderItemDrawer";
 import {
   BidBoqImport,
@@ -502,7 +503,6 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
           Pricing
         </Typography.Title>
       }
-      style={{ height: "100%" }}
     >
       {/* One column beside the items on a wide screen, several above them on a narrower one. */}
       <div
@@ -805,7 +805,10 @@ function BoqTab({
         </Card>
       </Col>
       <Col xs={24} xxl={{ span: 7, order: 2 }} order={1}>
-        <PricingCard key={tender.ownPct ?? "none"} tender={tender} />
+        <Flex vertical gap={12}>
+          <PricingCard key={tender.ownPct ?? "none"} tender={tender} />
+          <PastOpenings tender={tender} />
+        </Flex>
       </Col>
       {deleteDialog}
     </Row>

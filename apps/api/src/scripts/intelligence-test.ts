@@ -5,7 +5,7 @@
  *   node dist/scripts/intelligence-test.js
  */
 import assert from 'node:assert/strict';
-import { billDateFor, canSeeDprChecks, canSeePurchaseControls, insightKeysFor, nextBill, stagesUnbilled, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
+import { bidLevel, bidMatch, pickOpenings, workKindOf, billDateFor, canSeeDprChecks, canSeePurchaseControls, insightKeysFor, nextBill, stagesUnbilled, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
 import { copied, crewKeyOf, noCrew, noMaterial, reusedPhotos } from '../dpr/dpr-check-rules';
 import { CUBE_7DAY_SHARE, cubeEarly, paidAfterBankChange, selfReceived, splitOrders, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
 
@@ -228,6 +228,48 @@ test('Q7: billable now plus the pace of the last 30 days up to the bill date', (
 });
 test('Q7: lump-sum stages count what is done beyond what was billed, never less than nothing', () => {
   assert.equal(stagesUnbilled([{ value: 1_000_000, evidencePct: 60, billedPct: 40 }, { value: 500_000, evidencePct: 20, billedPct: 30 }, { value: 200_000, evidencePct: 100, billedPct: 100 }]), 200_000);
+});
+
+// ── Q4: bid intelligence ───────────────────────────────────────────────────────────────────────────────────────────
+test('Q4: the kind of work comes from the title, a bridge on a road reading as a bridge', () => {
+  assert.equal(workKindOf('Improvement of Khurda-Begunia road, km 0.000 to 14.200'), 'ROAD');
+  assert.equal(workKindOf('Construction of 30-bed CHC building at Pipili'), 'BUILDING');
+  assert.equal(workKindOf('Rural piped water supply to 12 villages, Jatni block'), 'WATER');
+  assert.equal(workKindOf('Minor bridge over the Daya on the Pipili road'), 'BRIDGE');
+  assert.equal(workKindOf('Roadside plantation'), 'OTHER');
+});
+test('Q4: a past opening matches on the client and the kind; OTHER work never matches on kind alone', () => {
+  assert.equal(bidMatch({ clientKey: 'c1', kind: 'ROAD' }, { clientKey: 'c1', kind: 'ROAD' }), 'CLIENT_AND_KIND');
+  assert.equal(bidMatch({ clientKey: 'c1', kind: 'ROAD' }, { clientKey: 'c2', kind: 'ROAD' }), 'KIND');
+  assert.equal(bidMatch({ clientKey: 'c1', kind: 'ROAD' }, { clientKey: 'c1', kind: 'WATER' }), 'CLIENT');
+  assert.equal(bidMatch({ clientKey: 'c1', kind: 'OTHER' }, { clientKey: 'c2', kind: 'OTHER' }), null);
+  assert.equal(bidMatch({ clientKey: null, kind: 'ROAD' }, { clientKey: null, kind: 'WATER' }), null);
+});
+test('Q4: openings within three years, strongest match first then latest, never the tender itself', () => {
+  const t = { tenderId: 't0', clientKey: 'c1', kind: 'ROAD' as const };
+  const past = [
+    { tenderId: 't0', clientKey: 'c1', kind: 'ROAD' as const, openedOn: '2026-09-01' },
+    { tenderId: 'a', clientKey: 'c2', kind: 'ROAD' as const, openedOn: '2026-08-01' },
+    { tenderId: 'b', clientKey: 'c1', kind: 'ROAD' as const, openedOn: '2025-01-01' },
+    { tenderId: 'c', clientKey: 'c1', kind: 'ROAD' as const, openedOn: '2026-05-01' },
+    { tenderId: 'd', clientKey: 'c1', kind: 'ROAD' as const, openedOn: '2022-01-01' },
+    { tenderId: 'e', clientKey: 'c3', kind: 'WATER' as const, openedOn: '2026-07-01' },
+  ];
+  assert.deepEqual(pickOpenings(t, past, '2026-10-29').map((p) => p.tenderId), ['c', 'b', 'a']);
+});
+test('Q4: the level is read from the strongest basis with two openings, and the quote is placed on it', () => {
+  const o = [
+    { match: 'CLIENT_AND_KIND' as const, l1Pct: '-9.80' },
+    { match: 'CLIENT_AND_KIND' as const, l1Pct: '-11.20' },
+    { match: 'CLIENT_AND_KIND' as const, l1Pct: '-10.40' },
+    { match: 'KIND' as const, l1Pct: '-2.00' },
+  ];
+  assert.deepEqual(bidLevel(o, '-3.50'), { basis: 'CLIENT_AND_KIND', count: 3, median: -10.4, low: -11.2, high: -9.8, wouldLead: 0 });
+  assert.equal(bidLevel(o, '-10.40')!.wouldLead, 2);
+  assert.equal(bidLevel(o, null)!.wouldLead, null);
+  // One of the client's own is too few: the kind's openings join it.
+  assert.deepEqual(bidLevel([o[0], o[3]], null), { basis: 'KIND', count: 2, median: -5.9, low: -9.8, high: -2, wouldLead: null });
+  assert.equal(bidLevel([o[0], { match: 'KIND', l1Pct: null }], null), null);
 });
 
 let failed = 0;

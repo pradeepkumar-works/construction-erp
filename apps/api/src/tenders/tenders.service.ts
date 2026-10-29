@@ -2,6 +2,11 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from '@prisma/client';
 import {
   RATE_LIBRARY,
+  bidLevel,
+  pickOpenings,
+  workKindOf,
+  type PastOpeningDto,
+  type PastOpeningsDto,
   TENDER_DUE_DAYS,
   TENDER_OPEN,
   TENDER_RESULTS,
@@ -300,6 +305,55 @@ export class TendersService {
   }
 
   /** The company's labour rates by trade and machine rates by category (the average hourly rate of its machines). */
+  /**
+   * Bid intelligence (intelligence quick win Q4): the company's past openings of the same client and kind of work, each
+   * priced through `price` like the register, with where L1 landed against the SOR (or the estimate) and our place; the
+   * choice and the level are pure in `@erp/shared/bid-history.ts`.
+   */
+  async pastOpenings(user: RequestUser, id: string): Promise<PastOpeningsDto> {
+    this.assertView(user);
+    const t = await this.row(user, id);
+    const today = todayIn();
+    const clientKey = (r: { clientId: string | null; clientName: string | null; client: { name: string } | null }) => {
+      const name = r.client?.name ?? r.clientName;
+      return r.clientId ?? (name ? key(name) : null);
+    };
+    const kind = workKindOf(t.title);
+    const rows = await this.prisma.tender.findMany({
+      where: { organizationId: user.organizationId, id: { not: t.id }, openedOn: { not: null }, bids: { some: {} } },
+      include: TENDER_INCLUDE,
+    });
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const picked = pickOpenings(
+      { tenderId: t.id, clientKey: clientKey(t), kind },
+      rows.map((r) => ({ tenderId: r.id, clientKey: clientKey(r), kind: workKindOf(r.title), openedOn: dateOnly(r.openedOn)! })),
+      today,
+    );
+    const openings: PastOpeningDto[] = picked.map((o) => {
+      const r = byId.get(o.tenderId)!;
+      const p = this.price(r);
+      const base = p.totals.sorAmount;
+      const l1 = p.ranked[0];
+      const us = p.ranked.find((b) => b.us);
+      return {
+        tenderId: r.id,
+        tenderNo: r.tenderNo,
+        title: r.title,
+        clientName: r.client?.name ?? r.clientName,
+        openedOn: o.openedOn,
+        kind: o.kind,
+        match: o.match,
+        bidders: p.ranked.length,
+        l1Name: l1.name,
+        l1Pct: pctOver(l1.amount, base),
+        ourPct: us ? pctOver(us.amount, base) : null,
+        ourRank: us?.rank ?? null,
+      };
+    });
+    const quotedPct = this.price(t).totals.quotedPct;
+    return { tenderId: t.id, kind, quotedPct, openings, level: bidLevel(openings, quotedPct) };
+  }
+
   private async rates(organizationId: string) {
     const [labour, machines] = await Promise.all([
       this.prisma.labourRate.findMany({ where: { organizationId }, select: { category: true, dailyRate: true } }),

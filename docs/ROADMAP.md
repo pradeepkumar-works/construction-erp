@@ -851,7 +851,8 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
   vendor's bank details changed.
 - ~~**Q7 Next billable stage** (S).~~ Done: Billing readiness opens each project with its next bill: billable today (measured,
   approved and not measured, stages done) and its worth by the month end at the pace of the last 30 days.
-- **Q4 Bid intelligence** (S): where L1 landed on past openings of the same client and type of work.
+- ~~**Q4 Bid intelligence** (S).~~ Done: Past openings beside a tender's pricing: where L1 landed against the SOR on the
+  last three years' openings of the same client and kind of work, and how many of them the quote now would have led.
 - **Q8 Toolbox talk in Hindi** (S): today's five-minute talk written from the day's activities, permits and past incidents.
 - **Q9 MIS commentary** (S): the Monthly MIS opens with a paragraph written from its own figures.
 

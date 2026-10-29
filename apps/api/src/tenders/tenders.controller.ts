@@ -102,6 +102,12 @@ export class TendersController {
     return this.tenders.get(user, id);
   }
 
+  @ApiOperation({ summary: 'Where L1 landed on past openings of the same client and kind of work, against the SOR' })
+  @Get(':id/past-openings')
+  pastOpenings(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.tenders.pastOpenings(user, id);
+  }
+
   @ApiOperation({ summary: 'Record a tender; an EMD with its reference goes to the guarantees' })
   @Post()
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateTenderDto) {
