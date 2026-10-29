@@ -32,7 +32,7 @@ export async function seedWeighbridge(prisma: PrismaClient, organizationId: stri
 
   const item =
     (await prisma.item.findFirst({ where: { organizationId, name: 'Aggregate 20 mm', unit: 'MT' }, select: { id: true } })) ??
-    (await prisma.item.create({ data: { organizationId, name: 'Aggregate 20 mm', unit: 'MT' }, select: { id: true } }));
+    (await prisma.item.create({ data: { organizationId, name: 'Aggregate 20 mm', unit: 'MT', rate: RATE }, select: { id: true } }));
   const lastPo = await prisma.purchaseOrder.findFirst({ where: { organizationId, poNo: { startsWith: `PO-${year}-` } }, orderBy: { poNo: 'desc' }, select: { poNo: true } });
   const poNo = `PO-${year}-${String((lastPo ? parseInt(lastPo.poNo.slice(8), 10) : 0) + 1).padStart(4, '0')}`;
   const qty = 300;
