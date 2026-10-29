@@ -855,7 +855,9 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
   last three years' openings of the same client and kind of work, and how many of them the quote now would have led.
 - ~~**Q8 Toolbox talk in Hindi** (S).~~ Done: Today's talk on the toolbox talks list (web) and the talk form (phone): five
   minutes in Hindi and English from today's permits, the project's recent incidents and the work going on, recorded as a talk.
-- **Q9 MIS commentary** (S): the Monthly MIS opens with a paragraph written from its own figures.
+- ~~**Q9 MIS commentary** (S).~~ Done: the Monthly MIS opens with a paragraph written from its own figures (the month
+  against the one before, cost, what clients owe and what is not billed, the year's margin, what needs action), on the
+  page, in print and in Excel.
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

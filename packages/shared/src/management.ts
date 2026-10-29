@@ -267,6 +267,8 @@ export interface ManagementReportDto {
   /** The project it is limited to, else null for every project the reader sees */
   projectName: string | null;
   generatedAt: string;
+  /** The paragraph the report opens with, written from its own figures (the Monthly MIS, intelligence quick win Q9) */
+  commentary?: string | null;
   figures: ReportFigureDto[];
   sections: ReportSectionDto[];
   /** How the figures are worked out, for the last page */

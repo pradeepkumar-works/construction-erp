@@ -7,6 +7,7 @@
 import assert from 'node:assert/strict';
 import { bidLevel, bidMatch, hazardsIn, pickOpenings, talkText, toolboxTalk, workKindOf, billDateFor, canSeeDprChecks, canSeePurchaseControls, insightKeysFor, nextBill, stagesUnbilled, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
 import { copied, crewKeyOf, noCrew, noMaterial, reusedPhotos } from '../dpr/dpr-check-rules';
+import { inrWords, misCommentary, type MisFacts } from '../management/management-rules';
 import { CUBE_7DAY_SHARE, cubeEarly, paidAfterBankChange, selfReceived, splitOrders, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
 
 const tests: [string, () => void][] = [];
@@ -299,6 +300,44 @@ test('Q8: with nothing that names a hazard, the talk is the general one on safet
   assert.equal(t.topic, 'PPE: helmet, shoes, gloves, reflective jacket');
   assert.ok(talkText(t, 'hi').includes('हेलमेट'));
   assert.equal(talkText(t, 'en').split('\n').length, 1 + 4 + 1);
+});
+
+// ── Q9: MIS commentary ─────────────────────────────────────────────────────────────────────────────────────────────
+test('Q9: rupees in crore and lakh for the board', () => {
+  assert.equal(inrWords(24_500_000), '₹2.45 crore');
+  assert.equal(inrWords(3_820_000), '₹38.2 lakh');
+  assert.equal(inrWords(42_500), '₹42,500');
+  assert.equal(inrWords(-150_000), '−₹1.5 lakh');
+});
+const misBase: MisFacts = {
+  month: 'October 2026',
+  previous: 'the same days of September',
+  projects: 6,
+  inMonth: { workDone: 24_000_000, billed: 18_000_000, received: 11_000_000, cost: 20_000_000 },
+  before: { workDone: 20_000_000, billed: 15_000_000, received: 9_000_000, cost: 17_000_000 },
+  year: { billed: 124_000_000, cost: 101_000_000 },
+  unbilled: 31_000_000,
+  outstanding: 42_000_000,
+  mostUnbilled: { name: 'Bhubaneswar - Puri Highway', amount: 12_000_000 },
+  mostOwed: { name: 'District Hospital', amount: 15_000_000 },
+  actNow: [{ name: 'District Hospital', text: 'Margin forecast at 3.1%, under 5%.' }],
+  watch: 2,
+};
+test('Q9: the paragraph tells the month against the one before, cost, what is owed and not billed, the year and what to act on', () => {
+  assert.equal(
+    misCommentary(misBase),
+    'In October 2026 the 6 projects did ₹2.4 crore of work, 20% more than in the same days of September; ₹1.8 crore was billed and ₹1.1 crore received. ' +
+      'Cost was ₹2 crore, ₹20 lakh more than was billed. Today clients owe ₹4.2 crore, the most on District Hospital (₹1.5 crore). ' +
+      '₹3.1 crore of work done is not billed yet, the most on Bhubaneswar - Puri Highway (₹1.2 crore). ' +
+      'For the year so far ₹12.4 crore is billed against ₹10.1 crore of cost, a margin of 18.5% on billing. ' +
+      '1 project needs action now (District Hospital), first District Hospital: margin forecast at 3.1%, under 5%. 2 more are to watch.',
+  );
+});
+test('Q9: a change under 5% reads as about the same, and a quiet month says so', () => {
+  assert.ok(misCommentary({ ...misBase, before: { ...misBase.before!, workDone: 23_500_000 } }).includes('about the same as in the same days of September'));
+  const quiet = misCommentary({ ...misBase, inMonth: { workDone: 0, billed: 0, received: 0, cost: 0 }, actNow: [], watch: 0, unbilled: 50_000, outstanding: 0, year: { billed: 0, cost: 0 } });
+  assert.equal(quiet, 'Nothing was done, billed, received or spent on the 6 projects in October 2026. No project needs action now.');
+  assert.ok(misCommentary({ ...misBase, inMonth: { ...misBase.inMonth, received: 0 } }).includes('₹1.8 crore was billed and nothing received.'));
 });
 
 let failed = 0;

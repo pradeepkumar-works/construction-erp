@@ -36,7 +36,7 @@ import { StockService } from '../stock/stock.service';
 import { CostService, total, type Acc } from '../cost/cost.service';
 import { ManagementService } from './management.service';
 import { ManagementReportQuery } from './management.dto';
-import { approvalAgeing, billedMarginPct, daysBetween, financialYearStart, monthName, monthSpan, monthsBetween, pctOf } from './management-rules';
+import { approvalAgeing, billedMarginPct, byUrgency, daysBetween, financialYearStart, misCommentary, monthName, monthSpan, monthsBetween, pctOf, type MisFlow } from './management-rules';
 
 const N = (v: Prisma.Decimal | number | string | null | undefined) => Number(v ?? 0);
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -142,9 +142,16 @@ export class ManagementReportsService {
     const ids = projects.map((p) => p.id);
     const fy = financialYearStart(period.to);
     const range = (from: string) => ({ gte: parseDate(from), lte: parseDate(period.to) });
-    const [month, year, { rows }] = await Promise.all([
+    // The month before, to its same days while this month is still running, for the commentary.
+    const prev = new Date(`${period.from!}T00:00:00Z`);
+    prev.setUTCMonth(prev.getUTCMonth() - 1);
+    const prevSpan = monthSpan(prev.toISOString().slice(0, 7));
+    const running = period.to < monthSpan(period.from!.slice(0, 7)).to;
+    const prevTo = running ? `${prevSpan.from.slice(0, 8)}${period.to.slice(8)}` : prevSpan.to;
+    const [month, year, before, { rows }] = await Promise.all([
       this.cost.compute(user.organizationId, ids, range(period.from!)),
       this.cost.compute(user.organizationId, ids, range(fy)),
+      this.cost.compute(user.organizationId, ids, { gte: parseDate(prevSpan.from), lte: parseDate(prevTo < prevSpan.to ? prevTo : prevSpan.to) }),
       this.management.build(user, projects, today),
     ]);
     const flow = (acc: Map<string, Acc>) => {
@@ -201,7 +208,36 @@ export class ManagementReportsService {
       { label: 'Work done not billed', value: sum(standing.rows, 'unbilled'), kind: 'money', note: 'Today, all projects' },
       { label: 'Clients owe', value: sum(standing.rows, 'outstanding'), kind: 'money', note: 'Today, with GST' },
     ];
+    const flowOf = (acc: Map<string, Acc>): MisFlow =>
+      projects.reduce(
+        (f, p) => {
+          const x = acc.get(p.id)!;
+          return { workDone: f.workDone + (p.contractModel === 'ITEM_RATE' ? N(x.executed) : 0), billed: f.billed + N(x.billed), received: f.received + N(x.cashIn), cost: f.cost + N(total(x.heads)) };
+        },
+        { workDone: 0, billed: 0, received: 0, cost: 0 },
+      );
+    const most = (key: 'unbilled' | 'outstanding') => {
+      const top = [...rows].sort((a, b) => N(b.money[key]) - N(a.money[key]))[0];
+      return top ? { name: top.name, amount: N(top.money[key]) } : null;
+    };
+    const acting = rows.filter((r) => r.reasons.some((x) => x.level === 'act'));
+    const prevName = new Date(`${prevSpan.from}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' });
+    const commentary = misCommentary({
+      month: period.label,
+      previous: running ? `the same days of ${prevName}` : prevName,
+      projects: projects.length,
+      inMonth: flowOf(month),
+      before: flowOf(before),
+      year: { billed: N(sum(inYear.rows, 'billed')), cost: N(sum(inYear.rows, 'cost')) },
+      unbilled: N(sum(standing.rows, 'unbilled')),
+      outstanding: N(sum(standing.rows, 'outstanding')),
+      mostUnbilled: most('unbilled'),
+      mostOwed: most('outstanding'),
+      actNow: acting.map((r) => ({ name: r.name, text: [...r.reasons].filter((x) => x.level === 'act').sort(byUrgency)[0].text })),
+      watch: rows.filter((r) => !acting.includes(r) && r.reasons.length).length,
+    });
     return {
+      commentary,
       figures,
       sections: [
         section({ key: 'month', title: `In ${period.label}`, note: 'Work done is approved progress at BOQ rates (blank for a lump-sum or EPC contract, which is valued by its stages); measured is approved measurement sheets; billed is RA bills dated in the month before GST.', ...inMonth, totals: true }),

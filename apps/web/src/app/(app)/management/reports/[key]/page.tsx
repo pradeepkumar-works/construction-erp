@@ -168,6 +168,7 @@ function ReportBody({ data }: { data: ManagementReportDto }) {
       <Typography.Text type="secondary">
         <span translate="no">{data.period}</span>, {data.projectName ? <span translate="no">{data.projectName}</span> : 'every contract project'}
       </Typography.Text>
+      {data.commentary ? <p style={{ margin: 0, fontSize: token.fontSizeLG, lineHeight: 1.6, maxWidth: 960 }}>{data.commentary}</p> : null}
       {data.figures.length ? (
         <FigureStrip
           label={`${data.title} figures`}

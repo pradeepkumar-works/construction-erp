@@ -3643,6 +3643,12 @@ export; the client portal and the phone app show the amount.
   fixed points in Hindi and English, never a model's, with the two latest incidents and what changed after them. The web's
   Today's talk drawer (toolbox talks list) and the phone's card on the talk form fill the talk's topic and points
   (`talkText`) for the supervisor to record.
+- **Q9 MIS commentary.** `ManagementReportDto.commentary`, set by the Monthly MIS only: `misCommentary` (pure in
+  `management-rules.ts`) over the report's own figures, plus the month before (to its same days while the month runs) from
+  the same `CostService.compute`. Rules, never a model, so every figure in it is the report's: the month's work, billing and
+  collection and the change in work done (under `MIS_SAME_PCT`, 5%, "about the same"), billing against cost, what clients
+  owe and what is not billed today and the project with most of each, the year's margin on billing, and the projects to act
+  on now with the first one's reason. The page, the print and the Excel summary sheet open with it.
 
 ## Money and quantities
 
