@@ -3589,6 +3589,13 @@ export; the client portal and the phone app show the amount.
   Nirmaan while `AiService.status` says it is off and why. `GET /insights` (`apps/api/src/insights`); which checks a role
   gets is `insightKeysFor` (`@erp/shared/insights.ts`), each the helper of the check's own page. A check that fails shows a
   dash and the rest still come. Web: `components/watch-list/OtherChecks.tsx` over `FigureStrip`.
+- **Q1 Margin fade.** A watch list kind, `MARGIN_FADE` (Margin falling), for those who see cost and approve. At each month
+  end of the earned value curve (`EarnedValueService.get` with the caller) the forecast cost is BAC ÷ CPI and the margin
+  the revised contract value (contract plus approved variations) less it (`marginAt`); a month under a tenth earned, or
+  with CPI outside 0.5 to 2 (cost or progress not yet entered), gives no forecast. `marginFade` warns when the margin fell
+  2 points or more from the earliest month in the last three to the latest, and the latest is the lowest. The heads behind
+  it (`headsBehind`) are what each head spent since (`CostService.compute`) against its budget (`BudgetService.forecasts`)
+  for the share earned since, worst two. The key moves with the month and every 2 points lost (`marginStep`).
 
 ## Money and quantities
 

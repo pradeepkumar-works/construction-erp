@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-05-margin-falling',
+    date: '2027-05-31',
+    title: 'Margin falling, on the watch list',
+    points: [
+      'The watch list now warns when a project’s forecast margin at completion has dropped 2 points or more in the last three months, with what it costs and the cost heads running over their budget for the work done.',
+    ],
+  },
+  {
     id: '2027-05-other-checks',
     date: '2027-05-24',
     title: 'Every check on the watch list',

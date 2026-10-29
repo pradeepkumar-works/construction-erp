@@ -838,7 +838,8 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
 
 - ~~**Q0 Other checks on the watch list** (S).~~ Done: the headline of leakage, the cash forecast, billing readiness and the
   attendance cross-check, and Ask Nirmaan while it is off (admins), at the top of the watch list.
-- **Q1 Margin fade** (S): the forecast margin at completion falling month on month, and the cost heads behind it.
+- ~~**Q1 Margin fade** (S).~~ Done: the watch list's Margin falling, when the forecast margin at completion drops 2 points
+  or more within three months, with the cost heads that ran over their budget for the work earned.
 - **Q2 Cube strength at 7 days** (S): a 7-day cube result below what its grade needs by then, before the next lift.
 - **Q3 DPR credibility** (S): work reported with no crew, no material issued for it, numbers copied day after day, a photo used twice.
 - **Q5 Vendor scorecard at L1** (S): on time, rejections and rates against the median on the comparative statement.

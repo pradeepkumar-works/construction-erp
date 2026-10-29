@@ -23,6 +23,8 @@ import {
   WARNING_KIND_LABELS,
   WARNING_OUTCOME_LABELS,
   BOQ_GAP_PCT,
+  COST_HEAD_LABELS,
+  COST_HEADS,
   boqContractGap,
   canResumeWarningKind,
   canSeeCashForecast,
@@ -50,6 +52,9 @@ import { QaRegistersService } from '../qa/registers.service';
 import { DrawingScheduleService } from '../design/drawing-schedule.service';
 import { DesignSubmissionsService } from '../design/design-submissions.service';
 import { DesignControlService } from '../design/design-control.service';
+import { EarnedValueService } from '../cost/earned-value.service';
+import { BudgetService } from '../cost/budget.service';
+import { CostService } from '../cost/cost.service';
 import { noticeClock } from '../hindrance/hindrance-rules';
 import { packageStatus } from '../epc/epc-rules';
 import { loadMonths, loadOm } from '../om/om-load';
@@ -98,6 +103,11 @@ import {
   scheduleWarns,
   stockRunout,
   vendorTrend,
+  headsBehind,
+  marginFade,
+  marginStep,
+  MARGIN_FADE_PTS,
+  MARGIN_WINDOW_MONTHS,
 } from './warning-rules';
 
 const n = (d: Prisma.Decimal | null | undefined) => (d ? d.toNumber() : 0);
@@ -157,6 +167,9 @@ export class WarningsService {
     private drawingSchedule: DrawingScheduleService,
     private designSubmissions: DesignSubmissionsService,
     private designControl: DesignControlService,
+    private earnedValue: EarnedValueService,
+    private budget: BudgetService,
+    private cost: CostService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -298,6 +311,8 @@ export class WarningsService {
         if (k === 'DRAWING_LATE') return today === todayIn() ? this.drawings(user) : Promise.resolve([]);
         if (k === 'DESIGN_REVIEW_LATE') return today === todayIn() ? this.designReviews(user) : Promise.resolve([]);
         if (k === 'COPY_RECALL_LATE') return today === todayIn() ? this.copyRecalls(user) : Promise.resolve([]);
+        // Margin fade (intelligence quick win Q1): earned value's month ends, as of today.
+        if (k === 'MARGIN_FADE') return today === todayIn() ? this.marginFades(user, active) : Promise.resolve([]);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -988,6 +1003,89 @@ export class WarningsService {
    * `boqContractGap`): work done, earned value and the budget are built on the BOQ, so all of them are off. The key moves
    * with the gap's whole %.
    */
+  /**
+   * Projects whose forecast margin at completion has fallen by `MARGIN_FADE_PTS` or more over the last few months
+   * (intelligence quick win Q1). The forecast at each month end is earned value's (EAC = BAC × AC ÷ EV), read through
+   * `EarnedValueService` with the caller; the heads behind it are what each spent in the window against its budget for
+   * the work earned in it.
+   */
+  private async marginFades(user: RequestUser, projects: Project[]): Promise<Draft[]> {
+    if (!projects.length) return [];
+    const terms = await this.prisma.project.findMany({
+      where: { id: { in: projects.map((p) => p.id) }, contractValue: { gt: 0 } },
+      select: { id: true, contractValue: true },
+    });
+    if (!terms.length) return [];
+    // The revised contract value: the contract plus approved variations, as the projects list has it.
+    const varied = new Map(
+      (await this.prisma.variation.groupBy({ by: ['projectId'], where: { projectId: { in: terms.map((t) => t.id) }, status: 'APPROVED' }, _sum: { approvedAmount: true } })).map((v) => [v.projectId, n(v._sum.approvedAmount)]),
+    );
+    const fades = (
+      await Promise.all(
+        terms.map(async (t) => {
+          const ev = await this.earnedValue.get(user, t.id);
+          const contractValue = n(t.contractValue) + (varied.get(t.id) ?? 0);
+          const points = ev.curve.flatMap((c) => (c.ev !== null && c.ac !== null ? [{ month: c.month, ev: Number(c.ev), ac: Number(c.ac) }] : []));
+          const fade = marginFade(points, Number(ev.bac), contractValue);
+          return fade ? { t, ev, fade, contractValue } : null;
+        }),
+      )
+    ).filter((f) => !!f);
+    if (!fades.length) return [];
+    const ids = fades.map((f) => f.t.id);
+    const earliest = fades.map((f) => f.fade.from.month).sort()[0];
+    const [forecasts, windowCost] = await Promise.all([
+      this.budget.forecasts(user.organizationId, fades.map((f) => ({ id: f.t.id, contractValue: f.t.contractValue }))),
+      // Spent after the window's first month end.
+      this.cost.compute(user.organizationId, ids, { gt: parseDate(`${earliest}-01`) }),
+    ]);
+    const byId = new Map(projects.map((p) => [p.id, p]));
+    return fades.map(({ t, ev, fade, contractValue }) => {
+      const p = byId.get(t.id)!;
+      const f = forecasts.get(t.id);
+      const acc = windowCost.get(t.id);
+      // Each head's spend in the months after the window's first, against its budget for the share earned in them.
+      const after = [...(acc?.months.entries() ?? [])].filter(([m]) => m > fade.from.month);
+      const spent = (h: (typeof COST_HEADS)[number]) => after.reduce((s, [, v]) => s + n(v.heads[h]), 0);
+      const earnedShare = fade.to.earned - fade.from.earned;
+      const heads = headsBehind(
+        COST_HEADS.map((h) => ({ head: h, spent: spent(h), budget: f?.headBudget ? n(f.headBudget[h]) : null })),
+        earnedShare,
+      );
+      const headLine = heads.length ? heads.map((h) => `${COST_HEAD_LABELS[h.head].toLowerCase()} ${rupees(h.over)} over`).join(' and ') : null;
+      const monthName = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+      return {
+        key: `marginfade:${p.id}:${fade.to.month}:${marginStep(fade.dropPts)}`,
+        kind: 'MARGIN_FADE' as const,
+        title: `${p.name}: forecast margin down from ${fade.from.marginPct}% to ${fade.to.marginPct}% since ${monthName(fade.from.month)}`,
+        detail: headLine
+          ? `Cost is running ahead of the work earned. Over the same months ${headLine} against the budget for the work done.`
+          : 'Cost is running ahead of the work earned, across the cost heads rather than in one of them.',
+        action: heads.length ? `Review ${COST_HEAD_LABELS[heads[0].head].toLowerCase()} on this project` : 'Review the cost heads against the budget',
+        impact: { text: `${rupees(fade.dropInr)} less margin at completion`, inr: fade.dropInr, days: null },
+        working: [
+          `Forecast cost at completion = budget ÷ CPI, CPI = earned value ÷ actual cost at each month end`,
+          `${monthName(fade.from.month)}: forecast cost ${rupees(fade.from.eac)}, margin ${rupees(fade.from.margin)} (${fade.from.marginPct}% of ${rupees(contractValue)})`,
+          `${monthName(fade.to.month)}: forecast cost ${rupees(fade.to.eac)}, margin ${rupees(fade.to.margin)} (${fade.to.marginPct}%)`,
+          ...heads.map((h) => `${COST_HEAD_LABELS[h.head]}: spent ${rupees(h.spent)} against ${rupees(h.allowed)} budgeted for the ${pct(earnedShare)} of the work earned since`),
+          `Flagged when the margin falls ${MARGIN_FADE_PTS} points or more within ${MARGIN_WINDOW_MONTHS} months and is at its lowest now`,
+        ],
+        facts: [
+          { label: 'Forecast margin', value: `${fade.from.marginPct}% → ${fade.to.marginPct}%` },
+          { label: 'Forecast cost', value: rupees(fade.to.eac) },
+          { label: 'Budget at completion', value: rupees(Number(ev.bac)) },
+          { label: 'Contract value', value: rupees(contractValue) },
+        ],
+        links: [
+          { label: 'Earned value', href: `/projects/${p.id}?tab=earned-value` },
+          { label: 'Cost', href: `/projects/${p.id}?tab=cost` },
+        ],
+        projectId: p.id,
+        projectName: p.name,
+      };
+    });
+  }
+
   private async boqGaps(projects: Project[]): Promise<Draft[]> {
     if (!projects.length) return [];
     const terms = await this.prisma.project.findMany({
