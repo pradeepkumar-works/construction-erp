@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { SUBMISSION_STATUS_LABELS, canPurchase, canViewPurchaseOrders, type ComparativeStatementDto, type QuotationDto } from '@erp/shared';
+import { SUBMISSION_STATUS_LABELS, VENDOR_RECORD_DAYS, canPurchase, canViewPurchaseOrders, type ComparativeStatementDto, type QuotationDto, type VendorRecordDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -229,7 +229,38 @@ export class QuotationsService {
         lowestQuotationId: best?.id ?? null,
       };
     });
-    return { materialRequestId: mr.id, requestNo: mr.requestNo, projectId: mr.projectId, projectName: mr.project.name, quotations, lines, lowestQuotationId: lowestOf(quotations)?.id ?? null };
+    const vendorRecords = await this.vendorRecords(user.organizationId, [...new Set(quotations.map((q) => q.vendorId))]);
+    return { materialRequestId: mr.id, requestNo: mr.requestNo, projectId: mr.projectId, projectName: mr.project.name, quotations, lines, lowestQuotationId: lowestOf(quotations)?.id ?? null, vendorRecords };
+  }
+
+  /**
+   * Each vendor's deliveries on the company's orders over the last `VENDOR_RECORD_DAYS` (intelligence quick win Q5): receipts
+   * against its purchase orders, those after the order's delivery date, and the quantity rejected at the gate. Company-wide,
+   * as the buyer weighs the vendor and not one site's dealings with it.
+   */
+  private async vendorRecords(organizationId: string, vendorIds: string[]): Promise<VendorRecordDto[]> {
+    if (!vendorIds.length) return [];
+    const since = parseDate(dateOnly(new Date(Date.now() - VENDOR_RECORD_DAYS * 86_400_000))!);
+    const [receipts, orders] = await Promise.all([
+      this.prisma.stockEntry.findMany({
+        where: { organizationId, type: 'RECEIPT', vendorId: { in: vendorIds }, purchaseOrderId: { not: null }, date: { gte: since } },
+        select: { vendorId: true, date: true, purchaseOrder: { select: { deliveryBy: true } }, lines: { select: { quantity: true, rejectedQty: true } } },
+      }),
+      this.prisma.purchaseOrder.groupBy({ by: ['vendorId'], where: { organizationId, vendorId: { in: vendorIds }, status: 'APPROVED', poDate: { gte: since } }, _count: { _all: true } }),
+    ]);
+    const ordersOf = new Map(orders.map((o) => [o.vendorId, o._count._all]));
+    return vendorIds.map((vendorId) => {
+      const mine = receipts.filter((r) => r.vendorId === vendorId);
+      const received = mine.reduce((s, r) => s + r.lines.reduce((t, l) => t + Number(l.quantity), 0), 0);
+      const rejected = mine.reduce((s, r) => s + r.lines.reduce((t, l) => t + Number(l.rejectedQty ?? 0), 0), 0);
+      return {
+        vendorId,
+        deliveries: mine.length,
+        late: mine.filter((r) => r.purchaseOrder?.deliveryBy && r.date > r.purchaseOrder.deliveryBy).length,
+        rejectShare: received > 0 ? Math.round((rejected / received) * 1000) / 1000 : null,
+        orders: ordersOf.get(vendorId) ?? 0,
+      };
+    });
   }
 
   /** The lowest quotation on a request that prices every line (as the comparative statement marks it), for an order's reason check. */

@@ -3610,6 +3610,12 @@ export; the client portal and the phone app show the amount.
   an image the same type and size to the byte as one on a report of the last 90 days (20 KB and up). The DPR record shows
   them as its first section while the report is not yet approved; they never stop an approval. The demo's latest town DPR
   has a tapping line with no crew.
+- **Q5 Vendor scorecard.** `ComparativeStatementDto.vendorRecords` (`QuotationsService.vendorRecords`): each quoting vendor's
+  receipts against the company's orders over `VENDOR_RECORD_DAYS` (365), those after the order's delivery date, and the
+  quantity rejected at the gate over the quantity received, company-wide. The comparative statement's Vendor record row
+  (`VendorScorecard`, every place `ComparativeTable` draws) adds `rateVsMedian`: the quotation's landed rates against the
+  median of the quotations, averaged over the lines two or more quoted. `vendorScore` (`@erp/shared/vendor-score.ts`) calls a
+  habit only from 3 deliveries: late on a quarter, a twentieth rejected, 5% over the median.
 
 ## Money and quantities
 

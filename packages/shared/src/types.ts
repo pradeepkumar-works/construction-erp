@@ -1,3 +1,4 @@
+import type { VendorRecordDto } from './vendor-score';
 import type { LetterAction, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
@@ -1926,6 +1927,8 @@ export interface ComparativeStatementDto {
   }[];
   /** The quotation with the lowest total among those quoting every line */
   lowestQuotationId: string | null;
+  /** Each quoting vendor's deliveries over the last year (intelligence quick win Q5), for the scorecard */
+  vendorRecords: VendorRecordDto[];
 }
 
 export interface PurchaseOrderLineDto {

@@ -5,7 +5,7 @@
  *   node dist/scripts/intelligence-test.js
  */
 import assert from 'node:assert/strict';
-import { canSeeDprChecks, insightKeysFor, watchListKinds } from '@erp/shared';
+import { canSeeDprChecks, insightKeysFor, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
 import { copied, crewKeyOf, noCrew, noMaterial, reusedPhotos } from '../dpr/dpr-check-rules';
 import { CUBE_7DAY_SHARE, cubeEarly, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
 
@@ -148,6 +148,30 @@ test('Q3: a photo the same to the byte as one on an earlier report is flagged; s
 test('Q3: the checks are for those who approve daily reports', () => {
   assert.ok(canSeeDprChecks('PROJECT_MANAGER'));
   assert.ok(!canSeeDprChecks('SITE_ENGINEER'));
+});
+
+// ── Q5: vendor scorecard at L1 ─────────────────────────────────────────────────────────────────────────────────────
+const r = (rate: number, gstRate = 18) => ({ rate: String(rate), gstRate: String(gstRate) });
+
+test('Q5: the median of the quotations, odd and even', () => {
+  assert.equal(medianOf([5, 1, 3]), 3);
+  assert.equal(medianOf([4, 1, 3, 2]), 2.5);
+  assert.equal(medianOf([]), null);
+});
+test('Q5: rates against the median are landed (with GST) and averaged over the lines two or more quoted', () => {
+  const lines = [{ rates: { a: r(100), b: r(110), c: r(90) } }, { rates: { a: r(200), b: r(220), c: null } }, { rates: { a: r(50), b: null, c: null } }];
+  // Line 1: median 100, b +10%. Line 2: median 210, b +4.76%. Line 3: b did not quote.
+  assert.equal(rateVsMedian(lines, 'b'), 7.4);
+  assert.equal(rateVsMedian(lines, 'a'), -2.4, 'line 1 at the median, line 2 4.76% under');
+  assert.equal(rateVsMedian([{ rates: { a: r(100), b: r(100, 28) } }], 'b'), 4.1, 'the higher GST makes it dearer landed');
+  assert.equal(rateVsMedian([{ rates: { a: r(100) } }], 'a'), null, 'alone on every line');
+});
+test('Q5: a habit needs three deliveries; late on a quarter, a twentieth rejected, 5% dearer', () => {
+  assert.deepEqual(vendorScore({ vendorId: 'v', deliveries: 8, late: 2, rejectShare: 0.06, orders: 5 }, 5), { thin: false, lateHabit: true, rejectHabit: true, dear: true, ratePct: 5 });
+  assert.deepEqual(vendorScore({ vendorId: 'v', deliveries: 8, late: 1, rejectShare: 0.01, orders: 5 }, -3), { thin: false, lateHabit: false, rejectHabit: false, dear: false, ratePct: -3 });
+  const thin = vendorScore({ vendorId: 'v', deliveries: 2, late: 2, rejectShare: 0.5, orders: 1 }, null);
+  assert.ok(thin.thin && !thin.lateHabit && !thin.rejectHabit);
+  assert.ok(vendorScore(undefined, null).thin, 'never delivered');
 });
 
 let failed = 0;
