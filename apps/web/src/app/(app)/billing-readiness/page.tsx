@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { App, Button, Card, Empty, Flex, Result, Statistic, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { MailOutlined } from '@/components/common/icons';
-import { canViewContract, canViewLetters, type BillingReadinessRowDto } from '@erp/shared';
+import { PACE_DAYS, canViewContract, canViewLetters, type BillingReadinessRowDto, type NextBillDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useBillingReadiness, usePaymentReminder } from '@/lib/queries';
 import { formatDate, formatINR, formatINRCompact } from '@/lib/format';
@@ -17,6 +17,38 @@ import { DRAFT_PAGES } from '@/components/ai/drafts';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ResultMark } from '@/components/common/ResultMark';
+
+/**
+ * The next bill (intelligence quick win Q7): what the project could bill today (measured, approved and not measured, stages
+ * done) and, at the pace of the last days' approved work, what it will be worth by the month end the next bill runs to.
+ */
+function NextBill({ next, projectId }: { next: NextBillDto; projectId: string }) {
+  const parts = [
+    next.measured ? `${formatINR(next.measured)} measured` : null,
+    next.toMeasure ? `${formatINR(next.toMeasure)} approved on site and not yet measured` : null,
+    next.stages ? `${formatINR(next.stages)} of stages done` : null,
+  ].filter(Boolean);
+  return (
+    <p style={{ margin: 0 }}>
+      <Typography.Text strong>Next bill: </Typography.Text>
+      <span translate="no">{formatINR(next.atBillBy)}</span> by {formatDate(next.billBy)}
+      {next.pacePerDay ? (
+        <>
+          {' '}
+          at <span translate="no">{formatINR(next.pacePerDay)}</span> of work a day, the pace of the last {PACE_DAYS} days
+        </>
+      ) : (
+        `, with no approved work in the last ${PACE_DAYS} days`
+      )}
+      {parts.length ? <> ({parts.join(', ')} today)</> : null}.{' '}
+      {next.toMeasure ? (
+        <Link href={`/measurements?projectId=${projectId}`} className="text-link">
+          Measure it
+        </Link>
+      ) : null}
+    </p>
+  );
+}
 
 /**
  * Billing readiness (AI item 122): per project, money earned and not yet asked for (approved measurements in no RA bill,
@@ -72,6 +104,7 @@ export default function Page() {
         </Typography.Paragraph>
       ) : null}
       <Flex vertical gap={token.marginSM}>
+        <NextBill next={r.next} projectId={r.projectId} />
         {r.unbilledSheets ? (
           <p style={{ margin: 0 }}>
             <Typography.Text strong>Measured, not billed: </Typography.Text>
@@ -125,8 +158,14 @@ export default function Page() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Billing readiness" subtitle={`Money earned and not yet asked for, and money asked for and not yet paid, as of ${formatDate(data.asOf)}.`} />
+      <PageHeader title="Billing readiness" subtitle={`What the next bills will be worth, money earned and not yet asked for, and money asked for and not yet paid, as of ${formatDate(data.asOf)}.`} />
       <Flex wrap gap={token.marginSM} style={{ marginBottom: token.margin }}>
+        <Card size="small" style={{ flex: '1 1 180px' }}>
+          <Statistic title={`Next bills by ${formatDate(data.billBy)}`} value={0} formatter={() => <span translate="no">{formatINRCompact(data.totals.nextAtBillBy)}</span>} styles={big} />
+          <Typography.Text type="secondary">
+            <span translate="no">{formatINRCompact(data.totals.nextNow)}</span> billable today, the rest at the pace of the last {PACE_DAYS} days
+          </Typography.Text>
+        </Card>
         <Card size="small" style={{ flex: '1 1 180px' }}>
           <Statistic title="Measured, not billed" value={0} formatter={() => <span translate="no">{formatINRCompact(data.totals.unbilled)}</span>} styles={big} />
           <Typography.Text type="secondary">Approved measurements in no RA bill</Typography.Text>

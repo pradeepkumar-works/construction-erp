@@ -849,7 +849,8 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
 - ~~**Q6 Purchase controls** (S).~~ Done: the watch list's Purchase control, for management, accounts and the admin only:
   orders split under an approver's limit, goods received by the person who ordered them, a payment within 30 days after a
   vendor's bank details changed.
-- **Q7 Next billable stage** (S): when work in hand becomes billable at the current pace, and what it is worth.
+- ~~**Q7 Next billable stage** (S).~~ Done: Billing readiness opens each project with its next bill: billable today (measured,
+  approved and not measured, stages done) and its worth by the month end at the pace of the last 30 days.
 - **Q4 Bid intelligence** (S): where L1 landed on past openings of the same client and type of work.
 - **Q8 Toolbox talk in Hindi** (S): today's five-minute talk written from the day's activities, permits and past incidents.
 - **Q9 MIS commentary** (S): the Monthly MIS opens with a paragraph written from its own figures.

@@ -4,7 +4,10 @@ import {
   DEFAULT_CLIENT_PAYMENT_DAYS,
   FORECAST_ERROR_WEEKS,
   FORECAST_WEEKS,
+  PACE_DAYS,
   billLabel,
+  nextBill,
+  stagesUnbilled,
   canSeeCashForecast,
   canViewContract,
   canViewLetters,
@@ -24,6 +27,8 @@ import { BooksService } from '../books/books.service';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
 import { DocumentTextService } from '../documents/document-text.service';
+import { MeasurementsService } from '../measurements/measurements.service';
+import { StageBillingService } from '../stage-billing/stage-billing.service';
 import {
   type Dates,
   type PayTiming,
@@ -73,6 +78,8 @@ export class CashForecastService {
     private receivables: ReceivablesService,
     private payables: PayablesService,
     private documents: DocumentTextService,
+    private measurements: MeasurementsService,
+    private stageBilling: StageBillingService,
   ) {}
 
   private assertSee(user: RequestUser) {
@@ -434,6 +441,7 @@ export class CashForecastService {
       this.prisma.raBill.findMany({ where: { projectId: { in: ids }, status: 'APPROVED', stage: 'NOT_SENT' }, orderBy: { billDate: 'asc' }, select: { id: true, projectId: true, billNo: true, isFinal: true, omYear: true, billDate: true, netPayable: true } }),
       this.receivables.summary(user),
     ]);
+    const nexts = await this.nextBills(user, ids, today);
     const rows: BillingReadinessRowDto[] = projects.map((p) => ({
       projectId: p.id,
       projectCode: p.code,
@@ -444,6 +452,7 @@ export class CashForecastService {
       oldestUnbilled: null,
       notSent: [],
       unpaid: [],
+      next: nexts.get(p.id)!,
     }));
     const rowOf = new Map(rows.map((r) => [r.projectId, r]));
     for (const s of sheets) {
@@ -461,17 +470,57 @@ export class CashForecastService {
       r.unpaid.push({ billId: b.billId, label: b.billLabel, sentDate: b.sentDate, daysOutstanding: b.daysOutstanding, expectedDays: t.days, outstanding: N(b.outstanding), late: b.daysOutstanding > t.days });
     }
     for (const r of rows) r.unbilledValue = Math.round(r.unbilledValue);
-    const shown = rows.filter((r) => r.unbilledSheets || r.notSent.length || r.unpaid.length);
+    const shown = rows.filter((r) => r.unbilledSheets || r.notSent.length || r.unpaid.length || r.next.atBillBy > 0);
     return {
       asOf: today,
+      billBy: nextBill({ measured: 0, toMeasure: 0, stages: 0, workLastDays: 0, today }).billBy,
       rows: shown,
       totals: {
         unbilled: shown.reduce((s, r) => s + r.unbilledValue, 0),
         notSent: shown.reduce((s, r) => s + r.notSent.reduce((a, b) => a + b.amount, 0), 0),
         unpaid: shown.reduce((s, r) => s + r.unpaid.reduce((a, b) => a + b.outstanding, 0), 0),
         pastDue: shown.reduce((s, r) => s + r.unpaid.filter((b) => b.late).reduce((a, b) => a + b.outstanding, 0), 0),
+        nextNow: shown.reduce((s, r) => s + r.next.now, 0),
+        nextAtBillBy: shown.reduce((s, r) => s + r.next.atBillBy, 0),
       },
     };
+  }
+
+  /**
+   * Each project's next bill (intelligence quick win Q7, `nextBill`): approved measurements in no bill, approved work no
+   * sheet holds yet (`MeasurementsService.toMeasure`), lump-sum stages done beyond what was billed (`StageBillingService.breakup`),
+   * and the pace of approved work over the last `PACE_DAYS` at BOQ rates, on activities in their BOQ item's own unit.
+   */
+  private async nextBills(user: RequestUser, ids: string[], today: string) {
+    const from = parseDate(dateOnly(new Date(Date.parse(`${today}T00:00:00Z`) - (PACE_DAYS - 1) * 86_400_000))!);
+    const [sheets, recent, staged] = await Promise.all([
+      this.prisma.measurementSheet.findMany({ where: { projectId: { in: ids }, status: 'APPROVED', raBillId: null, workOrderId: null }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
+      this.prisma.progressEntry.findMany({
+        where: { projectId: { in: ids }, status: 'APPROVED', date: { gte: from, lte: parseDate(today) }, activity: { boqItemId: { not: null } } },
+        select: { projectId: true, quantity: true, activity: { select: { unit: true, boqItem: { select: { unit: true, rate: true } } } } },
+      }),
+      this.prisma.billingComponent.groupBy({ by: ['projectId'], where: { projectId: { in: ids } } }),
+    ]);
+    const add = (m: Map<string, number>, k: string, v: number) => m.set(k, (m.get(k) ?? 0) + v);
+    const measured = new Map<string, number>();
+    for (const s of sheets) add(measured, s.projectId, N(s.totalQty) * N(s.boqItem.rate));
+    const work = new Map<string, number>();
+    const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+    for (const e of recent) if (e.activity.boqItem && same(e.activity.unit, e.activity.boqItem.unit)) add(work, e.projectId, N(e.quantity) * N(e.activity.boqItem.rate));
+    const stagedIds = new Set(staged.map((s) => s.projectId));
+    const out = new Map<string, ReturnType<typeof nextBill>>();
+    await Promise.all(
+      ids.map(async (id) => {
+        const toMeasure = (await this.measurements.toMeasure(user, id)).reduce((s, i) => s + Number(i.toMeasureAmount), 0);
+        let stages = 0;
+        if (stagedIds.has(id)) {
+          const b = await this.stageBilling.breakup(user, id);
+          if (b.stageBilling) stages = stagesUnbilled(b.components.filter((c) => !b.components.some((k) => k.parentId === c.id)).flatMap((c) => c.stages.map((st) => ({ value: Number(st.value), evidencePct: st.evidencePct, billedPct: st.billedPct }))));
+        }
+        out.set(id, nextBill({ measured: measured.get(id) ?? 0, toMeasure, stages, workLastDays: work.get(id) ?? 0, today }));
+      }),
+    );
+    return out;
   }
 
   /**

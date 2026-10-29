@@ -5,7 +5,7 @@
  *   node dist/scripts/intelligence-test.js
  */
 import assert from 'node:assert/strict';
-import { canSeeDprChecks, canSeePurchaseControls, insightKeysFor, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
+import { billDateFor, canSeeDprChecks, canSeePurchaseControls, insightKeysFor, nextBill, stagesUnbilled, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
 import { copied, crewKeyOf, noCrew, noMaterial, reusedPhotos } from '../dpr/dpr-check-rules';
 import { CUBE_7DAY_SHARE, cubeEarly, paidAfterBankChange, selfReceived, splitOrders, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
 
@@ -207,6 +207,27 @@ test('Q6: the controls are for management, accounts and the admin, never the buy
   assert.ok(canSeePurchaseControls('MANAGEMENT') && canSeePurchaseControls('ACCOUNTS_MANAGER') && canSeePurchaseControls('ADMIN'));
   assert.ok(!canSeePurchaseControls('PROCUREMENT_MANAGER') && !canSeePurchaseControls('PROJECT_MANAGER'));
   assert.ok(!watchListKinds('PROCUREMENT_MANAGER').includes('PURCHASE_CONTROL'));
+});
+
+// ── Q7: the next bill ──────────────────────────────────────────────────────────────────────────────────────────────
+test('Q7: the next bill runs to this month end, or the next when fewer than five days are left', () => {
+  assert.equal(billDateFor('2026-10-10'), '2026-10-31');
+  assert.equal(billDateFor('2026-10-26'), '2026-10-31', 'five days left');
+  assert.equal(billDateFor('2026-10-29'), '2026-11-30');
+  assert.equal(billDateFor('2026-12-30'), '2027-01-31');
+  assert.equal(billDateFor('2027-02-10'), '2027-02-28');
+});
+test('Q7: billable now plus the pace of the last 30 days up to the bill date', () => {
+  const b = nextBill({ measured: 400_000, toMeasure: 150_000, stages: 0, workLastDays: 900_000, today: '2026-10-10' });
+  assert.equal(b.now, 550_000);
+  assert.equal(b.pacePerDay, 30_000);
+  assert.equal(b.atBillBy, 550_000 + 30_000 * 21);
+  const idle = nextBill({ measured: 0, toMeasure: 0, stages: 0, workLastDays: 0, today: '2026-10-10' });
+  assert.equal(idle.pacePerDay, null);
+  assert.equal(idle.atBillBy, 0);
+});
+test('Q7: lump-sum stages count what is done beyond what was billed, never less than nothing', () => {
+  assert.equal(stagesUnbilled([{ value: 1_000_000, evidencePct: 60, billedPct: 40 }, { value: 500_000, evidencePct: 20, billedPct: 30 }, { value: 200_000, evidencePct: 100, billedPct: 100 }]), 200_000);
 });
 
 let failed = 0;
