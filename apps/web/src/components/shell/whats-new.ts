@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-05-other-checks',
+    date: '2027-05-24',
+    title: 'Every check on the watch list',
+    points: [
+      'The watch list now opens with the headline of each check that has a page of its own: leakage this month, weeks the cash forecast runs short, work measured and not billed, and man-days billed above the records. Each links to its page.',
+      'Admins see there too when Ask Nirmaan is off, and why.',
+    ],
+  },
+  {
     id: '2027-05-controlled-copies',
     date: '2027-05-17',
     title: 'Controlled copies and the design dashboard',
