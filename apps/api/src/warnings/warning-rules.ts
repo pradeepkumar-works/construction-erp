@@ -531,3 +531,93 @@ export function lateRecalls<C extends { documentId: string; currentRevision: str
     .map((cs) => ({ documentId: cs[0].documentId, revision: cs[0].currentRevision!, copies: cs, longest: Math.max(...cs.map((c) => c.recallDays ?? 0)) }))
     .sort((a, b) => b.longest - a.longest);
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Margin fade (intelligence quick win Q1): the margin at completion, forecast at each month end from earned value
+// (EAC = BAC × AC ÷ EV), falling over the last few months.
+
+/** Months looked back over. */
+export const MARGIN_WINDOW_MONTHS = 3;
+/** Points of margin (as a share of the contract) the forecast must fall by. */
+export const MARGIN_FADE_PTS = 2;
+/** Share of the budget earned before a month's forecast means anything. */
+export const MARGIN_MIN_EARNED = 0.1;
+/** Cost against earned value outside this band means the cost records are incomplete, not that the margin moved. */
+export const MARGIN_CPI_BAND: readonly [number, number] = [0.5, 2];
+
+export interface MarginPoint {
+  /** YYYY-MM, figures cumulative to its end */
+  month: string;
+  ev: number;
+  ac: number;
+}
+
+export interface MarginAt {
+  month: string;
+  eac: number;
+  margin: number;
+  /** Margin as a share of the contract, one decimal */
+  marginPct: number;
+  /** Earned share of the budget, 0 to 1 */
+  earned: number;
+}
+
+/** The forecast margin at a month end, or null while too little is earned or the cost records look incomplete. */
+export function marginAt(p: MarginPoint, bac: number, contractValue: number): MarginAt | null {
+  if (bac <= 0 || contractValue <= 0 || p.ev <= 0 || p.ac <= 0) return null;
+  const earned = p.ev / bac;
+  if (earned < MARGIN_MIN_EARNED) return null;
+  const cpi = p.ev / p.ac;
+  if (cpi < MARGIN_CPI_BAND[0] || cpi > MARGIN_CPI_BAND[1]) return null;
+  const eac = bac / cpi;
+  const margin = contractValue - eac;
+  return { month: p.month, eac, margin, marginPct: Math.round((margin / contractValue) * 1000) / 10, earned };
+}
+
+export interface MarginFade {
+  from: MarginAt;
+  to: MarginAt;
+  /** Points of margin lost, one decimal */
+  dropPts: number;
+  /** Rupees of margin lost */
+  dropInr: number;
+}
+
+/**
+ * The forecast margin's fall from the earliest month in the window (the latest month and the `MARGIN_WINDOW_MONTHS` before
+ * it) to the latest month, when it fell by `MARGIN_FADE_PTS` or more and is still at its lowest in the latest month.
+ */
+export function marginFade(points: MarginPoint[], bac: number, contractValue: number): MarginFade | null {
+  const sorted = [...points].sort((a, b) => a.month.localeCompare(b.month));
+  const last = sorted[sorted.length - 1];
+  if (!last) return null;
+  const [y, m] = last.month.split('-').map(Number);
+  const back = new Date(Date.UTC(y, m - 1 - MARGIN_WINDOW_MONTHS, 1)).toISOString().slice(0, 7);
+  const window = sorted.filter((p) => p.month >= back).flatMap((p) => marginAt(p, bac, contractValue) ?? []);
+  if (window.length < 2) return null;
+  const from = window[0];
+  const to = window[window.length - 1];
+  if (to.month !== last.month) return null;
+  const dropPts = Math.round((from.marginPct - to.marginPct) * 10) / 10;
+  if (dropPts < MARGIN_FADE_PTS || window.some((w) => w.marginPct < to.marginPct)) return null;
+  return { from, to, dropPts, dropInr: Math.round(from.margin - to.margin) };
+}
+
+/** A fade's key moves on every 2 points lost. */
+export const marginStep = (dropPts: number) => Math.floor(dropPts / 2) * 2;
+
+/**
+ * The cost heads behind a fade: what each spent over the window against its budget for the work earned in it, worst
+ * first, those over only, at most `max`.
+ */
+export function headsBehind<H extends string>(heads: { head: H; spent: number; budget: number | null }[], earnedShare: number, max = 2): { head: H; spent: number; allowed: number; over: number }[] {
+  return heads
+    .flatMap((h) => {
+      if (h.budget === null) return [];
+      const allowed = h.budget * Math.max(0, earnedShare);
+      const over = h.spent - allowed;
+      return over > 0.5 ? [{ head: h.head, spent: h.spent, allowed, over }] : [];
+    })
+    .sort((a, b) => b.over - a.over)
+    .slice(0, max);
+}
