@@ -3616,6 +3616,12 @@ export; the client portal and the phone app show the amount.
   (`VendorScorecard`, every place `ComparativeTable` draws) adds `rateVsMedian`: the quotation's landed rates against the
   median of the quotations, averaged over the lines two or more quoted. `vendorScore` (`@erp/shared/vendor-score.ts`) calls a
   habit only from 3 deliveries: late on a quarter, a twentieth rejected, 5% over the median.
+- **Q6 Purchase controls.** A watch list kind, `PURCHASE_CONTROL`, for `canSeePurchaseControls` (management, accounts, the
+  admin; never the buyer or approver it looks at), over the last 90 days of the caller's projects. `splitOrders`: two or
+  more approved orders to one vendor on one project, approved by the same person within 7 days, each within that person's
+  level-1 purchase order limit (`ApprovalRightsService.rules`) and together above it. `selfReceived`: a GRN made by the
+  person who raised its order. `paidAfterBankChange`: a vendor payment within 30 days after a `BANK_CHANGED` line in the
+  vendor's audit log, which `VendorsService.update` writes whenever a bank field changes (the account number masked).
 
 ## Money and quantities
 

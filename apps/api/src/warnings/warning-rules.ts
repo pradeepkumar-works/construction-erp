@@ -655,3 +655,72 @@ export function cubeEarly(readings: { label: string; value: number | null }[], n
   if (projected >= needed) return null;
   return { at7, needed, projected, shortBy: Math.round((needed - projected) * 10) / 10 };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Purchase controls (intelligence quick win Q6)
+
+/** Orders to one vendor on one project within this many days read as one purchase. */
+export const SPLIT_WINDOW_DAYS = 7;
+/** A payment within this many days after the vendor's bank details changed is worth a call to the vendor. */
+export const BANK_CHANGE_DAYS = 30;
+
+export interface ControlOrder {
+  id: string;
+  poNo: string;
+  vendorId: string;
+  projectId: string;
+  date: string;
+  total: number;
+  /** Who approved it, and the most that person's role may approve on an order; null for no limit */
+  reviewedById: string | null;
+  limit: number | null;
+}
+
+export interface SplitGroup {
+  orders: ControlOrder[];
+  total: number;
+  limit: number;
+}
+
+/**
+ * Orders split to stay under an approval limit: two or more orders to the same vendor on the same project, approved by
+ * the same person within `SPLIT_WINDOW_DAYS`, each within that person's limit and together above it.
+ */
+export function splitOrders(orders: ControlOrder[]): SplitGroup[] {
+  const groups = new Map<string, ControlOrder[]>();
+  for (const o of orders) {
+    if (o.limit === null || !o.reviewedById) continue;
+    const k = `${o.vendorId}|${o.projectId}|${o.reviewedById}`;
+    groups.set(k, [...(groups.get(k) ?? []), o]);
+  }
+  const out: SplitGroup[] = [];
+  for (const list of groups.values()) {
+    const sorted = [...list].sort((a, b) => a.date.localeCompare(b.date) || a.poNo.localeCompare(b.poNo));
+    let i = 0;
+    while (i < sorted.length) {
+      const run = [sorted[i]];
+      while (i + run.length < sorted.length && addDays(sorted[i].date, SPLIT_WINDOW_DAYS) >= sorted[i + run.length].date) run.push(sorted[i + run.length]);
+      const limit = Math.min(...run.map((o) => o.limit!));
+      const total = run.reduce((s, o) => s + o.total, 0);
+      if (run.length >= 2 && run.every((o) => o.total <= limit) && total > limit) out.push({ orders: run, total, limit });
+      i += run.length;
+    }
+  }
+  return out;
+}
+
+/** Orders whose goods were received (a GRN made) by the same person who raised the order. */
+export function selfReceived(orders: { id: string; poNo: string; raisedById: string }[], receipts: { purchaseOrderId: string; entryNo: string; createdById: string }[]) {
+  const byId = new Map(orders.map((o) => [o.id, o]));
+  return receipts.filter((r) => byId.get(r.purchaseOrderId)?.raisedById === r.createdById).map((r) => ({ order: byId.get(r.purchaseOrderId)!, entryNo: r.entryNo }));
+}
+
+/** Payments to a vendor within `BANK_CHANGE_DAYS` after its bank details changed, each with the change before it. */
+export function paidAfterBankChange<P extends { vendorId: string; date: string }>(changes: { vendorId: string; date: string; note: string | null }[], payments: P[]) {
+  return payments.flatMap((p) => {
+    const c = changes
+      .filter((x) => x.vendorId === p.vendorId && x.date <= p.date && addDays(x.date, BANK_CHANGE_DAYS) >= p.date)
+      .sort((a, b) => b.date.localeCompare(a.date))[0];
+    return c ? [{ payment: p, change: c, days: Math.round((Date.parse(p.date) - Date.parse(c.date)) / 86_400_000) }] : [];
+  });
+}

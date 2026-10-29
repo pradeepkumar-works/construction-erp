@@ -180,6 +180,11 @@ export class VendorsService {
       throw e;
     }
     await this.audit.log(user, 'VENDOR', id, 'UPDATED');
+    // A changed bank account is its own line in the log: the purchase controls (intelligence quick win Q6) read it
+    // against the payments that follow.
+    const mask = (v: string | null | undefined) => (v ? `••${v.slice(-4)}` : 'none');
+    if (BANK_FIELDS.some((k) => dto[k] !== undefined && (dto[k] ?? null) !== (current[k] ?? null)))
+      await this.audit.log(user, 'VENDOR', id, 'BANK_CHANGED', dto.bankAccountNo !== undefined && dto.bankAccountNo !== current.bankAccountNo ? `Account ${mask(current.bankAccountNo)} to ${mask(dto.bankAccountNo)}` : 'Bank name, IFSC or account name');
     return this.get(user, id);
   }
 

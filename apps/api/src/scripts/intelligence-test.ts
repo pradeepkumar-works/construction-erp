@@ -5,9 +5,9 @@
  *   node dist/scripts/intelligence-test.js
  */
 import assert from 'node:assert/strict';
-import { canSeeDprChecks, insightKeysFor, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
+import { canSeeDprChecks, canSeePurchaseControls, insightKeysFor, medianOf, rateVsMedian, vendorScore, watchListKinds } from '@erp/shared';
 import { copied, crewKeyOf, noCrew, noMaterial, reusedPhotos } from '../dpr/dpr-check-rules';
-import { CUBE_7DAY_SHARE, cubeEarly, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
+import { CUBE_7DAY_SHARE, cubeEarly, paidAfterBankChange, selfReceived, splitOrders, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -172,6 +172,41 @@ test('Q5: a habit needs three deliveries; late on a quarter, a twentieth rejecte
   const thin = vendorScore({ vendorId: 'v', deliveries: 2, late: 2, rejectShare: 0.5, orders: 1 }, null);
   assert.ok(thin.thin && !thin.lateHabit && !thin.rejectHabit);
   assert.ok(vendorScore(undefined, null).thin, 'never delivered');
+});
+
+// ── Q6: purchase controls ──────────────────────────────────────────────────────────────────────────────────────────
+const po = (id: string, date: string, total: number, extra: Partial<{ vendorId: string; reviewedById: string | null; limit: number | null }> = {}) => ({ id, poNo: `PO-${id}`, vendorId: 'v1', projectId: 'p1', date, total, reviewedById: 'pm', limit: 500_000, ...extra });
+
+test('Q6: orders each within the limit and together above it, within a week, read as split', () => {
+  const g = splitOrders([po('1', '2026-10-01', 450_000), po('2', '2026-10-04', 300_000), po('3', '2026-10-30', 200_000)]);
+  assert.equal(g.length, 1);
+  assert.deepEqual(g[0].orders.map((o) => o.id), ['1', '2']);
+  assert.equal(g[0].total, 750_000);
+  assert.equal(g[0].limit, 500_000);
+});
+test('Q6: no split when together they stay within it, an order is over it, or approvers or vendors differ', () => {
+  assert.equal(splitOrders([po('1', '2026-10-01', 200_000), po('2', '2026-10-03', 250_000)]).length, 0, 'together within');
+  assert.equal(splitOrders([po('1', '2026-10-01', 450_000), po('2', '2026-10-03', 600_000)]).length, 0, 'one went above, so to a higher approver anyway');
+  assert.equal(splitOrders([po('1', '2026-10-01', 450_000), po('2', '2026-10-03', 300_000, { reviewedById: 'md', limit: null })]).length, 0, 'the MD has no limit');
+  assert.equal(splitOrders([po('1', '2026-10-01', 450_000), po('2', '2026-10-03', 300_000, { vendorId: 'v2' })]).length, 0);
+  assert.equal(splitOrders([po('1', '2026-10-01', 450_000), po('2', '2026-10-09', 300_000)]).length, 0, 'eight days apart');
+});
+test('Q6: a receipt made by the person who raised the order', () => {
+  const found = selfReceived([{ id: 'a', poNo: 'PO-1', raisedById: 'u1' }, { id: 'b', poNo: 'PO-2', raisedById: 'u1' }], [{ purchaseOrderId: 'a', entryNo: 'GRN-1', createdById: 'u1' }, { purchaseOrderId: 'b', entryNo: 'GRN-2', createdById: 'store' }]);
+  assert.deepEqual(found.map((f) => f.entryNo), ['GRN-1']);
+});
+test('Q6: a payment within 30 days after a bank change, with the latest change before it', () => {
+  const changes = [{ vendorId: 'v1', date: '2026-09-01', note: 'old' }, { vendorId: 'v1', date: '2026-10-10', note: 'new' }];
+  const pays = [{ vendorId: 'v1', date: '2026-10-12' }, { vendorId: 'v1', date: '2026-11-20' }, { vendorId: 'v2', date: '2026-10-12' }];
+  const found = paidAfterBankChange(changes, pays);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].change.note, 'new');
+  assert.equal(found[0].days, 2);
+});
+test('Q6: the controls are for management, accounts and the admin, never the buyer or the approver', () => {
+  assert.ok(canSeePurchaseControls('MANAGEMENT') && canSeePurchaseControls('ACCOUNTS_MANAGER') && canSeePurchaseControls('ADMIN'));
+  assert.ok(!canSeePurchaseControls('PROCUREMENT_MANAGER') && !canSeePurchaseControls('PROJECT_MANAGER'));
+  assert.ok(!watchListKinds('PROCUREMENT_MANAGER').includes('PURCHASE_CONTROL'));
 });
 
 let failed = 0;

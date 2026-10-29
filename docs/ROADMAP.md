@@ -846,8 +846,9 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
   work with no crew, no material issued for it in the week, numbers or crews copied day after day, a photo sent before.
 - ~~**Q5 Vendor scorecard at L1** (S).~~ Done: a Vendor record row on the comparative statement: deliveries on time and
   rejected at the gate over the last year, and each quotation's rates against the median of the quotations.
-- **Q6 Purchase controls** (S): orders split under an approval limit, the same person raising and receiving, a bank account
-  changed just before payment.
+- ~~**Q6 Purchase controls** (S).~~ Done: the watch list's Purchase control, for management, accounts and the admin only:
+  orders split under an approver's limit, goods received by the person who ordered them, a payment within 30 days after a
+  vendor's bank details changed.
 - **Q7 Next billable stage** (S): when work in hand becomes billable at the current pace, and what it is worth.
 - **Q4 Bid intelligence** (S): where L1 landed on past openings of the same client and type of work.
 - **Q8 Toolbox talk in Hindi** (S): today's five-minute talk written from the day's activities, permits and past incidents.

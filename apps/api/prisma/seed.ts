@@ -2545,6 +2545,8 @@ async function seedPayables(organizationId: string) {
       { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'CREATED', actorId: accounts, createdAt: day(-39) },
       { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'SUBMITTED', actorId: accounts, createdAt: day(-39) },
       { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'APPROVED', actorId: md, createdAt: day(-38) },
+      // The vendor's account changed three days before the payment: the purchase controls (Q6) ask for a call to confirm it.
+      { organizationId, entityType: 'VENDOR', entityId: po.vendorId, action: 'BANK_CHANGED', actorId: accounts, note: 'Account ••4471 to ••9032', createdAt: day(-15) },
       { organizationId, entityType: 'VENDOR_PAYMENT', entityId: payment.id, action: 'CREATED', actorId: accounts, createdAt: day(-12) },
       { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'PAYMENT_MADE', actorId: accounts, note: `₹${paid.toFixed(2)} paid (SBIN526287700412)`, createdAt: day(-12) },
     ],
