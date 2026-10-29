@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  InsightsDto,
   CubeAcceptanceDto,
   PourDto,
   PourStatus,
@@ -3938,6 +3939,10 @@ export const useDelayRegister = () => useMutation({ mutationFn: async (projectId
 
 export const useWatchList = (enabled = true) =>
   useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
+
+/** The headline of each check with a page of its own, for the watch list's Other checks (intelligence quick win Q0). */
+export const useInsights = (enabled = true) =>
+  useQuery({ queryKey: ['insights'], queryFn: async () => (await api.get<InsightsDto>('/insights')).data, enabled, staleTime: 5 * 60_000 });
 
 /** Dismiss a warning saying what became of it (item 119), or bring a dismissed one back (`restore`). */
 export function useDismissWarning() {

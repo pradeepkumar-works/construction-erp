@@ -25,7 +25,8 @@ import {
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
-import { useDismissWarning, useResumeWarningKind, useWatchList } from '@/lib/queries';
+import { useDismissWarning, useInsights, useResumeWarningKind, useWatchList } from '@/lib/queries';
+import { OtherChecks } from '@/components/watch-list/OtherChecks';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -48,6 +49,7 @@ export default function Page() {
   const { user } = useAuth();
   const allowed = !!user && canSeeWatchList(user.roleKey);
   const { data, isLoading, error, refetch } = useWatchList(allowed);
+  const insights = useInsights(allowed);
   const [projectId] = useProjectScope();
   const [kind, setKind] = useState<WarningKind | 'ALL'>('ALL');
   const [tab, setTab] = useState<'open' | 'dismissed' | 'record'>('open');
@@ -226,6 +228,11 @@ export default function Page() {
         title="Watch list"
         subtitle={`Early warnings as of ${formatDate(data.asOf)}: what to do, what it costs, and the working behind it. Say what became of one when you dismiss it, so each check keeps its track record.`}
       />
+      {insights.data?.checks.length ? (
+        <div style={{ marginBottom: token.margin }}>
+          <OtherChecks checks={insights.data.checks} />
+        </div>
+      ) : null}
       {kinds.length > 1 ? (
         <Segmented
           aria-label="Kind of warning"

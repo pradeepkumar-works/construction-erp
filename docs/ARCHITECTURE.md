@@ -3578,6 +3578,18 @@ export; the client portal and the phone app show the amount.
   entry in `MANAGEMENT_REPORTS`, a builder in `ManagementReportsService`, and a node under Reports in the navigation tree.
 - **Not yet.** The phone, a scheduled email of the MIS, and a budget for the company as a whole.
 
+## Intelligence quick wins
+
+- **What they are.** Ten small checks from the ideas page "Nirmaan intelligence map" (ROADMAP "Intelligence quick wins"),
+  each a set of pure rules with a test block in `src/scripts/intelligence-test.ts` (CI runs it), reading the records through
+  the modules' own services, so a figure never shows more than the module's own page would.
+- **Q0 Other checks.** The watch list opens with a strip of the checks that have pages of their own: leakage this month
+  (`LeakageService.get`), the cash forecast's short weeks and lowest balance (`CashForecastService.forecast`), work measured
+  and not billed (`readiness`), man-day flags (`AttendanceCheckService.get`) and, for those who may switch it on, Ask
+  Nirmaan while `AiService.status` says it is off and why. `GET /insights` (`apps/api/src/insights`); which checks a role
+  gets is `insightKeysFor` (`@erp/shared/insights.ts`), each the helper of the check's own page. A check that fails shows a
+  dash and the rest still come. Web: `components/watch-list/OtherChecks.tsx` over `FigureStrip`.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

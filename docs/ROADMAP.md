@@ -828,6 +828,27 @@ such as P07/OUT/26-27/042; bar bending schedules later.
      deliverables) in the document drawer, and the design dashboard by project, also on the module screen. Bar bending
      schedules and design screens on the phone follow as items of their own.
 
+## Intelligence quick wins (Q0 to Q9)
+
+Asked by Pradeep on 28 Oct 2026: "till now we have developed only the transaction capturing layer; what intelligence can we
+build?" The answer is the ideas page "Nirmaan intelligence map" (copy in the project's `intelligence/`): 18 checks already
+built, 25 ideas ranked, and the open-source projects that could help with their licences. Its ten quick wins are rules over
+data Nirmaan already holds, one pull request each, in this order. They carry no roadmap numbers (the integrations thread has
+139 to 166); ARCHITECTURE "Intelligence quick wins" has each one's rules.
+
+- ~~**Q0 Other checks on the watch list** (S).~~ Done: the headline of leakage, the cash forecast, billing readiness and the
+  attendance cross-check, and Ask Nirmaan while it is off (admins), at the top of the watch list.
+- **Q1 Margin fade** (S): the forecast margin at completion falling month on month, and the cost heads behind it.
+- **Q2 Cube strength at 7 days** (S): a 7-day cube result below what its grade needs by then, before the next lift.
+- **Q3 DPR credibility** (S): work reported with no crew, no material issued for it, numbers copied day after day, a photo used twice.
+- **Q5 Vendor scorecard at L1** (S): on time, rejections and rates against the median on the comparative statement.
+- **Q6 Purchase controls** (S): orders split under an approval limit, the same person raising and receiving, a bank account
+  changed just before payment.
+- **Q7 Next billable stage** (S): when work in hand becomes billable at the current pace, and what it is worth.
+- **Q4 Bid intelligence** (S): where L1 landed on past openings of the same client and type of work.
+- **Q8 Toolbox talk in Hindi** (S): today's five-minute talk written from the day's activities, permits and past incidents.
+- **Q9 MIS commentary** (S): the Monthly MIS opens with a paragraph written from its own figures.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

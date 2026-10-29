@@ -37,6 +37,7 @@ import { BriefsModule } from './briefs/briefs.module';
 import { PhotoChecksModule } from './photo-checks/photo-checks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { LeakageModule } from './leakage/leakage.module';
+import { InsightsModule } from './insights/insights.module';
 import { CashForecastModule } from './cash-forecast/cash-forecast.module';
 import { ManagementModule } from './management/management.module';
 import { HindranceModule } from './hindrance/hindrance.module';
@@ -171,6 +172,7 @@ import { VitalsController } from './vitals.controller';
     PhotoChecksModule,
     WhatsappModule,
     LeakageModule,
+    InsightsModule,
     CashForecastModule,
     ManagementModule,
     HindranceModule,
