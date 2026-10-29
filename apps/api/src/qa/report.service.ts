@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { isGuest, countBy, monthBounds, ncrAgeBand, passRate, reportTotals, NCR_AGE_BAND_LABELS, type NcrAgeBand, type QaReportDto, type QaReportRowDto } from '@erp/shared';
+import { isGuest, countBy, monthBounds, ncrAgeBand, passRate, reportRowHasWork, reportTotals, NCR_AGE_BAND_LABELS, type NcrAgeBand, type QaReportDto, type QaReportRowDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -62,7 +62,7 @@ export class QaReportService {
 
     const count = <T extends { projectId: string }>(xs: T[], id: string) => xs.filter((x) => x.projectId === id).length;
     const grouped = (xs: { projectId: string; _count: number }[], id: string) => xs.filter((x) => x.projectId === id).reduce((s, x) => s + x._count, 0);
-    const rows: QaReportRowDto[] = projects.map((p) => {
+    const all: QaReportRowDto[] = projects.map((p) => {
       const t = tests.filter((x) => x.projectId === p.id);
       const of = (r: string) => t.filter((x) => x.result === r).reduce((s, x) => s + x._count, 0);
       const passed = of('PASS');
@@ -89,6 +89,7 @@ export class QaReportService {
         cubesFailing: cubes.filter((c) => c.projectId === p.id && c.acceptance.verdict === 'FAIL').map((c) => c.grade),
       };
     });
+    const rows = all.filter(reportRowHasWork);
     const bands = Object.keys(NCR_AGE_BAND_LABELS) as NcrAgeBand[];
     const ages = open.map((x) => ncrAgeBand(dateOnly(x.raisedOn)!, today));
     const nameIn = (list: { code: string; name: string }[]) => (code: string) => list.find((e) => e.code === code)?.name ?? code;

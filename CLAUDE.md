@@ -145,6 +145,9 @@ and the pre-delivery checklist.
   Labs, samples, calibration and certificates (part 2) are `QaRegistersService` over the pure `@erp/shared/qa-registers.ts`
   (`reportWait`, `calibrationState`, `testedOutOfCalibration`, `certificateNeeded`); an NCR's category and root cause are
   master codes. Keep `src/scripts/qa-registers-test.ts` passing.
+  Audits and visits and the monthly report (part 3) are `QaAuditsService` and `QaReportService` over the pure
+  `@erp/shared/qa-audits.ts` (`findingState`, `findingOverdue`, `auditProblem`, `reportTotals`); a finding becomes an NCR
+  only through `QaAuditsService.raiseNcr`. Keep `src/scripts/qa-audits-test.ts` passing.
 - Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
   over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep

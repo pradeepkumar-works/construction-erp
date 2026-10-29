@@ -157,6 +157,10 @@ export interface QaReportDto {
   labsExpiring: string[];
 }
 
+/** A project with nothing to report this month (no test, NCR, audit or shortfall) is left off the report. */
+export const reportRowHasWork = (r: QaReportRowDto) =>
+  !!(r.tests || r.short || r.ncrsRaised || r.ncrsClosed || r.ncrsOpen || r.audits || r.findingsOpen || Number(r.reworkCost) || r.cubesFailing.length);
+
 /** The report's totals over its rows (the pass rate from the summed counts, not an average of rates). */
 export function reportTotals(rows: QaReportRowDto[]): QaReportDto['totals'] {
   const sum = (k: keyof QaReportRowDto) => rows.reduce((s, r) => s + (r[k] as number), 0);

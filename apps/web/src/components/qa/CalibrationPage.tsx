@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { Button, Card, Checkbox, Drawer, Flex, Form, Input, InputNumber, Select, Statistic, Switch, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CALIBRATION_RESULTS, CALIBRATION_RESULT_LABELS, calibrationDaysFor, canManageQaPlan, type CalibrationResult, type QaInstrumentDto } from '@erp/shared';
+import { CALIBRATION_RESULTS, CALIBRATION_RESULT_LABELS, calibrationDaysFor, canManageQaPlan, type AttachmentDto, type CalibrationResult, type QaInstrumentDto } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useInstrument, useInstruments, useMasterList, useQaLabs } from '@/lib/queries';
@@ -146,7 +146,7 @@ interface CalibrationForm {
   agency?: string;
   nextDueOn?: dayjs.Dayjs | null;
   remarks?: string;
-  attachmentIds?: string[];
+  photos?: AttachmentDto[];
 }
 
 function CalibrateDialog({ inst, onClose }: { inst: QaInstrumentDto | null; onClose: () => void }) {
@@ -169,7 +169,7 @@ function CalibrateDialog({ inst, onClose }: { inst: QaInstrumentDto | null; onCl
           agency: v.agency || null,
           nextDueOn: v.result !== 'FAILED' && v.nextDueOn ? v.nextDueOn.format('YYYY-MM-DD') : null,
           remarks: v.remarks || null,
-          attachmentIds: v.attachmentIds ?? [],
+          attachmentIds: (v.photos ?? []).map((a) => a.id),
         })
       ).data,
     onSuccess: (i) => {
@@ -205,7 +205,7 @@ function CalibrateDialog({ inst, onClose }: { inst: QaInstrumentDto | null; onCl
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
-        <Form.Item name="attachmentIds" label="Certificate">
+        <Form.Item name="photos" label="Certificate">
           <PhotoUpload max={3} />
         </Form.Item>
       </Form>

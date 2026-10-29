@@ -23,15 +23,15 @@ type Tone = 'warning' | 'error' | 'info';
  * only: the API leaves out a card the role may not see.
  */
 const ORDERS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores' | 'hr' | 'qs' | 'site' | 'documents', MyWorkKey[]> = {
-  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'certifiedToReceive', 'expiring', 'lateDeliveries', 'toOrder', 'staffToDecide', 'dprsMissing', 'lowStock', 'toMatch', 'toDebit', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
-  manager: ['approvals', 'watchList', 'meetingActions', 'letters', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
+  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'certifiedToReceive', 'expiring', 'lateDeliveries', 'toOrder', 'staffToDecide', 'dprsMissing', 'lowStock', 'toMatch', 'toDebit', 'grnsToCheck', 'findingsToClose', 'dueThisWeek', 'transfersToReceive', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
+  manager: ['approvals', 'watchList', 'meetingActions', 'letters', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'findingsToClose', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
   accounts: ['payablesDue', 'certifiedToReceive', 'toMatch', 'toDebit', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
   purchase: ['toOrder', 'lateDeliveries', 'dueThisWeek', 'toMatch', 'toDebit', 'approvals', 'watchList', 'lowStock', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
   stores: ['dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'watchList', 'approvals', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
   hr: ['staffToDecide', 'approvals', 'watchList', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
   qs: ['sentBack', 'waitingWithOthers', 'approvals', 'meetingActions', 'letters', 'receivables', 'dprsMissing'],
   documents: ['letters', 'approvals', 'watchList', 'meetingActions', 'sentBack', 'waitingWithOthers'],
-  site: ['grnsToCheck', 'sentBack', 'meetingActions', 'letters', 'waitingWithOthers', 'dprsMissing', 'approvals', 'dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'staffToDecide'],
+  site: ['grnsToCheck', 'findingsToClose', 'sentBack', 'meetingActions', 'letters', 'waitingWithOthers', 'dprsMissing', 'approvals', 'dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'staffToDecide'],
 };
 
 function myWorkOrder(role: RoleKey): MyWorkKey[] {
@@ -81,6 +81,7 @@ const CARDS: Record<CardKey, { title: string; icon: keyof typeof Ionicons.glyphM
   certifiedToReceive: { title: 'Certified, payment to come', icon: 'document-attach-outline', tone: 'error', route: null, web: '/receivables' },
   toMatch: { title: 'Goods received, no bill yet', icon: 'git-compare-outline', tone: 'warning', route: null, web: '/vendor-bills?tab=to-bill' },
   grnsToCheck: { title: 'Material to check', icon: 'clipboard-outline', tone: 'warning', route: null, web: '/inspections?tab=grns' },
+  findingsToClose: { title: 'Audit findings to close', icon: 'search-outline', tone: 'warning', route: null, web: '/qa-audits?open=1' },
   toDebit: { title: 'Debit notes to raise', icon: 'return-down-back-outline', tone: 'warning', route: null, web: '/payables?tab=debit-notes&sub=to-raise' },
   transfersToReceive: { title: 'Material on the way', icon: 'swap-horizontal-outline', tone: 'info', route: '/stock', web: '/stock' },
 };
