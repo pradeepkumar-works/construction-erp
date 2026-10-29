@@ -339,6 +339,55 @@ Letters in and out for every project and for head office (`CorrespondenceService
   project's Documents › Letters, Search's Letters, My work's "Letters for you". Phone: `app/letters.tsx` (marked to you,
   to sign) and `app/letter/[id].tsx` (close, approve, return).
 
+### QA/QC (item 137)
+
+Test types, a project's quality plan (inspection and test plan, ITP), the tests it owes and the pour register
+(`QaService`, `PoursService`, `apps/api/src/qa`; routes under `/qa`). The rules are pure in `@erp/shared/qa-plan.ts`,
+tested in `src/scripts/qa-plan-test.ts` (CI runs it).
+
+- **Test types.** `STANDARD_TEST_TYPES` (cube, slump, cement, steel, silt, grading, AIV, brick strength and absorption, MDD,
+  CBR, field density, bitumen, penetration, water, hydrotest) with the IS or MoRTH method, unit, limits and readings; the
+  company's `TestType` rows lay over them by code (`testTypesOf`), so nothing is seeded. Admin › Masters › Test types.
+- **Plan.** `QaPlanLine`: what it covers (`source` WORK or RECEIPT, `match` words, `grade`, `itemCategory`, `unit`), the test
+  type, how often (`IS456`, `QUANTITY` per `per`, `RECEIPT` per lot, `DAY`), the witness (own, client, TPI), hold point and
+  acceptance. A project starts from `STANDARD_QA_PLANS[type]`; `canManageQaPlan` edits it.
+- **Tests due.** `testsOwed(line, work, lots, taken)`: work is approved DPR lines (`ProgressEntry`, words matched on the
+  activity and BOQ item, the grade read by `concreteGrade`), lots are receipts not rejected; IS 456 lines count
+  `is456Samples` of each grade's volume per day (clause 15.2.2). A test counts under the line it names, else
+  `planLineFor` (the only line of its type and grade). `GET /qa/tests-due` gives each line's owed, taken and short.
+- **Pours.** `Pour` (`POUR-<year>-NNNN`): place, element, grade, planned and actual volume, source (RMC or site batched),
+  supplier. Asking for its pour card makes an `Inspection` with `POUR_CARD_CHECKLIST` through `InspectionsService.create`
+  (the card is the inspection; `pourFlags` shows a pour without a passed card, or poured short of cube sets).
+  `cubeSetsFor(volume)` is the sets it owes; a cube test names its pour (`QualityTest.pourId`).
+- **Cube check.** `cubeAcceptance(results, fck)`: IS 456 clause 16.1 and Table 11 as amended. In date order, each four
+  non-overlapping results' mean must reach max(fck + 0.825 × SD rounded to 0.5, fck + 3) and each result fck − 3; the
+  SD is Table 8's (`assumedSd`: 3.5 to M15, 4 to M25, 5 above) until the grade has 30 results of its own. The margins
+  follow the published amendment as summarised in https://infralens.in/handbook/cube-test-acceptance; check them against
+  the contract's own specification. `GET /qa/cubes` by project and grade.
+- **Clients.** Web: `/quality-plan`, `/tests-due`, `/pours` (Pours and Cube results tabs), `/test-types`; the test form
+  picks a type and fills its plan line and pour.
+
+Part 2 (`QaRegistersService`, rules pure in `@erp/shared/qa-registers.ts`, tested in `src/scripts/qa-registers-test.ts`):
+
+- **Labs.** `QaLab`: the site's own lab (at a project), an NABL lab with its certificate (`NABL_NO`) and validity
+  (`accreditationState`: expiring in its last `NABL_ALERT_DAYS`, then expired), the group company's lab or another. A lab
+  samples went to is switched off, never deleted. `/qa-labs`, under Masters.
+- **Samples.** A test names its lab, the day sent, the lab's report number and day, and the charge (`QualityTest.labId`,
+  `sentOn`, `labReportNo`, `reportOn`, `labCharge`; checked by `labFields`). `sampleState` and `reportWait` (late after
+  `LAB_REPORT_DAYS`, counted from the later of the day sent and the last reading due) drive `GET /qa/samples` and
+  `/lab-samples`.
+- **Calibration.** `QaInstrument` (kind from the `instrumentKind` master, `calibrationDaysFor` its usual interval) and
+  its `QaCalibration` history with the certificate as attachments; the latest calibration sets the instrument's last
+  day, next due and result. `calibrationState` (due soon in its last `CALIBRATION_SOON_DAYS`, overdue, never, out of use
+  after a failed one). A test names the instrument it was run on, and `testedOutOfCalibration` flags it. `/calibration`.
+- **Test certificates.** `Organization.mtcCategories` (item categories, by code; steel, cement and pipes by default) are
+  the material that needs the maker's test certificate; the GRN's QA/QC check takes its number and date
+  (`StockEntry.mtcNo`, `mtcDate`) and `certificateNeeded` warns without blocking. `GET /qa/certificates-missing` and
+  `/test-certificates` list receipts still without one.
+- **NCRs.** Category (`ncrCategory` master), root cause (`ncrRootCause`, chosen with the corrective action), raised by the
+  client or TPI, and the rework cost (on the action or at closure); `assertNcrLists` keeps them to the masters' codes.
+- Part 3 (audits and visits, the QA/QC dashboard and monthly report, the phone, My work and the watch list) follows.
+
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 
 The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the person's day and then a menu, as a phone's home

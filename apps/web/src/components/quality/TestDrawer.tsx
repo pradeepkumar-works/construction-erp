@@ -10,7 +10,8 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useNcrs, useQualityTest } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR } from '@/lib/format';
+import { AppTag } from '@/components/common/AppTag';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { NcrStatusTag, TestResultTag } from './qualityUi';
@@ -139,6 +140,42 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
               { key: 'spec', label: 'Specification', children: data.specification ?? '-', span: 2 },
               { key: 'range', label: 'Passes at', children: spec ?? 'As judged by the tester' },
               { key: 'result', label: 'Result', children: <TestResultTag result={data.result} /> },
+              ...(data.labName
+                ? [
+                    {
+                      key: 'lab',
+                      label: 'Lab',
+                      span: 2,
+                      children: (
+                        <span translate="no">
+                          {[
+                            data.labName,
+                            data.sentOn ? `sent ${formatDate(data.sentOn)}` : null,
+                            data.reportOn ? `report ${[data.labReportNo, formatDate(data.reportOn)].filter(Boolean).join(' of ')}` : data.sentOn ? 'report awaited' : null,
+                            data.labCharge ? formatINR(data.labCharge) : null,
+                          ]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </span>
+                      ),
+                    },
+                  ]
+                : []),
+              ...(data.instrumentName
+                ? [
+                    {
+                      key: 'instrument',
+                      label: 'Tested on',
+                      span: 2,
+                      children: (
+                        <Space size={4} wrap>
+                          <span translate="no">{data.instrumentName}</span>
+                          {data.outOfCalibration ? <AppTag tone="danger">Out of calibration that day</AppTag> : null}
+                        </Space>
+                      ),
+                    },
+                  ]
+                : []),
               { key: 'remarks', label: 'Remarks', children: data.remarks ?? '-', span: 2 },
               { key: 'by', label: 'Recorded by', children: `${data.createdByName}, ${formatDateTime(data.createdAt)}`, span: 2 },
             ]}

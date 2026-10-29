@@ -92,7 +92,7 @@ const include = {
   toProject: { select: { name: true } },
   transferIn: { select: { id: true, entryNo: true } },
   transferOut: { select: { entryNo: true, project: { select: { name: true } } } },
-  lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true } } } },
+  lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true, category: true } } } },
   qcBy: { select: { fullName: true } },
   equipment: { select: { code: true } },
   attachments: { select: ATTACHMENT_FIELDS },
@@ -239,11 +239,14 @@ export class StockService {
       qcAt: iso(r.qcAt),
       qcByName: r.qcBy?.fullName ?? null,
       qcNote: r.qcNote,
+      mtcNo: r.mtcNo,
+      mtcDate: dateOnly(r.mtcDate),
       lines: r.lines.map((l) => ({
         id: l.id,
         itemId: l.itemId,
         itemName: l.item.name,
         unit: l.item.unit,
+        category: l.item.category,
         quantity: dec(l.quantity)!,
         materialRequestItemId: l.materialRequestItemId,
         purchaseOrderLineId: l.purchaseOrderLineId,
@@ -744,7 +747,10 @@ export class StockService {
       if (all) throw new BadRequestException('Everything was rejected: mark it rejected');
     }
     await this.prisma.$transaction([
-      this.prisma.stockEntry.update({ where: { id }, data: { qcStatus: dto.status, qcAt: new Date(), qcById: user.id, qcNote: note } }),
+      this.prisma.stockEntry.update({
+        where: { id },
+        data: { qcStatus: dto.status, qcAt: new Date(), qcById: user.id, qcNote: note, ...(dto.mtcNo !== undefined ? { mtcNo: blank(dto.mtcNo) } : {}), ...(dto.mtcDate !== undefined ? { mtcDate: dto.mtcDate ? parseDate(dto.mtcDate) : null } : {}) },
+      }),
       ...row.lines.map((l) => this.prisma.stockTxn.update({ where: { id: l.id }, data: { rejectedQty: rejected.get(l.id) ?? ZERO } })),
     ]);
     await this.audit.log(user, 'STOCK', id, `QC_${dto.status}`, note);

@@ -82,13 +82,14 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     label: 'Quality (QA/QC)',
     icon: 'shield-check',
     family: 'work',
-    description: 'Inspections and hold points, material tests, NCRs and material checked on arrival.',
+    description: 'Inspections and hold points, the quality plan and tests due, material tests, pours and samples at the labs, calibration, NCRs and material checked on arrival.',
     subs: [
       sub('inspections', 'Inspections', 'quality.inspections'),
-      sub('tests', 'Tests', 'quality.tests'),
+      sub('plan', 'Plan', 'quality.plan', 'quality.due'),
+      sub('tests', 'Tests', 'quality.tests', 'quality.pours', 'quality.samples', 'quality.calibration'),
       sub('material', 'Material', 'quality.grns', 'materials.approvals'),
       sub('ncrs', 'NCRs', 'quality.ncrs'),
-      sub('masters', 'Masters', 'quality.checklists'),
+      sub('masters', 'Masters', 'quality.checklists', 'quality.testTypes', 'quality.labs', 'quality.certificates', 'quality.ncrCategories', 'quality.rootCauses', 'quality.instrumentKinds'),
     ],
   },
   {

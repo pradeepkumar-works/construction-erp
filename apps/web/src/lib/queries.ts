@@ -2,6 +2,12 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  CubeAcceptanceDto,
+  PourDto,
+  PourStatus,
+  QaPlanDto,
+  TestTypeDto,
+  TestsDueDto,
   GroupCompanyInput,
   GroupStateDto,
   ManagementReportDto,
@@ -390,8 +396,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle,
-} from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -1416,6 +1421,105 @@ export const useQualitySummary = (projectId?: string) =>
   useQuery({
     queryKey: ['quality', 'summary', projectId ?? null],
     queryFn: async () => (await api.get<QualitySummaryDto>('/quality/summary', { params: clean({ projectId }) })).data,
+  });
+
+/* ---------- QA/QC plans and pours (item 137) ---------- */
+
+/** The company's test types; switched-off ones only with `all`, for the master page. */
+export const useTestTypes = (all = false) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'test-types'],
+    queryFn: async () => (await api.get<TestTypeDto[]>('/qa/test-types')).data,
+    staleTime: 5 * 60_000,
+    select: (types) => (all ? types : types.filter((t) => t.active)),
+  });
+
+export const useQaPlan = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'plan', projectId],
+    queryFn: async () => (await api.get<QaPlanDto>('/qa/plan', { params: { projectId } })).data,
+    enabled: !!projectId,
+  });
+
+export const useTestsDue = (projectId?: string, short?: boolean) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'due', projectId ?? null, !!short],
+    queryFn: async () => (await api.get<TestsDueDto>('/qa/tests-due', { params: clean({ projectId, short: short || undefined }) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useCubeAcceptance = (projectId?: string) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'cubes', projectId ?? null],
+    queryFn: async () => (await api.get<CubeAcceptanceDto[]>('/qa/cubes', { params: clean({ projectId }) })).data,
+  });
+
+export interface PourFilters extends PageParams {
+  projectId?: string;
+  status?: PourStatus;
+  flagged?: boolean;
+  grade?: string;
+}
+
+export const usePours = (filters?: PourFilters) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'pours', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<PourDto>>('/qa/pours', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const usePour = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'pours', 'detail', id],
+    queryFn: async () => (await api.get<PourDto>(`/qa/pours/${id}`)).data,
+    enabled: !!id,
+  });
+
+/* ---------- QA/QC registers (item 137 part 2) ---------- */
+
+export const useQaLabs = (enabled = true) =>
+  useQuery({ queryKey: ['quality', 'qa', 'labs'], queryFn: async () => (await api.get<QaLabDto[]>('/qa/labs')).data, staleTime: 60_000, enabled });
+
+export interface LabSampleFilters extends PageParams {
+  projectId?: string;
+  labId?: string;
+  state?: 'AT_LAB' | 'REPORTED';
+  late?: boolean;
+}
+
+export const useLabSamples = (filters?: LabSampleFilters) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'samples', clean(filters)],
+    queryFn: async () => (await api.get<LabSamplesDto>('/qa/samples', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useInstruments = (filters?: { projectId?: string; attention?: boolean }, enabled = true) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'instruments', clean(filters)],
+    queryFn: async () => (await api.get<CalibrationRegisterDto>('/qa/instruments', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useInstrument = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'instruments', 'detail', id],
+    queryFn: async () => (await api.get<QaInstrumentDto>(`/qa/instruments/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useCertificateCategories = () =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'certificate-categories'],
+    queryFn: async () => (await api.get<{ categories: string[]; standard: string[]; canEdit: boolean }>('/qa/certificate-categories')).data,
+    staleTime: 5 * 60_000,
+  });
+
+export const useCertificatesMissing = (projectId?: string) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'certificates-missing', projectId ?? null],
+    queryFn: async () => (await api.get<CertificateMissingDto[]>('/qa/certificates-missing', { params: clean({ projectId }) })).data,
   });
 
 export interface DocumentFilters extends PageParams {

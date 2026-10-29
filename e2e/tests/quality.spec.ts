@@ -68,7 +68,7 @@ test.describe.serial('a failed cube test through its NCR', () => {
     await signIn(page, 'engineer@demo.com');
     await page.goto(`/inspections?tab=ncrs&id=${ncrId}`);
     const drawer = page.locator('.ant-drawer-open');
-    await drawer.getByLabel('Cause').fill('Extra water added at the pump');
+    await drawer.getByLabel('Cause', { exact: true }).fill('Extra water added at the pump');
     await drawer.getByLabel('Corrective action').fill('Cores taken: 26.4 N/mm², accepted by the designer');
     await drawer.getByRole('button', { name: 'Record action' }).click();
     await expect(page.getByText(/Action recorded on NCR-/)).toBeVisible();

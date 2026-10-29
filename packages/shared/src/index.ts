@@ -101,3 +101,5 @@ export * from './nav-menu';
 export * from './group';
 export * from './masters';
 export * from './correspondence';
+export * from './qa-plan';
+export * from './qa-registers';

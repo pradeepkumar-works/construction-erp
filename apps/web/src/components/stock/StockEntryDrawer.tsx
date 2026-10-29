@@ -131,6 +131,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
                         </Space>
                       ),
                     },
+                    ...(data.mtcNo ? [{ key: 'mtc', label: 'Test certificate', children: <span translate="no">{data.mtcDate ? `${data.mtcNo}, ${formatDate(data.mtcDate)}` : data.mtcNo}</span> }] : []),
                   ]
                 : []),
               ...(data.type === 'TRANSFER_OUT'

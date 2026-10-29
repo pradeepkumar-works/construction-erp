@@ -69,6 +69,25 @@ export class CreateTestDto {
   @ArrayMaxSize(200)
   @IsUUID('all', { each: true })
   segmentIds?: string[];
+  @ApiPropertyOptional({ example: 'CUBE', description: "The test type it is taken as (item 137); counts it under the project's quality plan" })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @trim()
+  @IsString()
+  @MaxLength(30)
+  testTypeCode?: string | null;
+  @ApiPropertyOptional({ description: 'The quality plan line it counts under; omitted = the only line of its type (or of its grade)' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsUUID()
+  planLineId?: string | null;
+  @ApiPropertyOptional({ description: 'Cubes taken at a pour of the same project' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pourId?: string | null;
+  @ApiPropertyOptional({ description: 'The lab the sample went to (item 137 part 2)' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() labId?: string | null;
+  @ApiPropertyOptional({ example: '2026-10-21', description: 'The day the sample went to the lab' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() sentOn?: string | null;
+  @ApiPropertyOptional({ example: 'KTL/2026/4471' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) labReportNo?: string | null;
+  @ApiPropertyOptional({ example: '2026-11-19', description: "The day of the lab's report" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() reportOn?: string | null;
+  @ApiPropertyOptional({ example: '1800.00', description: "The lab's charge for the sample" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() labCharge?: string | null;
+  @ApiPropertyOptional({ description: 'The instrument it was tested on, from the calibration register' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() instrumentId?: string | null;
 }
 
 /** `readings`, when given, is the complete list: readings left out are removed. */
@@ -99,6 +118,10 @@ export class CreateNcrDto {
   @ApiPropertyOptional() @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() activityId?: string | null;
   @ApiPropertyOptional({ description: 'The inspection that found it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() inspectionId?: string | null;
   @ApiPropertyOptional({ description: 'The test that failed' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() qualityTestId?: string | null;
+  @ApiPropertyOptional({ example: 'workmanship', description: 'An NCR category (Masters › NCR categories), by code' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) category?: string | null;
+  @ApiPropertyOptional({ example: 'supervision', description: 'A root cause (Masters › NCR root causes), by code' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) rootCause?: string | null;
+  @ApiPropertyOptional({ description: "Raised by the client's engineer or the third-party inspector" }) @IsOptional() @IsBoolean() raisedByClient?: boolean;
+  @ApiPropertyOptional({ example: '42000.00', description: 'What putting it right cost' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() reworkCost?: string | null;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
 }
 
@@ -108,11 +131,14 @@ export class NcrActionDto {
   @ApiProperty({ description: 'Why it happened' }) @trim() @IsString() @IsNotEmpty() @MaxLength(2000) cause: string;
   @ApiProperty({ description: 'What was done to put it right' }) @trim() @IsString() @IsNotEmpty() @MaxLength(2000) correctiveAction: string;
   @ApiPropertyOptional({ description: 'What will stop it happening again' }) @IsOptional() @trim() @IsString() @MaxLength(2000) preventiveAction?: string | null;
+  @ApiPropertyOptional({ example: 'supervision', description: 'The root cause (Masters › NCR root causes), by code' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) rootCause?: string | null;
+  @ApiPropertyOptional({ example: '42000.00', description: 'What putting it right cost' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() reworkCost?: string | null;
   @ApiPropertyOptional({ type: [String], description: 'Photos of the rectified work, added to the NCR' }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
 }
 
 export class NcrCloseDto {
   @ApiPropertyOptional({ description: 'How it was verified' }) @IsOptional() @trim() @IsString() @MaxLength(2000) note?: string | null;
+  @ApiPropertyOptional({ example: '42000.00', description: 'What putting it right cost, where known by now' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() reworkCost?: string | null;
 }
 
 export class NcrReopenDto {

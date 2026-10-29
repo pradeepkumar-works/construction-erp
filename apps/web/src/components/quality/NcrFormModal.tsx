@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, Form, Input, Segmented, Select, Typography } from 'antd';
+import { App, Checkbox, Form, Input, Segmented, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, NcrDto, NcrSeverity } from '@erp/shared';
@@ -9,7 +9,7 @@ import { NCR_SEVERITIES, NCR_SEVERITY_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useActivities, useProject, useProjects } from '@/lib/queries';
+import { useActivities, useMasterList, useProject, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
@@ -23,6 +23,17 @@ interface FormValues {
   actionById?: string;
   dueDate?: dayjs.Dayjs | null;
   photos?: AttachmentDto[];
+  category?: string | null;
+  raisedByClient?: boolean;
+}
+
+/** A simple list's entries as Select options by code (item 137 part 2), keeping a switched-off entry a record still has. */
+export function useMasterOptions(slug: string, current?: string | null, enabled = true) {
+  const { data } = useMasterList(slug, false, enabled);
+  const entries = data?.entries ?? [];
+  const options = entries.filter((e) => e.isActive || e.code === current).map((e) => ({ value: e.code, label: e.name }));
+  const nameOf = (code: string | null | undefined) => (code ? (entries.find((e) => e.code === code)?.name ?? code) : null);
+  return { options, nameOf };
 }
 
 /** An NCR raised from a failed test or inspection starts from it. */
@@ -49,6 +60,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
   const { data: activities } = useActivities(selectedProject);
   const { data: project } = useProject(selectedProject);
+  const categories = useMasterOptions('ncr-category', ncr?.category, open);
 
   const people = useMemo(() => {
     if (!project) return [];
@@ -74,6 +86,8 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         actionById: ncr.actionById ?? undefined,
         dueDate: ncr.dueDate ? dayjs(ncr.dueDate) : null,
         photos: ncr.attachments,
+        category: ncr.category,
+        raisedByClient: ncr.raisedByClient,
       });
     } else {
       form.setFieldsValue({
@@ -83,6 +97,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         location: prefill?.location ?? undefined,
         activityId: prefill?.activityId ?? undefined,
         severity: 'MINOR',
+        raisedByClient: false,
         dueDate: dayjs().add(7, 'day'),
       });
     }
@@ -99,6 +114,8 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         actionById: v.actionById ?? (editing ? null : undefined),
         dueDate: v.dueDate ? v.dueDate.format('YYYY-MM-DD') : null,
         attachmentIds: (v.photos ?? []).map((p) => p.id),
+        category: v.category ?? null,
+        raisedByClient: !!v.raisedByClient,
       };
       return ncr
         ? (await api.patch<NcrDto>(`/quality/ncrs/${ncr.id}`, body)).data
@@ -143,8 +160,16 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         <Form.Item name="description" label="Details" rules={[{ required: true, whitespace: true, message: 'Say what is wrong and against which requirement' }]}>
           <Input.TextArea rows={3} maxLength={4000} placeholder="What is wrong, against which drawing or specification, and what must be done" />
         </Form.Item>
-        <Form.Item name="severity" label="Severity">
-          <Segmented options={NCR_SEVERITIES.map((s) => ({ value: s, label: NCR_SEVERITY_LABELS[s] }))} />
+        <FormGrid cols={2}>
+          <Form.Item name="severity" label="Severity">
+            <Segmented options={NCR_SEVERITIES.map((s) => ({ value: s, label: NCR_SEVERITY_LABELS[s] }))} />
+          </Form.Item>
+          <Form.Item name="category" label="Category">
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Workmanship, material…" options={categories.options} />
+          </Form.Item>
+        </FormGrid>
+        <Form.Item name="raisedByClient" valuePropName="checked">
+          <Checkbox>Raised by the client or their consultant</Checkbox>
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="activityId" label="Activity (optional)">

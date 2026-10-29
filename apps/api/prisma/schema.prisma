@@ -734,6 +734,8 @@ model Organization {
   modulesOff          String[]           @default([])
   /// Correspondence (item 136): which outward letters wait for their signatory's approval before they are numbered
   letterApproval      LetterApprovalRule @default(CONTRACTUAL)
+  /// Item categories (master codes) whose receipts need the maker's test certificate (item 137 part 2)
+  mtcCategories       String[]           @default(["steel", "cement", "pipes-and-fittings"])
   /// Launcher phase 3: Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
   discoverLocked      Boolean            @default(true)
   /// The plan's module set, set from the Nirmaan console; null = every module
@@ -850,6 +852,12 @@ model Organization {
   inspections          Inspection[]
   qualityTests         QualityTest[]
   ncrs                 Ncr[]
+  testTypes            TestType[]
+  qaPlanLines          QaPlanLine[]
+  pours                Pour[]
+  qaLabs               QaLab[]
+  qaInstruments        QaInstrument[]
+  qaCalibrations       QaCalibration[]
   documents            Document[]
   drawingMarkups       DrawingMarkup[]
   transmittals         Transmittal[]
@@ -1126,6 +1134,8 @@ model User {
   inspectionsDone       Inspection[]               @relation("InspectionInspector")
   inspectionsWitnessed  Inspection[]               @relation("InspectionWitness")
   qualityTests          QualityTest[]              @relation("TestCreator")
+  pours                 Pour[]                     @relation("PourCreator")
+  qaCalibrations        QaCalibration[]            @relation("CalibrationBy")
   ncrsRaised            Ncr[]                      @relation("NcrRaiser")
   ncrsToAct             Ncr[]                      @relation("NcrActionBy")
   ncrsClosed            Ncr[]                      @relation("NcrCloser")
@@ -1394,6 +1404,10 @@ model Project {
   inspections        Inspection[]
   qualityTests       QualityTest[]
   ncrs               Ncr[]
+  qaPlanLines        QaPlanLine[]
+  pours              Pour[]
+  qaLabs             QaLab[]
+  qaInstruments      QaInstrument[]
   documents          Document[]
   drawingMarkups     DrawingMarkup[]
   transmittals       Transmittal[]
@@ -2237,6 +2251,7 @@ model Activity {
   inspections      Inspection[]
   qualityTests     QualityTest[]
   ncrs             Ncr[]
+  pours            Pour[]
   workerDays       WorkerAttendance[]
   successorLinks   ActivityLink[]         @relation("LinkPredecessor")
   predecessorLinks ActivityLink[]         @relation("LinkSuccessor")
@@ -2957,6 +2972,9 @@ model StockEntry {
   qcById             String?
   qcBy               User?                  @relation("GrnQcBy", fields: [qcById], references: [id], onDelete: SetNull)
   qcNote             String?
+  /// The maker's test certificate for the lot (item 137 part 2), where its item category needs one
+  mtcNo              String?
+  mtcDate            DateTime?              @db.Date
   createdById        String
   createdBy          User                   @relation(fields: [createdById], references: [id])
   createdAt          DateTime               @default(now())
@@ -4157,6 +4175,8 @@ model Attachment {
   drawingMarkups     DrawingMarkup[]
   letterId           String?
   letter             Letter?            @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  qaCalibrationId    String?
+  qaCalibration      QaCalibration?     @relation(fields: [qaCalibrationId], references: [id], onDelete: Cascade)
   variationId        String?
   variation          Variation?         @relation(fields: [variationId], references: [id], onDelete: Cascade)
   safetyIncidentId   String?
@@ -4530,6 +4550,7 @@ model Inspection {
 
   attachments Attachment[]
   ncrs        Ncr[]
+  pour        Pour?
 
   @@unique([organizationId, inspectionNo])
   @@index([projectId, status])
@@ -4541,34 +4562,52 @@ model Inspection {
 /// A quality test: a sample taken on a date, the specification and its readings (cubes at 7 and 28 days).
 /// The result is decided by the last reading: against specMin / specMax when given, else as recorded.
 model QualityTest {
-  id             String       @id @default(uuid())
+  id             String        @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id])
   projectId      String
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   activityId     String?
-  activity       Activity?    @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  activity       Activity?     @relation(fields: [activityId], references: [id], onDelete: SetNull)
   /// TST-2026-0001
   testNo         String
   kind           TestKind
   /// e.g. "M25 cubes, GF slab bays 1 to 4"
   title          String
   location       String?
-  sampledOn      DateTime     @db.Date
+  sampledOn      DateTime      @db.Date
   /// As written in the contract, e.g. "Not less than 25 N/mm2 at 28 days"
   specification  String?
   unit           String?
-  specMin        Decimal?     @db.Decimal(18, 3)
-  specMax        Decimal?     @db.Decimal(18, 3)
-  result         TestResult   @default(PENDING)
+  specMin        Decimal?      @db.Decimal(18, 3)
+  specMax        Decimal?      @db.Decimal(18, 3)
+  result         TestResult    @default(PENDING)
   remarks        String?
   createdById    String
-  createdBy      User         @relation("TestCreator", fields: [createdById], references: [id])
+  createdBy      User          @relation("TestCreator", fields: [createdById], references: [id])
   /// Cubes taken from an RMC truck (v6 item 104)
-  rmcBatchId     String?      @unique
-  rmcBatch       RmcBatch?    @relation(fields: [rmcBatchId], references: [id], onDelete: SetNull)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  rmcBatchId     String?       @unique
+  rmcBatch       RmcBatch?     @relation(fields: [rmcBatchId], references: [id], onDelete: SetNull)
+  /// The test type it was taken as (item 137): a standard code or the company's own
+  testTypeCode   String?
+  /// The quality plan line it counts under
+  planLineId     String?
+  planLine       QaPlanLine?   @relation(fields: [planLineId], references: [id], onDelete: SetNull)
+  /// Cubes taken at a pour
+  pourId         String?
+  pour           Pour?         @relation(fields: [pourId], references: [id], onDelete: SetNull)
+  /// Sent out (item 137 part 2): the lab, the day it went, the lab's report number and day, and its charge
+  labId          String?
+  lab            QaLab?        @relation(fields: [labId], references: [id], onDelete: SetNull)
+  sentOn         DateTime?     @db.Date
+  labReportNo    String?
+  reportOn       DateTime?     @db.Date
+  labCharge      Decimal?      @db.Decimal(18, 2)
+  /// The instrument it was tested on, for the calibration check
+  instrumentId   String?
+  instrument     QaInstrument? @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   readings     QualityTestReading[]
   attachments  Attachment[]
@@ -4578,6 +4617,10 @@ model QualityTest {
   @@unique([organizationId, testNo])
   @@index([projectId, result])
   @@index([organizationId, kind])
+  @@index([planLineId])
+  @@index([pourId])
+  @@index([labId, reportOn])
+  @@index([instrumentId])
 }
 
 /// One reading of a test: "7 days", "28 days" or "Result", due on a date, with the value once tested.
@@ -4631,6 +4674,11 @@ model Ncr {
   closedBy         User?        @relation("NcrCloser", fields: [closedById], references: [id])
   closedAt         DateTime?
   closureNote      String?
+  /// Item 137 part 2: the `ncrCategory` and `ncrRootCause` masters (codes), raised by the client or TPI, and what putting it right cost
+  category         String?
+  rootCause        String?
+  raisedByClient   Boolean      @default(false)
+  reworkCost       Decimal?     @db.Decimal(18, 2)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
@@ -4639,6 +4687,110 @@ model Ncr {
 
   @@unique([organizationId, ncrNo])
   @@index([projectId, status])
+  @@index([organizationId, status])
+}
+
+/// A company's copy of a standard test type or one of its own (item 137, `STANDARD_TEST_TYPES` in shared): matched by
+/// code, so a company that never edits its tests needs no rows.
+model TestType {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// CUBE, SAND_SILT…: a standard code or the company's own
+  code           String
+  name           String
+  /// The built-in kind it is recorded as
+  kind           TestKind
+  material       String
+  /// e.g. IS 516
+  method         String?
+  unit           String
+  specMin        Decimal?     @db.Decimal(18, 3)
+  specMax        Decimal?     @db.Decimal(18, 3)
+  /// [{ label, days }]
+  readings       Json
+  specimens      Int          @default(1)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+/// One line of a project's quality plan (inspection and test plan, item 137): a test, the work or material it covers and
+/// how often it is owed. Tests due are counted from it (`testsOwed` in shared).
+model QaPlanLine {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// A test type's code
+  testType       String
+  /// WORK | RECEIPT (`QA_PLAN_SOURCES`)
+  source         String
+  /// Words the work or the item is named with, comma separated
+  match          String       @default("")
+  /// Concrete: the grade the line is for (M25)
+  grade          String?
+  /// Material: the item category it covers
+  itemCategory   String?
+  /// IS456 | QUANTITY | RECEIPT | DAY (`QA_FREQUENCIES`)
+  frequency      String
+  per            Decimal?     @db.Decimal(18, 3)
+  unit           String?
+  /// OWN | CLIENT | TPI (`QA_WITNESSES`)
+  witness        String       @default("OWN")
+  holdPoint      Boolean      @default(false)
+  notes          String?
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  tests QualityTest[]
+
+  @@index([projectId])
+  @@index([organizationId])
+}
+
+/// A concrete pour (item 137): its grade and volume, the pour card that clears it and the cube sets taken from it,
+/// checked under IS 456.
+model Pour {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activityId     String
+  activity       Activity     @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  /// POUR-2026-0001
+  pourNo         String
+  date           DateTime     @db.Date
+  location       String
+  /// M25
+  grade          String
+  plannedVolume  Decimal      @db.Decimal(18, 3)
+  /// Volume poured, once poured
+  volume         Decimal?     @db.Decimal(18, 3)
+  /// RMC | SITE (`POUR_SOURCES`)
+  source         String       @default("RMC")
+  supplier       String?
+  /// PLANNED | POURED | CANCELLED (`POUR_STATUSES`)
+  status         String       @default("PLANNED")
+  /// The pour card: an inspection with the pour card's points
+  inspectionId   String?      @unique
+  inspection     Inspection?  @relation(fields: [inspectionId], references: [id], onDelete: SetNull)
+  remarks        String?
+  createdById    String
+  createdBy      User         @relation("PourCreator", fields: [createdById], references: [id])
+  pouredAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  tests QualityTest[]
+
+  @@unique([organizationId, pourNo])
+  @@index([projectId, date])
   @@index([organizationId, status])
 }
 
@@ -8107,4 +8259,87 @@ model AuthAttempt {
   @@index([email, kind, createdAt])
   @@index([ip, kind, createdAt])
   @@index([createdAt])
+}
+
+/// A lab tests are done at (item 137 part 2): the site's own, an NABL lab with its accreditation, a sister company's, or other.
+model QaLab {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  /// SITE | NABL | GROUP | OUTSIDE (`LAB_KINDS`)
+  kind           String       @default("OUTSIDE")
+  nablNo         String?
+  nablValidTill  DateTime?    @db.Date
+  /// A site lab's project
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  address        String?
+  contact        String?
+  phone          String?
+  email          String?
+  active         Boolean      @default(true)
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  tests       QualityTest[]
+  instruments QaInstrument[]
+
+  @@unique([organizationId, name])
+}
+
+/// An instrument in the calibration register (item 137 part 2), at a site or a lab, with when it falls due.
+model QaInstrument {
+  id               String       @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  name             String
+  /// The `instrumentKind` master (code)
+  kind             String
+  serialNo         String?
+  make             String?
+  range            String?
+  projectId        String?
+  project          Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  labId            String?
+  lab              QaLab?       @relation(fields: [labId], references: [id], onDelete: SetNull)
+  intervalDays     Int          @default(365)
+  /// From the latest calibration
+  lastCalibratedOn DateTime?    @db.Date
+  nextDueOn        DateTime?    @db.Date
+  lastResult       String?
+  certificateNo    String?
+  active           Boolean      @default(true)
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  calibrations QaCalibration[]
+  tests        QualityTest[]
+
+  @@index([organizationId, nextDueOn])
+}
+
+/// One calibration of an instrument: the certificate, who did it, the result and the next due day.
+model QaCalibration {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  instrumentId   String
+  instrument     QaInstrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  calibratedOn   DateTime     @db.Date
+  certificateNo  String?
+  agency         String?
+  /// OK | ADJUSTED | FAILED (`CALIBRATION_RESULTS`)
+  result         String       @default("OK")
+  nextDueOn      DateTime?    @db.Date
+  remarks        String?
+  createdById    String
+  createdBy      User         @relation("CalibrationBy", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  attachments Attachment[]
+
+  @@index([instrumentId, calibratedOn])
 }

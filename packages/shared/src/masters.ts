@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -205,6 +205,75 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
       'Statutory and tax',
       'Bank',
       'Invitation and meeting',
+    ),
+  },
+  ncrCategory: {
+    key: 'ncrCategory',
+    label: 'NCR categories',
+    singular: 'NCR category',
+    description: 'What kind of non-conformance an NCR records, for the monthly report and the trend by category.',
+    slug: 'ncr-category',
+    node: 'quality.ncrCategories',
+    usedOn: 'NCRs',
+    manage: (role) => P.canManageChecklists(role),
+    standard: entries(
+      ['Workmanship', 'कारीगरी'],
+      ['Material', 'सामग्री'],
+      ['Dimensions and levels', 'माप और लेवल'],
+      ['Concrete strength', 'कंक्रीट की मज़बूती'],
+      ['Reinforcement', 'सरिया'],
+      ['Shuttering', 'शटरिंग'],
+      ['Finishes', 'फिनिशिंग'],
+      ['Testing not done', 'टेस्ट नहीं हुआ'],
+      ['Documentation', 'दस्तावेज़'],
+      ['Drawing not followed', 'ड्रॉइंग के अनुसार नहीं'],
+      ['Safety', 'सुरक्षा'],
+    ),
+  },
+  ncrRootCause: {
+    key: 'ncrRootCause',
+    label: 'NCR root causes',
+    singular: 'root cause',
+    description: 'Why a non-conformance happened, chosen when site answers the NCR, so the same causes can be fixed at their source.',
+    slug: 'ncr-root-cause',
+    node: 'quality.rootCauses',
+    usedOn: 'NCRs',
+    manage: (role) => P.canManageChecklists(role),
+    standard: entries(
+      ['Workmanship or skill', 'कारीगरी या कौशल'],
+      ['Supervision', 'निगरानी'],
+      ['Method not followed', 'तरीका नहीं अपनाया'],
+      ['Material defect', 'सामग्री में दोष'],
+      ['Wrong or late drawing', 'गलत या देर से ड्रॉइंग'],
+      ['Equipment', 'मशीन'],
+      ['Weather', 'मौसम'],
+      ['Subcontractor', 'पेटी ठेकेदार'],
+      ['Design', 'डिज़ाइन'],
+      ['Other', 'अन्य'],
+    ),
+  },
+  instrumentKind: {
+    key: 'instrumentKind',
+    label: 'Instrument kinds',
+    singular: 'instrument kind',
+    description: 'Lab and survey instruments kept in the calibration register, each with how often it is calibrated.',
+    slug: 'instrument-kind',
+    node: 'quality.instrumentKinds',
+    usedOn: 'instruments',
+    manage: (role) => P.canManageChecklists(role),
+    standard: entries(
+      'Compression testing machine',
+      'Cube moulds',
+      'Slump cone',
+      'Weighing scale',
+      'Batching plant',
+      'Sieves',
+      'Oven',
+      'Total station',
+      'Auto level',
+      'Pressure gauge',
+      'Thermometer',
+      'Proving ring',
     ),
   },
 };

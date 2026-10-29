@@ -723,6 +723,8 @@ export interface StockLineDto {
   itemId: string;
   itemName: string;
   unit: string;
+  /** The item's category, by name (for the test certificate check) */
+  category?: string | null;
   /** Signed: positive into the store, negative out of it. */
   quantity: string;
   materialRequestItemId: string | null;
@@ -778,6 +780,9 @@ export interface StockEntryDto {
   qcAt?: string | null;
   qcByName?: string | null;
   qcNote?: string | null;
+  /** Receipts: the maker's test certificate for the lot (item 137 part 2) */
+  mtcNo?: string | null;
+  mtcDate?: string | null;
   lines: StockLineDto[];
   attachments: AttachmentDto[];
   createdById: string;
@@ -2744,6 +2749,22 @@ export interface QualityTestDto {
   openNcrs: number;
   /** Pipe lengths this test covers (a hydraulic test of P-12 to P-15); a pass marks their TEST stage done */
   segments: { id: string; code: string; label: string }[];
+  /** The test type it was taken as, the plan line it counts under and the pour its cubes came from (item 137) */
+  testTypeCode: string | null;
+  planLineId: string | null;
+  pourId: string | null;
+  pourNo: string | null;
+  /** Sent out (item 137 part 2): the lab, the day it went, its report number and day, and the charge */
+  labId: string | null;
+  labName: string | null;
+  sentOn: string | null;
+  labReportNo: string | null;
+  reportOn: string | null;
+  labCharge: string | null;
+  /** The instrument it was tested on, and whether that was out of calibration on the sample's day */
+  instrumentId: string | null;
+  instrumentName: string | null;
+  outOfCalibration: boolean;
   createdById: string;
   createdByName: string;
   attachments: AttachmentDto[];
@@ -2784,6 +2805,11 @@ export interface NcrDto {
   closedByName: string | null;
   closedAt: string | null;
   closureNote: string | null;
+  /** Item 137 part 2: the NCR category and root cause (master codes), raised by the client or TPI, and what putting it right cost */
+  category: string | null;
+  rootCause: string | null;
+  raisedByClient: boolean;
+  reworkCost: string | null;
   attachments: AttachmentDto[];
   createdAt: string;
   updatedAt: string;

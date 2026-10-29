@@ -9,6 +9,29 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-04-qa-registers',
+    date: '2027-04-02',
+    title: 'Labs, calibration and test certificates',
+    points: [
+      'Record which lab each sample went to, the day it was sent and its report. Samples at labs shows what is still waiting and which reports are late.',
+      'Keep your NABL labs with their certificate and validity: a lab whose accreditation runs out in the next month is marked.',
+      'The calibration register keeps each instrument with its certificates and when it falls due. A test run on a machine out of calibration is flagged.',
+      'Enter the maker’s test certificate on the QA/QC check of a receipt. Test certificates lists the steel, cement and pipes still without one.',
+      'NCRs now carry a category, a root cause, whether the client raised them and what the rework cost.',
+    ],
+  },
+  {
+    id: '2027-03-quality-plan',
+    date: '2027-03-06',
+    title: 'Quality plans, tests due and the pour register',
+    points: [
+      'Each project has a quality plan: which tests are taken, how often, and who witnesses them. Start from the standard plan for its kind of work and change it to match the contract.',
+      'Tests due counts what the plan owes from the work approved in DPRs and the material received, including the cube samples IS 456 asks for by the concrete poured each day, and shows what is short.',
+      'Record each pour in the pour register, ask for its pour card before concreting, and see whether each grade’s cube results pass the IS 456 acceptance check.',
+      'Test types, with their IS method and limits, are under Quality (QA/QC) › Masters. Add your own or change the standard ones.',
+    ],
+  },
+  {
     id: '2027-03-correspondence',
     date: '2027-03-05',
     title: 'Correspondence: inward and outward registers',
