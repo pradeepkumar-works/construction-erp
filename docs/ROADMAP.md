@@ -844,7 +844,8 @@ data Nirmaan already holds, one pull request each, in this order. They carry no 
   under the 28-day mark while the 28-day result is still to come, so the next lift waits.
 - ~~**Q3 DPR credibility** (S).~~ Done: a Checks section on a DPR for its approvers (drawer, page and the Approvals pane):
   work with no crew, no material issued for it in the week, numbers or crews copied day after day, a photo sent before.
-- **Q5 Vendor scorecard at L1** (S): on time, rejections and rates against the median on the comparative statement.
+- ~~**Q5 Vendor scorecard at L1** (S).~~ Done: a Vendor record row on the comparative statement: deliveries on time and
+  rejected at the gate over the last year, and each quotation's rates against the median of the quotations.
 - **Q6 Purchase controls** (S): orders split under an approval limit, the same person raising and receiving, a bank account
   changed just before payment.
 - **Q7 Next billable stage** (S): when work in hand becomes billable at the current pace, and what it is worth.

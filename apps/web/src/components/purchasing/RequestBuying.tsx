@@ -13,6 +13,7 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { StatusTag } from '@/components/common/StatusTag';
 import { RecordLink } from '@/components/record/RecordLink';
 import { LastRates } from './LastRates';
+import { VendorScorecard } from './VendorScorecard';
 import { PoStateTag } from './PurchaseOrderDrawer';
 import type { PoStart } from './PurchaseOrderFormModal';
 
@@ -132,6 +133,21 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
       ]}
       summary={() => (
         <Table.Summary fixed>
+          {quotes.length > 0 ? (
+            <Table.Summary.Row>
+              <Table.Summary.Cell index={0}>
+                <strong>Vendor record</strong>
+                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                  Deliveries in the last year, rates against the median of these quotations
+                </div>
+              </Table.Summary.Cell>
+              {quotes.map((q, i) => (
+                <Table.Summary.Cell key={q.id} index={i + 1} align="right">
+                  <VendorScorecard data={data} quotation={q} />
+                </Table.Summary.Cell>
+              ))}
+            </Table.Summary.Row>
+          ) : null}
           <Table.Summary.Row>
             <Table.Summary.Cell index={0}>
               <strong>Total with GST and freight</strong>

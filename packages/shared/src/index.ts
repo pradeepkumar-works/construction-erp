@@ -109,3 +109,4 @@ export * from './design-submissions';
 export * from './design-control';
 export * from './insights';
 export * from './dpr-checks';
+export * from './vendor-score';

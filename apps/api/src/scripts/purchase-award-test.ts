@@ -56,6 +56,7 @@ const statement = (quotations: QuotationDto[], lines: Line[]): ComparativeStatem
   quotations,
   lines,
   lowestQuotationId: null,
+  vendorRecords: [],
 });
 
 const cs = statement(

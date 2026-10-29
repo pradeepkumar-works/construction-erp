@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-06-vendor-record',
+    date: '2027-06-21',
+    title: 'Each vendor’s record on the comparative statement',
+    points: [
+      'Under the quotations, the comparative statement now shows how each vendor delivered over the last year (on time, rejected at the gate) and how its rates compare with the median of the quotations, so L1 is weighed against more than price.',
+    ],
+  },
+  {
     id: '2027-06-dpr-checks',
     date: '2027-06-14',
     title: 'Checks on a DPR before you approve it',
