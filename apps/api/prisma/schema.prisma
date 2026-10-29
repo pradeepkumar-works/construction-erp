@@ -549,6 +549,8 @@ enum IntegrationKind {
   GPS_TRACKER
   /// A site's fuel dispenser posting each fill, issued from the site's store as a fuel slip (item 147)
   FUEL_DISPENSER
+  /// A site's weighbridge indicator, read by the Connector: each weight it holds steady (item 148)
+  WEIGHBRIDGE
 }
 
 enum IntegrationDirection {
@@ -916,6 +918,8 @@ model Organization {
   machineReadings      MachineReading[]
   machineDays          MachineDay[]
   fuelDispenses        FuelDispense[]
+  weighings            Weighing[]
+  weighTickets         WeighTicket[]
   ledgerAccounts       LedgerAccount[]
   bookVouchers         BookVoucher[]
   bookLines            BookLine[]
@@ -1224,6 +1228,7 @@ model User {
   settlementsPrepared   FinalSettlement[]          @relation("SettlementPreparer")
   biometricDevices      BiometricDevice[]          @relation("BiometricDeviceCreator")
   integrationsMade      IntegrationConnection[]    @relation("IntegrationConnectionCreator")
+  weighTicketsMade      WeighTicket[]              @relation("WeighTicketCreator")
   connectorsMade        ConnectorAgent[]           @relation("ConnectorAgentCreator")
   vouchersPrepared      BookVoucher[]              @relation("BookVoucherPreparer")
   vouchersApproved      BookVoucher[]              @relation("BookVoucherApprover")
@@ -1477,6 +1482,8 @@ model Project {
   connectorAgents    ConnectorAgent[]
   deviceLinks        DeviceLink[]
   machineDays        MachineDay[]
+  weighings          Weighing[]
+  weighTickets       WeighTicket[]
   bookVouchers       BookVoucher[]
   bookLines          BookLine[]
   mixDesigns         MixDesign[]
@@ -1716,6 +1723,7 @@ model PurchaseOrder {
   dispatches       SupplierDispatch[]
   supplierInvoices SupplierInvoice[]
   packages         ProcurementPackage[]
+  weighTickets     WeighTicket[]
 
   @@unique([organizationId, poNo])
   @@index([organizationId, status])
@@ -1745,6 +1753,7 @@ model PurchaseOrderLine {
   stockTxns     StockTxn[]
   billLines     VendorBillLine[]
   dispatchLines SupplierDispatchLine[]
+  weighTickets  WeighTicket[]
 
   @@index([purchaseOrderId])
 }
@@ -3049,6 +3058,8 @@ model StockEntry {
 
   /// The dispenser fill it was made from (item 147)
   fuelDispense FuelDispense?
+  /// Receipts: the weighbridge ticket it was drafted from (item 148)
+  weighTicket  WeighTicket?
 
   @@unique([organizationId, entryNo])
   @@index([projectId, date])
@@ -8711,6 +8722,7 @@ model IntegrationConnection {
   events        IntegrationEvent[]
   deviceLinks   DeviceLink[]
   fuelDispenses FuelDispense[]
+  weighings     Weighing[]
 
   @@index([organizationId])
 }
@@ -8887,4 +8899,69 @@ model FuelDispense {
 
   @@unique([connectionId, externalId])
   @@index([organizationId, stockEntryId])
+}
+
+/// One weight a site's weighbridge held steady, as the Connector read it from the indicator (item 148). A ticket uses it
+/// as its first or second weight.
+model Weighing {
+  id             String                @id @default(uuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  connectionId   String
+  connection     IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  at             DateTime
+  weightKg       Decimal               @db.Decimal(18, 3)
+  /// How long the indicator held it
+  stableSeconds  Int?
+  createdAt      DateTime              @default(now())
+
+  firstOf  WeighTicket? @relation("WeighTicketFirst")
+  secondOf WeighTicket? @relation("WeighTicketSecond")
+
+  @@index([projectId, at])
+  @@index([organizationId, at])
+}
+
+/// A truck over the weighbridge (item 148): its first and second weights, the order and challan it brought, and the GRN
+/// drafted from its net weight. Numbered WB-<year>-0001 per company.
+model WeighTicket {
+  id                  String             @id @default(uuid())
+  organizationId      String
+  organization        Organization       @relation(fields: [organizationId], references: [id])
+  projectId           String
+  project             Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ticketNo            String
+  vehicleNo           String
+  purchaseOrderId     String?
+  purchaseOrder       PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  purchaseOrderLineId String?
+  purchaseOrderLine   PurchaseOrderLine? @relation(fields: [purchaseOrderLineId], references: [id], onDelete: SetNull)
+  challanNo           String?
+  /// The challan's quantity, in the order line's unit
+  challanQty          Decimal?           @db.Decimal(18, 3)
+  firstKg             Decimal            @db.Decimal(18, 3)
+  firstAt             DateTime
+  /// The bridge's weighing it took; null when the weight was typed
+  firstWeighingId     String?            @unique
+  firstWeighing       Weighing?          @relation("WeighTicketFirst", fields: [firstWeighingId], references: [id], onDelete: SetNull)
+  secondKg            Decimal?           @db.Decimal(18, 3)
+  secondAt            DateTime?
+  secondWeighingId    String?            @unique
+  secondWeighing      Weighing?          @relation("WeighTicketSecond", fields: [secondWeighingId], references: [id], onDelete: SetNull)
+  /// The GRN drafted from it
+  stockEntryId        String?            @unique
+  stockEntry          StockEntry?        @relation(fields: [stockEntryId], references: [id], onDelete: SetNull)
+  cancelledAt         DateTime?
+  cancelReason        String?
+  remarks             String?
+  createdById         String
+  createdBy           User               @relation("WeighTicketCreator", fields: [createdById], references: [id])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@unique([organizationId, ticketNo])
+  @@index([projectId, createdAt])
+  @@index([purchaseOrderId])
 }

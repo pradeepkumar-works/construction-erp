@@ -152,6 +152,8 @@ import type {
   FleetUtilisationDto,
   MachineDayDto,
   MachineDaysDto,
+  WeighbridgeBoardDto,
+  WeighTicketDto,
   FuelIssueDto,
   FuelPositionDto,
   EquipmentOwnership,
@@ -1137,6 +1139,42 @@ export function useRetryDispense() {
     mutationFn: async (id: string) => (await api.post<{ entryNo: string | null; problem: string | null }>(`/telematics/dispenses/${id}/retry`)).data,
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['machinery'] }),
   });
+}
+
+/** Stock › Weighbridge (item 148): the weights on the bridge, the trucks waiting and the tickets to receive; fetched every half minute while open. */
+export const useWeighbridge = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['stock', 'weighbridge', projectId ?? 'all'],
+    queryFn: async () => (await api.get<WeighbridgeBoardDto>('/weighbridge', { params: clean({ projectId }) })).data,
+    enabled,
+    refetchInterval: 30_000,
+    placeholderData: keepPreviousData,
+  });
+
+/** A weight for a ticket: the bridge's weighing, or one typed. */
+export type WeightInput = { weighingId: string } | { weightKg: number };
+
+export interface WeighTicketInput {
+  projectId: string;
+  vehicleNo: string;
+  purchaseOrderId?: string | null;
+  purchaseOrderLineId?: string | null;
+  challanNo?: string | null;
+  challanQty?: string | null;
+  remarks?: string | null;
+  first: WeightInput;
+}
+
+/** A truck's ticket made, its second weight, its details changed or the ticket cancelled; the board is fetched again. */
+export function useWeighTicket() {
+  const qc = useQueryClient();
+  const done = () => void qc.invalidateQueries({ queryKey: ['stock', 'weighbridge'] });
+  return {
+    create: useMutation({ mutationFn: async (v: WeighTicketInput) => (await api.post<WeighTicketDto>('/weighbridge/tickets', v)).data, onSuccess: done, meta: FAIL_NOTICE }),
+    second: useMutation({ mutationFn: async ({ id, ...w }: WeightInput & { id: string }) => (await api.post<WeighTicketDto>(`/weighbridge/tickets/${id}/second`, w)).data, onSuccess: done, meta: FAIL_NOTICE }),
+    update: useMutation({ mutationFn: async ({ id, ...v }: Partial<Omit<WeighTicketInput, 'first' | 'projectId'>> & { id: string }) => (await api.patch<WeighTicketDto>(`/weighbridge/tickets/${id}`, v)).data, onSuccess: done, meta: FAIL_NOTICE }),
+    cancel: useMutation({ mutationFn: async ({ id, reason }: { id: string; reason: string }) => (await api.post<WeighTicketDto>(`/weighbridge/tickets/${id}/cancel`, { reason })).data, onSuccess: done, meta: FAIL_NOTICE }),
+  };
 }
 
 export interface FuelIssueInput {

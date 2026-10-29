@@ -1,6 +1,6 @@
 {
   "name": "@erp/connector",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Nirmaan Connector: reads devices on a site's network and sends their readings to Nirmaan, calling out only",
   "main": "dist/main.js",
@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsc -p tsconfig.json && node dist/outbox-test.js"
+    "test": "tsc -p tsconfig.json && node dist/outbox-test.js && node dist/weight-test.js"
   },
   "engines": { "node": ">=20" },
   "devDependencies": {

@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-08-weighbridge',
+    date: '2027-08-23',
+    title: 'Weighbridge',
+    points: [
+      'Stock has a Weighbridge tab. Each truck gets a ticket from its first weight on the way in and its second on the way out, with the order and challan it brings, and the GRN is drafted at the net weight.',
+      'A load lighter than its challan is marked short, and a supplier with two short loads in a month comes up on the watch list. The Nirmaan Connector can read the weighbridge’s indicator (Admin, Connections), or the weights can be typed.',
+    ],
+  },
+  {
     id: '2027-08-fuel-sensors',
     date: '2027-08-16',
     title: 'Fuel sensors and dispensers',

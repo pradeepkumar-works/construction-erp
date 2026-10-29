@@ -424,6 +424,45 @@ export function fuelTankCheck(days: FuelTankDay[]): FuelTankCheck | null {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Short deliveries at the weighbridge (item 148): a supplier's loads whose net weight fell below the challan.
+
+export interface WeighLoad {
+  ticketNo: string;
+  date: string;
+  /** Challan less net (kg) and whether it is beyond the allowance (`shortSupply`); null when the challan's quantity is not known */
+  shortKg: number | null;
+  shortPct: number | null;
+  short: boolean;
+}
+
+export interface WeighShortCheck {
+  /** Loads with a challan quantity to check, and those short */
+  loads: number;
+  shortLoads: number;
+  /** Kilograms short over the short loads */
+  shortKg: number;
+  worstPct: number;
+  /** The short loads' tickets, oldest first, and the date of the latest */
+  tickets: string[];
+  last: string;
+}
+
+/** One supplier's weighed loads: a warning from WEIGH_SHORT_LOADS short ones. */
+export function weighShortCheck(loads: WeighLoad[], minLoads: number): WeighShortCheck | null {
+  const checked = loads.filter((l) => l.shortKg !== null);
+  const short = checked.filter((l) => l.short).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.ticketNo < b.ticketNo ? -1 : 1));
+  if (short.length < minLoads) return null;
+  return {
+    loads: checked.length,
+    shortLoads: short.length,
+    shortKg: Math.round(short.reduce((t, l) => t + (l.shortKg ?? 0), 0) * 1000) / 1000,
+    worstPct: Math.max(...short.map((l) => l.shortPct ?? 0)),
+    tickets: short.map((l) => l.ticketNo),
+    last: short[short.length - 1].date,
+  };
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Machine loans (v6 item 108): an EMI past its date unpaid.
 
 /** An EMI paid this many days late is still a slip worth no warning (a cheque in clearing). */

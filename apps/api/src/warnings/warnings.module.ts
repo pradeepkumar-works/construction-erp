@@ -10,9 +10,10 @@ import { DesignModule } from '../design/design.module';
 import { CostModule } from '../cost/cost.module';
 import { QualityModule } from '../quality/quality.module';
 import { TelematicsModule } from '../telematics/telematics.module';
+import { WeighbridgeModule } from '../weighbridge/weighbridge.module';
 import { WarningsController } from './warnings.controller';
 import { WarningsService } from './warnings.service';
 
 /** Early warnings, the watch list (AI roadmap item 73). The weekly notification is `NotificationJobsService.watchList`. */
-@Module({ imports: [ReceivablesModule, PayablesModule, ReconciliationModule, LeakageModule, CashForecastModule, AttendanceCheckModule, QaModule, DesignModule, CostModule, QualityModule, TelematicsModule], controllers: [WarningsController], providers: [WarningsService], exports: [WarningsService] })
+@Module({ imports: [ReceivablesModule, PayablesModule, ReconciliationModule, LeakageModule, CashForecastModule, AttendanceCheckModule, QaModule, DesignModule, CostModule, QualityModule, TelematicsModule, WeighbridgeModule], controllers: [WarningsController], providers: [WarningsService], exports: [WarningsService] })
 export class WarningsModule {}

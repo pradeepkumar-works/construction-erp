@@ -551,6 +551,17 @@ export class StockService {
     if (dto.supplierDispatchId && !dispatch) throw new BadRequestException(`The dispatch note is not one of ${po.poNo}'s`);
     if (dispatch?.cancelledAt) throw new ConflictException(`The supplier cancelled dispatch note ${dispatch.dispatchNo}`);
     if (dispatch?.grn) throw new ConflictException(`Dispatch note ${dispatch.dispatchNo} was already received as ${dispatch.grn.entryNo}`);
+    // Drafted from a weighbridge ticket (item 148): weighed, against this order, not received or cancelled.
+    const ticket = dto.weighTicketId
+      ? await this.prisma.weighTicket.findFirst({
+          where: { id: dto.weighTicketId, organizationId: user.organizationId },
+          select: { id: true, ticketNo: true, purchaseOrderId: true, secondKg: true, cancelledAt: true, stockEntry: { select: { entryNo: true } } },
+        })
+      : null;
+    if (dto.weighTicketId && (!ticket || ticket.purchaseOrderId !== po.id)) throw new BadRequestException(`The weighbridge ticket is not one of ${po.poNo}'s`);
+    if (ticket?.cancelledAt) throw new ConflictException(`Weighbridge ticket ${ticket.ticketNo} is cancelled`);
+    if (ticket && ticket.secondKg === null) throw new ConflictException(`Weighbridge ticket ${ticket.ticketNo} has no second weight yet`);
+    if (ticket?.stockEntry) throw new ConflictException(`Weighbridge ticket ${ticket.ticketNo} was already received as ${ticket.stockEntry.entryNo}`);
     const date = this.entryDate(dto.date);
     const want = new Map<string, Decimal>();
     for (const l of dto.lines) {
@@ -573,17 +584,23 @@ export class StockService {
           const item = await this.resolveItem(tx, user.organizationId, line.itemName, line.unit);
           lines.push({ itemId: item.id, quantity, materialRequestItemId: line.materialRequestItemId, purchaseOrderLineId: line.id });
         }
-        return this.insertEntry(
+        const entry = await this.insertEntry(
           tx,
           user,
           { ...dto, supplier: po.vendor.name, vendorId: po.vendorId, type: 'RECEIPT', projectId: po.projectId, date, materialRequestId: po.materialRequestId, purchaseOrderId: po.id },
           lines,
         );
+        if (ticket) {
+          // Only a ticket not received yet takes it, so two GRNs from one ticket cannot both stand.
+          const tied = await tx.weighTicket.updateMany({ where: { id: ticket.id, stockEntryId: null, cancelledAt: null }, data: { stockEntryId: entry.id } });
+          if (!tied.count) throw new ConflictException(`Weighbridge ticket ${ticket.ticketNo} was just received or cancelled`);
+        }
+        return entry;
       }),
     );
     if ('existing' in saved) return this.get(user, saved.id);
     await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
-    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${po.poNo}${dispatch ? `, from the supplier's dispatch note ${dispatch.dispatchNo}` : ''}`);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${po.poNo}${dispatch ? `, from the supplier's dispatch note ${dispatch.dispatchNo}` : ''}${ticket ? `, weighed on ${ticket.ticketNo}` : ''}`);
     await this.notifications.onGoodsReceived(user, saved.id);
     return this.get(user, saved.id);
   }
