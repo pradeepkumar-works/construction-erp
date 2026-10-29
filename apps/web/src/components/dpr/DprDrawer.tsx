@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { App, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { DailyReportDto, DprBuiltInKey, ManpowerLine, MachineryLine } from '@erp/shared';
-import { STANDARD_DPR_FORM, WEATHER_LABELS, canManageTemplates, canReviewHindrances, dprLabel, dprShows, filledExtra, linesSummary, ownFieldsOf } from '@erp/shared';
-import { useDpr } from '@/lib/queries';
+import { STANDARD_DPR_FORM, WEATHER_LABELS, canManageTemplates, canSeeDprChecks, canReviewHindrances, dprLabel, dprShows, filledExtra, linesSummary, ownFieldsOf } from '@erp/shared';
+import { useDpr, useDprChecks } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -21,6 +21,7 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { DprHindrance } from '@/components/risks/HindranceSuggestions';
 import { DprLineTotals, DprPipelineSummary, DprWorkLines, crewNote } from './DprLines';
+import { dprChecksSection } from './DprChecks';
 
 function Note({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -45,6 +46,8 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
   const { data, isLoading, error, refetch } = useDpr(id ?? undefined);
   const { user } = useAuth();
   const { message } = App.useApp();
+  // Q3: checks for an approver while the report waits or is being made; an approved report is settled.
+  const checks = useDprChecks(id ?? undefined, !!user && canSeeDprChecks(user.roleKey) && !!data && data.status !== 'APPROVED').data;
 
   const def = data?.form?.def ?? STANDARD_DPR_FORM;
   // A field the form hides shows only when the report has something in it (made before it was hidden).
@@ -98,6 +101,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
           ],
           lifecycle: submissionLifecycle(data),
           sections: [
+            ...dprChecksSection(checks?.checks),
             data.lines?.length
               ? {
                   key: 'work',

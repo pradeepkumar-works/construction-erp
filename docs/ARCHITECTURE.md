@@ -3601,6 +3601,15 @@ export; the client portal and the phone app show the amount.
   `cubeEarly`: the 7-day result ÷ `CUBE_7DAY_SHARE` (0.67, ordinary Portland cement) against the test's specification, else
   the grade's fck; under it warns, so the next lift and the striking of props wait for the 28-day result. The key is the
   test and its 7-day value. The demo's columns C1 to C8 set reads 16.2 at 7 days to show it.
+- **Q3 DPR credibility.** `GET /dpr/:id/checks` (`DprChecksService`, for `canSeeDprChecks`, the approvers) reads the report
+  through `DprService.get` with the caller and compares it with the project's records; the rules are pure in
+  `apps/api/src/dpr/dpr-check-rules.ts`. No crew: work on a day with no crew or machine, or a working line without one where
+  the others name theirs. No material: a line on an activity with norms (its own, else its BOQ item's) where none of the
+  items was issued in the 7 days to the report and the line used none. Copied: the same quantity on an activity on 3 reports
+  running, the same crew trade by trade on 5 (`DPR_COPY_DAYS`, `DPR_CREW_COPY_DAYS`; sent or approved reports only). Photo:
+  an image the same type and size to the byte as one on a report of the last 90 days (20 KB and up). The DPR record shows
+  them as its first section while the report is not yet approved; they never stop an approval. The demo's latest town DPR
+  has a tapping line with no crew.
 
 ## Money and quantities
 

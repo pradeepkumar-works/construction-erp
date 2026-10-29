@@ -5,7 +5,8 @@
  *   node dist/scripts/intelligence-test.js
  */
 import assert from 'node:assert/strict';
-import { insightKeysFor, watchListKinds } from '@erp/shared';
+import { canSeeDprChecks, insightKeysFor, watchListKinds } from '@erp/shared';
+import { copied, crewKeyOf, noCrew, noMaterial, reusedPhotos } from '../dpr/dpr-check-rules';
 import { CUBE_7DAY_SHARE, cubeEarly, headsBehind, marginAt, marginFade, marginStep } from '../warnings/warning-rules';
 
 const tests: [string, () => void][] = [];
@@ -100,6 +101,53 @@ test('Q2: the cube warning goes to QA/QC and the approvers', () => {
   assert.ok(watchListKinds('QA_QC_ENGINEER').includes('CUBE_7DAY_LOW'));
   assert.ok(watchListKinds('PROJECT_MANAGER').includes('CUBE_7DAY_LOW'));
   assert.ok(!watchListKinds('ACCOUNTS_MANAGER').includes('CUBE_7DAY_LOW'));
+});
+
+// ── Q3: DPR credibility ────────────────────────────────────────────────────────────────────────────────────────────
+const line = (id: string, activityId: string, quantity: number, crew = 0, used: string[] = []) => ({ id, activityId, activityName: `Activity ${activityId}`, unit: 'Cum', quantity, crew, machines: 0, usedItemIds: used });
+const report = (lines: ReturnType<typeof line>[], crew = 0, crewKey = '') => ({ id: 'r', date: '2026-10-28', crew, machines: 0, crewKey, lines });
+
+test('Q3: work on a day with no crew and no machine is one check for the report', () => {
+  const c = noCrew(report([line('l1', 'a', 12), line('l2', 'b', 4)]));
+  assert.equal(c.length, 1);
+  assert.equal(c[0].lineId, null);
+  assert.equal(noCrew(report([line('l1', 'a', 12)], 10)).length, 0, 'the day names its crew');
+});
+test('Q3: when lines name their crews, a working line without one is flagged on its own', () => {
+  const c = noCrew(report([line('l1', 'a', 12, 8), line('l2', 'b', 4, 0), line('l3', 'c', 0, 0)], 8));
+  assert.deepEqual(c.map((x) => x.lineId), ['l2']);
+});
+test('Q3: work whose norm material was neither issued nor used is flagged', () => {
+  const needs = new Map([['a', [{ itemId: 'cement', name: 'Cement OPC 53' }]]]);
+  assert.equal(noMaterial(report([line('l1', 'a', 12)]), needs, new Set()).length, 1);
+  assert.equal(noMaterial(report([line('l1', 'a', 12)]), needs, new Set(['cement'])).length, 0, 'issued in the week');
+  assert.equal(noMaterial(report([line('l1', 'a', 12, 0, ['cement'])]), needs, new Set()).length, 0, 'the line says it used it');
+  assert.equal(noMaterial(report([line('l1', 'b', 12)]), needs, new Set()).length, 0, 'no norms, nothing to say');
+});
+test('Q3: the same quantity three reports running reads as copied; two does not', () => {
+  const e = (id: string, q: number) => ({ id, date: `2026-10-2${id}`, crewKey: '', lines: [{ activityId: 'a', quantity: q }] });
+  assert.equal(copied(report([line('l1', 'a', 12)]), [e('7', 12), e('6', 12)]).length, 1);
+  assert.equal(copied(report([line('l1', 'a', 12)]), [e('7', 12), e('6', 10)]).length, 0);
+  assert.equal(copied(report([line('l1', 'a', 12)]), [e('7', 12)]).length, 0);
+});
+test('Q3: the same crew trade by trade five reports running reads as copied', () => {
+  const key = crewKeyOf([{ category: 'Mason', count: 4 }, { category: 'Helper', count: 6 }]);
+  assert.equal(key, crewKeyOf([{ category: 'helper', count: 6 }, { category: 'Mason ', count: 4 }]), 'order and case do not matter');
+  const e = (i: number, k: string) => ({ id: `e${i}`, date: `2026-10-2${i}`, crewKey: k, lines: [] });
+  assert.equal(copied(report([], 10, key), [e(7, key), e(6, key), e(5, key), e(4, key)]).length, 1);
+  assert.equal(copied(report([], 10, key), [e(7, key), e(6, key), e(5, 'mason:5'), e(4, key)]).length, 0);
+});
+test('Q3: a photo the same to the byte as one on an earlier report is flagged; small files and other sizes are not', () => {
+  const p = (id: string, size: number, mimeType = 'image/jpeg') => ({ id, fileName: `${id}.jpg`, mimeType, size });
+  const earlier = [{ ...p('old', 482_113), dprId: 'd1', date: '2026-10-20' }, { ...p('icon', 4_000), dprId: 'd1', date: '2026-10-20' }];
+  assert.equal(reusedPhotos([p('new', 482_113)], earlier).length, 1);
+  assert.equal(reusedPhotos([p('new', 482_114)], earlier).length, 0);
+  assert.equal(reusedPhotos([p('new', 4_000)], earlier).length, 0);
+  assert.equal(reusedPhotos([p('new', 482_113, 'application/pdf')], earlier).length, 0);
+});
+test('Q3: the checks are for those who approve daily reports', () => {
+  assert.ok(canSeeDprChecks('PROJECT_MANAGER'));
+  assert.ok(!canSeeDprChecks('SITE_ENGINEER'));
 });
 
 let failed = 0;

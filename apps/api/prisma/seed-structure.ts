@@ -259,7 +259,7 @@ interface LineSeed {
   activity: string;
   qty: number;
   at: string;
-  crew: [string, number][];
+  crew?: [string, number][];
   machines?: [string, number][];
   material?: [string, number][];
 }
@@ -313,7 +313,8 @@ const TOWN_DPRS: DprSeed[] = [
       },
       { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 84, at: 'Market road', crew: [['Plumber', 2], ['Helper', 6]], material: [['HDPE PE100 110mm PN6', 84], ['HDPE electrofusion coupler 110mm', 14]] },
       { element: '9.2', activity: 'Backfilling and compaction', qty: 96, at: 'Market road', crew: [['Helper', 4], ['Operator', 1]], machines: [['JCB 3DX', 7]] },
-      { element: '11', activity: 'Tapping and saddle', qty: 18, at: 'Ward 3', crew: [['Plumber', 3], ['Helper', 3]], material: [['Ball valve 50mm', 18]] },
+      // No crew named on this line: the approver's DPR checks (intelligence quick win Q3) point it out.
+      { element: '11', activity: 'Tapping and saddle', qty: 18, at: 'Ward 3', material: [['Ball valve 50mm', 18]] },
       { element: '10', activity: 'Bituminous road', qty: 120, at: 'Station Road', crew: [['Helper', 8], ['Operator', 1]], machines: [['Road roller', 5]], material: [['Bitumen VG-30', 0.65], ['Emulsion SS-1', 60]] },
     ],
     nextDayPlan: 'Container wall ring 2 shuttering; pipe laying on along the market road; backfill behind it; tapping in Ward 3',
@@ -338,7 +339,7 @@ export async function addTownDpr(prisma: PrismaClient, organizationId: string, d
   if (!pm || !engineer) return;
   const items = new Map((await prisma.item.findMany({ where: { organizationId }, select: { id: true, name: true } })).map((i) => [i.name, i.id]));
   const activities = await prisma.activity.findMany({ where: { projectId: project.id }, select: { id: true, name: true, unit: true, parentActivity: { select: { name: true } }, workElement: { select: { code: true } } } });
-  const crewOf = (c: [string, number][]) => c.map(([category, count]) => ({ category, count }));
+  const crewOf = (c: [string, number][] = []) => c.map(([category, count]) => ({ category, count }));
   const machinesOf = (m: [string, number][] = []) => m.map(([name, hours]) => ({ name, hours }));
 
   const submittedAt = new Date(date.getTime() + 19 * 3_600_000);
