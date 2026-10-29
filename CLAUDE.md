@@ -360,6 +360,11 @@ and the pre-delivery checklist.
   machine's day is only `foldReading` / `rollUpDay` (`telematics-rules.ts`); a feed is read only by `IntegrationsService.pollFeed`
   over `readFeedConfig` (https on the internet, never a private address). Screens compare a log with the engine only by
   `hoursAboveEngine` and fill a log only by `engineLogDraft` (`@erp/shared/telematics.ts`). Keep `src/scripts/telematics-test.ts` passing.
+- Fuel sensors and dispensers (item 147, ARCHITECTURE "Fuel sensors and dispensers"): a machine's tank is read only by
+  `tankLitres` and its refills and drains found only by `foldReading` / `fuelStepKind` (kept on `MachineDay.fuelEvents`);
+  burnt is `fuelUsedOf`, and a day's tank is set against its slips only by `fuelSlipGap` (`@erp/shared/telematics.ts`). A
+  dispenser's fill becomes a slip only through `FuelDispenseService` over `StockService.fuelIssue`, never a stock write of
+  its own. Keep `src/scripts/telematics-test.ts` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

@@ -73,6 +73,7 @@ interface EquipmentForm {
   fuelNorm?: number | null;
   fuelNormUnit?: FuelNormUnit | null;
   fuelTolerancePct?: number | null;
+  fuelTankLitres?: number | null;
 }
 
 /** Equipment master. Everyone sees the fleet and where it is deployed; approvers add machines, set rates and move them. */
@@ -111,6 +112,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         fuelNorm: v.fuelNorm ? String(v.fuelNorm) : null,
         fuelNormUnit: v.fuelNorm ? (v.fuelNormUnit ?? 'LITRES_PER_HOUR') : null,
         fuelTolerancePct: v.fuelNorm && v.fuelTolerancePct ? String(v.fuelTolerancePct) : null,
+        fuelTankLitres: v.fuelTankLitres ? String(v.fuelTankLitres) : null,
         ...(editing && editing !== 'new' ? { isActive: v.isActive ?? true } : {}),
       };
       return editing && editing !== 'new' ? (await api.patch<EquipmentDto>(`/equipment/${editing.id}`, body)).data : (await api.post<EquipmentDto>('/equipment', body)).data;
@@ -154,6 +156,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         fuelNorm: e.fuelNorm ? Number(e.fuelNorm) : null,
         fuelNormUnit: e.fuelNormUnit ?? 'LITRES_PER_HOUR',
         fuelTolerancePct: e.fuelTolerancePct ? Number(e.fuelTolerancePct) : null,
+        fuelTankLitres: e.fuelTankLitres ? Number(e.fuelTankLitres) : null,
       });
   };
 
@@ -376,7 +379,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               </FormGrid>
             ) : null}
           </FormSection>
-          <FormSection title="Fuel norm">
+          <FormSection title="Fuel">
             <FormGrid cols={3}>
               <Form.Item name="fuelNorm" label="Norm" extra="Leave blank for no fuel check">
                 <QuantityInput />
@@ -386,6 +389,11 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               </Form.Item>
               <Form.Item name="fuelTolerancePct" label="Tolerance" tooltip="How far its average over recent logs may stray before the watch list flags it">
                 <QuantityInput unit="%" precision={1} max={100} placeholder={String(FUEL_TOLERANCE_DEFAULT_PCT)} />
+              </Form.Item>
+            </FormGrid>
+            <FormGrid cols={3}>
+              <Form.Item name="fuelTankLitres" label="Tank size" extra="For a fuel sensor that reads a %">
+                <QuantityInput unit="L" max={20000} />
               </Form.Item>
             </FormGrid>
           </FormSection>

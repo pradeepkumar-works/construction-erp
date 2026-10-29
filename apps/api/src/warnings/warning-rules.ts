@@ -387,6 +387,43 @@ export function fuelNormCheck(logs: FuelLog[], norm: number, unit: FuelNormUnit,
 export const fuelStep = (deviationPct: number) => Math.floor(Math.abs(deviationPct) / 10) * 10;
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Fuel tank against the slips (item 147): the fuel sensor's drains and its fills that the slips do not account for.
+
+/** Days of the tank looked back over. */
+export const FUEL_TANK_DAYS = 7;
+
+export interface FuelTankDay {
+  date: string;
+  drained: number;
+  /** Litres filled with no slip for them, and litres on slips that never reached the tank (`fuelSlipGap`) */
+  unslipped: number | null;
+  notInTank: number | null;
+}
+
+export interface FuelTankCheck {
+  drained: number;
+  drains: number;
+  unslipped: number;
+  notInTank: number;
+  /** The days it is about, oldest first, and the latest of them */
+  days: string[];
+  last: string;
+  /** Litres the books cannot account for: drained, filled with no slip and on slips but not in the tank */
+  litres: number;
+}
+
+/** A machine's days of the tank: a warning when any drained or did not match its slips. */
+export function fuelTankCheck(days: FuelTankDay[]): FuelTankCheck | null {
+  const off = days.filter((d) => d.drained > 0 || d.unslipped !== null || d.notInTank !== null).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  if (!off.length) return null;
+  const sum = (f: (d: FuelTankDay) => number) => Math.round(off.reduce((t, d) => t + f(d), 0) * 10) / 10;
+  const drained = sum((d) => d.drained);
+  const unslipped = sum((d) => d.unslipped ?? 0);
+  const notInTank = sum((d) => d.notInTank ?? 0);
+  return { drained, drains: off.filter((d) => d.drained > 0).length, unslipped, notInTank, days: off.map((d) => d.date), last: off[off.length - 1].date, litres: Math.round((drained + unslipped + notInTank) * 10) / 10 };
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Machine loans (v6 item 108): an EMI past its date unpaid.
 
 /** An EMI paid this many days late is still a slip worth no warning (a cheque in clearing). */

@@ -7,7 +7,7 @@ import type { RoleKey } from './enums';
  * it. The API's `integration-rules.ts` holds the secrets, pairing codes and health; this holds the labels and shapes.
  */
 
-export const INTEGRATION_KINDS = ['GENERIC_WEBHOOK', 'CONNECTOR_CHECK', 'MACHINE_FEED', 'GPS_TRACKER'] as const;
+export const INTEGRATION_KINDS = ['GENERIC_WEBHOOK', 'CONNECTOR_CHECK', 'MACHINE_FEED', 'GPS_TRACKER', 'FUEL_DISPENSER'] as const;
 export type IntegrationKind = (typeof INTEGRATION_KINDS)[number];
 
 /** How a kind's messages reach Nirmaan: posted to its web address, read on site by a paired Connector, or asked for by Nirmaan. */
@@ -48,7 +48,19 @@ export const INTEGRATION_KIND_INFO: Record<IntegrationKind, IntegrationKindInfo>
       "A tracker's service posts each reading as JSON: deviceId (or imei), time, latitude and longitude, ignition, and the hour meter (engineHours) where the tracker reads one. Traccar's event forwarding works as it is.",
     quietAfterMin: 6 * 60,
   },
+  FUEL_DISPENSER: {
+    label: 'Fuel dispenser',
+    transport: 'HOOK',
+    description:
+      "A site's fuel dispenser or bowser posts each fill as JSON: its id, time, litres, and the machine's tag (RFID, code or number plate) and meter. A fill into a matched machine becomes a fuel issue slip from the site's store.",
+    quietAfterMin: 3 * 24 * 60,
+  },
 };
+
+/** A fuel dispenser's settings: the fuel item it pours, issued from the connection's site. */
+export interface FuelDispenserConfig {
+  itemId: string;
+}
 
 /** How Nirmaan signs in to a maker's feed: a key it is given, a user and password, or OAuth client credentials. */
 export const FEED_AUTHS = ['BEARER', 'BASIC', 'OAUTH'] as const;

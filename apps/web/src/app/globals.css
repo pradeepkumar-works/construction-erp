@@ -857,6 +857,15 @@ kbd {
   vertical-align: top;
 }
 
+/* A password box's show / hide eye is a 24 px target (WCAG 2.5.8); antd draws it the size of its 14 px icon. */
+.ant-input-password-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
 /*
  * Links look like links (UX item 81, WCAG 1.4.1): the reset at the top makes every <a> inherit its colour, so links in
  * table cells, record facts, card headers and notices take the link colour, underlined on hover. Buttons, tags and antd's

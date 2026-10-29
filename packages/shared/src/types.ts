@@ -904,6 +904,8 @@ export interface EquipmentDto {
   fuelNorm?: string | null;
   fuelNormUnit?: FuelNormUnit | null;
   fuelTolerancePct?: string | null;
+  /** The fuel tank's size in litres (item 147), so a sensor's % reads as litres */
+  fuelTankLitres?: string | null;
   /** Its running loan (v6 item 108), for those who keep machine loans */
   loan?: { id: string; lenderName: string } | null;
   createdAt: string;

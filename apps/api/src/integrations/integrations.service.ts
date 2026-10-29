@@ -46,7 +46,8 @@ import {
   type RawReading,
 } from './integration-rules';
 import { TelematicsService } from '../telematics/telematics.service';
-import { FEED_MAX_PAGES, FEED_TIMEOUT_MS, feedDue, feedHttpProblem, readFeedConfig, readFeedMachine, readFeedPage, readTracker, type ReadResult } from '../telematics/telematics-rules';
+import { FuelDispenseService } from '../telematics/fuel-dispense.service';
+import { FEED_MAX_PAGES, FEED_TIMEOUT_MS, feedDue, feedHttpProblem, readDispense, readFeedConfig, readFeedMachine, readFeedPage, readTracker, type ReadResult } from '../telematics/telematics-rules';
 import type { ConnectorReadingsDto, CreateAgentDto, CreateConnectionDto, EventQuery, MatchDeviceDto, PairConnectorDto, UpdateConnectionDto } from './integrations.dto';
 
 type Connection = Prisma.IntegrationConnectionGetPayload<{
@@ -87,6 +88,7 @@ export class IntegrationsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private telematics: TelematicsService,
+    private fuel: FuelDispenseService,
   ) {}
 
   /** OAuth tokens for makers' feeds, by connection, until they run out. */
@@ -105,7 +107,22 @@ export class IntegrationsService {
     },
     GPS_TRACKER: (c, payload, at, ctx) => this.machineReading(c, readTracker(payload, at), ctx),
     MACHINE_FEED: (c, payload, at, ctx) => this.machineReading(c, readFeedMachine(payload, at), ctx),
+    FUEL_DISPENSER: (c, payload, at, ctx) => this.dispense(c, payload, at, ctx),
   };
+
+  /** A dispenser's fill: its tag listed under Devices, the fill kept once and issued as a slip when the tag is matched (item 147). */
+  private async dispense(c: { id: string; organizationId: string }, payload: unknown, at: Date, ctx: HandlerContext): Promise<HandlerResult> {
+    const read = readDispense(payload, at);
+    if (!read.dispense) return { status: 'FAILED', summary: read.problem };
+    const d = read.dispense;
+    const link = await ctx.link({ externalId: d.tag, label: d.tagLabel });
+    const out = await this.fuel.take(c.organizationId, c.id, link, d);
+    const name = `${d.tagLabel ?? d.tag}${link.equipment ? ` (${link.equipment.code})` : ''}: ${d.litres} L`;
+    if (out.duplicate) return { status: 'IGNORED', summary: `${name}, this fill was taken in before` };
+    if (!link.equipmentId) return { status: 'OK', summary: `${name} kept. Match the tag to a machine under Devices and it becomes a fuel slip` };
+    if (out.problem) return { status: 'FAILED', summary: `${name} not issued: ${out.problem}` };
+    return { status: 'OK', summary: `${name}, slip ${out.entryNo}` };
+  }
 
   /** A tracker's or a feed's reading: its device listed, the reading kept, and the matched machine's day moved on (item 146). */
   private async machineReading(c: { organizationId: string }, read: ReadResult, ctx: HandlerContext): Promise<HandlerResult> {
@@ -210,6 +227,7 @@ export class IntegrationsService {
     if (info.transport === 'CONNECTOR' && !dto.agentId) throw new BadRequestException('Choose the Connector that reads it');
     await this.checkRefs(user, dto.projectId, info.transport === 'CONNECTOR' ? dto.agentId : null);
     if (info.transport === 'POLL') dto.config = this.feedConfig(dto.config, !!dto.credential);
+    if (dto.kind === 'FUEL_DISPENSER') dto.config = await this.fuel.checkConfig(user, dto.projectId, dto.config);
     const secret = info.transport === 'HOOK' ? newSecret() : null;
     const row = await this.prisma.integrationConnection.create({
       data: {
@@ -241,6 +259,8 @@ export class IntegrationsService {
       const hasCredential = dto.credential ? true : dto.credential === '' || dto.credential === null ? false : !!c.secretEnc;
       dto.config = this.feedConfig(dto.config ?? c.config, hasCredential);
     }
+    if (c.kind === 'FUEL_DISPENSER' && (dto.config !== undefined || dto.projectId !== undefined))
+      dto.config = await this.fuel.checkConfig(user, dto.projectId === undefined ? c.projectId : dto.projectId, dto.config ?? c.config);
     const data: Prisma.IntegrationConnectionUncheckedUpdateInput = {
       name: dto.name,
       projectId: dto.projectId,
@@ -382,6 +402,8 @@ export class IntegrationsService {
     // A tracker's kept readings follow the match, and the days they fall on are built again (item 146).
     if (dto.equipmentId !== undefined && (row.connection.kind === 'GPS_TRACKER' || row.connection.kind === 'MACHINE_FEED'))
       await this.telematics.rematch(user.organizationId, { id, projectId: row.projectId }, d.equipmentId, row.equipmentId);
+    // A dispenser's tag: the fills it was given before the match become fuel slips (item 147).
+    if (row.connection.kind === 'FUEL_DISPENSER' && row.equipmentId && row.equipmentId !== d.equipmentId) await this.fuel.issuePending(id);
     await this.audit.log(user, 'DEVICE_LINK', id, 'UPDATED', dto.equipmentId ? 'Matched to a machine' : dto.equipmentId === null ? 'Match cleared' : null);
     return (await this.devices(user)).find((x) => x.id === id)!;
   }

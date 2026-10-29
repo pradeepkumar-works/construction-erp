@@ -84,6 +84,12 @@ export class CreateEquipmentDto {
   @ValidateIf((_, v) => v !== null)
   @IsNumberString()
   fuelTolerancePct?: string | null;
+  @ApiPropertyOptional({ example: '300', description: "The fuel tank's size in litres (item 147); null = not known" })
+  @IsOptional()
+  @num()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  fuelTankLitres?: string | null;
 }
 
 export class UpdateEquipmentDto extends PartialType(CreateEquipmentDto) {

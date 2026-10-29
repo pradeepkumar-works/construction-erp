@@ -3656,7 +3656,48 @@ share (the site radius, the hours-above rule, the log draft and the shapes) is `
   (`hire-dead`). Service falls due on the larger of the logged hours and the hour meter's (`serviceStatuses`,
   `hoursFrom: 'METER'`).
 - **Not yet.** A route or a polygon for a linear site (a road or a pipeline is held to a point and a radius), a watch list
-  warning for a machine off site, AEMP 1.2 XML feeds, and fuel from the tank's sensor (item 147).
+  warning for a machine off site, and AEMP 1.2 XML feeds.
+
+## Fuel sensors and dispensers
+
+Item 147, on machine telematics. A machine's fuel is checked against its tank as well as its slips: the tank's level comes
+with the tracker's or the feed's readings, and a site's fuel dispenser posts each fill. The tank's rules and the
+dispenser's message are pure in `apps/api/src/telematics/telematics-rules.ts` (tested in `src/scripts/telematics-test.ts`);
+the slip, rate and norm rules the screens share are `fuelSlipGap`, `litresPerHour` and `rateAboveNorm` in
+`@erp/shared/telematics.ts`.
+
+- **The tank.** A reading's `fuelLitres`, else its `fuelPct` of `Equipment.fuelTankLitres` (Equipment, Fuel, Tank size), is
+  the tank (`tankLitres`; Traccar's `fuel` attribute is litres). `foldReading` keeps the day's level at its start (the day
+  before's last reading, carried) and its last reading, and its runs: a rise between two readings of at least 5 litres or
+  3% of the tank is a refill going on, a fall as big is a drain when the engine was off at both readings and its hour
+  meter and ignition time did not move between them, or when it fell faster than 80 litres an hour
+  (`fuelStepKind`). Consecutive steps the same way are one event, from the reading before the run to its last; an event
+  counts from 20 litres (`FUEL_EVENT_MIN_LITRES`), and a closed one smaller than that is slosh and is dropped. The events
+  are kept on the day (`MachineDay.fuelEvents`, with `fuelStart`, `fuelEnd`, `fuelAt`), so a rebuilt day gives the same.
+- **Burnt.** Fuel burnt on a day is the maker's fuel-used counter where it sends one, else the tank: its start, plus
+  refills, less drains and what was left (`fuelUsedOf`). Litres an hour are over days of at least one engine hour, and
+  compared with a litres-an-hour norm beyond its tolerance (`rateAboveNorm`). The watch list's `FUEL_NORM` takes a log's
+  litres from what the sensor saw burnt first (`TelematicsService.burntOn`), then the log's diesel, then the day's slips.
+- **Slips.** A day's refills are set against the fuel slips made out to the machine that day, whoever made them
+  (`TelematicsService.slipsFor`: issues of a fuel item with the machine): filled with no slip, or on slips but never in the
+  tank, each beyond 20 litres or 10% of the larger (`fuelSlipGap`). The Fuel tab shows each machine's tank for the day
+  (`FuelTanks`: in the tank, filled with its times, on slips, drained, burnt and litres an hour, the checks), and Engine
+  hours shows the same checks beside the engine's.
+- **Watch list.** `FUEL_TANK` (machine managers, `canManageMaintenance`) is each machine's last seven days with a drain or
+  a gap against its slips (`fuelTankCheck` in `warning-rules.ts`), keyed by machine, its latest such day and the litres in
+  20-litre steps.
+- **The dispenser.** `FUEL_DISPENSER` is a web address kind for a site's dispenser or bowser: the connection's site is the
+  store its fuel comes from and its settings name the fuel item (`FuelDispenseService.checkConfig`; only someone who may
+  keep stock sets one up, since fills are issued in their name). Each message is one fill (`readDispense`: its id, time,
+  litres or gallons, the machine's tag as RFID, code or number plate, and the meter), kept once as a `FuelDispense`
+  (tenant table, RLS; unique per connection and id). The tag is a device under Devices; once it is matched to a machine,
+  the fill and any waiting for that tag become fuel slips through `StockService.fuelIssue` (the fill's id is the slip's,
+  so a retry returns the same slip), and so go into the stock, the fuel position, the leakage checks and the tank's
+  slips like any other. A refused slip (no stock booked, the machine inactive) keeps its reason, shows under Dispenser
+  fills not on a slip on the Fuel tab, and is tried again there (`POST /api/telematics/dispenses/:id/retry`, whoever
+  issues fuel at the site) or when its tag is matched again.
+- **Not yet.** A dispenser read through the Connector on the site's network (a serial or Modbus reader), the model reading
+  a fill slip's photo against the dispenser, and alerts as a drain happens (the watch list is daily).
 
 ## Intelligence quick wins
 

@@ -547,6 +547,8 @@ enum IntegrationKind {
   MACHINE_FEED
   /// A GPS tracker's service posting each position, ignition and hour meter (item 146)
   GPS_TRACKER
+  /// A site's fuel dispenser posting each fill, issued from the site's store as a fuel slip (item 147)
+  FUEL_DISPENSER
 }
 
 enum IntegrationDirection {
@@ -913,6 +915,7 @@ model Organization {
   deviceLinks          DeviceLink[]
   machineReadings      MachineReading[]
   machineDays          MachineDay[]
+  fuelDispenses        FuelDispense[]
   ledgerAccounts       LedgerAccount[]
   bookVouchers         BookVoucher[]
   bookLines            BookLine[]
@@ -3044,6 +3047,9 @@ model StockEntry {
   covers      MaterialRequestCover[]
   rmcBatch    RmcBatch?
 
+  /// The dispenser fill it was made from (item 147)
+  fuelDispense FuelDispense?
+
   @@unique([organizationId, entryNo])
   @@index([projectId, date])
   @@index([equipmentId, date])
@@ -3216,6 +3222,8 @@ model Equipment {
   fuelNorm             Decimal?           @db.Decimal(18, 3)
   fuelNormUnit         FuelNormUnit?
   fuelTolerancePct     Decimal?           @db.Decimal(5, 2)
+  /// The fuel tank's size (item 147), so a fuel sensor's % reads as litres
+  fuelTankLitres       Decimal?           @db.Decimal(18, 3)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -8700,8 +8708,9 @@ model IntegrationConnection {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  events      IntegrationEvent[]
-  deviceLinks DeviceLink[]
+  events        IntegrationEvent[]
+  deviceLinks   DeviceLink[]
+  fuelDispenses FuelDispense[]
 
   @@index([organizationId])
 }
@@ -8775,6 +8784,7 @@ model DeviceLink {
   readings       Int                   @default(0)
 
   machineReadings MachineReading[]
+  fuelDispenses   FuelDispense[]
 
   @@unique([connectionId, externalId])
   @@index([organizationId])
@@ -8840,8 +8850,41 @@ model MachineDay {
   outsideReadings Int          @default(0)
   lastLat         Decimal?     @db.Decimal(9, 6)
   lastLng         Decimal?     @db.Decimal(9, 6)
+  /// The tank (item 147): litres at the day's start (the day before's last reading) and at its last reading, when
+  /// that was read, and the refills and drains seen in between ([{ kind, startAt, endAt, before, after, engineOn }])
+  fuelStart       Decimal?     @db.Decimal(18, 3)
+  fuelEnd         Decimal?     @db.Decimal(18, 3)
+  fuelAt          DateTime?
+  fuelEvents      Json         @default("[]")
   updatedAt       DateTime     @updatedAt
 
   @@unique([equipmentId, date])
   @@index([organizationId, date])
+}
+
+/// A fill a fuel dispenser posted (item 147): one per transaction, issued from the connection's site as a fuel slip once
+/// its tag (a DeviceLink under the dispenser's connection) is matched to a machine; a refused issue keeps its reason.
+model FuelDispense {
+  id             String                @id @default(uuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  connectionId   String
+  connection     IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  /// The dispenser's own id for the fill
+  externalId     String
+  /// The machine's tag
+  deviceLinkId   String
+  deviceLink     DeviceLink            @relation(fields: [deviceLinkId], references: [id], onDelete: Cascade)
+  at             DateTime
+  litres         Decimal               @db.Decimal(18, 3)
+  meter          Decimal?              @db.Decimal(18, 2)
+  stockEntryId   String?               @unique
+  stockEntry     StockEntry?           @relation(fields: [stockEntryId], references: [id], onDelete: SetNull)
+  /// Why it is not on a slip yet
+  problem        String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([connectionId, externalId])
+  @@index([organizationId, stockEntryId])
 }

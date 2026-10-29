@@ -21,6 +21,7 @@ import { seedDesignSubmissions } from './seed-design-submissions';
 import { seedControlledCopies } from './seed-controlled-copies';
 import { seedIntegrations } from './seed-integrations';
 import { seedTelematics } from './seed-telematics';
+import { seedFuel } from './seed-fuel';
 import { seedDemoGroup, seedGroupCompanies } from './seed-group';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
@@ -226,6 +227,7 @@ async function main() {
     await seedMeetings(org.id);
     await seedMaterialApprovals(org.id);
     await seedLeakage(org.id);
+    await seedFuel(prisma, org.id);
     await seedAttendanceCheck(org.id);
     await seedActivityLinks(org.id);
     await seedWorkBreakdown(prisma, org.id);
@@ -454,6 +456,7 @@ async function main() {
   await seedMeetings(org.id);
   await seedMaterialApprovals(org.id);
   await seedLeakage(org.id);
+  await seedFuel(prisma, org.id);
   await seedAttendanceCheck(org.id);
   await seedActivityLinks(org.id);
   await seedWorkBreakdown(prisma, org.id);

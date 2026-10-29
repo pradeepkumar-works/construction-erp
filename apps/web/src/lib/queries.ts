@@ -1056,11 +1056,12 @@ export const useStockEntry = (id: string | undefined) =>
     enabled: !!id,
   });
 
-export const useStockItems = (filters?: PageParams) =>
+export const useStockItems = (filters?: PageParams & { fuel?: boolean }, enabled = true) =>
   useQuery({
     queryKey: ['stock', 'items', clean(filters)],
     queryFn: async () => (await api.get<Paginated<ItemDto>>('/stock/items', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 /** Items that look like one item, for the store manager to merge (finding 3 of the October review). */
@@ -1128,6 +1129,15 @@ export const useMachineDay = (equipmentId: string | undefined, date: string | un
     enabled: !!equipmentId && !!date,
     staleTime: 60_000,
   });
+
+/** A dispenser's fill refused as a slip, tried again (item 147); the fuel and telematics figures are fetched again. */
+export function useRetryDispense() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.post<{ entryNo: string | null; problem: string | null }>(`/telematics/dispenses/${id}/retry`)).data,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['machinery'] }),
+  });
+}
 
 export interface FuelIssueInput {
   projectId: string;

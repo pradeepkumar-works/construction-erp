@@ -21,6 +21,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import type { SubmissionStatus } from '@erp/shared';
 import { MachineryDrawer } from './MachineryDrawer';
 import { MachineryFormModal, type MachineryPrefill } from './MachineryFormModal';
+import { fuelTags } from './FuelTanks';
 
 const hrs = (v: string | null) =>
   v === null ? (
@@ -83,9 +84,23 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
     {
       title: 'Fuel used',
       dataIndex: 'fuelUsedLitres',
-      width: 90,
+      width: 100,
       align: 'right',
-      render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no">{formatQty(v)} L</span>),
+      render: (v: string | null, d) =>
+        v === null ? (
+          <span className="text-muted">-</span>
+        ) : (
+          <div>
+            <span className="mono" translate="no">
+              {formatQty(v)} L
+            </span>
+            {d.fuel?.litresPerHour ? (
+              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }} translate="no">
+                {`${formatQty(d.fuel.litresPerHour)} L/h`}
+              </div>
+            ) : null}
+          </div>
+        ),
     },
     {
       title: 'Log',
@@ -110,9 +125,10 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
     {
       title: 'Check',
       key: 'check',
-      width: 230,
+      width: 260,
       render: (_, d) => {
         const tags = [
+          ...(d.fuel ? fuelTags(d.fuel, false) : []),
           d.hoursAbove !== null ? (
             <AppTag key="above" tone="danger">
               {`${formatQty(d.hoursAbove)} h above engine`}
@@ -166,7 +182,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
           columns={columns}
           dataSource={data?.days ?? []}
           pagination={{ pageSize: 50, hideOnSinglePage: true }}
-          scroll={{ x: 1120 }}
+          scroll={{ x: 1160 }}
           locale={{ emptyText: empty }}
         />
       )}

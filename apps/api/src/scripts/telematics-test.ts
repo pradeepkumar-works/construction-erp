@@ -1,12 +1,13 @@
 /**
  * Machine telematics' tests (item 146): a GPS tracker's message (flat and Traccar), a maker's fleet snapshot
- * (ISO 15143-3), a feed's settings, and a machine's day rolled up from its readings, with no database. CI runs it
+ * (ISO 15143-3), a feed's settings, and a machine's day rolled up from its readings; and (item 147) the tank's refills
+ * and drains, fuel burnt, the slips and the norm, and a fuel dispenser's message. No database. CI runs it
  * after the build:
  *
  *   node dist/scripts/telematics-test.js
  */
 import assert from 'node:assert/strict';
-import { engineLogDraft, hoursAboveEngine, machineSiteRadius } from '@erp/shared';
+import { engineLogDraft, fuelSlipGap, hoursAboveEngine, litresPerHour, machineSiteRadius, rateAboveNorm } from '@erp/shared';
 import {
   dayBounds,
   dayOf,
@@ -14,14 +15,20 @@ import {
   feedDue,
   feedHttpProblem,
   feedUrlProblem,
+  dayRowData,
   foldReading,
+  fuelEventsOf,
+  fuelMovesOf,
+  fuelStepKind,
   fuelUsedOf,
   idleHoursOf,
   litres,
   readFeedConfig,
   readFeedMachine,
+  readDispense,
   readFeedPage,
   readTracker,
+  tankLitres,
   rollUpDay,
   type DayState,
   type ReadingFigures,
@@ -179,7 +186,7 @@ test('a feed is read once an hour, and its refusals say what to do', () => {
 
 const SITE = { lat: 12.9716, lng: 77.5946, radiusM: machineSiteRadius(300) };
 const at = (hhmm: string) => new Date(`2026-10-20T${hhmm}:00+05:30`);
-const fig = (hhmm: string, f: Partial<ReadingFigures>): ReadingFigures => ({ at: at(hhmm), hourMeter: null, idleMeter: null, fuelUsed: null, lat: null, lng: null, engineOn: null, ...f });
+const fig = (hhmm: string, f: Partial<ReadingFigures>): ReadingFigures => ({ at: at(hhmm), hourMeter: null, idleMeter: null, fuelUsed: null, fuelPct: null, fuelLitres: null, lat: null, lng: null, engineOn: null, ...f });
 const ctx = { date: '2026-10-20', site: SITE, carry: null };
 
 test('the engine hours are the hour meter moved over the day; idle and fuel likewise', () => {
@@ -251,6 +258,149 @@ test('days are taken in the company time zone', () => {
   assert.equal(s.toISOString(), '2026-10-19T18:30:00.000Z');
   assert.equal(e.toISOString(), '2026-10-20T18:30:00.000Z');
   assert.equal(dayBounds('2026-10-20', 'UTC')[0].toISOString(), '2026-10-20T00:00:00.000Z');
+});
+
+/* ---------- the tank (item 147) ---------- */
+
+const tankCtx = { ...ctx, tank: 300 };
+
+test("a fuel sensor's % reads as litres through the tank's size; litres it sends are taken as they are", () => {
+  assert.equal(tankLitres({ fuelPct: 50, fuelLitres: null }, 300), 150);
+  assert.equal(tankLitres({ fuelPct: 50, fuelLitres: null }, null), null);
+  assert.equal(tankLitres({ fuelPct: 50, fuelLitres: 142.36 }, 300), 142.4);
+});
+
+test('a refill read minute by minute is one refill, from the level before it to the last rise', () => {
+  const d = rollUpDay(
+    [
+      fig('08:00', { fuelPct: 20, engineOn: false }),
+      fig('08:01', { fuelPct: 35, engineOn: false }),
+      fig('08:02', { fuelPct: 52, engineOn: false }),
+      fig('08:03', { fuelPct: 61, engineOn: false }),
+      fig('08:04', { fuelPct: 61.5, engineOn: true }),
+      fig('17:00', { fuelPct: 30, engineOn: false }),
+    ],
+    tankCtx,
+  )!;
+  const refills = d.fuelEvents.filter((e) => e.kind === 'REFILL');
+  assert.equal(refills.length, 1);
+  assert.equal(refills[0].before, 60);
+  assert.equal(refills[0].after, 183);
+  assert.equal(refills[0].startAt.toISOString(), at('08:00').toISOString());
+  assert.equal(refills[0].endAt.toISOString(), at('08:03').toISOString());
+  assert.deepEqual(fuelMovesOf(d), { filled: 123, drained: 0 });
+  // 60 at the start + 123 filled − 90 left = 93 burnt.
+  assert.equal(fuelUsedOf(d), 93);
+});
+
+test('a fall with the engine off is a drain; slosh and an engine burning are not', () => {
+  const d = rollUpDay(
+    [
+      fig('18:00', { fuelLitres: 200, engineOn: false }),
+      fig('18:30', { fuelLitres: 197, engineOn: false }),
+      fig('22:00', { fuelLitres: 196, engineOn: false }),
+      fig('23:00', { fuelLitres: 150, engineOn: false }),
+      fig('23:10', { fuelLitres: 151, engineOn: false }),
+    ],
+    tankCtx,
+  )!;
+  assert.equal(d.fuelEvents.length, 1);
+  assert.equal(d.fuelEvents[0].kind, 'DRAIN');
+  assert.equal(d.fuelEvents[0].before - d.fuelEvents[0].after, 46);
+  assert.equal(d.fuelEvents[0].engineOn, false);
+  assert.deepEqual(fuelMovesOf(d), { filled: 0, drained: 46 });
+  assert.equal(fuelUsedOf(d), 3);
+  // Burning 20 litres an hour is the engine; 40 litres in 15 minutes is not.
+  assert.equal(fuelStepKind(200, 180, 1, true, true, 300), null);
+  assert.equal(fuelStepKind(200, 160, 0.25, true, true, 300), 'DRAIN');
+  // An unknown engine is no drain unless it was fast.
+  assert.equal(fuelStepKind(200, 180, 2, null, null, 300), null);
+  // Off at both readings, but its hour meter moved between them: it ran, so it burnt the fuel.
+  assert.equal(fuelStepKind(200, 180, 2, false, false, 300), 'DRAIN');
+  assert.equal(fuelStepKind(200, 180, 2, false, false, 300, true), null);
+  const ran = rollUpDay([fig('17:00', { fuelLitres: 200, hourMeter: 100, engineOn: false }), fig('19:00', { fuelLitres: 175, hourMeter: 101.5, engineOn: false })], tankCtx)!;
+  assert.equal(ran.fuelEvents.length, 0);
+  // The step grows with the tank: 3% of 1,000 litres.
+  assert.equal(fuelStepKind(500, 525, 0.1, false, false, 1000), null);
+  assert.equal(fuelStepKind(500, 531, 0.1, false, false, 1000), 'REFILL');
+});
+
+test('a run too small to count is dropped once another starts; events round-trip through their JSON', () => {
+  const d = rollUpDay(
+    [
+      fig('08:00', { fuelLitres: 100, engineOn: false }),
+      fig('08:05', { fuelLitres: 108, engineOn: false }),
+      fig('09:00', { fuelLitres: 107, engineOn: false }),
+      fig('10:00', { fuelLitres: 180, engineOn: false }),
+    ],
+    tankCtx,
+  )!;
+  assert.equal(d.fuelEvents.length, 1);
+  assert.equal(d.fuelEvents[0].after - d.fuelEvents[0].before, 73);
+  const back = fuelEventsOf(JSON.parse(JSON.stringify(dayRowData(d).fuelEvents)));
+  assert.deepEqual(back, d.fuelEvents);
+  assert.deepEqual(fuelEventsOf([{ kind: 'LEAK', before: 1, after: 2 }, 'x']), []);
+});
+
+test("the tank carries over from the day before's last reading, so a fill just after midnight is still a fill", () => {
+  const carry = { meter: null, meterAt: null, idle: null, fuelUsed: null, fuel: 40, fuelAt: new Date(at('00:00').getTime() - 10 * 60_000), engineOn: false };
+  const d = rollUpDay([fig('00:20', { fuelLitres: 190, engineOn: false }), fig('18:00', { fuelLitres: 120, engineOn: true })], { ...tankCtx, carry })!;
+  assert.equal(d.fuelStart, 40);
+  assert.equal(fuelMovesOf(d).filled, 150);
+  assert.equal(fuelUsedOf(d), 70);
+});
+
+test("the maker's fuel-used counter comes before the tank", () => {
+  const d = rollUpDay([fig('08:00', { fuelLitres: 200, fuelUsed: 1000 }), fig('18:00', { fuelLitres: 100, fuelUsed: 1060 })], tankCtx)!;
+  assert.equal(fuelUsedOf(d), 60);
+});
+
+test('the tank against the slips, and litres an hour against the norm', () => {
+  assert.deepEqual(fuelSlipGap(120, 120), { unslipped: null, notInTank: null });
+  assert.deepEqual(fuelSlipGap(120, 105), { unslipped: null, notInTank: null });
+  assert.deepEqual(fuelSlipGap(150, 0), { unslipped: 150, notInTank: null });
+  assert.deepEqual(fuelSlipGap(60, 200), { unslipped: null, notInTank: 140 });
+  // 10% of a big fill: 500 filled against 460 on slips is within it.
+  assert.deepEqual(fuelSlipGap(500, 460), { unslipped: null, notInTank: null });
+  assert.equal(litresPerHour(90, 6), 15);
+  assert.equal(litresPerHour(10, 0.5), null);
+  assert.equal(litresPerHour(null, 6), null);
+  assert.equal(rateAboveNorm(15, 12, 15), 25);
+  assert.equal(rateAboveNorm(13, 12, 15), null);
+  assert.equal(rateAboveNorm(15, null, 15), null);
+});
+
+test("Traccar's fuel attribute is the tank in litres", () => {
+  const r = readTracker({ position: { fixTime: ago(1).toISOString(), latitude: 12.97, longitude: 77.59, attributes: { ignition: false, fuel: 182.5 } }, device: { uniqueId: 'T-9' } }, NOW);
+  assert.equal(r.reading?.fuelLitres, 182.5);
+});
+
+/* ---------- a fuel dispenser's fill (item 147) ---------- */
+
+test("a dispenser's fill: its id, the tag, the time, the litres and the meter", () => {
+  const r = readDispense({ transactionId: 'TX-1001', rfid: 'E200 3412', time: ago(5).toISOString(), litres: '120.5', hourMeter: 4183.2, vehicleName: 'Excavator 1' }, NOW);
+  assert.ok(r.dispense);
+  assert.equal(r.dispense.externalId, 'TX-1001');
+  assert.equal(r.dispense.tag, 'E200 3412');
+  assert.equal(r.dispense.tagLabel, 'Excavator 1');
+  assert.equal(r.dispense.litres, 120.5);
+  assert.equal(r.dispense.meter, 4183.2);
+  assert.equal(r.dispense.at.toISOString(), ago(5).toISOString());
+});
+
+test('a fill with no id is known by its tag and time; gallons are litres', () => {
+  const r = readDispense({ vehicleNo: 'KA01AB1234', quantity: 10, unit: 'gal' }, NOW);
+  assert.equal(r.dispense?.externalId, `KA01AB1234@${NOW.toISOString()}`);
+  assert.equal(r.dispense?.litres, 37.854);
+});
+
+test("a fill with no tag, no litres, too many litres or from long ago is refused with what to do", () => {
+  assert.match(readDispense({ litres: 50 }, NOW).problem!, /No tag/);
+  assert.match(readDispense({ tag: 'A' }, NOW).problem!, /No litres/);
+  assert.match(readDispense({ tag: 'A', litres: 0 }, NOW).problem!, /more than 0/);
+  assert.match(readDispense({ tag: 'A', litres: 9000 }, NOW).problem!, /more than a machine's tank/);
+  assert.match(readDispense({ tag: 'A', litres: 50, time: '2026-08-01T10:00:00Z' }, NOW).problem!, /more than 30 days ago/);
+  assert.match(readDispense([{ tag: 'A' }], NOW).problem!, /one fill in each message/);
 });
 
 let failed = 0;

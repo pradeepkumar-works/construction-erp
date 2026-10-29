@@ -12,7 +12,7 @@ import type { RoleKey } from '@erp/shared';
 import { PAUSE_MIN_OUTCOMES, PAUSE_WINDOW_DAYS, PAUSE_WRONG_SHARE, WARNING_KINDS, trackRecordText, watchListKinds } from '@erp/shared';
 import { OM_MISSING_DAYS, TESTS_SHORT_MIN, calibrationWarns, lateDesignReviews, lateRecalls, lateDrawingGroups, lateReportGroups, omSlip, packageLate, testsShort } from '../warnings/warning-rules';
 import { packageStatus } from '../epc/epc-rules';
-import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, planFinishLate, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
+import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, fuelTankCheck, materialOveruse, overuseStep, planFinishLate, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -183,6 +183,17 @@ test('material: 3% or more over the allowance warns, and the key moves on in ste
 const fuelDays = (n: number, hours: number, litres: number, km: number | null = null) =>
   Array.from({ length: n }, (_, i) => ({ date: addDays('2026-10-20', -i), hoursWorked: hours, km, litres }));
 
+test("fuel tank: drains and fills off the slips over the week add up; a week that matched does not warn", () => {
+  assert.equal(fuelTankCheck([{ date: '2026-10-20', drained: 0, unslipped: null, notInTank: null }]), null);
+  const c = fuelTankCheck([
+    { date: '2026-10-21', drained: 0, unslipped: 120, notInTank: null },
+    { date: '2026-10-20', drained: 45, unslipped: null, notInTank: null },
+    { date: '2026-10-22', drained: 0, unslipped: null, notInTank: 60.5 },
+    { date: '2026-10-23', drained: 0, unslipped: null, notInTank: null },
+  ])!;
+  assert.deepEqual(c, { drained: 45, drains: 1, unslipped: 120, notInTank: 60.5, days: ['2026-10-20', '2026-10-21', '2026-10-22'], last: '2026-10-22', litres: 225.5 });
+});
+
 test('fuel: within the tolerance, or fewer than five logs with fuel, does not warn', () => {
   assert.equal(fuelNormCheck(fuelDays(10, 8, 40), 4.5, 'LITRES_PER_HOUR', 15, '2026-10-20'), null, '5 L/h against 4.5 is 11% over');
   assert.equal(fuelNormCheck(fuelDays(4, 8, 80), 4.5, 'LITRES_PER_HOUR', 15, '2026-10-20'), null, 'four logs are too few');
@@ -305,9 +316,9 @@ test('superseded copies: only those out past the recall period warn, one per doc
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW', 'PURCHASE_CONTROL']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'FUEL_TANK', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW', 'PURCHASE_CONTROL']);
   assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE']);
-  assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE']);
+  assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE', 'FUEL_TANK']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH', 'LOAN_EMI', 'PURCHASE_CONTROL']);
   assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR', 'RATE_ABOVE', 'PACKAGE_LATE']);
   assert.deepEqual(watchListKinds('SITE_ENGINEER'), []);

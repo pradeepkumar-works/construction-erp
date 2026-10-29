@@ -5,7 +5,7 @@ import { canApprove, canEditProjects, canManageDocuments, canManageMachineLoans,
  * Early warnings (AI roadmap item 73): plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
-export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW', 'PURCHASE_CONTROL'] as const;
+export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW', 'PURCHASE_CONTROL', 'FUEL_TANK'] as const;
 export type WarningKind = (typeof WARNING_KINDS)[number];
 
 export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
@@ -35,6 +35,7 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
   MARGIN_FADE: 'Margin falling',
   CUBE_7DAY_LOW: 'Cubes weak at 7 days',
   PURCHASE_CONTROL: 'Purchase control',
+  FUEL_TANK: "Fuel tank and slips don't match",
 };
 
 /**
@@ -59,6 +60,8 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   // Leakage checks (item 121)
   if (canPurchase(role)) out.push('RATE_ABOVE');
   if (canManageMaintenance(role)) out.push('FUEL_NO_LOG', 'IDLE_HIRE');
+  // Fuel sensors (item 147): drains and fills off the slips, for whoever looks after the machines' fuel.
+  if (canManageMaintenance(role)) out.push('FUEL_TANK');
   // Hindrance notices (item 123): the project manager signs them.
   if (canApprove(role) && canRaiseRisk(role)) out.push('NOTICE_DUE');
   // Attendance cross-check (item 124): whoever approves the bill.
@@ -130,6 +133,7 @@ export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
   MARGIN_FADE: 'LIKELY',
   CUBE_7DAY_LOW: 'LIKELY',
   PURCHASE_CONTROL: 'CHECKED',
+  FUEL_TANK: 'CHECKED',
 };
 
 /**
