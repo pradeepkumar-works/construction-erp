@@ -94,9 +94,16 @@ test('a stock count posts the differences as one adjustment, and stock value sho
 
   await signIn(page, 'pm@demo.com');
   await page.goto(`/projects/${road.id}?tab=stock`);
-  await page.getByRole('button', { name: /More/ }).click();
-  await page.getByRole('menuitem', { name: 'Stock count' }).click();
   const modal = page.locator('.ant-modal').filter({ hasText: 'Stock count' });
+  // As with the transfer: a click while the menu is still opening can be lost, so pick again until the form is up.
+  await expect(async () => {
+    if (!(await modal.isVisible())) {
+      const item = page.getByRole('menuitem', { name: 'Stock count' });
+      if (!(await item.isVisible())) await page.getByRole('button', { name: /More/ }).click({ timeout: 2000 });
+      await item.click({ timeout: 2000 });
+    }
+    await expect(modal.getByLabel(`Counted ${first.itemName}`)).toBeVisible({ timeout: 3000 });
+  }).toPass();
   await modal.getByLabel(`Counted ${first.itemName}`).fill(String(Number(first.balance) + 2));
   await expect(modal.getByText('1 counted, 1 differs')).toBeVisible();
   await modal.getByRole('button', { name: 'Post count' }).click();
