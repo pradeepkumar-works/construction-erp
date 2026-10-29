@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict';
 import type { RoleKey } from '@erp/shared';
 import { PAUSE_MIN_OUTCOMES, PAUSE_WINDOW_DAYS, PAUSE_WRONG_SHARE, WARNING_KINDS, trackRecordText, watchListKinds } from '@erp/shared';
-import { OM_MISSING_DAYS, omSlip, packageLate } from '../warnings/warning-rules';
+import { OM_MISSING_DAYS, TESTS_SHORT_MIN, calibrationWarns, lateReportGroups, omSlip, packageLate, testsShort } from '../warnings/warning-rules';
 import { packageStatus } from '../epc/epc-rules';
 import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, planFinishLate, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
@@ -251,15 +251,48 @@ test('emi: an EMI more than two days late warns, with the oldest, the count and 
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
+// QA/QC (item 137 part 3)
+
+test('tests short: a project warns at two or more tests short, its most short lines first', () => {
+  const l = (short: number, required = 4) => ({ short, required, taken: required - short });
+  assert.equal(testsShort([l(1), l(0)]), null);
+  const w = testsShort([l(1), l(0), l(3, 6)])!;
+  assert.equal(w.short, 4);
+  assert.equal(w.required, 14);
+  assert.equal(w.taken, 10);
+  assert.deepEqual(w.lines.map((x) => x.short), [3, 1]);
+  assert.equal(TESTS_SHORT_MIN, 2);
+});
+
+test('calibration: an instrument in use warns overdue or failed, and never calibrated once a test names it', () => {
+  const i = (state: 'OK' | 'DUE_SOON' | 'OVERDUE' | 'NEVER' | 'OUT_OF_USE', o: { active?: boolean; lastResult?: string | null; usedSinceDue?: number } = {}) => ({ state, active: o.active ?? true, lastResult: o.lastResult ?? null, usedSinceDue: o.usedSinceDue ?? 0 });
+  assert.equal(calibrationWarns(i('OVERDUE')), true);
+  assert.equal(calibrationWarns(i('OVERDUE', { active: false })), false);
+  assert.equal(calibrationWarns(i('DUE_SOON')), false);
+  assert.equal(calibrationWarns(i('OK')), false);
+  assert.equal(calibrationWarns(i('OUT_OF_USE', { lastResult: 'FAILED' })), true);
+  assert.equal(calibrationWarns(i('NEVER')), false);
+  assert.equal(calibrationWarns(i('NEVER', { usedSinceDue: 2 })), true);
+});
+
+test('lab reports: late samples group by project and lab, the longest wait first', () => {
+  const s = (projectId: string, labId: string, waitDays: number, late = true) => ({ projectId, labId, waitDays, late });
+  const g = lateReportGroups([s('p1', 'l1', 12), s('p1', 'l1', 18), s('p1', 'l2', 25), s('p2', 'l1', 5, false)]);
+  assert.deepEqual(g.map((x) => [x.projectId, x.labId, x.samples.length, x.longest]), [['p1', 'l2', 1, 25], ['p1', 'l1', 2, 18]]);
+  assert.deepEqual(g[1].samples.map((x) => x.waitDays), [18, 12]);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE']);
   assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE']);
   assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH', 'LOAN_EMI']);
   assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR', 'RATE_ABOVE', 'PACKAGE_LATE']);
   assert.deepEqual(watchListKinds('SITE_ENGINEER'), []);
+  assert.deepEqual(watchListKinds('QA_QC_ENGINEER'), ['TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE']);
 });
 
 // ---------------------------------------------------------------------------------------------------------------------

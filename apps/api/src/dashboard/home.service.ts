@@ -29,6 +29,8 @@ import {
   canRecordVendorBill,
   canSignLetters,
   canViewLetters,
+  canRaiseNcr,
+  QA_AUDIT_KIND_LABELS,
   isCompanyWide,
   isGuest,
   seesCompanyToday,
@@ -54,6 +56,7 @@ import { FleetService } from '../machinery/fleet.service';
 import { RequestsToOrderService } from '../purchasing/requests-to-order.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { CorrespondenceService } from '../correspondence/correspondence.service';
+import { QaAuditsService } from '../qa/audits.service';
 import { moduleOn } from '../common/module-switch.guard';
 
 type D = Prisma.Decimal;
@@ -123,6 +126,7 @@ export class HomeService {
     private meetings: MeetingsService,
     private toOrderList: RequestsToOrderService,
     private letters: CorrespondenceService,
+    private qaAudits: QaAuditsService,
   ) {}
 
   async myWork(user: RequestUser): Promise<MyWorkDto> {
@@ -132,7 +136,7 @@ export class HomeService {
     const seesDue = canViewPurchaseOrders(role) && (canPurchase(role) || canKeepStock(role));
     const matches = canRecordVendorBill(role) && canViewPayables(role);
     const checks = canCheckGrn(role) && role !== 'ADMIN' && role !== 'MANAGEMENT';
-    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch, actions, toOrder, orders, staff, unmatched, unchecked, toDebit, incoming, letters] = await Promise.all([
+    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch, actions, toOrder, orders, staff, unmatched, unchecked, toDebit, incoming, letters, findings] = await Promise.all([
       rights.length ? this.lifecycle.pending(user) : null,
       canApprove(role) || submitsDpr(role) ? this.dprsMissing(user, today) : null,
       this.lifecycle.mine(user, ['REJECTED', 'CHANGES_REQUESTED']),
@@ -153,6 +157,7 @@ export class HomeService {
       canRaiseDebitNote(role) ? this.receiptsWaiting(user, 'DEBIT_NOTE', today) : null,
       canKeepStock(role) ? this.stock.incomingTransfers(user, {}) : null,
       isGuest(role) ? null : this.letters.forMe(user),
+      canRaiseNcr(role) ? this.qaAudits.openFindings(user) : null,
     ]);
     // The store receives on its own Stock page; purchase follows its orders under Purchases.
     const storeSide = canKeepStock(role) && !canPurchase(role);
@@ -353,6 +358,21 @@ export class HomeService {
         unchecked.map((g) => ({ label: [g.entryNo, g.from].filter(Boolean).join(' · '), note: ago(g.date) === 0 ? 'received today' : `received ${days(ago(g.date))} ago`, projectName: g.projectName, amount: null, href: '/inspections?tab=grns' })),
         null,
         most(unchecked.map((g) => ago(g.date) - CHECK_LATE_AFTER)),
+      );
+    }
+    // Audit and visit findings (item 137): QA/QC always, the managers once one is open.
+    if (findings && (role === 'QA_QC_ENGINEER' || findings.length)) {
+      out.findingsToClose = card(
+        findings.length,
+        findings.map((f) => ({
+          label: `${f.auditNo} · ${f.text}`,
+          note: f.overdueDays ? `${QA_AUDIT_KIND_LABELS[f.kind]}, ${days(f.overdueDays)} overdue` : `${QA_AUDIT_KIND_LABELS[f.kind]}, ${f.ageDays === 0 ? 'today' : `${days(f.ageDays)} ago`}`,
+          projectName: f.projectName,
+          amount: null,
+          href: `/qa-audits?id=${f.auditId}`,
+        })),
+        null,
+        most(findings.map((f) => f.overdueDays ?? -1)),
       );
     }
     if (toDebit && (role === 'ACCOUNTS_MANAGER' || toDebit.length)) {

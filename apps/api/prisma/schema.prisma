@@ -858,6 +858,8 @@ model Organization {
   qaLabs               QaLab[]
   qaInstruments        QaInstrument[]
   qaCalibrations       QaCalibration[]
+  qaAudits             QaAudit[]
+  qaAuditFindings      QaAuditFinding[]
   documents            Document[]
   drawingMarkups       DrawingMarkup[]
   transmittals         Transmittal[]
@@ -1136,6 +1138,7 @@ model User {
   qualityTests          QualityTest[]              @relation("TestCreator")
   pours                 Pour[]                     @relation("PourCreator")
   qaCalibrations        QaCalibration[]            @relation("CalibrationBy")
+  qaAudits              QaAudit[]                  @relation("QaAuditBy")
   ncrsRaised            Ncr[]                      @relation("NcrRaiser")
   ncrsToAct             Ncr[]                      @relation("NcrActionBy")
   ncrsClosed            Ncr[]                      @relation("NcrCloser")
@@ -1408,6 +1411,7 @@ model Project {
   pours              Pour[]
   qaLabs             QaLab[]
   qaInstruments      QaInstrument[]
+  qaAudits           QaAudit[]
   documents          Document[]
   drawingMarkups     DrawingMarkup[]
   transmittals       Transmittal[]
@@ -4177,6 +4181,8 @@ model Attachment {
   letter             Letter?            @relation(fields: [letterId], references: [id], onDelete: Cascade)
   qaCalibrationId    String?
   qaCalibration      QaCalibration?     @relation(fields: [qaCalibrationId], references: [id], onDelete: Cascade)
+  qaAuditId          String?
+  qaAudit            QaAudit?           @relation(fields: [qaAuditId], references: [id], onDelete: Cascade)
   variationId        String?
   variation          Variation?         @relation(fields: [variationId], references: [id], onDelete: Cascade)
   safetyIncidentId   String?
@@ -4684,6 +4690,7 @@ model Ncr {
 
   attachments    Attachment[]
   meetingActions MeetingAction[]
+  auditFinding   QaAuditFinding?
 
   @@unique([organizationId, ncrNo])
   @@index([projectId, status])
@@ -8342,4 +8349,51 @@ model QaCalibration {
   attachments Attachment[]
 
   @@index([instrumentId, calibratedOn])
+}
+
+/// An internal audit or a visit by the client, its consultant, a third-party inspector or the department (item 137 part 3).
+model QaAudit {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// AUD-<year>-NNNN
+  auditNo        String
+  /// INTERNAL | CLIENT | CONSULTANT | TPI | DEPARTMENT (`QA_AUDIT_KINDS`)
+  kind           String       @default("INTERNAL")
+  date           DateTime     @db.Date
+  visitor        String?
+  summary        String?
+  /// An internal audit's score out of 100
+  score          Int?
+  createdById    String
+  createdBy      User         @relation("QaAuditBy", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  findings    QaAuditFinding[]
+  attachments Attachment[]
+
+  @@unique([organizationId, auditNo])
+  @@index([projectId, date])
+}
+
+/// A finding of an audit or visit: put right on its own (closedOn) or through the NCR raised from it.
+model QaAuditFinding {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  auditId        String
+  audit          QaAudit      @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  text           String
+  severity       NcrSeverity  @default(MINOR)
+  dueOn          DateTime?    @db.Date
+  closedOn       DateTime?    @db.Date
+  closingNote    String?
+  ncrId          String?      @unique
+  ncr            Ncr?         @relation(fields: [ncrId], references: [id], onDelete: SetNull)
+  sortOrder      Int          @default(0)
+
+  @@index([auditId])
 }

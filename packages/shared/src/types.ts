@@ -545,6 +545,8 @@ export interface MyWorkDto {
   transfersToReceive?: MyWorkCard;
   /** Letters marked to the caller and not acted on, and drafts waiting for their signature (Correspondence, item 136) */
   letters?: MyWorkCard;
+  /** QA/QC and the managers: audit and visit findings still open with no NCR raised, most overdue first (item 137) */
+  findingsToClose?: MyWorkCard;
 }
 
 /** Month by month, oldest first, for the home page's KPI trends and charts (UI roadmap item 59). */

@@ -42,6 +42,8 @@ import { LeakageService } from '../leakage/leakage.service';
 import { AttendanceCheckService } from '../attendance-check/attendance-check.service';
 import { monthSpan } from '../leakage/leakage-rules';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
+import { QaService } from '../qa/qa.service';
+import { QaRegistersService } from '../qa/registers.service';
 import { noticeClock } from '../hindrance/hindrance-rules';
 import { packageStatus } from '../epc/epc-rules';
 import { loadMonths, loadOm } from '../om/om-load';
@@ -58,6 +60,10 @@ import {
   MACHINE_WINDOW_DAYS,
   MIN_BREAKDOWN_HOURS,
   REJECT_SHARE,
+  TESTS_SHORT_MIN,
+  calibrationWarns,
+  lateReportGroups,
+  testsShort,
   PACKAGE_GRACE_DAYS,
   SLIP_GRACE_DAYS,
   VENDOR_WINDOW_DAYS,
@@ -137,6 +143,8 @@ export class WarningsService {
     private leakage: LeakageService,
     private cashForecast: CashForecastService,
     private attendance: AttendanceCheckService,
+    private qa: QaService,
+    private qaRegisters: QaRegistersService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -270,6 +278,10 @@ export class WarningsService {
         // A scheme in O&M is a completed project (item 131).
         if (k === 'OM_SERVICE') return this.omService(projects, today);
         if (k === 'BOQ_OFF_CONTRACT') return this.boqGaps(projects.filter((p) => p.status === 'ACTIVE' || p.status === 'PLANNED'));
+        // QA/QC (item 137): today's registers, read through their own services.
+        if (k === 'TESTS_SHORT') return today === todayIn() ? this.testsShort(user) : Promise.resolve([]);
+        if (k === 'CALIBRATION_DUE') return today === todayIn() ? this.calibration(user, today) : Promise.resolve([]);
+        if (k === 'LAB_REPORT_LATE') return today === todayIn() ? this.labReports(user) : Promise.resolve([]);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -779,6 +791,99 @@ export class WarningsService {
       });
     }
     return out;
+  }
+
+  /** A project whose quality plan is short of `TESTS_SHORT_MIN` tests or more (`testsShort` over `QaService.testsDue`). */
+  private async testsShort(user: RequestUser): Promise<Draft[]> {
+    const due = await this.qa.testsDue(user, {});
+    const byProject = new Map<string, typeof due.rows>();
+    for (const r of due.rows) byProject.set(r.line.projectId, [...(byProject.get(r.line.projectId) ?? []), r]);
+    const out: Draft[] = [];
+    for (const [projectId, rows] of byProject) {
+      const w = testsShort(rows);
+      if (!w) continue;
+      const name = rows[0].projectName;
+      const top = w.lines.slice(0, 3).map((l) => `${l.line.testName}${l.line.grade ? ` ${l.line.grade}` : ''}: ${l.short} short`);
+      out.push({
+        key: `tests:${projectId}:${w.short}`,
+        kind: 'TESTS_SHORT',
+        title: `${name} is ${plural(w.short, 'test')} short of its quality plan`,
+        detail: `The work approved in DPRs and the material received owe ${w.required} tests by the plan; ${w.taken} are recorded. ${top.join('; ')}.`,
+        action: 'Take the samples before the work is covered up, or record the tests already taken against their plan line',
+        impact: { text: `${plural(w.short, 'test')} short`, inr: null, days: null },
+        working: [...w.lines.map((l) => `${l.line.testName}${l.line.grade ? ` ${l.line.grade}` : ''}: ${l.required} owed, ${l.taken} taken`), `Warns at ${TESTS_SHORT_MIN} or more short`],
+        facts: [
+          { label: 'Owed', value: String(w.required) },
+          { label: 'Taken', value: String(w.taken) },
+        ],
+        links: [{ label: 'Tests due', href: `/tests-due?projectId=${projectId}` }],
+        projectId,
+        projectName: name,
+      });
+    }
+    return out;
+  }
+
+  /** An instrument in use past its calibration, failed, or never calibrated and used (`calibrationWarns`). */
+  private async calibration(user: RequestUser, today: string): Promise<Draft[]> {
+    const register = await this.qaRegisters.instruments(user, { attention: true });
+    const used = new Map(
+      (
+        await this.prisma.qualityTest.groupBy({
+          by: ['instrumentId'],
+          where: { organizationId: user.organizationId, instrumentId: { in: register.items.map((i) => i.id) } },
+          _count: true,
+        })
+      ).map((g) => [g.instrumentId!, g._count]),
+    );
+    const out: Draft[] = [];
+    for (const i of register.items) {
+      if (!calibrationWarns({ state: i.state, active: i.active, lastResult: i.lastResult, usedSinceDue: used.get(i.id) ?? 0 })) continue;
+      const overdue = i.dueOn ? Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${i.dueOn}T00:00:00Z`)) / 86_400_000)) : null;
+      const why = i.state === 'OVERDUE' ? `was due for calibration on ${day(i.dueOn!)}` : i.state === 'NEVER' ? 'has no calibration on record' : 'failed its last calibration';
+      out.push({
+        key: `calibration:${i.id}:${i.state}:${i.dueOn ?? ''}`,
+        kind: 'CALIBRATION_DUE',
+        title: `${i.name} ${why}`,
+        detail: `Results from ${i.name}${i.labName ? ` at ${i.labName}` : ''} will not stand with the client or a third-party inspector until it is calibrated${used.get(i.id) ? `; ${plural(used.get(i.id)!, 'test')} ${used.get(i.id) === 1 ? 'names' : 'name'} it` : ''}.`,
+        action: i.state === 'OUT_OF_USE' ? 'Stop using it, repair or replace it and record the new calibration' : 'Book the calibration with an NABL calibration lab and record its certificate',
+        impact: { text: overdue ? `${plural(overdue, 'day')} overdue` : 'Not calibrated', inr: null, days: overdue },
+        working: [`Calibrated every ${plural(i.intervalDays, 'day')}`, i.lastCalibratedOn ? `Last calibrated ${day(i.lastCalibratedOn)}${i.certificateNo ? `, certificate ${i.certificateNo}` : ''}` : 'No calibration recorded'],
+        facts: [
+          { label: 'Due', value: i.dueOn ? day(i.dueOn) : 'Not calibrated' },
+          { label: 'Where', value: i.labName ?? i.projectName ?? 'Head office' },
+        ],
+        links: [{ label: 'Calibration register', href: '/calibration' }],
+        projectId: i.projectId,
+        projectName: i.projectName,
+      });
+    }
+    return out;
+  }
+
+  /** Samples at a lab past `LAB_REPORT_DAYS` without a report, one warning per project and lab (`lateReportGroups`). */
+  private async labReports(user: RequestUser): Promise<Draft[]> {
+    const late = await this.qaRegisters.samples(user, { late: true, state: 'AT_LAB', page: 1, pageSize: 500 });
+    return lateReportGroups(late.items).map((g) => {
+      const s = g.samples[0];
+      const names = g.samples.slice(0, 3).map((x) => `${x.testNo} ${x.title}`);
+      return {
+        key: `lab:${g.projectId}:${g.labId}:${g.samples.map((x) => x.testId).join(',')}`,
+        kind: 'LAB_REPORT_LATE' as const,
+        title: `${plural(g.samples.length, 'report')} late from ${s.labName}`,
+        detail: `${names.join('; ')}${g.samples.length > 3 ? ' and more' : ''}. The oldest went ${plural(g.longest, 'day')} ago, and work that waits on the result is held.`,
+        action: `Chase ${s.labName} for the reports, or send a fresh sample elsewhere`,
+        impact: { text: `${plural(g.longest, 'day')} waiting`, inr: null, days: g.longest },
+        working: g.samples.map((x) => `${x.testNo}: sent ${day(x.sentOn)}, ${plural(x.waitDays ?? 0, 'day')} at the lab`),
+        facts: [
+          { label: 'Late', value: String(g.samples.length) },
+          { label: 'Longest wait', value: plural(g.longest, 'day') },
+        ],
+        links: [{ label: 'Samples sent out', href: `/lab-samples?labId=${g.labId}&late=1` }],
+        projectId: g.projectId,
+        projectName: s.projectName,
+      };
+    });
   }
 
   /**
