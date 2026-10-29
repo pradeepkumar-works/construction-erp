@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DprService } from './dpr.service';
+import { DprChecksService } from './dpr-checks.service';
 import { CreateDprDto, DprWorkOptionsQuery, ListDprQuery, UpdateDprDto } from './dpr.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { DprFormsService } from '../templates/dpr-forms.service';
@@ -12,6 +13,7 @@ export class DprController {
   constructor(
     private dpr: DprService,
     private forms: DprFormsService,
+    private checks: DprChecksService,
   ) {}
 
   @Get()
@@ -32,6 +34,15 @@ export class DprController {
   @Get('forms')
   formsById(@CurrentUser() user: RequestUser, @Query('ids') ids?: string) {
     return this.forms.byIds(user.organizationId, (ids ?? '').split(',').map((x) => x.trim()).filter((x) => /^[0-9a-f-]{36}$/i.test(x)));
+  }
+
+  @ApiOperation({
+    summary: 'Credibility checks on a DPR (intelligence quick win Q3)',
+    description: 'For those who approve daily reports: work with no crew, work whose material was not issued in the week to it, quantities or crews the same as on the reports before, and photos that came with an earlier report. Advice only; nothing here stops an approval.',
+  })
+  @Get(':id/checks')
+  checksOf(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.checks.forReport(user, id);
   }
 
   @Get(':id')

@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-06-dpr-checks',
+    date: '2027-06-14',
+    title: 'Checks on a DPR before you approve it',
+    points: [
+      'A DPR waiting for you now opens with what is worth a second look: work with no crew, work whose material was not issued that week, the same figures or the same crew as the reports before, and a photo sent with an earlier report.',
+      'The checks are advice. Approve, send back or reject as before.',
+    ],
+  },
+  {
     id: '2027-06-cubes-at-7-days',
     date: '2027-06-07',
     title: 'Weak cubes, three weeks early',

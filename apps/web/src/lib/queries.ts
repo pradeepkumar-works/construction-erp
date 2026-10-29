@@ -254,6 +254,7 @@ import type {
   BoqItemDto,
   CompanyDashboard,
   DailyReportDto,
+  DprChecksDto,
   MaterialRequestDto,
   NotificationDto,
   NotificationListDto,
@@ -781,6 +782,10 @@ export const useDprList = (filters?: ListFilters, enabled = true) =>
   });
 
 export const useDpr = (id: string | undefined) => useQuery({ ...recordQuery<DailyReportDto>('/dpr', id), enabled: !!id });
+
+/** What an approver should look at twice on a DPR (intelligence quick win Q3); advice only. */
+export const useDprChecks = (dprId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['dpr', dprId, 'checks'], queryFn: async () => (await api.get<DprChecksDto>(`/dpr/${dprId}/checks`)).data, enabled: enabled && !!dprId, staleTime: 60_000 });
 
 /** What a project's DPR form offers (item 127): activities that take progress, store items, open work orders. */
 export const useDprWorkOptions = (projectId: string | undefined, date?: string) =>
