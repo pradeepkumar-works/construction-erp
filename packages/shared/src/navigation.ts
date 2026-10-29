@@ -112,6 +112,7 @@ export const NAV_ACCESS = {
   imprest: (u: NavUser) => P.canHoldImprest(u.roleKey) || P.canManageImprest(u.roleKey) || P.canApprove(u.roleKey),
   checklists: (u: NavUser) => P.canManageChecklists(u.roleKey),
   letters: (u: NavUser) => P.canViewLetters(u.roleKey),
+  lettersHead: (u: NavUser) => P.canHeadLetters(u.roleKey),
   materialRequests: (u: NavUser) => onSite(u) || P.canPurchase(u.roleKey),
   purchase: (u: NavUser) => P.canPurchase(u.roleKey),
   checkGrn: (u: NavUser) => P.canCheckGrn(u.roleKey),
@@ -233,7 +234,12 @@ export const NAV_TREE: NavNode[] = [
   // ── Documents (out of Site) ───────────────────────────────────────────────────────────────────────────────────
   { id: 'documents.register', parent: 'documents', label: 'Drawings and documents', icon: 'file-stack', route: '/documents?tab=register', nav: 'Documents', access: 'internal', status: 'live', description: 'Drawings and their revisions, GFC status and the drawing viewer.', keywords: 'drawings files rfi', concord: ['p7-attach'] },
   { id: 'documents.transmittals', parent: 'documents', label: 'Transmittals', icon: 'send', route: '/documents?tab=transmittals', access: 'internal', status: 'live', description: 'Documents sent and acknowledged.' },
-  { id: 'documents.letters', parent: 'correspondence', label: 'Letters', icon: 'scroll-text', route: '/documents?tab=letters', access: 'letters', status: 'live', badge: 'lettersDue', description: 'Numbered letters in and out, replies due.' },
+  { id: 'documents.letters', parent: 'correspondence', label: 'Inward register', icon: 'mail-open', route: '/correspondence', access: 'letters', status: 'live', badge: 'lettersDue', description: 'Letters received, numbered on entry, marked to someone with an action and a date.', keywords: 'dak inward letters received marked reply due' },
+  { id: 'correspondence.outward', parent: 'correspondence', label: 'Outward register', icon: 'send', route: '/correspondence/outward', access: 'letters', status: 'live', newUntil: '2027-03-31', description: 'Letters drafted, signed, numbered and dispatched, with proof of delivery.', keywords: 'outward letters sent dispatch speed post notice approval' },
+  { id: 'correspondence.contacts', parent: 'correspondence', label: 'Address book', icon: 'book-user', route: '/correspondence/address-book', access: 'letters', status: 'live', group: 'Masters', newUntil: '2027-03-31', description: 'The offices and people letters come from and go to.', keywords: 'address book contacts executive engineer office' },
+  { id: 'correspondence.numbering', parent: 'correspondence', label: 'Numbering and approval', icon: 'list-ordered', route: '/correspondence/numbering', access: 'lettersHead', status: 'live', group: 'Masters', newUntil: '2027-03-31', description: 'Letter number series per project and head office, and which letters need approval.', keywords: 'letter number series pattern financial year approval' },
+  { id: 'correspondence.templates', parent: 'correspondence', label: 'Letter templates', icon: 'file-pen-line', route: '/correspondence/templates', access: 'letters', status: 'live', group: 'Masters', newUntil: '2027-03-31', description: 'Standard letters a draft starts from, with placeholders filled in.', keywords: 'letter template format draft' },
+  { id: 'correspondence.categories', parent: 'correspondence', label: 'Letter categories', icon: 'tags', route: '/masters/letter-category', nav: false, access: 'letters', status: 'live', group: 'Masters', newUntil: '2027-03-31', description: 'What letters are about; the contractual ones need approval and proof.' },
   { id: 'documents.rfis', parent: 'documents', label: 'RFIs', icon: 'circle-help', route: '/documents?tab=rfis', access: 'internal', status: 'live', badge: 'rfisOpen', description: 'Questions to the designer, waiting for answers.' },
 
   // ── Materials ─────────────────────────────────────────────────────────────────────────────────────────────────

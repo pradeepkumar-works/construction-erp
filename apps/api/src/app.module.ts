@@ -47,6 +47,7 @@ import { RfisModule } from './rfis/rfis.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
 import { MastersModule } from './masters/masters.module';
+import { CorrespondenceModule } from './correspondence/correspondence.module';
 import { SectorModule } from './sector/sector.module';
 import { TemplatesModule } from './templates/templates.module';
 import { MeasurementsModule } from './measurements/measurements.module';
@@ -176,6 +177,7 @@ import { VitalsController } from './vitals.controller';
     MaintenanceModule,
     UnitsModule,
     MastersModule,
+    CorrespondenceModule,
     SectorModule,
     TemplatesModule,
     ApprovalsModule,

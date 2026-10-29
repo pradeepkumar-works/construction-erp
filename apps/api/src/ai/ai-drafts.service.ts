@@ -235,10 +235,11 @@ export class AiDraftsService {
     if (!subject) throw new BadRequestException('subject is required');
     const body = text(i.body, 3000);
     const cover = bill ? coverNote(bill, project.name) : null;
-    const summary = [cover, body].filter(Boolean).join('\n\n').slice(0, 4000) || undefined;
-    if (!summary) flags.push({ field: 'summary', note: 'Nothing was given for the body' });
+    // The letter's text (Correspondence, item 136): printed on the letterhead once its signatory approves it.
+    const letterBody = [cover, body].filter(Boolean).join('\n\n').slice(0, 20000) || undefined;
+    if (!letterBody) flags.push({ field: 'body', note: 'Nothing was given for the body' });
     const letterDate = todayIn();
-    const values = { direction: 'OUT', letterDate, party, subject, summary, inReplyToId: typeof i.inReplyToId === 'string' && UUID.test(i.inReplyToId) ? i.inReplyToId : undefined };
+    const values = { direction: 'OUT', letterDate, party, subject, body: letterBody, inReplyToId: typeof i.inReplyToId === 'string' && UUID.test(i.inReplyToId) ? i.inReplyToId : undefined };
     const out = this.draft('letter', project, `Letter to ${party ?? 'the client'}: ${subject}`, values, flags);
     // The bill's own figures, so the answer and the grounding check can see where the letter's numbers came from.
     return bill ? { ...out, bill: { billLabel: bill.billLabel, agreementNo: bill.agreementNo, agreementDate: bill.agreementDate, gstRate: bill.gstRate, billDate: bill.billDate, measuredUpTo: bill.measuredUpTo, grossAmount: bill.grossAmount, pvAmount: bill.pvAmount, gstAmount: bill.gstAmount, totalDeductions: bill.totalDeductions, netPayable: bill.netPayable, grossUpto: bill.grossUpto, href: `/bills/${bill.id}` } } : out;

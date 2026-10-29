@@ -1,12 +1,16 @@
 import type { RoleKey, SubmissionStatus } from './enums';
 
-/** Roles that see every project in the organisation without being a project member. */
+/**
+ * Roles that see every project in the organisation without being a project member. The document controller keeps the
+ * company's letters, in and out, for every project (Correspondence, item 136).
+ */
 export const COMPANY_WIDE_ROLES: RoleKey[] = [
   'ADMIN',
   'MANAGEMENT',
   'PROCUREMENT_MANAGER',
   'ACCOUNTS_MANAGER',
   'HR_MANAGER',
+  'DOCUMENT_CONTROLLER',
 ];
 
 /**
@@ -75,7 +79,7 @@ export const NCR_ROLES: RoleKey[] = CHECKLIST_ADMIN_ROLES;
 
 /** Roles that see contract terms and bills: approvers, the QS who prepares bills, and accounts. */
 /** Keep the document register: add drawings and revisions, send transmittals. Everyone on a project reads it. */
-export const DOCUMENT_CONTROL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER'];
+export const DOCUMENT_CONTROL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER', 'DOCUMENT_CONTROLLER'];
 
 /** Keep the staff master and holidays, see every employee, decide anyone's leave. */
 export const STAFF_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'HR_MANAGER'];
@@ -83,8 +87,15 @@ export const STAFF_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'HR_MANAGER'
 /** Monthly payroll inputs (days, leave, overtime per employee) for the payroll provider: staff admins and accounts. */
 export const PAYROLL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'HR_MANAGER', 'ACCOUNTS_MANAGER'];
 
-/** Read and record letters in and out (contractual correspondence). */
-export const CORRESPONDENCE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
+/** Read and record letters in and out (contractual correspondence) on their projects. */
+export const CORRESPONDENCE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'DOCUMENT_CONTROLLER'];
+/**
+ * Correspondence heads (item 136): every project's letters and head office's, confidential ones included; they keep the
+ * numbering series, the templates and the approval rule. The document controller runs the inward (dak) desk.
+ */
+export const LETTER_HEAD_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'DOCUMENT_CONTROLLER'];
+/** Who signs an outward letter, and so approves it before it is numbered: the project manager on their projects, directors anywhere. */
+export const LETTER_SIGNATORY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
 export const BILLING_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'ACCOUNTS_MANAGER'];
 
@@ -111,6 +122,9 @@ export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);
 export const canCheckGrn = (role: RoleKey) => NCR_ROLES.includes(role);
 export const canManageDocuments = (role: RoleKey) => DOCUMENT_CONTROL_ROLES.includes(role);
 export const canViewLetters = (role: RoleKey) => CORRESPONDENCE_ROLES.includes(role);
+/** Every letter, head office's and confidential ones too; keeps series, templates and the approval rule. */
+export const canHeadLetters = (role: RoleKey) => LETTER_HEAD_ROLES.includes(role);
+export const canSignLetters = (role: RoleKey) => LETTER_SIGNATORY_ROLES.includes(role);
 /** Change, resolve or delete a mark on a drawing (item 109): whoever made it, and document control. Anyone on the project adds one. */
 export const canEditMarkup = (role: RoleKey, mine: boolean) => mine || canManageDocuments(role);
 /** Who sees the company's WhatsApp and SMS log. */

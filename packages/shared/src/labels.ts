@@ -183,6 +183,7 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
   PROCUREMENT_MANAGER: 'Procurement Manager',
   QA_QC_ENGINEER: 'QA/QC Engineer',
   SAFETY_OFFICER: 'Safety Officer',
+  DOCUMENT_CONTROLLER: 'Document Controller',
   ACCOUNTS_MANAGER: 'Accounts Manager',
   HR_MANAGER: 'HR Manager',
   CLIENT_ENGINEER: "Client's Engineer (guest)",
@@ -226,6 +227,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   COMMENT: 'Comments',
   ACCESS_REQUEST: 'Access requests',
   HANDOFF: 'Your turn',
+  LETTER: 'Letter',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

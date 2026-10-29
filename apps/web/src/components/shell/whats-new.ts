@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-03-correspondence',
+    date: '2027-03-05',
+    title: 'Correspondence: inward and outward registers',
+    points: [
+      'Correspondence has an inward and an outward register for every project and for head office. Letters get short numbers from each project’s series, such as P07/OUT/26-27/042, starting again each financial year.',
+      'Record a letter received and mark it to someone with what to do and by when. They see it under Letters for you on My work and on the phone, and close it once it is dealt with.',
+      'Write a letter from a template. Notices, claims and extension of time letters go to their signatory first and get their number when approved. Print it on your letterhead, then record how it went and the proof it arrived.',
+      'The address book, numbering and templates are under Correspondence › Masters. The new Document Controller role keeps the registers.',
+    ],
+  },
+  {
     id: '2027-03-masters-and-modules',
     date: '2027-03-04',
     title: 'Masters, and QA/QC, design and letters as modules of their own',

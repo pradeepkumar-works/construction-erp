@@ -82,6 +82,12 @@ export class MastersService {
       case 'equipmentCategory':
         (await this.prisma.equipment.groupBy({ by: ['category'], where: { organizationId: org }, _count: { _all: true } })).forEach((r) => add(r.category, r._count._all));
         break;
+      case 'letterCategory': {
+        // Letters keep the category's code (so a renamed category stays on its letters); count them under its name.
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        (await this.prisma.letter.groupBy({ by: ['category'], where: { organizationId: org, category: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r.category!) ?? null, r._count._all));
+        break;
+      }
     }
     return out;
   }

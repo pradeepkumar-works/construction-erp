@@ -163,8 +163,8 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                     <span className="text-muted" style={{ width: 90, flex: 'none' }}>
                       {formatDate(l.letterDate)}
                     </span>
-                    <Link href={`/documents?tab=letters&letter=${l.id}`} className="text-link" style={{ flex: 'none' }}>
-                      {l.letterNo}
+                    <Link href={`/correspondence/${l.id}`} className="text-link" style={{ flex: 'none' }}>
+                      {l.letterNo ?? 'Draft'}
                     </Link>
                     <span>
                       {LETTER_DIRECTION_LABELS[l.direction]}: {l.subject}
@@ -172,7 +172,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                   </div>
                 ))
               ) : (
-                <Typography.Text type="secondary">No letters linked. Link hindrance notices and extension claims from Documents → Letters.</Typography.Text>
+                <Typography.Text type="secondary">No letters linked. Link hindrance notices and extension claims from Correspondence.</Typography.Text>
               )}
             </>
           ) : null}

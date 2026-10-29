@@ -1,3 +1,4 @@
+import type { LetterAction, LetterMarkDto, LetterMode, LetterPriority, LetterStatus } from './correspondence';
 import type { NavSettingsDto } from './nav-menu';
 import type { DprLineDto } from './dpr-lines';
 import type { DprExtra, DprFormDto } from './dpr-form';
@@ -542,6 +543,8 @@ export interface MyWorkDto {
   toDebit?: MyWorkCard;
   /** Store: material another site or store sent here that is still on the road, oldest first */
   transfersToReceive?: MyWorkCard;
+  /** Letters marked to the caller and not acted on, and drafts waiting for their signature (Correspondence, item 136) */
+  letters?: MyWorkCard;
 }
 
 /** Month by month, oldest first, for the home page's KPI trends and charts (UI roadmap item 59). */
@@ -609,7 +612,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -2875,7 +2878,8 @@ export interface TransmittalDto {
 
 export interface LetterRefDto {
   id: string;
-  letterNo: string;
+  /** Null for an outward draft not yet numbered */
+  letterNo: string | null;
   direction: LetterDirection;
   letterDate: string;
   subject: string;
@@ -2919,17 +2923,28 @@ export interface DocumentPageViewDto {
 
 export interface LetterDto {
   id: string;
-  projectId: string;
-  projectName: string;
+  /** Null for a head office letter */
+  projectId: string | null;
+  projectName: string | null;
   direction: LetterDirection;
-  letterNo: string;
+  /** From the series (P07/OUT/26-27/042); null for an outward draft until approved */
+  letterNo: string | null;
+  status: LetterStatus;
   theirRef: string | null;
   letterDate: string;
+  receivedOn: string | null;
   party: string;
+  contactId: string | null;
   subject: string;
   summary: string | null;
+  body: string | null;
+  category: string | null;
+  categoryName: string | null;
+  priority: LetterPriority;
+  confidential: boolean;
+  mode: LetterMode | null;
   replyBy: string | null;
-  /** Received, a reply is due and none has been sent */
+  /** A reply is due (ours to a letter received, theirs to one sent) and none has gone */
   awaitingReply: boolean;
   /** Awaiting a reply past `replyBy` */
   overdue: boolean;
@@ -2938,11 +2953,42 @@ export interface LetterDto {
   riskId: string | null;
   riskNo: string | null;
   riskTitle: string | null;
+  markedToId: string | null;
+  markedToName: string | null;
+  action: LetterAction | null;
+  actionDue: string | null;
+  actionOverdue: boolean;
+  signatoryId: string | null;
+  signatoryName: string | null;
+  sentForApprovalAt: string | null;
+  approvedAt: string | null;
+  returnNote: string | null;
+  docketNo: string | null;
+  dispatchedOn: string | null;
+  deliveredOn: string | null;
+  deliveryProof: string | null;
+  /** A contractual letter sent with no proof of delivery */
+  proofMissing: boolean;
+  closedAt: string | null;
+  closedNote: string | null;
+  closedByName: string | null;
   createdById: string;
   createdByName: string;
   attachments: AttachmentDto[];
+  /** Who it was marked to, in order (on the letter itself; empty in a list) */
+  marks: LetterMarkDto[];
+  /** What this user may do with it */
+  can: { edit: boolean; mark: boolean; sign: boolean; close: boolean; dispatch: boolean; remove: boolean };
   createdAt: string;
   updatedAt: string;
+}
+
+/** A letter for printing on the letterhead. */
+export interface LetterPrintDto {
+  company: { name: string; address: string | null; gstin: string | null };
+  letter: LetterDto;
+  to: { name: string; office: string | null; organisation: string | null; address: string | null };
+  signedBy: { name: string; title: string } | null;
 }
 
 /** Counts for the Documents page and the project tab. */

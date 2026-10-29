@@ -18,9 +18,9 @@ import { WarningsModule } from '../warnings/warnings.module';
 import { MachineryModule } from '../machinery/machinery.module';
 import { StaffModule } from '../staff/staff.module';
 import { MeetingsModule } from '../meetings/meetings.module';
-import { DocumentsModule } from '../documents/documents.module';
+import { CorrespondenceModule } from '../correspondence/correspondence.module';
 import { HomeService } from './home.service';
 import { ModuleHomeService } from './module-home.service';
 
-@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule, StaffModule, PayrollModule, BooksModule, StatementsModule, MeetingsModule, DocumentsModule], controllers: [DashboardController], providers: [DashboardService, HomeService, ModuleHomeService], exports: [DashboardService, HomeService] })
+@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule, StaffModule, PayrollModule, BooksModule, StatementsModule, MeetingsModule, CorrespondenceModule], controllers: [DashboardController], providers: [DashboardService, HomeService, ModuleHomeService], exports: [DashboardService, HomeService] })
 export class DashboardModule {}

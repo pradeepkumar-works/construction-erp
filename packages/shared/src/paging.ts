@@ -37,7 +37,7 @@ export const LIST_SORT_FIELDS = {
   ncrs: ['raisedOn', 'ncrNo', 'severity', 'status', 'dueDate', 'project', 'createdAt'],
   documents: ['docNo', 'title', 'kind', 'discipline', 'issuedOn', 'status', 'project', 'updatedAt'],
   transmittals: ['sentOn', 'transmittalNo', 'toParty', 'project', 'createdAt'],
-  letters: ['letterDate', 'letterNo', 'party', 'replyBy', 'project', 'createdAt'],
+  letters: ['letterDate', 'letterNo', 'party', 'replyBy', 'actionDue', 'project', 'createdAt'],
   rfis: ['raisedOn', 'rfiNo', 'replyBy', 'project', 'updatedAt'],
   employees: ['employeeCode', 'fullName', 'designation', 'project', 'createdAt'],
   leave: ['fromDate', 'createdAt', 'employee', 'status', 'type'],

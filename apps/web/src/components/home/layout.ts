@@ -15,45 +15,50 @@ export interface HomeLayout {
  * caller's role cannot see is left out by the API, so a layout never shows more than the role's permissions allow.
  * My work puts its most urgent card first (UX item 85); `myWork` orders the cards that are equally urgent.
  */
-const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores' | 'hr' | 'qs' | 'site', HomeLayout> = {
+const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores' | 'hr' | 'qs' | 'site' | 'documents', HomeLayout> = {
   director: {
-    myWork: ['approvals', 'watchList', 'receivables', 'payablesDue', 'certifiedToReceive', 'expiring', 'lateDeliveries', 'toOrder', 'staffToDecide', 'dprsMissing', 'lowStock', 'toMatch', 'toDebit', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+    myWork: ['approvals', 'watchList', 'receivables', 'payablesDue', 'certifiedToReceive', 'expiring', 'lateDeliveries', 'toOrder', 'staffToDecide', 'dprsMissing', 'lowStock', 'toMatch', 'toDebit', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
     kpis: ['contract', 'workDone', 'billed', 'cashIn', 'receivables', 'payables'],
     charts: ['sCurve', 'cashFlow', 'billingVsContract', 'costByHead'],
   },
   manager: {
-    myWork: ['approvals', 'watchList', 'meetingActions', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
+    myWork: ['approvals', 'watchList', 'meetingActions', 'letters', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
     // The approvals count is My work's and the sidebar's (UX item 85); this row leads with progress against plan instead.
     kpis: ['progress', 'workDone', 'delayed', 'dprsToday', 'cost', 'billed'],
     charts: ['sCurve', 'costByHead', 'billingVsContract', 'cashFlow'],
   },
   accounts: {
-    myWork: ['payablesDue', 'certifiedToReceive', 'toMatch', 'toDebit', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+    myWork: ['payablesDue', 'certifiedToReceive', 'toMatch', 'toDebit', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
     kpis: ['cashIn', 'receivables', 'payables', 'billed', 'cost'],
     charts: ['cashFlow', 'billingVsContract', 'costByHead'],
   },
   purchase: {
-    myWork: ['toOrder', 'lateDeliveries', 'dueThisWeek', 'toMatch', 'toDebit', 'approvals', 'watchList', 'lowStock', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+    myWork: ['toOrder', 'lateDeliveries', 'dueThisWeek', 'toMatch', 'toDebit', 'approvals', 'watchList', 'lowStock', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
     kpis: ['projects', 'workDone', 'dprsToday', 'delayed'],
     charts: ['sCurve'],
   },
   stores: {
-    myWork: ['dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'watchList', 'approvals', 'meetingActions', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
+    myWork: ['dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'watchList', 'approvals', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
     kpis: ['projects', 'workDone', 'dprsToday', 'delayed'],
     charts: ['sCurve'],
   },
   hr: {
-    myWork: ['staffToDecide', 'approvals', 'watchList', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+    myWork: ['staffToDecide', 'approvals', 'watchList', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
     kpis: ['projects', 'dprsToday', 'workDone', 'delayed'],
     charts: ['sCurve'],
   },
   qs: {
-    myWork: ['sentBack', 'waitingWithOthers', 'approvals', 'meetingActions', 'receivables', 'dprsMissing'],
+    myWork: ['sentBack', 'waitingWithOthers', 'approvals', 'meetingActions', 'letters', 'receivables', 'dprsMissing'],
     kpis: ['workDone', 'billed', 'receivables', 'contract'],
     charts: ['billingVsContract', 'sCurve'],
   },
+  documents: {
+    myWork: ['letters', 'approvals', 'watchList', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+    kpis: ['projects', 'dprsToday', 'workDone', 'delayed'],
+    charts: ['sCurve'],
+  },
   site: {
-    myWork: ['grnsToCheck', 'sentBack', 'meetingActions', 'waitingWithOthers', 'dprsMissing', 'approvals', 'dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'staffToDecide'],
+    myWork: ['grnsToCheck', 'sentBack', 'meetingActions', 'letters', 'waitingWithOthers', 'dprsMissing', 'approvals', 'dueThisWeek', 'transfersToReceive', 'lateDeliveries', 'lowStock', 'staffToDecide'],
     kpis: ['dprsToday', 'delayed', 'workDone', 'projects'],
     charts: ['sCurve'],
   },
@@ -77,6 +82,8 @@ export function homeLayout(role: RoleKey): HomeLayout {
       return LAYOUTS.hr;
     case 'QUANTITY_SURVEYOR':
       return LAYOUTS.qs;
+    case 'DOCUMENT_CONTROLLER':
+      return LAYOUTS.documents;
     default:
       return LAYOUTS.site;
   }

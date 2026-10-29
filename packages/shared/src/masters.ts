@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -179,6 +179,33 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
     usedOn: 'machines',
     manage: (role) => P.canManageEquipment(role),
     standard: entries('Earthmoving', 'Compaction', 'Concreting', 'Lifting', 'Transport', 'Power', 'Pumping', 'Piling and drilling', 'Road work', 'Survey instruments'),
+  },
+  letterCategory: {
+    key: 'letterCategory',
+    label: 'Letter categories',
+    singular: 'letter category',
+    description: 'What a letter is about. Notices, claims, extension of time, hindrance and replies to show cause are contractual: they can need approval and proof of delivery.',
+    slug: 'letter-category',
+    node: 'correspondence.categories',
+    usedOn: 'letters',
+    manage: (role) => P.canHeadLetters(role),
+    standard: entries(
+      'General',
+      'Notice',
+      'Claim',
+      'Extension of time',
+      'Hindrance',
+      'Reply to show cause',
+      'Bill and payment',
+      'Drawing and design',
+      'Quality',
+      'Safety',
+      'Variation',
+      'Guarantee and insurance',
+      'Statutory and tax',
+      'Bank',
+      'Invitation and meeting',
+    ),
   },
 };
 

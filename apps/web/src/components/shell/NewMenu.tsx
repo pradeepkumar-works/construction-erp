@@ -41,7 +41,12 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     ...(canSellRmc(role) ? [{ kind: 'rmc-order' as const, label: 'RMC quote', action: 'New RMC quote', href: '/rmc?tab=orders', icon: <FileDoneOutlined /> }] : []),
     ...(canKeepBooks(role) ? [{ kind: 'voucher' as const, label: 'Voucher', action: 'New voucher', href: '/books?tab=vouchers', icon: <AccountBookOutlined /> }] : []),
     ...(canManageMachineLoans(role) ? [{ kind: 'machine-loan' as const, label: 'Machine loan', action: 'Record machine loan', href: '/machine-loans', icon: <CarOutlined /> }] : []),
-    ...(canViewLetters(role) ? [{ kind: 'letter' as const, label: 'Letter', action: 'Record letter', href: '/documents?tab=letters', icon: <MailOutlined /> }] : []),
+    ...(canViewLetters(role)
+      ? [
+          { kind: 'letter' as const, label: 'Letter to send', action: 'New letter', href: '/correspondence/outward', icon: <MailOutlined /> },
+          { kind: 'letter-in' as const, label: 'Letter received', action: 'Record letter', href: '/correspondence', icon: <MailOutlined /> },
+        ]
+      : []),
   ];
   // Nothing from a module the company has turned off (v6 item 117).
   return [site, office].map((g) => g.filter((e) => !pathIsOff(e.href, user.modulesOff))).filter((g) => g.length > 0);

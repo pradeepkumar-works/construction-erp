@@ -8,7 +8,6 @@ import { DrawingTakeoffsService } from './drawing-takeoffs.service';
 import {
   AcknowledgeTransmittalDto,
   CreateDocumentDto,
-  CreateLetterDto,
   CreateRevisionDto,
   CreateTransmittalDto,
   CreateMarkupDto,
@@ -19,14 +18,12 @@ import {
   UpdateTakeoffDto,
   LinkMarkupRfiDto,
   ListDocumentsQuery,
-  ListLettersQuery,
   ListTransmittalsQuery,
   ProjectQuery,
   ResolveMarkupDto,
   SearchDocumentsQuery,
   SiteDocumentsQuery,
   UpdateDocumentDto,
-  UpdateLetterDto,
   UpdateMarkupDto,
   UpdateRevisionDto,
   UpdateTransmittalDto,
@@ -240,39 +237,5 @@ export class TransmittalsController {
   @Delete(':id')
   remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.docs.removeTransmittal(user, id);
-  }
-}
-
-@ApiTags('documents')
-@ApiBearerAuth()
-@Controller('letters')
-export class LettersController {
-  constructor(private docs: DocumentsService) {}
-
-  @ApiOperation({ summary: 'Letters in and out (admin, management, project manager, quantity surveyor)' })
-  @Get()
-  list(@CurrentUser() user: RequestUser, @Query() q: ListLettersQuery) {
-    return this.docs.listLetters(user, q);
-  }
-
-  @Get(':id')
-  get(@CurrentUser() user: RequestUser, @Param('id') id: string) {
-    return this.docs.getLetter(user, id);
-  }
-
-  @ApiOperation({ summary: 'Record a letter received or sent', description: 'Numbered IN- or OUT-<year>-0001. Can answer another letter and be linked to a delay.' })
-  @Post()
-  create(@CurrentUser() user: RequestUser, @Body() dto: CreateLetterDto) {
-    return this.docs.createLetter(user, dto);
-  }
-
-  @Patch(':id')
-  update(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: UpdateLetterDto) {
-    return this.docs.updateLetter(user, id, dto);
-  }
-
-  @Delete(':id')
-  remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {
-    return this.docs.removeLetter(user, id);
   }
 }

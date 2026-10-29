@@ -50,7 +50,7 @@ import { StatementsService } from '../statements/statements.service';
 import { moduleOn } from '../common/module-switch.guard';
 import { ProjectsService } from '../projects/projects.service';
 import { plannedProgress } from './dashboard.service';
-import { DocumentsService } from '../documents/documents.service';
+import { CorrespondenceService } from '../correspondence/correspondence.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -80,7 +80,7 @@ export class ModuleHomeService {
     private books: BooksService,
     private statements: StatementsService,
     private projects: ProjectsService,
-    private documents: DocumentsService,
+    private letters: CorrespondenceService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -203,7 +203,7 @@ export class ModuleHomeService {
       case 'safety':
         return this.safety(user, today, projectId);
       case 'correspondence':
-        return this.correspondence(user, projectId);
+        return this.correspondence(user);
       case 'materials':
         return this.materials(user, projectId);
       case 'plant':
@@ -279,17 +279,25 @@ export class ModuleHomeService {
     return [count('incidents', 'Safety incidents this month', incidents, '/safety', { tone: incidents ? 'danger' : 'default', note: incidents ? 'Reported since the 1st' : 'None since the 1st' })];
   }
 
-  private async correspondence(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {
-    if (!canViewLetters(user.roleKey)) return [];
-    const s = await this.documents.summary(user, projectId);
-    const due = s.lettersAwaitingReply ?? 0;
-    const late = s.lettersOverdue ?? 0;
-    return [
-      count('lettersDue', 'Letters waiting for our reply', due, '/documents?tab=letters', {
-        tone: late ? 'danger' : due ? 'warning' : 'default',
-        note: late ? `${plural(late, 'reply', 'replies')} past the date asked` : due ? 'Replies asked by a date' : 'Nothing waiting',
+  private async correspondence(user: RequestUser): Promise<ModuleFigureDto[]> {
+    const s = await this.letters.summary(user);
+    const out: ModuleFigureDto[] = [
+      count('markedToMe', 'Letters marked to you', s.markedToMe, '/correspondence?mine=1', {
+        tone: s.markedToMeOverdue ? 'danger' : s.markedToMe ? 'warning' : 'default',
+        note: s.markedToMeOverdue ? `${plural(s.markedToMeOverdue, 'letter')} past the action date` : s.markedToMe ? 'Waiting for you to act' : 'Nothing marked to you',
       }),
     ];
+    if (s.toSign) out.push(count('toSign', 'Letters to sign', s.toSign, '/correspondence/outward?toSign=1', { tone: 'warning', note: 'Numbered once you approve' }));
+    if (!canViewLetters(user.roleKey)) return out;
+    out.push(
+      count('lettersDue', 'Letters waiting for our reply', s.repliesDue, '/correspondence?awaiting=1', {
+        tone: s.repliesOverdue ? 'danger' : s.repliesDue ? 'warning' : 'default',
+        note: s.repliesOverdue ? `${plural(s.repliesOverdue, 'reply', 'replies')} past the date asked` : s.repliesDue ? 'Replies asked by a date' : 'Nothing waiting',
+      }),
+      count('unmarked', 'Received, not marked to anyone', s.unmarked, '/correspondence?unmarked=1', { tone: s.unmarked ? 'warning' : 'default', note: s.unmarked ? 'Mark each to someone with an action' : 'All marked' }),
+      count('proofMissing', 'Notices without proof of delivery', s.proofMissing, '/correspondence/outward?proof=1', { tone: s.proofMissing ? 'danger' : 'default', note: s.proofMissing ? 'Keep the receipt or acknowledged copy' : 'Every notice has its proof' }),
+    );
+    return out;
   }
 
   private async materials(user: RequestUser, projectId?: string): Promise<ModuleFigureDto[]> {

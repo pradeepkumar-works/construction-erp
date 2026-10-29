@@ -348,4 +348,17 @@ export const NAV: Record<string, string> = {
   'The departments people work in.': 'वे विभाग जिनमें लोग काम करते हैं।',
   'Designations': 'पद',
   'Job titles on employee records.': 'कर्मचारी रिकॉर्ड पर पद के नाम।',
+  // Item 136: Correspondence
+  'Inward register': 'आवक रजिस्टर',
+  'Letters received, numbered on entry, marked to someone with an action and a date.': 'आए हुए पत्र, आते ही नंबर, किसी को काम और तारीख के साथ सौंपे गए।',
+  'Outward register': 'जावक रजिस्टर',
+  'Letters drafted, signed, numbered and dispatched, with proof of delivery.': 'लिखे, हस्ताक्षरित, नंबर दिए और भेजे गए पत्र, पहुँचने के सबूत के साथ।',
+  'Address book': 'पता पुस्तिका',
+  'The offices and people letters come from and go to.': 'वे दफ़्तर और लोग जिनसे पत्र आते हैं और जिन्हें जाते हैं।',
+  'Numbering and approval': 'नंबरिंग और मंज़ूरी',
+  'Letter number series per project and head office, and which letters need approval.': 'हर प्रोजेक्ट और मुख्य कार्यालय की पत्र नंबर सीरीज़, और किन पत्रों को मंज़ूरी चाहिए।',
+  'Letter templates': 'पत्र के नमूने',
+  'Standard letters a draft starts from, with placeholders filled in.': 'मानक पत्र जिनसे मसौदा शुरू होता है, खाली जगहें भरी हुई।',
+  'Letter categories': 'पत्रों की श्रेणियाँ',
+  'What letters are about; the contractual ones need approval and proof.': 'पत्र किस बारे में हैं; अनुबंध वाले पत्रों को मंज़ूरी और सबूत चाहिए।',
 };

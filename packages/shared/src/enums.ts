@@ -110,6 +110,7 @@ export const ROLE_KEYS = [
   'PROCUREMENT_MANAGER',
   'QA_QC_ENGINEER',
   'SAFETY_OFFICER',
+  'DOCUMENT_CONTROLLER',
   'ACCOUNTS_MANAGER',
   'HR_MANAGER',
   'CLIENT_ENGINEER',
@@ -149,6 +150,7 @@ export const NOTIFICATION_TYPES = [
   'COMMENT',
   'ACCESS_REQUEST',
   'HANDOFF',
+  'LETTER',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

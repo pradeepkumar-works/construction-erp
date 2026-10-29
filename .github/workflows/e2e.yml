@@ -294,6 +294,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/masters-test.js
+      - name: Letters are numbered by series and financial year, wait for their signatory where the company asks, and show replies due and proof missing
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/correspondence-test.js
       - name: Measures on drawings scale right, add up lines, areas and counts, and make measurement book lines
         if: matrix.suite == 'flows'
         working-directory: apps/api

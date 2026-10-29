@@ -232,6 +232,12 @@ import type {
   TransmittalDto,
   LetterDto,
   LetterDirection,
+  LetterStatus,
+  LetterContactDto,
+  LetterPersonDto,
+  LetterSettingsDto,
+  LetterSummaryDto,
+  LetterTemplateDto,
   NcrSeverity,
   NcrStatus,
   QualitySummaryDto,
@@ -1569,15 +1575,24 @@ export const useTransmittal = (id: string | undefined) =>
   });
 
 export interface LetterFilters extends PageParams {
+  /** A project id, or HO for head office letters */
   projectId?: string;
   direction?: LetterDirection;
+  status?: LetterStatus;
+  category?: string;
   riskId?: string;
+  mine?: boolean;
+  toSign?: boolean;
   awaitingReply?: boolean;
+  overdue?: boolean;
+  proofMissing?: boolean;
+  unmarked?: boolean;
 }
 
+/** Correspondence (item 136): the inward and outward registers. */
 export const useLetters = (filters?: LetterFilters, enabled = true) =>
   useQuery({
-    queryKey: ['documents', 'letters', clean(filters)],
+    queryKey: ['letters', clean(filters)],
     queryFn: async () => (await api.get<Paginated<LetterDto>>('/letters', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
     enabled,
@@ -1585,9 +1600,46 @@ export const useLetters = (filters?: LetterFilters, enabled = true) =>
 
 export const useLetter = (id: string | undefined) =>
   useQuery({
-    queryKey: ['documents', 'letters', 'detail', id],
+    queryKey: ['letters', 'detail', id],
     queryFn: async () => (await api.get<LetterDto>(`/letters/${id}`)).data,
     enabled: !!id,
+  });
+
+export const useLetterSummary = (enabled = true) =>
+  useQuery({
+    queryKey: ['letters', 'summary'],
+    queryFn: async () => (await api.get<LetterSummaryDto>('/letters/summary')).data,
+    enabled,
+  });
+
+/** Staff a letter can be marked to, and who may sign one for the project (head office when left out). */
+export const useLetterPeople = (projectId: string | null | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['letters', 'people', projectId ?? 'HO'],
+    queryFn: async () => (await api.get<LetterPersonDto[]>('/letters/people', { params: projectId ? { projectId } : {} })).data,
+    staleTime: 5 * 60_000,
+    enabled,
+  });
+
+export const useLetterSettings = (enabled = true) =>
+  useQuery({
+    queryKey: ['letters', 'settings'],
+    queryFn: async () => (await api.get<LetterSettingsDto>('/letters/settings')).data,
+    enabled,
+  });
+
+export const useLetterContacts = (all = false, enabled = true) =>
+  useQuery({
+    queryKey: ['letter-contacts', all],
+    queryFn: async () => (await api.get<Paginated<LetterContactDto>>('/letter-contacts', { params: { pageSize: MAX_PAGE_SIZE, ...(all ? { all: true } : {}) } })).data.items,
+    enabled,
+  });
+
+export const useLetterTemplates = (enabled = true) =>
+  useQuery({
+    queryKey: ['letter-templates'],
+    queryFn: async () => (await api.get<LetterTemplateDto[]>('/letter-templates')).data,
+    enabled,
   });
 
 /* ---------- RFIs ---------- */

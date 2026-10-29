@@ -12,6 +12,7 @@ import { seedTownStock } from './seed-stock';
 import { seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
 import { seedOm } from './seed-om';
+import { seedCorrespondence } from './seed-correspondence';
 import { seedDemoGroup, seedGroupCompanies } from './seed-group';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
@@ -37,6 +38,7 @@ const ROLES: [string, string][] = [
   ['PROCUREMENT_MANAGER', 'Procurement Manager'],
   ['QA_QC_ENGINEER', 'QA/QC Engineer'],
   ['SAFETY_OFFICER', 'Safety Officer'],
+  ['DOCUMENT_CONTROLLER', 'Document Controller'],
   ['ACCOUNTS_MANAGER', 'Accounts Manager'],
   ['HR_MANAGER', 'HR Manager'],
   ['CLIENT_ENGINEER', "Client's Engineer (guest)"],
@@ -59,6 +61,7 @@ const USERS: { email: string; name: string; role: string; phone: string }[] = [
   { email: 'accounts@demo.com', name: 'Mahesh Gupta', role: 'ACCOUNTS_MANAGER', phone: '9800000012' },
   { email: 'hr@demo.com', name: 'Pooja Reddy', role: 'HR_MANAGER', phone: '9800000013' },
   { email: 'safety@demo.com', name: 'Harish Pradhan', role: 'SAFETY_OFFICER', phone: '9800000016' },
+  { email: 'docs@demo.com', name: 'Ritu Agarwal', role: 'DOCUMENT_CONTROLLER', phone: '9800000019' },
   // Guests from outside the company: they use the client portal only, on the projects below (seedGuests).
   { email: 'client@demo.com', name: 'Er. Bijay Kumar Panda', role: 'CLIENT_ENGINEER', phone: '9800000014' },
   { email: 'pmc@demo.com', name: 'Lakshmi Menon', role: 'CONSULTANT', phone: '9800000015' },
@@ -167,6 +170,7 @@ async function main() {
     await seedQuality(org.id);
     await seedTestsAndNcrs(org.id);
     await seedDocuments(org.id);
+    await seedCorrespondence(prisma, org.id);
     await seedContractDocuments(org.id);
     await seedStaff(org.id);
     await seedAttendanceExtras(org.id);
@@ -385,6 +389,7 @@ async function main() {
   await seedQuality(org.id);
   await seedTestsAndNcrs(org.id);
   await seedDocuments(org.id);
+  await seedCorrespondence(prisma, org.id);
   await seedContractDocuments(org.id);
   await seedStaff(org.id);
   await seedAttendanceExtras(org.id);
@@ -3208,7 +3213,7 @@ async function seedDocuments(organizationId: string) {
     const row = await prisma.letter.create({
       data: {
         organizationId, projectId: road.id, direction: l.direction, letterNo: `${l.direction}-${year}-${String(counters[l.direction]).padStart(4, '0')}`, theirRef: l.theirRef ?? null,
-        letterDate: day(-l.ago), party: l.party, subject: l.subject, summary: l.summary, replyBy: l.replyBy === undefined ? null : day(l.replyBy),
+        letterDate: day(-l.ago), receivedOn: l.direction === 'IN' ? day(-l.ago) : null, status: l.direction === 'OUT' ? 'ISSUED' : 'OPEN', party: l.party, subject: l.subject, summary: l.summary, replyBy: l.replyBy === undefined ? null : day(l.replyBy),
         inReplyToId: l.inReplyToId ?? null, riskId: l.risk && delay ? delay.id : null, createdById: pm, createdAt: day(-l.ago),
       },
     });

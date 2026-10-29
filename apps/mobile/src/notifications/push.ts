@@ -127,6 +127,7 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
   const projectId = data?.projectId as string | undefined;
   if (data?.type === 'DPR_REMINDER' && projectId) return `/dpr/new?projectId=${projectId}`;
   if (entityType === 'RFI' && entityId) return `/rfi/${entityId}`;
+  if (entityType === 'LETTER' && entityId) return `/letter/${entityId}`;
   // Meetings (v6 item 112) and material approvals (113) have no phone screen yet; the notice itself says what is due.
   if (entityType === 'MEETING' || entityType === 'MATERIAL_APPROVAL') return '/notifications';
   if (data?.type === 'DOCUMENT_ISSUED' && projectId) return `/documents?projectId=${projectId}`;

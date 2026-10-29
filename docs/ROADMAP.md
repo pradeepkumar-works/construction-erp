@@ -792,10 +792,12 @@ such as P07/OUT/26-27/042; bar bending schedules later.
      Administration › Masters listing them; trades, designations, departments, item categories and equipment categories as
      company lists over standard entries, with Hindi names, picked on the attendance, worker, item, equipment and employee
      forms. ARCHITECTURE "Masters".
-136. **Correspondence** (L): company-wide inward and outward registers, marking to a person with an action and due date,
-     numbering series by financial year, an address book, templates with sign-off and letterhead print, dispatch and proof
-     of delivery, threads and links, replies due, a photographed letter read by Ask, the phone. Inward letters are created
-     through one service method that the integrations' email inbox (item 155) calls too.
+136. ~~**Correspondence** (L).~~ Done: company-wide inward and outward registers, marking to a person with an action and
+     due date, numbering series by financial year, an address book, templates with sign-off and letterhead print, dispatch
+     and proof of delivery, threads and links, replies due, Search, My work and the phone (letters for you, approve and
+     close). Inward letters are created through one service method (`recordInward`) that the integrations' email inbox
+     (item 155) calls too. Reading a photographed letter with Ask is left for item 155's inbox. ARCHITECTURE
+     "Correspondence".
 137. **QA/QC** (L): test types and quality plans (ITP), tests due from DPR quantities and receipts, the pour register with
      the IS 456 cube acceptance check, pour cards; then labs and samples sent out, calibration, supplier test certificates,
      audits and visits, NCR categories and root causes, the dashboard and monthly report.

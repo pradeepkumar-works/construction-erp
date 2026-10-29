@@ -4,7 +4,6 @@ import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsI
 import {
   DOCUMENT_DISCIPLINES,
   DOCUMENT_KINDS,
-  LETTER_DIRECTIONS,
   LIST_SORT_FIELDS,
   MARKUP_COLORS,
   MARKUP_KINDS,
@@ -20,8 +19,6 @@ import {
   type DocumentDiscipline,
   type DocumentKind,
   type DocumentSortField,
-  type LetterDirection,
-  type LetterSortField,
   type MarkupColor,
   type MarkupKind,
   type RevisionStatus,
@@ -114,31 +111,6 @@ export class ListTransmittalsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.transmittals, default: 'sentOn' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.transmittals as unknown as string[]) sortBy?: TransmittalSortField;
 }
 
-/* ---------- letters ---------- */
-
-export class CreateLetterDto {
-  @ApiProperty() @IsUUID() projectId: string;
-  @ApiProperty({ enum: LETTER_DIRECTIONS, description: 'IN = received, OUT = sent; numbered IN- / OUT-<year>-0001' }) @IsIn(LETTER_DIRECTIONS as unknown as string[]) direction: LetterDirection;
-  @ApiPropertyOptional({ example: 'EE/RB/2026/412', description: "The other side's reference" }) @IsOptional() @trim() @IsString() @MaxLength(100) theirRef?: string | null;
-  @ApiProperty({ example: '2026-10-14' }) @IsDateString() letterDate: string;
-  @ApiProperty({ example: 'Executive Engineer, R&B Division', description: 'Received from (IN) or addressed to (OUT)' }) @trim() @IsString() @IsNotEmpty() @MaxLength(200) party: string;
-  @ApiProperty() @trim() @IsString() @IsNotEmpty() @MaxLength(300) subject: string;
-  @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(4000) summary?: string | null;
-  @ApiPropertyOptional({ description: 'Received letters: when a reply is due' }) @IsOptional() @opt() @IsDateString() replyBy?: string | null;
-  @ApiPropertyOptional({ description: 'The letter this one answers' }) @IsOptional() @opt() @IsUUID() inReplyToId?: string | null;
-  @ApiPropertyOptional({ description: 'A delay in the risk register this letter is about (notice, EoT claim)' }) @IsOptional() @opt() @IsUUID() riskId?: string | null;
-  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayMaxSize(20) @IsUUID('all', { each: true }) attachmentIds?: string[];
-}
-
-export class UpdateLetterDto extends PartialType(OmitType(CreateLetterDto, ['projectId', 'direction'] as const)) {}
-
-export class ListLettersQuery extends PageQuery {
-  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
-  @ApiPropertyOptional({ enum: LETTER_DIRECTIONS }) @IsOptional() @IsIn(LETTER_DIRECTIONS as unknown as string[]) direction?: LetterDirection;
-  @ApiPropertyOptional() @IsOptional() @IsUUID() riskId?: string;
-  @ApiPropertyOptional({ description: 'Received, reply due and not sent' }) @IsOptional() @QueryBool() @IsBoolean() awaitingReply?: boolean;
-  @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.letters, default: 'letterDate' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.letters as unknown as string[]) sortBy?: LetterSortField;
-}
 
 /* ---------- drawing markup (item 109) ---------- */
 

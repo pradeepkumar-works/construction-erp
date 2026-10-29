@@ -16,7 +16,7 @@ export const DRAFT_PAGES: Record<AiDraftKind, string> = {
   expense: '/expenses',
   progress: '/progress',
   dpr: '/dpr',
-  letter: '/documents?tab=letters',
+  letter: '/correspondence/outward',
 };
 
 /**

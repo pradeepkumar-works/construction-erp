@@ -3,7 +3,7 @@ import { api, apiToken, signIn } from './helpers';
 
 type Card = { count: number; amount: string | null; items: { label: string; href: string }[]; urgencyDays?: number | null };
 type MyWork = { approvals?: { type: string; count: number }[]; approvalsWaitingDays?: number | null } & Partial<Record<CardKey, Card>>;
-type CardKey = 'watchList' | 'dprsMissing' | 'sentBack' | 'waitingWithOthers' | 'receivables' | 'payablesDue' | 'expiring' | 'lateDeliveries' | 'lowStock' | 'meetingActions' | 'toOrder' | 'dueThisWeek' | 'staffToDecide' | 'certifiedToReceive' | 'toMatch' | 'grnsToCheck' | 'toDebit' | 'transfersToReceive';
+type CardKey = 'watchList' | 'dprsMissing' | 'sentBack' | 'waitingWithOthers' | 'receivables' | 'payablesDue' | 'expiring' | 'lateDeliveries' | 'lowStock' | 'meetingActions' | 'toOrder' | 'dueThisWeek' | 'staffToDecide' | 'certifiedToReceive' | 'toMatch' | 'grnsToCheck' | 'toDebit' | 'transfersToReceive' | 'letters';
 type Trends = { months: string[]; workDone: string[]; cashIn?: string[]; cashOut?: string[]; cost?: string[]; sCurve: unknown[] };
 
 const section = (page: import('@playwright/test').Page, name: string) => page.getByRole('region', { name, exact: true });
@@ -29,8 +29,9 @@ const TITLES: Record<CardKey | 'approvals', string> = {
   grnsToCheck: 'Material to check',
   toDebit: 'Debit notes to raise',
   transfersToReceive: 'Material on the way',
+  letters: 'Letters for you',
 };
-const MANAGER_ORDER: (CardKey | 'approvals')[] = ['approvals', 'watchList', 'meetingActions', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'];
+const MANAGER_ORDER: (CardKey | 'approvals')[] = ['approvals', 'watchList', 'meetingActions', 'letters', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'];
 
 /** "Oct" for the API's YYYY-MM, as the tiles write it. */
 const monthName = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });

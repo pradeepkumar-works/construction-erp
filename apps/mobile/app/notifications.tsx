@@ -40,6 +40,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   COMMENT: { name: 'chatbubbles', color: colors.primary, bg: colors.primarySoft },
   ACCESS_REQUEST: { name: 'key', color: colors.accent, bg: colors.accentSoft },
   HANDOFF: { name: 'arrow-forward-circle', color: colors.primary, bg: colors.primarySoft },
+  LETTER: { name: 'mail', color: colors.primary, bg: colors.primarySoft },
 };
 
 export default function NotificationsScreen() {
