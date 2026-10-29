@@ -374,6 +374,7 @@ import type {
   SorBookDto,
   SorItemListDto,
   TenderDetailDto,
+  PastOpeningsDto,
   TenderListDto,
   ScEnquiryDetailDto,
   ScEnquiryListDto,
@@ -884,6 +885,8 @@ export const useLoanPreview = (terms: { amount?: number | null; ratePct?: number
 export const useTenders = (filters?: { status?: string; q?: string }, enabled = true) =>
   useQuery({ queryKey: ['tenders', 'list', clean(filters)], queryFn: async () => (await api.get<TenderListDto>('/tenders', { params: clean(filters) })).data, placeholderData: keepPreviousData, enabled });
 export const useTender = (id?: string) => useQuery({ queryKey: ['tenders', 'one', id], queryFn: async () => (await api.get<TenderDetailDto>(`/tenders/${id}`)).data, enabled: !!id });
+/** Where L1 landed on past openings of the same client and kind of work (intelligence quick win Q4). */
+export const usePastOpenings = (id?: string) => useQuery({ queryKey: ['tenders', 'past', id], queryFn: async () => (await api.get<PastOpeningsDto>(`/tenders/${id}/past-openings`)).data, enabled: !!id });
 export const useSorBooks = (enabled = true) => useQuery({ queryKey: ['tenders', 'sor-books'], queryFn: async () => (await api.get<SorBookDto[]>('/sor-books')).data, enabled });
 export const useSorItems = (filters: { bookId?: string; q?: string; page?: number; pageSize?: number }, enabled = true) =>
   useQuery({ queryKey: ['tenders', 'sor-items', clean(filters)], queryFn: async () => (await api.get<SorItemListDto>('/sor-items', { params: clean(filters) })).data, placeholderData: keepPreviousData, enabled: enabled && !!filters.bookId });

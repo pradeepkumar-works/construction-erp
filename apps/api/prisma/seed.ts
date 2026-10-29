@@ -217,6 +217,7 @@ async function main() {
     await seedFundRequests(org.id);
     await seedMachineLoans(org.id);
     await seedTenders(org.id);
+    await seedPastOpenings(org.id);
     await seedScEnquiries(org.id);
     await seedMeetings(org.id);
     await seedMaterialApprovals(org.id);
@@ -442,6 +443,7 @@ async function main() {
   await seedFundRequests(org.id);
   await seedMachineLoans(org.id);
   await seedTenders(org.id);
+  await seedPastOpenings(org.id);
   await seedScEnquiries(org.id);
   await seedMeetings(org.id);
   await seedMaterialApprovals(org.id);
@@ -4208,6 +4210,36 @@ async function seedTenders(organizationId: string) {
       });
     }
     await prisma.auditLog.create({ data: { organizationId, entityType: 'TENDER', entityId: tender.id, action: 'CREATED', actorId: qs.id, createdAt: day(t.submitBy - 25) } });
+  }
+}
+
+/**
+ * Past openings for bid intelligence (intelligence quick win Q4): three road tenders of the Works Department lost over
+ * the last year and a half, where we quoted near 4 to 6% below and L1 landed near 10% below, so the Khurda road being
+ * priced shows the level. Percentage tenders on the estimate (no BOQ kept), added once to a company that has tenders.
+ */
+async function seedPastOpenings(organizationId: string) {
+  if (await prisma.tender.findFirst({ where: { organizationId, tenderNo: 'TND-2025-0003' }, select: { id: true } })) return;
+  const book = await prisma.sorBook.findFirst({ where: { organizationId, name: 'Odisha SOR 2024-25 (demo)' }, select: { id: true } });
+  const qs = await prisma.user.findFirst({ where: { organizationId, email: { in: ['qs@demo.com', 'admin@demo.com'] } }, orderBy: { email: 'desc' }, select: { id: true } });
+  if (!book || !qs) return;
+  const client = 'Odisha Works Department';
+  const clientId = (await prisma.client.findFirst({ where: { organizationId, name: client }, select: { id: true } }))?.id ?? null;
+  const past: { no: string; nit: string; title: string; location: string; opened: number; estimate: number; pct: number; bids: [string, number][] }[] = [
+    { no: 'TND-2025-0003', nit: 'OWD/RD/NIT-31/2024-25', title: 'Strengthening of Jatni-Khurda road, km 4.000 to 11.500', location: 'Jatni', opened: -420, estimate: 86_400_000, pct: -4.2, bids: [['Kalinga Infra Projects', -9.8], ['Utkal Builders', -6.5]] },
+    { no: 'TND-2025-0007', nit: 'OWD/RD/NIT-07/2025-26', title: 'Widening of Balugaon-Tangi road to two lanes', location: 'Balugaon', opened: -300, estimate: 142_000_000, pct: -6, bids: [['Mahanadi Infra', -11.2], ['Jagannath Constructions', -7.4], ['Utkal Builders', -5.1]] },
+    { no: 'TND-2025-0011', nit: 'OWD/RD/NIT-19/2025-26', title: 'Periodic renewal of Delang-Pipili road', location: 'Pipili', opened: -150, estimate: 38_500_000, pct: -5.5, bids: [['Kalinga Infra Projects', -10.4], ['Utkal Builders', -5]] },
+  ];
+  for (const t of past) {
+    const estimate = D(t.estimate);
+    await prisma.tender.create({
+      data: {
+        organizationId, tenderNo: t.no, nitNo: t.nit, title: t.title, clientId, clientName: client, location: t.location, bidType: 'PERCENTAGE', sorBookId: book.id,
+        estimatedValue: estimate, completionMonths: 12, publishedOn: day(t.opened - 45), submitBy: day(t.opened - 7), submittedOn: day(t.opened - 8), openedOn: day(t.opened),
+        quotedPct: D(t.pct), tenderFee: D(5900), status: 'LOST', resultOn: day(t.opened + 14), resultNote: `L1 ${t.bids[0][0]} at ${Math.abs(t.bids[0][1]).toFixed(2)}% below`, createdById: qs.id, createdAt: day(t.opened - 40),
+        bids: { create: t.bids.map(([name, f]) => ({ organizationId, bidderName: name, amount: estimate.mul(D(100).plus(f)).div(100).toDecimalPlaces(0) })) },
+      },
+    });
   }
 }
 

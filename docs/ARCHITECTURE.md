@@ -3627,6 +3627,14 @@ export; the client portal and the phone app show the amount.
   beyond what was billed (`StageBillingService.breakup`, `stagesUnbilled`), and the pace of approved work over the last
   `PACE_DAYS` (30) at BOQ rates on activities in their item's own unit. `nextBill` runs it to `billDateFor` (this month end,
   or the next with fewer than 5 days left). The page leads each project with it and the header totals it.
+- **Q4 Bid intelligence.** `GET /tenders/:id/past-openings` (`TendersService.pastOpenings`, for those who see the register):
+  the company's tenders with bids recorded at an opening in the last `BID_HISTORY_DAYS` (three years), each priced through
+  the register's own `price` (L1 and our bid against the SOR value, else the estimate). Pure in `@erp/shared/bid-history.ts`:
+  `workKindOf` reads the kind of work from the title (a bridge on a road is a bridge; OTHER never matches on kind),
+  `bidMatch` and `pickOpenings` keep the same client and kind first, then the same kind, then the same client (eight at most),
+  and `bidLevel` reads the median, lowest and highest L1 from the strongest basis with 2 openings, with how many the
+  tender's own quote would have led. The tender page shows it under Pricing. The demo's Khurda road has three of the Works
+  Department's road openings, L1 near 10% below.
 
 ## Money and quantities
 
