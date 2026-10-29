@@ -3622,6 +3622,11 @@ export; the client portal and the phone app show the amount.
   level-1 purchase order limit (`ApprovalRightsService.rules`) and together above it. `selfReceived`: a GRN made by the
   person who raised its order. `paidAfterBankChange`: a vendor payment within 30 days after a `BANK_CHANGED` line in the
   vendor's audit log, which `VendorsService.update` writes whenever a bank field changes (the account number masked).
+- **Q7 Next bill.** `BillingReadinessRowDto.next` (`CashForecastService.nextBills`, pure in `@erp/shared/next-bill.ts`):
+  approved measurements in no bill, approved work no sheet holds yet (`MeasurementsService.toMeasure`), lump-sum stages done
+  beyond what was billed (`StageBillingService.breakup`, `stagesUnbilled`), and the pace of approved work over the last
+  `PACE_DAYS` (30) at BOQ rates on activities in their item's own unit. `nextBill` runs it to `billDateFor` (this month end,
+  or the next with fewer than 5 days left). The page leads each project with it and the header totals it.
 
 ## Money and quantities
 

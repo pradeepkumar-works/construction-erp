@@ -1,3 +1,4 @@
+import type { NextBillDto } from './next-bill';
 import type { RoleKey } from './enums';
 import { canKeepBooks } from './permissions';
 
@@ -138,11 +139,15 @@ export interface BillingReadinessRowDto {
   notSent: { billId: string; label: string; billDate: string; amount: number }[];
   /** Sent bills not fully paid, the longest waiting first; `late` once past the days the client takes (or the contract's) */
   unpaid: { billId: string; label: string; sentDate: string; daysOutstanding: number; expectedDays: number; outstanding: number; late: boolean }[];
+  /** The next bill (intelligence quick win Q7): billable now and by the next month end at the current pace */
+  next: NextBillDto;
 }
 
 export interface BillingReadinessDto {
   asOf: string;
   rows: BillingReadinessRowDto[];
   /** pastDue: the late part of `unpaid` */
-  totals: { unbilled: number; notSent: number; unpaid: number; pastDue: number };
+  totals: { unbilled: number; notSent: number; unpaid: number; pastDue: number; nextNow: number; nextAtBillBy: number };
+  /** The month end the next bills run to */
+  billBy: string;
 }

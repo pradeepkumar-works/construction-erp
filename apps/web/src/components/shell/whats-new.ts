@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-07-next-bill',
+    date: '2027-07-05',
+    title: 'What the next bill will be worth',
+    points: [
+      'Billing readiness now opens each project with its next bill: what could be billed today (measured, approved on site and not yet measured, stages done) and what it will be worth by the month end at the pace of the last 30 days.',
+    ],
+  },
+  {
     id: '2027-06-purchase-controls',
     date: '2027-06-28',
     title: 'Purchase controls on the watch list',
