@@ -1,16 +1,20 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { RmcService } from './rmc.service';
+import { PlantBatchesService } from './plant-batches.service';
 import {
   CreateMixDesignDto,
   CreateRmcInvoiceDto,
   CreateRmcOrderDto,
   CreateRmcReceiptDto,
   DeliverBatchDto,
+  DismissPlantRowDto,
   DispatchBatchDto,
   MixDesignQuery,
   NoteDto,
+  PlantBatchQuery,
+  PlantColumnsDto,
   RejectBatchDto,
   RmcBatchQuery,
   RmcDayQuery,
@@ -28,7 +32,28 @@ import { ModuleSwitch } from '../common/decorators';
 @ModuleSwitch('rmc')
 @Controller('rmc')
 export class RmcController {
-  constructor(private rmc: RmcService) {}
+  constructor(
+    private rmc: RmcService,
+    private plantBatches: PlantBatchesService,
+  ) {}
+
+  @ApiOperation({ summary: "The batching plant controllers' batches waiting for a challan, and this week's (item 149)" })
+  @Get('batcher')
+  batcher(@CurrentUser() user: RequestUser, @Query() q: PlantBatchQuery) {
+    return this.plantBatches.board(user, q.plantId);
+  }
+
+  @ApiOperation({ summary: "What the controller's batch report columns mean, matched once from a real report" })
+  @Put('batcher/:connectionId/columns')
+  batcherColumns(@CurrentUser() user: RequestUser, @Param('connectionId', ParseUUIDPipe) id: string, @Body() dto: PlantColumnsDto) {
+    return this.plantBatches.saveColumns(user, id, dto.columns);
+  }
+
+  @ApiOperation({ summary: 'Set aside a controller batch that will have no challan (a test batch, a wash-out)' })
+  @Post('batcher/rows/:id/dismiss')
+  dismissBatcherRow(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: DismissPlantRowDto) {
+    return this.plantBatches.dismiss(user, id, dto.reason);
+  }
 
   @ApiOperation({ summary: 'The RMC plants the caller sees (projects of type PLANT)' })
   @Get('plants')

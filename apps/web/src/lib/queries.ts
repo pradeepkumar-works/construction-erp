@@ -37,6 +37,7 @@ import type {
   VendorPortalDto,
   MixDesignDto,
   RmcBatchDto,
+  PlantBatchBoardDto,
   RmcBatchStatus,
   RmcDayDto,
   RmcInvoiceDto,
@@ -4204,7 +4205,7 @@ export const useRmcReceipts = (filters: PageParams & { clientId?: string }, enab
 export function useRmcAction<T = unknown>() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch'; path: string; body?: unknown }) => (await api[method]<T>(path, body ?? {})).data,
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'put'; path: string; body?: unknown }) => (await api[method]<T>(path, body ?? {})).data,
     onSuccess: () => {
       for (const key of [['rmc'], ['stock'], ['quality'], ['books'], ['dashboard', 'module', 'rmc']]) void qc.invalidateQueries({ queryKey: key });
     },
@@ -4213,6 +4214,10 @@ export function useRmcAction<T = unknown>() {
 
 export const useRmcOrder = (id: string | null) => useQuery({ queryKey: ['rmc', 'order', id], queryFn: async () => (await api.get<RmcOrderDto>(`/rmc/orders/${id}`)).data, enabled: !!id });
 export const useRmcBatch = (id: string | null) => useQuery({ queryKey: ['rmc', 'batch', id], queryFn: async () => (await api.get<RmcBatchDto>(`/rmc/batches/${id}`)).data, enabled: !!id });
+
+/** The batching plant controllers' batches waiting for a challan (item 149); the Connector brings rows in every minute or so. */
+export const usePlantBatches = (plantId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['rmc', 'batcher', plantId ?? 'all'], queryFn: async () => (await api.get<PlantBatchBoardDto>('/rmc/batcher', { params: { plantId } })).data, enabled, refetchInterval: 60_000 });
 
 /* ---------- the supplier portal (v6 item 105) ---------- */
 

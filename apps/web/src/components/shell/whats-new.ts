@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-08-batching-plant',
+    date: '2027-08-30',
+    title: 'Batches from the batching plant',
+    points: [
+      'RMC plant has a From the batcher tab. The Nirmaan Connector on the plant’s control room computer reads the controller’s batch reports (Admin, Connections), and each batch waits there with the order it looks to be for.',
+      'Dispatch makes the challan from the batch with its cubic metres, truck and the weights the controller printed, so the materials leave the store as batched. Match the report’s columns once; a trial batch is set aside with why.',
+    ],
+  },
+  {
     id: '2027-08-weighbridge',
     date: '2027-08-23',
     title: 'Weighbridge',

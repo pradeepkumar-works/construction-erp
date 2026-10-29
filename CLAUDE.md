@@ -371,6 +371,11 @@ and the pre-delivery checklist.
   ticket's net is only `weighNet`, a weight's unit only `kgPerUnit` / `kgToUnit`, short supply only `shortSupply`
   (`@erp/shared/weighbridge.ts`), and a ticket becomes stock only as a GRN through `StockService.receiveAgainstPo` with
   `weighTicketId` (one ticket, one GRN). Keep `src/scripts/weighbridge-test.ts` and the Connector's `npm test` passing.
+- Batching plant (item 149, `apps/api/src/rmc/plant-batches.service.ts`, ARCHITECTURE "Batching plant controller"): a
+  controller's report rows come in only through the Connector's `readBatchFolder` and `IntegrationsService.takeIn` into
+  `PlantBatchesService.take` (`readPlantRow`); a row is read only by `readBatchRow` through the plant's column map, which is
+  checked only by `columnMapProblem` (`@erp/shared/batching.ts`), and becomes a challan only through `RmcService.dispatch`
+  with `plantRowId` (one batch, one challan). Keep `src/scripts/batching-test.ts` and the Connector's `npm test` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

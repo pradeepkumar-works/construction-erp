@@ -49,6 +49,8 @@ import { TelematicsService } from '../telematics/telematics.service';
 import { FuelDispenseService } from '../telematics/fuel-dispense.service';
 import { WeighbridgeService } from '../weighbridge/weighbridge.service';
 import { readWeighbridgeConfig, readWeighing } from '../weighbridge/weighbridge-rules';
+import { PlantBatchesService } from '../rmc/plant-batches.service';
+import { readBatchingConfig, readPlantRow } from '../rmc/batching-rules';
 import { FEED_MAX_PAGES, FEED_TIMEOUT_MS, feedDue, feedHttpProblem, readDispense, readFeedConfig, readFeedMachine, readFeedPage, readTracker, type ReadResult } from '../telematics/telematics-rules';
 import type { ConnectorReadingsDto, CreateAgentDto, CreateConnectionDto, EventQuery, MatchDeviceDto, PairConnectorDto, UpdateConnectionDto } from './integrations.dto';
 
@@ -92,6 +94,7 @@ export class IntegrationsService {
     private telematics: TelematicsService,
     private fuel: FuelDispenseService,
     private weighbridge: WeighbridgeService,
+    private plantBatches: PlantBatchesService,
   ) {}
 
   /** OAuth tokens for makers' feeds, by connection, until they run out. */
@@ -112,7 +115,32 @@ export class IntegrationsService {
     MACHINE_FEED: (c, payload, at, ctx) => this.machineReading(c, readFeedMachine(payload, at), ctx),
     FUEL_DISPENSER: (c, payload, at, ctx) => this.dispense(c, payload, at, ctx),
     WEIGHBRIDGE: (c, payload) => this.weighing(c, payload),
+    BATCHING_PLANT: (c, payload) => this.plantRow(c, payload),
   };
+
+  /** A row of the plant controller's batch report, read by the Connector: kept for a challan on the RMC page (item 149). */
+  private async plantRow(c: { id: string; organizationId: string; projectId: string | null }, payload: unknown): Promise<HandlerResult> {
+    const r = readPlantRow(payload);
+    if (!r.row) return { status: 'FAILED', summary: r.problem };
+    const where = `${r.row.file ?? 'the report'}${r.row.line ? `, line ${r.row.line}` : ''}`;
+    // The column map as it stands now: the plant may have matched the columns since the Connector fetched its settings.
+    const { config } = await this.prisma.integrationConnection.findUniqueOrThrow({ where: { id: c.id }, select: { config: true } });
+    const out = await this.plantBatches.take({ ...c, config }, r.row);
+    if (out.duplicate) return { status: 'IGNORED', summary: `${where}: this row was taken in before` };
+    const b = out.read;
+    if (!b.batchNo && b.problems[0] === 'The columns are not matched yet') return { status: 'OK', summary: `${where} kept. Match the report's columns in RMC plant, From the batcher` };
+    if (b.problems.length) return { status: 'OK', summary: `${where} kept: ${b.problems.join('; ')}` };
+    return { status: 'OK', summary: `Batch ${b.batchNo}: ${b.quantity} m³${b.mix ? ` ${b.mix}` : ''}${b.truck ? `, ${b.truck}` : ''}. Make its challan in RMC plant, From the batcher` };
+  }
+
+  /** A batching plant's settings, checked before they are saved: its plant, and the folder the Connector reads. */
+  private async batchingConfig(user: RequestUser, projectId: string | null | undefined, config: unknown, kept: unknown): Promise<Record<string, unknown>> {
+    if (!projectId) throw new BadRequestException('Choose the RMC plant the controller batches for');
+    if (!(await this.prisma.project.count({ where: { id: projectId, organizationId: user.organizationId, type: 'PLANT' } }))) throw new BadRequestException('Choose an RMC plant (a project of type RMC plant)');
+    const r = readBatchingConfig(config, kept);
+    if (r.problem !== undefined) throw new BadRequestException(r.problem);
+    return { ...r.config };
+  }
 
   /** A weight the site's weighbridge held, read by the Connector: kept for the store to put on a ticket (item 148). */
   private async weighing(c: { id: string; organizationId: string; projectId: string | null }, payload: unknown): Promise<HandlerResult> {
@@ -251,6 +279,7 @@ export class IntegrationsService {
     if (info.transport === 'POLL') dto.config = this.feedConfig(dto.config, !!dto.credential);
     if (dto.kind === 'FUEL_DISPENSER') dto.config = await this.fuel.checkConfig(user, dto.projectId, dto.config);
     if (dto.kind === 'WEIGHBRIDGE') dto.config = this.weighbridgeConfig(dto.projectId, dto.config);
+    if (dto.kind === 'BATCHING_PLANT') dto.config = await this.batchingConfig(user, dto.projectId, dto.config, null);
     const secret = info.transport === 'HOOK' ? newSecret() : null;
     const row = await this.prisma.integrationConnection.create({
       data: {
@@ -286,6 +315,8 @@ export class IntegrationsService {
       dto.config = await this.fuel.checkConfig(user, dto.projectId === undefined ? c.projectId : dto.projectId, dto.config ?? c.config);
     if (c.kind === 'WEIGHBRIDGE' && (dto.config !== undefined || dto.projectId !== undefined))
       dto.config = this.weighbridgeConfig(dto.projectId === undefined ? c.projectId : dto.projectId, dto.config ?? c.config);
+    if (c.kind === 'BATCHING_PLANT' && (dto.config !== undefined || dto.projectId !== undefined))
+      dto.config = await this.batchingConfig(user, dto.projectId === undefined ? c.projectId : dto.projectId, dto.config ?? c.config, c.config);
     const data: Prisma.IntegrationConnectionUncheckedUpdateInput = {
       name: dto.name,
       projectId: dto.projectId,

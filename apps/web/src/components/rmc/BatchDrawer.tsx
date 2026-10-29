@@ -77,6 +77,7 @@ export function BatchDrawer({ id, onClose }: { id: string | null; onClose: () =>
               { key: 'p', label: 'Pumped', children: b.pumped ? 'Yes' : 'No' },
               { key: 'sl', label: 'Slump at the plant', children: b.slumpMm === null ? '-' : <span translate="no">{`${b.slumpMm} mm`}</span> },
               { key: 'l', label: 'Left the plant', children: formatDateTime(b.dispatchedAt) },
+              ...(b.plantBatchNo ? [{ key: 'pb', label: "Controller's batch", children: <span translate="no">{b.plantBatchNo}</span> }] : []),
               ...(b.status === 'DELIVERED' ? [{ key: 'd', label: 'Delivered', children: `${formatDateTime(b.deliveredAt)}${b.receivedBy ? `, received by ${b.receivedBy}` : ''}` }] : []),
               { key: 'st', label: 'Stock issue', children: <span translate="no">{b.stockEntryNo ?? '-'}</span> },
               { key: 'i', label: 'Bill', children: <span translate="no">{b.invoiceNo ?? 'Not billed'}</span> },

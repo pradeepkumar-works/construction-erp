@@ -234,7 +234,11 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/weighbridge-test.js
-      - name: The Connector's outbox keeps readings through a power cut, and it reads a weighbridge indicator's frames into weighings
+      - name: A batching plant's settings, its batch report read through the column map, the first map and the order a batch was for
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/batching-test.js
+      - name: The Connector's outbox keeps readings through a power cut, it reads a weighbridge indicator's frames into weighings and a batching plant's reports into rows
         if: matrix.suite == 'flows'
         working-directory: apps/connector
         run: npm test

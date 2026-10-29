@@ -4,6 +4,7 @@ import type { Reading } from './outbox';
 import type { Connection } from './state';
 import { VERSION } from './client';
 import { readWeighbridge } from './weighbridge';
+import { readBatchFolder } from './batch-folder';
 
 export interface ReaderContext {
   waiting: number;
@@ -22,4 +23,6 @@ export const READERS: Record<string, Reader> = {
   CONNECTOR_CHECK: async (conn, ctx) => [reading(conn, { deviceId: hostname(), deviceName: hostname(), version: VERSION, uptimeMin: Math.round(uptime() / 60), waiting: ctx.waiting })],
   /** Each weight the weighbridge's indicator held steady (item 148), read from its serial port or network address. */
   WEIGHBRIDGE: (conn) => readWeighbridge(conn),
+  /** Each row of the batch reports the plant's controller writes to its folder (item 149). */
+  BATCHING_PLANT: (conn) => readBatchFolder(conn),
 };

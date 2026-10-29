@@ -890,7 +890,10 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
      stable weight a weighing, a truck's ticket from its two weights on Stock › Weighbridge, the GRN drafted at the net
      weight (one ticket, one GRN), short supply against the challan beyond 0.5% or 20 kg, and WEIGH_SHORT on the watch list
      for a supplier's repeated short loads. ARCHITECTURE "Weighbridge".
-149. **Batching plant controller** (M): batch records to the RMC batches' actual quantities.
+149. ~~**Batching plant controller** (M).~~ Done: the controller's batch reports read by the Connector from its folder, each
+     row kept and read through the plant's column map (matched once from a real report), RMC plant › From the batcher with
+     the order each batch looks to be for, the challan made from the batch with its own weights (one batch, one challan),
+     and trial batches set aside. ARCHITECTURE "Batching plant controller".
 150. **Biometric device commands** (S): users added and removed and the clock set over ADMS.
 151. **Bank statement feed** (M).
 152. **Bank account check** (S).

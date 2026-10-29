@@ -2,11 +2,12 @@
 
 import React, { useEffect } from 'react';
 import { App, Form, Input, InputNumber, Switch, Table, Typography } from 'antd';
-import type { MixDesignDto, RmcBatchDto, RmcOrderDto } from '@erp/shared';
+import type { MixDesignDto, PlantBatchRowDto, RmcBatchDto, RmcOrderDto } from '@erp/shared';
 import { useMixDesigns, useRmcAction } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, QuantityInput } from '@/components/form/inputs';
+import { themeColor } from '@/lib/theme';
 import { m3 } from './rmcUi';
 
 interface DispatchValues {
@@ -19,8 +20,11 @@ interface DispatchValues {
   weighed?: Record<string, number | null>;
 }
 
-/** A truck leaving the plant on an order: its challan, and the materials out of the plant's store at the design or as weighed. */
-export function DispatchForm({ order, onClose }: { order: RmcOrderDto | null; onClose: () => void }) {
+/**
+ * A truck leaving the plant on an order: its challan, and the materials out of the plant's store at the design or as
+ * weighed. From a batch the controller reported (item 149), the batch's cubic metres, truck and weights come filled in.
+ */
+export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | null; row?: PlantBatchRowDto; onClose: () => void }) {
   const [form] = Form.useForm<DispatchValues>();
   const { message } = App.useApp();
   const save = useRmcAction<RmcBatchDto>();
@@ -29,8 +33,17 @@ export function DispatchForm({ order, onClose }: { order: RmcOrderDto | null; on
   const qty = Number(Form.useWatch('quantity', form)) || 0;
   const left = order ? Math.max(0, Number(order.quantity) - Number(order.delivered) - Number(order.onTheWay)) : 0;
   useEffect(() => {
-    if (order) form.setFieldsValue({ quantity: Math.min(6, left || 6), pumped: order.pumpRate !== null, weighed: {} });
-  }, [order, form, left]);
+    if (!order) return;
+    if (row)
+      form.setFieldsValue({
+        quantity: Number(row.quantity) || Math.min(6, left || 6),
+        truck: row.truck ?? undefined,
+        pumped: order.pumpRate !== null,
+        weighed: Object.fromEntries(row.materials.map((m) => [m.itemId, Number(m.actualQty)])),
+      });
+    else form.setFieldsValue({ quantity: Math.min(6, left || 6), pumped: order.pumpRate !== null, weighed: {} });
+  }, [order, row, form, left]);
+  const notInDesign = row && design ? row.materials.filter((m) => !design.lines.some((l) => l.itemId === m.itemId)) : [];
   return (
     <FormShell
       open={!!order}
@@ -39,7 +52,7 @@ export function DispatchForm({ order, onClose }: { order: RmcOrderDto | null; on
       layout="modal"
       width={640}
       projectDefault={false}
-      title={order ? `Send a truck on ${order.orderNo}` : 'Send a truck'}
+      title={order ? (row?.batchNo ? `Send batch ${row.batchNo} on ${order.orderNo}` : `Send a truck on ${order.orderNo}`) : 'Send a truck'}
       okText="Dispatch"
       onSubmit={async (v) => {
         const lines = Object.entries(v.weighed ?? {})
@@ -47,7 +60,7 @@ export function DispatchForm({ order, onClose }: { order: RmcOrderDto | null; on
           .map(([itemId, actualQty]) => ({ itemId, actualQty }));
         const b = await save.mutateAsync({
           path: '/rmc/batches',
-          body: { orderId: order!.id, quantity: v.quantity, truck: v.truck?.trim().toUpperCase() || null, driver: v.driver?.trim() || null, pumped: v.pumped, slumpMm: v.slumpMm ?? null, note: v.note?.trim() || null, lines },
+          body: { orderId: order!.id, plantRowId: row?.id, quantity: v.quantity, truck: v.truck?.trim().toUpperCase() || null, driver: v.driver?.trim() || null, pumped: v.pumped, slumpMm: v.slumpMm ?? null, note: v.note?.trim() || null, lines },
         });
         message.success(`${b.batchNo} on its way: ${m3(b.quantity)} to ${b.customer}`);
       }}
@@ -56,8 +69,14 @@ export function DispatchForm({ order, onClose }: { order: RmcOrderDto | null; on
         {order && (
           <Typography.Paragraph type="secondary">
             {`${order.grade} (${order.mixDesignCode}) for ${order.customer}${order.site ? `, ${order.site}` : ''}. ${m3(left)} of ${m3(order.quantity)} left to send.`}
+            {row ? ` The controller's batch${row.batchNo ? ` ${row.batchNo}` : ''}${row.mix ? `, ${row.mix}` : ''}: its weights are filled in below.` : ''}
           </Typography.Paragraph>
         )}
+        {notInDesign.length ? (
+          <Typography.Paragraph style={{ color: themeColor('colorErrorText') }}>
+            {`The controller weighed ${notInDesign.map((m) => m.itemName).join(', ')}, which ${order?.mixDesignCode ?? 'the design'} does not use. Check the order is the batch's.`}
+          </Typography.Paragraph>
+        ) : null}
         <FormGrid cols={3}>
           <Form.Item name="quantity" label="On the truck" rules={[{ required: true, message: 'Enter the cubic metres on the truck' }]}>
             <QuantityInput unit="m³" />

@@ -6,16 +6,18 @@ import { Card, Result } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
 import { canBillRmc, canSellRmc, canViewRmc } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useRmcPlants } from '@/lib/queries';
+import { usePlantBatches, useRmcPlants } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DayView } from '@/components/rmc/DayView';
 import { Orders } from '@/components/rmc/Orders';
 import { Batches } from '@/components/rmc/Batches';
+import { Batcher } from '@/components/rmc/Batcher';
+import { usePlantScope } from '@/components/rmc/rmcUi';
 import { MixDesigns } from '@/components/rmc/MixDesigns';
 import { Bills } from '@/components/rmc/Bills';
 import { ResultMark } from '@/components/common/ResultMark';
 
-const TABS = ['day', 'orders', 'batches', 'designs', 'bills'] as const;
+const TABS = ['day', 'orders', 'batcher', 'batches', 'designs', 'bills'] as const;
 
 function RmcPage() {
   const search = useSearchParams();
@@ -25,6 +27,8 @@ function RmcPage() {
   const allowed = !!user && canViewRmc(user.roleKey);
   const { data: plants, isLoading } = useRmcPlants(allowed);
   const sees = !!user && (canSellRmc(user.roleKey) || canBillRmc(user.roleKey));
+  const [plantId] = usePlantScope();
+  const { data: board } = usePlantBatches(plantId, allowed && !!plants?.length);
   const raw = search.get('tab');
   const tab = TABS.find((t) => t === raw && (t !== 'bills' || sees)) ?? 'day';
   return (
@@ -44,6 +48,14 @@ function RmcPage() {
             items={[
               { key: 'day', label: 'The day', children: <DayView /> },
               { key: 'orders', label: 'Quotes and orders', children: <Orders /> },
+              {
+                key: 'batcher',
+                label: 'From the batcher',
+                count: board?.controllers.length ? board.waiting.length : null,
+                countLabel: 'batches waiting for a challan',
+                attention: !!board?.late,
+                children: <Batcher />,
+              },
               { key: 'batches', label: 'Trucks and challans', children: <Batches /> },
               { key: 'designs', label: 'Mix designs', children: <MixDesigns /> },
               ...(sees ? [{ key: 'bills', label: 'Bills and money received', children: <Bills /> }] : []),

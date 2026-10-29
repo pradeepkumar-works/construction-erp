@@ -6,9 +6,9 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
 import type { ConnectionHealth, FeedAuth, FeedPollResultDto, IntegrationConnectionDto, IntegrationKind, IntegrationSecretDto, WeighbridgeSource } from '@erp/shared';
-import { CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO, WEIGH_BAUDS, WEIGH_MIN_KG, WEIGH_STABLE_SECONDS, WEIGHBRIDGE_SOURCES, WEIGHBRIDGE_SOURCE_LABELS } from '@erp/shared';
+import { BATCH_SINCE_DAYS, CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO, WEIGH_BAUDS, WEIGH_MIN_KG, WEIGH_STABLE_SECONDS, WEIGHBRIDGE_SOURCES, WEIGHBRIDGE_SOURCE_LABELS } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
-import { useConnectorAgents, useIntegrationAction, useIntegrationConnections, useStockItems } from '@/lib/queries';
+import { useConnectorAgents, useIntegrationAction, useIntegrationConnections, useRmcPlants, useStockItems } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -38,6 +38,9 @@ interface Values {
   tcpPort?: number | null;
   minKg?: number | null;
   stableSeconds?: number | null;
+  /** A batching plant (item 149): the folder its controller writes batch reports to, and how far back the first read goes */
+  folder?: string;
+  sinceDays?: number | null;
 }
 
 const CREDENTIAL_LABEL: Record<FeedAuth, string> = { BEARER: 'API key', BASIC: 'User name and password, as user:password', OAUTH: 'Client secret' };
@@ -59,6 +62,8 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
   const polled = kind ? INTEGRATION_KIND_INFO[kind].transport === 'POLL' : false;
   const dispenser = kind === 'FUEL_DISPENSER';
   const bridge = kind === 'WEIGHBRIDGE';
+  const batcher = kind === 'BATCHING_PLANT';
+  const plants = useRmcPlants(open && batcher);
   const source = (Form.useWatch('source', form) ?? str(connection?.config.source) ?? 'SERIAL') as WeighbridgeSource;
   const fuels = useStockItems({ fuel: true, pageSize: 100 }, open && dispenser);
   const auth = (Form.useWatch('auth', form) ?? str(connection?.config.auth) ?? 'BEARER') as FeedAuth;
@@ -86,7 +91,9 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                   minKg: v.minKg ?? WEIGH_MIN_KG,
                   stableSeconds: v.stableSeconds ?? WEIGH_STABLE_SECONDS,
                 }
-              : undefined;
+              : batcher
+                ? { folder: v.folder?.trim(), sinceDays: v.sinceDays ?? BATCH_SINCE_DAYS }
+                : undefined;
         if (connection) {
           await act.mutateAsync({
             method: 'patch',
@@ -121,8 +128,10 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                 tcpPort: typeof connection.config.tcpPort === 'number' ? connection.config.tcpPort : null,
                 minKg: typeof connection.config.minKg === 'number' ? connection.config.minKg : WEIGH_MIN_KG,
                 stableSeconds: typeof connection.config.stableSeconds === 'number' ? connection.config.stableSeconds : WEIGH_STABLE_SECONDS,
+                folder: str(connection.config.folder),
+                sinceDays: typeof connection.config.sinceDays === 'number' ? connection.config.sinceDays : BATCH_SINCE_DAYS,
               }
-            : { kind: 'GENERIC_WEBHOOK', auth: 'BEARER', source: 'SERIAL', baud: 9600, minKg: WEIGH_MIN_KG, stableSeconds: WEIGH_STABLE_SECONDS }
+            : { kind: 'GENERIC_WEBHOOK', auth: 'BEARER', source: 'SERIAL', baud: 9600, minKg: WEIGH_MIN_KG, stableSeconds: WEIGH_STABLE_SECONDS, sinceDays: BATCH_SINCE_DAYS }
         }
       >
         <Form.Item name="kind" label="What it connects to" extra={kind ? INTEGRATION_KIND_INFO[kind].description : undefined}>
@@ -139,6 +148,10 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           ) : bridge ? (
             <Form.Item name="projectId" label="Site" extra="Its weights go to this site's store" rules={[{ required: true, message: 'Choose the site the weighbridge is at' }]}>
               <ProjectSelect placeholder="Choose the site" style={{ width: '100%' }} aria-label="Site" />
+            </Form.Item>
+          ) : batcher ? (
+            <Form.Item name="projectId" label="Plant" extra="Its batches wait for challans on this plant's RMC page" rules={[{ required: true, message: 'Choose the RMC plant the controller batches for' }]}>
+              <Select loading={plants.isLoading} placeholder="Choose the plant" options={(plants.data ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
             </Form.Item>
           ) : (
             <Form.Item name="projectId" label="Site (optional)" extra="Where its readings belong when they do not say">
@@ -200,6 +213,21 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             </FormGrid>
           </>
         )}
+        {batcher && (
+          <FormGrid cols={2}>
+            <Form.Item
+              name="folder"
+              label="Folder of batch reports"
+              extra="On the Connector's computer, where the controller saves its CSV reports"
+              rules={[{ required: true, whitespace: true, message: 'Type the folder in full, e.g. D:\\Batch Reports' }]}
+            >
+              <Input maxLength={200} placeholder="D:\Batch Reports" translate="no" />
+            </Form.Item>
+            <Form.Item name="sinceDays" label="Reports to read at first" extra="Files changed in these days; older ones are left">
+              <InputNumber<number> min={1} max={30} precision={0} controls={false} suffix="days" style={{ width: '100%' }} />
+            </Form.Item>
+          </FormGrid>
+        )}
         {polled && (
           <>
             <Form.Item
@@ -230,7 +258,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             )}
           </>
         )}
-        {bridge ? null : (
+        {bridge || batcher ? null : (
           <Form.Item
           name="credential"
           label={

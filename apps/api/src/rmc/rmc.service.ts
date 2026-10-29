@@ -30,6 +30,7 @@ import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/pa
 import { todayIn } from '../notifications/time';
 import { StockService } from '../stock/stock.service';
 import { QualityService } from '../quality/quality.service';
+import { PlantBatchesService } from './plant-batches.service';
 import { isInterState } from '../tally/vouchers';
 import { actualQuantities, amountDue, batchQuantities, dispatchable, invoiceAmounts, materialsNeeded, orderProgress, orderValue, variancePct } from './rmc-rules';
 import type {
@@ -77,6 +78,7 @@ const batchInclude = {
   invoice: { select: { invoiceNo: true } },
   cubeTest: { select: { id: true, testNo: true, result: true } },
   lines: { include: { item: { select: { name: true, unit: true } } } },
+  plantRows: { select: { batchNo: true }, take: 1 },
 } satisfies Prisma.RmcBatchInclude;
 type BatchRow = Prisma.RmcBatchGetPayload<{ include: typeof batchInclude }>;
 
@@ -106,6 +108,7 @@ export class RmcService {
     private audit: AuditService,
     private stock: StockService,
     private quality: QualityService,
+    private plantBatches: PlantBatchesService,
   ) {}
 
   private assertView(user: RequestUser) {
@@ -455,6 +458,7 @@ export class RmcService {
       cubeTestId: b.cubeTest?.id ?? null,
       cubeTestNo: b.cubeTest?.testNo ?? null,
       cubeResult: b.cubeTest?.result ?? null,
+      plantBatchNo: b.plantRows[0]?.batchNo ?? null,
       lines: b.lines.map((l) => ({ itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, designQty: dec(l.designQty)!, actualQty: dec(l.actualQty)!, variancePct: variancePct(l.designQty, l.actualQty) })),
       canDeliver: b.status === 'DISPATCHED' && (canRunRmcPlant(user.roleKey) || canSellRmc(user.roleKey)),
       canTakeCubes: b.status !== 'REJECTED' && !b.cubeTest && canRecordTest(user.roleKey),
@@ -509,12 +513,17 @@ export class RmcService {
     if (D(dto.quantity).gt(left)) throw new BadRequestException(left.lte(0) ? `${o.orderNo} has had all its concrete. Raise the order's quantity to send more.` : `${o.orderNo} can take ${dec(left)} m³ more. Raise the order's quantity to send more.`);
     const design = await this.prisma.mixDesignLine.findMany({ where: { mixDesignId: o.mixDesignId }, orderBy: { sortOrder: 'asc' } });
     const planned = batchQuantities(design, dto.quantity);
-    if (dto.lines?.some((l) => !planned.some((p) => p.itemId === l.itemId))) throw new BadRequestException('A weighed material is not in the mix design');
-    const lines = actualQuantities(planned, dto.lines);
+    // From the controller's batch (item 149): its weights are the lines unless the form sent its own.
+    const fromPlant = dto.plantRowId ? await this.plantBatches.forDispatch(user.organizationId, dto.plantRowId, o.plantId) : null;
+    if (fromPlant?.read.problems.length) throw new BadRequestException(`The controller's batch cannot be read: ${fromPlant.read.problems[0]}`);
+    const weighed = dto.lines?.length ? dto.lines : fromPlant?.read.materials;
+    const stray = weighed?.find((l) => !planned.some((p) => p.itemId === l.itemId));
+    if (stray) throw new BadRequestException(fromPlant && !dto.lines?.length ? `The controller weighed a material that is not in ${o.mixDesign.code}; check the order or the report's columns` : 'A weighed material is not in the mix design');
+    const lines = actualQuantities(planned, weighed);
     const date = todayIn();
     const batch = await this.prisma.$transaction(async (tx) => {
       const batchNo = await nextDocNo(tx, user.organizationId, 'DC', async (prefix) => (await tx.rmcBatch.findFirst({ where: { organizationId: user.organizationId, batchNo: { startsWith: prefix } }, orderBy: { batchNo: 'desc' }, select: { batchNo: true } }))?.batchNo ?? null);
-      return tx.rmcBatch.create({
+      const made = await tx.rmcBatch.create({
         data: {
           id: dto.id,
           organizationId: user.organizationId,
@@ -535,6 +544,8 @@ export class RmcService {
         },
         select: { id: true, batchNo: true },
       });
+      if (fromPlant && !(await this.plantBatches.tie(tx, fromPlant.row, made.id))) throw new ConflictException('That batch from the controller is on another challan now');
+      return made;
     });
     const issue = lines.filter((l) => l.actualQty.gt(0));
     if (issue.length) {
@@ -553,7 +564,7 @@ export class RmcService {
         throw e;
       }
     }
-    await this.audit.log(user, 'RMC_BATCH', batch.id, 'CREATED', `${batch.batchNo}: ${dto.quantity} m³ on ${o.orderNo}`);
+    await this.audit.log(user, 'RMC_BATCH', batch.id, 'CREATED', `${batch.batchNo}: ${dto.quantity} m³ on ${o.orderNo}${fromPlant ? `, from the controller's batch ${fromPlant.read.batchNo}` : ''}`);
     return this.batch(user, batch.id);
   }
 
