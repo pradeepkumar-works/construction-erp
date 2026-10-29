@@ -137,6 +137,14 @@ and the pre-delivery checklist.
   its series through `formatLetterNo` (`@erp/shared/correspondence.ts`), an outward letter waits for its signatory only by
   `letterNeedsApproval`, and a received letter comes in only through `CorrespondenceService.recordInward` (the form and the
   email inbox). Keep `src/scripts/correspondence-test.ts` passing.
+- QA/QC (item 137, `apps/api/src/qa`, ARCHITECTURE "QA/QC"): test types are `STANDARD_TEST_TYPES` overlaid by the company's
+  rows by code (`testTypesOf`), never seeded; what a quality plan line owes is only `testsOwed` (IS 456 sampling by
+  `is456Samples`), over approved DPR lines and receipts; a pour's card is an `Inspection` made through
+  `InspectionsService.create`, and cubes pass or fail only by `cubeAcceptance` (`@erp/shared/qa-plan.ts`). Keep
+  `src/scripts/qa-plan-test.ts` passing.
+  Labs, samples, calibration and certificates (part 2) are `QaRegistersService` over the pure `@erp/shared/qa-registers.ts`
+  (`reportWait`, `calibrationState`, `testedOutOfCalibration`, `certificateNeeded`); an NCR's category and root cause are
+  master codes. Keep `src/scripts/qa-registers-test.ts` passing.
 - Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
   over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep

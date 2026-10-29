@@ -801,6 +801,14 @@ such as P07/OUT/26-27/042; bar bending schedules later.
 137. **QA/QC** (L): test types and quality plans (ITP), tests due from DPR quantities and receipts, the pour register with
      the IS 456 cube acceptance check, pour cards; then labs and samples sent out, calibration, supplier test certificates,
      audits and visits, NCR categories and root causes, the dashboard and monthly report.
+     Part 1 done: test types as a master over sixteen standard ones, a quality plan per project (from the standard plan of
+     its type), tests due from approved DPR lines and receipts (IS 456 clause 15.2.2 sampling for concrete), the pour
+     register with its pour card as an inspection and the cube acceptance check of IS 456 Table 11 (as amended), and a
+     test recorded against its type, plan line and pour. ARCHITECTURE "QA/QC".
+     Part 2 done: labs (site, NABL with its accreditation, group) and samples at them with late reports, the calibration
+     register with certificates and tests on an instrument out of calibration flagged, the maker's test certificate on a
+     GRN with the receipts still missing one, and NCR categories, root causes, client-raised and rework cost. Part 3 is
+     audits and visits, the dashboard and monthly report, the phone, My work and the watch list.
 138. **Design and drawings** (L): drawing schedule with late drawings as delays and reminder letters, design submissions and
      comment replies on every project, vetting, controlled copies, numbering, revision impact, the as-built check, the
      design dashboard. Bar bending schedules follow as an item of their own.

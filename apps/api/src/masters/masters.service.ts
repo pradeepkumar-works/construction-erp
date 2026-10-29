@@ -88,6 +88,19 @@ export class MastersService {
         (await this.prisma.letter.groupBy({ by: ['category'], where: { organizationId: org, category: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r.category!) ?? null, r._count._all));
         break;
       }
+      case 'ncrCategory':
+      case 'ncrRootCause': {
+        // NCRs keep the code, like letters.
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        const by = list === 'ncrCategory' ? 'category' : 'rootCause';
+        (await this.prisma.ncr.groupBy({ by: [by], where: { organizationId: org, [by]: { not: null } }, _count: { _all: true } })).forEach((r) => add(names.get(r[by]!) ?? null, r._count._all));
+        break;
+      }
+      case 'instrumentKind': {
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        (await this.prisma.qaInstrument.groupBy({ by: ['kind'], where: { organizationId: org }, _count: { _all: true } })).forEach((r) => add(names.get(r.kind) ?? null, r._count._all));
+        break;
+      }
     }
     return out;
   }

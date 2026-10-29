@@ -11,6 +11,7 @@ import {
   comparePipeCodes,
   isCompanyWide,
   judgeTest,
+  planLineFor,
   segmentLabel,
   specRange,
   type NcrDto,
@@ -22,6 +23,8 @@ import {
   type RoleKey,
   type SortOrder,
   type TestResult,
+  testedOutOfCalibration,
+  type CalibrationResult,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -29,8 +32,9 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MastersService } from '../masters/masters.service';
 import { todayIn } from '../notifications/time';
-import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -44,6 +48,9 @@ const testInclude = {
   attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
   _count: { select: { ncrs: { where: { status: { not: 'CLOSED' } } } } },
   pipeSegments: { select: { segment: { select: { id: true, code: true, fromNode: { select: { code: true } }, toNode: { select: { code: true } } } } } },
+  pour: { select: { pourNo: true } },
+  lab: { select: { name: true } },
+  instrument: { select: { name: true, lastCalibratedOn: true, nextDueOn: true, intervalDays: true, lastResult: true } },
 } satisfies Prisma.QualityTestInclude;
 type TestRow = Prisma.QualityTestGetPayload<{ include: typeof testInclude }>;
 
@@ -97,6 +104,7 @@ export class QualityService {
     private audit: AuditService,
     private attachments: AttachmentsService,
     private notifications: NotificationsService,
+    private masters: MastersService,
   ) {}
 
   /* ---------- tests ---------- */
@@ -131,6 +139,19 @@ export class QualityService {
       segments: r.pipeSegments
         .map(({ segment: g }) => ({ id: g.id, code: g.code, label: segmentLabel({ code: g.code, fromCode: g.fromNode.code, toCode: g.toNode.code }) }))
         .sort((a, b) => comparePipeCodes(a.code, b.code)),
+      testTypeCode: r.testTypeCode,
+      planLineId: r.planLineId,
+      pourId: r.pourId,
+      pourNo: r.pour?.pourNo ?? null,
+      labId: r.labId,
+      labName: r.lab?.name ?? null,
+      sentOn: dateOnly(r.sentOn),
+      labReportNo: r.labReportNo,
+      reportOn: dateOnly(r.reportOn),
+      labCharge: money(r.labCharge),
+      instrumentId: r.instrumentId,
+      instrumentName: r.instrument?.name ?? null,
+      outOfCalibration: !!r.instrument && testedOutOfCalibration({ lastCalibratedOn: dateOnly(r.instrument.lastCalibratedOn), nextDueOn: dateOnly(r.instrument.nextDueOn), intervalDays: r.instrument.intervalDays, lastResult: r.instrument.lastResult as CalibrationResult | null }, dateOnly(r.sampledOn)!),
       createdById: r.createdById,
       createdByName: r.createdBy.fullName,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
@@ -185,6 +206,57 @@ export class QualityService {
     if (found !== ids.length) throw new NotFoundException("Choose pipes from this project's pipe network");
   }
 
+  /**
+   * Where a test counts (item 137): the pour its cubes came from (on the same project, not cancelled) and the plan line,
+   * given or else the only line of its type (or of its grade) on the project. `title` names the grade for the line.
+   */
+  private async placeInPlan(projectId: string, dto: { testTypeCode?: string | null; planLineId?: string | null; pourId?: string | null }, title: string) {
+    let grade: string | null = null;
+    if (dto.pourId) {
+      const pour = await this.prisma.pour.findFirst({ where: { id: dto.pourId, projectId }, select: { status: true, grade: true } });
+      if (!pour) throw new NotFoundException('Pour not found in this project');
+      if (pour.status === 'CANCELLED') throw new BadRequestException('This pour was cancelled');
+      grade = pour.grade;
+    }
+    if (dto.planLineId) {
+      const line = await this.prisma.qaPlanLine.findFirst({ where: { id: dto.planLineId, projectId }, select: { id: true, testType: true } });
+      if (!line) throw new NotFoundException("Choose a line of this project's quality plan");
+      return { planLineId: line.id, testTypeCode: dto.testTypeCode ?? line.testType };
+    }
+    if (!dto.testTypeCode) return { planLineId: null, testTypeCode: dto.testTypeCode ?? null };
+    const lines = await this.prisma.qaPlanLine.findMany({ where: { projectId, testType: dto.testTypeCode }, select: { id: true, testType: true, grade: true } });
+    return { planLineId: planLineFor(dto.testTypeCode, `${grade ?? ''} ${title}`, lines)?.id ?? null, testTypeCode: dto.testTypeCode };
+  }
+
+  /**
+   * Where a sample went and the instrument it was tested on (item 137 part 2): a lab and an instrument of the company, sent
+   * on or after the sample and not after today, reported on or after it was sent.
+   */
+  private async labFields(
+    user: RequestUser,
+    sampledOn: string,
+    v: { labId: string | null; sentOn: string | null; labReportNo: string | null; reportOn: string | null; labCharge: string | null; instrumentId: string | null },
+  ): Promise<{ labId: string | null; sentOn: Date | null; labReportNo: string | null; reportOn: Date | null; labCharge: string | null; instrumentId: string | null }> {
+    const today = todayIn();
+    if (v.labId && !(await this.prisma.qaLab.count({ where: { id: v.labId, organizationId: user.organizationId } }))) throw new BadRequestException('Choose a lab from the list (QA/QC › Labs)');
+    if (v.instrumentId && !(await this.prisma.qaInstrument.count({ where: { id: v.instrumentId, organizationId: user.organizationId } }))) throw new BadRequestException('Choose an instrument from the calibration register');
+    if (v.sentOn && !v.labId) throw new BadRequestException('Choose the lab the sample went to');
+    if (v.sentOn && v.sentOn < sampledOn) throw new BadRequestException('A sample goes to the lab on or after the day it was taken');
+    if (v.sentOn && v.sentOn > today) throw new BadRequestException('The day sent cannot be after today');
+    if (v.reportOn && !v.sentOn) throw new BadRequestException('Give the day the sample went to the lab before its report');
+    if (v.reportOn && v.sentOn && v.reportOn < v.sentOn) throw new BadRequestException('The report comes on or after the day the sample was sent');
+    if (v.reportOn && v.reportOn > today) throw new BadRequestException('The report day cannot be after today');
+    if (v.labCharge && Number(v.labCharge) < 0) throw new BadRequestException('A lab charge cannot be below zero');
+    return {
+      labId: v.labId,
+      sentOn: v.sentOn ? parseDate(v.sentOn) : null,
+      labReportNo: v.labReportNo?.trim() || null,
+      reportOn: v.reportOn ? parseDate(v.reportOn) : null,
+      labCharge: v.labCharge || null,
+      instrumentId: v.instrumentId,
+    };
+  }
+
   private checkSpec(min: string | null, max: string | null) {
     if (min !== null && max !== null && Number(min) > Number(max)) throw new BadRequestException('The lowest passing value is above the highest');
   }
@@ -223,6 +295,15 @@ export class QualityService {
     const readings: TestReadingInputDto[] = dto.readings?.length ? dto.readings : defaults.readings.map((r) => ({ label: r.label, dueOn: dateOnly(addDays(dto.sampledOn, r.days)) }));
     this.checkReadings(readings, dto.sampledOn);
     const result = this.result(readings, specMin, specMax, dto.result, 'PENDING');
+    const placed = await this.placeInPlan(dto.projectId, dto, dto.title);
+    const lab = await this.labFields(user, dto.sampledOn, {
+      labId: dto.labId ?? null,
+      sentOn: dto.sentOn ?? null,
+      labReportNo: dto.labReportNo ?? null,
+      reportOn: dto.reportOn ?? null,
+      labCharge: dto.labCharge ?? null,
+      instrumentId: dto.instrumentId ?? null,
+    });
     const today = todayIn();
     let id: string | null;
     try {
@@ -249,6 +330,10 @@ export class QualityService {
             result,
             remarks: dto.remarks || null,
             createdById: user.id,
+            testTypeCode: placed.testTypeCode,
+            planLineId: placed.planLineId,
+            pourId: dto.pourId || null,
+            ...lab,
             readings: {
               create: readings.map((r, i) => ({
                 label: r.label,
@@ -321,6 +406,26 @@ export class QualityService {
     if (dto.specification !== undefined) data.specification = dto.specification || null;
     if (dto.unit !== undefined) data.unit = dto.unit || null;
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
+    if (dto.testTypeCode !== undefined || dto.planLineId !== undefined || dto.pourId !== undefined) {
+      if (!canEditTest(user, cur)) throw new ForbiddenException('Only whoever recorded the test, QA/QC or an approver can change where it counts');
+      const pourId = dto.pourId !== undefined ? dto.pourId || null : cur.pourId;
+      const placed = await this.placeInPlan(cur.projectId, { testTypeCode: dto.testTypeCode !== undefined ? dto.testTypeCode : cur.testTypeCode, planLineId: dto.planLineId, pourId }, dto.title ?? cur.title);
+      Object.assign(data, { ...placed, pourId });
+    }
+    if ([dto.labId, dto.sentOn, dto.labReportNo, dto.reportOn, dto.labCharge, dto.instrumentId].some((v) => v !== undefined)) {
+      const pick = <K extends 'labId' | 'labReportNo' | 'instrumentId'>(k: K) => (dto[k] !== undefined ? dto[k] ?? null : cur[k]);
+      Object.assign(
+        data,
+        await this.labFields(user, sampledOn, {
+          labId: pick('labId'),
+          sentOn: dto.sentOn !== undefined ? dto.sentOn ?? null : dateOnly(cur.sentOn),
+          labReportNo: pick('labReportNo'),
+          reportOn: dto.reportOn !== undefined ? dto.reportOn ?? null : dateOnly(cur.reportOn),
+          labCharge: dto.labCharge !== undefined ? dto.labCharge ?? null : dec(cur.labCharge),
+          instrumentId: pick('instrumentId'),
+        }),
+      );
+    }
     await this.prisma.$transaction(async (tx) => {
       await tx.qualityTest.update({ where: { id }, data });
       if (dto.segmentIds) {
@@ -427,6 +532,10 @@ export class QualityService {
       closedByName: r.closedBy?.fullName ?? null,
       closedAt: iso(r.closedAt),
       closureNote: r.closureNote,
+      category: r.category,
+      rootCause: r.rootCause,
+      raisedByClient: r.raisedByClient,
+      reworkCost: money(r.reworkCost),
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       createdAt: iso(r.createdAt)!,
       updatedAt: iso(r.updatedAt)!,
@@ -492,12 +601,20 @@ export class QualityService {
     return row ? this.getNcr(user, row.id) : null;
   }
 
+  /** An NCR's category and root cause are codes of the company's lists; a rework cost is not below zero. */
+  private async assertNcrLists(user: RequestUser, dto: { category?: string | null; rootCause?: string | null; reworkCost?: string | null }) {
+    if (dto.category && !(await this.masters.entriesFor(user.organizationId, 'ncrCategory')).some((e) => e.code === dto.category)) throw new BadRequestException('Choose a category from the list (Masters › NCR categories)');
+    if (dto.rootCause && !(await this.masters.entriesFor(user.organizationId, 'ncrRootCause')).some((e) => e.code === dto.rootCause)) throw new BadRequestException('Choose a root cause from the list (Masters › NCR root causes)');
+    if (dto.reworkCost && Number(dto.reworkCost) < 0) throw new BadRequestException('A rework cost cannot be below zero');
+  }
+
   async createNcr(user: RequestUser, dto: CreateNcrDto): Promise<NcrDto> {
     const existing = await this.findExistingNcr(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanRaiseNcr(user, dto.projectId);
     await this.assertLinks(dto.projectId, dto);
     await this.assertActionBy(user, dto.projectId, dto.actionById);
+    await this.assertNcrLists(user, dto);
     const raisedOn = dto.raisedOn ?? todayIn();
     if (raisedOn > todayIn()) throw new BadRequestException('The NCR date cannot be in the future');
     if (dto.dueDate && dto.dueDate < raisedOn) throw new BadRequestException('The rectify-by date is before the NCR date');
@@ -529,6 +646,10 @@ export class QualityService {
             activityId,
             inspectionId: dto.inspectionId || null,
             qualityTestId: dto.qualityTestId || null,
+            category: dto.category || null,
+            rootCause: dto.rootCause || null,
+            raisedByClient: dto.raisedByClient ?? false,
+            reworkCost: dto.reworkCost || null,
           },
           select: { id: true },
         });
@@ -562,6 +683,7 @@ export class QualityService {
     if (cur.status === 'CLOSED') throw new BadRequestException('A closed NCR cannot be changed; reopen it first');
     await this.assertLinks(cur.projectId, dto);
     if (dto.actionById !== undefined) await this.assertActionBy(user, cur.projectId, dto.actionById);
+    await this.assertNcrLists(user, dto);
     const raisedOn = dto.raisedOn ?? dateOnly(cur.raisedOn)!;
     if (raisedOn > todayIn()) throw new BadRequestException('The NCR date cannot be in the future');
     const dueDate = dto.dueDate !== undefined ? dto.dueDate : dateOnly(cur.dueDate);
@@ -577,6 +699,10 @@ export class QualityService {
     if (dto.activityId !== undefined) data.activityId = dto.activityId || null;
     if (dto.inspectionId !== undefined) data.inspectionId = dto.inspectionId || null;
     if (dto.qualityTestId !== undefined) data.qualityTestId = dto.qualityTestId || null;
+    if (dto.category !== undefined) data.category = dto.category || null;
+    if (dto.rootCause !== undefined) data.rootCause = dto.rootCause || null;
+    if (dto.raisedByClient !== undefined) data.raisedByClient = dto.raisedByClient;
+    if (dto.reworkCost !== undefined) data.reworkCost = dto.reworkCost || null;
     await this.prisma.ncr.update({ where: { id }, data });
     await this.attachments.sync(user, 'ncrId', id, dto.attachmentIds);
     await this.audit.log(user, 'NCR', id, 'UPDATED');
@@ -591,9 +717,19 @@ export class QualityService {
     await this.access.assertCanAccessProject(user, cur.projectId);
     if (!canActOnNcr(user, cur)) throw new ForbiddenException('Only the person it is assigned to, site staff or an approver can record the action on an NCR');
     if (cur.status === 'CLOSED') throw new BadRequestException('This NCR is closed');
+    await this.assertNcrLists(user, dto);
     await this.prisma.ncr.update({
       where: { id },
-      data: { status: 'ACTION_TAKEN', cause: dto.cause, correctiveAction: dto.correctiveAction, preventiveAction: dto.preventiveAction || null, actionAt: new Date(), actionById: cur.actionById ?? user.id },
+      data: {
+        status: 'ACTION_TAKEN',
+        cause: dto.cause,
+        correctiveAction: dto.correctiveAction,
+        preventiveAction: dto.preventiveAction || null,
+        actionAt: new Date(),
+        actionById: cur.actionById ?? user.id,
+        ...(dto.rootCause !== undefined ? { rootCause: dto.rootCause || null } : {}),
+        ...(dto.reworkCost !== undefined ? { reworkCost: dto.reworkCost || null } : {}),
+      },
     });
     await this.attachments.link(user, 'ncrId', id, dto.attachmentIds);
     await this.audit.log(user, 'NCR', id, 'ACTION_TAKEN', dto.correctiveAction);
@@ -607,7 +743,8 @@ export class QualityService {
     const cur = await this.loadNcr(user, id);
     await this.access.assertCanRaiseNcr(user, cur.projectId);
     if (cur.status !== 'ACTION_TAKEN') throw new BadRequestException(cur.status === 'CLOSED' ? 'This NCR is already closed' : 'Record the cause and corrective action before closing the NCR');
-    await this.prisma.ncr.update({ where: { id }, data: { status: 'CLOSED', closedById: user.id, closedAt: new Date(), closureNote: dto.note || null } });
+    await this.assertNcrLists(user, dto);
+    await this.prisma.ncr.update({ where: { id }, data: { status: 'CLOSED', closedById: user.id, closedAt: new Date(), closureNote: dto.note || null, ...(dto.reworkCost !== undefined ? { reworkCost: dto.reworkCost || null } : {}) } });
     await this.audit.log(user, 'NCR', id, 'CLOSED', dto.note || null);
     const updated = await this.getNcr(user, id);
     if (updated.actionById) await this.tell(user, [updated.actionById], updated, `NCR closed: ${updated.ncrNo}`, `${user.fullName} verified the corrective action on ${updated.title}.${dto.note ? ` ${dto.note}` : ''}`, `CLOSED:${Date.now()}`);

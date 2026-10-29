@@ -309,6 +309,8 @@ class GrnQcLineDto {
 export class CheckGrnDto {
   @ApiProperty({ enum: GRN_QC_STATUSES }) @IsIn(GRN_QC_STATUSES) status: GrnQcStatus;
   @ApiPropertyOptional({ example: '20 bags lumpy, set aside for return' }) @IsOptional() @IsString() @MaxLength(1000) note?: string;
+  @ApiPropertyOptional({ example: 'TC/24/88123', description: "The maker's test certificate for the lot (item 137 part 2)" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) mtcNo?: string | null;
+  @ApiPropertyOptional({ example: '2026-10-18', description: 'The date on the certificate' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() mtcDate?: string | null;
   @ApiPropertyOptional({ type: [GrnQcLineDto], description: 'Partly accepted: the rejected quantity per line' })
   @IsOptional()
   @IsArray()

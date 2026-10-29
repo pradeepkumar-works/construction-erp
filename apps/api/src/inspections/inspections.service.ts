@@ -212,8 +212,8 @@ export class InspectionsService {
   }
 
   /** The points to check: given ones, else the chosen checklist's, else the activity's checklist's. */
-  private async checklist(user: RequestUser, dto: { items?: string[]; checklistTemplateId?: string | null }, activityChecklistId: string | null) {
-    if (dto.items?.length) return { checklistName: null, checklist: fresh(dto.items) };
+  private async checklist(user: RequestUser, dto: { items?: string[]; checklistTemplateId?: string | null; checklistName?: string }, activityChecklistId: string | null) {
+    if (dto.items?.length) return { checklistName: dto.checklistName ?? null, checklist: fresh(dto.items) };
     const templateId = dto.checklistTemplateId === undefined ? activityChecklistId : dto.checklistTemplateId;
     if (!templateId) return { checklistName: null, checklist: [] as InspectionCheck[] };
     const t = await this.prisma.checklistTemplate.findFirst({ where: { id: templateId, organizationId: user.organizationId } });
@@ -227,7 +227,8 @@ export class InspectionsService {
     return row ? this.get(user, row.id) : null;
   }
 
-  async create(user: RequestUser, dto: CreateInspectionDto): Promise<InspectionDto> {
+  /** `checklistName` names given points (a pour card's, item 137); the API's own callers set it, the form does not. */
+  async create(user: RequestUser, dto: CreateInspectionDto & { checklistName?: string }): Promise<InspectionDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanRequestInspection(user, dto.projectId);
