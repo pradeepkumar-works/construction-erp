@@ -186,6 +186,7 @@ export class LauncherService {
     // Each desk's queue on the tile that opens it.
     add('purchases.toOrder', work.toOrder?.count);
     add('quality.grns', work.grnsToCheck?.count);
+    add('quality.audits', work.findingsToClose?.count);
     add('purchases.toBill', work.toMatch?.count);
     add('accounts.debitNotes', work.toDebit?.count);
     return { nodes, approvals: approvals.filter((a) => a.count > 0) };

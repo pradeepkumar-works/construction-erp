@@ -306,6 +306,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/qa-registers-test.js
+      - name: Audit findings stand open, by NCR or closed, and the monthly quality report adds up
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/qa-audits-test.js
       - name: Measures on drawings scale right, add up lines, areas and counts, and make measurement book lines
         if: matrix.suite == 'flows'
         working-directory: apps/api

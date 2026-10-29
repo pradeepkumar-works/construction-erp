@@ -386,7 +386,27 @@ Part 2 (`QaRegistersService`, rules pure in `@erp/shared/qa-registers.ts`, teste
   `/test-certificates` list receipts still without one.
 - **NCRs.** Category (`ncrCategory` master), root cause (`ncrRootCause`, chosen with the corrective action), raised by the
   client or TPI, and the rework cost (on the action or at closure); `assertNcrLists` keeps them to the masters' codes.
-- Part 3 (audits and visits, the QA/QC dashboard and monthly report, the phone, My work and the watch list) follows.
+- **Audits and visits** (part 3). `QaAudit` (`AUD-YYYY-NNNN`, kind from `QA_AUDIT_KINDS`: internal, client, consultant,
+  TPI, department; who came, a summary, an internal audit's score, the report as attachments) and its `QaAuditFinding`
+  rows (text, severity, put right by). `auditProblem` checks it before saving. A finding is closed with what was done
+  (`closingNote`) or becomes an NCR through `QaAuditsService.raiseNcr` (`QualityService.createNcr`, raised by the client
+  when the visit was from outside); `findingState` follows the NCR until it closes, and `findingOverdue` marks one open
+  past `FINDING_CLOSE_DAYS` (15) from the audit. An audit an NCR came from cannot be deleted; a finding with an NCR keeps
+  its words. `/qa-audits` (`?open=1`, `?id=`); My work's `findingsToClose` card and the launcher's badge on
+  `quality.audits`.
+- **Monthly report** (part 3). `GET /qa/report?month=&projectId=` (`QaReportService.monthly`): per project the month's
+  tests sampled, passed and failed (`passRate` of those decided), tests short of the plan today (`testsOwed`), NCRs
+  raised, closed and open (over 30 days), rework cost, audits and findings open and grades whose cubes fail Table 11;
+  totals by `reportTotals` (the pass rate from the summed counts), open NCRs by `ncrAgeBand`, the month's NCRs by
+  category and those closed by root cause (`countBy` over the masters), and the registers (instruments overdue and due,
+  late lab reports, receipts without a certificate, labs whose accreditation is running out). A project with nothing to
+  report is left off (`reportRowHasWork`). `/qa-report`, printed from the browser. The arithmetic is pure in
+  `@erp/shared/qa-audits.ts`; keep `src/scripts/qa-audits-test.ts` passing.
+- **Watch list** (part 3). `TESTS_SHORT` (a project at least `TESTS_SHORT_MIN` tests short of its plan),
+  `CALIBRATION_DUE` (an instrument in use that is overdue or never calibrated) and `LAB_REPORT_LATE` (reports late at a
+  lab), from `testsShort`, `calibrationWarns` and `lateReportGroups` in `warning-rules.ts`, for the roles that manage the
+  quality plan.
+- The phone shows My work's audit findings card; QA/QC screens of its own on the phone are later.
 
 ### The launcher on the phone (launcher phase 4, phone Home of October 2026)
 

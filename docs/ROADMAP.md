@@ -807,8 +807,11 @@ such as P07/OUT/26-27/042; bar bending schedules later.
      test recorded against its type, plan line and pour. ARCHITECTURE "QA/QC".
      Part 2 done: labs (site, NABL with its accreditation, group) and samples at them with late reports, the calibration
      register with certificates and tests on an instrument out of calibration flagged, the maker's test certificate on a
-     GRN with the receipts still missing one, and NCR categories, root causes, client-raised and rework cost. Part 3 is
-     audits and visits, the dashboard and monthly report, the phone, My work and the watch list.
+     GRN with the receipts still missing one, and NCR categories, root causes, client-raised and rework cost.
+     Part 3 done: audits and visits (internal, client, consultant, TPI, department) with findings closed or raised as
+     NCRs and late after 15 days, the monthly quality report by project with print, My work's audit findings card (web
+     and phone) and the watch list's tests short, instruments out of calibration and late lab reports. QA/QC screens of
+     its own on the phone are later.
 138. **Design and drawings** (L): drawing schedule with late drawings as delays and reminder letters, design submissions and
      comment replies on every project, vetting, controlled copies, numbering, revision impact, the as-built check, the
      design dashboard. Bar bending schedules follow as an item of their own.

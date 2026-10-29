@@ -33,7 +33,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 import { ResultMark } from '@/components/common/ResultMark';
 
-const KIND_COLOR: Record<WarningKind, string> = { SCHEDULE: 'orange', CASH: 'red', VENDOR: 'purple', STOCK: 'gold', MACHINE: 'blue', DPR: 'cyan', MATERIAL_OVERUSE: 'magenta', FUEL_NORM: 'volcano', LOAN_EMI: 'geekblue', RATE_ABOVE: 'purple', FUEL_NO_LOG: 'volcano', IDLE_HIRE: 'blue', NOTICE_DUE: 'red', MANDAYS_ABOVE: 'volcano', PACKAGE_LATE: 'orange', OM_SERVICE: 'cyan', BOQ_OFF_CONTRACT: 'gold' };
+const KIND_COLOR: Record<WarningKind, string> = { SCHEDULE: 'orange', CASH: 'red', VENDOR: 'purple', STOCK: 'gold', MACHINE: 'blue', DPR: 'cyan', MATERIAL_OVERUSE: 'magenta', FUEL_NORM: 'volcano', LOAN_EMI: 'geekblue', RATE_ABOVE: 'purple', FUEL_NO_LOG: 'volcano', IDLE_HIRE: 'blue', NOTICE_DUE: 'red', MANDAYS_ABOVE: 'volcano', PACKAGE_LATE: 'orange', OM_SERVICE: 'cyan', BOQ_OFF_CONTRACT: 'gold', TESTS_SHORT: 'cyan', CALIBRATION_DUE: 'volcano', LAB_REPORT_LATE: 'blue' };
 const CONFIDENCE_COLOR: Record<WarningConfidence, string> = { CHECKED: 'green', LIKELY: 'blue', CHECK_THIS: 'orange' };
 
 type DismissForm = { outcome: WarningOutcome; reason?: string };

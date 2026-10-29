@@ -135,6 +135,7 @@ export const CORE: Record<string, string> = {
   'Below minimum stock': 'न्यूनतम स्टॉक से कम',
   'Your actions from meetings': 'बैठकों से आपके काम',
   'Letters for you': 'आपके लिए पत्र',
+  'Audit findings to close': 'बंद करने को ऑडिट टिप्पणियाँ',
   // Correspondence (item 136): letters for you and one letter
   'Head office': 'मुख्य कार्यालय',
   Dated: 'दिनांक',

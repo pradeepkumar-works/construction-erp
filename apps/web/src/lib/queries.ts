@@ -396,7 +396,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -1520,6 +1520,33 @@ export const useCertificatesMissing = (projectId?: string) =>
   useQuery({
     queryKey: ['quality', 'qa', 'certificates-missing', projectId ?? null],
     queryFn: async () => (await api.get<CertificateMissingDto[]>('/qa/certificates-missing', { params: clean({ projectId }) })).data,
+  });
+
+export interface QaAuditFilters extends PageParams {
+  projectId?: string;
+  kind?: QaAuditKind;
+  open?: boolean;
+}
+
+export const useQaAudits = (filters?: QaAuditFilters) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'audits', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<QaAuditDto>>('/qa/audits', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useQaAudit = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'audits', 'detail', id],
+    queryFn: async () => (await api.get<QaAuditDto>(`/qa/audits/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useQaReport = (month: string, projectId?: string) =>
+  useQuery({
+    queryKey: ['quality', 'qa', 'report', month, projectId ?? null],
+    queryFn: async () => (await api.get<QaReportDto>('/qa/report', { params: clean({ month, projectId }) })).data,
+    placeholderData: keepPreviousData,
   });
 
 export interface DocumentFilters extends PageParams {

@@ -9,11 +9,22 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-04-qa-audits',
+    date: '2027-04-16',
+    title: 'Audits, visits and the quality report',
+    points: [
+      'Record internal audits and visits by the client, its consultant, a third-party inspector or the department, with each finding and the day it is to be put right.',
+      'Close a finding with what was done, or raise an NCR from it in one step. A finding still open after 15 days shows as late, and My work lists the ones to close.',
+      'The quality report gives each month’s tests and pass rate, tests short of the plan, NCRs by age, category and root cause, rework cost and audits, by project, ready to print.',
+      'The watch list now warns of projects short of tests, instruments out of calibration and lab reports that are late.',
+    ],
+  },
+  {
     id: '2027-04-qa-registers',
     date: '2027-04-02',
     title: 'Labs, calibration and test certificates',
     points: [
-      'Record which lab each sample went to, the day it was sent and its report. Samples at labs shows what is still waiting and which reports are late.',
+      'Record which lab each sample went to, the day it was sent and its report. Samples sent out shows what is still waiting and which reports are late.',
       'Keep your NABL labs with their certificate and validity: a lab whose accreditation runs out in the next month is marked.',
       'The calibration register keeps each instrument with its certificates and when it falls due. A test run on a machine out of calibration is flagged.',
       'Enter the maker’s test certificate on the QA/QC check of a receipt. Test certificates lists the steel, cement and pipes still without one.',

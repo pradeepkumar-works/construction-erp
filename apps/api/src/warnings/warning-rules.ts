@@ -458,3 +458,37 @@ export function alertsToSend<W extends { key: string; impact: { inr: number | nu
     .slice(0, cap)
     .map((x) => x.w);
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// QA/QC (item 137 part 3)
+
+/** A project's quality plan warns once this many tests are short of what its work and receipts owe. */
+export const TESTS_SHORT_MIN = 2;
+
+/** The plan lines of one project that are short, most short first; null while the project is under `TESTS_SHORT_MIN`. */
+export function testsShort<L extends { short: number; required: number; taken: number }>(lines: L[]): { short: number; required: number; taken: number; lines: L[] } | null {
+  const short = lines.filter((l) => l.short > 0).sort((a, b) => b.short - a.short);
+  const total = short.reduce((s, l) => s + l.short, 0);
+  if (total < TESTS_SHORT_MIN) return null;
+  return { short: total, required: lines.reduce((s, l) => s + l.required, 0), taken: lines.reduce((s, l) => s + l.taken, 0), lines: short };
+}
+
+/** An instrument in use that is overdue for calibration or failed its last one; never-calibrated ones too once a test names them. */
+export function calibrationWarns(i: { state: 'OK' | 'DUE_SOON' | 'OVERDUE' | 'NEVER' | 'OUT_OF_USE'; active: boolean; lastResult: string | null; usedSinceDue: number }): boolean {
+  if (!i.active) return false;
+  if (i.state === 'OVERDUE') return true;
+  if (i.state === 'OUT_OF_USE') return i.lastResult === 'FAILED';
+  return i.state === 'NEVER' && i.usedSinceDue > 0;
+}
+
+/** Late samples grouped by project and lab, the longest wait first. */
+export function lateReportGroups<S extends { projectId: string; labId: string; late: boolean; waitDays: number | null }>(samples: S[]): { projectId: string; labId: string; samples: S[]; longest: number }[] {
+  const groups = new Map<string, S[]>();
+  for (const s of samples.filter((x) => x.late)) {
+    const k = `${s.projectId}:${s.labId}`;
+    groups.set(k, [...(groups.get(k) ?? []), s]);
+  }
+  return [...groups.values()]
+    .map((xs) => ({ projectId: xs[0].projectId, labId: xs[0].labId, samples: xs.sort((a, b) => (b.waitDays ?? 0) - (a.waitDays ?? 0)), longest: Math.max(...xs.map((x) => x.waitDays ?? 0)) }))
+    .sort((a, b) => b.longest - a.longest);
+}

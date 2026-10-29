@@ -12,6 +12,7 @@ import {
   CreditCardOutlined,
   EyeOutlined,
   FileDoneOutlined,
+  FileSearchOutlined,
   FileTextOutlined,
   HourglassOutlined,
   InboxOutlined,
@@ -51,6 +52,7 @@ export const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; ico
   certifiedToReceive: { title: 'Certified, payment to come', icon: <FileDoneOutlined />, href: '/receivables', tone: 'error' },
   toMatch: { title: 'Goods received, no bill yet', icon: <ReconciliationOutlined />, href: '/vendor-bills?tab=to-bill', tone: 'warning' },
   grnsToCheck: { title: 'Material to check', icon: <AuditOutlined />, href: '/inspections?tab=grns', tone: 'warning' },
+  findingsToClose: { title: 'Audit findings to close', icon: <FileSearchOutlined />, href: '/qa-audits?open=1', tone: 'warning' },
   toDebit: { title: 'Debit notes to raise', icon: <SyncOutlined />, href: '/payables?tab=debit-notes&sub=to-raise', tone: 'warning' },
   transfersToReceive: { title: 'Material on the way', icon: <SendOutlined />, href: '/stock', tone: 'info' },
 };
@@ -77,6 +79,7 @@ const CLEAR: Record<MyWorkKey, string> = {
   certifiedToReceive: 'certified bills',
   toMatch: 'goods to match with a bill',
   grnsToCheck: 'material to check',
+  findingsToClose: 'audit findings',
   toDebit: 'debit notes to raise',
   transfersToReceive: 'transfers on the way',
 };
