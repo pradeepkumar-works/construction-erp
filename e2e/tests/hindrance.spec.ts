@@ -85,11 +85,13 @@ test('a DPR’s own page offers its hindrance, and the delay register prints', a
 
   await signIn(page, 'pm2@demo.com');
   if (drawings) {
-    expect(drawings.openDelay?.riskNo).toBe('RISK-2026-0001');
+    // The building's open design delay: the demo's, or a later one another test recorded.
+    const riskNo = drawings.openDelay?.riskNo;
+    expect(riskNo).toMatch(/^RISK-\d{4}-\d{4}$/);
     await page.goto(`/dpr/${drawings.dprId}`);
     await expect(page.getByText('This reads as a hindrance to record in the delay register:')).toBeVisible();
     const row = page.locator(`[data-hindrance="${drawings.id}"]`);
-    await expect(row.getByRole('button', { name: 'Add to RISK-2026-0001' })).toBeVisible();
+    await expect(row.getByRole('button', { name: `Add to ${riskNo}` })).toBeVisible();
     await row.getByRole('button', { name: 'Dismiss' }).click();
     await expect(page.getByText('Dismissed')).toBeVisible();
     await expect(row).toHaveCount(0);
