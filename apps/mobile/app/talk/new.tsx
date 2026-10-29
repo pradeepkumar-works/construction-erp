@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import type { ToolboxTalkDto } from '@erp/shared';
-import { TOOLBOX_TOPICS } from '@erp/shared';
+import type { ToolboxTalkDraftDto, ToolboxTalkDto } from '@erp/shared';
+import { TOOLBOX_TOPICS, talkText } from '@erp/shared';
 import { useApi } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, useSnackbar, type LocalPhoto } from '../../src/components';
+import { TodaysTalk } from '../../src/components/TodaysTalk';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, fontSize, spacing } from '../../src/theme';
@@ -33,6 +34,7 @@ export default function TalkFormScreen() {
   // (a new one for each entry made with Submit another).
   const clientId = useRef(newId());
   const projects = useProjectOptions();
+  const snackbar = useSnackbar();
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [date, setDate] = useState(today());
@@ -56,6 +58,17 @@ export default function TalkFormScreen() {
   }, [projects.options, projectId]);
 
   const subject = topic === OTHER ? otherTopic.trim() : (topic ?? '');
+
+  /** Today's talk fills the topic and the points covered; the rest is the supervisor's. */
+  const takeTalk = (d: ToolboxTalkDraftDto) => {
+    if ((TOOLBOX_TOPICS as readonly string[]).includes(d.topic)) setTopic(d.topic);
+    else {
+      setTopic(OTHER);
+      setOtherTopic(d.topic);
+    }
+    setNotes(talkText(d, 'en').slice(0, 2000));
+    snackbar.show(t('Topic and points filled in'));
+  };
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -131,6 +144,7 @@ export default function TalkFormScreen() {
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
+      {projectId ? <TodaysTalk projectId={projectId} onUse={takeTalk} /> : null}
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />

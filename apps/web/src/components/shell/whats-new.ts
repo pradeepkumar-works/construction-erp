@@ -9,6 +9,14 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-07-todays-talk',
+    date: '2027-07-19',
+    title: "Today's toolbox talk, in Hindi",
+    points: [
+      'Toolbox talks now offer Today’s talk: five minutes in Hindi and English written from today’s permits, the project’s recent incidents and the work going on, ready to read out and record. On the phone it sits at the top of the talk form.',
+    ],
+  },
+  {
     id: '2027-07-past-openings',
     date: '2027-07-12',
     title: 'Where L1 landed on past openings',

@@ -375,6 +375,7 @@ import type {
   SorItemListDto,
   TenderDetailDto,
   PastOpeningsDto,
+  ToolboxTalkDraftDto,
   TenderListDto,
   ScEnquiryDetailDto,
   ScEnquiryListDto,
@@ -3552,6 +3553,9 @@ export const useSafetyIncident = (id: string | undefined) =>
 export const useSafetyIncidentHistory = (id: string | undefined) =>
   useQuery({ queryKey: ['safety', 'incident-history', id], queryFn: async () => (await api.get<AuditLogDto[]>(`/safety/incidents/${id}/history`)).data, enabled: !!id });
 
+/** Today's toolbox talk for a project, in Hindi and English (intelligence quick win Q8); nothing is saved. */
+export const useTodaysTalk = (projectId?: string | null) =>
+  useQuery({ queryKey: ['safety', 'talk-today', projectId], queryFn: async () => (await api.get<ToolboxTalkDraftDto>('/safety/talks/today', { params: { projectId } })).data, enabled: !!projectId });
 export const useToolboxTalks = (filters?: TalkFilters) =>
   useQuery({
     queryKey: ['safety', 'talks', clean(filters)],

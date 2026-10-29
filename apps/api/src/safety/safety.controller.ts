@@ -11,6 +11,7 @@ import {
   ListIncidentsQuery,
   ListPermitsQuery,
   ListTalksQuery,
+  TalkTodayQuery,
   RejectPermitDto,
   SafetySummaryQuery,
   UpdateIncidentDto,
@@ -88,6 +89,12 @@ export class SafetyController {
   @Get('talks')
   listTalks(@CurrentUser() user: RequestUser, @Query() q: ListTalksQuery) {
     return this.safety.listTalks(user, q);
+  }
+
+  @ApiOperation({ summary: "Today's toolbox talk", description: 'A five-minute talk in Hindi and English from the day\'s activities, the permits for today and the project\'s recent incidents. Nothing is saved.' })
+  @Get('talks/today')
+  talkForToday(@CurrentUser() user: RequestUser, @Query() q: TalkTodayQuery) {
+    return this.safety.talkForToday(user, q.projectId);
   }
 
   @Get('talks/:id')

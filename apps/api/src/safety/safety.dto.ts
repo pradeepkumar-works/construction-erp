@@ -81,6 +81,10 @@ export class ListTalksQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsDateString() to?: string;
 }
 
+export class TalkTodayQuery {
+  @ApiProperty() @IsUUID() projectId: string;
+}
+
 /* ---------- permits to work ---------- */
 
 export class CreatePermitDto {

@@ -4,6 +4,10 @@ import {
   INJURY_TYPES,
   LOST_TIME_TYPES,
   PERMIT_MAX_DAYS,
+  TALK_INCIDENT_DAYS,
+  TALK_RECENT_DAYS,
+  toolboxTalk,
+  type ToolboxTalkDraftDto,
   SAFETY_INCIDENT_TYPES,
   SAFETY_INCIDENT_TYPE_LABELS,
   WORK_PERMIT_TYPE_LABELS,
@@ -410,6 +414,57 @@ export class SafetyService {
     await this.prisma.toolboxTalk.delete({ where: { id } });
     await this.audit.log(user, 'TOOLBOX_TALK', id, 'DELETED', row.talkNo);
     return { ok: true };
+  }
+
+  /**
+   * Today's toolbox talk (intelligence quick win Q8), for anyone who can open the project: written by the pure
+   * `toolboxTalk` (`@erp/shared/toolbox-talk.ts`) from the activities planned for today or reported in the last
+   * `TALK_RECENT_DAYS` days, the permits requested or issued for today and the project's incidents of the last
+   * `TALK_INCIDENT_DAYS` days. Nothing is saved: the talk is recorded through `createTalk` as ever.
+   */
+  async talkForToday(user: RequestUser, projectId: string): Promise<ToolboxTalkDraftDto> {
+    await this.access.assertCanAccessProject(user, projectId);
+    const today = todayIn();
+    const start = parseDate(today);
+    const end = new Date(start.getTime() + 86_400_000);
+    const back = (days: number) => new Date(start.getTime() - days * 86_400_000);
+    const where = { organizationId: user.organizationId, projectId };
+    const [project, planned, reported, permits, incidents] = await Promise.all([
+      this.prisma.project.findFirst({ where: { id: projectId, organizationId: user.organizationId }, select: { name: true } }),
+      this.prisma.activity.findMany({
+        where: { ...where, plannedStart: { lte: start }, plannedEnd: { gte: start }, subActivities: { none: {} } },
+        orderBy: { sortOrder: 'asc' },
+        select: { name: true },
+        take: 20,
+      }),
+      this.prisma.progressEntry.findMany({
+        where: { ...where, date: { gte: back(TALK_RECENT_DAYS), lte: start }, status: { not: 'REJECTED' } },
+        orderBy: { date: 'desc' },
+        select: { activity: { select: { name: true } } },
+        take: 50,
+      }),
+      this.prisma.workPermit.findMany({
+        where: { ...where, status: { in: ['REQUESTED', 'ISSUED'] }, validFrom: { lt: end }, validTo: { gte: start } },
+        orderBy: { validFrom: 'asc' },
+        select: { permitNo: true, type: true, location: true, description: true },
+      }),
+      this.prisma.safetyIncident.findMany({
+        where: { ...where, date: { gte: back(TALK_INCIDENT_DAYS), lte: start } },
+        orderBy: [{ date: 'desc' }, { incidentNo: 'desc' }],
+        select: { incidentNo: true, type: true, date: true, description: true, correctiveAction: true, immediateAction: true },
+        take: 5,
+      }),
+    ]);
+    if (!project) throw new NotFoundException('Project not found');
+    // What was reported lately comes first: it is the work actually going on.
+    const activities = [...new Set([...reported.map((r) => r.activity.name), ...planned.map((a) => a.name)])].slice(0, 12);
+    const talk = toolboxTalk({
+      date: today,
+      activities,
+      permits,
+      incidents: incidents.map((i) => ({ incidentNo: i.incidentNo, type: i.type, date: dateOnly(i.date)!, description: i.description, correctiveAction: i.correctiveAction ?? i.immediateAction })),
+    });
+    return { projectId, projectName: project.name, ...talk };
   }
 
   /* ---------- permits to work ---------- */

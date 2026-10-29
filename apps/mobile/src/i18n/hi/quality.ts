@@ -378,6 +378,12 @@ export const QUALITY: Record<string, string> = {
   'Heat stress, water and rest': 'गर्मी से थकान, पानी और आराम',
   'First aid and emergency numbers': 'प्राथमिक उपचार और इमरजेंसी नंबर',
   'Scaffold safety': 'पाड़ (स्कैफ़ोल्ड) की सुरक्षा',
+  "Today's talk": 'आज की टूलबॉक्स टॉक',
+  "Loading today's talk": 'आज की टॉक आ रही है',
+  'Read this out before work, about {n} minutes.': 'काम से पहले इसे पढ़कर सुनाएँ, लगभग {n} मिनट।',
+  'Language of the talk': 'टॉक की भाषा',
+  'Use this talk': 'यही टॉक लें',
+  'Topic and points filled in': 'विषय और मुख्य बातें भर दी गईं',
   'Crane and lifting operations': 'क्रेन और लिफ़्टिंग का काम',
 
   // Snags and defects
