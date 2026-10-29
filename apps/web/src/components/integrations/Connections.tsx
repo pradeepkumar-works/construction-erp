@@ -8,7 +8,7 @@ import { AppTag, type TagTone } from '@/components/common/AppTag';
 import type { ConnectionHealth, FeedAuth, FeedPollResultDto, IntegrationConnectionDto, IntegrationKind, IntegrationSecretDto } from '@erp/shared';
 import { CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
-import { useConnectorAgents, useIntegrationAction, useIntegrationConnections } from '@/lib/queries';
+import { useConnectorAgents, useIntegrationAction, useIntegrationConnections, useStockItems } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -28,6 +28,8 @@ interface Values {
   tokenUrl?: string;
   clientId?: string;
   scope?: string;
+  /** A fuel dispenser (item 147): the fuel it pours */
+  itemId?: string;
 }
 
 const CREDENTIAL_LABEL: Record<FeedAuth, string> = { BEARER: 'API key', BASIC: 'User name and password, as user:password', OAUTH: 'Client secret' };
@@ -35,7 +37,8 @@ const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
 
 /** What a connection's messages carry, for its web address. */
 const HOOK_BODY: Partial<Record<IntegrationKind, string>> = {
-  GPS_TRACKER: "JSON for each reading: deviceId (or imei), time, latitude and longitude, ignition, and engineHours where the tracker reads the hour meter. Traccar's event forwarding works as it is.",
+  GPS_TRACKER: "JSON for each reading: deviceId (or imei), time, latitude and longitude, ignition, engineHours where the tracker reads the hour meter, and fuelPct or fuelLitres where it reads the tank. Traccar's event forwarding works as it is.",
+  FUEL_DISPENSER: "JSON for each fill: transactionId, time, litres, the machine's tag (RFID, code or number plate) and its meter. Match each tag to a machine under Devices.",
 };
 
 function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolean; onClose: () => void; connection: IntegrationConnectionDto | null; onCreated: (r: IntegrationSecretDto) => void }) {
@@ -46,6 +49,8 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
   const kind = Form.useWatch('kind', form) ?? connection?.kind;
   const viaConnector = kind ? INTEGRATION_KIND_INFO[kind].transport === 'CONNECTOR' : false;
   const polled = kind ? INTEGRATION_KIND_INFO[kind].transport === 'POLL' : false;
+  const dispenser = kind === 'FUEL_DISPENSER';
+  const fuels = useStockItems({ fuel: true, pageSize: 100 }, open && dispenser);
   const auth = (Form.useWatch('auth', form) ?? str(connection?.config.auth) ?? 'BEARER') as FeedAuth;
   const liveAgents = (agents.data ?? []).filter((a) => a.state !== 'REVOKED');
   return (
@@ -60,7 +65,11 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
       okText={connection ? 'Save' : 'Connect'}
       onSubmit={async (v) => {
         const credential = v.credential?.trim() || undefined;
-        const config = polled ? { url: v.url?.trim(), auth: v.auth ?? 'BEARER', ...(v.auth === 'OAUTH' ? { tokenUrl: v.tokenUrl?.trim(), clientId: v.clientId?.trim(), scope: v.scope?.trim() || undefined } : {}) } : undefined;
+        const config = polled
+          ? { url: v.url?.trim(), auth: v.auth ?? 'BEARER', ...(v.auth === 'OAUTH' ? { tokenUrl: v.tokenUrl?.trim(), clientId: v.clientId?.trim(), scope: v.scope?.trim() || undefined } : {}) }
+          : dispenser
+            ? { itemId: v.itemId }
+            : undefined;
         if (connection) {
           await act.mutateAsync({
             method: 'patch',
@@ -87,6 +96,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                 tokenUrl: str(connection.config.tokenUrl),
                 clientId: str(connection.config.clientId),
                 scope: str(connection.config.scope),
+                itemId: str(connection.config.itemId),
               }
             : { kind: 'GENERIC_WEBHOOK', auth: 'BEARER' }
         }
@@ -98,10 +108,26 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Name the connection, for example Fleet trackers' }]}>
             <Input maxLength={80} placeholder="Fleet trackers" />
           </Form.Item>
-          <Form.Item name="projectId" label="Site (optional)" extra="Where its readings belong when they do not say">
-            <ProjectSelect allowClear placeholder="Any site" style={{ width: '100%' }} aria-label="Site" />
-          </Form.Item>
+          {dispenser ? (
+            <Form.Item name="projectId" label="Site" extra="Its fills are issued from this site's store" rules={[{ required: true, message: 'Choose the site whose store the dispenser pours from' }]}>
+              <ProjectSelect placeholder="Choose the site" style={{ width: '100%' }} aria-label="Site" />
+            </Form.Item>
+          ) : (
+            <Form.Item name="projectId" label="Site (optional)" extra="Where its readings belong when they do not say">
+              <ProjectSelect allowClear placeholder="Any site" style={{ width: '100%' }} aria-label="Site" />
+            </Form.Item>
+          )}
         </FormGrid>
+        {dispenser && (
+          <Form.Item
+            name="itemId"
+            label="Fuel it pours"
+            extra={fuels.data && !fuels.data.items.length ? 'Mark diesel as fuel in Items first' : 'Each fill is a fuel issue slip of this item'}
+            rules={[{ required: true, message: 'Choose the fuel the dispenser pours' }]}
+          >
+            <Select loading={fuels.isLoading} placeholder="Choose the fuel" options={(fuels.data?.items ?? []).map((i) => ({ value: i.id, label: `${i.name} (${i.unit})` }))} />
+          </Form.Item>
+        )}
         {viaConnector && (
           <Form.Item
             name="agentId"

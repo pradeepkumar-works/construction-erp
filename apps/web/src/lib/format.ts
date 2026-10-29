@@ -85,6 +85,13 @@ export function formatDateTime(value: string | null | undefined): string {
   return d.isValid() ? d.format('DD MMM YYYY, HH:mm') : value;
 }
 
+/** The time of day only, 24-hour: "07:45". */
+export function formatTime(value: string | null | undefined): string {
+  if (!value) return '-';
+  const d = dayjs(value);
+  return d.isValid() ? d.format('HH:mm') : value;
+}
+
 /** A label inside a sentence: "RA Bill" reads "RA bill", "Measurement (MB)" reads "measurement (MB)"; abbreviations keep their capitals. */
 export function inSentence(label: string): string {
   return label

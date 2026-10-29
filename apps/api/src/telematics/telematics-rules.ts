@@ -3,7 +3,7 @@
  * `src/scripts/telematics-test.ts`: reading a GPS tracker's message and a maker's fleet feed (AEMP 2.0, ISO 15143-3),
  * checking a feed's settings, and rolling a machine's readings up into its day.
  */
-import { FEED_AUTHS, distanceMetres, type FeedAuth, type MachineFeedConfig } from '@erp/shared';
+import { FEED_AUTHS, FUEL_EVENT_MIN_LITRES, distanceMetres, type FeedAuth, type FuelEventKind, type MachineFeedConfig } from '@erp/shared';
 
 /** One reading, whichever way it came: the device it is from and what it says. */
 export interface MachineReadingIn {
@@ -120,9 +120,10 @@ export function readTracker(payload: unknown, receivedAt: Date): ReadResult {
         at,
         hourMeter: ms === null ? null : Math.round((ms / 3_600_000) * 100) / 100,
         idleMeter: null,
+        // Traccar's fuel is the sensor's level as the device reports it: litres where it is calibrated, else %.
         fuelPct: null,
-        fuelLitres: null,
-        fuelUsed: null,
+        fuelLitres: num(field(attrs, 'fuel', 'fuelLevel')),
+        fuelUsed: num(field(attrs, 'fuelUsed', 'fuelConsumption')),
         lat: num(field(pos, 'latitude')),
         lng: num(field(pos, 'longitude')),
         engineOn: bool(field(attrs, 'ignition')),
@@ -289,9 +290,24 @@ export interface DayState {
   outsideReadings: number;
   lastLat: number | null;
   lastLng: number | null;
+  /** The tank (item 147): litres at the day's start and its last reading, when that was, and its refills and drains */
+  fuelStart: number | null;
+  fuelEnd: number | null;
+  fuelAt: Date | null;
+  fuelEvents: FuelEvent[];
 }
 
-export type ReadingFigures = Pick<MachineReadingIn, 'at' | 'hourMeter' | 'idleMeter' | 'fuelUsed' | 'lat' | 'lng' | 'engineOn'>;
+/** A run of readings over which the tank rose (refill) or fell (drain), from the reading before the run to its last. */
+export interface FuelEvent {
+  kind: FuelEventKind;
+  startAt: Date;
+  endAt: Date;
+  before: number;
+  after: number;
+  engineOn: boolean | null;
+}
+
+export type ReadingFigures = Pick<MachineReadingIn, 'at' | 'hourMeter' | 'idleMeter' | 'fuelUsed' | 'fuelPct' | 'fuelLitres' | 'lat' | 'lng' | 'engineOn'>;
 
 /** The day before's closing figures, so the day's hours start from where the meter stood at midnight. */
 export interface Carry {
@@ -299,6 +315,10 @@ export interface Carry {
   meterAt: Date | null;
   idle: number | null;
   fuelUsed: number | null;
+  /** Litres in the tank at the last reading of the day before, when, and whether the engine was running */
+  fuel?: number | null;
+  fuelAt?: Date | null;
+  engineOn?: boolean | null;
 }
 
 export interface Site {
@@ -308,6 +328,37 @@ export interface Site {
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
+/** The smallest move of the tank between two readings that is a fill or a drain going on, not the sensor's slosh. */
+export const FUEL_STEP_MIN_LITRES = 5;
+/** A fall faster than this with the engine running is no engine burning it: it counts as a drain too. */
+export const FUEL_FAST_FALL_LPH = 80;
+
+/** Litres in the tank by a reading: its litres, else its % of the tank's size when that is known. */
+export function tankLitres(r: Pick<ReadingFigures, 'fuelPct' | 'fuelLitres'>, tank: number | null): number | null {
+  if (r.fuelLitres !== null && r.fuelLitres >= 0) return r1(r.fuelLitres);
+  if (r.fuelPct !== null && tank) return r1((r.fuelPct * tank) / 100);
+  return null;
+}
+
+/**
+ * The tank moved from one reading to the next: a rise of at least the step (FUEL_STEP_MIN_LITRES, or 3% of the tank) is
+ * a refill; a fall of as much is a drain when the engine was off at both readings and did not run between them (its
+ * hour meter or ignition time did not move), or when it fell faster than an engine burns. Anything less is slosh or
+ * burning, and none of the events' business.
+ */
+export function fuelStepKind(before: number, after: number, hours: number, engineBefore: boolean | null, engineAfter: boolean | null, tank: number | null, ranBetween = false): FuelEventKind | null {
+  const step = Math.max(FUEL_STEP_MIN_LITRES, tank ? tank * 0.03 : 0);
+  const move = after - before;
+  if (move >= step) return 'REFILL';
+  if (-move < step) return null;
+  const off = engineBefore === false && engineAfter !== true && !ranBetween;
+  return off || (hours > 0 && -move / hours > FUEL_FAST_FALL_LPH) ? 'DRAIN' : null;
+}
+
+/** A refill or drain big enough to count (FUEL_EVENT_MIN_LITRES). */
+export const fuelEventCounts = (e: FuelEvent) => Math.abs(e.after - e.before) >= FUEL_EVENT_MIN_LITRES;
 
 /** A cumulative figure moved on: only forward, never by more than the time allows when that is given. */
 function forward(end: number | null, v: number | null, maxStep: number | null): { ok: boolean; end: number | null } {
@@ -319,12 +370,20 @@ function forward(end: number | null, v: number | null, maxStep: number | null): 
   return { ok: true, end: Math.max(end, v) };
 }
 
+/** What a day is folded against: its date, the site it is held to, the day before's close, and the tank's size in litres. */
+export interface DayContext {
+  date: string;
+  site: Site | null;
+  carry: Carry | null;
+  tank?: number | null;
+}
+
 /**
  * One more reading for a machine's day, in time order. The hour meter only goes forward and never by more than the
  * time since it was last read (a reset or a wrong reading is left out and counted); ignition on at two readings close
  * together counts as running between them; the position is held to the site's radius.
  */
-export function foldReading(day: DayState | null, r: ReadingFigures, ctx: { date: string; site: Site | null; carry: Carry | null }): DayState {
+export function foldReading(day: DayState | null, r: ReadingFigures, ctx: DayContext): DayState {
   const c = ctx.carry;
   const d: DayState = day
     ? { ...day }
@@ -347,7 +406,14 @@ export function foldReading(day: DayState | null, r: ReadingFigures, ctx: { date
         outsideReadings: 0,
         lastLat: null,
         lastLng: null,
+        fuelStart: c?.fuel ?? null,
+        fuelEnd: c?.fuel ?? null,
+        fuelAt: c?.fuel !== null && c?.fuel !== undefined ? (c.fuelAt ?? null) : null,
+        fuelEvents: [],
       };
+  const engineBefore = day ? day.lastEngineOn : (c?.engineOn ?? null);
+  const meterBefore = d.meterEnd;
+  const onBefore = d.onSeconds;
   const gapS = Math.max(0, (r.at.getTime() - d.lastAt.getTime()) / 1000);
   if (day && d.lastEngineOn === true && gapS <= MAX_ON_GAP_S) d.onSeconds += Math.round(gapS);
   if (r.engineOn !== null) d.lastEngineOn = r.engineOn;
@@ -371,6 +437,28 @@ export function foldReading(day: DayState | null, r: ReadingFigures, ctx: { date
   if (fuel.ok && r.fuelUsed !== null) {
     if (d.fuelUsedStart === null) d.fuelUsedStart = r.fuelUsed;
     d.fuelUsedEnd = fuel.end;
+  }
+  const level = tankLitres(r, ctx.tank ?? null);
+  if (level !== null) {
+    if (d.fuelEnd !== null && d.fuelAt && r.at >= d.fuelAt) {
+      const hours = (r.at.getTime() - d.fuelAt.getTime()) / 3_600_000;
+      const ran = d.onSeconds > onBefore || (meterBefore !== null && d.meterEnd !== null && d.meterEnd - meterBefore >= 0.1);
+      const kind = fuelStepKind(d.fuelEnd, level, hours, engineBefore, r.engineOn, ctx.tank ?? null, ran);
+      if (kind) {
+        const events = [...d.fuelEvents];
+        const last = events[events.length - 1];
+        if (last && last.kind === kind && last.endAt.getTime() === d.fuelAt.getTime()) events[events.length - 1] = { ...last, endAt: r.at, after: level, engineOn: last.engineOn === true || r.engineOn === true ? true : last.engineOn };
+        else {
+          // A run that ended too small to count was slosh; only the latest may still grow.
+          if (last && !fuelEventCounts(last)) events.pop();
+          events.push({ kind, startAt: d.fuelAt, endAt: r.at, before: d.fuelEnd, after: level, engineOn: engineBefore === true || r.engineOn === true ? true : engineBefore === false ? false : null });
+        }
+        d.fuelEvents = events;
+      }
+    }
+    if (d.fuelStart === null) d.fuelStart = level;
+    d.fuelEnd = level;
+    d.fuelAt = r.at;
   }
   if (r.lat !== null && r.lng !== null) {
     d.lastLat = r.lat;
@@ -406,10 +494,27 @@ export const dayRowData = (s: DayState) => ({
   outsideReadings: s.outsideReadings,
   lastLat: s.lastLat,
   lastLng: s.lastLng,
+  fuelStart: s.fuelStart,
+  fuelEnd: s.fuelEnd,
+  fuelAt: s.fuelAt,
+  fuelEvents: s.fuelEvents.map((e) => ({ ...e, startAt: e.startAt.toISOString(), endAt: e.endAt.toISOString() })),
 });
 
+/** A day's refills and drains as kept (JSON), read back. */
+export function fuelEventsOf(raw: unknown): FuelEvent[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((e) => {
+    const x = e as Record<string, unknown>;
+    if ((x.kind !== 'REFILL' && x.kind !== 'DRAIN') || typeof x.before !== 'number' || typeof x.after !== 'number') return [];
+    const startAt = new Date(String(x.startAt));
+    const endAt = new Date(String(x.endAt));
+    if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) return [];
+    return [{ kind: x.kind, startAt, endAt, before: x.before, after: x.after, engineOn: typeof x.engineOn === 'boolean' ? x.engineOn : null }];
+  });
+}
+
 /** A whole day from its readings, the same as folding them one by one in time order. */
-export function rollUpDay(readings: ReadingFigures[], ctx: { date: string; site: Site | null; carry: Carry | null }): DayState | null {
+export function rollUpDay(readings: ReadingFigures[], ctx: DayContext): DayState | null {
   return [...readings].sort((a, b) => a.at.getTime() - b.at.getTime()).reduce<DayState | null>((d, r) => foldReading(d, r, ctx), null);
 }
 
@@ -420,8 +525,27 @@ export function engineHoursOf(d: Pick<DayState, 'meterStart' | 'meterEnd' | 'onS
 }
 
 export const idleHoursOf = (d: Pick<DayState, 'idleStart' | 'idleEnd'>) => (d.idleStart !== null && d.idleEnd !== null ? r2(Math.max(0, d.idleEnd - d.idleStart)) : null);
-export const fuelUsedOf = (d: Pick<DayState, 'fuelUsedStart' | 'fuelUsedEnd'>) =>
-  d.fuelUsedStart !== null && d.fuelUsedEnd !== null ? Math.round(Math.max(0, d.fuelUsedEnd - d.fuelUsedStart) * 1000) / 1000 : null;
+/** Litres the tank gained in refills and lost in drains that count, over the day. */
+export function fuelMovesOf(d: Pick<DayState, 'fuelEvents'>): { filled: number; drained: number } {
+  let filled = 0;
+  let drained = 0;
+  for (const e of d.fuelEvents.filter(fuelEventCounts)) {
+    if (e.kind === 'REFILL') filled += e.after - e.before;
+    else drained += e.before - e.after;
+  }
+  return { filled: r1(filled), drained: r1(drained) };
+}
+
+/**
+ * Fuel burnt on the day: the maker's fuel-used counter where it sends one, else the tank: where it stood at the start,
+ * plus what was filled, less what was drained and what was left.
+ */
+export function fuelUsedOf(d: Pick<DayState, 'fuelUsedStart' | 'fuelUsedEnd'> & Partial<Pick<DayState, 'fuelStart' | 'fuelEnd' | 'fuelEvents'>>): number | null {
+  if (d.fuelUsedStart !== null && d.fuelUsedEnd !== null) return Math.round(Math.max(0, d.fuelUsedEnd - d.fuelUsedStart) * 1000) / 1000;
+  if (d.fuelStart === null || d.fuelStart === undefined || d.fuelEnd === null || d.fuelEnd === undefined) return null;
+  const m = fuelMovesOf({ fuelEvents: d.fuelEvents ?? [] });
+  return r1(Math.max(0, d.fuelStart + m.filled - m.drained - d.fuelEnd));
+}
 
 /* ---------- days in a time zone ---------- */
 
@@ -452,4 +576,53 @@ export function feedHttpProblem(status: number, what = 'feed'): string {
   if (status === 429) return `The ${what} asked Nirmaan to slow down (429); it is read again in an hour`;
   if (status >= 500) return `The ${what} is down at the maker's end (${status}); it is read again in an hour`;
   return `The ${what} answered ${status}; check its address`;
+}
+
+/* ---------- a fuel dispenser's fill (item 147) ---------- */
+
+/** One fill a dispenser sent: its own id, the machine's tag, when, how much and the machine's meter. */
+export interface DispenseIn {
+  externalId: string;
+  tag: string;
+  tagLabel: string | null;
+  at: Date;
+  litres: number;
+  meter: number | null;
+}
+
+/** A fill as big as a tanker's compartment is no machine's: refused above this many litres. */
+export const DISPENSE_MAX_LITRES = 5000;
+/** A dispenser that was offline sends its fills later; older than this they are refused. */
+const DISPENSE_MAX_AGE_MS = 30 * 86_400_000;
+
+/**
+ * A dispenser's or bowser's message: flat JSON with its transaction id, the time, the litres (or gallons with a unit),
+ * the machine's tag (an RFID, the machine's code or its number plate) and its hour meter or odometer. A message with no
+ * id is known by its tag and time.
+ */
+export function readDispense(payload: unknown, receivedAt: Date): { dispense: DispenseIn; problem?: undefined } | { dispense?: undefined; problem: string } {
+  if (Array.isArray(payload)) return { problem: 'Send one fill in each message, not a list' };
+  if (!isObj(payload)) return { problem: 'The message is not a JSON object' };
+  const tag = text(field(payload, 'tag', 'rfid', 'tagId', 'vehicle', 'vehicleNo', 'vehicleNumber', 'registrationNo', 'equipment', 'equipmentCode', 'machine', 'assetId', 'asset'));
+  if (!tag) return { problem: "No tag in the message: send the machine's tag, code or number plate as tag" };
+  const rawTime = field(payload, 'time', 'timestamp', 'at', 'dateTime', 'datetime', 'endTime', 'end', 'ts');
+  const at = rawTime === undefined ? receivedAt : timeOf(rawTime);
+  if (!at) return { problem: `The time ${JSON.stringify(rawTime).slice(0, 40)} could not be read; send ISO time or seconds since 1970` };
+  if (receivedAt.getTime() - at.getTime() > DISPENSE_MAX_AGE_MS) return { problem: `The fill is from ${at.toISOString().slice(0, 10)}, more than 30 days ago; record it by hand as a fuel issue` };
+  if (at.getTime() - receivedAt.getTime() > MAX_AHEAD_MS) return { problem: "The fill's time is ahead of the clock; check the dispenser's clock" };
+  const amount = litres(num(field(payload, 'litres', 'liters', 'quantity', 'qty', 'volume', 'amount')), field(payload, 'unit', 'volumeUnit', 'uom'));
+  if (amount === null) return { problem: 'No litres in the message: send the quantity filled as litres' };
+  if (amount <= 0) return { problem: 'The litres filled must be more than 0' };
+  if (amount > DISPENSE_MAX_LITRES) return { problem: `${amount} litres is more than a machine's tank; check the dispenser's reading` };
+  const meter = num(field(payload, 'meter', 'meterReading', 'hourMeter', 'engineHours', 'odometer', 'km'));
+  return {
+    dispense: {
+      externalId: text(field(payload, 'transactionId', 'txnId', 'transactionNo', 'fillId', 'id'), 100) ?? `${tag}@${at.toISOString()}`,
+      tag,
+      tagLabel: text(field(payload, 'tagLabel', 'vehicleName', 'equipmentName', 'name')),
+      at,
+      litres: Math.round(amount * 1000) / 1000,
+      meter: meter !== null && meter >= 0 ? meter : null,
+    },
+  };
 }

@@ -40,6 +40,8 @@ export async function seedTelematics(prisma: PrismaClient, organizationId: strin
         hourMeter: Math.round((start + run) * 100) / 100,
         idleMeter: Math.round((idle + run * idleShare) * 100) / 100,
         fuelUsed: Math.round((fuel + run * 14.5) * 1000) / 1000,
+        fuelPct: null,
+        fuelLitres: null,
         lat: Math.round((site.lat + off + Math.sin(h) * 0.002) * 1e6) / 1e6,
         lng: Math.round((site.lng + Math.cos(h) * 0.002) * 1e6) / 1e6,
         engineOn: h < hours,

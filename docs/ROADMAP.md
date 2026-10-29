@@ -881,7 +881,11 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
      web addresses (Traccar too) to each machine's day (engine hours from the hour meter, idle, fuel used, how far from
      its site); Machinery › Engine hours beside the logs, a new log filled from the tracker, hire bills checked against
      the engine's hours and service due on the real meter. ARCHITECTURE "Machine telematics".
-147. **Fuel sensors and dispensers** (M): refills with no slip, drains with the engine off, litres per hour against the norm.
+147. ~~**Fuel sensors and dispensers** (M).~~ Done: a tracker's tank level (% through the machine's tank size, or litres)
+     to each machine's day (refills, drains with the engine off, fuel burnt), set against the day's fuel slips on the Fuel
+     tab and Engine hours, litres an hour against the norm (the FUEL_NORM check reads the sensor first), FUEL_TANK on the
+     watch list, and a site's fuel dispenser posting each fill, made a fuel slip through `StockService.fuelIssue` once its
+     tag is matched. ARCHITECTURE "Fuel sensors and dispensers".
 148. **Weighbridge** (M): the indicator read by the Connector, a GRN drafted at the net weight, short supply checked.
 149. **Batching plant controller** (M): batch records to the RMC batches' actual quantities.
 150. **Biometric device commands** (S): users added and removed and the clock set over ADMS.

@@ -111,6 +111,7 @@ export class MachineryService {
       fuelNorm: dec(r.fuelNorm),
       fuelNormUnit: r.fuelNormUnit,
       fuelTolerancePct: dec(r.fuelTolerancePct),
+      fuelTankLitres: dec(r.fuelTankLitres),
       // Machine finance (v6 item 108): only those who keep the loans see that a machine is financed.
       loan: canManageMachineLoans(user.roleKey) && r.loans[0] ? { id: r.loans[0].id, lenderName: r.loans[0].lenderName } : null,
       createdAt: iso(r.createdAt)!,
@@ -191,6 +192,11 @@ export class MachineryService {
       const t = decimalOrNull(dto.fuelTolerancePct);
       if (t && (t.lte(0) || t.gt(100))) throw new BadRequestException('The tolerance is a % from 1 to 100');
       data.fuelTolerancePct = t;
+    }
+    if (dto.fuelTankLitres !== undefined) {
+      const tank = decimalOrNull(dto.fuelTankLitres);
+      if (tank && (tank.lte(0) || tank.gt(20000))) throw new BadRequestException('The fuel tank holds from 1 to 20,000 litres');
+      data.fuelTankLitres = tank;
     }
     if ((dto.fuelNorm ?? null) !== null && dto.fuelNormUnit === null) throw new BadRequestException('Say whether the fuel norm is litres an hour or km a litre');
     return data;

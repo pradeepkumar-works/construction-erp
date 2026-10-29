@@ -16,6 +16,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { Section, SectionStack } from '@/components/common/Section';
 import { FuelIssueModal } from './FuelIssueModal';
+import { FuelTanks } from './FuelTanks';
 
 const RED = themeColor('colorErrorText');
 const q = (v: string, unit: string, muted = true) =>
@@ -29,7 +30,8 @@ const q = (v: string, unit: string, muted = true) =>
 
 /**
  * Fuel (v5 item 93): each site's fuel on a day (opening, received, into machines, other issues, closing against its
- * minimum level) and the day's fuel issues into machines, with Fuel issue for the store.
+ * minimum level) and the day's fuel issues into machines, with Fuel issue for the store; where trackers read the tanks,
+ * each machine's tank against its slips and the dispenser's fills waiting (item 147).
  */
 export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
   const [scope, setScope] = useProjectScope();
@@ -173,6 +175,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
               locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No fuel went into machines on this day" /> }}
             />
           </Section>
+          <FuelTanks date={data.date} projectId={projectId} canIssue={data.canIssue} />
           <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 12, marginBottom: 0 }}>
             A fuel issue names the machine and its meter, so each machine&apos;s litres an hour can be checked against its norm (set on the machine in
             Equipment). The watch list flags a machine whose recent logs are off the norm by more than its tolerance.

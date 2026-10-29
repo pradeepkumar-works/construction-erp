@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-08-fuel-sensors',
+    date: '2027-08-16',
+    title: 'Fuel sensors and dispensers',
+    points: [
+      'Where a machine’s tracker reads its fuel tank, the Fuel tab shows each machine’s tank for the day: what was filled against the day’s slips, what was drained with the engine off, and the litres an hour it burnt against its norm.',
+      'A site’s fuel dispenser can post each fill to Nirmaan (Admin, Connections). A fill into a machine whose tag is matched becomes its fuel slip by itself; the watch list flags fills with no slip, slips that never reached the tank, and drains.',
+    ],
+  },
+  {
     id: '2027-08-engine-hours',
     date: '2027-08-09',
     title: 'Engine hours from trackers and makers’ feeds',

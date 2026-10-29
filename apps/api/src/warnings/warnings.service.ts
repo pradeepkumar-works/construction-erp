@@ -39,6 +39,7 @@ import {
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
+import { TelematicsService } from '../telematics/telematics.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { dateOnly, parseDate } from '../common/serialize';
 import { PrismaService } from '../prisma/prisma.service';
@@ -107,6 +108,8 @@ import {
   emiOverdue,
   fuelNormCheck,
   fuelStep,
+  fuelTankCheck,
+  FUEL_TANK_DAYS,
   leadDays,
   machineTrend,
   materialOveruse,
@@ -184,6 +187,7 @@ export class WarningsService {
     private cost: CostService,
     private quality: QualityService,
     private approvalRights: ApprovalRightsService,
+    private telematics: TelematicsService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -329,6 +333,7 @@ export class WarningsService {
         if (k === 'MARGIN_FADE') return today === todayIn() ? this.marginFades(user, active) : Promise.resolve([]);
         if (k === 'CUBE_7DAY_LOW') return today === todayIn() ? this.cubesEarly(user, today) : Promise.resolve([]);
         if (k === 'PURCHASE_CONTROL') return this.purchaseControls(user, projects, today);
+        if (k === 'FUEL_TANK') return this.fuelTank(projects, today);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -576,6 +581,12 @@ export class WarningsService {
       const k = `${e.equipmentId}|${dateOnly(e.date)}`;
       issued.set(k, (issued.get(k) ?? 0) - e.lines.reduce((s, l) => s + n(l.quantity), 0));
     }
+    // A machine whose tracker reads its tank or fuel counter (item 147): what it burnt comes before what was put in.
+    const burnt = await this.telematics.burntOn([...new Set(logs.map((l) => l.equipmentId))], addDays(today, -120), today);
+    const litresOf = (l: (typeof logs)[number]) => {
+      const k = `${l.equipmentId}|${dateOnly(l.date)}`;
+      return burnt.get(k) ?? (l.dieselLitres ? n(l.dieselLitres) : (issued.get(k) ?? 0));
+    };
     const byMachine = new Map<string, typeof logs>();
     for (const l of logs) byMachine.set(l.equipmentId, [...(byMachine.get(l.equipmentId) ?? []), l]);
     const byId = new Map(projects.map((p) => [p.id, p]));
@@ -592,7 +603,7 @@ export class WarningsService {
             date,
             hoursWorked: n(l.hoursWorked),
             km: l.meterStart && l.meterEnd ? n(l.meterEnd) - n(l.meterStart) : null,
-            litres: l.dieselLitres ? n(l.dieselLitres) : (issued.get(`${id}|${date}`) ?? 0),
+            litres: litresOf(l),
           };
         }),
         norm,
@@ -603,7 +614,8 @@ export class WarningsService {
       if (!f) continue;
       const p = byId.get(ls[ls.length - 1].projectId);
       const usedLogs = ls.filter((l) => dateOnly(l.date)! >= f.from && dateOnly(l.date)! <= f.to);
-      const litres = usedLogs.reduce((s, l) => s + (l.dieselLitres ? n(l.dieselLitres) : (issued.get(`${id}|${dateOnly(l.date)}`) ?? 0)), 0);
+      const litres = usedLogs.reduce((s, l) => s + litresOf(l), 0);
+      const sensed = usedLogs.filter((l) => burnt.has(`${id}|${dateOnly(l.date)}`)).length;
       const use = unit === 'KM_PER_LITRE' ? usedLogs.reduce((s, l) => s + (l.meterStart && l.meterEnd ? n(l.meterEnd) - n(l.meterStart) : 0), 0) : usedLogs.reduce((s, l) => s + n(l.hoursWorked), 0);
       // Litres beyond the norm over these logs, for a machine that burns too much.
       const extraLitres = f.thirsty ? Math.max(0, unit === 'KM_PER_LITRE' ? litres - use / norm : litres - use * norm) : 0;
@@ -616,7 +628,7 @@ export class WarningsService {
         action: f.thirsty ? `Check ${eq.code} for leaks and idling, and match its fuel slips to the log sheets` : `Check ${eq.code}'s ${unit === 'KM_PER_LITRE' ? 'odometer' : 'hour meter'} readings and where its fuel is booked`,
         impact: { text: f.thirsty ? `${qty(extraLitres)} litres over the norm` : `${Math.abs(Math.round(f.deviationPct))}% under the norm`, inr: null, days: null },
         working: [
-          `${f.logs} logs, ${day(f.from)} to ${day(f.to)}: ${qty(litres)} litres for ${qty(use)} ${unit === 'KM_PER_LITRE' ? 'km' : 'hours'}`,
+          `${f.logs} logs, ${day(f.from)} to ${day(f.to)}: ${qty(litres)} litres for ${qty(use)} ${unit === 'KM_PER_LITRE' ? 'km' : 'hours'}${sensed ? ` (${sensed === usedLogs.length ? 'all' : sensed} burnt as the fuel sensor read it)` : ''}`,
           unit === 'KM_PER_LITRE' ? `${qty(use)} km ÷ ${qty(litres)} litres = ${avg}` : `${qty(litres)} litres ÷ ${qty(use)} hours = ${avg}`,
           `Norm ${fuelNormText(norm, unit)}, flagged beyond ±${tolerance}%: this is ${Math.round(f.deviationPct) > 0 ? '+' : ''}${Math.round(f.deviationPct)}%`,
           ...(f.thirsty ? [`At the norm these ${unit === 'KM_PER_LITRE' ? 'km' : 'hours'} need ${qty(litres - extraLitres)} litres: ${qty(extraLitres)} more were used`] : []),
@@ -637,6 +649,64 @@ export class WarningsService {
       });
     }
     return out.sort((a, b) => b.off - a.off).map(({ off: _o, ...w }) => w);
+  }
+
+  /**
+   * Fuel sensors (item 147): each machine's week of its tank against the fuel slips made out to it, through the
+   * telematics service; drains and fills off the slips are pure in `fuelTankCheck`.
+   */
+  private async fuelTank(projects: Project[], today: string): Promise<Draft[]> {
+    const days = await this.telematics.fuelDays(projects.map((p) => p.id), addDays(today, -(FUEL_TANK_DAYS - 1)), today);
+    const byMachine = new Map<string, typeof days>();
+    for (const d of days) byMachine.set(d.equipmentId, [...(byMachine.get(d.equipmentId) ?? []), d]);
+    const byId = new Map(projects.map((p) => [p.id, p]));
+    const out: (Draft & { litres: number })[] = [];
+    for (const [id, ds] of byMachine) {
+      const num = (v: string | null) => (v === null ? null : Number(v));
+      const c = fuelTankCheck(ds.map((d) => ({ date: d.date, drained: Number(d.fuel.drainedLitres), unslipped: num(d.fuel.unslippedLitres), notInTank: num(d.fuel.notInTankLitres) })));
+      if (!c) continue;
+      const m = ds[0];
+      const p = m.projectId ? byId.get(ds[ds.length - 1].projectId ?? m.projectId) : undefined;
+      const what = [
+        c.drained ? `${qty(c.drained)} litres drained with the engine off${c.drains > 1 ? ` on ${c.drains} days` : ''}` : null,
+        c.unslipped ? `${qty(c.unslipped)} litres filled with no slip` : null,
+        c.notInTank ? `${qty(c.notInTank)} litres on slips that never reached the tank` : null,
+      ].filter((x): x is string => !!x);
+      out.push({
+        key: `fuel-tank:${id}:${c.last}:${Math.round(c.litres / 20)}`,
+        kind: 'FUEL_TANK',
+        title: `${m.code} ${m.name}: ${qty(c.litres)} litres of fuel the slips don't account for`,
+        detail: `The fuel sensor on ${m.code} saw ${what.join(', ')} in the last ${FUEL_TANK_DAYS} days (${c.days.map(day).join(', ')}).`,
+        action: `Ask the operator and the store about ${m.code}'s fuel on ${day(c.last)}, and match its slips to the tank`,
+        impact: { text: `${qty(c.litres)} litres`, inr: null, days: null },
+        working: ds
+          .filter((d) => c.days.includes(d.date))
+          .map((d) =>
+            [
+              `${day(d.date)}: filled ${qty(Number(d.fuel.filledLitres))} L against ${qty(Number(d.fuel.slipLitres))} L on slips`,
+              Number(d.fuel.drainedLitres) ? `drained ${qty(Number(d.fuel.drainedLitres))} L` : null,
+              d.fuel.unslippedLitres ? `${qty(Number(d.fuel.unslippedLitres))} L with no slip` : null,
+              d.fuel.notInTankLitres ? `${qty(Number(d.fuel.notInTankLitres))} L not in the tank` : null,
+            ]
+              .filter(Boolean)
+              .join(', '),
+          ),
+        facts: [
+          ...(c.drained ? [{ label: 'Drained', value: `${qty(c.drained)} L` }] : []),
+          ...(c.unslipped ? [{ label: 'Filled, no slip', value: `${qty(c.unslipped)} L` }] : []),
+          ...(c.notInTank ? [{ label: 'Slips, not in tank', value: `${qty(c.notInTank)} L` }] : []),
+          { label: 'Days', value: String(c.days.length) },
+        ],
+        links: [
+          { label: 'Engine hours', href: '/machinery?tab=engine' },
+          { label: 'Fuel position', href: '/machinery?tab=fuel' },
+        ],
+        projectId: p?.id ?? null,
+        projectName: p?.name ?? null,
+        litres: c.litres,
+      });
+    }
+    return out.sort((a, b) => b.litres - a.litres).map(({ litres: _l, ...w }) => w);
   }
 
   /** Machine loans (v6 item 108): an EMI unpaid past its date, most overdue first. Company-wide, as the loans are. */
