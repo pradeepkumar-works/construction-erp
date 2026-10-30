@@ -111,7 +111,7 @@ export class DepartmentHomeService {
       number: o.poNo,
       href: `/purchase-orders/${o.purchaseOrderId}`,
       projectName: o.projectName,
-      title: o.vendorName,
+      title: `${o.vendorName}: ${listed(o.lines.slice(0, 2).map((l) => l.itemName), o.lines.length)}`,
       stage: o.state,
       dueOn: o.deliveryBy,
       daysLate: o.daysLate,
