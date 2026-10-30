@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, Button, Form, Input } from 'antd';
@@ -27,6 +27,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { data: options } = useAuthOptions();
+  // The product page's "See it as …" opens this page with ?demo=pm: fill in that demo account, ready to sign in.
+  const demo = params.get('demo');
+  useEffect(() => {
+    const account = options?.demoLogin && demo ? DEMO_ACCOUNTS.find((a) => a.email === `${demo}@demo.com`) : undefined;
+    if (account) form.setFieldsValue({ email: account.email, password: DEMO_PASSWORD });
+  }, [demo, form, options?.demoLogin]);
 
   const onFinish = async (values: { email: string; password: string }) => {
     setError(null);
