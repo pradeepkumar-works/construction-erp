@@ -4,7 +4,7 @@ import { MANAGEMENT_REPORT_KEYS, type ManagementReportKey } from '@erp/shared';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ManagementService } from './management.service';
 import { ManagementReportsService } from './management-reports.service';
-import { ManagementReportQuery } from './management.dto';
+import { ManagementReportQuery, VerticalQuery } from './management.dto';
 
 @ApiTags('management')
 @ApiBearerAuth()
@@ -18,8 +18,8 @@ export class ManagementController {
       'Management, accounts and project managers (`canSeeManagement`), over the projects the caller sees (stores and RMC plants left out). Work done counts each BOQ item at the larger of its approved progress and measurement; committed is open purchase and work orders not yet billed; each project carries the reasons it needs attention. With the approvals waiting by age, billed, received and cost for 12 months, and the cash forecast’s headline for those who see it.',
   })
   @Get('portfolio')
-  portfolio(@CurrentUser() user: RequestUser) {
-    return this.management.portfolio(user);
+  portfolio(@CurrentUser() user: RequestUser, @Query() q: VerticalQuery) {
+    return this.management.portfolio(user, q.vertical);
   }
 
   @ApiOperation({ summary: "One project's drill-down: its portfolio row, cost by head against budget, 12 months, open bills, approvals waiting, open risks and open orders" })

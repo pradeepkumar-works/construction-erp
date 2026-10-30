@@ -788,6 +788,8 @@ model Organization {
   modulesOff          String[]           @default([])
   /// Correspondence (item 136): which outward letters wait for their signatory's approval before they are numbered
   letterApproval      LetterApprovalRule @default(CONTRACTUAL)
+  /// Item 169: which signed letters then wait for a director's seal at head office (L2) before they are numbered
+  letterSeal          LetterApprovalRule @default(NONE)
   /// Item categories (master codes) whose receipts need the maker's test certificate (item 137 part 2)
   mtcCategories       String[]           @default(["steel", "cement", "pipes-and-fittings"])
   /// Launcher phase 3: Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
@@ -1226,6 +1228,7 @@ model User {
   lettersRecorded       Letter[]                   @relation("LetterRecorder")
   lettersMarkedTo       Letter[]                   @relation("LetterMarkedTo")
   lettersToSign         Letter[]                   @relation("LetterSignatory")
+  lettersSigned         Letter[]                   @relation("LetterSigner")
   lettersClosed         Letter[]                   @relation("LetterCloser")
   letterMarksFrom       LetterMark[]               @relation("LetterMarkFrom")
   letterMarksTo         LetterMark[]               @relation("LetterMarkTo")
@@ -1338,6 +1341,8 @@ model Project {
   typeCode               String?
   /// The type's version the project was made with
   typeVersion            Int?
+  /// Item 167: the business line (vertical) the project belongs to, a code of the `vertical` master; filled from its type
+  verticalCode           String?
   status                 ProjectStatus  @default(PLANNED)
   /// Item rate, lump sum or EPC (item 125): lump sum and EPC projects weigh their components by billing share
   contractModel          ContractModel  @default(ITEM_RATE)
@@ -1543,6 +1548,7 @@ model Project {
   @@unique([organizationId, code])
   @@index([organizationId, status])
   @@index([projectManagerId])
+  @@index([organizationId, verticalCode])
 }
 
 /// A client (employer) the organisation builds for: a government department or a private owner.
@@ -5179,6 +5185,10 @@ model Letter {
   signatoryId       String?
   signatory         User?     @relation("LetterSignatory", fields: [signatoryId], references: [id], onDelete: SetNull)
   sentForApprovalAt DateTime?
+  /// Item 169: the signatory's approval (L1) where the letter then waits for a director's seal at head office (L2)
+  signedAt          DateTime?
+  signedById        String?
+  signedBy          User?     @relation("LetterSigner", fields: [signedById], references: [id], onDelete: SetNull)
   approvedAt        DateTime?
   returnNote        String?
 
@@ -7730,6 +7740,8 @@ model Tender {
   /// The client's name (a copy of the client master's, or free text without one)
   clientName       String?
   location         String?
+  /// Item 167: the business line (vertical) the tender is for, a code of the `vertical` master
+  verticalCode     String?
   bidType          TenderBidType  @default(PERCENTAGE)
   sorBookId        String?
   sorBook          SorBook?       @relation(fields: [sorBookId], references: [id], onDelete: SetNull)

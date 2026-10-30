@@ -7,7 +7,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { MANAGEMENT_REPORTS, MANAGEMENT_REPORT_KEYS, canSeeManagement, type ManagementReportDto, type ManagementReportKey } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementReport, useProjects } from '@/lib/queries';
-import { useProjectScope } from '@/lib/project-scope';
+import { useProjectScope, useVerticalScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -62,7 +62,10 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
   const month = search.get('month') ?? undefined;
   const from = search.get('from') ?? undefined;
   const to = search.get('to') ?? undefined;
-  const params = info.period === 'month' ? { month, projectId } : info.period === 'range' ? { from, to, projectId } : { projectId };
+  // The header's vertical (item 167) narrows a report over every project.
+  const [vertical] = useVerticalScope();
+  const scope = projectId ? { projectId } : { vertical };
+  const params = info.period === 'month' ? { month, ...scope } : info.period === 'range' ? { from, to, ...scope } : scope;
   const { data, isLoading, isFetching, error, refetch } = useManagementReport(reportKey, params);
 
   const setParams = (next: Record<string, string | undefined>) => {
@@ -166,7 +169,7 @@ function ReportBody({ data }: { data: ManagementReportDto }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: token.margin }}>
       <Typography.Text type="secondary">
-        <span translate="no">{data.period}</span>, {data.projectName ? <span translate="no">{data.projectName}</span> : 'every contract project'}
+        <span translate="no">{data.period}</span>, {data.projectName ? <span translate="no">{data.projectName}</span> : data.verticalName ? <span translate="no">{`every project in ${data.verticalName}`}</span> : 'every contract project'}
       </Typography.Text>
       {data.commentary ? <p style={{ margin: 0, fontSize: token.fontSizeLG, lineHeight: 1.6, maxWidth: 960 }}>{data.commentary}</p> : null}
       {data.figures.length ? (

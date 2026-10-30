@@ -121,6 +121,10 @@ export class ListLetterContactsQuery extends PageQuery {
 
 export class LetterSettingsInput {
   @ApiProperty({ enum: LETTER_APPROVAL_RULES }) @IsIn(list(LETTER_APPROVAL_RULES)) approval: LetterApprovalRule;
+  @ApiPropertyOptional({ enum: LETTER_APPROVAL_RULES, description: 'Item 169: which signed letters then wait for a director\'s seal at head office (never more than `approval` reaches)' })
+  @IsOptional()
+  @IsIn(list(LETTER_APPROVAL_RULES))
+  seal?: LetterApprovalRule;
 }
 
 export class LetterSeriesInput {

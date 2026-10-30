@@ -1,7 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsUUID, Matches } from 'class-validator';
+import { IsDateString, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 
-export class ManagementReportQuery {
+/** The vertical (item 167) a dashboard or report is limited to. */
+export class VerticalQuery {
+  @ApiPropertyOptional({ description: "A vertical's code, or `none` for projects with none; every vertical when left out" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  vertical?: string;
+}
+
+export class ManagementReportQuery extends VerticalQuery {
   @ApiPropertyOptional({ example: '2026-10', description: 'A monthly report’s month, YYYY-MM (default this month)' })
   @IsOptional()
   @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'Choose a month as YYYY-MM' })

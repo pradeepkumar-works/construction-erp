@@ -9,6 +9,7 @@ export class ListProjectsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: PROJECT_STATUSES }) @IsOptional() @IsIn(PROJECT_STATUSES as unknown as string[]) status?: ProjectStatus;
   @ApiPropertyOptional({ enum: PROJECT_TYPES }) @IsOptional() @IsIn(PROJECT_TYPES as unknown as string[]) type?: ProjectType;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.projects, default: 'status' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.projects as unknown as string[]) sortBy?: ProjectSortField;
+  @ApiPropertyOptional({ description: "A vertical's code (item 167), or `none` for projects with none" }) @IsOptional() @IsString() @MaxLength(60) vertical?: string;
 }
 
 /** The type of project a suggested code is for. */
@@ -73,6 +74,12 @@ export class CreateProjectDto {
   @IsString()
   @MaxLength(40)
   typeCode?: string | null;
+  @ApiPropertyOptional({ description: "Its vertical (item 167), a code of the vertical master; a new project with none named takes its kind's", nullable: true })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(60)
+  verticalCode?: string | null;
   @ApiPropertyOptional({ type: [BreakdownPickDto], description: "Lay out these components of the type's starting breakdown (top-level keys and how many of each)" })
   @IsOptional()
   @IsArray()

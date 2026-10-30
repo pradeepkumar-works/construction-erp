@@ -214,7 +214,8 @@ export class ModuleHomeService {
     return out;
   }
 
-  private async figures(user: RequestUser, key: ModuleKey, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
+  /** One area module's figures; department screens pick theirs from these (`departmentFigures`). */
+  async figures(user: RequestUser, key: ModuleKey, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
     switch (key) {
       case 'site':
         return this.site(user, today, projectId);
