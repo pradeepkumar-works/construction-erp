@@ -13,6 +13,8 @@ import {
   STOCK_AGEING_BUCKETS,
   SUBMISSION_TYPE_LABELS,
   submissionHref,
+  byVertical,
+  NO_VERTICAL,
   type AgeingDto,
   type BillStage,
   type ManagementReportDto,
@@ -35,6 +37,7 @@ import { PayablesService } from '../payables/payables.service';
 import { StockService } from '../stock/stock.service';
 import { CostService, total, type Acc } from '../cost/cost.service';
 import { ManagementService } from './management.service';
+import { MastersService } from '../masters/masters.service';
 import { ManagementReportQuery } from './management.dto';
 import { approvalAgeing, billedMarginPct, byUrgency, daysBetween, financialYearStart, misCommentary, monthName, monthSpan, monthsBetween, pctOf, type MisFlow } from './management-rules';
 
@@ -64,6 +67,30 @@ const section = (s: Omit<ReportSectionDto, 'total'> & { totals?: boolean | strin
   return totals && s.rows.length > 1 ? { ...rest, total: totalRow(s.columns, s.rows, typeof totals === 'string' ? totals : 'Total') } : rest;
 };
 
+/** Reports read by project from their own services, which a vertical does not narrow. */
+const OWN_SCOPE = new Set<ManagementReportKey>(['receivables', 'payables', 'stock']);
+
+/**
+ * The MIS's "where each project stands" added up by vertical (`byVertical`), put after it; left out when every project
+ * is in one vertical.
+ */
+function withVerticals(sections: ReportSectionDto[], projects: ProjectSummary[], verticals: { code: string; name: string }[]): ReportSectionDto[] {
+  const standing = sections.find((s) => s.key === 'standing');
+  if (!standing) return sections;
+  const verticalOf = new Map(projects.map((p) => [projectHref(p.id), p.verticalCode]));
+  const groups = byVertical(standing.rows, (r) => verticalOf.get(r._href ?? '') ?? null, verticals);
+  if (groups.length < 2) return sections;
+  const keys = ['contract', 'workDone', 'billed', 'unbilled', 'outstanding', 'cost', 'committed'];
+  const columns = [col('vertical', 'Vertical', 'text'), col('projects', 'Projects', 'count'), ...standing.columns.filter((c) => keys.includes(c.key))];
+  const rows = groups.map((g) => ({
+    vertical: g.name,
+    projects: g.rows.length,
+    ...Object.fromEntries(keys.map((k) => [k, r2(g.rows.reduce((s, r) => s + N(r[k] as number), 0))])),
+  }));
+  const at = sections.indexOf(standing) + 1;
+  return [...sections.slice(0, at), section({ key: 'verticals', title: 'By vertical', note: 'Where each project stands today, added up by vertical.', columns, rows, totals: true }), ...sections.slice(at)];
+}
+
 interface Period {
   from: string | null;
   to: string;
@@ -85,6 +112,7 @@ export class ManagementReportsService {
     private payables: PayablesService,
     private stock: StockService,
     private lifecycle: SubmissionLifecycleService,
+    private masters: MastersService,
   ) {}
 
   async report(user: RequestUser, key: ManagementReportKey, q: ManagementReportQuery): Promise<ManagementReportDto> {
@@ -92,11 +120,17 @@ export class ManagementReportsService {
     const info = MANAGEMENT_REPORTS[key];
     const today = todayIn();
     const period = this.period(info.period, q, today);
-    const projects = await this.management.contractProjects(user, q.projectId);
+    const projects = await this.management.contractProjects(user, q.projectId, q.vertical);
     if (q.projectId && !projects.length && key !== 'stock') throw new BadRequestException('Choose one of your contract projects, or every project');
     const projectName = q.projectId ? (projects[0] ? projectCell(projects[0]) : null) : null;
+    const verticals = await this.masters.entriesFor(user.organizationId, 'vertical');
+    const verticalName = q.vertical ? (q.vertical === NO_VERTICAL ? 'No vertical' : (verticals.find((v) => v.code === q.vertical)?.name ?? q.vertical)) : null;
     const body = await this.build(key, user, projects, period, today, q.projectId);
-    return { key, title: info.title, period: period.label, from: period.from, to: period.to, projectName, generatedAt: new Date().toISOString(), ...body };
+    // Receivables, payables and stock read their own services by project, so a vertical does not narrow them.
+    const notes = q.vertical && !q.projectId && OWN_SCOPE.has(key) ? [...body.notes, 'This report covers every vertical: it is read by project, not by vertical.'] : body.notes;
+    // The monthly MIS over every vertical adds up where each vertical stands (item 167).
+    const sections = key === 'mis' && !q.vertical && !q.projectId ? withVerticals(body.sections, projects, verticals) : body.sections;
+    return { key, title: info.title, period: period.label, from: period.from, to: period.to, projectName, verticalName: OWN_SCOPE.has(key) ? null : verticalName, generatedAt: new Date().toISOString(), ...body, notes, sections };
   }
 
   private period(kind: 'month' | 'range' | 'asOf', q: ManagementReportQuery, today: string): Period {

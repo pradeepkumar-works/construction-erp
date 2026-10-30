@@ -304,6 +304,7 @@ import type {
   PayslipDto,
   FinalSettlementDto,
   ModuleHomeDto,
+  DepartmentHomeDto,
   HomeTrendsDto,
   NextProjectCodeDto,
   ProgressEntryDto,
@@ -464,6 +465,8 @@ export interface ListFilters extends PageParams {
 export interface ProjectFilters extends PageParams {
   status?: ProjectStatus;
   type?: ProjectType;
+  /** A vertical's code or `none` (item 167) */
+  vertical?: string;
 }
 
 export interface UserFilters extends PageParams {
@@ -652,6 +655,15 @@ export const useMyWork = () =>
 
 /** Six months of trends for the home page's tiles and charts. */
 export const useHomeTrends = () => useQuery({ queryKey: ['dashboard', 'trends'], queryFn: async () => (await api.get<HomeTrendsDto>('/dashboard/trends')).data });
+
+/** A department's screen (item 168): its figures strip and the work in flight, for the header's project or all. */
+export const useDepartmentHome = (key: string, projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['dashboard', 'department', key, projectId ?? null],
+    queryFn: async () => (await api.get<DepartmentHomeDto>(`/dashboard/departments/${key}`, { params: projectId ? { projectId } : {} })).data,
+    enabled,
+    refetchInterval: 60_000,
+  });
 
 /** A module's home page (v6 item 98): its figures and what waits for the caller in it, for the header's project or all. */
 export const useModuleHome = (key: string, projectId: string | undefined, enabled = true) =>
@@ -4428,15 +4440,15 @@ export function useDecideAccess() {
 }
 
 /** Management dashboard: every contract project the caller sees, with its money from work done to cash and its health. */
-export const useManagementPortfolio = (enabled = true) =>
-  useQuery({ queryKey: ['management', 'portfolio'], queryFn: async () => (await api.get<PortfolioDto>('/management/portfolio')).data, enabled });
+export const useManagementPortfolio = (enabled = true, vertical?: string) =>
+  useQuery({ queryKey: ['management', 'portfolio', vertical ?? null], queryFn: async () => (await api.get<PortfolioDto>('/management/portfolio', { params: vertical ? { vertical } : {} })).data, enabled, placeholderData: keepPreviousData });
 
 /** One project's drill-down on the management dashboard. */
 export const useManagementProject = (projectId: string | undefined) =>
   useQuery({ queryKey: ['management', 'project', projectId], queryFn: async () => (await api.get<PortfolioProjectDetailDto>(`/management/projects/${projectId}`)).data, enabled: !!projectId });
 
 /** A management report for its period (`month`, or `from` and `to`) and, optionally, one project. */
-export const useManagementReport = (key: ManagementReportKey | undefined, params: { month?: string; from?: string; to?: string; projectId?: string }) =>
+export const useManagementReport = (key: ManagementReportKey | undefined, params: { month?: string; from?: string; to?: string; projectId?: string; vertical?: string }) =>
   useQuery({
     queryKey: ['management', 'report', key, params],
     queryFn: async () => (await api.get<ManagementReportDto>(`/management/reports/${key}`, { params })).data,

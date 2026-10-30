@@ -172,6 +172,8 @@ export interface TenderDto {
   clientId: string | null;
   clientName: string | null;
   location: string | null;
+  /** Its vertical (item 167), a code of the `vertical` master */
+  verticalCode: string | null;
   status: TenderStatus;
   bidType: TenderBidType;
   estimatedValue: string | null;

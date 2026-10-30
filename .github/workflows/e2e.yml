@@ -326,10 +326,14 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/indent-check-test.js
-      - name: Verticals and the department screens' figures and pipelines (items 167 and 168)
+      - name: Verticals take a project's kind, filter, and group reports (item 167)
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/verticals-test.js
+      - name: Department screens pick their figures and order their pipelines (item 168)
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/department-home-test.js
       - name: Quality plans count the tests owed from work done and receipts, and cubes pass or fail by IS 456
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -22,6 +22,7 @@ import { useAppearance } from '@/lib/appearance';
 import { useProjectScope } from '@/lib/project-scope';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import { ProjectProgressPanel } from './ProjectProgress';
+import { DepartmentPanel } from './DepartmentPanel';
 import s from './DepartmentHome.module.css';
 
 /** The department that holds the projects shows their progress above its pages. */
@@ -156,6 +157,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
           </Card>
         )}
         {moduleKey === PROJECTS_DEPARTMENT && <ProjectProgressPanel />}
+        <DepartmentPanel department={moduleKey} />
         <div className={s.subs}>
           {mod.subs.map((sub) => (
             <section key={sub.key} aria-labelledby={`sub-${sub.key}`} className={s.sub}>

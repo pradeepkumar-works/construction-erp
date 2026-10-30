@@ -101,6 +101,16 @@ export class MastersService {
         (await this.prisma.qaInstrument.groupBy({ by: ['kind'], where: { organizationId: org }, _count: { _all: true } })).forEach((r) => add(names.get(r.kind) ?? null, r._count._all));
         break;
       }
+      case 'vertical': {
+        // Projects and tenders keep the vertical's code.
+        const names = new Map((await this.entriesFor(org, list)).map((e) => [e.code, e.name]));
+        const [projects, tenders] = await Promise.all([
+          this.prisma.project.groupBy({ by: ['verticalCode'], where: { organizationId: org, verticalCode: { not: null } }, _count: { _all: true } }),
+          this.prisma.tender.groupBy({ by: ['verticalCode'], where: { organizationId: org, verticalCode: { not: null } }, _count: { _all: true } }),
+        ]);
+        [...projects, ...tenders].forEach((r) => add(names.get(r.verticalCode!) ?? null, r._count._all));
+        break;
+      }
     }
     return out;
   }

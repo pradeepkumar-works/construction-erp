@@ -24,6 +24,6 @@ UPDATE "Project" SET "verticalCode" = CASE "type"
   WHEN 'WATER_SUPPLY' THEN 'water'
   WHEN 'SEWERAGE' THEN 'water'
   WHEN 'BUILDING' THEN 'buildings'
-  WHEN 'ROAD' THEN 'roads'
+  WHEN 'ROAD' THEN 'roads-and-bridges'
   ELSE NULL END
 WHERE "verticalCode" IS NULL;

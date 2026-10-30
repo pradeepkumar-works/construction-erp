@@ -15,6 +15,9 @@ import {
   type SortOrder,
   STANDARD_TYPE_FOR,
   layOutBreakdown,
+  NO_VERTICAL,
+  verticalOfType,
+  verticalProblem,
 } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { physicalProgress } from '../common/progress';
@@ -25,6 +28,7 @@ import { AuditService } from '../common/audit.service';
 import { TemplatesService } from '../templates/templates.service';
 import { ProjectTypesService } from '../templates/project-types.service';
 import { StructureService } from '../structure/structure.service';
+import { MastersService } from '../masters/masters.service';
 import { dateOnly, iso, money, parseDate, pct } from '../common/serialize';
 import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
 
@@ -61,6 +65,7 @@ export class ProjectsService {
     private types: ProjectTypesService,
     private structure: StructureService,
     private notifications: NotificationsService,
+    private masters: MastersService,
   ) {}
 
   /**
@@ -102,6 +107,7 @@ export class ProjectsService {
       name: p.name,
       type: p.type,
       ...types.get(p.id)!,
+      verticalCode: p.verticalCode,
       status: p.status,
       contractModel: p.contractModel,
       clientName: p.clientName,
@@ -157,6 +163,7 @@ export class ProjectsService {
     const where: Prisma.ProjectWhereInput = { ...this.access.projectWhere(user) };
     if (q.status) where.status = q.status;
     if (q.type) where.type = q.type;
+    if (q.vertical) where.verticalCode = q.vertical === NO_VERTICAL ? null : q.vertical;
     const words = searchWords(q.q);
     if (words.length)
       where.AND = words.map((w) => ({ OR: [{ code: ilike(w) }, { name: ilike(w) }, { clientName: ilike(w) }, { location: ilike(w) }, { workOrderNo: ilike(w) }] }));
@@ -238,6 +245,22 @@ export class ProjectsService {
     return t;
   }
 
+  /**
+   * The project's vertical (item 167): a code of the company's vertical master, switched on. A new project with none
+   * named takes its kind's (`verticalOfType`); null clears it.
+   */
+  private async withVertical(user: RequestUser, dto: CreateProjectDto | UpdateProjectDto, data: Prisma.ProjectUpdateInput, creating: boolean) {
+    if (dto.verticalCode === undefined && !creating) return;
+    const verticals = await this.masters.entriesFor(user.organizationId, 'vertical');
+    if (dto.verticalCode === undefined) {
+      data.verticalCode = dto.type ? verticalOfType(dto.type, verticals) : null;
+      return;
+    }
+    const problem = verticalProblem(dto.verticalCode, verticals);
+    if (problem) throw new BadRequestException(problem);
+    data.verticalCode = dto.verticalCode || null;
+  }
+
   /** A client from the master sets the project's client name too; null unlinks it and keeps the name as text. */
   private async withClient(user: RequestUser, dto: CreateProjectDto | UpdateProjectDto, data: Prisma.ProjectUpdateInput) {
     if (dto.clientId === undefined) return;
@@ -269,6 +292,7 @@ export class ProjectsService {
     await this.withClient(user, dto, data);
     if (dto.clientId === null) delete data.client;
     const type = await this.withType(user, dto, data);
+    await this.withVertical(user, { ...dto, type: (data.type as ProjectType | undefined) ?? dto.type }, data, true);
     const terms = await this.startingTerms(user, dto);
     const row = await this.prisma.project.create({ data: { ...data, ...terms, organization: { connect: { id: user.organizationId } } }, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'CREATED');
@@ -344,6 +368,7 @@ export class ProjectsService {
     await this.withClient(user, dto, data);
     // A new built-in kind with no type named leaves the old type, whose kind it no longer is.
     await this.withType(user, dto.type !== undefined && dto.typeCode === undefined ? { ...dto, typeCode: null } : dto, data);
+    await this.withVertical(user, dto, data, false);
     const before = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { startDate: true } });
     const row = await this.prisma.project.update({ where: { id }, data, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'UPDATED');

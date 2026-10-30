@@ -26,8 +26,11 @@ import {
   type TenderListDto,
   type TenderStatus,
   type TenderSummaryDto,
+  inVertical,
+  verticalProblem,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { MastersService } from '../masters/masters.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
@@ -101,6 +104,7 @@ export class TendersService {
     private audit: AuditService,
     private attachments: AttachmentsService,
     private projects: ProjectsService,
+    private masters: MastersService,
   ) {}
 
   private assertView(user: RequestUser) {
@@ -154,6 +158,7 @@ export class TendersService {
       clientId: t.clientId,
       clientName: t.client?.name ?? t.clientName,
       location: t.location,
+      verticalCode: t.verticalCode,
       status: t.status,
       bidType: t.bidType,
       estimatedValue: money(t.estimatedValue),
@@ -227,6 +232,7 @@ export class TendersService {
       if (status === 'open' && !TENDER_OPEN.includes(t.status)) return false;
       if (status === 'closed' && TENDER_OPEN.includes(t.status)) return false;
       if (status !== 'open' && status !== 'closed' && status !== 'all' && t.status !== status) return false;
+      if (!inVertical(t.verticalCode, q.vertical)) return false;
       if (!words.length) return true;
       const hay = [dto.tenderNo, dto.nitNo, dto.title, dto.clientName, dto.location].filter(Boolean).join(' ').toLowerCase();
       return words.every((w) => hay.includes(w.toLowerCase()));
@@ -419,12 +425,20 @@ export class TendersService {
     }
   }
 
+  /** A tender's vertical (item 167) is a code of the company's vertical master, switched on. */
+  private async assertVertical(user: RequestUser, code: string | null | undefined) {
+    if (!code) return;
+    const problem = verticalProblem(code, await this.masters.entriesFor(user.organizationId, 'vertical'));
+    if (problem) throw new BadRequestException(problem);
+  }
+
   private fields(dto: TenderFieldsInput): Prisma.TenderUncheckedUpdateInput {
     const day = (v: string | null | undefined) => (v === undefined ? undefined : v ? parseDate(v) : null);
     const decOrNull = (v: number | null | undefined) => (v === undefined ? undefined : v === null ? null : new Dec(v));
     return {
       nitNo: dto.nitNo,
       location: dto.location,
+      verticalCode: dto.verticalCode,
       bidType: dto.bidType,
       sorBookId: dto.sorBookId,
       estimatedValue: decOrNull(dto.estimatedValue),
@@ -441,6 +455,7 @@ export class TendersService {
   async create(user: RequestUser, dto: CreateTenderDto): Promise<TenderDetailDto> {
     this.assertEdit(user);
     await this.assertBook(user, dto.sorBookId);
+    await this.assertVertical(user, dto.verticalCode);
     const client = await this.clientName(user, dto);
     try {
       const id = await this.prisma.$transaction(async (tx) => {
@@ -478,6 +493,7 @@ export class TendersService {
       if (moved) this.assertPreparing(t);
     }
     await this.assertBook(user, dto.sorBookId);
+    if (dto.verticalCode !== undefined && dto.verticalCode !== t.verticalCode) await this.assertVertical(user, dto.verticalCode);
     const client = await this.clientName(user, dto);
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -844,6 +860,7 @@ export class TendersService {
       status: 'ACTIVE',
       ...(t.clientId ? { clientId: t.clientId } : { clientName: t.clientName ?? undefined }),
       location: t.location ?? undefined,
+      ...(t.verticalCode ? { verticalCode: t.verticalCode } : {}),
       workOrderNo: dto.agreementNo ?? undefined,
       description: `Won on tender ${t.tenderNo}${t.nitNo ? ` (${t.nitNo})` : ''}`,
       startDate: start,

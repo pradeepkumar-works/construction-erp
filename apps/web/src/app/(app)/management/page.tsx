@@ -21,6 +21,8 @@ import { AttentionList } from '@/components/management/AttentionList';
 import { ProjectsHealthTable } from '@/components/management/ProjectsHealthTable';
 import { TrendTable, trendSummary } from '@/components/management/TrendTable';
 import { ReportsList } from '@/components/management/ReportsList';
+import { VerticalsTable } from '@/components/management/VerticalsTable';
+import { useVerticalScope } from '@/lib/project-scope';
 
 const TrendChart = dynamic(() => import('@/components/management/TrendChart').then((m) => m.TrendChart), {
   ssr: false,
@@ -42,7 +44,9 @@ const day = (d: string) =>
 export default function Page() {
   const { user } = useAuth();
   const allowed = !!user && canSeeManagement(user.roleKey);
-  const { data, isLoading, error, refetch } = useManagementPortfolio(allowed);
+  // The header's vertical (item 167) narrows the portfolio.
+  const [vertical] = useVerticalScope();
+  const { data, isLoading, error, refetch } = useManagementPortfolio(allowed, vertical);
 
   if (user && !allowed)
     return (
@@ -116,7 +120,7 @@ function Dashboard({ data }: { data: PortfolioDto }) {
     <div className="page-container">
       <PageHeader
         title="Management dashboard"
-        subtitle={`Every contract project as of ${formatDate(data.asOf)}: progress against plan, money from work done to paid, cost, approvals and what needs action.`}
+        subtitle={`Every contract project${data.vertical && data.verticals[0] ? ` in ${data.verticals[0].name}` : ''} as of ${formatDate(data.asOf)}: progress against plan, money from work done to paid, cost, approvals and what needs action.`}
         extra={
           <LinkButton href="/management/reports/mis" icon={<FileExcelOutlined />}>
             Monthly MIS
@@ -144,6 +148,12 @@ function Dashboard({ data }: { data: PortfolioDto }) {
             </Card>
           </Col>
         </Row>
+
+        {data.verticals.length > 1 && (
+          <Card size="small" title="By vertical" styles={{ body: { padding: 0 } }}>
+            <VerticalsTable verticals={data.verticals} />
+          </Card>
+        )}
 
         <Card size="small" title="Projects" styles={{ body: { padding: 0 } }}>
           <ProjectsHealthTable projects={data.projects} />
