@@ -228,7 +228,7 @@ export class ReportsService {
         .map((x) => ({ riskNo: x.riskNo, title: x.title, score: x.score, mitigation: x.mitigation, ownerName: x.owner?.fullName ?? null, dueDate: dateOnly(x.dueDate) })),
       nextPeriod: activityRows
         .filter((r) => r.pct < 100 && !!r.a.plannedStart && r.a.plannedStart <= nextEnd)
-        .map((r) => ({ name: r.a.name, unit: r.a.unit, balanceQty: dec(Prisma.Decimal.max(r.a.plannedQty.minus(r.cumulative), ZERO))!, plannedEnd: dateOnly(r.a.plannedEnd) })),
+        .map((r) => ({ activityId: r.a.id, name: r.a.name, unit: r.a.unit, balanceQty: dec(Prisma.Decimal.max(r.a.plannedQty.minus(r.cumulative), ZERO))!, plannedEnd: dateOnly(r.a.plannedEnd) })),
       photos: photos.map((p) => ({
         url: this.attachments.toDto(p).url,
         caption: [p.progressEntry?.activity.name, dateOnly(p.progressEntry?.date ?? null)].filter(Boolean).join(' · '),

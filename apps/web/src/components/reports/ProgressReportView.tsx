@@ -20,10 +20,11 @@ const weekOf = (d: Dayjs): [Dayjs, Dayjs] => {
  * The weekly / monthly / custom progress report of one project, previewed and printable. Staff read it from
  * /reports/progress, the client portal from /portal/projects/:id/report (the same report).
  */
-export function ProgressReportView({ projectId, portal = false, picker }: { projectId: string | undefined; portal?: boolean; picker?: React.ReactNode }) {
+export function ProgressReportView({ projectId, portal = false, picker, only }: { projectId: string | undefined; portal?: boolean; picker?: React.ReactNode; only?: ReportKind }) {
   const { token } = theme.useToken();
   const { message } = App.useApp();
-  const [kind, setKind] = useState<ReportKind>('MONTHLY');
+  const [chosen, setKind] = useState<ReportKind>('MONTHLY');
+  const kind = only ?? chosen;
   const [anchor, setAnchor] = useState<Dayjs>(dayjs());
   const [custom, setCustom] = useState<[Dayjs, Dayjs] | null>(null);
 
@@ -43,6 +44,7 @@ export function ProgressReportView({ projectId, portal = false, picker }: { proj
       <Card size="small" style={{ marginBottom: 12 }}>
         <Space wrap>
           {picker}
+          {only ? null : (
           <Segmented
             value={kind}
             onChange={(v) => setKind(v as ReportKind)}
@@ -52,6 +54,7 @@ export function ProgressReportView({ projectId, portal = false, picker }: { proj
               { value: 'CUSTOM', label: 'Custom' },
             ]}
           />
+          )}
           {kind === 'WEEKLY' ? <DatePicker picker="week" aria-label="Week" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format={() => `${formatDayMonth(from)} to ${formatDate(to.format('YYYY-MM-DD'))}`} /> : null}
           {kind === 'MONTHLY' ? <DatePicker picker="month" aria-label="Month" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format="MMMM YYYY" /> : null}
           {kind === 'CUSTOM' ? (

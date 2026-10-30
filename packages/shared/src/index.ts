@@ -117,3 +117,4 @@ export * from './integrations';
 export * from './telematics';
 export * from './weighbridge';
 export * from './batching';
+export * from './official-reports';

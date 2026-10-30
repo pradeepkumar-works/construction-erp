@@ -267,6 +267,8 @@ export class CorrespondenceService {
     if (q.status) and.push({ status: q.status });
     if (q.category) and.push({ category: q.category });
     if (q.riskId) and.push({ riskId: q.riskId });
+    if (q.from) and.push({ letterDate: { gte: parseDate(q.from) } });
+    if (q.to) and.push({ letterDate: { lte: parseDate(q.to) } });
     if (q.mine) and.push({ markedToId: user.id, status: 'OPEN' });
     if (q.toSign) and.push({ signatoryId: user.id, status: 'AWAITING_APPROVAL' });
     if (q.unmarked) and.push({ direction: 'IN', status: 'OPEN', markedToId: null });

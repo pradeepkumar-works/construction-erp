@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  OfficialIssueDto,
+  OfficialReportDto,
+  OfficialReportKind,
   InsightsDto,
   CubeAcceptanceDto,
   PourDto,
@@ -3164,6 +3167,33 @@ export const useProgressReport = (projectId: string | undefined, from: string, t
     placeholderData: keepPreviousData,
     enabled: !!projectId,
   });
+
+/** Official progress reports (item 167): the report for a period, the issue register, an issued copy, and Issue. */
+export const useOfficialReport = (projectId: string | undefined, kind: OfficialReportKind, date: string) =>
+  useQuery({
+    queryKey: ['reports', 'official', projectId, kind, date],
+    queryFn: async () => (await api.get<OfficialReportDto>('/reports/official', { params: { projectId, kind, date } })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!projectId,
+  });
+export const useOfficialIssues = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['reports', 'official-issues', projectId],
+    queryFn: async () => (await api.get<OfficialIssueDto[]>('/reports/official/issues', { params: { projectId } })).data,
+    enabled: !!projectId,
+  });
+/** An issued copy, fetched when it is opened or downloaded. */
+export const fetchOfficialIssue = async (id: string) => (await api.get<OfficialReportDto>(`/reports/official/issues/${id}`)).data;
+export function useIssueOfficialReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { projectId: string; kind: OfficialReportKind; date: string; note?: string }) => (await api.post<OfficialReportDto>('/reports/official/issue', body)).data,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['reports', 'official'] });
+      void qc.invalidateQueries({ queryKey: ['reports', 'official-issues'] });
+    },
+  });
+}
 
 /** Approved material requests with something still to receive (GRN form). */
 export const useReceivable = (projectId: string | undefined, enabled = true) =>
