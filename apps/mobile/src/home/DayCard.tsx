@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { canMarkStaff, type MyStaffDto, type PayslipDto, type StaffSummaryDto } from '@erp/shared';
-import { useApi, useFetch } from '../api/hooks';
-import { errorMessage } from '../api/client';
+import { useFetch } from '../api/hooks';
 import { useAuth } from '../auth/AuthContext';
 import { Button } from '../components/Button';
-import { useSnackbar } from '../components/Snackbar';
 import { Skeleton } from '../components/Skeleton';
 import { Touchable } from '../components/Touchable';
 import { useT } from '../i18n/LanguageContext';
 import { colors, familyTint, fonts, fontSize, maxFontScale, radius, spacing, type IconName } from '../theme';
 import { formatDayMonth, formatMonth, formatTime, formatWeekdayDayMonth, today } from '../utils/format';
-import { checkInPosition } from '../utils/location';
+import { useFaceMark } from './faceMark';
 
 /** The time on the card, moved on each minute. */
 function useNow() {
@@ -40,19 +38,16 @@ function workedFor(from: string, to: string): { h: number; m: number } {
 }
 
 /**
- * The first thing on Home (the phone launcher): the person's day. The time, check in and out for today (with where the
- * phone was, as the Attendance and leave screen), and the HR row: days present this month, leave left, the last
+ * The first thing on Home (the phone launcher): the person's day. The time, face attendance for today (Mark in and Mark
+ * out, each with the person's photo and, marking in, where the phone was, as the Attendance and leave screen), and the HR row: days present this month, leave left, the last
  * payslip, and the next holiday, or for those who decide leave, what waits on them. It reads the same `/staff/me` as
  * that screen, so either one keeps the other fresh.
  */
 export function DayCard({ refreshKey }: { refreshKey?: number }) {
   const { user } = useAuth();
-  const api = useApi();
   const router = useRouter();
-  const { show } = useSnackbar();
   const t = useT();
   const now = useNow();
-  const [busy, setBusy] = useState(false);
   const me = useFetch<MyStaffDto>((a) => a.get('/staff/me'), [refreshKey], { cacheKey: 'staff:me' });
   const linked = !!me.data?.employee;
   const slips = useFetch<PayslipDto[]>((a) => (linked ? a.get('/payroll/my-payslips') : Promise.resolve([])), [linked, refreshKey], { cacheKey: 'payslips:mine' });
@@ -65,29 +60,7 @@ export function DayCard({ refreshKey }: { refreshKey?: number }) {
   const data = me.data;
   const day = data?.today ?? null;
 
-  const run = async (fn: () => Promise<unknown>, done: string) => {
-    setBusy(true);
-    try {
-      await fn();
-      await me.reload();
-      show(done, { tone: 'success' });
-    } catch (e) {
-      show(errorMessage(e), { tone: 'error' });
-    } finally {
-      setBusy(false);
-    }
-  };
-  // Check-in sends where the phone is when the site has a location to measure from (v5 item 97).
-  const checkIn = () =>
-    void run(async () => {
-      const at = data?.site ? await checkInPosition() : null;
-      return api.post('/staff/me/check-in', at ?? {});
-    }, t('Checked in'));
-  const checkOut = () =>
-    Alert.alert(t('Check out'), t('Check out for today? Your day ends at {time}.', { time: formatTime(new Date()) }), [
-      { text: t('Not yet'), style: 'cancel' },
-      { text: t('Check out'), onPress: () => void run(() => api.post('/staff/me/check-out'), t('Checked out')) },
-    ]);
+  const face = useFaceMark(me.reload);
 
   const place = day?.checkInPlace;
   const pill: { text: string; fg: string; bg: string; icon: IconName } | null =
@@ -96,7 +69,7 @@ export function DayCard({ refreshKey }: { refreshKey?: number }) {
         ? { text: t('At the site'), fg: colors.success, bg: colors.successSoft, icon: 'location-outline' }
         : place?.inside === false
           ? { text: t('Outside the site'), fg: colors.warning, bg: colors.warningSoft, icon: 'warning-outline' }
-          : { text: t('Checked in'), fg: colors.success, bg: colors.successSoft, icon: 'checkmark-circle-outline' }
+          : { text: t('Marked in'), fg: colors.success, bg: colors.successSoft, icon: 'checkmark-circle-outline' }
       : !day?.checkIn && data?.todayOff
         ? { text: data.todayOff === 'Sunday' ? t('Weekly off') : data.todayOff, fg: colors.neutral, bg: colors.neutralSoft, icon: 'sunny-outline' }
         : null;
@@ -137,14 +110,20 @@ export function DayCard({ refreshKey }: { refreshKey?: number }) {
           <Skeleton variant="card" rows={1} label={t('Loading…')} />
         ) : !data ? null : !linked ? (
           <Text style={styles.note} maxFontSizeMultiplier={maxFontScale}>
-            {t('Your login is not linked to a staff record. Ask HR to link it, then you can check in here.')}
+            {t('Your login is not linked to a staff record. Ask HR to link it, then you can mark in here.')}
           </Text>
         ) : (
           <>
+            <View style={styles.faceHead}>
+              <Ionicons name="scan-outline" size={18} color={colors.primary} />
+              <Text style={styles.faceTitle} accessibilityRole="header" maxFontSizeMultiplier={maxFontScale}>
+                {t('Face attendance')}
+              </Text>
+            </View>
             <View style={styles.io}>
               <View style={styles.box}>
                 <Text style={styles.boxLabel} maxFontSizeMultiplier={maxFontScale}>
-                  {t('Check in')}
+                  {t('Mark in')}
                 </Text>
                 <Text style={[styles.boxValue, !day?.checkIn && styles.boxNone]} maxFontSizeMultiplier={maxFontScale}>
                   {day?.checkIn ? formatTime(day.checkIn) : t('Not yet')}
@@ -152,7 +131,7 @@ export function DayCard({ refreshKey }: { refreshKey?: number }) {
               </View>
               <View style={styles.box}>
                 <Text style={styles.boxLabel} maxFontSizeMultiplier={maxFontScale}>
-                  {t('Check out')}
+                  {t('Mark out')}
                 </Text>
                 <Text style={[styles.boxValue, !day?.checkOut && styles.boxNone]} maxFontSizeMultiplier={maxFontScale}>
                   {day?.checkOut ? formatTime(day.checkOut) : day?.checkIn ? t('Not yet') : '—'}
@@ -160,9 +139,9 @@ export function DayCard({ refreshKey }: { refreshKey?: number }) {
               </View>
             </View>
             {!day?.checkIn ? (
-              <Button title={t('Check in')} icon="log-in-outline" loading={busy} onPress={checkIn} style={styles.action} />
+              <Button title={t('Mark in')} icon="scan-outline" accessibilityHint={t('Opens the front camera for your photo')} loading={face.busy} onPress={() => face.markIn(!!data.site)} style={styles.action} />
             ) : !day.checkOut ? (
-              <Button title={t('Check out')} icon="log-out-outline" loading={busy} onPress={checkOut} style={styles.action} />
+              <Button title={t('Mark out')} icon="scan-outline" accessibilityHint={t('Opens the front camera for your photo')} loading={face.busy} onPress={face.markOut} style={styles.action} />
             ) : done ? (
               <View style={styles.done} accessibilityRole="text">
                 <Ionicons name="checkmark-circle" size={20} color={colors.success} />
@@ -216,6 +195,8 @@ const styles = StyleSheet.create({
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 28, paddingHorizontal: 10, borderRadius: radius.pill, flexShrink: 1 },
   pillText: { fontSize: fontSize.small, fontWeight: '600' },
   note: { fontSize: fontSize.secondary, color: colors.textMuted },
+  faceHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
+  faceTitle: { fontSize: fontSize.secondary, fontWeight: '600', color: colors.text },
   io: { flexDirection: 'row', gap: spacing.sm },
   box: { flex: 1, backgroundColor: colors.bg, borderRadius: 12, paddingVertical: 10, paddingHorizontal: spacing.md },
   boxLabel: { fontSize: fontSize.secondary, color: colors.textMuted },

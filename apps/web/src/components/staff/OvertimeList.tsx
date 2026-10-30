@@ -58,7 +58,7 @@ export function OvertimeList() {
       render: (_, r) => (r.checkIn ? <span translate="no">{`${clock(r.checkIn)} to ${clock(r.checkOut)}`}</span> : <Typography.Text type="secondary">In the register</Typography.Text>),
     },
     { title: 'Overtime', dataIndex: 'overtimeHours', width: 100, align: 'right', render: (v: string) => <span translate="no">{v} h</span> },
-    { title: 'Checked in', key: 'place', width: 200, render: (_, r) => (r.checkInPlace ? <CheckInPlaceTag place={r.checkInPlace} /> : '-') },
+    { title: 'Marked in', key: 'place', width: 200, render: (_, r) => (r.checkInPlace ? <CheckInPlaceTag place={r.checkInPlace} /> : '-') },
     {
       title: '',
       key: 'actions',

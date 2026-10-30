@@ -26,6 +26,7 @@ import {
   canViewWorkers,
   BEHIND_TOLERANCE_PCT,
   byProgressOrder,
+  contractTime,
   isCompanyWide,
   isGuest,
   isModuleKey,
@@ -136,25 +137,34 @@ export class ModuleHomeService {
     const seesFinancial = canViewContract(user.roleKey);
     const projects = (await this.projects.listAll(user)).filter((p) => p.type !== 'STORE' && p.type !== 'PLANT' && p.status !== 'CLOSED' && (!projectId || p.id === projectId));
     const ids = projects.map((p) => p.id);
-    const [items, activities, bills] = ids.length
+    const [items, activities, bills, milestones, delays, handovers] = ids.length
       ? await Promise.all([
           this.prisma.boqItem.findMany({ where: { projectId: { in: ids } }, select: { id: true, rate: true } }),
           // The leaves only: an activity with sub-activities takes no progress (Work breakdown)
           this.prisma.activity.findMany({ where: { projectId: { in: ids }, subActivities: { none: {} } }, select: { projectId: true, boqItemId: true, plannedQty: true, plannedStart: true, plannedEnd: true } }),
           seesFinancial ? this.prisma.raBill.groupBy({ by: ['projectId'], where: { organizationId: user.organizationId, projectId: { in: ids }, status: 'APPROVED' }, _sum: { grossAmount: true } }) : [],
+          this.prisma.milestone.groupBy({ by: ['projectId'], where: { projectId: { in: ids } }, _max: { dueDate: true } }),
+          // Extensions of time live in the delay register, as the contract's dates read them
+          this.prisma.risk.findMany({ where: { projectId: { in: ids }, kind: 'DELAY', OR: [{ eotClaimed: true }, { eotGrantedDays: { not: null } }] }, select: { projectId: true, eotGrantedDays: true } }),
+          this.prisma.projectHandover.findMany({ where: { projectId: { in: ids } }, select: { projectId: true, completedOn: true } }),
         ])
-      : [[], [], []];
+      : [[], [], [], [], [], []];
     const rates = new Map(items.map((b) => [b.id, new Prisma.Decimal(b.rate)]));
     const billedOf = new Map(bills.map((b) => [b.projectId, b._sum.grossAmount ?? ZERO]));
+    const dueOf = new Map(milestones.map((m) => [m.projectId, dateOnly(m._max.dueDate)]));
+    const completedOf = new Map(handovers.map((h) => [h.projectId, dateOnly(h.completedOn)]));
     const rows: ProjectProgressDto[] = projects
       .map((p) => {
         const contract = p.revisedContractValue ? new Prisma.Decimal(p.revisedContractValue) : null;
         const billed = billedOf.get(p.id) ?? ZERO;
-        const planned = plannedProgress(
-          activities.filter((a) => a.projectId === p.id).map((a) => ({ plannedQty: a.plannedQty.toString(), boqItemId: a.boqItemId, plannedStart: dateOnly(a.plannedStart), plannedEnd: dateOnly(a.plannedEnd) })),
-          rates,
-          today,
-        );
+        const own = activities.filter((a) => a.projectId === p.id).map((a) => ({ plannedQty: a.plannedQty.toString(), boqItemId: a.boqItemId, plannedStart: dateOnly(a.plannedStart), plannedEnd: dateOnly(a.plannedEnd) }));
+        const planned = plannedProgress(own, rates, today);
+        // The Gantt's planned finish, as the watch list reads it: the latest activity end or milestone due date
+        const planFinish = [...own.map((a) => a.plannedEnd), dueOf.get(p.id) ?? null].reduce<string | null>((m, d) => (d && (!m || d > m) ? d : m), null);
+        const eots = delays.filter((d) => d.projectId === p.id);
+        const granted = eots.filter((d) => d.eotGrantedDays !== null);
+        const eotDays = granted.reduce((s, d) => s + d.eotGrantedDays!, 0);
+        const completedOn = completedOf.get(p.id) ?? null;
         return {
           projectId: p.id,
           code: p.code,
@@ -165,6 +175,14 @@ export class ModuleHomeService {
           financialPct: seesFinancial && contract?.gt(0) ? Math.round(billed.div(contract).mul(1000).toNumber()) / 10 : null,
           contractValue: seesFinancial ? p.revisedContractValue : null,
           billed: seesFinancial ? money(billed)! : null,
+          startDate: p.startDate,
+          endDate: p.endDate,
+          eotDays,
+          eotCount: granted.length,
+          eotPending: eots.length - granted.length,
+          planFinish,
+          completedOn,
+          ...contractTime({ startDate: p.startDate, endDate: p.endDate, eotDays, completedOn }, today),
         };
       })
       .sort(byProgressOrder);

@@ -195,9 +195,10 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
         headerSortHoverBg: dark ? c.nightBorderSoft : c.hairline,
         fixedHeaderSortActiveBg: header,
         bodySortBg: 'transparent',
-        rowHoverBg: soft,
-        rowSelectedBg: chosen,
-        rowSelectedHoverBg: chosen,
+        // Solid at night, so a fixed column hides the cells scrolling under it
+        rowHoverBg: dark ? c.nightRowHover : soft,
+        rowSelectedBg: dark ? c.nightRowChosen : chosen,
+        rowSelectedHoverBg: dark ? c.nightRowChosen : chosen,
         footerBg: header,
       },
       // Cards: flat on a hairline, with a tighter header.

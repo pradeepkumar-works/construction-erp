@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, axeViolations, signIn } from './helpers';
+import { API_URL, api, apiToken, axeViolations, signIn } from './helpers';
 
 type Site = { projectId: string; projectName: string; lat: string; lng: string; radiusM: number; strict: boolean };
 type Me = { employee: { id: string; projectId: string } | null; site: Site | null; balances: { type: string; entitled: number | null; left: number | null }[] };
@@ -11,6 +11,8 @@ type Day = {
   overtimeStatus: string | null;
   canDecideOvertime: boolean;
   checkInPlace: { distanceM: number | null; inside: boolean | null } | null;
+  checkInPhoto: { id: string; url: string } | null;
+  checkOutPhoto: { id: string; url: string } | null;
 };
 type Register = { rows: { employee: { id: string; employeeCode: string; fullName: string }; attendance: Day | null }[] };
 type Payroll = { rows: { employeeCode: string; present: number; overtimeHours: number; overtimePendingHours: number; lopDays: number; leave: Record<string, number> }[] };
@@ -39,10 +41,10 @@ test('a check-in records where the phone is, and a strict site refuses one from 
   await api(admin, `/projects/${site.projectId}`, { method: 'PATCH', body: { siteCheckInStrict: true } });
   try {
     expect((await api<Me>(se2, '/staff/me')).site!.strict).toBe(true);
-    await expect(api(se2, '/staff/me/check-in', { method: 'POST', body: {} })).rejects.toThrow(/checks your location at check-in\. Allow location/);
+    await expect(api(se2, '/staff/me/check-in', { method: 'POST', body: {} })).rejects.toThrow(/checks your location when you mark in\. Allow location/);
     const lat = Number(site.lat);
     const lng = Number(site.lng);
-    await expect(api(se2, '/staff/me/check-in', { method: 'POST', body: { lat: lat + 0.009, lng, accuracyM: 15 } })).rejects.toThrow(/You are 1(\.0)? km from .*check in from within 200 m/);
+    await expect(api(se2, '/staff/me/check-in', { method: 'POST', body: { lat: lat + 0.009, lng, accuracyM: 15 } })).rejects.toThrow(/You are 1(\.0)? km from .*mark in from within 200 m/);
     const day = await api<Day>(se2, '/staff/me/check-in', { method: 'POST', body: { lat: lat + 0.0005, lng, accuracyM: 30 } });
     expect(day.checkInPlace).toMatchObject({ inside: true });
     expect(day.checkInPlace!.distanceM).toBeGreaterThan(50);
@@ -57,6 +59,44 @@ test('a check-in records where the phone is, and a strict site refuses one from 
   await api(pm2, '/staff/register', { method: 'PUT', body: { projectId: me.employee!.projectId, date: today, entries: [{ employeeId: me.employee!.id, status: null }] } });
   const flagged = await api<Day>(se2, '/staff/me/check-in', { method: 'POST', body: { lat: Number(site.lat) + 0.02, lng: Number(site.lng), accuracyM: 10 } });
   expect(flagged.checkInPlace).toMatchObject({ inside: false });
+});
+
+/** A valid 1×1 PNG, for a face photo. */
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+
+async function upload(token: string, name: string): Promise<string> {
+  const form = new FormData();
+  form.append('file', new Blob([PNG], { type: 'image/png' }), name);
+  const res = await fetch(`${API_URL}/uploads`, { method: 'POST', headers: { authorization: `Bearer ${token}` }, body: form });
+  expect(res.ok, await res.clone().text()).toBe(true);
+  return ((await res.json()) as { id: string }).id;
+}
+
+/**
+ * Face attendance: the phone sends the person's own photo with Mark in and Mark out, and the site manager's register
+ * shows both. A photo someone else uploaded is refused.
+ */
+test('mark in and mark out keep the photo the person took', async () => {
+  const pm2 = await apiToken('pm2@demo.com');
+  const se2 = await apiToken('engineer2@demo.com');
+  const me = await api<Me>(se2, '/staff/me');
+  const today = istDay();
+  await api(pm2, '/staff/register', { method: 'PUT', body: { projectId: me.employee!.projectId, date: today, entries: [{ employeeId: me.employee!.id, status: null }] } });
+
+  const theirs = await upload(pm2, `face-${Date.now()}.png`);
+  await expect(api(se2, '/staff/me/check-in', { method: 'POST', body: { photoId: theirs } })).rejects.toThrow(/Your photo did not reach the server/);
+  const inPhoto = await upload(se2, `face-in-${Date.now()}.png`);
+  const day = await api<Day>(se2, '/staff/me/check-in', { method: 'POST', body: { photoId: inPhoto } });
+  expect(day.checkInPhoto?.id).toBe(inPhoto);
+  await expect(api(se2, '/staff/me/check-in', { method: 'POST', body: {} })).rejects.toThrow(/already marked in today/);
+  const outPhoto = await upload(se2, `face-out-${Date.now()}.png`);
+  const out = await api<Day>(se2, '/staff/me/check-out', { method: 'POST', body: { photoId: outPhoto } });
+  expect([out.checkInPhoto?.id, out.checkOutPhoto?.id]).toEqual([inPhoto, outPhoto]);
+
+  const reg = await api<Register>(pm2, `/staff/register?projectId=${me.employee!.projectId}&date=${today}`);
+  const row = reg.rows.find((r) => r.employee.id === me.employee!.id)!.attendance!;
+  expect([row.checkInPhoto?.id, row.checkOutPhoto?.id]).toEqual([inPhoto, outPhoto]);
+  await api(pm2, '/staff/register', { method: 'PUT', body: { projectId: me.employee!.projectId, date: today, entries: [{ employeeId: me.employee!.id, status: null }] } });
 });
 
 /**

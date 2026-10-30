@@ -45,9 +45,9 @@ test.describe.serial('staff attendance and leave', () => {
 
     await signIn(page, 'engineer@demo.com');
     await page.getByRole('link', { name: 'Staff and leave' }).click();
-    await page.getByRole('button', { name: 'Check in' }).click();
-    await expect(page.getByText('Checked in', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Check out' })).toBeVisible();
+    await page.getByRole('button', { name: 'Mark in' }).click();
+    await expect(page.getByText('Marked in', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Mark out' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Apply for leave' }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: 'Apply for leave' });

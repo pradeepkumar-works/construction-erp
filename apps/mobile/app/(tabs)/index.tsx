@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { HOME_TABS, homeTabsFor, isGuest, isSupplier, navMenuFor, navSettingsOf, type HomeTabKey } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { BillingBanner, IconButton, NotificationBell, OfflineBanner, Screen, Touchable } from '../../src/components';
 import { BottomSheet } from '../../src/components/BottomSheet';
 import { CompanyChoices } from '../../src/components/CompanySwitch';
 import { DayCard } from '../../src/home/DayCard';
+import { HomeTabs, TabPages } from '../../src/home/HomeTabs';
 import { MenuGrid } from '../../src/home/MenuGrid';
 import { useHomeMenu, type MenuItem } from '../../src/home/menu';
 import { useOpenNode } from '../../src/launcher/open';
@@ -14,12 +16,20 @@ import { useTileMenu } from '../../src/launcher/TileMenu';
 import { useLauncher } from '../../src/launcher/useLauncher';
 import { colors, fonts, fontSize, maxFontScale, spacing } from '../../src/theme';
 import { useT } from '../../src/i18n/LanguageContext';
+import { kvGet, kvSet } from '../../src/utils/kv';
+
+const TAB_KEY = 'home:tab';
+const savedTab = (): HomeTabKey => {
+  const v = kvGet(TAB_KEY);
+  return HOME_TABS.some((x) => x.key === v) ? (v as HomeTabKey) : 'overview';
+};
 
 /**
  * The Home tab (ARCHITECTURE "The launcher on the phone"): the person's day first (the time, check in and out, the HR
  * row), then the menu as a phone's home screen: My work, the pins and the company's modules under its own names. What
  * waits, today's DPR and the recent entries are one level down, in My work; Search and Recent are behind the search
- * icon. The company's name at the top switches company in a group.
+ * icon. The company's name at the top switches company in a group. Tabs over the menu (`homeTabsFor`) keep Overview as
+ * the menu and show the pages of the user's modules by the work they are for; the phone remembers the last one.
  */
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -29,6 +39,14 @@ export default function HomeScreen() {
   const { open, sheet } = useOpenNode(launcher.webUrl);
   const { openMenu, menu } = useTileMenu(launcher);
   const items = useHomeMenu(user, launcher);
+  const modules = useMemo(() => (user && !isGuest(user.roleKey) && !isSupplier(user.roleKey) ? navMenuFor(user, navSettingsOf(user)) : []), [user]);
+  const tabs = useMemo(() => homeTabsFor(modules), [modules]);
+  const [picked, setPicked] = useState<HomeTabKey>(savedTab);
+  const tab = tabs.some((x) => x.key === picked) ? picked : 'overview';
+  const pick = (key: HomeTabKey) => {
+    setPicked(key);
+    kvSet(TAB_KEY, key);
+  };
   const [refreshKey, setRefreshKey] = useState(0);
   const [switching, setSwitching] = useState(false);
   const group = (user?.companies?.length ?? 0) > 1;
@@ -69,7 +87,12 @@ export default function HomeScreen() {
       <OfflineBanner />
 
       <DayCard refreshKey={refreshKey} />
-      <MenuGrid items={items} onOpen={openItem} onMenu={openMenu} onEdit={() => router.push({ pathname: '/find', params: { edit: '1' } })} />
+      {tabs.length > 1 ? <HomeTabs tabs={tabs} value={tab} onChange={pick} /> : null}
+      {tab === 'overview' ? (
+        <MenuGrid items={items} onOpen={openItem} onMenu={openMenu} onEdit={() => router.push({ pathname: '/find', params: { edit: '1' } })} />
+      ) : (
+        <TabPages menu={modules} tab={tab} badges={launcher.badges} onOpen={open} onMenu={openMenu} />
+      )}
 
       {sheet}
       {menu}
