@@ -15,6 +15,8 @@ interface Props {
   icon?: keyof typeof Ionicons.glyphMap;
   size?: 'md' | 'sm';
   style?: ViewStyle;
+  /** What happens on a tap when the title does not say it (a camera opening) */
+  accessibilityHint?: string;
 }
 
 const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
@@ -26,7 +28,7 @@ const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
   ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
 };
 
-export function Button({ title, onPress, variant = 'primary', loading, disabled, icon, size = 'md', style }: Props) {
+export function Button({ title, onPress, variant = 'primary', loading, disabled, icon, size = 'md', style, accessibilityHint }: Props) {
   const p = palette[variant];
   const isDisabled = disabled || loading;
   return (
@@ -35,6 +37,7 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={title}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
       pressedStyle={styles.pressed}
       style={[styles.base, { backgroundColor: p.bg, borderColor: p.border, minHeight: size === 'sm' ? touch.heightSm : touch.height }, isDisabled && styles.disabled, style]}

@@ -4335,7 +4335,9 @@ model Attachment {
   photoCheck      PhotoCheck?
   drawingScales   DrawingScale[]
   drawingTakeoffs DrawingTakeoff[]
-  inboundMessages InboundMessage[] @relation("InboundMessageMedia")
+  inboundMessages InboundMessage[]  @relation("InboundMessageMedia")
+  staffMarkIns    StaffAttendance[] @relation("StaffMarkInPhoto")
+  staffMarkOuts   StaffAttendance[] @relation("StaffMarkOutPhoto")
 
   @@index([organizationId])
   // Every record lists its files: one index per parent column (item 83).
@@ -5536,6 +5538,11 @@ model StaffAttendance {
   /// Biometric attendance (v6 item 101): the device whose punches set check-in and check-out
   biometricDeviceId   String?
   biometricDevice     BiometricDevice?      @relation(fields: [biometricDeviceId], references: [id], onDelete: SetNull)
+  /// Face attendance: the photo the phone took of the person as they marked in and as they marked out
+  checkInPhotoId      String?
+  checkInPhoto        Attachment?           @relation("StaffMarkInPhoto", fields: [checkInPhotoId], references: [id], onDelete: SetNull)
+  checkOutPhotoId     String?
+  checkOutPhoto       Attachment?           @relation("StaffMarkOutPhoto", fields: [checkOutPhotoId], references: [id], onDelete: SetNull)
   markedById          String
   markedBy            User                  @relation("StaffAttendanceMarker", fields: [markedById], references: [id])
   createdAt           DateTime              @default(now())

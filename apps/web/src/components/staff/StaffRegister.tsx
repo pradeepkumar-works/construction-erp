@@ -16,7 +16,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { useProjects, useStaffRegister } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { CheckInPlaceTag, OvertimeTag, clock } from './staffUi';
+import { CheckInPlaceTag, FacePhotos, OvertimeTag, clock } from './staffUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeFontSize } from '@/lib/theme';
 
@@ -126,6 +126,7 @@ export function StaffRegister() {
           <Space orientation="vertical" size={2}>
             <span translate="no">{`${clock(r.attendance.checkIn)} - ${clock(r.attendance.checkOut)}`}</span>
             <CheckInPlaceTag place={r.attendance.checkInPlace} />
+            <FacePhotos attendance={r.attendance} />
           </Space>
         ) : (
           ''

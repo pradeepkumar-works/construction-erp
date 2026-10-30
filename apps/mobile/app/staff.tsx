@@ -25,7 +25,8 @@ import type { TranslateVars } from '../src/i18n/translate';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, Screen, SectionTitle } from '../src/components';
 import { colors, fontSize, spacing, toneIcon, typography, type Tone } from '../src/theme';
 import { formatDate, formatTime, isIsoDate, today } from '../src/utils/format';
-import { checkInPosition, metres } from '../src/utils/location';
+import { metres } from '../src/utils/location';
+import { useFaceMark } from '../src/home/faceMark';
 
 const STATUS_TONE: Record<LeaveStatus, Tone> = {
   PENDING: { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.waiting },
@@ -116,7 +117,7 @@ function OvertimeRow({ a, busy, onApprove, onReject }: { a: StaffAttendanceDto; 
 }
 
 /**
- * The signed-in person's staff record: check in and out for today, leave left for the year, apply for leave and see
+ * The signed-in person's staff record: face attendance for today (Mark in and Mark out with their photo), leave left for the year, apply for leave and see
  * their requests. Site managers and HR also approve the leave waiting on them here.
  */
 export default function StaffScreen() {
@@ -193,12 +194,7 @@ export default function StaffScreen() {
         ]);
   };
 
-  // Check-in sends where the phone is when the site has a location to measure from (v5 item 97).
-  const checkIn = () =>
-    void run(async () => {
-      const at = data?.site ? await checkInPosition() : null;
-      return api.post('/staff/me/check-in', at ?? {});
-    }, t('Checked in'));
+  const face = useFaceMark(me.reload);
 
   if (me.loading && !data) return <Loading />;
   if (me.error && !data) return <ErrorState message={me.error} onRetry={me.reload} />;
@@ -212,7 +208,7 @@ export default function StaffScreen() {
       <ErrorBanner message={error} />
       {!data.employee ? (
         <Card>
-          <Text style={typography.body}>{t('Your login is not linked to a staff record. Ask HR to link it, then you can check in and apply for leave here.')}</Text>
+          <Text style={typography.body}>{t('Your login is not linked to a staff record. Ask HR to link it, then you can mark in and apply for leave here.')}</Text>
         </Card>
       ) : (
         <>
@@ -241,11 +237,11 @@ export default function StaffScreen() {
                 {day.overtimeStatus === 'PENDING' ? <Text style={typography.caption}>{t('Overtime is paid once your manager approves it.')}</Text> : null}
               </>
             ) : (
-              <Text style={typography.caption}>{t('Not checked in yet.')}</Text>
+              <Text style={typography.caption}>{t('Not marked in yet.')}</Text>
             )}
             {!day?.checkIn && data.site ? (
               <Text style={typography.caption}>
-                {t(data.site.strict ? 'Check-in records your location: you must be within {distance} of {site}.' : 'Check-in records your location: it is flagged if you are more than {distance} from {site}.', {
+                {t(data.site.strict ? 'Mark in records your location: you must be within {distance} of {site}.' : 'Mark in records your location: it is flagged if you are more than {distance} from {site}.', {
                   distance: metres(data.site.radiusM),
                   site: data.site.projectName,
                 })}
@@ -253,9 +249,9 @@ export default function StaffScreen() {
             ) : null}
             <View style={styles.actions}>
               {!day?.checkIn ? (
-                <Button title={t('Check in')} icon="log-in-outline" loading={busy} onPress={checkIn} />
+                <Button title={t('Mark in')} icon="scan-outline" accessibilityHint={t('Opens the front camera for your photo')} loading={face.busy} onPress={() => face.markIn(!!data.site)} />
               ) : !day.checkOut ? (
-                <Button title={t('Check out')} icon="log-out-outline" variant="secondary" loading={busy} onPress={() => void run(() => api.post('/staff/me/check-out'), t('Checked out'))} />
+                <Button title={t('Mark out')} icon="scan-outline" variant="secondary" accessibilityHint={t('Opens the front camera for your photo')} loading={face.busy} onPress={face.markOut} />
               ) : null}
             </View>
           </Card>

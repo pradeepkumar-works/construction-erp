@@ -10,11 +10,20 @@ export interface WhatsNew {
 export const WHATS_NEW: WhatsNew[] = [
   {
     id: '2027-09-progress-dates',
-    date: '2027-09-13',
+    date: '2027-09-20',
     title: 'Contract dates in Progress by project',
     points: [
       'Progress by project’s Table shows each project’s start and completion dates, the extension of time granted in the delay register, the revised completion, when the schedule ends and the days left, beside its physical and financial progress.',
       'Time used sets the share of the contract time gone against the work done, and a claim for extension not yet granted is noted under EOT.',
+    ],
+  },
+  {
+    id: '2027-09-face-attendance',
+    date: '2027-09-13',
+    title: 'Face attendance and tabs on the phone’s Home',
+    points: [
+      'On the phone, check in and check out are now Mark in and Mark out. Each takes a photo of the person with the front camera, and the staff register shows the photos beside the times.',
+      'The phone’s Home has tabs over the menu: Overview as before, then Attendance and HR, Project work, Procurement and stores, Quality and safety, Accounts and reports and Admin, each with the pages you can open.',
     ],
   },
   {
