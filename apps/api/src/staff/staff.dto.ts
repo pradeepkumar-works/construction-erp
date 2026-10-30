@@ -88,6 +88,11 @@ export class CheckInDto {
   @ApiPropertyOptional({ description: 'Where the phone or browser is (v5 item 97), decimal degrees' }) @IsOptional() @IsNumber() @Min(-90) @Max(90) lat?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(-180) @Max(180) lng?: number;
   @ApiPropertyOptional({ description: 'How sure the position is, metres' }) @IsOptional() @IsNumber() @Min(0) @Max(100_000) accuracyM?: number;
+  @ApiPropertyOptional({ description: 'Face attendance: their photo, uploaded by them through POST /uploads as they mark in' }) @IsOptional() @IsUUID() photoId?: string;
+}
+
+export class CheckOutDto {
+  @ApiPropertyOptional({ description: 'Face attendance: their photo, uploaded by them through POST /uploads as they mark out' }) @IsOptional() @IsUUID() photoId?: string;
 }
 
 export class RegisterQuery {

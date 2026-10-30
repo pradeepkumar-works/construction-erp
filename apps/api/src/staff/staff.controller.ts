@@ -8,6 +8,7 @@ import {
   AttendanceQuery,
   BalanceQuery,
   CheckInDto,
+  CheckOutDto,
   CreateEmployeeDto,
   CreateHolidayDto,
   EmployeeDocumentsDto,
@@ -42,16 +43,16 @@ export class StaffController {
     return this.staff.me(user);
   }
 
-  @ApiOperation({ summary: 'Check in for today (at their posting unless a project is given)' })
+  @ApiOperation({ summary: 'Mark in for today (at their posting unless a project is given), with their photo from the phone' })
   @Post('me/check-in')
   checkIn(@CurrentUser() user: RequestUser, @Body() dto: CheckInDto) {
     return this.staff.checkIn(user, dto);
   }
 
-  @ApiOperation({ summary: 'Check out: time past a 9-hour day is overtime, in half hours' })
+  @ApiOperation({ summary: 'Mark out, with their photo from the phone: time past a 9-hour day is overtime, in half hours' })
   @Post('me/check-out')
-  checkOut(@CurrentUser() user: RequestUser) {
-    return this.staff.checkOut(user);
+  checkOut(@CurrentUser() user: RequestUser, @Body() dto: CheckOutDto) {
+    return this.staff.checkOut(user, dto);
   }
 
   /* employees */

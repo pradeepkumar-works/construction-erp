@@ -193,7 +193,7 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
             <Form.Item name="phone" label="Phone" rules={[phoneRule]}>
               <Input {...PHONE_INPUT} />
             </Form.Item>
-            <Form.Item name="userId" label="Login" extra="Lets them check in, apply for leave and see their own record">
+            <Form.Item name="userId" label="Login" extra="Lets them mark in and out, apply for leave and see their own record">
               <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="No login" options={(users ?? []).map((u) => ({ value: u.id, label: `${u.fullName} (${u.email}, ${u.roleName})` }))} />
             </Form.Item>
           </FormGrid>

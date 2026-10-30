@@ -10,11 +10,20 @@ export interface WhatsNew {
 export const WHATS_NEW: WhatsNew[] = [
   {
     id: '2027-09-supplier-choice',
-    date: '2027-09-13',
+    date: '2027-09-20',
     title: 'Approve the supplier before the order',
     points: [
       'Admin, Approval rules has a switch: Orders wait for an approved supplier choice. With it on, finalising L1 under Purchases, Requests to order sends the choice to the approver, with the ranking, what it costs against L1 and why when it is not L1.',
       'The approver decides it from Approvals like any entry (not the person who finalised it). Once approved, purchase raises the order on that supplier; a rejected or sent back choice goes back to Finalise L1.',
+    ],
+  },
+  {
+    id: '2027-09-face-attendance',
+    date: '2027-09-13',
+    title: 'Face attendance and tabs on the phone’s Home',
+    points: [
+      'On the phone, check in and check out are now Mark in and Mark out. Each takes a photo of the person with the front camera, and the staff register shows the photos beside the times.',
+      'The phone’s Home has tabs over the menu: Overview as before, then Attendance and HR, Project work, Procurement and stores, Quality and safety, Accounts and reports and Admin, each with the pages you can open.',
     ],
   },
   {

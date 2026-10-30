@@ -1,11 +1,14 @@
 'use client';
 
 import React from 'react';
+import { Image, Space } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import type { LeaveRequestDto, LeaveStatus, OvertimeStatus, StaffAttendanceDto, StaffAttendanceStatus } from '@erp/shared';
 import { LEAVE_STATUS_LABELS, OVERTIME_STATUS_LABELS, STAFF_ATTENDANCE_LABELS } from '@erp/shared';
 import { formatDate } from '@/lib/format';
+import { fileUrl } from '@/lib/api';
+import { themeColor } from '@/lib/theme';
 
 export const LEAVE_STATUS_COLORS: Record<LeaveStatus, string> = { PENDING: 'orange', APPROVED: 'green', REJECTED: 'red', CANCELLED: 'default' };
 export const ATTENDANCE_COLORS: Record<StaffAttendanceStatus, string> = { PRESENT: 'green', HALF_DAY: 'gold', ABSENT: 'red' };
@@ -36,6 +39,24 @@ export function CheckInPlaceTag({ place }: { place: StaffAttendanceDto['checkInP
     <AppTag tone="success">At the site{place.distanceM !== null ? ` (${metres(place.distanceM)})` : ''}</AppTag>
   ) : (
     <AppTag tone="pending">Outside the site{place.distanceM !== null ? `, ${metres(place.distanceM)} away` : ''}</AppTag>
+  );
+}
+
+/** Face attendance: the photos the phone took as the person marked in and out, small, each opening full size. */
+export function FacePhotos({ attendance, size = 36 }: { attendance: Pick<StaffAttendanceDto, 'employeeName' | 'checkInPhoto' | 'checkOutPhoto'>; size?: number }) {
+  const shots = [
+    { photo: attendance.checkInPhoto, alt: `${attendance.employeeName} marking in` },
+    { photo: attendance.checkOutPhoto, alt: `${attendance.employeeName} marking out` },
+  ].filter((x) => !!x.photo);
+  if (!shots.length) return null;
+  return (
+    <Image.PreviewGroup>
+      <Space size={4}>
+        {shots.map(({ photo, alt }) => (
+          <Image key={photo!.id} src={fileUrl(photo!.url)} alt={alt} width={size} height={size} style={{ objectFit: 'cover', borderRadius: 6, border: `1px solid ${themeColor('colorBorderSecondary')}` }} />
+        ))}
+      </Space>
+    </Image.PreviewGroup>
   );
 }
 

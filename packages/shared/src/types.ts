@@ -3091,6 +3091,9 @@ export interface StaffAttendanceDto {
   overtimeNote: string | null;
   /** Where the check-in was, when a position was sent; inside is null when the site has no location */
   checkInPlace: { lat: string; lng: string; accuracyM: number | null; distanceM: number | null; inside: boolean | null } | null;
+  /** Face attendance: the photo the phone took as they marked in and as they marked out */
+  checkInPhoto: AttachmentDto | null;
+  checkOutPhoto: AttachmentDto | null;
   /** The caller may approve or reject the waiting overtime */
   canDecideOvertime: boolean;
   note: string | null;

@@ -37,7 +37,7 @@ for (const file of [...walk(join(root, 'app')), ...walk(join(root, 'src'))].filt
 }
 
 // The navigation tree's names, descriptions and groups reach t() as values (Home's tiles, the module screens, launcher phase 4).
-const { NAV_TREE, AREA_MODULES, DEPARTMENT_MODULES } = await import('@erp/shared');
+const { NAV_TREE, AREA_MODULES, DEPARTMENT_MODULES, HOME_TABS } = await import('@erp/shared');
 for (const n of NAV_TREE.filter((x) => x.status === 'live')) {
   for (const en of [n.label, n.description, n.group, typeof n.nav === 'string' ? n.nav : undefined]) if (en && !dict.has(en)) missing.set(en, `NAV_TREE ${n.id}`);
 }
@@ -45,6 +45,9 @@ for (const n of NAV_TREE.filter((x) => x.status === 'live')) {
 for (const m of [...AREA_MODULES, ...DEPARTMENT_MODULES]) {
   for (const en of [m.label, m.description, ...m.subs.map((s) => s.label)]) if (en && !dict.has(en)) missing.set(en, `menu module ${m.key}`);
 }
+
+// Home's tabs over the menu.
+for (const tab of HOME_TABS) if (!dict.has(tab.label)) missing.set(tab.label, `HOME_TABS ${tab.key}`);
 
 for (const [en, file] of missing) console.log(`no Hindi: "${en}" (${file})`);
 for (const p of problems) console.log(p);
