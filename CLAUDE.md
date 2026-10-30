@@ -378,6 +378,11 @@ and the pre-delivery checklist.
   `PlantBatchesService.take` (`readPlantRow`); a row is read only by `readBatchRow` through the plant's column map, which is
   checked only by `columnMapProblem` (`@erp/shared/batching.ts`), and becomes a challan only through `RmcService.dispatch`
   with `plantRowId` (one batch, one challan). Keep `src/scripts/batching-test.ts` and the Connector's `npm test` passing.
+- Contract obligations (item 167, `apps/api/src/contracts`, ARCHITECTURE "Contract obligations and recoveries"): a deadline is
+  only `obligationDue` over the project's anchors (`anchorsOf`, completion after the extensions granted) and what one costs
+  only `penaltyAsOf` (`@erp/shared/contract-obligations.ts`); a bill deducts them only through `billTotals`'
+  `obligationRecovery` (`billRecoveryLines` against what earlier bills took), and the security deposit stops at its cap only
+  by `cappedSecurityDeposit`. Keep `src/scripts/contract-obligations-test.ts` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

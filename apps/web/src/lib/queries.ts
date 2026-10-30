@@ -145,6 +145,7 @@ import type {
   VendorKind,
   ProjectContractDto,
   BillingBreakupDto,
+  ContractObligationsDto,
   EpcDto,
   OmDto,
   GettingStartedDto,
@@ -2857,6 +2858,14 @@ export const useContract = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['contract', projectId],
     queryFn: async () => (await api.get<ProjectContractDto>(`/projects/${projectId}/contract`)).data,
+    enabled: !!projectId && enabled,
+  });
+
+/** A contract's obligations (item 167): deadlines, where each stands, what missing it costs and what bills took. */
+export const useContractObligations = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['contract', projectId, 'obligations'],
+    queryFn: async () => (await api.get<ContractObligationsDto>(`/projects/${projectId}/contract/obligations`)).data,
     enabled: !!projectId && enabled,
   });
 

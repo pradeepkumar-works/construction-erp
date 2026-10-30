@@ -2,6 +2,8 @@ import { Prisma } from '@prisma/client';
 import { BILLABLE_BOQ_ITEM } from '../variations/variations.service';
 import type { BillStagePlan } from '../stage-billing/stage-plan';
 import { windowRecovery } from '../stage-billing/stage-billing-rules';
+import { cappedSecurityDeposit } from '@erp/shared';
+import { obligationRecovery } from '../contracts/obligation-recovery';
 
 /*
  * Pricing an RA bill: its measured lines, its work value, GST, deductions and net payable. `RaBillsService` runs it on
@@ -57,7 +59,7 @@ export interface Line {
 }
 
 /** What a bill's advance recovery and stage billing read from the project. */
-export const TERMS_SELECT = { mobilisationAdvance: true, contractValue: true, advanceRecoveryFromPct: true, advanceRecoveryToPct: true } satisfies Prisma.ProjectSelect;
+export const TERMS_SELECT = { mobilisationAdvance: true, contractValue: true, advanceRecoveryFromPct: true, advanceRecoveryToPct: true, securityDepositCapPct: true } satisfies Prisma.ProjectSelect;
 export type Terms = Prisma.ProjectGetPayload<{ select: typeof TERMS_SELECT }>;
 
 /** The project's percentages and terms a bill is priced with. */
@@ -100,11 +102,12 @@ export async function measuredLines(tx: Prisma.TransactionClient, bill: { id: st
 /**
  * Work value, price variation, GST, deductions and net payable of a set of lines priced on certified (else claimed)
  * quantities, with the stages' amounts and the slippage withheld (item 129). GST and the deductions are on work value +
- * price variation.
+ * price variation. A works bill also deducts what the contract's missed obligations cost as of its date, and holds the
+ * security deposit to its cap (item 167).
  */
 export async function billTotals(
   tx: Prisma.TransactionClient,
-  bill: { id: string; projectId: string; billNo: number; otherDeduction: Prisma.Decimal },
+  bill: { id: string; projectId: string; billNo: number; billDate: Date; otherDeduction: Prisma.Decimal },
   lines: Line[],
   pcts: Percentages,
   terms: Terms,
@@ -116,9 +119,11 @@ export async function billTotals(
   const amounts = lines.map((l) => round2((l.certifiedQty ?? l.thisQty).mul(l.rate)));
   const grossAmount = amounts.reduce((s, a) => s.add(a), plan?.stageAmount ?? om?.amount ?? ZERO);
   const grossPrevious = lines.reduce((s, l) => s.add(round2(l.prevQty.mul(l.rate))), plan?.stagePrevious ?? om?.previous ?? ZERO);
-  const [recovered, pvLines] = await Promise.all([
-    tx.raBill.aggregate({ where: { projectId: bill.projectId, billNo: { lt: bill.billNo } }, _sum: { advanceRecoveryAmount: true } }),
+  const [recovered, pvLines, obligations] = await Promise.all([
+    tx.raBill.aggregate({ where: { projectId: bill.projectId, billNo: { lt: bill.billNo } }, _sum: { advanceRecoveryAmount: true, securityDepositAmount: true } }),
     tx.raBillPvLine.findMany({ where: { billId: bill.id }, select: { id: true, sharePct: true, baseIndex: true, currentIndex: true } }),
+    // An O&M bill (item 131) takes no works obligations: those belonged to the construction contract.
+    om ? null : obligationRecovery(tx, bill, terms.contractValue),
   ]);
   const outstanding = Prisma.Decimal.max(advance.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
   const pvAmounts = pvLines.map((l) => ({ id: l.id, amount: pvLineAmount(grossAmount, l) }));
@@ -145,16 +150,29 @@ export async function billTotals(
     gstTdsPct: pcts.gstTdsPct,
     labourCessPct: pcts.labourCessPct,
     retentionAmount: pctOf(base, pcts.retentionPct),
-    securityDepositAmount: pctOf(base, pcts.securityDepositPct),
+    securityDepositAmount: D(
+      cappedSecurityDeposit(
+        pctOf(base, pcts.securityDepositPct).toNumber(),
+        terms.securityDepositCapPct ? terms.securityDepositCapPct.toNumber() : null,
+        Number(terms.contractValue ?? 0),
+        grossPrevious.add(grossAmount).toNumber(),
+        Number(recovered._sum.securityDepositAmount ?? 0),
+      ),
+    ),
     advanceRecoveryAmount: windowed ?? Prisma.Decimal.min(pctOf(base, pcts.advanceRecoveryPct), outstanding),
     tdsAmount: pctOf(base, pcts.tdsPct),
     gstTdsAmount: pctOf(base, pcts.gstTdsPct),
     labourCessAmount: pctOf(base, pcts.labourCessPct),
   };
   const omPenalty = om?.penalty ?? ZERO;
-  const totalDeductions = PCT_DEDUCTIONS.reduce((s, [, , k]) => s.add(data[k]), ZERO).add(bill.otherDeduction).add(slippageWithheld).add(omPenalty);
+  const obligationAmount = obligations?.total ?? ZERO;
+  const totalDeductions = PCT_DEDUCTIONS.reduce((s, [, , k]) => s.add(data[k]), ZERO).add(bill.otherDeduction).add(slippageWithheld).add(omPenalty).add(obligationAmount);
   const slippageLines = (plan?.slippageLines ?? []) as unknown as Prisma.InputJsonValue;
-  return { amounts, data: { ...data, slippageWithheld, slippageLines, omPenalty, totalDeductions, netPayable: grossAmount.add(pvAmount).add(data.gstAmount).sub(totalDeductions) } };
+  const obligationLines = (obligations?.lines ?? []) as unknown as Prisma.InputJsonValue;
+  return {
+    amounts,
+    data: { ...data, slippageWithheld, slippageLines, omPenalty, obligationRecovery: obligationAmount, obligationLines, totalDeductions, netPayable: grossAmount.add(pvAmount).add(data.gstAmount).sub(totalDeductions) },
+  };
 }
 
 /** Write a priced bill: its lines, its stage lines and its totals. */

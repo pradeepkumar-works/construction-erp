@@ -915,6 +915,22 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
 165. **Reading `.mpp` schedules** (M).
 166. **Client collections by link or UPI** (M).
 
+## Tender alignment (items 167 to 169)
+
+Asked by Pradeep on 30 Oct 2026: are we aligned with real business, against a consultant's terms of reference, two
+contractors' water supply tenders, their BOQs and the sample reports. The gap analysis is the Claude Doc "Nirmaan against
+real tenders: gap analysis"; Pradeep chose items 1 to 3 of it, in order.
+
+167. ~~**Contract obligations and recoveries** (M).~~ Done: each obligation of the contract with its clause, who owes it,
+     its deadline from the agreement, start, completion or handover, and what missing it costs; RA bills deduct it as named
+     Contract recoveries and give a withholding back once met; reminders a week before and when it passes; the security
+     deposit held to a cap of the contract value. ARCHITECTURE "Contract obligations and recoveries".
+168. **Consultant checks in the portal** (M): tiered check measurement (100%, 25%, 10% and 3% by the consultant's level),
+     hidden work signed off against its inspection and countersigned, and a site order book with compliance replies.
+169. **Programme submissions and extension of time applications** (M): the programme submitted and approved with its
+     update interval and the 0.20% watch, and EOT applications as records (sent, forwarded, decided within 30 days, EOT
+     for a variation) that write the delay register's `eotGrantedDays`.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

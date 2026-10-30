@@ -69,5 +69,6 @@ export const BILL_DEDUCTION_LABELS = {
   labourCess: 'Labour welfare cess',
   slippage: 'Milestone slippage withheld',
   omPenalty: 'Service level penalties',
+  obligations: 'Contract recoveries',
   other: 'Other deduction',
 } as const;
