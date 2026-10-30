@@ -2776,7 +2776,7 @@ export; the client portal and the phone app show the amount.
 A works contract binds both sides to more than its completion date: the programme within 15 days of the agreement, a
 field laboratory within two months, the technical staff the bid named from the start, the final account within 21 days of
 completion and the Engineer's certificate on it 45 days later. Each is a `ContractObligation` on the project (tenant table
-with its `tenant_isolation` policy, migration `20270517090000_contract_obligations`): a title and clause, who owes it
+with its `tenant_isolation` policy, migration `20270510090000_contract_obligations`): a title and clause, who owes it
 (`CONTRACTOR`, or `CLIENT` for ours to chase, which carries no penalty), what its deadline is counted from (`AGREEMENT`,
 `START`, `COMPLETION` after the extensions granted in the delay register, `HANDOVER`'s completion date, or a `DATE` of its
 own) and how many months and days after, what missing it costs (`WITHHOLD_PCT` of the contract value while unmet, given
