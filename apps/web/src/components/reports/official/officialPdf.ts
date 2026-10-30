@@ -7,7 +7,7 @@ import { controlFacts, factText, footNote, issueLine, WIDE_COLUMNS } from './off
 import { loadPhotos, type PhotoData } from './photoData';
 
 /**
- * An official progress report as a PDF file (item 167), drawn from the same `OfficialReportDto` as the page: the
+ * An official progress report as a PDF file (item 170), drawn from the same `OfficialReportDto` as the page: the
  * document control strip on every page, "Page x of y" and the document number at the foot, the facts box, chapters,
  * photographs two to a row and the signature boxes. pdfmake and its Roboto font (about 1.5 MB) load on the first
  * download, not with the page.

@@ -1,5 +1,5 @@
 /**
- * Official progress reports' tests (item 167): the periods a report covers, its number counted from the project's
+ * Official progress reports' tests (item 170): the periods a report covers, its number counted from the project's
  * start and its document number, the period in words, how late a component is, a component's status in words, and the
  * summary paragraph a weekly or monthly report opens with.
  *

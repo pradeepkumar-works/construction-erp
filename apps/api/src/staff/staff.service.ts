@@ -33,6 +33,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { UndoService } from '../common/undo.service';
+import { ATTACHMENT_FIELDS, AttachmentsService } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { todayIn } from '../notifications/time';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
@@ -43,6 +44,7 @@ import {
   AttendanceQuery,
   BalanceQuery,
   CheckInDto,
+  CheckOutDto,
   CreateEmployeeDto,
   CreateHolidayDto,
   DecideLeaveDto,
@@ -66,6 +68,8 @@ const attendanceInclude = {
   project: { select: { name: true } },
   markedBy: { select: { fullName: true } },
   overtimeDecidedBy: { select: { fullName: true } },
+  checkInPhoto: { select: ATTACHMENT_FIELDS },
+  checkOutPhoto: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.StaffAttendanceInclude;
 type AttendanceRow = Prisma.StaffAttendanceGetPayload<{ include: typeof attendanceInclude }>;
 
@@ -158,6 +162,7 @@ export class StaffService {
     private audit: AuditService,
     private notifications: NotificationsService,
     private undo: UndoService,
+    private attachments: AttachmentsService,
   ) {
     undo.register('HOLIDAY', { entityType: 'HOLIDAY', check: (user) => this.access.assertCanManageStaff(user) });
   }
@@ -236,6 +241,8 @@ export class StaffService {
         a.checkInLat && a.checkInLng
           ? { lat: a.checkInLat.toString(), lng: a.checkInLng.toString(), accuracyM: a.checkInAccuracyM, distanceM: a.checkInDistanceM, inside: a.checkInInside }
           : null,
+      checkInPhoto: a.checkInPhoto ? this.attachments.toDto(a.checkInPhoto) : null,
+      checkOutPhoto: a.checkOutPhoto ? this.attachments.toDto(a.checkOutPhoto) : null,
       canDecideOvertime: a.overtimeStatus === 'PENDING' && this.access.canDecideLeave(user, a.employee),
       note: a.note,
       markedByName: a.markedBy.fullName,
@@ -357,7 +364,7 @@ export class StaffService {
   /**
    * Self check-in from the app: today, at their posting unless they say which site. With a position (v5 item 97) it
    * records where they were and whether that was inside the site's radius; a strict site refuses a check-in from
-   * outside it or without a position.
+   * outside it or without a position. The phone sends the person's photo (face attendance), kept on the day.
    */
   async checkIn(user: RequestUser, dto: CheckInDto): Promise<StaffAttendanceDto> {
     const e = await this.ownEmployee(user);
@@ -366,13 +373,14 @@ export class StaffService {
     if (dto.projectId && dto.projectId !== e.projectId) await this.access.assertCanAccessProject(user, dto.projectId);
     const date = parseDate(todayIn());
     const cur = await this.prisma.staffAttendance.findUnique({ where: { employeeId_date: { employeeId: e.id, date } } });
-    if (cur?.checkIn) throw new BadRequestException('You have already checked in today');
+    if (cur?.checkIn) throw new BadRequestException('You have already marked in today');
+    const checkInPhotoId = await this.ownPhoto(user, dto.photoId);
     const site = this.toSite(projectId ? await this.prisma.project.findUnique({ where: { id: projectId }, select: siteSelect }) : null);
     const hasPosition = dto.lat !== undefined && dto.lng !== undefined;
     const place = site && hasPosition ? checkInPlace({ lat: Number(site.lat), lng: Number(site.lng), radiusM: site.radiusM }, { lat: dto.lat!, lng: dto.lng!, accuracyM: dto.accuracyM ?? null }) : null;
-    if (site?.strict && !hasPosition) throw new BadRequestException(`${site.projectName} checks your location at check-in. Allow location for this app and try again.`);
+    if (site?.strict && !hasPosition) throw new BadRequestException(`${site.projectName} checks your location when you mark in. Allow location for this app and try again.`);
     if (site?.strict && place && !place.inside) {
-      throw new BadRequestException(`You are ${km(place.distanceM)} from ${site.projectName}; check in from within ${site.radiusM} m of the site, or ask your manager to mark you in the register.`);
+      throw new BadRequestException(`You are ${km(place.distanceM)} from ${site.projectName}; mark in from within ${site.radiusM} m of the site, or ask your manager to mark you in the register.`);
     }
     const position = hasPosition
       ? {
@@ -385,11 +393,11 @@ export class StaffService {
       : {};
     const now = new Date();
     const row = cur
-      ? await this.prisma.staffAttendance.update({ where: { id: cur.id }, data: { checkIn: now, status: 'PRESENT', projectId: projectId ?? cur.projectId, ...position }, include: attendanceInclude })
+      ? await this.prisma.staffAttendance.update({ where: { id: cur.id }, data: { checkIn: now, status: 'PRESENT', projectId: projectId ?? cur.projectId, checkInPhotoId, ...position }, include: attendanceInclude })
       : await this.prisma.staffAttendance
-          .create({ data: { organizationId: user.organizationId, employeeId: e.id, date, projectId, status: 'PRESENT', checkIn: now, markedById: user.id, ...position }, include: attendanceInclude })
+          .create({ data: { organizationId: user.organizationId, employeeId: e.id, date, projectId, status: 'PRESENT', checkIn: now, markedById: user.id, checkInPhotoId, ...position }, include: attendanceInclude })
           .catch((err) => {
-            if (isUniqueViolation(err)) throw new BadRequestException('You have already checked in today');
+            if (isUniqueViolation(err)) throw new BadRequestException('You have already marked in today');
             throw err;
           });
     return this.toAttendanceDto(row, user);
@@ -399,23 +407,32 @@ export class StaffService {
    * Check-out: overtime is the time past a standard day in half hours and waits for the site manager or HR (v5 item
    * 97); under half a day is marked a half day.
    */
-  async checkOut(user: RequestUser): Promise<StaffAttendanceDto> {
+  async checkOut(user: RequestUser, dto: CheckOutDto = {}): Promise<StaffAttendanceDto> {
     const e = await this.ownEmployee(user);
     if (!e) throw new BadRequestException('Your login is not linked to a staff record. Ask HR to link it.');
     const cur = await this.prisma.staffAttendance.findUnique({ where: { employeeId_date: { employeeId: e.id, date: parseDate(todayIn()) } } });
-    if (!cur?.checkIn) throw new BadRequestException('Check in first');
-    if (cur.checkOut) throw new BadRequestException('You have already checked out today');
+    if (!cur?.checkIn) throw new BadRequestException('Mark in first');
+    if (cur.checkOut) throw new BadRequestException('You have already marked out today');
+    const checkOutPhotoId = await this.ownPhoto(user, dto.photoId);
     const now = new Date();
     const hours = (now.getTime() - cur.checkIn.getTime()) / 3_600_000;
     const ot = overtimeHours(cur.checkIn.toISOString(), now.toISOString());
     const row = await this.prisma.staffAttendance.update({
       where: { id: cur.id },
-      data: { checkOut: now, overtimeHours: ot, overtimeStatus: ot ? 'PENDING' : null, status: hours < STANDARD_DAY_HOURS / 2 ? 'HALF_DAY' : 'PRESENT' },
+      data: { checkOut: now, checkOutPhotoId, overtimeHours: ot, overtimeStatus: ot ? 'PENDING' : null, status: hours < STANDARD_DAY_HOURS / 2 ? 'HALF_DAY' : 'PRESENT' },
       include: attendanceInclude,
     });
     const out = this.toAttendanceDto(row, user);
     if (ot) await this.notifyOvertime(user, out, e.projectId);
     return out;
+  }
+
+  /** A face attendance photo: an image the person uploaded themselves, not yet kept on anything. */
+  private async ownPhoto(user: RequestUser, photoId: string | undefined): Promise<string | null> {
+    if (!photoId) return null;
+    const photo = await this.prisma.attachment.findFirst({ where: { id: photoId, organizationId: user.organizationId, uploadedById: user.id, mimeType: { startsWith: 'image/' } }, select: { id: true } });
+    if (!photo) throw new BadRequestException('Your photo did not reach the server. Take it again.');
+    return photo.id;
   }
 
   /* ---------- employees ---------- */

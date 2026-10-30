@@ -238,7 +238,7 @@ export const NAV: Record<string, string> = {
   'Vouchers for Tally with projects as cost centres.': 'प्रोजेक्ट को कॉस्ट सेंटर मानकर Tally के लिए वाउचर।',
   'Loans on financed machines: EMI schedules, EMIs paid and due, and what is owed to each lender.': 'फ़ाइनेंस की गई मशीनों के लोन: EMI शेड्यूल, चुकाई और बाकी EMI, और हर ऋणदाता का बकाया।',
   'My attendance and leave': 'मेरी हाज़िरी और छुट्टी',
-  'Check in, apply for leave, see your balance.': 'चेक इन करें, छुट्टी माँगें, अपना बैलेंस देखें।',
+  'Mark in and out with your photo, apply for leave, see your balance.': 'अपनी फ़ोटो से आने-जाने की हाज़िरी लगाएँ, छुट्टी माँगें, अपना बैलेंस देखें।',
   'Staff and leave': 'स्टाफ़ और छुट्टी',
   'Your payslips by month, once the month is approved.': 'महीने के अनुसार आपकी पेस्लिप, महीना मंज़ूर होने के बाद।',
   'Leave to decide': 'तय करनी बाकी छुट्टियाँ',

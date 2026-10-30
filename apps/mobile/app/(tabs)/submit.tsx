@@ -34,7 +34,7 @@ const ROLL_CALL = { href: '/roll-call', icon: 'checkbox-outline' as const, tone:
 
 const IMPREST = { href: '/imprest', icon: 'cash' as const, tone: colors.tileOchre, title: 'My imprest', text: 'Petty cash in hand after your cash expenses; ask accounts for a top-up.' };
 
-const MY_STAFF = { href: '/staff', icon: 'calendar' as const, tone: colors.tileLime, title: 'My attendance & leave', text: 'Check in and out, see your leave balance and apply for leave.' };
+const MY_STAFF = { href: '/staff', icon: 'calendar' as const, tone: colors.tileLime, title: 'My attendance and leave', text: 'Mark in and out with your photo, see your leave balance and apply for leave.' };
 
 const PAYSLIPS = { href: '/payslips', icon: 'wallet' as const, tone: colors.tileGreen, title: 'My payslips', text: 'Your salary each month once it is approved: days paid, earnings, PF, tax and net pay.' };
 

@@ -915,9 +915,9 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
 165. **Reading `.mpp` schedules** (M).
 166. **Client collections by link or UPI** (M).
 
-## Official progress reports (item 167)
+## Official progress reports (item 170)
 
-167. ~~**Daily, weekly and monthly progress reports for the client** (M).~~ Done: Reports › Progress reports makes the
+170. ~~**Daily, weekly and monthly progress reports for the client** (M).~~ Done: Reports › Progress reports makes the
      daily, weekly and monthly progress report (MPR) of a project in the company's own design, laid out after the
      reports a PIU and its consultant ask for on a water supply scheme: the contract box, progress by component with
      its weight and status in words, the activities as per the approved programme, the work done entry by entry with

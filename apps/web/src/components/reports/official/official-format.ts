@@ -3,7 +3,7 @@ import { formatDate, formatDateTime } from '@/lib/format';
 import { cellText } from '@/components/management/report-format';
 
 /**
- * What an official report's facts and labels read as, shared by the page, print, PDF, Word and Excel (item 167,
+ * What an official report's facts and labels read as, shared by the page, print, PDF, Word and Excel (item 170,
  * ARCHITECTURE "Official progress reports"): cells read through the management reports' `cellText`, so a rupee, a date
  * or a % looks the same in all of them.
  */

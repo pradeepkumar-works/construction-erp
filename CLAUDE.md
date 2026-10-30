@@ -350,7 +350,7 @@ and the pre-delivery checklist.
   `group-rules.ts`; keep `src/scripts/group-companies-test.ts` passing. A new company kind is a `CompanyKind` (schema +
   shared + label + Hindi) and its `COMPANY_KIND_INFO`. Reading across companies is `withoutTenant(async () => await …)`:
   a Prisma query returned unawaited from the callback runs later under the request's company, where RLS hides the rest.
-- Official progress reports (item 167, `apps/api/src/official-reports`, ARCHITECTURE "Official progress reports"): the daily,
+- Official progress reports (item 170, `apps/api/src/official-reports`, ARCHITECTURE "Official progress reports"): the daily,
   weekly and monthly reports for the client are one `OfficialReportDto` from `OfficialReportsService.build`, drawn by the
   page, Print, PDF, Word and Excel in `components/reports/official/` (never a second set of figures); periods, numbers
   and words are pure in `@erp/shared/official-reports.ts`, and an issued copy is only `OfficialReportsService.issue`'s

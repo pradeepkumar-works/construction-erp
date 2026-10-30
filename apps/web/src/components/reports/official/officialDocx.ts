@@ -5,7 +5,7 @@ import { controlFacts, factText, footNote, issueLine, WIDE_COLUMNS } from './off
 import { loadPhotos, type PhotoData } from './photoData';
 
 /**
- * An official progress report as a Word file (item 167), for a client who wants to add their own lines before it is
+ * An official progress report as a Word file (item 170), for a client who wants to add their own lines before it is
  * signed: the same `OfficialReportDto` as the page and the PDF, with the document control strip in the page header and
  * "Page x of y" in the footer. The docx library loads on the first download.
  */

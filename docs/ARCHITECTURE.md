@@ -495,8 +495,10 @@ screen. It carries no overview: what waits, today's DPR and recent entries are o
 
 - **The top bar**: the mark, the company's name (in a group, a tap opens Switch company, `CompanyChoices` in
   `src/components/CompanySwitch.tsx`, shared with Profile), Search and the bell.
-- **The day card** (`src/home/DayCard.tsx`): the time, check in and check out for today over `GET /staff/me` and
-  `POST /staff/me/check-in|check-out` (with the phone's position where the site has one, as the Attendance and leave screen),
+- **The day card** (`src/home/DayCard.tsx`): the time, then **face attendance**, Mark in and Mark out for today over
+  `GET /staff/me` and `POST /staff/me/check-in|check-out` through `useFaceMark` (`src/home/faceMark.ts`, shared with the
+  Attendance and leave screen): each opens the front camera, the person's photo is uploaded and sent as `photoId`, and
+  closing the camera marks nothing; Mark in also sends the phone's position where the site has one,
   then the HR row: days present this month (`MyStaffDto.monthPresent`), leave left, the last payslip, and the next holiday,
   or for those who mark staff, the leave and overtime waiting on them (`GET /staff/summary`). A login with no staff record
   sees a line asking HR to link it.
@@ -507,6 +509,12 @@ screen. It carries no overview: what waits, today's DPR and recent entries are o
   carries the approvals by type beside the node counts. A long press on a page or one of the tree's modules opens its menu
   (`src/launcher/TileMenu.tsx`: Pin to Home, or Move earlier, Move later and Unpin with Undo); screen readers get the same
   menu as an action. The last icon, Edit menu, opens `app/find.tsx` with every page of each module and a pin on each.
+- **The tabs over the menu** (`src/home/HomeTabs.tsx`): Overview is the menu above; the others (Attendance and HR, Project
+  work, Procurement and stores, Quality and safety, Accounts and reports, Admin) show the pages of the user's own menu by
+  the work they are for, a heading per module under the company's name (it opens the module's screen, where its masters
+  are) and its pages as icons. Which tab a module or sub-module belongs to is `homeTabOf` and a tab's pages
+  `homeTabSections` (`@erp/shared/nav-menu.ts`, tested in `nav-menu-test.ts`); a tab with nothing the user may open is
+  not shown (`homeTabsFor`). The phone remembers the last tab (`home:tab` in the kv store).
 - **Search** (`app/find.tsx`, the top bar's icon): the modules and pages of the menu by name, words or line (`findInMenu`
   in `src/home/find.ts`), and with nothing typed, Recent (the latest visits from any device) and the modules.
 - **My work** (`app/my-work.tsx`, the first icon): the company's day for those who lead with it, **Today on site** (each
@@ -1776,6 +1784,12 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   the register, on My attendance and on the overtime list); a strict site refuses a check-in from outside or without a
   position, with a message saying what to do. The register is the fallback: the site manager can still mark anyone.
   `expo-location` is a native module, so the phone needs the next store build; until then a check-in sends no position.
+- **Face attendance.** The phone words a self check-in and check-out as Mark in and Mark out, and takes the person's own
+  photo with the front camera for each (`useFaceMark`). The photo is an upload of theirs (`POST /uploads`) sent as
+  `photoId`; the server keeps only an image the caller uploaded (`StaffService.ownPhoto`) as
+  `StaffAttendance.checkInPhotoId` / `checkOutPhotoId`, and `StaffAttendanceDto.checkInPhoto` / `checkOutPhoto` show it in
+  the web's staff register and My attendance (`FacePhotos`). There is no face matching: the photo is the evidence a
+  manager looks at. The web's own Mark in sends no photo.
 - **On duty and tour.** `LeaveType` `ON_DUTY` and `TOUR` are requested and decided like leave but have no balance
   (`LEAVE_ENTITLEMENT` null) and count present and paid in payroll (`countsAsPresent`), each still shown in its own
   column.
@@ -3599,7 +3613,7 @@ export; the client portal and the phone app show the amount.
 
 ## Official progress reports
 
-Item 167. The reports a contractor sends the client and its consultant every day, week and month, in the company's own
+Item 170. The reports a contractor sends the client and its consultant every day, week and month, in the company's own
 design. `apps/api/src/official-reports`, web `components/reports/official/`, page `/reports` (Daily, Weekly, Monthly
 (MPR), and Any dates for the older progress report).
 
