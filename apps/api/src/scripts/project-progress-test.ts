@@ -1,12 +1,12 @@
 /**
  * Progress by project's tests (ARCHITECTURE "Progress by project"): the projects' physical progress together weighs by
  * contract value only when every project has one, financial progress compares bills with the contract values that exist,
- * the notes beside a project, and the order the projects come in.
+ * the notes beside a project, the order the projects come in, and the contract time with its extensions.
  *
  *   node dist/scripts/project-progress-test.js
  */
 import assert from 'node:assert/strict';
-import { BEHIND_TOLERANCE_PCT, BILLING_GAP_PCT, byProgressOrder, portfolioProgress, progressNotes } from '@erp/shared';
+import { BEHIND_TOLERANCE_PCT, BILLING_GAP_PCT, byProgressOrder, contractTime, portfolioProgress, progressNotes } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -85,6 +85,35 @@ test('running projects come first, then on hold, planned and complete, by code w
     { status: 'ACTIVE' as const, code: 'B-01' },
   ];
   assert.deepEqual([...rows].sort(byProgressOrder).map((r) => r.code), ['B-01', 'C-03', 'D-04', 'B-02', 'A-01']);
+});
+
+test('the extensions of time granted move the completion date, and the time used and left run to it', () => {
+  // 100 days from 1 Jan, 20 days of extension: 40 days gone of 120 is a third, 80 left
+  const t = contractTime({ startDate: '2026-01-01', endDate: '2026-04-11', eotDays: 20, completedOn: null }, '2026-02-10');
+  assert.equal(t.revisedEndDate, '2026-05-01');
+  assert.equal(t.timeUsedPct, 33.3);
+  assert.equal(t.daysLeft, 80);
+  // No extension: the completion date stands
+  assert.equal(contractTime({ startDate: '2026-01-01', endDate: '2026-04-11', eotDays: 0, completedOn: null }, '2026-02-10').revisedEndDate, '2026-04-11');
+});
+
+test('past the revised completion the time used runs over 100 and the days left go negative', () => {
+  const t = contractTime({ startDate: '2026-01-01', endDate: '2026-04-11', eotDays: 0, completedOn: null }, '2026-04-21');
+  assert.equal(t.timeUsedPct, 110);
+  assert.equal(t.daysLeft, -10);
+});
+
+test('a handed-over project counts its time to the handover and has no days left', () => {
+  const t = contractTime({ startDate: '2026-01-01', endDate: '2026-04-11', eotDays: 0, completedOn: '2026-03-22' }, '2026-06-01');
+  assert.equal(t.timeUsedPct, 80);
+  assert.equal(t.daysLeft, null);
+});
+
+test('without a completion date there is no contract time; without a start, only the days left', () => {
+  assert.deepEqual(contractTime({ startDate: '2026-01-01', endDate: null, eotDays: 10, completedOn: null }, '2026-02-10'), { revisedEndDate: null, timeUsedPct: null, daysLeft: null });
+  assert.deepEqual(contractTime({ startDate: null, endDate: '2026-03-01', eotDays: 0, completedOn: null }, '2026-02-10'), { revisedEndDate: '2026-03-01', timeUsedPct: null, daysLeft: 19 });
+  // Not started yet: no time used
+  assert.equal(contractTime({ startDate: '2026-03-01', endDate: '2026-06-01', eotDays: 0, completedOn: null }, '2026-02-10').timeUsedPct, 0);
 });
 
 let failed = 0;

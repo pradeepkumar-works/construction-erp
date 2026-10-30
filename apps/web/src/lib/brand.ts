@@ -146,6 +146,9 @@ export const BRAND = {
     /** Dark mode table header, chosen and hovered rows, and the soft blue behind a chosen option. */
     nightAccentSoft: 'rgba(110, 168, 255, 0.10)',
     nightAccentChosen: 'rgba(110, 168, 255, 0.16)',
+    /** The same two over the night surface, mixed solid: a table row's fixed column must hide the cells scrolling under it. */
+    nightRowHover: '#1B283B',
+    nightRowChosen: '#213148',
     /** Dark mode focus ring and the scrim behind a drawer or dialog. */
     nightRing: 'rgba(110, 168, 255, 0.30)',
     nightScrim: 'rgba(2, 6, 12, 0.66)',

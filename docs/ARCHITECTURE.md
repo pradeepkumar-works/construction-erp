@@ -179,7 +179,12 @@ The figures above the bars are the projects together (`portfolioProgress` in `@e
 weighs by contract value only when every project has one, else the projects count alike; financial compares bills with the
 contract values that exist), how many are behind plan by more than the schedule's tolerance and how many have billing
 `BILLING_GAP_PCT` points or more behind the work. The notes beside a project are `progressNotes`. Guests get none of it.
-`ModuleHomeService.progress` builds the rows; keep `src/scripts/project-progress-test.ts` passing. Bars rather than a pie
+The Table view adds each project's contract dates: start and completion, the extensions of time granted (the delay
+register's `eotGrantedDays`, with claims not yet granted counted apart), the revised completion (`revisedCompletion`, as the
+contract tab and the watch list read it), the schedule's planned finish (the latest activity end or milestone, marked when it
+runs past the revised completion), the time used (start to revised completion, to the handover once handed over) and the days
+left; `contractTime` in the same file works them out. There is no EOT field on the project: the delay register is the one
+record of extensions. `ModuleHomeService.progress` builds the rows; keep `src/scripts/project-progress-test.ts` passing. Bars rather than a pie
 per figure: two percentages per project compare across projects on a shared scale, which separate circles do not.
 
 ### Launcher Home, pins and Recent (launcher phase 2)

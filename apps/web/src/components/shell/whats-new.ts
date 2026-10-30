@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-09-progress-dates',
+    date: '2027-09-13',
+    title: 'Contract dates in Progress by project',
+    points: [
+      'Progress by project’s Table shows each project’s start and completion dates, the extension of time granted in the delay register, the revised completion, when the schedule ends and the days left, beside its physical and financial progress.',
+      'Time used sets the share of the contract time gone against the work done, and a claim for extension not yet granted is noted under EOT.',
+    ],
+  },
+  {
     id: '2027-09-biometric-commands',
     date: '2027-09-06',
     title: 'People put on the biometric devices from Nirmaan',
