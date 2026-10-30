@@ -14,6 +14,7 @@ import {
   type RateBenchmarksDto,
   type RateQuote,
   awardLowestPerItem,
+  choiceProblem,
   siteDeliveryAddress,
   type AwardPlan,
   type Paginated,
@@ -518,6 +519,34 @@ export class PurchaseOrdersService {
     return { vendor, mr };
   }
 
+  /**
+   * When the company has orders wait for an approved supplier choice (`ordersNeedApprovedChoice`), an order on a material
+   * request needs the request's choice approved and goes to its vendor, or to one the approved split orders from
+   * (`choiceProblem`). Checked when the order is made and again when it is sent for approval, as its vendor may change.
+   */
+  private async assertChoiceAllows(user: RequestUser, materialRequestId: string, vendor: { id: string; name: string }) {
+    const org = await this.prisma.organization.findUnique({ where: { id: user.organizationId }, select: { ordersNeedApprovedChoice: true } });
+    if (!org?.ordersNeedApprovedChoice) return;
+    const mr = await this.prisma.materialRequest.findFirstOrThrow({
+      where: { id: materialRequestId, organizationId: user.organizationId },
+      select: { requestNo: true, supplierChoice: { select: { status: true, split: true, quotation: { select: { vendorId: true, vendor: { select: { name: true } } } } } } },
+    });
+    const c = mr.supplierChoice;
+    let splitVendorIds: string[] = [];
+    if (c?.split && c.status === 'APPROVED') {
+      // The split's vendors over the whole request (each item to its lowest), so orders raised one by one all stay in it.
+      const cs = await this.quotations.comparative(user, materialRequestId);
+      splitVendorIds = awardLowestPerItem(cs, Object.fromEntries(cs.lines.map((l) => [l.materialRequestItemId, l.quantity]))).orders.map((o) => o.vendorId);
+    }
+    const problem = choiceProblem(
+      mr.requestNo,
+      c && { status: c.status, split: c.split, vendorId: c.quotation?.vendorId ?? null, vendorName: c.quotation?.vendor.name ?? null },
+      { vendorId: vendor.id, vendorName: vendor.name },
+      splitVendorIds,
+    );
+    if (problem) throw new ConflictException(problem);
+  }
+
   /** Payment days: at most 45 for micro and small enterprises (MSMED Act). */
   private paymentDays(days: number | null | undefined, vendor: { name: string; msmeCategory: string | null }) {
     if (days != null && days > MSME_MAX_PAYMENT_DAYS && (vendor.msmeCategory === 'MICRO' || vendor.msmeCategory === 'SMALL'))
@@ -584,6 +613,7 @@ export class PurchaseOrdersService {
     if (existing) return existing;
     await this.assertCanPurchase(user, dto.projectId);
     const { vendor, mr } = await this.refs(user, dto.projectId, dto.vendorId, dto.materialRequestId ?? null, dto.quotationId ?? null);
+    if (mr) await this.assertChoiceAllows(user, mr.id, vendor);
     const paymentDays = this.paymentDays(dto.paymentDays, vendor);
     const freight = parseFreight(dto.freight);
     const deliveryAddress = dto.deliveryAddress?.trim() || (await this.siteAddress(user.organizationId, dto.projectId));
@@ -727,8 +757,9 @@ export class PurchaseOrdersService {
 
   /** Every way an order goes for approval: one not from the lowest complete quotation on its request says why first. */
   private async submitOrder(user: RequestUser, id: string) {
-    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, vendor: { select: { name: true } } } });
+    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, vendor: { select: { id: true, name: true } } } });
     if (po.materialRequestId) {
+      await this.assertChoiceAllows(user, po.materialRequestId, po.vendor);
       const lowest = await this.quotations.lowestFor(user.organizationId, po.materialRequestId);
       const problem = selectionProblem(lowest && { id: lowest.id, vendorName: lowest.vendorName, total: lowest.total }, { quotationId: po.quotationId, vendorName: po.vendor.name }, po.selectionReason);
       if (problem) throw new BadRequestException(problem);

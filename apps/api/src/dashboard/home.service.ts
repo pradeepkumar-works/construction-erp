@@ -7,6 +7,7 @@ import {
   DEFAULT_CLIENT_PAYMENT_DAYS,
   LEAVE_TYPE_LABELS,
   ORDER_STAGE_LABELS,
+  type OrderStage,
   billLabel,
   canApprove,
   canCheckGrn,
@@ -284,8 +285,9 @@ export class HomeService {
     if (toOrder) {
       const late = (r: { requiredDate: string }) => daysBetween(r.requiredDate, today);
       const needed = (r: { requiredDate: string }) => (late(r) > 0 ? `needed ${days(late(r))} ago` : late(r) === 0 ? 'needed today' : `needed in ${days(-late(r))}`);
-      // What purchase can act on first: an order to raise, then an L1 to finalise, then quotations to get.
-      const rank: Record<string, number> = { READY: 0, TO_FINALISE: 1, TO_ENQUIRE: 2, AWAITING_QUOTES: 3 };
+      // What purchase can act on first: an order to raise, then an L1 to finalise, then quotations to get; a choice
+      // waiting for its approver is someone else's move, so it comes last.
+      const rank: Record<OrderStage, number> = { READY: 0, TO_FINALISE: 1, TO_ENQUIRE: 2, AWAITING_QUOTES: 3, AWAITING_APPROVAL: 4 };
       const sorted = [...toOrder].sort((a, b) => rank[a.stage] - rank[b.stage] || late(b) - late(a));
       out.toOrder = card(
         toOrder.length,
@@ -293,7 +295,7 @@ export class HomeService {
           label: r.requestNo,
           note: `${ORDER_STAGE_LABELS[r.stage]} · ${needed(r)}`,
           projectName: r.projectName,
-          amount: r.stage === 'READY' || r.stage === 'TO_FINALISE' ? (r.l1?.total ?? null) : null,
+          amount: r.stage === 'READY' || r.stage === 'TO_FINALISE' || r.stage === 'AWAITING_APPROVAL' ? (r.l1?.total ?? null) : null,
           href: `/requests-to-order/${r.id}`,
         })),
         null,

@@ -103,6 +103,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   SUBCONTRACT_BILL: 'Subcontractor Bill',
   INSPECTION: 'Inspection',
   PAYMENT_REQUEST: 'Payment Request',
+  SUPPLIER_CHOICE: 'Supplier Choice',
 };
 
 export const PAYMENT_REQUEST_KIND_LABELS: Record<PaymentRequestKind, string> = {

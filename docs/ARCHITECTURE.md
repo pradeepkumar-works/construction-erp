@@ -814,6 +814,24 @@ then carries as why this vendor. `POST /material-requests/:id/reopen-supplier` u
 notice and email, My work's Requests to order card (by stage, with the L1) and its launcher badge open the same screen.
 Tests: `src/scripts/purchase-award-test.ts` and `e2e/tests/requests-to-order.spec.ts`.
 
+**Supplier choice approval.** The purchase flow most companies write down has the comparison approved by the purchase
+manager before the order (*Quotation comparison and approval*). Admin › Approval rules has a company switch for it,
+*Orders wait for an approved supplier choice* (`Organization.ordersNeedApprovedChoice`, off for the demo company, on for
+a new sign-up). With it on, Finalise L1 also makes a `SupplierChoice`, a submission like any other (`SUPPLIER_CHOICE`,
+the six status columns, `SubmissionLifecycleService`, its own column in the approval matrix, which the migration copies
+from the purchase order's; the amount the matrix reads is what is still to order at the chosen rates, with GST and
+freight) and sends it for approval; the request points at its current choice (`MaterialRequest.supplierChoiceId`), and
+finalising again or reopening drops a choice not yet decided. The request then stands at *Choice waiting for approval*
+(`choiceStage` in `orderStage`), and a rejected or sent back choice puts it back at *L1 to finalise* with the
+approver's note on the Finalise step. The approver decides it from Approvals, the record page `/supplier-choices/[id]`
+(`SupplierChoiceRecord`: what was chosen against L1, why, and the ranking as it stands now) or the phone, but never the
+person who finalised it (an admin may), and not once the request has moved on to another choice
+(`RequestsToOrderService.assertCanApproveChoice`, a `beforeApprove` hook). `PurchaseOrdersService` holds an order on a
+material request to the pure `choiceProblem` (`@erp/shared/purchase-queue.ts`) when it is created and when it is
+submitted: nothing until the choice is approved, then only on the approved supplier (or one of the split's). With the
+switch on, Requests to order offers no *Raise PO without a quotation*. Tests: `purchase-award-test.ts` (`choiceProblem`,
+the stage) and `e2e/tests/supplier-choice.spec.ts`.
+
 **Where it is delivered.** `Project.siteAddress` is where suppliers deliver; `siteDeliveryAddress` falls back to the
 project's `location`. A purchase order with no address of its own takes it when it is created, the order form shows it
 as the field's placeholder, and the supplier's enquiry page shows the same address.
