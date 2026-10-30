@@ -376,6 +376,104 @@ const GROUP_OF_MODULE: Record<string, NavMenuGroup> = {
 
 export const navMenuGroup = (m: Pick<NavMenuModule, 'key' | 'family'>): NavMenuGroup => GROUP_OF_MODULE[m.key] ?? GROUP_OF_FAMILY[m.family];
 
+/** The phone's Home tabs: Overview (the menu as it is), then the company's modules' pages by the work they are for. */
+export const HOME_TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'hr', label: 'Attendance and HR' },
+  { key: 'work', label: 'Project work' },
+  { key: 'stores', label: 'Procurement and stores' },
+  { key: 'quality', label: 'Quality and safety' },
+  { key: 'accounts', label: 'Accounts and reports' },
+  { key: 'admin', label: 'Admin' },
+] as const;
+export type HomeTabKey = (typeof HOME_TABS)[number]['key'];
+type HomeCategory = Exclude<HomeTabKey, 'overview'>;
+
+/** Both sets' modules (keys kept forever). A module not named here goes by its colour family. */
+const TAB_OF_MODULE: Record<string, HomeCategory> = {
+  people: 'hr',
+  payroll: 'hr',
+  'labour-management': 'hr',
+  'hr-payroll': 'hr',
+  projects: 'work',
+  site: 'work',
+  documents: 'work',
+  correspondence: 'work',
+  tenders: 'work',
+  subcontracts: 'work',
+  'project-management': 'work',
+  'design-drawings': 'work',
+  'planning-estimation': 'work',
+  'contractor-management': 'work',
+  materials: 'stores',
+  plant: 'stores',
+  purchases: 'stores',
+  rmc: 'stores',
+  'purchase-management': 'stores',
+  'store-inventory': 'stores',
+  'machinery-vehicles': 'stores',
+  'plant-production': 'stores',
+  quality: 'quality',
+  safety: 'quality',
+  'quality-control': 'quality',
+  billing: 'accounts',
+  accounts: 'accounts',
+  reports: 'accounts',
+  'accounts-finance': 'accounts',
+  'reports-mis': 'accounts',
+  admin: 'admin',
+  administration: 'admin',
+};
+const TAB_OF_FAMILY: Record<NavFamily, HomeCategory> = { work: 'work', business: 'work', buying: 'stores', materials: 'stores', money: 'accounts', insight: 'accounts', people: 'hr', admin: 'admin' };
+/** Sub-modules that belong with another tab than their module (`module.sub`): labour attendance with HR, the department
+ *  set's safety with quality and its client billing with accounts. */
+const TAB_OF_SUB: Record<string, HomeCategory> = {
+  'site.site.attendance': 'hr',
+  'site.site.attendanceCheck': 'hr',
+  'project-management.safety': 'quality',
+  'project-management.billing': 'accounts',
+};
+
+export const homeTabOf = (m: Pick<NavMenuModule, 'key' | 'family'>, subKey?: string): HomeCategory =>
+  (subKey ? TAB_OF_SUB[`${m.key}.${subKey}`] : undefined) ?? TAB_OF_MODULE[m.key] ?? TAB_OF_FAMILY[m.family];
+
+/** A heading of a Home tab: a module of the menu (or the part of it that belongs here) and its pages. */
+export interface HomeTabSection {
+  key: string;
+  /** The company's name for the module, or the sub-module's name when only that one is here */
+  title: string;
+  module: NavMenuModule;
+  nodes: NavNode[];
+}
+
+/**
+ * The pages of one Home tab, by module in the menu's order, out of the user's own menu (`navMenuFor`, so only what they
+ * may open, under the company's names). Masters stay in the module's screen; a page already shown in the tab (itself
+ * or a shortcut to it) is not shown again.
+ */
+export function homeTabSections(menu: NavMenuModule[], tab: HomeCategory): HomeTabSection[] {
+  const seen = new Set<string>();
+  const out: HomeTabSection[] = [];
+  for (const m of menu) {
+    const subs = m.subs.filter((s) => s.key !== 'masters' && homeTabOf(m, s.key) === tab);
+    const nodes: NavNode[] = [];
+    for (const s of subs)
+      for (const n of s.nodes) {
+        const target = n.shortcutOf ?? n.id;
+        if (seen.has(target)) continue;
+        seen.add(target);
+        nodes.push(n);
+      }
+    if (!nodes.length) continue;
+    const title = homeTabOf(m) !== tab && subs.length === 1 ? subs[0].label : m.label;
+    out.push({ key: m.key, title, module: m, nodes });
+  }
+  return out;
+}
+
+/** The Home tabs this user has: Overview, then each tab with a page they may open. */
+export const homeTabsFor = (menu: NavMenuModule[]) => HOME_TABS.filter((t) => t.key === 'overview' || homeTabSections(menu, t.key).length > 0);
+
 /** Where a node is in the menu: its module and sub-module, the one named by `prefer` first (the module the user came
  *  from, when a page sits in two). */
 export function navMenuPlace(menu: NavMenuModule[], nodeId: string, prefer?: string | null): { module: NavMenuModule; sub: NavMenuSub } | null {
