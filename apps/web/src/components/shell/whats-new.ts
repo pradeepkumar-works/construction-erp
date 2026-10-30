@@ -10,11 +10,20 @@ export interface WhatsNew {
 export const WHATS_NEW: WhatsNew[] = [
   {
     id: '2027-09-official-reports',
-    date: '2027-09-20',
+    date: '2027-09-27',
     title: 'Daily, weekly and monthly reports for the client',
     points: [
       'Reports, Progress reports makes a project’s daily, weekly and monthly progress report (MPR) in your company’s design: the contract box, progress by component, the work done with its location, observations, crew and machines, hindrances, next period’s plan and photographs. The MPR adds the programme, milestones, bills, drawings, meetings, quality and safety.',
       'Download it as PDF, Word or Excel. Issue to client keeps the copy with its number and revision, so the one you sent can be downloaded again.',
+    ],
+  },
+  {
+    id: '2027-09-progress-dates',
+    date: '2027-09-20',
+    title: 'Contract dates in Progress by project',
+    points: [
+      'Progress by project’s Table shows each project’s start and completion dates, the extension of time granted in the delay register, the revised completion, when the schedule ends and the days left, beside its physical and financial progress.',
+      'Time used sets the share of the contract time gone against the work done, and a claim for extension not yet granted is noted under EOT.',
     ],
   },
   {
