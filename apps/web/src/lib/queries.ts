@@ -370,6 +370,7 @@ import type {
   PhotoChecksDto,
   SnagDraftDto,
   MaterialRequestStockDto,
+  IndentCheckDto,
   LastRatesDto,
   EnquiryDto,
   DrawingMarkupDto,
@@ -2678,6 +2679,14 @@ export const useRequestStock = (materialRequestId: string | undefined, enabled =
   useQuery({
     queryKey: ['material-requests', 'stock', materialRequestId],
     queryFn: async () => (await api.get<MaterialRequestStockDto>(`/material-requests/${materialRequestId}/stock`)).data,
+    enabled: enabled && !!materialRequestId,
+  });
+
+/** Item 170: a request's lines against the site's store and what the BOQ allows. */
+export const useIndentCheck = (materialRequestId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['material-requests', 'check', materialRequestId],
+    queryFn: async () => (await api.get<IndentCheckDto>(`/material-requests/${materialRequestId}/check`)).data,
     enabled: enabled && !!materialRequestId,
   });
 

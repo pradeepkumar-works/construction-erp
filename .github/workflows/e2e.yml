@@ -322,6 +322,14 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/correspondence-test.js
+      - name: Indents are checked against the site store and what the BOQ allows (item 170)
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/indent-check-test.js
+      - name: Verticals and the department screens' figures and pipelines (items 167 and 168)
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/verticals-test.js
       - name: Quality plans count the tests owed from work done and receipts, and cubes pass or fail by IS 456
         if: matrix.suite == 'flows'
         working-directory: apps/api

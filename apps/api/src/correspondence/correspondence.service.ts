@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundEx
 import { Prisma } from '@prisma/client';
 import {
   HEAD_OFFICE_PREFIX,
+  type LetterApprovalRule,
   LETTER_ACTION_LABELS,
   LETTER_NUMBER_PATTERN,
   ROLE_LABELS,
@@ -16,6 +17,10 @@ import {
   isGuest,
   letterFy,
   letterNeedsApproval,
+  letterNeedsSeal,
+  letterRulesProblem,
+  maySealLetters,
+  LETTER_SEAL_ROLES,
   letterPrefixOf,
   letterPatternProblem,
   letterPrefixProblem,
@@ -71,6 +76,7 @@ const letterInclude = {
   createdBy: { select: { fullName: true } },
   markedTo: { select: { fullName: true } },
   signatory: { select: { fullName: true } },
+  signedBy: { select: { fullName: true } },
   closedBy: { select: { fullName: true } },
   risk: { select: { riskNo: true, title: true } },
   inReplyTo: { select: { ...refSelect, status: true } },
@@ -148,7 +154,7 @@ export class CorrespondenceService {
     await this.access.assertCanAccessProject(user, projectId);
   }
 
-  private can(user: RequestUser, l: { direction: LetterDirection; status: LetterStatus; createdById: string; markedToId: string | null; signatoryId: string | null; projectId: string | null; letterNo: string | null }): LetterDto['can'] {
+  private can(user: RequestUser, l: { direction: LetterDirection; status: LetterStatus; createdById: string; markedToId: string | null; signatoryId: string | null; signedAt: Date | null; projectId: string | null; letterNo: string | null }): LetterDto['can'] {
     const keeper = canViewLetters(user.roleKey);
     const head = canHeadLetters(user.roleKey);
     const director = user.roleKey === 'ADMIN' || user.roleKey === 'MANAGEMENT';
@@ -156,7 +162,8 @@ export class CorrespondenceService {
     return {
       edit: keeper && (isIn ? l.status === 'OPEN' : l.status === 'DRAFT'),
       mark: isIn && l.status === 'OPEN' && (keeper || l.markedToId === user.id),
-      sign: !isIn && l.status === 'AWAITING_APPROVAL' && (l.signatoryId === user.id || director),
+      // Signed and waiting for head office's seal (item 169): a director's; before that its signatory's or a director's
+      sign: !isIn && l.status === 'AWAITING_APPROVAL' && (l.signedAt ? maySealLetters(user.roleKey) : l.signatoryId === user.id || director),
       close: isIn && (l.status === 'OPEN' ? keeper || l.markedToId === user.id : head),
       dispatch: !isIn && l.status === 'ISSUED' && keeper,
       remove: !l.letterNo ? l.createdById === user.id || head : head || (isIn && l.createdById === user.id),
@@ -184,7 +191,7 @@ export class CorrespondenceService {
     };
   }
 
-  private toDto(user: RequestUser, l: LetterRow, categories: Map<string, string>, today: string, marks: LetterMarkDto[] = []): LetterDto {
+  private toDto(user: RequestUser, l: LetterRow, categories: Map<string, string>, today: string, seal: LetterApprovalRule, marks: LetterMarkDto[] = []): LetterDto {
     const facts = {
       direction: l.direction,
       status: l.status,
@@ -232,6 +239,9 @@ export class CorrespondenceService {
       signatoryId: l.signatoryId,
       signatoryName: l.signatory?.fullName ?? null,
       sentForApprovalAt: iso(l.sentForApprovalAt),
+      signedAt: iso(l.signedAt),
+      signedByName: l.signedBy?.fullName ?? null,
+      needsSeal: l.direction === 'OUT' && !l.letterNo && letterNeedsApproval(seal, l.category),
       approvedAt: iso(l.approvedAt),
       returnNote: l.returnNote,
       docketNo: l.docketNo,
@@ -268,7 +278,7 @@ export class CorrespondenceService {
     if (q.category) and.push({ category: q.category });
     if (q.riskId) and.push({ riskId: q.riskId });
     if (q.mine) and.push({ markedToId: user.id, status: 'OPEN' });
-    if (q.toSign) and.push({ signatoryId: user.id, status: 'AWAITING_APPROVAL' });
+    if (q.toSign) and.push(this.toSignWhere(user));
     if (q.unmarked) and.push({ direction: 'IN', status: 'OPEN', markedToId: null });
     if (q.awaitingReply) and.push(this.awaitingWhere());
     if (q.overdue) and.push({ OR: [{ AND: [this.awaitingWhere(), { replyBy: { lt: today } }] }, { status: 'OPEN', markedToId: { not: null }, actionDue: { lt: today } }] });
@@ -288,6 +298,12 @@ export class CorrespondenceService {
     };
   }
 
+  /** Letters waiting for this user's approval: theirs to sign (L1), and for a director those signed and waiting for the seal (L2). */
+  private toSignWhere(user: RequestUser): Prisma.LetterWhereInput {
+    const sign: Prisma.LetterWhereInput = { signatoryId: user.id, status: 'AWAITING_APPROVAL', signedAt: null };
+    return maySealLetters(user.roleKey) ? { OR: [sign, { status: 'AWAITING_APPROVAL', signedAt: { not: null } }] } : sign;
+  }
+
   private proofMissingWhere(): Prisma.LetterWhereInput {
     return { direction: 'OUT', status: 'ISSUED', deliveredOn: null, category: { in: ['notice', 'claim', 'extension-of-time', 'hindrance', 'reply-to-show-cause'] } };
   }
@@ -298,22 +314,24 @@ export class CorrespondenceService {
     const where: Prisma.LetterWhereInput = { AND: [this.where(user), ...this.filterWhere(user, q, parseDate(today))] };
     const sortBy = q.sortBy ?? 'letterDate';
     const args = pageArgs(q);
-    const [rows, total, categories] = await Promise.all([
+    const [rows, total, categories, seal] = await Promise.all([
       this.prisma.letter.findMany({ where, include: letterInclude, orderBy: [...LETTER_ORDER[sortBy](order(sortBy, q.sortOrder)), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.letter.count({ where }),
       this.categoryNames(user.organizationId),
+      this.sealRule(user.organizationId),
     ]);
-    return paginated(rows.map((r) => this.toDto(user, r, categories, today)), total, args);
+    return paginated(rows.map((r) => this.toDto(user, r, categories, today, seal)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<LetterDto> {
     const row = await this.prisma.letter.findFirst({ where: { AND: [{ id }, this.where(user)] }, include: letterInclude });
     if (!row) throw new NotFoundException('Letter not found, or not one you can open');
-    const [marks, categories] = await Promise.all([
+    const [marks, categories, seal] = await Promise.all([
       this.prisma.letterMark.findMany({ where: { letterId: id }, include: markInclude, orderBy: { createdAt: 'asc' } }),
       this.categoryNames(user.organizationId),
+      this.sealRule(user.organizationId),
     ]);
-    return this.toDto(user, row, categories, todayIn(), marks.map((m) => this.markDto(m)));
+    return this.toDto(user, row, categories, todayIn(), seal, marks.map((m) => this.markDto(m)));
   }
 
   private async load(user: RequestUser, id: string) {
@@ -331,7 +349,7 @@ export class CorrespondenceService {
     const [markedToMe, markedToMeOverdue, toSign, repliesDue, repliesOverdue, theirsOverdue, proof, unmarked] = await Promise.all([
       count({ markedToId: user.id, status: 'OPEN' }),
       count({ markedToId: user.id, status: 'OPEN', actionDue: { lt: today } }),
-      count({ signatoryId: user.id, status: 'AWAITING_APPROVAL' }),
+      count(this.toSignWhere(user)),
       keeper ? count({ AND: [this.awaitingWhere(), { direction: 'IN' }] }) : 0,
       keeper ? count({ AND: [this.awaitingWhere(), { direction: 'IN', replyBy: { lt: today } }] }) : 0,
       keeper ? count({ AND: [this.awaitingWhere(), { direction: 'OUT', replyBy: { lt: today } }] }) : 0,
@@ -346,7 +364,7 @@ export class CorrespondenceService {
    * the most pressing first (an action date past, then the soonest; a letter to sign waits from the day it was sent).
    */
   async forMe(user: RequestUser): Promise<{ total: number; items: { id: string; letterNo: string | null; party: string; subject: string; projectName: string | null; toSign: boolean; due: string | null; action: string | null }[] }> {
-    const where: Prisma.LetterWhereInput = { organizationId: user.organizationId, OR: [{ markedToId: user.id, status: 'OPEN' }, { signatoryId: user.id, status: 'AWAITING_APPROVAL' }] };
+    const where: Prisma.LetterWhereInput = { organizationId: user.organizationId, OR: [{ markedToId: user.id, status: 'OPEN' }, this.toSignWhere(user)] };
     const [rows, total] = await Promise.all([
       this.prisma.letter.findMany({ where, select: { id: true, letterNo: true, party: true, subject: true, status: true, actionDue: true, action: true, sentForApprovalAt: true, project: { select: { name: true } } }, orderBy: [{ actionDue: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }], take: 20 }),
       this.prisma.letter.count({ where }),
@@ -669,6 +687,10 @@ export class CorrespondenceService {
 
   /* ---------- sign-off and issue ---------- */
 
+  private async sealRule(organizationId: string) {
+    return (await this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { letterSeal: true } })).letterSeal;
+  }
+
   private async approvalRule(organizationId: string) {
     return (await this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { letterApproval: true } })).letterApproval;
   }
@@ -715,7 +737,12 @@ export class CorrespondenceService {
   /** The signatory approves: the letter gets its number, is dated today and is issued. */
   async approve(user: RequestUser, id: string): Promise<LetterDto> {
     const cur = await this.load(user, id);
-    if (!this.can(user, cur).sign) throw new ForbiddenException(cur.status === 'AWAITING_APPROVAL' ? 'Only its signatory or a director approves this letter' : 'The letter is not waiting for approval');
+    if (!this.can(user, cur).sign)
+      throw new ForbiddenException(cur.status !== 'AWAITING_APPROVAL' ? 'The letter is not waiting for approval' : cur.signedAt ? 'A director seals this letter at head office' : 'Only its signatory or a director approves this letter');
+    if (!cur.signedAt && letterNeedsSeal(await this.sealRule(user.organizationId), cur.category, user.roleKey)) {
+      await this.sign(user, cur);
+      return this.get(user, id);
+    }
     await this.number(user, cur, 'APPROVED');
     if (cur.createdById !== user.id) {
       const fresh = await this.prisma.letter.findUniqueOrThrow({ where: { id }, select: { letterNo: true } });
@@ -736,6 +763,27 @@ export class CorrespondenceService {
     return this.get(user, id);
   }
 
+  /** The signatory's approval (L1) of a letter that then waits for a director's seal at head office (L2, item 169). */
+  private async sign(user: RequestUser, cur: { id: string; subject: string; party: string; projectId: string | null }) {
+    await this.prisma.letter.update({ where: { id: cur.id }, data: { signedAt: new Date(), signedById: user.id } });
+    await this.audit.log(user, 'LETTER', cur.id, 'APPROVED', 'Signed; waiting for the seal at head office');
+    const directors = await this.prisma.user.findMany({ where: { organizationId: user.organizationId, isActive: true, id: { not: user.id }, role: { key: { in: [...LETTER_SEAL_ROLES] } } }, select: { id: true } });
+    if (!directors.length) return;
+    await this.notifications
+      .notify({
+        organizationId: user.organizationId,
+        userIds: directors.map((d) => d.id),
+        type: 'LETTER',
+        title: `To seal: ${cur.subject}`,
+        body: `To ${cur.party}, signed by ${user.fullName}`,
+        projectId: cur.projectId,
+        entityType: 'LETTER',
+        entityId: cur.id,
+        email: { href: `/correspondence/${cur.id}`, cta: 'Read and seal' },
+      })
+      .catch((e: Error) => this.log.warn(`letter seal notice: ${e.message}`));
+  }
+
   private async number(user: RequestUser, cur: { id: string; projectId: string | null; signatoryId: string | null }, action: 'ISSUED' | 'APPROVED') {
     const today = todayIn();
     const letterNo = await this.prisma.$transaction(async (tx) => {
@@ -752,8 +800,8 @@ export class CorrespondenceService {
 
   async returnToDraft(user: RequestUser, id: string, note: string): Promise<LetterDto> {
     const cur = await this.load(user, id);
-    if (!this.can(user, cur).sign) throw new ForbiddenException('Only its signatory or a director returns this letter');
-    await this.prisma.letter.update({ where: { id }, data: { status: 'DRAFT', returnNote: note, sentForApprovalAt: null } });
+    if (!this.can(user, cur).sign) throw new ForbiddenException(cur.signedAt ? 'A director returns a letter waiting for the seal' : 'Only its signatory or a director returns this letter');
+    await this.prisma.letter.update({ where: { id }, data: { status: 'DRAFT', returnNote: note, sentForApprovalAt: null, signedAt: null, signedById: null } });
     await this.audit.log(user, 'LETTER', id, 'CHANGES_REQUESTED', note);
     if (cur.createdById !== user.id) {
       await this.notifications
@@ -836,13 +884,16 @@ export class CorrespondenceService {
     const rows = await this.prisma.letterSeries.findMany({ where: { organizationId: org, OR: [{ projectId: { in: projects.map((p) => p.id) } }, ...(canHeadLetters(user.roleKey) ? [{ projectId: null }] : [])] }, include: { project: { select: { name: true } } } });
     rows.sort((a, b) => (a.projectId === null ? -1 : b.projectId === null ? 1 : (a.project?.name ?? '').localeCompare(b.project?.name ?? '')) || a.direction.localeCompare(b.direction));
     const today = todayIn();
-    return { approval: await this.approvalRule(org), series: await Promise.all(rows.map((r) => this.seriesDto(r, today))), pattern: LETTER_NUMBER_PATTERN, canManage: canHeadLetters(user.roleKey) };
+    return { approval: await this.approvalRule(org), seal: await this.sealRule(org), series: await Promise.all(rows.map((r) => this.seriesDto(r, today))), pattern: LETTER_NUMBER_PATTERN, canManage: canHeadLetters(user.roleKey) };
   }
 
   async saveSettings(user: RequestUser, dto: LetterSettingsInput): Promise<LetterSettingsDto> {
     this.assertHead(user);
-    await this.prisma.organization.update({ where: { id: user.organizationId }, data: { letterApproval: dto.approval } });
-    await this.audit.log(user, 'ORGANIZATION', user.organizationId, 'UPDATED', `Letter approval: ${dto.approval}`);
+    const seal = dto.seal ?? (await this.sealRule(user.organizationId));
+    const problem = letterRulesProblem(dto.approval, seal);
+    if (problem) throw new BadRequestException(problem);
+    await this.prisma.organization.update({ where: { id: user.organizationId }, data: { letterApproval: dto.approval, letterSeal: seal } });
+    await this.audit.log(user, 'ORGANIZATION', user.organizationId, 'UPDATED', `Letter approval: ${dto.approval}; seal at head office: ${seal}`);
     return this.settings(user);
   }
 

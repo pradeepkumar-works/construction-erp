@@ -20,6 +20,10 @@ import {
   type SortOrder,
   type StockBalanceDto,
   type MaterialRequestStockDto,
+  type IndentCheckDto,
+  boqAllowance,
+  indentLineCheck,
+  indentLineFlagged,
   canKeepStock,
   canSeeStores,
   type StockDestinationDto,
@@ -1226,6 +1230,62 @@ export class StockService {
   private async itemsNamed(organizationId: string, lines: { itemName: string; unit: string }[]) {
     const items = await masterCandidates(this.prisma, organizationId, lines.map((l) => l.itemName));
     return (l: { itemName: string; unit: string }) => masterItemFor(l.itemName, l.unit, items);
+  }
+
+  /**
+   * Indent checks (item 170, `@erp/shared/indent-check.ts`): each line of a request the caller may open (the caller has
+   * loaded it through `MaterialRequestsService.get`) against its site's store and what the BOQ allows for the item, from
+   * the project's norms. A line naming no item of the master is checked against nothing.
+   */
+  async indentCheck(user: RequestUser, mr: { id: string; projectId: string; items: { id: string; itemName: string; unit: string; quantity: string }[] }): Promise<IndentCheckDto> {
+    const itemOf = await this.itemsNamed(user.organizationId, mr.items);
+    const itemIds = [...new Set(mr.items.map((i) => itemOf(i)?.id).filter((x): x is string => !!x))];
+    const projectId = mr.projectId;
+    const [held, moved, norms, activityNorms, waiting] = itemIds.length
+      ? await Promise.all([
+          this.prisma.stockTxn.groupBy({ by: ['itemId'], where: { projectId, itemId: { in: itemIds } }, _sum: { quantity: true } }),
+          this.prisma.stockTxn.groupBy({ by: ['itemId', 'type'], where: { projectId, itemId: { in: itemIds }, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] } }, _sum: { quantity: true } }),
+          this.prisma.materialNorm.findMany({ where: { projectId, itemId: { in: itemIds } }, select: { itemId: true, boqItemId: true, qtyPerUnit: true, wastagePct: true, boqItem: { select: { originalQty: true, revisedQty: true } } } }),
+          this.prisma.activityMaterialNorm.findMany({ where: { projectId, itemId: { in: itemIds } }, select: { itemId: true, activityId: true, qtyPerUnit: true, wastagePct: true, activity: { select: { boqItemId: true, plannedQty: true } } } }),
+          this.prisma.materialRequestItem.findMany({ where: { request: { projectId, status: 'SUBMITTED', id: { not: mr.id } } }, select: { itemName: true, unit: true, quantity: true } }),
+        ])
+      : [[], [], [], [], []];
+    const otherOf = await this.itemsNamed(user.organizationId, waiting);
+    const num = (d: Decimal | null | undefined) => Number(d ?? 0);
+    const lines = mr.items.map((i) => {
+      const item = itemOf(i);
+      const id = item?.id;
+      const onHand = id ? num(held.find((h) => h.itemId === id)?._sum.quantity) : 0;
+      // An issue's quantity is negative in the ledger, a return from site positive
+      const issued = id ? -moved.filter((m) => m.itemId === id).reduce((s, m) => s + num(m._sum.quantity), 0) : 0;
+      const allowance = id
+        ? boqAllowance(
+            norms.filter((n) => n.itemId === id).map((n) => ({ boqItemId: n.boqItemId, boqQty: num(n.boqItem.revisedQty ?? n.boqItem.originalQty), qtyPerUnit: num(n.qtyPerUnit), wastagePct: num(n.wastagePct) })),
+            activityNorms.filter((n) => n.itemId === id).map((n) => ({ activityId: n.activityId, boqItemId: n.activity.boqItemId, plannedQty: num(n.activity.plannedQty), qtyPerUnit: num(n.qtyPerUnit), wastagePct: num(n.wastagePct) })),
+          )
+        : null;
+      const others = id ? waiting.filter((w) => otherOf(w)?.id === id).reduce((s, w) => s + num(w.quantity), 0) : 0;
+      const requested = Number(i.quantity);
+      const v = indentLineCheck({ requested, onHand, allowance, issued, waiting: others });
+      const q = (n: number) => n.toFixed(3);
+      return {
+        materialRequestItemId: i.id,
+        itemName: i.itemName,
+        unit: i.unit,
+        itemId: id ?? null,
+        requested: q(requested),
+        onHand: q(onHand),
+        allowance: allowance === null ? null : q(allowance),
+        issued: q(issued),
+        waiting: q(others),
+        left: v.left === null ? null : q(v.left),
+        over: v.over === null ? null : q(v.over),
+        fromStock: q(v.fromStock),
+        notes: v.notes,
+        flagged: indentLineFlagged(v),
+      };
+    });
+    return { materialRequestId: mr.id, projectId, lines, flagged: lines.filter((l) => l.flagged).length };
   }
 
   /**

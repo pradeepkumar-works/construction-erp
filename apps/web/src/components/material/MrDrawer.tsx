@@ -6,7 +6,7 @@ import { ImportOutlined, InboxOutlined } from '@/components/common/icons';
 import type { MaterialRequestDto, MaterialRequestItemDto, RequestLineStockDto } from '@erp/shared';
 import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useMaterialRequest, useRequestStock } from '@/lib/queries';
+import { useIndentCheck, useMaterialRequest, useRequestStock } from '@/lib/queries';
 import { formatDate, formatQty, toNumber } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
@@ -17,6 +17,8 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { ReceiptModal } from '@/components/stock/ReceiptModal';
 import { QuotationsPanel } from '@/components/purchasing/QuotationsPanel';
 import { CoverFromStockModal } from './CoverFromStockModal';
+import { IndentChecks } from './IndentChecks';
+import { AppTag } from '@/components/common/AppTag';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 
@@ -41,6 +43,9 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
   const purchasing = approved && !!user && canViewPurchaseOrders(user.roleKey);
   const receivedLines = data?.items.filter((i) => got(i) >= Number(i.quantity)).length ?? 0;
   const stock = useRequestStock(data?.id, approved);
+  // Item 170: before the decision, each line against the site's store and what the BOQ allows
+  const deciding = data?.status === 'SUBMITTED' || data?.status === 'DRAFT' || data?.status === 'CHANGES_REQUESTED';
+  const check = useIndentCheck(data?.id, deciding);
   const stockOf = (id: string) => stock.data?.lines.find((l) => l.materialRequestItemId === id);
   const anyCovered = !!data?.items.some((i) => Number(i.coveredQty) > 0);
   const mayCover =
@@ -61,7 +66,16 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
         data && {
           href: `/material-requests/${data.id}`,
           title: `Material request · ${data.requestNo}`,
-          tags: <StatusTag status={data.status} />,
+          tags: (
+            <>
+              <StatusTag status={data.status} />
+              {deciding && check.data?.flagged ? (
+                <AppTag tone="pending" dot>
+                  {check.data.flagged === 1 ? '1 line to look at' : `${check.data.flagged} lines to look at`}
+                </AppTag>
+              ) : null}
+            </>
+          ),
           facts: [
             { key: 'no', label: 'Request no.', children: data.requestNo },
             { key: 'priority', label: 'Priority', children: <PriorityTag priority={data.priority} /> },
@@ -135,6 +149,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
                 />
               ),
             },
+            ...(deciding ? [{ key: 'checks', title: 'Store and BOQ checks', children: <IndentChecks check={check.data} loading={check.isLoading} /> }] : []),
             ...(purchasing ? [{ key: 'buying', title: 'Quotations and purchase orders', children: <QuotationsPanel request={data} /> }] : []),
             ...(data.attachments.length > 0 ? [{ key: 'attachments', title: 'Attachments', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> }] : []),
           ],
