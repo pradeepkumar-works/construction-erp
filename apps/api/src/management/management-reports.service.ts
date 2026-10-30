@@ -88,7 +88,7 @@ function withVerticals(sections: ReportSectionDto[], projects: ProjectSummary[],
     ...Object.fromEntries(keys.map((k) => [k, r2(g.rows.reduce((s, r) => s + N(r[k] as number), 0))])),
   }));
   const at = sections.indexOf(standing) + 1;
-  return [...sections.slice(0, at), section({ key: 'verticals', title: 'By vertical', note: 'Where each project stands today, added up by vertical.', columns, rows, totals: true }), ...sections.slice(at)];
+  return [...sections.slice(0, at), section({ key: 'verticals', title: 'By vertical', note: 'The projects’ figures today, added up by the vertical each belongs to.', columns, rows, totals: true }), ...sections.slice(at)];
 }
 
 interface Period {

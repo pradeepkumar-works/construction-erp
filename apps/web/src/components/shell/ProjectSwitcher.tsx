@@ -51,7 +51,7 @@ export function ProjectSwitcher({ width }: { width: number }) {
   const value = projectId ?? (usesVerticals && vertical ? V + vertical : ALL);
   return (
     <Select<string>
-      aria-label={usesVerticals ? 'Vertical or project' : 'Project'}
+      aria-label="Project"
       variant="filled"
       prefix={<ProjectOutlined />}
       value={value}
