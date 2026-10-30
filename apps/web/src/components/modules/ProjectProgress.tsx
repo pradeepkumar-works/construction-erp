@@ -11,7 +11,7 @@ import { useModuleHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { BRAND } from '@/lib/brand';
 import { useAppearance } from '@/lib/appearance';
-import { formatINRCompact, formatPct, toNumber } from '@/lib/format';
+import { formatDate, formatINRCompact, formatPct, toNumber } from '@/lib/format';
 import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
 import { kpiColumns } from '@/components/home/KpiTile';
@@ -112,46 +112,164 @@ function ProjectRow({ p, seesFinancial }: { p: ProjectProgressDto; seesFinancial
   );
 }
 
-/** The same figures as a table, to sort and read exactly. */
+const days = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
+/** Earlier dates first, projects without one last. */
+const byDate = (a: string | null, b: string | null) => (a === b ? 0 : a === null ? 1 : b === null ? -1 : a.localeCompare(b));
+/** Days the schedule's planned finish runs past the revised completion date; 0 when it does not. */
+const planLate = (p: ProjectProgressDto) =>
+  p.planFinish && p.revisedEndDate && !p.completedOn ? Math.max(0, Math.round((Date.parse(p.planFinish) - Date.parse(p.revisedEndDate)) / 86_400_000)) : 0;
+
+/**
+ * The same figures as a table, to sort and read exactly, with each project's contract dates: start, completion, the
+ * extensions of time granted in the delay register, the revised completion, the schedule's planned finish and the time left.
+ */
 function ProgressTable({ data }: { data: ModuleProgressDto }) {
   const { token } = theme.useToken();
   const router = useRouter();
+  // The project stays in view while the dates scroll by, where there is room for it to
+  const wide = Grid.useBreakpoint().md;
   const num = (a: number | null, b: number | null) => (a ?? -1) - (b ?? -1);
+  const pct = (v: number | null) => (
+    <span className="mono" translate="no">
+      {formatPct(v)}
+    </span>
+  );
+  const date = (v: string | null) => (
+    <span translate="no" style={{ whiteSpace: 'nowrap' }}>
+      {v ? formatDate(v) : '–'}
+    </span>
+  );
+  const money = (v: string | null) => (
+    <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>
+      {v === null ? '–' : formatINRCompact(v)}
+    </span>
+  );
+  const sub = (children: React.ReactNode, color: string = token.colorTextSecondary) => (
+    <div style={{ fontSize: token.fontSizeSM, color, whiteSpace: 'nowrap' }}>{children}</div>
+  );
   const columns: TableColumnsType<ProjectProgressDto> = [
     {
       key: 'project',
       title: 'Project',
+      fixed: wide ? 'left' : undefined,
+      width: 200,
       sorter: (a, b) => a.code.localeCompare(b.code),
       render: (_, p) => (
         <div style={{ minWidth: 0 }}>
           <Link href={`/projects/${p.projectId}`} className="mono" translate="no" onClick={(e) => e.stopPropagation()}>
             {p.code}
           </Link>
-          <Typography.Text type="secondary" ellipsis={{ tooltip: p.name }} translate="no" style={{ display: 'block', maxWidth: 240, fontSize: token.fontSizeSM }}>
+          <Typography.Text type="secondary" ellipsis={{ tooltip: p.name }} translate="no" style={{ display: 'block', maxWidth: 180, fontSize: token.fontSizeSM }}>
             {p.name}
           </Typography.Text>
         </div>
       ),
     },
-    { key: 'status', title: 'Status', render: (_, p) => PROJECT_STATUS_LABELS[p.status] },
-    { key: 'physical', title: 'Physical', align: 'right', className: 'mono', sorter: (a, b) => a.physicalPct - b.physicalPct, render: (_, p) => formatPct(p.physicalPct) },
-    { key: 'planned', title: 'Planned by today', align: 'right', className: 'mono', sorter: (a, b) => num(a.plannedPct, b.plannedPct), render: (_, p) => formatPct(p.plannedPct) },
+    { key: 'status', title: 'Status', width: 96, render: (_, p) => PROJECT_STATUS_LABELS[p.status] },
+    {
+      key: 'progress',
+      title: 'Progress',
+      children: [
+        { key: 'physical', title: 'Physical', align: 'right', width: 96, sorter: (a, b) => a.physicalPct - b.physicalPct, render: (_, p) => pct(p.physicalPct) },
+        { key: 'planned', title: 'Planned by today', align: 'right', width: 124, sorter: (a, b) => num(a.plannedPct, b.plannedPct), render: (_, p) => pct(p.plannedPct) },
+        ...(data.seesFinancial
+          ? ([{ key: 'financial', title: 'Financial', align: 'right', width: 100, sorter: (a, b) => num(a.financialPct, b.financialPct), render: (_, p) => pct(p.financialPct) }] satisfies TableColumnsType<ProjectProgressDto>)
+          : []),
+        { key: 'timeUsed', title: 'Time used', align: 'right', width: 100, sorter: (a, b) => num(a.timeUsedPct, b.timeUsedPct), render: (_, p) => pct(p.timeUsedPct) },
+      ],
+    },
+    {
+      key: 'dates',
+      title: 'Contract dates',
+      children: [
+        { key: 'start', title: 'Start', width: 120, sorter: (a, b) => byDate(a.startDate, b.startDate), render: (_, p) => date(p.startDate) },
+        { key: 'end', title: 'Completion', width: 128, sorter: (a, b) => byDate(a.endDate, b.endDate), render: (_, p) => date(p.endDate) },
+        {
+          key: 'eot',
+          title: 'EOT',
+          align: 'right',
+          width: 132,
+          sorter: (a, b) => a.eotDays - b.eotDays,
+          render: (_, p) => (
+            <>
+              <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>
+                {p.eotCount ? days(p.eotDays) : '–'}
+              </span>
+              {p.eotCount > 1 && sub(`${p.eotCount} extensions`)}
+              {p.eotPending > 0 && sub(`${p.eotPending} ${p.eotPending === 1 ? 'claim' : 'claims'} pending`)}
+            </>
+          ),
+        },
+        {
+          key: 'revisedEnd',
+          title: 'Revised completion',
+          width: 150,
+          sorter: (a, b) => byDate(a.revisedEndDate, b.revisedEndDate),
+          render: (_, p) => date(p.revisedEndDate),
+        },
+        {
+          key: 'planFinish',
+          title: 'Plan ends',
+          width: 140,
+          sorter: (a, b) => byDate(a.planFinish, b.planFinish),
+          render: (_, p) => {
+            const late = planLate(p);
+            return (
+              <>
+                {date(p.planFinish)}
+                {late > 0 && sub(`${days(late)} after completion`, token.colorWarningText)}
+              </>
+            );
+          },
+        },
+        {
+          key: 'timeLeft',
+          title: 'Time left',
+          align: 'right',
+          width: 116,
+          sorter: (a, b) => (a.daysLeft ?? Infinity) - (b.daysLeft ?? Infinity),
+          render: (_, p) =>
+            p.completedOn ? (
+              <>
+                Handed over
+                {sub(<span translate="no">{formatDate(p.completedOn)}</span>)}
+              </>
+            ) : p.daysLeft === null ? (
+              '–'
+            ) : p.daysLeft < 0 ? (
+              <span style={{ color: token.colorErrorText, whiteSpace: 'nowrap' }}>
+                <span translate="no">{days(-p.daysLeft)}</span> over
+              </span>
+            ) : (
+              <span translate="no" style={{ whiteSpace: 'nowrap' }}>
+                {days(p.daysLeft)}
+              </span>
+            ),
+        },
+      ],
+    },
     ...(data.seesFinancial
       ? ([
-          { key: 'financial', title: 'Financial', align: 'right', className: 'mono', sorter: (a, b) => num(a.financialPct, b.financialPct), render: (_, p) => formatPct(p.financialPct) },
-          { key: 'billed', title: 'Billed', align: 'right', className: 'mono', sorter: (a, b) => toNumber(a.billed) - toNumber(b.billed), render: (_, p) => formatINRCompact(p.billed) },
-          { key: 'contract', title: 'Contract', align: 'right', className: 'mono', sorter: (a, b) => toNumber(a.contractValue) - toNumber(b.contractValue), render: (_, p) => (p.contractValue === null ? '–' : formatINRCompact(p.contractValue)) },
+          {
+            key: 'value',
+            title: 'Value',
+            children: [
+              { key: 'billed', title: 'Billed', align: 'right', width: 104, sorter: (a, b) => toNumber(a.billed) - toNumber(b.billed), render: (_, p) => money(p.billed) },
+              { key: 'contract', title: 'Contract', align: 'right', width: 108, sorter: (a, b) => toNumber(a.contractValue) - toNumber(b.contractValue), render: (_, p) => money(p.contractValue) },
+            ],
+          },
         ] satisfies TableColumnsType<ProjectProgressDto>)
       : []),
   ];
   return (
     <Table<ProjectProgressDto>
       size="small"
+      bordered
       rowKey="projectId"
       dataSource={data.projects}
       columns={columns}
       pagination={false}
-      scroll={{ x: data.seesFinancial ? 760 : 480 }}
+      scroll={{ x: data.seesFinancial ? 1714 : 1402 }}
       rowClassName={() => 'row-click'}
       onRow={(p) => ({ onClick: () => router.push(`/projects/${p.projectId}`) })}
     />
