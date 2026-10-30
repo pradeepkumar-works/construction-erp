@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-09-face-attendance',
+    date: '2027-09-13',
+    title: 'Face attendance and tabs on the phone’s Home',
+    points: [
+      'On the phone, check in and check out are now Mark in and Mark out. Each takes a photo of the person with the front camera, and the staff register shows the photos beside the times.',
+      'The phone’s Home has tabs over the menu: Overview as before, then Attendance and HR, Project work, Procurement and stores, Quality and safety, Accounts and reports and Admin, each with the pages you can open.',
+    ],
+  },
+  {
     id: '2027-09-biometric-commands',
     date: '2027-09-06',
     title: 'People put on the biometric devices from Nirmaan',

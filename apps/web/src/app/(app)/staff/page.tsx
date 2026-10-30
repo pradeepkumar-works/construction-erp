@@ -47,7 +47,7 @@ function StaffPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Staff and leave" subtitle="Check in, apply for leave and see your balance. Site in-charges mark the staff register; HR keeps staff records and holidays." />
+      <PageHeader title="Staff and leave" subtitle="Mark in and out, apply for leave and see your balance. Site in-charges mark the staff register; HR keeps staff records and holidays." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

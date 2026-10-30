@@ -12,12 +12,12 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useMyStaff } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
-import { AttendanceTag, CheckInPlaceTag, LeaveStatusTag, OvertimeTag, clock, currentPosition, leaveSpan, metres } from './staffUi';
+import { AttendanceTag, CheckInPlaceTag, FacePhotos, LeaveStatusTag, OvertimeTag, clock, currentPosition, leaveSpan, metres } from './staffUi';
 import { LeaveFormModal } from './LeaveFormModal';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 
-/** The signed-in person's own record: check in and out, leave balances, their requests and coming holidays. */
+/** The signed-in person's own record: mark in and out (the phone adds their photo, face attendance), leave balances, their requests and coming holidays. */
 export function MyStaff() {
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -32,7 +32,7 @@ export function MyStaff() {
       return (await api.post(`/staff/me/${what}`, at ?? {})).data;
     },
     onSuccess: (_, what) => {
-      message.success(what === 'check-in' ? 'Checked in' : what === 'check-out' ? 'Checked out' : 'Leave cancelled');
+      message.success(what === 'check-in' ? 'Marked in' : what === 'check-out' ? 'Marked out' : 'Leave cancelled');
       qc.invalidateQueries({ queryKey: ['staff'] });
     },
     meta: FAIL_NOTICE,
@@ -43,7 +43,7 @@ export function MyStaff() {
   if (!data.employee)
     return (
       <div style={{ padding: 16 }}>
-        <Alert type="info" showIcon title="Your login is not linked to a staff record" description="HR links logins to staff records under Staff. Once linked you can check in and apply for leave here." />
+        <Alert type="info" showIcon title="Your login is not linked to a staff record" description="HR links logins to staff records under Staff. Once linked you can mark in and apply for leave here." />
       </div>
     );
 
@@ -86,6 +86,7 @@ export function MyStaff() {
                   In {clock(t.checkIn)} · Out {clock(t.checkOut)}
                 </Typography.Text>
                 <CheckInPlaceTag place={t.checkInPlace} />
+                <FacePhotos attendance={t} />
                 {t.overtimeHours && Number(t.overtimeHours) > 0 ? (
                   <Space size={4} wrap>
                     <Typography.Text>Overtime {t.overtimeHours} h</Typography.Text>
@@ -96,21 +97,21 @@ export function MyStaff() {
                 {!t.checkIn && <Typography.Text type="secondary">Marked by {t.markedByName}</Typography.Text>}
               </Space>
             ) : (
-              <Typography.Text type="secondary">Not checked in yet.</Typography.Text>
+              <Typography.Text type="secondary">Not marked in yet.</Typography.Text>
             )}
             {!t?.checkIn && data.site ? (
               <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
-                Check-in records your location: {data.site.strict ? 'it must be' : 'it is flagged unless'} within {metres(data.site.radiusM)} of {data.site.projectName}.
+                Mark in records your location: {data.site.strict ? 'it must be' : 'it is flagged unless'} within {metres(data.site.radiusM)} of {data.site.projectName}.
               </Typography.Paragraph>
             ) : null}
             <div style={{ marginTop: 12 }}>
               {!t?.checkIn ? (
                 <Button type="primary" icon={<LoginOutlined />} loading={act.isPending} onClick={() => act.mutate('check-in')}>
-                  Check in
+                  Mark in
                 </Button>
               ) : !t.checkOut ? (
                 <Button icon={<LogoutOutlined />} loading={act.isPending} onClick={() => act.mutate('check-out')}>
-                  Check out
+                  Mark out
                 </Button>
               ) : null}
             </div>

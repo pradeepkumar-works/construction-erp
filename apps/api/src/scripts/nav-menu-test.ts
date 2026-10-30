@@ -10,11 +10,15 @@ import {
   AREA_MODULES,
   DEFAULT_NAV_SETTINGS,
   DEPARTMENT_MODULES,
+  HOME_TABS,
   NAV_MODULE_NAME_KEYS,
   NAV_NAME_MAX,
   NAV_TREE,
   canSeeNav,
   cleanNavNames,
+  homeTabOf,
+  homeTabSections,
+  homeTabsFor,
   isDefaultNav,
   menuWaiting,
   navMenuFor,
@@ -134,6 +138,39 @@ test('what waits in a module: approvals whose list is one of its pages, and the 
     for (const m of menu) assert.equal(waiting[m.key] ?? 0, (dpr.includes(m.key) ? 3 : 0) + (toOrder.includes(m.key) ? 2 : 0), `${settings.moduleSet} › ${m.key}`);
   }
   assert.deepEqual(menuWaiting(navMenuFor(engineer, DEFAULT_NAV_SETTINGS), undefined, undefined), {});
+});
+
+test("the phone's Home tabs: every module has one, each page a user may open is in one tab, masters stay out", () => {
+  const named = new Set(NAV_MODULE_NAME_KEYS);
+  for (const key of named) assert.ok(HOME_TABS.some((t) => t.key === homeTabOf({ key, family: 'work' })), key);
+  for (const settings of [DEFAULT_NAV_SETTINGS, { ...DEFAULT_NAV_SETTINGS, ...departments }])
+    for (const user of [admin, engineer]) {
+      const menu = navMenuFor(user, settings);
+      const tabs = homeTabsFor(menu);
+      assert.equal(tabs[0].key, 'overview');
+      const shown = new Map<string, string>();
+      for (const t of tabs.slice(1)) {
+        const sections = homeTabSections(menu, t.key as Exclude<typeof t.key, 'overview'>);
+        assert.ok(sections.length, `${settings.moduleSet} › ${t.key} is shown with nothing in it`);
+        const ids = sections.flatMap((s) => s.nodes.map((n) => n.shortcutOf ?? n.id));
+        assert.equal(new Set(ids).size, ids.length, `${settings.moduleSet} › ${t.key}: a page twice`);
+        for (const id of ids) shown.set(id, t.key);
+      }
+      // Every page outside Masters is in a tab, and only pages the user may open.
+      for (const m of menu) for (const s of m.subs) if (s.key !== 'masters') for (const n of s.nodes) assert.ok(shown.has(n.shortcutOf ?? n.id), `${settings.moduleSet} › ${m.key} › ${n.id} is in no tab`);
+      for (const id of shown.keys()) assert.ok(canSeeNav(user, navNode(id)!), id);
+    }
+  const engineerMenu = navMenuFor(engineer, DEFAULT_NAV_SETTINGS);
+  assert.ok(!homeTabsFor(engineerMenu).some((t) => t.key === 'admin'), 'a site engineer has no Admin tab');
+  const hr = homeTabSections(engineerMenu, 'hr');
+  assert.ok(hr.some((s) => s.nodes.some((n) => n.id === 'site.attendance')), 'labour attendance is with HR');
+  const dept = navMenuFor(admin, { ...DEFAULT_NAV_SETTINGS, ...departments, names: { 'quality-control': 'QC' } });
+  const quality = homeTabSections(dept, 'quality');
+  assert.deepEqual(
+    quality.map((s) => s.title),
+    ['Safety', 'QC'],
+    "a module's part takes its sub-module's name, a whole module the company's",
+  );
 });
 
 let failed = 0;
