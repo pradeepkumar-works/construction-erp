@@ -159,7 +159,7 @@ test('guests cannot ask, and nobody can ask once an admin switches it off', asyn
 test('an admin sees the switch, the allowance and this month’s use', async ({ page }) => {
   await signIn(page, 'admin@demo.com');
   await page.goto('/ai-settings');
-  await expect(page.getByRole('heading', { name: 'Ask Nirmaan' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ask Nirmaan settings' })).toBeVisible();
   const toggle = page.getByRole('switch', { name: 'On for the company' });
   await expect(toggle).toBeChecked();
   await expect(page.getByRole('spinbutton', { name: 'Monthly allowance' })).toBeVisible();

@@ -108,7 +108,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     can(!user?.modulesOff?.includes('safety')) && { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
     { key: 'risks', group: 'site', label: 'Delays and risks', children: <RiskList projectId={project.id} /> },
     { key: 'documents', group: 'site', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
-    { key: 'material', group: 'materials', label: 'Material requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
+    { key: 'material', group: 'materials', label: 'Material requests', children: <MrList projectId={project.id} newLabel="New indent" /> },
     can(!!user && canViewPurchaseOrders(user.roleKey)) && { key: 'po', group: 'materials', label: 'Purchase orders', children: <PurchaseOrderList projectId={project.id} /> },
     { key: 'stock', group: 'materials', label: 'Stock', children: <StockPanel projectId={project.id} /> },
     can(!!user && canViewReconciliation(user.roleKey)) && { key: 'reconciliation', group: 'materials', label: 'Reconciliation', children: <ReconciliationPanel projectId={project.id} network={project.pipeNetwork} /> },

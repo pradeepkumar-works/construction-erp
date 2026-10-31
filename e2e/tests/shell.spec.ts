@@ -35,7 +35,7 @@ test('+ New opens the form from any page, and on the list already open', async (
   await openNewMenu(page);
   await page.getByRole('menuitem', { name: 'Indent' }).click();
   await expect(page).toHaveURL(/\/material-requests$/);
-  await expect(formPanel(page, 'New material request')).toBeVisible();
+  await expect(formPanel(page, 'New indent')).toBeVisible();
 });
 
 test('a page pinned to Home is under Pinned, and the last pages opened lead Search', async ({ page }) => {

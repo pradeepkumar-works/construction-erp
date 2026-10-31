@@ -82,7 +82,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
       open={open}
       onClose={onClose}
       form={form}
-      title={entry ? `${editActionLabel(entry.status)} · ${entry.requestNo}` : 'New material request'}
+      title={entry ? `${editActionLabel(entry.status)} · ${entry.requestNo}` : 'New indent'}
       okText={editing ? 'Resubmit request' : 'Submit request'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing ? undefined : `mr:${projectId ?? 'any'}`}
