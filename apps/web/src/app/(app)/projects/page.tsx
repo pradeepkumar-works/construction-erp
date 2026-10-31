@@ -133,7 +133,7 @@ export default function ProjectsPage() {
     <div className="page-container">
       <PageHeader
         title="Projects"
-        subtitle={`${data?.total ?? 0} project${data?.total === 1 ? '' : 's'} ${filtered ? 'match' : 'in your scope'}`}
+        subtitle={`${data?.total ?? 0} project${data?.total === 1 ? '' : 's'} ${filtered ? 'match' : 'you can see'}`}
         extra={newButton}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

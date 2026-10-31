@@ -4,7 +4,7 @@ import React, { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
-import { canViewContract } from '@erp/shared';
+import { canViewContract, navNode } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 import { RiskList } from '@/components/risks/RiskList';
@@ -21,7 +21,7 @@ function RisksPage() {
   const seesLd = !!user && canViewContract(user.roleKey);
   return (
     <div className="page-container">
-      <PageHeader title="Delays and risks" subtitle="What has held up work (days lost, who caused it, extension of time) and what might, scored probability × impact, with owners and due dates." />
+      <PageHeader title="Delays and risks" subtitle={navNode('site.risks')?.description} />
       <Card size="small">
         {seesLd ? (
           <AppTabs

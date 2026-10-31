@@ -3,6 +3,7 @@
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
+import { navNode } from '@erp/shared';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QUALITY_TABS, QualityTabs, type QualityTab } from '@/components/quality/QualityTabs';
 
@@ -18,7 +19,7 @@ function QualityPage() {
     <div className="page-container">
       <PageHeader
         title="Quality"
-        subtitle="Inspections requested by site and passed by QA/QC, material and field tests against their specification, and non-conformance reports through to closure."
+        subtitle={navNode('quality')?.description}
       />
       <Card size="small">
         <QualityTabs key={id ?? ''} tab={tab} onTab={(t) => router.replace(`${pathname}?tab=${t}`, { scroll: false })} openId={id} withChecklists />
