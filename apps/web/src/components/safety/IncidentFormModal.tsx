@@ -106,7 +106,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
       <Form form={form} layout="vertical">
         <FormSection title="The incident">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || editing}>
-            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
           </Form.Item>
           <FormGrid cols={3}>
             <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Choose the type' }]}>

@@ -267,7 +267,7 @@ export function LetterForm({
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project, or head office' }]} hidden={!!fixedProject}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Choose the project"
+              placeholder="Choose a project"
               options={projectOptions}
               onChange={() => form.setFieldsValue({ inReplyToId: null, riskId: null, signatoryId: null, markToId: null })}
             />

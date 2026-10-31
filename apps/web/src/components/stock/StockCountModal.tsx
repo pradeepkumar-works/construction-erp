@@ -113,7 +113,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
-                placeholder="Choose the project"
+                placeholder="Choose a project"
                 onChange={() => form.setFieldValue('counts', {})}
                 options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
               />

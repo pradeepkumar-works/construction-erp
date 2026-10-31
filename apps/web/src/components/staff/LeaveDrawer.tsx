@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Popconfirm, Space, Table, Timeline, Typography } from 'antd';
 import type { LeaveRequestDto } from '@erp/shared';
-import { LEAVE_TYPE_LABELS } from '@erp/shared';
+import { LEAVE_ACTION_LABELS, LEAVE_TYPE_LABELS, auditActionLabel } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -112,7 +112,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
               key: h.id,
               content: (
                 <div>
-                  <Typography.Text strong>{h.action.charAt(0) + h.action.slice(1).toLowerCase()}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
+                  <Typography.Text strong>{auditActionLabel(h.action, LEAVE_ACTION_LABELS)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   {h.note ? <span> · {h.note}</span> : null}
                   <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}

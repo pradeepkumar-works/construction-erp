@@ -99,7 +99,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
           project&apos;s contract terms (GST, retention, advance recovery, TDS and cess). Measurements approved later are picked up when the bill is submitted.
         </Typography.Paragraph>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <ProjectSelect allowClear={false} placeholder="Choose the project" />
+          <ProjectSelect allowClear={false} placeholder="Choose a project" />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>

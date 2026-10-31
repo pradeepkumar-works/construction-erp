@@ -156,7 +156,7 @@ function NeedFormModal({ open, onClose, need, projectId, onSaved }: { open: bool
       <Form form={form} layout="vertical">
         <FormSection title="Drawing">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!(need || projectId)}>
-            <ProjectSelect allowClear={false} placeholder="Choose the project" />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" />
           </Form.Item>
           <Form.Item name="title" label="Drawing" rules={[{ required: true, whitespace: true, message: 'Say which drawing it is' }]}>
             <Input maxLength={200} placeholder="Second floor slab reinforcement" />
@@ -246,7 +246,7 @@ function ManyFormDrawer({ open, onClose, projectId }: { open: boolean; onClose: 
       <Form form={form} layout="vertical">
         <FormSection title="From">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
-            <ProjectSelect allowClear={false} placeholder="Choose the project" />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="source" label="Issued by">

@@ -41,7 +41,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { VendorSelect } from '@/components/common/SearchSelect';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { RowMenu } from '@/components/list/RowMenu';
+import { MoreActions } from '@/components/record/MoreActions';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
 const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">{NO_VALUE}</span>);
@@ -165,7 +165,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
               r.exportedToTally ? (
                 <InTallyTag />
               ) : (
-                <RowMenu
+                <MoreActions inRow
                   label={`Actions for the payment of ${formatINR(r.amount)} to ${r.vendorName}`}
                   items={[
                     { key: 'edit', label: 'Edit', onSelect: () => setEditing(r) },

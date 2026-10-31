@@ -150,7 +150,7 @@ export function MeasurementFormModal({
         {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
         <FormSection title="What and where">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item

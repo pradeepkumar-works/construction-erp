@@ -96,7 +96,7 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
       <Form form={form} layout="vertical">
         {inspection?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Note from ${inspection.reviewedByName ?? 'the inspector'}`} description={inspection.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ activityId: undefined })} />
+          <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ activityId: undefined })} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity' }]} extra={activity?.holdPoint ? 'Hold point: its progress is approved after this passes.' : undefined}>

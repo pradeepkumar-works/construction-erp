@@ -20,7 +20,7 @@ import { ClientFormModal } from '@/components/clients/ClientFormModal';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { RowMenu } from '@/components/list/RowMenu';
+import { MoreActions } from '@/components/record/MoreActions';
 
 type ClientSortField = 'name' | 'createdAt';
 const KEYS = ['inactive'] as const;
@@ -92,7 +92,7 @@ export default function ClientsPage() {
               locked: true,
               width: 96,
               render: (_: unknown, c: ClientDto) => (
-                <RowMenu
+                <MoreActions inRow
                   label={`Actions for ${c.name}`}
                   items={[
                     { key: 'edit', label: 'Edit', onSelect: () => setEditing(c) },

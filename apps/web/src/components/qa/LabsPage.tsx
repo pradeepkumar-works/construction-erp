@@ -100,7 +100,7 @@ function LabDialog({ editing, onClose }: { editing: QaLabDto | 'new' | null; onC
           </Form.Item>
           {kind === 'SITE' ? (
             <Form.Item name="projectId" label="At the project" rules={[{ required: true, message: 'Choose the project the lab is at' }]}>
-              <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
+              <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
             </Form.Item>
           ) : null}
         </FormGrid>

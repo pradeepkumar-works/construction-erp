@@ -73,7 +73,7 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Choose the project"
+            placeholder="Choose a project"
             onChange={() => form.setFieldsValue({ equipmentId: undefined, itemId: undefined })}
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />

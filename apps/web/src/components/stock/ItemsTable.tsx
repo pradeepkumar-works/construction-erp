@@ -22,7 +22,7 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { RowMenu } from '@/components/list/RowMenu';
+import { MoreActions } from '@/components/record/MoreActions';
 import { ItemDuplicates } from './ItemDuplicates';
 import { MasterInput } from '@/components/masters/MasterInput';
 
@@ -137,7 +137,7 @@ export function ItemsTable() {
                 locked: true,
                 width: 100,
                 render: (_: unknown, r: ItemDto) => (
-                  <RowMenu
+                  <MoreActions inRow
                     label={`Actions for ${r.name}`}
                     items={[
                       { key: 'edit', label: 'Edit', onSelect: () => open(r) },

@@ -127,7 +127,7 @@ export function RfiFormModal({
         <FormSection title="Question">
           {!fixedProject ? (
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
-              <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
+              <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
             </Form.Item>
           ) : null}
           <Form.Item name="subject" label="Subject" rules={[{ required: true, whitespace: true, message: 'Say in a line what the question is about' }]}>

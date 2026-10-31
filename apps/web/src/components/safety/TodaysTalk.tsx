@@ -57,7 +57,7 @@ export function TodaysTalk({
           <Select
             aria-label="Project"
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Choose the project"
+            placeholder="Choose a project"
             value={chosen}
             onChange={setChosen}
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}

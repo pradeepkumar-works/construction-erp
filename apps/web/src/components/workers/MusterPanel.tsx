@@ -103,7 +103,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
   return (
     <div className="muster-panel">
       <CardToolbar wrap gap={8} align="center">
-        {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Choose the project" allowClear={false} /> : null}
+        {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Choose a project" allowClear={false} /> : null}
         <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format={MONTH_PICKER_FORMAT} allowClear={false} aria-label="Month" />
         <div style={{ flex: 1 }} />
         {m ? (

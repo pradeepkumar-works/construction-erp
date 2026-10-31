@@ -131,7 +131,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       <Form form={form} layout="vertical">
         {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <ProjectSelect allowClear={false} placeholder="Choose the project" onChange={() => form.setFieldValue('activityId', undefined)} />
+          <ProjectSelect allowClear={false} placeholder="Choose a project" onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Choose the category' }]} {...aiFlagItem(draft, 'category', category)}>

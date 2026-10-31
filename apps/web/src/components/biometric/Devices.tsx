@@ -14,7 +14,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { DeviceCommands } from './DeviceCommands';
-import { RowMenu } from '@/components/list/RowMenu';
+import { MoreActions } from '@/components/record/MoreActions';
 
 interface Values {
   name: string;
@@ -180,7 +180,7 @@ export function Devices() {
           <Button size="small" onClick={() => setSetup(d.id)} aria-label={`Set up ${d.name}`}>
             Set up
           </Button>
-          <RowMenu
+          <MoreActions inRow
             label={`More for ${d.name}`}
             items={[
               { key: 'edit', label: 'Edit', onSelect: () => setEditing({ device: d }) },

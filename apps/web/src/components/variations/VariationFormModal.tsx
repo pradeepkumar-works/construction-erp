@@ -133,7 +133,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
       <Form form={form} layout="vertical">
         <FormSection title="Variation">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ lines: [{}] })} />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ lines: [{}] })} />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Give the variation a title' }]}>

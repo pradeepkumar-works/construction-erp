@@ -249,7 +249,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         )}
         <FormSection title="The day">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
           </Form.Item>
           <FormGrid cols={3}>
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the report' }]} {...aiFlagItem(draft, 'date', watchedDate)}>

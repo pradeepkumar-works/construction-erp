@@ -159,7 +159,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             </Form.Item>
           ) : (
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={editing}>
-              <ProjectSelect allowClear={false} placeholder="Choose the project" />
+              <ProjectSelect allowClear={false} placeholder="Choose a project" />
             </Form.Item>
           )}
           {kind === 'BILL' && target && !editing && (

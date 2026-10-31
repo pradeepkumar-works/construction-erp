@@ -43,7 +43,7 @@ import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { RowMenu } from '@/components/list/RowMenu';
+import { MoreActions } from '@/components/record/MoreActions';
 import { EquipmentPartsDrawer } from './EquipmentPartsDrawer';
 import { MasterInput } from '@/components/masters/MasterInput';
 
@@ -224,7 +224,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
             <Space size="small">
               <Button type="text" size="small" icon={<ToolOutlined />} onClick={() => setPartsOf(r)} aria-label={`Tyres and batteries of ${r.code}`} title="Tyres and batteries" />
               {mayManage ? (
-                <RowMenu
+                <MoreActions inRow
                   label={`Actions for ${r.code}`}
                   items={[
                     { key: 'edit', label: 'Edit', onSelect: () => open(r) },

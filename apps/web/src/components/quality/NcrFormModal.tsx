@@ -149,7 +149,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Choose the project"
+            placeholder="Choose a project"
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             onChange={() => form.setFieldsValue({ activityId: undefined, actionById: undefined })}
           />

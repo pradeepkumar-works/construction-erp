@@ -150,7 +150,7 @@ function AuditFormDrawer({ open, onClose, audit, projectId, onSaved }: { open: b
         <FormSection title="Visit">
           <FormGrid cols={3}>
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
-              <ProjectSelect allowClear={false} placeholder="Choose the project" disabled={!!audit} />
+              <ProjectSelect allowClear={false} placeholder="Choose a project" disabled={!!audit} />
             </Form.Item>
             <Form.Item name="kind" label="Kind" rules={[{ required: true, message: 'Choose who audited or visited' }]}>
               <Select options={QA_AUDIT_KINDS.map((k) => ({ value: k, label: QA_AUDIT_KIND_LABELS[k] }))} />

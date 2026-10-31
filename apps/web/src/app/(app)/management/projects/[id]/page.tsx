@@ -6,11 +6,13 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Card, Col, Result, Row, Skeleton, Table, Typography, theme } from 'antd';
 import {
+  BILL_STAGE_LABELS,
   HEALTH_LABELS,
   PORTFOLIO_SCHEDULE_LABELS,
   SUBMISSION_TYPE_LABELS,
   canSeeManagement,
   submissionHref,
+  type BillStage,
   type PortfolioProjectDetailDto,
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -360,7 +362,7 @@ function OpenItems({ data }: { data: PortfolioProjectDetailDto }) {
                   key: 'stage',
                   title: 'Stage',
                   dataIndex: 'stage',
-                  render: (v: string) => v.charAt(0) + v.slice(1).toLowerCase().replace(/_/g, ' '),
+                  render: (v: string) => BILL_STAGE_LABELS[v as BillStage] ?? v,
                 },
                 {
                   key: 'sent',

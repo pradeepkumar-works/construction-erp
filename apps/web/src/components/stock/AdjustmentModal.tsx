@@ -83,7 +83,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={760} title="Adjust stock" okText="Save adjustment" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose a project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>

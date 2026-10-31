@@ -60,7 +60,7 @@ export function PourFormModal({ open, onClose, projectId, pour, onSaved }: { ope
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={640} title={pour ? `Edit ${pour.pourNo}` : 'Plan pour'} okText={pour ? 'Save' : 'Plan pour'} onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" hidden={!!pour || !!projectId} rules={[{ required: true, message: 'Choose the project' }]}>
-          <ProjectSelect allowClear={false} placeholder="Choose the project" onChange={() => form.setFieldValue('activityId', undefined)} />
+          <ProjectSelect allowClear={false} placeholder="Choose a project" onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity being poured' }]}>

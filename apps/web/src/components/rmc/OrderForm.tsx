@@ -115,7 +115,7 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
         <FormGrid cols={2}>
           {who === 'site' ? (
             <Form.Item name="projectId" label="Site" rules={[{ required: true, message: 'Choose the site the plant supplies' }]} extra="Supplied at cost, with no GST bill">
-              <ProjectSelect allowClear={false} placeholder="Choose the project" disabled={editing} />
+              <ProjectSelect allowClear={false} placeholder="Choose a project" disabled={editing} />
             </Form.Item>
           ) : (
             <Form.Item name="clientId" label="Customer" rules={[{ required: true, message: 'Choose the customer' }]} extra="Add a new customer in Masters, Clients">

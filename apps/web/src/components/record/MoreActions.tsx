@@ -2,21 +2,32 @@
 
 import React from 'react';
 import { Button, Dropdown } from 'antd';
-import { DeleteOutlined, MoreOutlined } from '@/components/common/icons';
+import { DeleteOutlined, EllipsisOutlined, MoreOutlined } from '@/components/common/icons';
 import { useConfirmDelete, type DeleteRequest } from '@/components/common/ConfirmDelete';
 import type { RecordMenuAction } from './RecordFrame';
 
 type Size = 'small' | 'middle';
 
-/** A ⋯ menu for a drawer not yet on RecordFrame: what cannot be taken back sits here, never beside the deciding button. */
-export function MoreActions({ items, size = 'small' }: { items: RecordMenuAction[]; size?: Size }) {
+/**
+ * The ⋯ menu of a record, a drawer or a row that is not a submission (submissions' rows use `RowActions`): what cannot
+ * be taken back goes last, after a divider, and is confirmed through `useConfirmDelete`, never one tap beside Edit.
+ * `inRow` draws the quiet row button; `label` names it for a screen reader ("Actions for INV-12").
+ */
+export function MoreActions({ items, size = 'small', label = 'More actions', inRow = false }: { items: RecordMenuAction[]; size?: Size; label?: string; inRow?: boolean }) {
   if (!items.length) return null;
+  const danger = items.filter((i) => i.danger);
+  const rest = items.filter((i) => !i.danger);
+  const entry = (i: RecordMenuAction) => ({ key: i.key, label: i.label, icon: i.icon, danger: i.danger, disabled: i.disabled });
   return (
     <Dropdown
       trigger={['click']}
-      menu={{ items: items.map((i) => ({ key: i.key, label: i.label, icon: i.icon, danger: i.danger, disabled: i.disabled, onClick: i.onSelect })) }}
+      placement="bottomRight"
+      menu={{
+        items: [...rest.map(entry), ...(rest.length && danger.length ? [{ type: 'divider' as const }] : []), ...danger.map(entry)],
+        onClick: ({ key }) => items.find((i) => i.key === key)?.onSelect(),
+      }}
     >
-      <Button size={size} icon={<MoreOutlined />} aria-label="More actions" />
+      {inRow ? <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label={label} /> : <Button size={size} icon={<MoreOutlined />} aria-label={label} />}
     </Dropdown>
   );
 }

@@ -35,7 +35,7 @@ import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { RowMenu } from '@/components/list/RowMenu';
+import { MoreActions } from '@/components/record/MoreActions';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
 function Sub({ children }: { children: React.ReactNode }) {
@@ -154,7 +154,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
               r.exportedToTally ? (
                 <InTallyTag />
               ) : (
-                <RowMenu
+                <MoreActions inRow
                   label={`Actions for the money received of ${formatINR(r.amount)}`}
                   items={[
                     { key: 'edit', label: 'Edit', onSelect: () => setEditing(r) },

@@ -13,7 +13,7 @@ import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { RowMenu } from '@/components/list/RowMenu';
+import { MoreActions } from '@/components/record/MoreActions';
 
 export const HEALTH_TONE: Record<ConnectionHealth, TagTone> = { LIVE: 'success', FAILING: 'danger', QUIET: 'pending', NOT_SET_UP: 'info', OFF: 'neutral' };
 
@@ -144,11 +144,11 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           </Form.Item>
           {dispenser ? (
             <Form.Item name="projectId" label="Project" extra="Its fills are issued from this project's store" rules={[{ required: true, message: 'Choose the project whose store the dispenser pours from' }]}>
-              <ProjectSelect placeholder="Choose the project" style={{ width: '100%' }} />
+              <ProjectSelect placeholder="Choose a project" style={{ width: '100%' }} />
             </Form.Item>
           ) : bridge ? (
             <Form.Item name="projectId" label="Project" extra="Its weights go to this project's store" rules={[{ required: true, message: 'Choose the project the weighbridge is at' }]}>
-              <ProjectSelect placeholder="Choose the project" style={{ width: '100%' }} />
+              <ProjectSelect placeholder="Choose a project" style={{ width: '100%' }} />
             </Form.Item>
           ) : batcher ? (
             <Form.Item name="projectId" label="Plant" extra="Its batches wait for challans on this plant's RMC page" rules={[{ required: true, message: 'Choose the RMC plant the controller batches for' }]}>
@@ -450,7 +450,7 @@ export function Connections() {
           <Button size="small" onClick={() => setSetupId(c.id)} aria-label={`Set up ${c.name}`}>
             Set up
           </Button>
-          <RowMenu
+          <MoreActions inRow
             label={`More for ${c.name}`}
             items={[
               { key: 'edit', label: 'Edit', onSelect: () => setEditing({ c }) },

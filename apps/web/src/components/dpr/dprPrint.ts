@@ -1,5 +1,5 @@
 import type { DailyReportDto, DprBuiltInKey, DprFormDef, DprLineDto } from '@erp/shared';
-import { PIPE_STAGE_LABELS, SEGMENT_STAGES, STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, dprLabel, dprShows, filledExtra, lineLocation, materialUsed, linesSummary, ownFieldsOf, pipelineSummary } from '@erp/shared';
+import { PIPE_STAGE_LABELS, SEGMENT_STAGES, SUBMISSION_STATUS_LABELS, STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, dprLabel, dprShows, filledExtra, lineLocation, materialUsed, linesSummary, ownFieldsOf, pipelineSummary } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
@@ -67,7 +67,7 @@ export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
     .filter((a) => a.mimeType?.startsWith('image/'))
     .map((a) => `<figure><img src="${esc(fileUrl(a.url))}" alt="${esc(a.fileName)}"/><figcaption>${esc(a.fileName)}</figcaption></figure>`)
     .join('');
-  const status = d.status.replace(/_/g, ' ');
+  const status = SUBMISSION_STATUS_LABELS[d.status];
 
   return `<!doctype html>
 <html><head><meta charset="utf-8"/>
@@ -105,7 +105,7 @@ ${PRINT_FONT_LINKS}
 <body>
   <div class="head">
     <div><div class="brand">${esc(orgName)}</div><div class="org">${esc(d.projectName)}</div></div>
-    <div style="text-align:right"><h1>Daily Progress Report</h1><div>${esc(formatDate(d.date))}</div><div style="margin-top:4px" class="status">${esc(status)}</div></div>
+    <div style="text-align:right"><h1>Daily report</h1><div>${esc(formatDate(d.date))}</div><div style="margin-top:4px" class="status">${esc(status)}</div></div>
   </div>
   <div class="meta">
     <div style="grid-column: span 2"><b>Project</b>${esc(d.projectName)}</div>

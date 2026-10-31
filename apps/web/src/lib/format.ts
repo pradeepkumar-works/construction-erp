@@ -122,9 +122,6 @@ export function inSentence(label: string): string {
 
 const pctFormats = new Map<string, Intl.NumberFormat>();
 
-/** What a cell or a fact shows when it has no value, on every screen (WRITING.md, Words we use). */
-export const NO_VALUE = '–';
-
 /**
  * A percentage, written one way everywhere (UX item 85): whole numbers from 10% up, one decimal below it (2.5%, and 2%
  * rather than 2.0%), `%` without a space, `–` for none. `digits` fixes the decimals instead ({ digits: 0 } for a

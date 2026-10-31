@@ -102,7 +102,7 @@ export function TalkFormModal({
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={680} title={talk ? `Edit ${talk.talkNo}` : 'Record toolbox talk'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!talk || !!prefill}>
-          <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
+          <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'Enter the topic' }]}>
           <AutoComplete options={TOOLBOX_TOPICS.map((t) => ({ value: t }))} showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} placeholder="Pick or type a topic" />

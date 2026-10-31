@@ -1,6 +1,6 @@
 'use client';
 
-import { auditActionLabel } from '@/components/common/AuditTrail';
+import { auditActionLabel } from '@erp/shared';
 import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Alert, Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Timeline, Typography } from 'antd';

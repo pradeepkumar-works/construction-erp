@@ -14,7 +14,7 @@ import { DISPLAY_FONT } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { RowMenu } from '@/components/list/RowMenu';
+import { MoreActions } from '@/components/record/MoreActions';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const STATE_TONE: Record<AgentState, TagTone> = { ONLINE: 'success', OFFLINE: 'pending', WAITING_TO_PAIR: 'info', CODE_EXPIRED: 'pending', REVOKED: 'neutral' };
@@ -104,7 +104,7 @@ export function Connectors() {
       width: 64,
       render: (_, a) =>
         a.state === 'REVOKED' ? null : (
-          <RowMenu
+          <MoreActions inRow
             label={`More for ${a.name}`}
             items={[
               {
