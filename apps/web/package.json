@@ -22,10 +22,12 @@
     "antd": "^6.6.6",
     "axios": "^1.20.0",
     "dayjs": "^1.11.23",
+    "docx": "9.9.0",
     "dxf-parser": "1.1.2",
     "lucide-react": "1.50.0",
     "next": "^15.5.27",
     "pdfjs-dist": "5.6.205",
+    "pdfmake": "0.3.11",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
@@ -33,6 +35,7 @@
   "devDependencies": {
     "@next/eslint-plugin-next": "15.5.27",
     "@types/node": "^22.20.5",
+    "@types/pdfmake": "0.3.3",
     "@types/react": "~19.2.2",
     "@types/react-dom": "~19.2.1",
     "eslint": "9.39.5",

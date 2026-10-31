@@ -8,6 +8,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { seedGroupCompanies } from './seed-group';
+import { seedGroupModules } from './seed-group-modules';
 
 const prisma = new PrismaClient();
 
@@ -18,6 +19,7 @@ async function main() {
     return;
   }
   await seedGroupCompanies(prisma, org.id, await bcrypt.hash('password123', 10));
+  await seedGroupModules(prisma, org.id);
   const { groupId } = await prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { groupId: true } });
   const companies = await prisma.organization.findMany({ where: { groupId }, select: { name: true, _count: { select: { projects: true } } }, orderBy: { name: 'asc' } });
   console.log(`Demo Infra Group: ${companies.map((c) => `${c.name} (${c._count.projects} projects)`).join(', ')}.`);

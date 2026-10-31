@@ -1,5 +1,9 @@
 /* Demo seed: one organisation, a user for every role, three projects (one per type) with BOQ,
- * activities, approved and pending progress, DPRs and material requests. Safe to re-run. */
+ * activities, approved and pending progress, DPRs and material requests. Safe to re-run.
+ *
+ * `--modules` (SEED_MODULES_ON_BUILD=true on a Vercel build) is for a live demo that no longer takes the full seed: it
+ * adds the demo users and roles that are missing and runs every module's step (`topUp`), each of which writes only what
+ * its module lacks. Existing users, roles, passwords, projects and records are left as they are. */
 import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
@@ -26,6 +30,7 @@ import { seedWeighbridge } from './seed-weighbridge';
 import { seedBatching } from './seed-batching';
 import { seedBiometricCommands } from './seed-biometric-commands';
 import { seedDemoGroup, seedGroupCompanies } from './seed-group';
+import { seedGroupModules } from './seed-group-modules';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
@@ -133,12 +138,27 @@ const WATER_BOQ: BoqSeed[] = [
   { itemNo: '6.01', description: 'House service connections with meter', unit: 'Nos', rate: '4200.00', qty: '5400', activity: 'House connections', start: 30, end: 200, done: [] },
 ];
 
+const MODULES_ONLY = process.argv.includes('--modules');
+
+/**
+ * The demo company's own projects. Steps that go over every project (attendance, stock, machinery, expenses, measurements,
+ * risks, price variation) keep to these, so a project someone set up by hand on the live demo gets no made-up records.
+ * A new demo project of the demo company adds its code here.
+ */
+const DEMO_PROJECT_CODES = ['RD-2026-01', 'BL-2026-02', 'WS-2026-03', 'WS-2026-04', 'WS-2025-05', 'WW-2026-07', 'CS-01', 'RMC-01'];
+/** Of those, the sites with day-to-day work: not the central store or the RMC plant, which have their own steps. */
+const SITE_PROJECTS = { code: { in: DEMO_PROJECT_CODES }, type: { notIn: ['STORE', 'PLANT'] as ProjectType[] } };
+
 async function main() {
-  const org = await prisma.organization.upsert({ where: { code: 'DEMO' }, update: { aiEnabled: true }, create: { code: 'DEMO', name: 'Demo Infra Projects Pvt Ltd', aiEnabled: true } });
+  if (MODULES_ONLY && !(await prisma.project.count({ where: { organization: { code: 'DEMO' } } }))) {
+    console.log('No demo company with projects; run the full seed instead.');
+    return;
+  }
+  const org = await prisma.organization.upsert({ where: { code: 'DEMO' }, update: MODULES_ONLY ? {} : { aiEnabled: true }, create: { code: 'DEMO', name: 'Demo Infra Projects Pvt Ltd', aiEnabled: true } });
 
   const roles = new Map<string, string>();
   for (const [key, name] of ROLES) {
-    const r = await prisma.role.upsert({ where: { organizationId_key: { organizationId: org.id, key } }, update: { name }, create: { organizationId: org.id, key, name } });
+    const r = await prisma.role.upsert({ where: { organizationId_key: { organizationId: org.id, key } }, update: MODULES_ONLY ? {} : { name }, create: { organizationId: org.id, key, name } });
     roles.set(key, r.id);
   }
 
@@ -149,7 +169,7 @@ async function main() {
     const login = await prisma.login.upsert({ where: { email: u.email }, update: {}, create: { email: u.email, passwordHash } });
     const row = await prisma.user.upsert({
       where: { organizationId_email: { organizationId: org.id, email: u.email } },
-      update: { fullName: u.name, roleId: roles.get(u.role)!, phone: u.phone, isActive: true, loginId: login.id },
+      update: MODULES_ONLY ? {} : { fullName: u.name, roleId: roles.get(u.role)!, phone: u.phone, isActive: true, loginId: login.id },
       create: { organizationId: org.id, email: u.email, fullName: u.name, roleId: roles.get(u.role)!, phone: u.phone, loginId: login.id },
     });
     users.set(u.email, row.id);
@@ -158,96 +178,8 @@ async function main() {
 
   const already = await prisma.project.count({ where: { organizationId: org.id } });
   if (already > 0) {
-    await seedAttendance(org.id);
-    await seedStock(org.id);
-    await seedMachinery(org.id);
-    await seedExpenses(org.id);
-    await seedMeasurements(org.id);
-    await seedCostRates(org.id);
-    await seedRisks(org.id);
-    await seedContracts(org.id);
-    await seedLdTerms(org.id);
-  await seedPriceVariation(org.id);
-    await seedPriceVariation(org.id);
-    await seedApprovalRules(org.id);
-    await seedBills(org.id);
-    await seedReceipts(org.id);
-    await seedVendors(org.id);
-    await seedPurchasing(org.id);
-    await seedSplitQuotes(org.id);
-    await seedSubcontracts(org.id);
-    await seedPayables(org.id);
-    await seedPaymentRequests(org.id);
-    await seedHireBills(org.id);
-    await seedQuality(org.id);
-    await seedTestsAndNcrs(org.id);
-    await seedDocuments(org.id);
-    await seedCorrespondence(prisma, org.id);
-    await seedQa(prisma, org.id);
-    await seedQaRegisters(prisma, org.id);
-    await seedQaAudits(prisma, org.id);
-    await seedDrawingSchedule(prisma, org.id);
-    await seedDesignSubmissions(prisma, org.id);
-    await seedControlledCopies(prisma, org.id);
-    await seedIntegrations(prisma, org.id);
-    await seedTelematics(prisma, org.id);
-    await seedContractDocuments(org.id);
-    await seedStaff(org.id);
-    await seedAttendanceExtras(org.id);
-    await seedHrRecords(org.id);
-    await seedPayroll(org.id);
-    await seedGuests(org.id);
-    await seedVariations(org.id);
-    await seedRfis(org.id);
-    await seedDrawingMarkups(org.id);
-    await seedDrawingTakeoffs(org.id);
-    await seedBudgets(org.id);
-    await seedStoreMoves(org.id);
-    await seedReconciliation(org.id);
-    await seedRateAnalysis(org.id);
-    await seedFleet(org.id);
-    await seedSafety(org.id);
-    await seedSectors(org.id);
-    await seedMaintenance(org.id);
-    await seedSchedule(org.id);
-    await seedWorkers(org.id);
-    await seedPpe(org.id);
-    await seedImprests(org.id);
-    await seedCompliance(org.id);
-    await seedHandover(org.id);
-    await seedCheckAnomalies(org.id);
-    await seedBiometric(org.id);
-    await seedBooks(org.id);
-    await seedOpening(org.id);
-    await seedRmc(org.id);
-    await seedSupplierPortal(org.id);
-    await seedCentralStore(org.id);
-    await seedFundRequests(org.id);
-    await seedMachineLoans(org.id);
-    await seedTenders(org.id);
-    await seedPastOpenings(org.id);
-    await seedScEnquiries(org.id);
-    await seedMeetings(org.id);
-    await seedMaterialApprovals(org.id);
-    await seedLeakage(org.id);
-    await seedFuel(prisma, org.id);
-    await seedWeighbridge(prisma, org.id);
-    await seedBatching(prisma, org.id);
-    await seedBiometricCommands(prisma, org.id);
-    await seedAttendanceCheck(org.id);
-    await seedActivityLinks(org.id);
-    await seedWorkBreakdown(prisma, org.id);
-    await seedTownDprs(prisma, org.id);
-    await seedTownNetwork(prisma, org.id);
-    await seedTownStock(prisma, org.id);
-    await seedTownBilling(prisma, org.id);
-    await seedEpc(prisma, org.id);
-    await seedOm(prisma, org.id);
-    await seedProjectTypes(prisma, org.id);
-    await seedComments(org.id);
-    await seedGroupCompanies(prisma, org.id, passwordHash);
-    await seedVerticals(org.id);
-    console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
+    await topUp(org.id, passwordHash);
+    console.log(MODULES_ONLY ? 'Demo company topped up: every module seeds what it is missing; existing records, users and passwords left alone.' : 'Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
 
@@ -392,94 +324,7 @@ async function main() {
     }
   }
 
-  await seedAttendance(org.id);
-  await seedStock(org.id);
-  await seedMachinery(org.id);
-  await seedExpenses(org.id);
-  await seedMeasurements(org.id);
-  await seedCostRates(org.id);
-  await seedRisks(org.id);
-  await seedContracts(org.id);
-  await seedLdTerms(org.id);
-  await seedPriceVariation(org.id);
-  await seedApprovalRules(org.id);
-  await seedBills(org.id);
-  await seedReceipts(org.id);
-  await seedVendors(org.id);
-  await seedPurchasing(org.id);
-  await seedSplitQuotes(org.id);
-  await seedSubcontracts(org.id);
-  await seedPayables(org.id);
-  await seedPaymentRequests(org.id);
-  await seedHireBills(org.id);
-  await seedQuality(org.id);
-  await seedTestsAndNcrs(org.id);
-  await seedDocuments(org.id);
-  await seedCorrespondence(prisma, org.id);
-  await seedQa(prisma, org.id);
-  await seedQaRegisters(prisma, org.id);
-  await seedQaAudits(prisma, org.id);
-  await seedDrawingSchedule(prisma, org.id);
-  await seedDesignSubmissions(prisma, org.id);
-  await seedControlledCopies(prisma, org.id);
-  await seedIntegrations(prisma, org.id);
-  await seedTelematics(prisma, org.id);
-  await seedContractDocuments(org.id);
-  await seedStaff(org.id);
-  await seedAttendanceExtras(org.id);
-  await seedHrRecords(org.id);
-  await seedPayroll(org.id);
-  await seedGuests(org.id);
-  await seedVariations(org.id);
-  await seedRfis(org.id);
-  await seedDrawingMarkups(org.id);
-  await seedDrawingTakeoffs(org.id);
-  await seedBudgets(org.id);
-  await seedStoreMoves(org.id);
-  await seedReconciliation(org.id);
-  await seedRateAnalysis(org.id);
-  await seedFleet(org.id);
-  await seedSafety(org.id);
-  await seedSectors(org.id);
-  await seedMaintenance(org.id);
-  await seedSchedule(org.id);
-  await seedWorkers(org.id);
-  await seedPpe(org.id);
-  await seedImprests(org.id);
-  await seedCompliance(org.id);
-  await seedHandover(org.id);
-  await seedCheckAnomalies(org.id);
-  await seedBiometric(org.id);
-  await seedBooks(org.id);
-  await seedOpening(org.id);
-  await seedRmc(org.id);
-  await seedSupplierPortal(org.id);
-  await seedCentralStore(org.id);
-  await seedFundRequests(org.id);
-  await seedMachineLoans(org.id);
-  await seedTenders(org.id);
-  await seedPastOpenings(org.id);
-  await seedScEnquiries(org.id);
-  await seedMeetings(org.id);
-  await seedMaterialApprovals(org.id);
-  await seedLeakage(org.id);
-  await seedFuel(prisma, org.id);
-  await seedWeighbridge(prisma, org.id);
-  await seedBatching(prisma, org.id);
-  await seedBiometricCommands(prisma, org.id);
-  await seedAttendanceCheck(org.id);
-  await seedActivityLinks(org.id);
-  await seedWorkBreakdown(prisma, org.id);
-  await seedTownDprs(prisma, org.id);
-  await seedTownNetwork(prisma, org.id);
-  await seedTownStock(prisma, org.id);
-  await seedTownBilling(prisma, org.id);
-  await seedEpc(prisma, org.id);
-  await seedOm(prisma, org.id);
-  await seedProjectTypes(prisma, org.id);
-  await seedComments(org.id);
-  await seedGroupCompanies(prisma, org.id, passwordHash);
-  await seedVerticals(org.id);
+  await topUp(org.id, passwordHash);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -1476,8 +1321,9 @@ const CONTRACTORS: Record<string, [string, string]> = {
  */
 async function seedAttendance(organizationId: string) {
   const projects = await prisma.project.findMany({
-    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
-    where: { organizationId, status: { not: 'COMPLETED' } },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up. Only the demo's own sites, never a project
+    // someone made on the live demo (SITE_PROJECTS).
+    where: { organizationId, status: { not: 'COMPLETED' }, ...SITE_PROJECTS },
     include: { members: { include: { user: { include: { role: true } } } } },
     orderBy: { code: 'asc' },
   });
@@ -1536,8 +1382,9 @@ async function seedStock(organizationId: string) {
     (await prisma.item.findFirst({ where: { organizationId, name, unit } })) ?? prisma.item.create({ data: { organizationId, name, unit, category } });
 
   const projects = await prisma.project.findMany({
-    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
-    where: { organizationId, status: { not: 'COMPLETED' } },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up. Only the demo's own sites, never a project
+    // someone made on the live demo (SITE_PROJECTS).
+    where: { organizationId, status: { not: 'COMPLETED' }, ...SITE_PROJECTS },
     include: { members: { include: { user: { include: { role: true } } } }, activities: { orderBy: { sortOrder: 'asc' } } },
     orderBy: { code: 'asc' },
   });
@@ -1712,8 +1559,9 @@ const FLEET: Record<string, Machine[]> = {
  */
 async function seedMachinery(organizationId: string) {
   const projects = await prisma.project.findMany({
-    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
-    where: { organizationId, status: { not: 'COMPLETED' } },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up. Only the demo's own sites, never a project
+    // someone made on the live demo (SITE_PROJECTS).
+    where: { organizationId, status: { not: 'COMPLETED' }, ...SITE_PROJECTS },
     include: { members: { include: { user: { include: { role: true } } } }, activities: { orderBy: { sortOrder: 'asc' } } },
     orderBy: { code: 'asc' },
   });
@@ -1838,8 +1686,9 @@ const EXPENSES: Record<string, DemoExpense[]> = {
  */
 async function seedExpenses(organizationId: string) {
   const projects = await prisma.project.findMany({
-    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
-    where: { organizationId, status: { not: 'COMPLETED' } },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up. Only the demo's own sites, never a project
+    // someone made on the live demo (SITE_PROJECTS).
+    where: { organizationId, status: { not: 'COMPLETED' }, ...SITE_PROJECTS },
     include: { members: { include: { user: { include: { role: true } } } } },
     orderBy: { code: 'asc' },
   });
@@ -1907,8 +1756,9 @@ const MEASUREMENTS: Record<string, DemoSheet[]> = {
 
 async function seedMeasurements(organizationId: string) {
   const projects = await prisma.project.findMany({
-    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
-    where: { organizationId, status: { not: 'COMPLETED' } },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up. Only the demo's own sites, never a project
+    // someone made on the live demo (SITE_PROJECTS).
+    where: { organizationId, status: { not: 'COMPLETED' }, ...SITE_PROJECTS },
     include: { members: { include: { user: { include: { role: true } } } }, boqItems: true },
     orderBy: { code: 'asc' },
   });
@@ -1977,6 +1827,110 @@ async function seedVerticals(organizationId: string) {
   }
 }
 
+/**
+ * Every module's demo records. Each step writes only what its module is missing, so this runs after a fresh seed, on
+ * every re-run, and alone (`--modules`) on a live demo that no longer takes the full seed. It goes round twice: some steps
+ * build on projects and records a later step adds (attendance and machinery for the EPC and O&M projects, the RMC
+ * plant's issues), and the second pass fills those in, so one deploy lands everything. A third pass adds nothing.
+ */
+async function topUp(organizationId: string, passwordHash: string) {
+  await modulesPass(organizationId, passwordHash);
+  await modulesPass(organizationId, passwordHash);
+}
+
+async function modulesPass(organizationId: string, passwordHash: string) {
+  await seedAttendance(organizationId);
+  await seedStock(organizationId);
+  await seedMachinery(organizationId);
+  await seedExpenses(organizationId);
+  await seedMeasurements(organizationId);
+  await seedCostRates(organizationId);
+  await seedRisks(organizationId);
+  await seedContracts(organizationId);
+  await seedLdTerms(organizationId);
+  await seedPriceVariation(organizationId);
+  await seedApprovalRules(organizationId);
+  await seedBills(organizationId);
+  await seedReceipts(organizationId);
+  await seedVendors(organizationId);
+  await seedPurchasing(organizationId);
+  await seedSplitQuotes(organizationId);
+  await seedSubcontracts(organizationId);
+  await seedPayables(organizationId);
+  await seedPaymentRequests(organizationId);
+  await seedHireBills(organizationId);
+  await seedQuality(organizationId);
+  await seedTestsAndNcrs(organizationId);
+  await seedDocuments(organizationId);
+  await seedCorrespondence(prisma, organizationId);
+  await seedQa(prisma, organizationId);
+  await seedQaRegisters(prisma, organizationId);
+  await seedQaAudits(prisma, organizationId);
+  await seedDrawingSchedule(prisma, organizationId);
+  await seedDesignSubmissions(prisma, organizationId);
+  await seedControlledCopies(prisma, organizationId);
+  await seedIntegrations(prisma, organizationId);
+  await seedContractDocuments(organizationId);
+  await seedStaff(organizationId);
+  await seedAttendanceExtras(organizationId);
+  await seedHrRecords(organizationId);
+  await seedPayroll(organizationId);
+  await seedGuests(organizationId);
+  await seedVariations(organizationId);
+  await seedRfis(organizationId);
+  await seedDrawingMarkups(organizationId);
+  await seedDrawingTakeoffs(organizationId);
+  await seedBudgets(organizationId);
+  await seedStoreMoves(organizationId);
+  await seedReconciliation(organizationId);
+  await seedRateAnalysis(organizationId);
+  await seedFleet(organizationId);
+  await seedSafety(organizationId);
+  await seedSectors(organizationId);
+  await seedMaintenance(organizationId);
+  await seedSchedule(organizationId);
+  await seedWorkers(organizationId);
+  await seedPpe(organizationId);
+  await seedImprests(organizationId);
+  await seedCompliance(organizationId);
+  await seedHandover(organizationId);
+  await seedCheckAnomalies(organizationId);
+  await seedBiometric(organizationId);
+  await seedBooks(organizationId);
+  await seedOpening(organizationId);
+  await seedRmc(organizationId);
+  await seedSupplierPortal(organizationId);
+  await seedCentralStore(organizationId);
+  await seedFundRequests(organizationId);
+  await seedMachineLoans(organizationId);
+  await seedTenders(organizationId);
+  await seedPastOpenings(organizationId);
+  await seedScEnquiries(organizationId);
+  await seedMeetings(organizationId);
+  await seedMaterialApprovals(organizationId);
+  await seedLeakage(organizationId);
+  // Engine hours need the site's location (seedAttendanceExtras) and the tracker's link (seedIntegrations); fuel needs the hours.
+  await seedTelematics(prisma, organizationId);
+  await seedFuel(prisma, organizationId);
+  await seedWeighbridge(prisma, organizationId);
+  await seedBatching(prisma, organizationId);
+  await seedBiometricCommands(prisma, organizationId);
+  await seedAttendanceCheck(organizationId);
+  await seedActivityLinks(organizationId);
+  await seedWorkBreakdown(prisma, organizationId);
+  await seedTownDprs(prisma, organizationId);
+  await seedTownNetwork(prisma, organizationId);
+  await seedTownStock(prisma, organizationId);
+  await seedTownBilling(prisma, organizationId);
+  await seedEpc(prisma, organizationId);
+  await seedOm(prisma, organizationId);
+  await seedProjectTypes(prisma, organizationId);
+  await seedComments(organizationId);
+  await seedGroupCompanies(prisma, organizationId, passwordHash);
+  await seedGroupModules(prisma, organizationId);
+  await seedVerticals(organizationId);
+}
+
 main()
   .catch((e) => { console.error(e); process.exit(1); })
   .finally(() => prisma.$disconnect());
@@ -2025,8 +1979,9 @@ const RISKS: Record<string, SeedRisk[]> = {
 /** Delay and risk register: a few entries per project, one notification to the PM for each open delay. */
 async function seedRisks(organizationId: string) {
   const projects = await prisma.project.findMany({
-    // Not the scheme in O&M (seed-om.ts): it has no site work to top up.
-    where: { organizationId, status: { not: 'COMPLETED' } },
+    // Not the scheme in O&M (seed-om.ts): it has no site work to top up. Only the demo's own sites, never a project
+    // someone made on the live demo (SITE_PROJECTS).
+    where: { organizationId, status: { not: 'COMPLETED' }, ...SITE_PROJECTS },
     include: { members: { include: { user: { include: { role: true } } } }, activities: true },
     orderBy: { code: 'asc' },
   });
@@ -2101,7 +2056,7 @@ const CONTRACTS: Record<string, {
 
 /** Clients from the projects' client names, and contract terms for projects that have none yet. */
 async function seedContracts(organizationId: string) {
-  const projects = await prisma.project.findMany({ where: { organizationId }, orderBy: { code: 'asc' } });
+  const projects = await prisma.project.findMany({ where: { organizationId, code: { in: DEMO_PROJECT_CODES } }, orderBy: { code: 'asc' } });
   for (const project of projects) {
     const c = CONTRACTS[project.type];
     if (!c || project.agreementNo) continue;
@@ -2127,7 +2082,7 @@ async function seedContracts(organizationId: string) {
 
 /** Liquidated damages terms (v4 item 50) on seeded contracts that have none: 0.5% of the contract value per week, capped at 10%. */
 async function seedLdTerms(organizationId: string) {
-  await prisma.project.updateMany({ where: { organizationId, agreementNo: { not: null }, ldRatePct: 0 }, data: { ldRatePct: D('0.5'), ldPeriod: 'WEEK', ldCapPct: D(10) } });
+  await prisma.project.updateMany({ where: { organizationId, code: { in: DEMO_PROJECT_CODES }, agreementNo: { not: null }, ldRatePct: 0 }, data: { ldRatePct: D('0.5'), ldPeriod: 'WEEK', ldCapPct: D(10) } });
 }
 
 /** Price variation formulas (v4 item 50) by project type: component, share of the work value (%), base index (WPI-like). */
@@ -2138,7 +2093,7 @@ const PV_FORMULAS: Partial<Record<string, [string, string, string][]>> = {
 
 /** The formula on seeded contracts with a price variation clause and no components yet; base date a month before the agreement. */
 async function seedPriceVariation(organizationId: string) {
-  const projects = await prisma.project.findMany({ where: { organizationId, priceVariation: true, pvComponents: { none: {} } }, select: { id: true, type: true, agreementDate: true } });
+  const projects = await prisma.project.findMany({ where: { organizationId, priceVariation: true, pvComponents: { none: {} }, code: { in: DEMO_PROJECT_CODES } }, select: { id: true, type: true, agreementDate: true } });
   for (const p of projects) {
     const formula = PV_FORMULAS[p.type];
     if (!formula) continue;
@@ -2852,7 +2807,7 @@ async function seedQuality(organizationId: string) {
   const checklists = new Map((await prisma.checklistTemplate.findMany({ where: { organizationId } })).map((c) => [c.name, c]));
   for (const [activity, [checklist, holdPoint]] of Object.entries(ACTIVITY_CHECKLISTS)) {
     const c = checklists.get(checklist);
-    if (c) await prisma.activity.updateMany({ where: { organizationId, name: activity, checklistTemplateId: null }, data: { checklistTemplateId: c.id, holdPoint: !!holdPoint } });
+    if (c) await prisma.activity.updateMany({ where: { organizationId, project: { code: { in: DEMO_PROJECT_CODES } }, name: activity, checklistTemplateId: null }, data: { checklistTemplateId: c.id, holdPoint: !!holdPoint } });
   }
   if ((await prisma.inspection.count({ where: { organizationId } })) > 0) return;
   const qa = await prisma.user.findFirst({ where: { organizationId, email: 'qaqc@demo.com' } });
@@ -3020,8 +2975,10 @@ function drawingPdf(docNo: string, title: string, revision: string, project: str
 /** The sample contracts (AI item 75): a CONTRACT document with its text PDF on each demo project that has none. */
 async function seedContractDocuments(organizationId: string) {
   for (const c of DEMO_CONTRACTS) {
+    // Once per company: a project added later (the O&M scheme sorts first) must not file the contract again.
+    if (await prisma.document.count({ where: { organizationId, docNo: c.docNo } })) continue;
     const project = await prisma.project.findFirst({ where: { organizationId, type: c.projectType }, orderBy: { code: 'asc' } });
-    if (!project?.projectManagerId || (await prisma.document.count({ where: { projectId: project.id, docNo: c.docNo } }))) continue;
+    if (!project?.projectManagerId) continue;
     const by = project.projectManagerId;
     const ago = 120;
     const doc = await prisma.document.create({
@@ -4552,6 +4509,23 @@ async function seedAttendanceCheck(organizationId: string) {
   // The roll call's last six days but the latest, which is left as the site marked it (the biometric test punches then).
   const dates = [...new Set(roll.map((r) => iso(r.date)))].sort().slice(-6, -1);
   if (dates.length < 4) return;
+  // The head count kept on those days. Where the sheets came from an older seed than the roll call (the live demo),
+  // a day has none: its sheet is then the roll call's own count beside the latest sheet's other lines.
+  const latest = await prisma.attendanceSheet.findFirst({ where: { projectId: project.id }, orderBy: { date: 'desc' }, include: { lines: { orderBy: { sortOrder: 'asc' } } } });
+  for (const d of dates) {
+    const date = new Date(`${d}T00:00:00Z`);
+    if (!latest || (await prisma.attendanceSheet.count({ where: { projectId: project.id, date } }))) continue;
+    const present = roll.filter((r) => iso(r.date) === d && r.status !== 'ABSENT');
+    const lines = [
+      ...latest.lines.filter((l) => l.contractor !== sjc.name).map(({ contractor, vendorId, category, count }) => ({ contractor, vendorId, category, count })),
+      ...[...new Set(present.map((r) => r.worker.trade))].map((category) => ({ contractor: sjc.name, vendorId: sjc.id, category, count: present.filter((r) => r.worker.trade === category).length })),
+    ];
+    const total = lines.reduce((s, l) => s + l.count, 0);
+    const sheet = await prisma.attendanceSheet.create({
+      data: { organizationId, projectId: project.id, date, totalWorkers: total, recordedById: latest.recordedById, lines: { create: lines.map((l, i) => ({ ...l, sortOrder: i })) } },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'ATTENDANCE', entityId: sheet.id, action: 'CREATED', actorId: latest.recordedById, note: `${d}: ${total} workers`, createdAt: date } });
+  }
 
   // Enrol the crew (the first five already are) and punch them in and out on the gate terminal.
   const workers = [...new Map(roll.map((r) => [r.workerId, r.worker])).values()];

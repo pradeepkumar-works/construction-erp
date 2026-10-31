@@ -120,6 +120,303 @@
   }
 }
 
+/* The hero's art (HeroArt.tsx): the survey sheet under the field, and the road set out round the words and behind Ask. */
+.lw-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  --lw-art: var(--brand-accent-light);
+}
+.lw-ground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+.lw-grid-line {
+  fill: none;
+  stroke: var(--lp-on-stage);
+  stroke-opacity: 0.045;
+  stroke-width: 1;
+}
+.lw-grid-cross {
+  fill: none;
+  stroke: var(--lw-art);
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+}
+.lw-contour {
+  fill: none;
+  stroke: var(--lw-art);
+  stroke-opacity: 0.13;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+.lw-contour-index {
+  stroke-opacity: 0.26;
+  stroke-width: 1.4;
+}
+.lw-hero-inner {
+  position: relative;
+}
+.lw-hero-words,
+.lw-hero-ask {
+  position: relative;
+  z-index: 1;
+}
+.lw-plan {
+  position: absolute;
+  top: 40px;
+  bottom: 72px;
+  left: 50%;
+  width: 1920px;
+  height: calc(100% - 112px);
+  transform: translateX(-50%);
+  overflow: visible;
+  pointer-events: none;
+}
+.lw-strip {
+  display: none;
+}
+.lw-road-edge {
+  fill: none;
+  stroke: var(--lp-on-stage);
+  stroke-opacity: 0.5;
+  stroke-width: 1.25;
+}
+.lw-road-cl {
+  fill: none;
+  stroke: var(--lw-art);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+  stroke-dasharray: 14 4 2 4;
+}
+.lw-road-tick {
+  fill: none;
+  stroke: var(--lp-on-stage);
+  stroke-opacity: 0.4;
+  stroke-width: 1;
+}
+.lw-road-today {
+  fill: none;
+  stroke: var(--lw-art);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.lw-plan-text {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  fill: var(--lp-on-stage-soft);
+}
+.lw-plan-ch {
+  fill: var(--lw-art);
+}
+.lw-plan-strong {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--lp-on-stage);
+}
+.lw-plan-tangent {
+  fill: none;
+  stroke: var(--lw-art);
+  stroke-opacity: 0.6;
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+.lw-plan-pi {
+  fill: var(--lp-stage);
+  stroke: var(--lw-art);
+  stroke-width: 1.25;
+}
+.lw-plan-rule {
+  fill: none;
+  stroke: var(--lp-on-stage-soft);
+  stroke-width: 1.25;
+}
+.lw-plan-north {
+  fill: var(--lp-on-stage-soft);
+}
+.lw-read-dot {
+  fill: var(--lw-art);
+}
+.lw-read-ring {
+  fill: none;
+  stroke: var(--lw-art);
+  stroke-width: 1.25;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lw-ring 2400ms var(--lp-ease) infinite;
+}
+@keyframes lw-ring {
+  from {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+/* The road is set out after the headline: the edges draw in, then the day's work, then what the AI read on it. */
+.lw-road-edge[data-draw] {
+  stroke-dasharray: 1;
+  animation: lw-draw 2200ms var(--lp-ease) 300ms both;
+}
+.lw-road-today {
+  stroke-dasharray: 1;
+  animation: lw-draw 1200ms var(--lp-ease) 1600ms both;
+}
+.lw-road-cl,
+.lw-road-tick,
+.lw-plan-ch,
+.lw-plan-setout,
+.lw-plan-scale {
+  animation: lw-fade-in 1200ms ease 1200ms both;
+}
+.lw-plan-note {
+  animation: lw-fade-in 800ms ease 2200ms both;
+}
+.lw-plan-top {
+  animation-delay: 2600ms;
+}
+@keyframes lw-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes lw-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The road section under the day's WMM (Diagrams.tsx), on the blue field. */
+.lw-section {
+  display: grid;
+  gap: 16px;
+}
+.lw-section-art {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+}
+.lw-section-ground,
+.lw-section-dim path {
+  fill: none;
+  stroke: var(--lp-on-accent);
+  stroke-opacity: 0.55;
+  stroke-width: 1.25;
+}
+.lw-hatch-line {
+  stroke: var(--lp-on-accent);
+  stroke-opacity: 0.35;
+  stroke-width: 1.5;
+}
+.lw-dot {
+  fill: var(--lp-on-accent);
+  fill-opacity: 0.7;
+}
+.lw-layer-existing {
+  fill: url(#lw-hatch);
+  stroke: var(--lp-on-accent);
+  stroke-opacity: 0.4;
+}
+.lw-layer-gsb {
+  fill: url(#lw-dots);
+  stroke: var(--lp-on-accent);
+  stroke-opacity: 0.7;
+}
+.lw-layer-wmm {
+  fill: var(--lp-on-accent);
+}
+.lw-layer-dbm {
+  fill: var(--brand-primary-deep);
+}
+.lw-layer-bc {
+  fill: var(--brand-ink-deep);
+}
+.lw-section-key {
+  display: grid;
+  gap: 12px;
+  font-size: var(--lp-small);
+  color: var(--lp-on-accent);
+}
+.lw-section-key ul {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 6px 32px;
+}
+.lw-section-key li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lw-swatch {
+  flex: none;
+  width: 22px;
+  height: 12px;
+}
+/* The running bill as a waterfall, between the question and the figure. */
+.lw-figure-fall {
+  min-height: 272px;
+}
+.lw-fall {
+  display: grid;
+  gap: 6px;
+  font-size: var(--lp-small);
+}
+.lw-fall li {
+  display: grid;
+  grid-template-columns: minmax(0, 12em) minmax(0, 1fr) 7em;
+  align-items: center;
+  gap: 24px;
+  min-height: 26px;
+}
+.lw-fall-name {
+  color: var(--lp-on-stage-soft);
+}
+.lw-fall-total .lw-fall-name {
+  color: var(--lp-on-stage);
+  font-weight: 600;
+}
+.lw-fall-track {
+  position: relative;
+  height: 14px;
+}
+.lw-fall-track i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  transition: left 500ms var(--lp-ease), width 500ms var(--lp-ease);
+}
+.lw-fall-total i {
+  background: var(--lp-on-stage);
+}
+.lw-fall-add i {
+  background: var(--lp-ring);
+}
+.lw-fall-less i {
+  border: 1.5px solid var(--lp-on-stage-soft);
+}
+.lw-fall-net i,
+.lw-fall li:last-child i {
+  background: var(--lp-ring);
+}
+.lw-fall-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--lp-on-stage);
+  white-space: nowrap;
+}
+
 /* Ask Nirmaan, as the panel looks in the app. */
 .ui-ask {
   display: flex;
@@ -905,8 +1202,8 @@
 .lw-figure-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
-  gap: 96px;
+  grid-template-rows: auto auto 1fr;
+  gap: 72px;
   min-height: 88svh;
   padding-top: 120px;
   padding-bottom: 96px;
@@ -1431,8 +1728,20 @@
   .lw-flow-frag,
   .lw-sheet-wrap,
   .lw-panel,
-  .lw-reads-photo img {
+  .lw-reads-photo img,
+  .lw-road-edge[data-draw],
+  .lw-road-today,
+  .lw-road-cl,
+  .lw-road-tick,
+  .lw-plan-ch,
+  .lw-plan-setout,
+  .lw-plan-scale,
+  .lw-plan-note,
+  .lw-read-ring {
     animation: none;
+  }
+  .lw-read-ring {
+    opacity: 0;
   }
   .lw-screen,
   .lw-switch-knob,
@@ -1445,7 +1754,23 @@
   }
 }
 
+@media (max-height: 860px) {
+  .lw-plan-top,
+  .lw-plan-scale {
+    display: none;
+  }
+}
+
 @media (max-width: 1080px) {
+  .lw-plan {
+    display: none;
+  }
+  .lw-strip {
+    display: block;
+    width: calc(100% + 2 * var(--lp-gutter));
+    height: 140px;
+    margin: -8px calc(-1 * var(--lp-gutter));
+  }
   .lw-hero-inner,
   .lw-checks-head,
   .lw-checks-foot,
@@ -1698,6 +2023,24 @@
     display: block;
     width: 100%;
     margin: 0.1em 0;
+  }
+  .lw-fall li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'name amount' 'track track';
+    gap: 4px 12px;
+  }
+  .lw-fall-name {
+    grid-area: name;
+  }
+  .lw-fall-amount {
+    grid-area: amount;
+  }
+  .lw-fall-track {
+    grid-area: track;
+    height: 10px;
+  }
+  .lw-section-key ul {
+    gap: 6px 20px;
   }
   /* On a phone a screen is cropped to its top-left at a size that can be read, never shrunk to a thumbnail. */
   .lw-checks-shot {

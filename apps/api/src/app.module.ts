@@ -26,6 +26,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { CostModule } from './cost/cost.module';
 import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { ReportsModule } from './reports/reports.module';
+import { OfficialReportsModule } from './official-reports/official-reports.module';
 import { RisksModule } from './risks/risks.module';
 import { EpcModule } from './epc/epc.module';
 import { OmModule } from './om/om.module';
@@ -167,6 +168,7 @@ import { VitalsController } from './vitals.controller';
     CostModule,
     ReconciliationModule,
     ReportsModule,
+    OfficialReportsModule,
     RisksModule,
     EpcModule,
     OmModule,

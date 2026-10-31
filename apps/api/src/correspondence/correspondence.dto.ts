@@ -67,6 +67,8 @@ export class ListLettersQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Past its reply or action date' }) @IsOptional() @QueryBool() @IsBoolean() overdue?: boolean;
   @ApiPropertyOptional({ description: 'Contractual letters sent with no proof of delivery' }) @IsOptional() @QueryBool() @IsBoolean() proofMissing?: boolean;
   @ApiPropertyOptional({ description: 'Received and not marked to anyone' }) @IsOptional() @QueryBool() @IsBoolean() unmarked?: boolean;
+  @ApiPropertyOptional({ description: 'Letters dated on or after (YYYY-MM-DD)' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ description: 'Letters dated on or before (YYYY-MM-DD)' }) @IsOptional() @IsDateString() to?: string;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.letters, default: 'letterDate' }) @IsOptional() @IsIn(list(LIST_SORT_FIELDS.letters)) sortBy?: LetterSortField;
 }
 

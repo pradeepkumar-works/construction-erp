@@ -57,6 +57,7 @@ import {
   FileSearchIcon,
   FileSpreadsheetIcon,
   FileTextIcon,
+  FileTypeIcon,
   FlagIcon,
   FlaskConicalIcon,
   FolderKanbanIcon,
@@ -271,6 +272,7 @@ export const FilePdfOutlined = lucide(FileTextIcon, 'file-pdf');
 export const FileProtectOutlined = lucide(FileLockIcon, 'file-protect');
 export const FileSearchOutlined = lucide(FileSearchIcon, 'file-search');
 export const FileTextOutlined = lucide(FileTextIcon, 'file-text');
+export const FileWordOutlined = lucide(FileTypeIcon, 'file-word');
 export const FilterOutlined = lucide(FunnelIcon, 'filter');
 export const FlagOutlined = lucide(FlagIcon, 'flag');
 export const FolderOpenOutlined = lucide(FolderOpenIcon, 'folder-open');

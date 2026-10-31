@@ -10,12 +10,21 @@ export interface WhatsNew {
 export const WHATS_NEW: WhatsNew[] = [
   {
     id: '2027-09-contract-obligations',
-    date: '2027-10-04',
+    date: '2027-10-11',
     title: 'Contract obligations and recoveries',
     points: [
       'A project’s Contract tab lists what each side has to do by when: the programme, the field laboratory, the staff the bid named, the final account. Add the standard set and set each as the contract says, counted from the agreement, the start, completion or the handover.',
       'An RA bill deducts what a missed obligation costs as of its date as Contract recoveries, line by line, and gives back a withholding once it is met. Reminders go out a week before a deadline and when it passes.',
       'The security deposit can stop at a share of the contract value (Edit contract), so bills stop deducting it once the cap is reached.',
+    ],
+  },
+  {
+    id: '2027-09-official-reports',
+    date: '2027-10-04',
+    title: 'Daily, weekly and monthly reports for the client',
+    points: [
+      'Reports, Progress reports makes a project’s daily, weekly and monthly progress report (MPR) in your company’s design: the contract box, progress by component, the work done with its location, observations, crew and machines, hindrances, next period’s plan and photographs. The MPR adds the programme, milestones, bills, drawings, meetings, quality and safety.',
+      'Download it as PDF, Word or Excel. Issue to client keeps the copy with its number and revision, so the one you sent can be downloaded again.',
     ],
   },
   {

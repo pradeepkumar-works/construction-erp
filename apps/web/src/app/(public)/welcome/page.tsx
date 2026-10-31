@@ -10,6 +10,8 @@ import { useAuthOptions } from '@/lib/queries';
 import { usePageTitle } from '@/lib/page-title';
 import { SiteHeader } from '@/components/site/SiteChrome';
 import { AI_RULES, CHECKS, DEMO_ROLES, DEMO_TERMS, FAQ, MODULES, MORE_CHECKS, OUTPUTS, PHOTO_CREDITS, READS, STAGES } from './content';
+import { BillWaterfall, PavementSection } from './Diagrams';
+import { HeroGround, HeroPlan, HeroStrip } from './HeroArt';
 import { AskPanel, BillSheet, BriefSheet, EntryRow, Img, NoticeSheet, Screen, StageFragment, billOf } from './fragments';
 import './welcome.css';
 
@@ -195,6 +197,7 @@ function Flow() {
             <h2 id="lw-flow-title" className="lw-flow-clause" key={stage.key}>
               {stage.clause}
             </h2>
+            <PavementSection />
             <p className="lw-flow-text">
               One entry of 296 Cum on the Bhubaneswar - Puri highway. Typed once on site, it is the same 296 in the approval, the RA bill and the voucher in
               Tally. Nobody keys it in again at the office.
@@ -306,6 +309,7 @@ function BillFigure() {
             </p>
           </div>
         </div>
+        <div className="lw-figure-fall">{bill && value !== null && <BillWaterfall value={value} bill={bill} />}</div>
         <div className="lw-figure-bottom" aria-live="polite">
           <p className="lw-figure-number" translate="no">
             {bill ? formatINR(bill.net) : '—'}
@@ -423,12 +427,14 @@ export default function WelcomePage() {
   return (
     <div className="lp lp-welcome" ref={root}>
       <section className="lw-hero" aria-labelledby="lw-title">
+        <HeroGround />
         <SiteHeader links={SECTIONS} onField>
           <Link href="/login" className="lp-nav-signin">
             Sign in
           </Link>
         </SiteHeader>
         <div className="lp-wrap lw-hero-inner">
+          <HeroPlan />
           <div className="lw-hero-words">
             <h1 id="lw-title" className="lw-hero-title">
               <span className="lp-line">
@@ -444,6 +450,7 @@ export default function WelcomePage() {
             </p>
             <Ctas signup={signup} />
           </div>
+          <HeroStrip />
           <div className="lw-hero-ask">
             <AskPanel />
           </div>

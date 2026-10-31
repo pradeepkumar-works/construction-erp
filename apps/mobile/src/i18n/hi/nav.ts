@@ -301,7 +301,7 @@ export const NAV: Record<string, string> = {
   'Approvals waiting': 'रुकी मंज़ूरियाँ',
   'Entries waiting for a decision by type and project, the oldest first.': 'फ़ैसले का इंतज़ार कर रही एंट्री, प्रकार और प्रोजेक्ट के अनुसार, सबसे पुरानी पहले।',
   'Progress reports': 'प्रगति रिपोर्ट',
-  'Monthly and weekly progress reports as PDF.': 'मासिक और साप्ताहिक प्रगति रिपोर्ट PDF में।',
+  'Daily, weekly and monthly progress reports for the client, as PDF, Word or Excel.': 'क्लाइंट के लिए दैनिक, साप्ताहिक और मासिक प्रगति रिपोर्ट, PDF, Word या Excel में।',
   'Project cost': 'प्रोजेक्ट लागत',
   'Budget against actual by cost head, margin per BOQ item.': 'लागत मद के अनुसार बजट बनाम असल, हर BOQ आइटम का मार्जिन।',
   'Cash flow': 'कैश फ़्लो',

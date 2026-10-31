@@ -218,6 +218,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/management-test.js
+      - name: Official progress reports cover the right day, week and month, number from the start and say where each component stands
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/official-reports-test.js
       - name: Biometric punches read from ADMS, webhooks and files and turn into the right attendance
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -6,6 +6,7 @@
  * due by its date, less what earlier bills took, so meeting a withholding obligation releases it on the next bill.
  * Everything here is pure; `ContractObligationsService` loads the rows and the bills.
  */
+import { daysFrom } from './official-reports';
 
 /** The day an obligation's deadline counts from; DATE is a fixed day of its own. */
 export const OBLIGATION_ANCHORS = ['AGREEMENT', 'START', 'COMPLETION', 'HANDOVER', 'DATE'] as const;
@@ -112,8 +113,6 @@ export interface ObligationTerms {
 const DAY_MS = 86_400_000;
 const day = (s: string) => Date.parse(`${s}T00:00:00Z`);
 const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-/** Whole days from a to b (negative when b is before a). */
-export const daysFrom = (a: string, b: string) => Math.round((day(b) - day(a)) / DAY_MS);
 
 /** A day plus whole months (the 31st of a short month becomes its last day) and days. */
 export function addMonthsDays(from: string, months: number, days: number): string {
