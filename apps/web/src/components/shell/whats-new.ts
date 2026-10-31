@@ -23,7 +23,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-31',
     title: 'Daily, weekly and monthly reports for the client',
     points: [
-      'Reports, Progress reports makes a project’s daily, weekly and monthly progress report (MPR) in your company’s design: the contract box, progress by component, the work done with its location, observations, crew and machines, hindrances, next period’s plan and photographs. The MPR adds the programme, milestones, bills, drawings, meetings, quality and safety.',
+      'Reports › Progress reports makes a project’s daily, weekly and monthly progress report (MPR) in your company’s design: the contract box, progress by component, the work done with its location, observations, crew and machines, hindrances, next period’s plan and photographs. The MPR adds the programme, milestones, bills, drawings, meetings, quality and safety.',
       'Download it as PDF, Word or Excel. Issue to client keeps the copy with its number and revision, so the one you sent can be downloaded again.',
     ],
   },
@@ -855,7 +855,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Material approvals',
     points: [
-      'Ask the client or consultant to approve a make or a sample from Materials and plant → Material approvals: the material, the make and model, where it is used, why this make, and the catalogue and test certificates.',
+      'Ask the client or consultant to approve a make or a sample from Materials and plant › Material approvals: the material, the make and model, where it is used, why this make, and the catalogue and test certificates.',
       'Each submission is a revision (R0, R1…) with the outcome and comments that came back. Requests waiting past their reply date, and those back with you to revise, are counted at the top.',
       'Each project keeps its approved makes, from the contract or approved on request. A purchase order line for one of those materials that names another make, or none, is flagged on the order.',
     ],
@@ -865,7 +865,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Meetings and action items',
     points: [
-      'Record a meeting from Site → Meetings: who came (your staff, and the client, consultant or subcontractor by name), what was noted and decided, and the actions, each with who does it by when and, if it is about one, the RFI, NCR or variation.',
+      'Record a meeting from Site › Meetings: who came (your staff, and the client, consultant or subcontractor by name), what was noted and decided, and the actions, each with who does it by when and, if it is about one, the RFI, NCR or variation.',
       'Issue the minutes and they are emailed to everyone on the list with an email; your staff are told of their actions, which then wait in their My work until done. Print them, or send them to the site group on WhatsApp.',
       'The next meeting of the project shows what earlier ones left open, and the Actions tab lists every action by due date, the late ones first.',
     ],
@@ -875,7 +875,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Subcontract enquiries',
     points: [
-      'Send work out to quote from Purchases → Subcontract enquiries: pick the BOQ items and the quantity to give out (or add your own items, like scaffolding), say what the rates must include, and choose the subcontractors to ask.',
+      'Send work out to quote from Purchases › Subcontract enquiries: pick the BOQ items and the quantity to give out (or add your own items, like scaffolding), say what the rates must include, and choose the subcontractors to ask.',
       'Enter each quote as it comes. The comparative statement sets every rate side by side, marks the lowest for each item and ranks the quotes L1, L2… on their total, each against the client’s rates.',
       'Award a quote and it becomes a draft work order at its rates and GST, with your scope as its terms. Choosing one that is not the lowest asks for the reason, which stays on the enquiry.',
     ],
@@ -885,8 +885,8 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Tenders and schedules of rates',
     points: [
-      'Keep the tenders you are bidding under Billing → Tenders: the notice, the client, the last date to submit and the EMD, which goes to Guarantees and licences until it comes back.',
-      'Price the bid BOQ from each item’s rate analysis (materials with wastage, labour and machinery, with overheads and profit), against the state SOR, the CPWD DSR or your own rates kept under Billing → Schedule of rates and imported from Excel. Quote one percentage above or below the SOR, or a rate per item, and see the margin it leaves.',
+      'Keep the tenders you are bidding under Billing › Tenders: the notice, the client, the last date to submit and the EMD, which goes to Guarantees and licences until it comes back.',
+      'Price the bid BOQ from each item’s rate analysis (materials with wastage, labour and machinery, with overheads and profit), against the state SOR, the CPWD DSR or your own rates kept under Billing › Schedule of rates and imported from Excel. Quote one percentage above or below the SOR, or a rate per item, and see the margin it leaves.',
       'Record the bids read out at opening to see where you stand (L1, L2…), then the result. A won tender becomes a project in one step, with its BOQ, rate analysis, cost budget and guarantees.',
     ],
   },
@@ -895,7 +895,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Machine loans',
     points: [
-      'Record the loan on a financed machine from Accounts → Machine loans: the lender, the amount, rate and tenure, and the first EMI date. The EMI and its schedule are worked out, or use the lender’s EMI.',
+      'Record the loan on a financed machine from Accounts › Machine loans: the lender, the amount, rate and tenure, and the first EMI date. The EMI and its schedule are worked out, or use the lender’s EMI.',
       'Record each EMI as it is paid, close a loan early, and see what is owed to each lender, what falls due in the next 30 days and any EMI overdue. EMIs falling due and overdue are reminded, and an overdue one is on the watch list.',
       'The loan and every EMI go to the books and Tally by themselves: the loan to its own ledger under secured loans, the interest to finance costs. Each loan shows the interest it costs the machine for every hour it works.',
     ],
@@ -905,7 +905,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Fund requests from sites',
     points: [
-      'A site asks head office for money from Site imprest → Fund requests: for wages, a local purchase, a petty contractor or running costs, by a date, with the wage sheet or quotation attached.',
+      'A site asks head office for money from Site imprest › Fund requests: for wages, a local purchase, a petty contractor or running costs, by a date, with the wage sheet or quotation attached.',
       "The money goes into the site's imprest, or straight to a party on account. A site can also ask on behalf of another site it works with.",
       'Requests are approved like payment requests, by the approval matrix. Accounts then release them into the imprest, or pay the party under Payables; both show on the request.',
     ],
@@ -915,7 +915,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Central stores',
     points: [
-      'Keep stock at a company store or yard that is not a site: add one from Materials and plant → Central stores (a project of type Central store or yard).',
+      'Keep stock at a company store or yard that is not a site: add one from Materials and plant › Central stores (a project of type Central store or yard).',
       'Order and receive into the store like any site. Send material to a site by transfer; it stays on the road until the site receives it, and sites send spare material back the same way.',
       "Each store shows its stock, register, value and age, and what is on the road. When a site's indent needs something, the store's stock is listed beside the other sites'.",
     ],
@@ -947,7 +947,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Financial statements',
     points: [
-      'Accounts → Financial statements shows the trial balance, the profit and loss account and the balance sheet in Schedule III order, each beside the same period a year before, and every figure opens its ledger.',
+      'Accounts › Financial statements shows the trial balance, the profit and loss account and the balance sheet in Schedule III order, each beside the same period a year before, and every figure opens its ledger.',
       'See the trial balance and profit and loss project by project, and download any of them to Excel.',
       'Import the bank statement as CSV or Excel: lines that agree by amount and day are matched at once, you match the rest or make a voucher for bank charges and interest, and the bank reconciliation shows what is still in transit.',
       'Enter the day your books begin with the balances from your old books, lock the books up to a day once returns are filed, and close a year when it ends.',
@@ -959,7 +959,7 @@ export const WHATS_NEW: WhatsNew[] = [
     title: 'The books of account',
     points: [
       'A new Accounts section holds the books, the GST registers and the Tally export, with an overview of cash and bank in the books, vouchers to approve and records not posted.',
-      'Accounts → Books keeps the day book, the cash and bank books and every ledger from what the modules already hold: RA bills, money received, vendor and subcontractor bills, payments, site expenses, debit notes, salaries and loans to staff. Projects are the cost centres.',
+      'Accounts › Books keeps the day book, the cash and bank books and every ledger from what the modules already hold: RA bills, money received, vendor and subcontractor bills, payments, site expenses, debit notes, salaries and loans to staff. Projects are the cost centres.',
       'Make journal, payment, receipt and contra vouchers for the rest (rent, capital, cash drawn). Management approves them before they count, and can cancel one later.',
       'The Tally export now sends salary runs, salary payments and loans to staff too.',
     ],
@@ -969,7 +969,7 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Biometric devices mark attendance',
     points: [
-      'People → Biometric devices registers your fingerprint and face terminals. ZKTeco, eSSL and similar devices with ADMS (cloud) send punches straight in; Setup shows what to enter on the device.',
+      'People › Biometric devices registers your fingerprint and face terminals. ZKTeco, eSSL and similar devices with ADMS (cloud) send punches straight in; Setup shows what to enter on the device.',
       'Other devices and attendance services can send punches to a webhook with the device\'s own key, or you can import the punch file from the device software as Excel or CSV.',
       'Match each user number on the device to an employee or a worker once. Punches then become staff attendance (with overtime to approve) and worker attendance at the device\'s site, and the Punches tab shows what each one did.',
     ],
@@ -979,10 +979,10 @@ export const WHATS_NEW: WhatsNew[] = [
     date: '2026-10-27',
     title: 'Payroll: salary runs, payslips and full and final',
     points: [
-      'Payroll now runs the salary itself. Set each person\'s salary from a date under Payroll → Salaries; PF, ESI, professional tax and TDS a month and the CTC are worked out for you.',
+      'Payroll now runs the salary itself. Set each person\'s salary from a date under Payroll › Salaries; PF, ESI, professional tax and TDS a month and the CTC are worked out for you.',
       'Each month HR prepares the salary run from approved attendance, adds arrears or a bonus where needed and submits it. Management approves it, and accounts downloads the bank file and marks it paid. The PF (ECR) and ESI files come from the same run.',
       'Loans and advances are recovered from salary each month until nothing is left. When someone leaves, Full and final works out their last salary, leave encashment, gratuity, notice short and what they still owe.',
-      'Everyone sees their own payslips under Staff and leave → My payslips, and in the phone app (in Hindi too) once the month is approved.',
+      'Everyone sees their own payslips under Staff and leave › My payslips, and in the phone app (in Hindi too) once the month is approved.',
     ],
   },
   {
@@ -992,7 +992,7 @@ export const WHATS_NEW: WhatsNew[] = [
     points: [
       'A staff record now holds the employment terms, personal details, PAN, UAN, PF and ESI numbers and the salary account. Only HR, payroll and the person see the private parts.',
       'Record a confirmation, transfer, promotion, increment, warning or exit from the record\'s Service and letters tab. The record changes to match, and each step gets a letter number and a letter to print. Take back the latest one if it was a mistake.',
-      'Staff and leave → Service records lists every step across the company. The People overview now shows head count by site, department and employment, probation ending, birthdays and work anniversaries, and whose details payroll still needs.',
+      'Staff and leave › Service records lists every step across the company. The People overview now shows head count by site, department and employment, probation ending, birthdays and work anniversaries, and whose details payroll still needs.',
     ],
   },
   {
@@ -1022,7 +1022,7 @@ export const WHATS_NEW: WhatsNew[] = [
     points: [
       "A project can now hold its site's location and a radius (in the project form). Check-in records where the phone or browser is and shows At the site or Outside the site; tick Refuse a check-in from outside to make it a rule. The phone app needs its next update for this.",
       'On duty and Tour are new kinds of leave request for work away from the site: approved like leave, with no balance, and counted present and paid in payroll.',
-      'Overtime from a check-out now waits for the site manager or HR under Staff and leave → Overtime. Payroll pays approved overtime only and shows what still waits.',
+      'Overtime from a check-out now waits for the site manager or HR under Staff and leave › Overtime. Payroll pays approved overtime only and shows what still waits.',
     ],
   },
   {

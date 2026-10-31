@@ -328,7 +328,7 @@ export default function AskPanel({
           variant="borderless"
           icon={<SparkleIcon style={{ fontSize: 28, color: token.colorPrimary }} />}
           title={`Hi ${user.fullName.split(' ')[0]}, what would you like to know?`}
-          description="Ask about your projects, bills, orders, stock, progress or approvals. Answers come from the records you can see, with a link to each one. It can also fill in a material request, expense, progress entry, DPR or letter for you to check and save; it never saves or approves anything itself."
+          description="Ask about your projects, bills, orders, stock, progress or approvals. Answers come from the records you can see, with a link to each one. It can also fill in an indent, site expense, progress entry, daily report or letter for you to check and save; it never saves or approves anything itself."
         />
         <Prompts title="Try asking" vertical items={suggestions.map((s) => ({ key: s, label: s }))} onItemClick={({ data }) => void ask(String(data.label))} />
       </Flex>

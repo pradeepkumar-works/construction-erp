@@ -47,8 +47,8 @@ export function PortalDprs({ projectId }: { projectId: string }) {
         }}
         columns={[
           { title: 'Date', dataIndex: 'date', width: 120, render: (v: string) => formatDate(v) },
-          { title: 'Work executed', dataIndex: 'workExecuted', ellipsis: true },
-          { title: 'Manpower', dataIndex: 'totalManpower', width: 100, align: 'right' },
+          { title: 'Work done', dataIndex: 'workExecuted', ellipsis: true },
+          { title: 'Labour', dataIndex: 'totalManpower', width: 100, align: 'right' },
           { title: 'Weather', dataIndex: 'weather', width: 100, render: (w: PortalDprDto['weather']) => (w ? WEATHER_LABELS[w] : NO_VALUE) },
           { title: 'Photos', key: 'photos', width: 80, align: 'right', render: (_, r) => r.attachments.length || NO_VALUE },
         ]}
@@ -64,14 +64,14 @@ export function PortalDprs({ projectId }: { projectId: string }) {
               items={[
                 { key: 'w', label: 'Weather', children: open.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[open.weather]}</AppTag> : NO_VALUE },
                 { key: 'c', label: 'Site condition', children: open.siteCondition ?? NO_VALUE },
-                { key: 'm', label: 'Total manpower', children: open.totalManpower },
+                { key: 'm', label: 'Total labour', children: open.totalManpower },
                 { key: 'by', label: 'Reported by', children: open.submittedByName },
                 { key: 'ap', label: 'Approved', children: `${open.reviewedByName ?? NO_VALUE}, ${formatDateTime(open.reviewedAt)}`, span: 2 },
               ]}
             />
-            <Section title="Work executed">{open.workExecuted}</Section>
+            <Section title="Work done">{open.workExecuted}</Section>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <Card size="small" title="Manpower">
+              <Card size="small" title="Labour">
                 {open.manpower.map((m, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>{m.category}</span>

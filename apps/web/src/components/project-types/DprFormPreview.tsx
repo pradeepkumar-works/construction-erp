@@ -143,8 +143,8 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
           <>
             {wide.filter((k) => k === 'lines').map(builtIn)}
             {s === 'WORK' ? (
-              <Form.Item label={keys.includes('lines') ? 'Other work and notes' : 'Work executed'}>
-                <Input.TextArea aria-label="Work executed" rows={2} />
+              <Form.Item label={keys.includes('lines') ? 'Other work and notes' : 'Work done'}>
+                <Input.TextArea aria-label="Work done" rows={2} />
               </Form.Item>
             ) : null}
             <Grid cols={2}>{inline.map(builtIn)}</Grid>

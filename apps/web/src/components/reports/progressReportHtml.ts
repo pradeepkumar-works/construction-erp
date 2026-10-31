@@ -136,7 +136,7 @@ ${PRINT_FONT_LINKS}
 
   <div class="cols">
     <div>
-      <h2>4. Manpower</h2>
+      <h2>4. Labour</h2>
       <table><thead><tr><th>Trade</th><th class="num">Man-days</th><th class="num">Avg / day</th></tr></thead>
       <tbody>${manpower || none(3)}</tbody></table>
       <div class="muted">${esc(r.attendanceDays)} day(s) with an attendance sheet</div>
