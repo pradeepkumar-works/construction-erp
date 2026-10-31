@@ -9,7 +9,7 @@ export class ListProjectsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: PROJECT_STATUSES }) @IsOptional() @IsIn(PROJECT_STATUSES as unknown as string[]) status?: ProjectStatus;
   @ApiPropertyOptional({ enum: PROJECT_TYPES }) @IsOptional() @IsIn(PROJECT_TYPES as unknown as string[]) type?: ProjectType;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.projects, default: 'status' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.projects as unknown as string[]) sortBy?: ProjectSortField;
-  @ApiPropertyOptional({ description: "A vertical's code (item 167), or `none` for projects with none" }) @IsOptional() @IsString() @MaxLength(60) vertical?: string;
+  @ApiPropertyOptional({ description: "A vertical's code, or `none` for projects with none" }) @IsOptional() @IsString() @MaxLength(60) vertical?: string;
 }
 
 /** The type of project a suggested code is for. */
@@ -33,9 +33,9 @@ export class CreateProjectDto {
   @ApiPropertyOptional({ description: 'Free-text client name, used when no clientId is given' }) @IsOptional() @IsString() clientName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() consultantName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() location?: string;
-  @ApiPropertyOptional({ description: 'Where deliveries go; a purchase order with no address of its own takes it (finding 12)' }) @IsOptional() @IsString() @MaxLength(500) siteAddress?: string;
+  @ApiPropertyOptional({ description: 'Where deliveries go; a purchase order with no address of its own takes it' }) @IsOptional() @IsString() @MaxLength(500) siteAddress?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() workOrderNo?: string;
-  @ApiPropertyOptional({ description: 'The agreement number, when the work order says one (finding 10: read from the work order)' }) @IsOptional() @IsString() @MaxLength(100) agreementNo?: string;
+  @ApiPropertyOptional({ description: 'The agreement number, when the work order says one (read from the work order)' }) @IsOptional() @IsString() @MaxLength(100) agreementNo?: string;
   @ApiPropertyOptional({ example: '2026-11-05' }) @IsOptional() @IsDateString() agreementDate?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional({ example: '2026-01-01' }) @IsOptional() @IsDateString() startDate?: string;
@@ -60,7 +60,7 @@ export class CreateProjectDto {
   @IsString({ each: true })
   @MaxLength(120, { each: true })
   villages?: string[];
-  @ApiPropertyOptional({ description: 'Site latitude for GPS check-in (v5 item 97), decimal degrees', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber({ maxDecimalPlaces: 6 }) @Min(-90) @Max(90) siteLat?: number | null;
+  @ApiPropertyOptional({ description: 'Site latitude for GPS check-in, decimal degrees', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber({ maxDecimalPlaces: 6 }) @Min(-90) @Max(90) siteLat?: number | null;
   @ApiPropertyOptional({ description: 'Site longitude, decimal degrees', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber({ maxDecimalPlaces: 6 }) @Min(-180) @Max(180) siteLng?: number | null;
   @ApiPropertyOptional({ description: 'Check-in radius in metres (default 300)', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(25) @Max(10_000) siteRadiusM?: number | null;
   @ApiPropertyOptional({ description: 'Refuse a check-in from outside the radius, or without a position' }) @IsOptional() @IsBoolean() siteCheckInStrict?: boolean;
@@ -68,13 +68,13 @@ export class CreateProjectDto {
   @IsOptional()
   @IsBoolean()
   applyTemplate?: boolean;
-  @ApiPropertyOptional({ description: "The company's project type (item 134, GET /project-types); sets `type` to its built-in kind", nullable: true })
+  @ApiPropertyOptional({ description: "The company's project type (GET /project-types); sets `type` to its built-in kind", nullable: true })
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
   @IsString()
   @MaxLength(40)
   typeCode?: string | null;
-  @ApiPropertyOptional({ description: "Its vertical (item 167), a code of the vertical master; a new project with none named takes its kind's", nullable: true })
+  @ApiPropertyOptional({ description: "Its vertical, a code of the vertical master; a new project with none named takes its kind's", nullable: true })
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
   @IsString()

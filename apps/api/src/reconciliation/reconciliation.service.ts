@@ -286,7 +286,6 @@ export class ReconciliationService {
     };
   }
 
-  /** Add a norm, or change the one the BOQ item already has for that store item. */
   /**
    * What adopting the standard norms library would do to a project (finding 16 of the October review): the BOQ items
    * the library recognises, the norms they would get, and the store items it would have to add. Nothing is written.

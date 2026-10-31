@@ -9,7 +9,6 @@ import {
   canEditTest,
   canRaiseNcr,
   comparePipeCodes,
-  isCompanyWide,
   judgeTest,
   planLineFor,
   segmentLabel,
@@ -583,9 +582,7 @@ export class QualityService {
     if (!actionById) return;
     const u = await this.prisma.user.findFirst({ where: { id: actionById, organizationId: user.organizationId, isActive: true }, include: { role: { select: { key: true } } } });
     if (!u) throw new NotFoundException('User not found');
-    if (isCompanyWide(u.role.key as RoleKey)) return;
-    const member = await this.prisma.project.count({ where: { id: projectId, OR: [{ projectManagerId: actionById }, { members: { some: { userId: actionById } } }] } });
-    if (!member) throw new BadRequestException(`${u.fullName} is not on this project`);
+    if (!(await this.access.userSeesProject({ id: u.id, organizationId: u.organizationId, roleKey: u.role.key as RoleKey }, projectId))) throw new BadRequestException(`${u.fullName} is not on this project`);
   }
 
   /** The activity, inspection and test an NCR refers to must be of the same project. */

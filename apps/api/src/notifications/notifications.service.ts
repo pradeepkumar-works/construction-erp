@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { COMPANY_WIDE_ROLES, DEFAULT_NOTICE_DAYS, DELAY_PARTY_LABELS, PAYMENT_ROLES, needsNotice, subBillLabel, type RoleKey, LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
+import { DEFAULT_NOTICE_DAYS, DELAY_PARTY_LABELS, PAYMENT_ROLES, needsNotice, subBillLabel, type RoleKey, LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -219,13 +219,9 @@ export class NotificationsService {
    */
   async onProjectFirst<T extends { id: string }>(users: T[], projectId: string): Promise<T[]> {
     if (users.length < 2) return users;
-    const on = await this.prisma.user.findMany({
-      where: { id: { in: users.map((u) => u.id) }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
-      select: { id: true },
-    });
-    if (!on.length) return users;
-    const ids = new Set(on.map((u) => u.id));
-    return users.filter((u) => ids.has(u.id));
+    const team = new Set(await this.access.projectPeople(projectId));
+    const on = users.filter((u) => team.has(u.id));
+    return on.length ? on : users;
   }
 
   /** Tell the next role in the chain that a step waits on them (e2e review, fix 2), in the app and by email. */
@@ -347,17 +343,8 @@ export class NotificationsService {
 
   /** An approved payment request (v5 item 90) is money to release: tell the project's payers (admin, management, accounts). */
   private async onPaymentApproved(actor: RequestUser, id: string, s: { title: string; projectId: string; projectName: string; submittedById: string }) {
-    const payers = await this.prisma.user.findMany({
-      where: {
-        organizationId: actor.organizationId,
-        isActive: true,
-        // The approver and the one who asked hear of it already.
-        id: { notIn: [actor.id, s.submittedById] },
-        role: { key: { in: PAYMENT_ROLES } },
-        OR: [{ role: { key: { in: COMPANY_WIDE_ROLES } } }, { managedProjects: { some: { id: s.projectId } } }, { memberships: { some: { projectId: s.projectId } } }],
-      },
-      select: { id: true },
-    });
+    // The approver and the one who asked hear of it already.
+    const payers = (await this.access.usersWithRoles(actor.organizationId, s.projectId, PAYMENT_ROLES)).filter((u) => u.id !== actor.id && u.id !== s.submittedById);
     if (!payers.length) return;
     await this.notify({
       organizationId: actor.organizationId,
@@ -472,7 +459,6 @@ export class NotificationsService {
     }
   }
 
-  /** Tell the author how the review went. */
   /** An approved purchase or work order goes to the supplier's portal logins to accept (v6 item 105). */
   private async onOrderApproved(actor: RequestUser, type: 'PURCHASE_ORDER' | 'WORK_ORDER', id: string, projectName: string) {
     const order =

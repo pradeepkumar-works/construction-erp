@@ -7,7 +7,6 @@ import {
   canApprove,
   canEditRisk,
   delayDays,
-  isCompanyWide,
   riskScore,
   type DelayParty,
   type DelaySuggestionDto,
@@ -235,9 +234,7 @@ export class RisksService {
     if (!ownerId) return;
     const u = await this.prisma.user.findFirst({ where: { id: ownerId, organizationId: user.organizationId, isActive: true }, include: { role: { select: { key: true } } } });
     if (!u) throw new NotFoundException('Owner not found');
-    if (isCompanyWide(u.role.key as RoleKey)) return;
-    const member = await this.prisma.project.count({ where: { id: projectId, OR: [{ projectManagerId: ownerId }, { members: { some: { userId: ownerId } } }] } });
-    if (!member) throw new BadRequestException(`${u.fullName} is not on this project`);
+    if (!(await this.access.userSeesProject({ id: u.id, organizationId: u.organizationId, roleKey: u.role.key as RoleKey }, projectId))) throw new BadRequestException(`${u.fullName} is not on this project`);
   }
 
   /** Validated delay fields; risks keep none of them. */
