@@ -1,5 +1,6 @@
 'use client';
 
+import { revLabel } from './docUi';
 import React, { useEffect } from 'react';
 import { App, Form } from 'antd';
 import dayjs from 'dayjs';
@@ -63,7 +64,7 @@ export function RevisionFormModal({ open, onClose, doc, revision }: { open: bool
       return revision ? (await api.patch<DocumentDetailDto>(`/documents/${doc!.id}/revisions/${revision.id}`, body)).data : (await api.post<DocumentDetailDto>(`/documents/${doc!.id}/revisions`, body)).data;
     },
     onSuccess: (d) => {
-      message.success(editing ? 'Revision updated' : `${d.docNo} Rev ${d.current?.revision ?? ''} recorded`);
+      message.success(editing ? 'Revision updated' : `${d.docNo} ${revLabel(d.current?.revision ?? '')} recorded`);
       qc.invalidateQueries({ queryKey: ['documents'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
     },
@@ -77,7 +78,7 @@ export function RevisionFormModal({ open, onClose, doc, revision }: { open: bool
       form={form}
       layout="modal"
       width={640}
-      title={doc ? (revision ? `${doc.docNo} Rev ${revision.revision}` : `New revision of ${doc.docNo}`) : ''}
+      title={doc ? (revision ? `${doc.docNo} ${revLabel(revision.revision)}` : `New revision of ${doc.docNo}`) : ''}
       okText={editing ? 'Save' : 'Record revision'}
       onSubmit={(v) => mutation.mutateAsync(v)}
     >

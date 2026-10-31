@@ -1,5 +1,6 @@
 'use client';
 
+import { revLabel } from '@/components/documents/docUi';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Checkbox, Empty, Flex, Form, Input, Radio, Segmented, Select, Space, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
@@ -256,7 +257,7 @@ export function TakeoffList({
                         </Typography.Text>
                         {scope === 'all' ? (
                           <AppTag translate="no" style={{ margin: 0 }}>
-                            Rev {t.revision}
+                            {revLabel(t.revision)}
                             {t.page > 1 ? `, p ${t.page}` : ''}
                           </AppTag>
                         ) : null}

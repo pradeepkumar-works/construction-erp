@@ -20,6 +20,9 @@ const STATUS_TAG: Record<RevisionStatus, string> = {
   WITHDRAWN: 'default',
 };
 
+/** "R2" as it is; a bare number reads "Rev 3". */
+export const revLabel = (revision: string) => (/^\d+$/.test(revision) ? `Rev ${revision}` : revision);
+
 export const RevisionStatusTag = ({ status }: { status: RevisionStatus }) => (
   <AppTag color={STATUS_TAG[status]} style={{ margin: 0 }}>
     {REVISION_STATUS_LABELS[status]}

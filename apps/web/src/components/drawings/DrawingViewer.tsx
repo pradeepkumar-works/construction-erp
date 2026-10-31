@@ -68,7 +68,7 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { RfiFormModal } from '@/components/documents/RfiFormModal';
-import { RevisionStatusTag } from '@/components/documents/docUi';
+import { RevisionStatusTag, revLabel } from '@/components/documents/docUi';
 import { MeasurementFormModal, type MeasurementPrefill } from '@/components/measurements/MeasurementFormModal';
 import { MarkShape, MARKUP_INK, VB_W, type ShownMark } from './MarkupLayer';
 import { MarkupList, MarkupNoteForm, ResolveMarkupForm, type ListScope } from './MarkupList';
@@ -503,7 +503,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
       ids: ts.map((t) => t.id),
       prefill: {
         lines: lines.map((l) => ({ description: l.description.slice(0, 200), nos: l.nos, length: l.length, breadth: l.breadth })),
-        remarks: `Taken off ${doc.docNo} Rev ${revs.join(', ')}: ${ts.map((t) => `T${t.takeoffNo}`).join(', ')}`,
+        remarks: `Taken off ${doc.docNo} ${revs.map(revLabel).join(', ')}: ${ts.map((t) => `T${t.takeoffNo}`).join(', ')}`,
       },
     });
   };
@@ -761,7 +761,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
           aria-label="Compare with another revision"
           value={compareRev?.id}
           onChange={(v) => setCompareId(v ?? null)}
-          options={revisions.filter((r) => r.id !== revision?.id && r.attachments.some(canViewDrawingFile)).map((r) => ({ value: r.id, label: `Compare with Rev ${r.revision}` }))}
+          options={revisions.filter((r) => r.id !== revision?.id && r.attachments.some(canViewDrawingFile)).map((r) => ({ value: r.id, label: `Compare with ${revLabel(r.revision)}` }))}
           disabled={!sheet?.readable}
         />
       ) : null}
@@ -798,7 +798,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                   setCompareId(null);
                   go({ rev: v, file: null, page: 1, mark: null });
                 }}
-                options={revisions.map((r) => ({ value: r.id, label: `Rev ${r.revision} · ${r.current ? REVISION_STATUS_LABELS[r.status] : 'Superseded'}` }))}
+                options={revisions.map((r) => ({ value: r.id, label: `${revLabel(r.revision)} · ${r.current ? REVISION_STATUS_LABELS[r.status] : 'Superseded'}` }))}
               />
             ) : null}
             {viewable.length > 1 ? (
@@ -871,7 +871,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
             <div
               ref={attachViewport}
               role="application"
-              aria-label={`Drawing ${doc.docNo} Rev ${revision.revision}${pages > 1 ? `, page ${page} of ${pages}` : ''}. Arrow keys move it, plus and minus zoom, 0 fits the sheet.${isMeasure(tool) ? ' Enter finishes a measure, Backspace removes its last point, Escape drops it.' : ''}`}
+              aria-label={`Drawing ${doc.docNo} ${revLabel(revision.revision)}${pages > 1 ? `, page ${page} of ${pages}` : ''}. Arrow keys move it, plus and minus zoom, 0 fits the sheet.${isMeasure(tool) ? ' Enter finishes a measure, Backspace removes its last point, Escape drops it.' : ''}`}
               aria-roledescription="drawing viewer"
               // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keys move and zoom the drawing, so it takes focus
               tabIndex={0}
@@ -1099,7 +1099,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
           rfiFrom
             ? {
                 subject: `${doc.docNo} M${rfiFrom.markupNo}: ${(rfiFrom.note ?? MARKUP_KIND_LABELS[rfiFrom.kind]).slice(0, 150)}`,
-                question: `${rfiFrom.note ? `${rfiFrom.note}\n\n` : ''}See mark M${rfiFrom.markupNo} on ${doc.docNo} Rev ${rfiFrom.revision}${rfiFrom.page > 1 ? `, page ${rfiFrom.page}` : ''}.`,
+                question: `${rfiFrom.note ? `${rfiFrom.note}\n\n` : ''}See mark M${rfiFrom.markupNo} on ${doc.docNo} ${revLabel(rfiFrom.revision)}${rfiFrom.page > 1 ? `, page ${rfiFrom.page}` : ''}.`,
               }
             : undefined
         }

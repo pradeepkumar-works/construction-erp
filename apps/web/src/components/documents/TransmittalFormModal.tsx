@@ -1,5 +1,6 @@
 'use client';
 
+import { revLabel } from './docUi';
 import React, { useEffect, useMemo } from 'react';
 import { App, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -56,8 +57,8 @@ export function TransmittalFormModal({
 
   // A revision already on this transmittal stays pickable after a newer one is issued.
   const options = useMemo(() => {
-    const list = (docs ?? []).filter((d) => d.current).map((d) => ({ value: d.current!.id, label: `${d.docNo} Rev ${d.current!.revision}, ${d.title}` }));
-    for (const i of transmittal?.items ?? []) if (!list.some((o) => o.value === i.revisionId)) list.push({ value: i.revisionId, label: `${i.docNo} Rev ${i.revision}, ${i.title}` });
+    const list = (docs ?? []).filter((d) => d.current).map((d) => ({ value: d.current!.id, label: `${d.docNo} ${revLabel(d.current!.revision)}, ${d.title}` }));
+    for (const i of transmittal?.items ?? []) if (!list.some((o) => o.value === i.revisionId)) list.push({ value: i.revisionId, label: `${i.docNo} ${revLabel(i.revision)}, ${i.title}` });
     return list;
   }, [docs, transmittal]);
 
