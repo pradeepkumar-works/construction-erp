@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, OpenBillDto, PaymentMode, RaBillDto, ReceiptDto, ReceiptKind } from '@erp/shared';
-import { RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS, isForeign } from '@erp/shared';
+import { BILL_DEDUCTION_LABELS, RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS, isForeign } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useBill, useProjects, useReceivables } from '@/lib/queries';
@@ -14,14 +14,15 @@ import { formatDate, formatINR, formatMoney, inContract, moneyPrefix, outOfContr
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
+// In the bill's own order and words, so the client's deductions are copied off the bill line by line.
 const DEDUCTIONS = [
-  ['tdsAmount', 'TDS (income tax)', 'tds'],
-  ['gstTdsAmount', 'GST TDS', 'gstTds'],
-  ['retentionAmount', 'Retention', 'retention'],
-  ['securityDepositAmount', 'Security deposit', 'securityDeposit'],
-  ['advanceRecoveryAmount', 'Advance recovery', 'advanceRecovery'],
-  ['labourCessAmount', 'Labour welfare cess', 'labourCess'],
-  ['otherDeduction', 'Other deduction', 'other'],
+  ['retentionAmount', BILL_DEDUCTION_LABELS.retention, 'retention'],
+  ['securityDepositAmount', BILL_DEDUCTION_LABELS.securityDeposit, 'securityDeposit'],
+  ['advanceRecoveryAmount', BILL_DEDUCTION_LABELS.advanceRecovery, 'advanceRecovery'],
+  ['tdsAmount', BILL_DEDUCTION_LABELS.tds, 'tds'],
+  ['gstTdsAmount', BILL_DEDUCTION_LABELS.gstTds, 'gstTds'],
+  ['labourCessAmount', BILL_DEDUCTION_LABELS.labourCess, 'labourCess'],
+  ['otherDeduction', BILL_DEDUCTION_LABELS.other, 'other'],
 ] as const;
 type DeductionField = (typeof DEDUCTIONS)[number][0];
 
@@ -163,7 +164,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
           )}
           {kind === 'BILL' && target && !editing && (
             <Typography.Paragraph type="secondary">
-              {target.billLabel} of {formatDate(target.billDate)}: work + GST {fm(target.invoiceAmount)}, settled so far {fm(target.settledAmount)}, outstanding{' '}
+              {target.billLabel} of {formatDate(target.billDate)}: bill amount with GST {fm(target.invoiceAmount)}, settled so far {fm(target.settledAmount)}, outstanding{' '}
               <strong>{fm(target.outstanding)}</strong>.
             </Typography.Paragraph>
           )}
