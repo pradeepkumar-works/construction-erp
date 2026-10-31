@@ -164,7 +164,6 @@ export class ProjectAccessService {
     await this.assertCanAccessProject(user, projectId);
   }
 
-  /** Who looks after quality on a project: whoever passes its inspections (QA/QC by default, per the approval matrix). */
   /** Add drawings and revisions, send transmittals: document control roles on the project. */
   async assertCanManageDocuments(user: RequestUser, projectId: string) {
     if (!canManageDocuments(user.roleKey)) throw new ForbiddenException('Your role cannot change the document register');
@@ -177,7 +176,6 @@ export class ProjectAccessService {
     if (projectId) await this.assertCanAccessProject(user, projectId);
   }
 
-  /** Staff master and holidays: staff admins (admin, management, HR). */
   /**
    * The client portal: certify a bill or record attending an inspection. Only the client's engineer or the consultant,
    * and only on projects they are a member of (guests are never company-wide).

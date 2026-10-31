@@ -472,7 +472,6 @@ export class NotificationsService {
     }
   }
 
-  /** Tell the author how the review went. */
   /** An approved purchase or work order goes to the supplier's portal logins to accept (v6 item 105). */
   private async onOrderApproved(actor: RequestUser, type: 'PURCHASE_ORDER' | 'WORK_ORDER', id: string, projectName: string) {
     const order =

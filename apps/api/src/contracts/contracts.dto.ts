@@ -45,7 +45,7 @@ export class UpdateContractDto {
   ldRatePct?: string;
   @ApiPropertyOptional({ enum: LD_PERIODS, example: 'WEEK' }) @IsOptional() @IsIn(LD_PERIODS) ldPeriod?: LdPeriod;
   @ApiPropertyOptional({ example: '10', description: 'Liquidated damages cap, % of the contract value (0 to 100)' }) @IsOptional() @num() @IsNumberString() ldCapPct?: string;
-  @ApiPropertyOptional({ enum: CURRENCY_CODES, example: 'USD', description: "The contract's currency (item 130); amounts stay in rupees at the contract rate" })
+  @ApiPropertyOptional({ enum: CURRENCY_CODES, example: 'USD', description: "The contract's currency; amounts stay in rupees at the contract rate" })
   @IsOptional()
   @IsIn(CURRENCY_CODES)
   currency?: string;

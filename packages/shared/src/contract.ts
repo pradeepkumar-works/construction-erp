@@ -55,7 +55,6 @@ export function revisedCompletion(endDate: string | null, extensionDays: number)
   return d.toISOString().slice(0, 10);
 }
 
-/** "RA bill 3", or "RA bill 7 (final)". */
 /** "RA bill 3", "RA bill 7 (final)", or "O&M bill 9" for an instalment of the O&M contract (item 131). */
 export const billLabel = (billNo: number, isFinal: boolean, om = false): string => (om ? `O&M bill ${billNo}` : `RA bill ${billNo}${isFinal ? ' (final)' : ''}`);
 

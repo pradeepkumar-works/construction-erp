@@ -2727,7 +2727,6 @@ export function useCoverRequest(materialRequestId: string) {
   });
 }
 
-/** The last approved orders of items (`name|unit` each), keyed by `lastRateKey`. */
 /** What other sites paid for the items in the 30 days before the order (item 121), for the PO form's rate check. */
 export const useRateCheck = (items: { itemName: string; unit: string }[], projectId: string | undefined, poDate: string | undefined, enabled = true, excludePoId?: string) => {
   const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
