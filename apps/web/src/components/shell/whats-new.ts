@@ -10,11 +10,20 @@ export interface WhatsNew {
 export const WHATS_NEW: WhatsNew[] = [
   {
     id: '2027-09-supplier-choice',
-    date: '2027-09-28',
+    date: '2027-10-11',
     title: 'Approve the supplier before the order',
     points: [
       'Admin, Approval rules has a switch: Orders wait for an approved supplier choice. With it on, finalising L1 under Purchases, Requests to order sends the choice to the approver, with the ranking, what it costs against L1 and why when it is not L1.',
       'The approver decides it from Approvals like any entry (not the person who finalised it). Once approved, purchase raises the order on that supplier; a rejected or sent back choice goes back to Finalise L1.',
+    ],
+  },
+  {
+    id: '2027-09-official-reports',
+    date: '2027-10-04',
+    title: 'Daily, weekly and monthly reports for the client',
+    points: [
+      'Reports, Progress reports makes a project’s daily, weekly and monthly progress report (MPR) in your company’s design: the contract box, progress by component, the work done with its location, observations, crew and machines, hindrances, next period’s plan and photographs. The MPR adds the programme, milestones, bills, drawings, meetings, quality and safety.',
+      'Download it as PDF, Word or Excel. Issue to client keeps the copy with its number and revision, so the one you sent can be downloaded again.',
     ],
   },
   {

@@ -656,8 +656,14 @@ DROP POLICY IF EXISTS tenant_isolation ON "PlantBatchRow";
 ALTER TABLE "BiometricCommand" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "BiometricCommand" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "BiometricCommand";
+<<<<<<< HEAD
 ALTER TABLE "SupplierChoice" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "SupplierChoice" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "SupplierChoice";
+=======
+ALTER TABLE "OfficialReportIssue" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "OfficialReportIssue" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "OfficialReportIssue";
+>>>>>>> cb369810ba59a4eff7eecf95c2456debbd35b247
 
 DROP FUNCTION IF EXISTS app_current_org();

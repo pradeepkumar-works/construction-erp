@@ -942,6 +942,7 @@ model Organization {
   biometricUsers       BiometricUser[]
   biometricPunches     BiometricPunch[]
   biometricCommands    BiometricCommand[]
+  officialReportIssues OfficialReportIssue[]
   integrations         IntegrationConnection[]
   connectorAgents      ConnectorAgent[]
   integrationEvents    IntegrationEvent[]
@@ -1263,6 +1264,7 @@ model User {
   settlementsPrepared   FinalSettlement[]          @relation("SettlementPreparer")
   biometricDevices      BiometricDevice[]          @relation("BiometricDeviceCreator")
   biometricCommands     BiometricCommand[]         @relation("BiometricCommandCreator")
+  officialReportIssues  OfficialReportIssue[]      @relation("OfficialReportIssuer")
   integrationsMade      IntegrationConnection[]    @relation("IntegrationConnectionCreator")
   weighTicketsMade      WeighTicket[]              @relation("WeighTicketCreator")
   connectorsMade        ConnectorAgent[]           @relation("ConnectorAgentCreator")
@@ -1450,6 +1452,7 @@ model Project {
   billingComponents  BillingComponent[]
   billingStages      BillingStage[]
   milestoneTargets   MilestoneTarget[]
+  officialReports    OfficialReportIssue[]
   slippageTiers      SlippageTier[]
   milestones         Milestone[]
   epcDeliverables    EngineeringDeliverable[]
@@ -9129,4 +9132,38 @@ model PlantBatchRow {
   @@index([plantId, takenAt])
   @@index([connectionId, batchNo])
   @@index([rmcBatchId])
+}
+
+/// Official progress reports (item 174): daily, weekly and monthly reports for the client, in Nirmaan's design
+enum OfficialReportKind {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+/// An official progress report as it was issued to the client (item 174): its number, revision and the copy that went
+model OfficialReportIssue {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind           OfficialReportKind
+  periodFrom     DateTime           @db.Date
+  periodTo       DateTime           @db.Date
+  /// Counted from the project's start (`officialReportNo`); null without a start date
+  reportNo       Int?
+  /// P07/MPR/016
+  docNo          String
+  /// 0 the first time the period is issued, then 1, 2…
+  revision       Int                @default(0)
+  note           String?
+  /// The report (`OfficialReportDto`) exactly as issued, so the copy downloads the same later
+  snapshot       Json
+  issuedById     String
+  issuedBy       User               @relation("OfficialReportIssuer", fields: [issuedById], references: [id])
+  issuedAt       DateTime           @default(now())
+
+  @@unique([projectId, kind, periodFrom, revision])
+  @@index([organizationId, projectId, kind])
 }
