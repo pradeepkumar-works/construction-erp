@@ -23,8 +23,12 @@ test('issue diesel into a machine and see it in the fuel position', async ({ pag
   const store = await apiToken('store@demo.com');
   const project = await road(store);
   const position = () => api<FuelPosition>(store, `/fleet/fuel-position?projectId=${project.id}`);
-  const before = (await position()).rows.find((r) => /diesel/i.test(r.itemName))!;
-  expect(Number(before.closing)).toBeGreaterThan(20);
+  const seeded = (await position()).rows.find((r) => /diesel/i.test(r.itemName))!;
+  // The 20 litres this test issues come in first, so the seed's own fills never leave too little and the stock ends as it began.
+  const pm = await apiToken('pm@demo.com');
+  await api(pm, '/stock/adjustments', { method: 'POST', body: { projectId: project.id, date: localToday(), reason: 'OTHER', remarks: 'E2E: diesel for the fuel issue', lines: [{ itemId: seeded.itemId, quantity: '20' }] } });
+  const before = (await position()).rows.find((r) => r.itemId === seeded.itemId)!;
+  expect(Number(before.closing)).toBeGreaterThanOrEqual(20);
 
   await signIn(page, 'store@demo.com');
   await page.goto(`/projects/${project.id}?tab=machinery&sub=fuel`);
@@ -51,10 +55,6 @@ test('issue diesel into a machine and see it in the fuel position', async ({ pag
     await expect(
       api(store, '/stock/fuel-issues', { method: 'POST', body: { projectId: project.id, date: localToday(), equipmentId: grader.id, itemId: cement.itemId, quantity: '1' } }),
     ).rejects.toThrow(/400/);
-
-  // Put the diesel back as it was.
-  const pm = await apiToken('pm@demo.com');
-  await api(pm, '/stock/adjustments', { method: 'POST', body: { projectId: project.id, date: localToday(), reason: 'OTHER', remarks: 'E2E: put back', lines: [{ itemId: before.itemId, quantity: '20' }] } });
 });
 
 /** A norm set below what the excavator burns puts it on the watch list; utilisation never reads over 100%. */
