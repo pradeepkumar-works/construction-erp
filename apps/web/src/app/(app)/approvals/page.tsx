@@ -220,7 +220,7 @@ export default function ApprovalsPage() {
     ),
   }));
   const limitLine = limited.length > 0 ? ` Your approval limit: ${limited.map((r) => `${inSentence(SUBMISSION_TYPE_LABELS[r.type])} up to ${formatINR(r.maxAmount)}`).join(', ')}; anything above goes to a higher approver.` : '';
-  const subtitle = !approver ? 'Entries waiting for approval' : data ? `${data.length} waiting for your approval.${limitLine}` : undefined;
+  const subtitle = !approver ? 'Entries waiting for approval' : `${data ? `${data.length} waiting` : 'Entries waiting'} for your approval.${limitLine}`;
 
   const queue = (
     <>
