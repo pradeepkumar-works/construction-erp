@@ -202,7 +202,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
                 </Button>
               ) : (
                 <Flex vertical gap={4} align="start">
-                  <Button size="small" type={c.state === 'OPEN' ? 'primary' : 'default'} onClick={() => setReplying(c.id)}>
+                  <Button size="small" onClick={() => setReplying(c.id)}>
                     {c.reply ? 'Edit reply' : 'Reply'}
                   </Button>
                   {c.state === 'ANSWERED' ? (
@@ -279,7 +279,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
                 <Typography.Text type="secondary">Not submitted yet. Add the drawings, then submit.</Typography.Text>
               )}
             </Card>
-            <Card size="small" title={<CardTitle>{`Files (${s.attachments.length})`}</CardTitle>}>
+            <Card size="small" title={<CardTitle>Files</CardTitle>} extra={s.attachments.length ? <Typography.Text type="secondary" translate="no">{s.attachments.length}</Typography.Text> : null}>
               {s.attachments.length ? <AttachmentGallery attachments={s.attachments} /> : <Typography.Text type="secondary">No file attached.</Typography.Text>}
             </Card>
           </Flex>

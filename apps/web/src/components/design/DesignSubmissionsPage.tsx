@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Col, Row, Select, Statistic, Typography, theme } from 'antd';
 import {
   DESIGN_PURPOSE_LABELS,
   DESIGN_PURPOSES,
@@ -152,7 +152,7 @@ export function DesignSubmissionsPage() {
   const { data, isLoading, isFetching, error, refetch } = useDesignSubmissions({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, projectId: frame.projectId, status, purpose, kind, toAnswer: toAnswer || undefined });
   const newButton = may ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-      New submission
+      New design submission
     </Button>
   ) : null;
   const s = data?.summary;
@@ -167,7 +167,7 @@ export function DesignSubmissionsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Design submissions" subtitle="Drawings and designs sent for approval or vetting, the codes they came back with and our replies to the comments." extra={newButton} />
+      <PageHeader title="Design submissions" subtitle="Drawings and designs sent for approval or vetting, the codes they came back with and our replies to the comments." />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {s ? (
         <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
@@ -186,20 +186,14 @@ export function DesignSubmissionsPage() {
           onSearch={page.setSearch}
           searchPlaceholder="Search number, title, drawing or reviewer"
           searchLabel="Search design submissions"
+          extra={newButton}
         >
           <Select<StatusFilter> allowClear placeholder="Any status" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 190 }} options={STATUS_FILTERS} />
           <Select<DesignPurpose> allowClear placeholder="Approval or vetting" aria-label="Sent for" value={purpose} onChange={(v) => page.setFilter('purpose', v)} style={{ width: 180 }} options={DESIGN_PURPOSES.map((p) => ({ value: p, label: DESIGN_PURPOSE_LABELS[p] }))} />
           <Select<DesignSubmissionKind> allowClear placeholder="Any kind" aria-label="Kind" value={kind} onChange={(v) => page.setFilter('kind', v)} style={{ width: 190 }} options={DESIGN_SUBMISSION_KINDS.map((k) => ({ value: k, label: DESIGN_SUBMISSION_KIND_LABELS[k] }))} />
-          <Select<string>
-            aria-label="Comments"
-            value={toAnswer ? 'true' : 'all'}
-            onChange={(v) => page.setFilter('toAnswer', v === 'true' ? 'true' : undefined)}
-            style={{ width: 200 }}
-            options={[
-              { value: 'all', label: 'With or without comments' },
-              { value: 'true', label: 'Comments to answer' },
-            ]}
-          />
+          <Checkbox checked={toAnswer} onChange={(e) => page.setFilter('toAnswer', e.target.checked ? 'true' : undefined)}>
+            Only with comments to answer
+          </Checkbox>
         </ListToolbar>
         <DataTable<DesignSubmissionDto>
           columns={frame.columns}
