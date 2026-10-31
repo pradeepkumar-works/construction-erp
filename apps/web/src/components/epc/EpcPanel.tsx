@@ -330,7 +330,7 @@ function DeliverableForm({ projectId, target, onClose }: { projectId: string; ta
             <Select
               allowClear
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder={structure?.elements.length ? 'The whole project' : 'No breakdown yet'}
+              placeholder={structure?.elements.length ? 'The whole project' : 'No components yet (Components tab)'}
               options={(structure?.elements ?? []).map((e) => ({ value: e.id, label: `${e.code} ${e.name}` }))}
             />
           </Form.Item>

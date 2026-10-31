@@ -101,7 +101,7 @@ export function NewTypeForm({ open, onClose, types }: { open: boolean; onClose: 
         </FormGrid>
         <Form.Item
           name="baseType"
-          label="Built on"
+          label="Based on"
           rules={[{ required: true, message: 'Choose what the type is built on' }]}
           extra="Sets the project code, the reports a project of it appears in, and which DPR form it uses for now."
         >
@@ -136,7 +136,7 @@ export function NewKindForm({ open, onClose, kinds, onMade }: { open: boolean; o
       form={form}
       layout="modal"
       width={520}
-      title="New component kind"
+      title="New component type"
       okText="Save"
       projectDefault={false}
       draftKey="component-kind:new"
@@ -158,8 +158,8 @@ export function NewKindForm({ open, onClose, kinds, onMade }: { open: boolean; o
           }
         }}
       >
-        <Form.Item name="copyFrom" label="Start from" extra="A copy takes the kind's specs and steps; you change them after.">
-          <Select allowClear placeholder="The steps of what it is built on" showSearch={{ optionFilterProp: 'label' }} options={kinds.map((k) => ({ value: k.code, label: k.name }))} />
+        <Form.Item name="copyFrom" label="Start from" extra="A copy takes the type's specs and steps; you change them after.">
+          <Select allowClear placeholder="The steps of what it is based on" showSearch={{ optionFilterProp: 'label' }} options={kinds.map((k) => ({ value: k.code, label: k.name }))} />
         </Form.Item>
         <FormGrid>
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name, e.g. Bridge pier' }]}>
@@ -169,7 +169,7 @@ export function NewKindForm({ open, onClose, kinds, onMade }: { open: boolean; o
             <Input {...CODE_INPUT} maxLength={40} placeholder="BRIDGE_PIER" />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="elementType" label="Built on" rules={[{ required: true, message: 'Choose what the kind is built on' }]} extra="Where its components show in reports and stock checks.">
+        <Form.Item name="elementType" label="Based on" rules={[{ required: true, message: 'Choose what the type is based on' }]} extra="Where its components show in reports and stock checks.">
           <Select disabled={!!copyFrom} showSearch={{ optionFilterProp: 'label' }} options={WORK_ELEMENT_TYPES.map((t) => ({ value: t, label: WORK_ELEMENT_TYPE_LABELS[t] }))} />
         </Form.Item>
       </Form>

@@ -153,7 +153,7 @@ export function TypeEditor({ type, kinds, open, onClose }: { type: ProjectTypeDt
             <Input.TextArea maxLength={300} autoSize={{ minRows: 2, maxRows: 4 }} />
           </Form.Item>
           <FormGrid cols={3}>
-            <Form.Item name="locations" label="Work is located by" tooltip="What a DPR line and the sector view name: a chainage, a floor or a village.">
+            <Form.Item name="locations" label="Work is located by" tooltip="What a DPR line and the Chainage, Floors or Villages tab name: a chainage, a floor or a village.">
               <Checkbox.Group options={WORK_LOCATIONS.map((l) => ({ value: l, label: WORK_LOCATION_LABELS[l] }))} />
             </Form.Item>
             <Form.Item name="pipeNetwork" label="Pipe network" valuePropName="checked" tooltip={hasPipes(baseType) ? 'Zones and mains with their nodes and pipes, imported from the drawings.' : 'Only a water supply or sewerage type has one.'}>
@@ -163,11 +163,11 @@ export function TypeEditor({ type, kinds, open, onClose }: { type: ProjectTypeDt
               <Select options={CONTRACT_MODELS.map((m) => ({ value: m, label: CONTRACT_MODEL_LABELS[m] }))} />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="kinds" label="Component kinds offered first" extra="When someone adds a component to a project of this type; the rest of the library follows.">
-            <Select mode="multiple" allowClear showSearch={{ optionFilterProp: 'label' }} options={kindOptions} placeholder="Every kind in the library" />
+          <Form.Item name="kinds" label="Component types offered first" extra="When someone adds a component to a project of this type; every other component type follows.">
+            <Select mode="multiple" allowClear showSearch={{ optionFilterProp: 'label' }} options={kindOptions} placeholder="Every component type" />
           </Form.Item>
         </FormSection>
-        <FormSection title="Starting breakdown">
+        <FormSection title="Starting components">
           <Typography.Paragraph type="secondary">
             The components a new project of this type is offered, each laid out with its kind&apos;s activities. Copies number themselves (Overhead tank 1, 2…); a sub-component goes in every copy of its
             component. Weights are each copy&apos;s share, %; left empty they share what is left by BOQ value.
@@ -210,12 +210,12 @@ export function TypeEditor({ type, kinds, open, onClose }: { type: ProjectTypeDt
               },
               {
                 key: 'kind',
-                title: 'Kind',
+                title: 'Component type',
                 width: 200,
                 render: (f) => (
-                  <Form.Item name={[f.name, 'kind']} noStyle rules={[{ required: true, message: 'Choose its kind' }]}>
+                  <Form.Item name={[f.name, 'kind']} noStyle rules={[{ required: true, message: 'Choose its component type' }]}>
                     <Select
-                      aria-label="Component kind"
+                      aria-label="Component type"
                       showSearch={{ optionFilterProp: 'label' }}
                       options={kindOptions}
                       placeholder="Overhead tank"

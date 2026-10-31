@@ -266,7 +266,7 @@ export function DprFormEditor({
                 width: 170,
                 render: (f) => (
                   <Form.Item name={[f.name, 'labelHi']} noStyle>
-                    <Input aria-label={`Hindi name of field ${f.name + 1}`} maxLength={60} lang="hi" placeholder="Optional" />
+                    <Input aria-label={`Hindi name of field ${f.name + 1}`} maxLength={60} lang="hi" />
                   </Form.Item>
                 ),
               },
