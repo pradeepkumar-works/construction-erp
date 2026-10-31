@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import type { ModuleTier, PlatformCompanyDetailDto, PlatformCompanyDto, SupportSessionDto } from '@erp/shared';
-import { PRODUCT_NAME, SUPPORT_SESSION_HOURS, modulesOffFor } from '@erp/shared';
+import type { ModuleTier, PlatformCompanyDetailDto, PlatformCompanyDto, RoleKey, SupportSessionDto } from '@erp/shared';
+import { PRODUCT_NAME, ROLE_LABELS, SUPPORT_SESSION_HOURS, modulesOffFor } from '@erp/shared';
 import { tierNote } from '../module-switches/module-switch-rules';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
@@ -70,7 +70,7 @@ export class PlatformService {
     return withoutTenant(async () => {
       const [org, users, lastByUser] = await Promise.all([
         this.prisma.organization.findUniqueOrThrow({ where: { id }, select: { supportAccessGrantedByName: true } }),
-        this.prisma.user.findMany({ where: { organizationId: id }, include: { role: { select: { name: true } } }, orderBy: [{ isActive: 'desc' }, { fullName: 'asc' }] }),
+        this.prisma.user.findMany({ where: { organizationId: id }, include: { role: { select: { key: true } } }, orderBy: [{ isActive: 'desc' }, { fullName: 'asc' }] }),
         this.prisma.auditLog.groupBy({ by: ['actorId'], where: { organizationId: id }, _max: { createdAt: true } }),
       ]);
       const last = new Map(lastByUser.map((x) => [x.actorId, x._max.createdAt]));
@@ -81,7 +81,7 @@ export class PlatformService {
           id: x.id,
           fullName: x.fullName,
           email: x.email,
-          roleName: x.role.name,
+          roleName: ROLE_LABELS[x.role.key as RoleKey],
           isActive: x.isActive,
           createdAt: x.createdAt.toISOString(),
           lastActivityAt: last.get(x.id)?.toISOString() ?? null,

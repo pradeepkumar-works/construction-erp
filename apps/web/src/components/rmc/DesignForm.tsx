@@ -48,8 +48,8 @@ export function DesignForm({ open, onClose, design }: { open: boolean; onClose: 
       layout="drawer"
       width={760}
       projectDefault={false}
-      title={editing ? `Change ${design.code}` : 'New mix design'}
-      okText="Send for approval"
+      title={editing ? `Edit ${design.code}` : 'New mix design'}
+      okText="Submit for approval"
       draftKey={editing ? undefined : 'rmc-design'}
       onSubmit={async (v) => {
         const body = {
@@ -67,7 +67,7 @@ export function DesignForm({ open, onClose, design }: { open: boolean; onClose: 
       <Form form={form} layout="vertical" initialValues={{ grade: 'M25', lines: [{}, {}, {}] }}>
         <FormGrid cols={2}>
           <Form.Item name="plantId" label="Plant" rules={[{ required: true, message: 'Choose the plant' }]}>
-            <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
           </Form.Item>
           <Form.Item name="code" label="Code" rules={[{ required: true, whitespace: true, message: 'Enter a code, e.g. M25-OPC-02' }]}>
             <Input maxLength={40} placeholder="M25-OPC-02" {...CODE_INPUT} />
@@ -114,14 +114,14 @@ export function DesignForm({ open, onClose, design }: { open: boolean; onClose: 
             },
             {
               key: 'quantity',
-              title: 'In a cubic metre',
+              title: 'Per m³',
               width: 200,
               align: 'right',
               render: (field) => (
                 <Form.Item noStyle shouldUpdate>
                   {() => (
                     <Form.Item name={[field.name, 'quantity']} rules={[{ required: true, message: 'Enter how much goes into a cubic metre' }]} noStyle>
-                      <QuantityInput aria-label="In a cubic metre" unit={form.getFieldValue(['lines', field.name, 'unit'])} />
+                      <QuantityInput aria-label="Quantity per m³" unit={form.getFieldValue(['lines', field.name, 'unit'])} />
                     </Form.Item>
                   )}
                 </Form.Item>

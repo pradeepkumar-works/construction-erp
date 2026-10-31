@@ -18,7 +18,7 @@ const TAGS: Record<DiscoverEntry['reason'], TileEntry['tag']> = {
   new: { text: 'New', tone: 'new' },
   featured: { text: 'Featured', tone: 'featured' },
   unopened: { text: 'Not opened yet' },
-  locked: { text: 'Ask for access' },
+  locked: { text: 'Request access' },
 };
 
 /** The pages a Discover tile's drawer lists: those the user can open, or for a module they cannot, every page it has. */

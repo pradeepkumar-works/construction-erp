@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ChangeForm } from '@/components/supplier/SupplierForms';
 import { ChangeList } from '@/components/supplier/ChangeList';
+import { NO_VALUE } from '@/lib/format';
 
 /** The supplier's details as the company holds them; a change goes to the company for approval (bank changes to those who pay). */
 export default function SupplierProfilePage() {
@@ -17,7 +18,7 @@ export default function SupplierProfilePage() {
   const pending = data?.changes.find((c) => c.status === 'PENDING');
   const show = (f: (typeof SUPPLIER_PROFILE_FIELDS)[number]) => {
     const v = data?.values[f];
-    if (!v) return '-';
+    if (!v) return NO_VALUE;
     return f === 'msmeCategory' ? (MSME_CATEGORY_LABELS[v as MsmeCategory] ?? v) : <span translate="no">{v}</span>;
   };
   const change = (

@@ -7,7 +7,7 @@ import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
-import { MAX_PAGE_SIZE } from '@erp/shared';
+import { MAX_PAGE_SIZE, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useStockDestinations } from '@/lib/queries';
@@ -42,7 +42,7 @@ const COPY: Record<StockMove, { title: string; ok: string; path: string; help: s
     path: '/stock/transfers',
     help: 'The material leaves this store now and shows as in transit until the site or store it goes to receives it.',
   },
-  vendor: { title: 'Return to supplier', ok: 'Save return', path: '/stock/vendor-returns', help: 'The material leaves stock. Raise the debit note on the supplier separately.' },
+  vendor: { title: 'Return to vendor', ok: 'Save return', path: '/stock/vendor-returns', help: 'The material leaves stock. Make the debit note on the vendor separately.' },
   site: {
     title: 'Return from site',
     ok: 'Save return',
@@ -109,9 +109,9 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
         <Form.Item name="projectId" label={move === 'transfer' ? 'From project' : 'Project'} rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Select project"
+            placeholder="Choose a project"
             onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined })}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />
         </Form.Item>
         <FormGrid cols={2}>
@@ -125,23 +125,23 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                     label: group,
                     options: (destinations ?? [])
                       .filter((d) => d.id !== scope && d.store === (group === 'Central stores'))
-                      .map((d) => ({ value: d.id, label: `${d.code} - ${d.name}` })),
+                      .map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` })),
                   }))
                   .filter((g) => g.options.length)}
               />
             </Form.Item>
           )}
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {move === 'vendor' && (
-            <Form.Item name="supplier" label="Supplier" rules={[{ required: true, whitespace: true, message: 'Who does it go back to?' }]}>
+            <Form.Item name="supplier" label="Vendor" rules={[{ required: true, whitespace: true, message: 'Enter who it goes back to' }]}>
               <VendorPicker kind="SUPPLIER" />
             </Form.Item>
           )}
           {move === 'site' && (
             <>
-              <Form.Item name="issuedTo" label="Returned by" rules={[{ required: true, whitespace: true, message: 'Who brought it back?' }]}>
+              <Form.Item name="issuedTo" label="Returned by" rules={[{ required: true, whitespace: true, message: 'Enter who brought it back' }]}>
                 <AutoComplete
                   placeholder="Contractor, gang or person"
                   options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))}
@@ -178,16 +178,16 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                   const row = items.find((i) => i.itemId === itemId);
                   return (
                     <div key={f.key} className="stock-move-line" style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
+                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Choose an item' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
                           aria-label="Item"
-                          placeholder={scope ? 'Item' : 'Pick the project first'}
+                          placeholder={scope ? 'Item' : 'Choose the project first'}
                           disabled={!scope}
                           loading={stock.isLoading}
                           options={items.map((i) => ({
                             value: i.itemId,
-                            label: move === 'site' ? `${i.itemName} (${formatQty(i.issued)} ${i.unit} issued)` : `${i.itemName} (${formatQty(i.balance)} ${i.unit} in stock)`,
+                            label: move === 'site' ? `${i.itemName} (${formatQty(i.issued)} ${unitLabel(i.unit)} issued)` : `${i.itemName} (${formatQty(i.balance)} ${unitLabel(i.unit)} in stock)`,
                             disabled: chosen.has(i.itemId) && i.itemId !== itemId,
                           }))}
                         />
@@ -201,7 +201,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                             validator: (_, v) =>
                               !v || !row || Number(v) <= Number(limitOf(row))
                                 ? Promise.resolve()
-                                : Promise.reject(new Error(move === 'site' ? `Only ${formatQty(row.issued)} ${row.unit} issued` : `Only ${formatQty(row.balance)} ${row.unit} in stock`)),
+                                : Promise.reject(new Error(move === 'site' ? `Only ${formatQty(row.issued)} ${unitLabel(row.unit)} issued` : `Only ${formatQty(row.balance)} ${unitLabel(row.unit)} in stock`)),
                           },
                         ]}
                       >
@@ -218,7 +218,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
             )}
           </Form.List>
         </Form.Item>
-        <Form.Item name="remarks" label={move === 'vendor' ? 'Reason' : 'Remarks'} rules={move === 'vendor' ? [{ required: true, whitespace: true, min: 3, message: 'Why is it going back?' }] : []}>
+        <Form.Item name="remarks" label={move === 'vendor' ? 'Reason' : 'Remarks'} rules={move === 'vendor' ? [{ required: true, whitespace: true, min: 3, message: 'Enter why it is going back' }] : []}>
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>

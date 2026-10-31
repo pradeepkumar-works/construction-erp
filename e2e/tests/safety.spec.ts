@@ -95,7 +95,7 @@ test('a permit to work is asked for, issued by the safety officer and closed', a
   await issue.getByLabel('Area cleared of flammable material').check();
   await issue.getByLabel('Conditions').fill('Fire watch till 30 minutes after.');
   await issue.getByRole('button', { name: 'Issue permit' }).click();
-  await expect(page.getByText(`${permit.permitNo} issued`)).toBeVisible();
+  await expect(page.getByText(`${permit.permitNo} issued`, { exact: true })).toBeVisible();
 
   const issued = await api<Permit>(engineer, `/safety/permits/${permit.id}`);
   expect(issued.status).toBe('ISSUED');

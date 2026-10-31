@@ -4,6 +4,7 @@ import React from 'react';
 import { AppTag } from '@/components/common/AppTag';
 import type { ExpiryState, MaintenanceKind, MaintenanceStatus, ServiceState } from '@erp/shared';
 import { EXPIRY_STATE_LABELS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUS_LABELS, SERVICE_STATE_LABELS } from '@erp/shared';
+import { NO_VALUE } from '@/lib/format';
 
 const SERVICE_COLORS: Record<ServiceState, string> = { OVERDUE: 'red', DUE_SOON: 'gold', OK: 'green', NOT_SET: 'default' };
 const EXPIRY_COLORS: Record<ExpiryState, string> = { EXPIRED: 'red', EXPIRING: 'gold', VALID: 'green' };
@@ -21,7 +22,7 @@ export const ExpiryTag = ({ state, daysLeft }: { state: ExpiryState | null; days
       {state === 'EXPIRING' && daysLeft !== null ? (daysLeft === 0 ? 'Expires today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`) : EXPIRY_STATE_LABELS[state]}
     </AppTag>
   ) : (
-    <span className="text-muted">-</span>
+    <span className="text-muted">{NO_VALUE}</span>
   );
 
 export const JobKindTag = ({ kind }: { kind: MaintenanceKind }) => (

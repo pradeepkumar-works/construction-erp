@@ -165,7 +165,7 @@ function makeNotifier(message: MessageInstance, push: (href: string) => void, qc
                 retry();
               }}
             >
-              Retry
+              Try again
             </Button>
           ) : undefined,
         ),

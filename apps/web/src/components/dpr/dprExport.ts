@@ -24,6 +24,6 @@ export async function dprExportColumns(rows: DailyReportDto[]): Promise<ExportCo
     width: Math.max(12, f.label.length + 6),
   }));
   // After the figures of the day, before the notes.
-  const at = DPR_EXPORT.findIndex((c) => c.header === 'Work executed');
+  const at = DPR_EXPORT.findIndex((c) => c.header === 'Work done');
   return [...DPR_EXPORT.slice(0, at), ...own, ...DPR_EXPORT.slice(at)];
 }

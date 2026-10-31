@@ -1,8 +1,9 @@
 'use client';
 
+import { MoreActions } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Form, Input, Select, Skeleton, Table, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Form, Input, Select, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   POUR_FLAG_LABELS,
@@ -26,7 +27,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { useUrlTab } from '@/lib/url-state';
 import { formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -41,6 +42,7 @@ import { FormShell } from '@/components/form/FormShell';
 import { TestFormModal, type TestPrefill } from '@/components/quality/TestFormModal';
 import { TestResultTag } from '@/components/quality/qualityUi';
 import { PourFormModal, PouredModal } from './PourForms';
+import { IS456_SAMPLING } from './qaUi';
 
 const TABS = ['pours', 'cubes'] as const;
 type Tab = (typeof TABS)[number];
@@ -137,18 +139,18 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
           <Flex gap={token.marginXS} wrap>
             {!pour.card || cardBad ? (
               <Button loading={card.isPending} onClick={() => card.mutate()}>
-                Ask for pour card
+                Request pour card
               </Button>
             ) : null}
             <Button type="primary" onClick={() => setPouring(pour)}>
-              Record poured
+              Record pour
             </Button>
           </Flex>
         ) : null
       }
     >
       {isLoading ? (
-        <Skeleton active />
+        <PageSkeleton shape="record" header={false} />
       ) : error || !pour ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
@@ -212,7 +214,7 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
                 </Button>
               ) : null}
             </Flex>
-            <Typography.Paragraph type="secondary">IS 456 asks for one sample to 5 m³, then 2, 3 and 4 to 50 m³, and one more for each 50 m³ of a grade poured in a day.</Typography.Paragraph>
+            <Typography.Paragraph type="secondary">{`For each grade poured in a day: ${IS456_SAMPLING}.`}</Typography.Paragraph>
             <Table
               rowKey="id"
               size="small"
@@ -232,9 +234,7 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
               <Button onClick={() => setEditing(true)}>Edit</Button>
               <Button onClick={() => setCancelling(pour)}>Cancel pour</Button>
               {!pour.tests.length ? (
-                <Button danger onClick={() => confirmDelete({ what: pour.pourNo, onConfirm: () => remove.mutateAsync(), onDone: onClose })}>
-                  Delete
-                </Button>
+                <MoreActions size="middle" items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => confirmDelete({ what: pour.pourNo, onConfirm: () => remove.mutateAsync(), onDone: onClose }) }]} />
               ) : null}
             </Flex>
           ) : null}
@@ -264,7 +264,7 @@ function PourList() {
     columns: (sortOrderFor): ListColumn<PourDto>[] => {
       const sort = (key: PourSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
       return [
-        { title: 'Day', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
+        { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
         { title: 'No.', dataIndex: 'pourNo', width: 140, className: 'mono', ...sort('pourNo') },
         { key: 'project', title: 'Project', dataIndex: 'projectName', width: 180, ellipsis: true, render: (v: string, r: PourDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
         {
@@ -357,7 +357,7 @@ function CubeAcceptancePanel() {
         must reach fck − 3 N/mm². Until a grade has 30 results, the deviation is Table 8&apos;s.
       </Typography.Paragraph>
       {isLoading ? (
-        <Skeleton active />
+        <PageSkeleton shape="list" header={false} />
       ) : error || !data ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : !data.length ? (
@@ -410,7 +410,7 @@ export function PoursPage() {
   const [tab, setTab] = useUrlTab<Tab>(TABS, 'pours', { param: 'tab' });
   return (
     <div className="page-container">
-      <PageHeader title="Pour register" subtitle="Each pour cleared by its card, the cube sets IS 456 asks for its volume, and each grade's acceptance under Table 11." />
+      <PageHeader title="Pour register" subtitle="Each pour with its pour card, the cube sets IS 456 needs for its volume, and each grade's acceptance under Table 11." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

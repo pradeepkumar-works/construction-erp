@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, AutoComplete, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { App, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,11 +14,11 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { DescribeFromPhoto } from '@/components/photo-checks/DescribeFromPhoto';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { MasterInput } from '@/components/masters/MasterInput';
 
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const t = (v?: string) => v?.trim() || null;
 const DATE = 'DD MMM YYYY';
-const TRADES = ['Civil', 'Plaster', 'Masonry', 'Tiling', 'Painting', 'Plumbing', 'Electrical', 'Joinery', 'Waterproofing', 'Fabrication', 'Road work', 'Drainage', 'Road marking', 'Landscaping'];
 
 interface HandoverValues {
   completedOn?: dayjs.Dayjs;
@@ -134,8 +134,9 @@ interface DefectValues {
   note?: string;
 }
 
-const TITLES: Record<DefectAction['kind'], string> = { new: 'Report a snag or defect', edit: 'Edit', fix: 'Mark fixed', close: 'Close', reopen: 'Reopen' };
-const OK: Record<DefectAction['kind'], string> = { new: 'Report', edit: 'Save', fix: 'Fixed', close: 'Close it', reopen: 'Reopen' };
+const titleOf = (a: DefectAction, completed: boolean): string =>
+  a.kind === 'new' ? (completed ? 'Report defect' : 'Report snag') : a.kind === 'fix' ? `Mark ${a.defect.defectNo} fixed` : `${{ edit: 'Edit', close: 'Close', reopen: 'Reopen' }[a.kind]} ${a.defect.defectNo}`;
+const OK: Record<DefectAction['kind'], string> = { new: 'Report', edit: 'Save', fix: 'Mark fixed', close: 'Close', reopen: 'Reopen' };
 
 export function DefectFormModal({
   action,
@@ -239,7 +240,7 @@ export function DefectFormModal({
       // Reporting or editing a defect is a long form; marking it fixed, closing or reopening is a short one.
       layout={wasFull ? 'drawer' : 'modal'}
       width={wasFull ? 720 : 520}
-      title={mode ? TITLES[mode] : ''}
+      title={action ? titleOf(action, completed) : ''}
       okText={mode ? OK[mode] : 'Save'}
       draftKey={mode === 'new' ? `defect:${projectId}` : undefined}
       onSubmit={(v) => save.mutateAsync(v)}
@@ -265,7 +266,7 @@ export function DefectFormModal({
                   <Input maxLength={200} placeholder="Block, floor, room or chainage" />
                 </Form.Item>
                 <Form.Item name="trade" label="Trade">
-                  <AutoComplete options={TRADES.map((v) => ({ value: v }))} showSearch={{ filterOption: (input, o) => String(o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} maxLength={80} />
+                  <MasterInput list="workTrade" maxLength={80} />
                 </Form.Item>
                 <Form.Item name="reportedOn" label="Found on">
                   <DatePicker format={DATE} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
@@ -290,7 +291,7 @@ export function DefectFormModal({
                 <Form.Item name="assignedToId" label="Assigned to">
                   <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Someone on the project" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />
                 </Form.Item>
-                <Form.Item name="contractor" label="Subcontractor" extra="When they are to put it right">
+                <Form.Item name="contractor" label="Contractor" extra="When they are to put it right">
                   <Input maxLength={160} />
                 </Form.Item>
                 <Form.Item name="dueDate" label="Put right by">
@@ -322,7 +323,7 @@ export function DefectFormModal({
           <Form.Item
             name="note"
             label={mode === 'reopen' ? 'Why it is not right yet' : 'Note'}
-            rules={mode === 'close' && defect?.status === 'OPEN' ? [{ required: true, whitespace: true, message: 'Say why it is closed without being fixed' }] : undefined}
+            rules={mode === 'close' && defect?.status === 'OPEN' ? [{ required: true, whitespace: true, message: 'Enter why it is closed without being fixed' }] : undefined}
             extra={mode === 'close' && defect?.status === 'OPEN' ? 'It has not been marked fixed: say why it is closed, e.g. waived by the client' : undefined}
           >
             <Input.TextArea rows={3} maxLength={1000} />

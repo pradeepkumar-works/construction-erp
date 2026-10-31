@@ -222,14 +222,14 @@ export function StageFragment({ stage }: { stage: (typeof STAGES)[number]['key']
         <dl className="ui-dl">
           <div>
             <dt>Quantity</dt>
-            <dd>{ENTRY.qty} Cum</dd>
+            <dd>{ENTRY.qty} m³</dd>
           </div>
           <div>
             <dt>Chainage</dt>
             <dd>14+200 to 14+650</dd>
           </div>
           <div>
-            <dt>Manpower</dt>
+            <dt>Labour</dt>
             <dd>18</dd>
           </div>
           <div>

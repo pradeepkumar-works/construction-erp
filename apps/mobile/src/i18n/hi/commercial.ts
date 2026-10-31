@@ -48,7 +48,8 @@ export const COMMERCIAL: Record<string, string> = {
 
   // Payment requests
   'Payment request': 'भुगतान अनुरोध',
-  'Bill payment': 'बिल का भुगतान',
+  'Pay a vendor bill': 'वेंडर बिल का भुगतान',
+  'Against an RA bill': 'RA बिल के बदले',
   'Advance on a purchase order': 'परचेज़ ऑर्डर पर एडवांस',
   'Advance on a work order': 'वर्क ऑर्डर पर एडवांस',
   'to pay by {date}': '{date} तक भुगतान करना है',

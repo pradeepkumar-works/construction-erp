@@ -6,12 +6,12 @@ import { Alert, App, Button, Divider, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useSubcontractBill } from '@/lib/queries';
-import { formatDate, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -112,7 +112,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   showIcon
                   style={{ marginBottom: 12 }}
                   title="Billed beyond the work order"
-                  description={excess.map((l) => `${l.itemNo ?? l.description}: ${formatQty(l.uptoQty)} against ${formatQty(l.woQty)} ${l.unit} ordered`).join(' · ')}
+                  description={excess.map((l) => `${l.itemNo ?? l.description}: ${formatQty(l.uptoQty)} against ${formatQty(l.woQty)} ${unitLabel(l.unit)} ordered`).join(' · ')}
                 />
               )}
             </>
@@ -139,7 +139,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             { key: 'date', label: 'Bill date', children: formatDate(data.billDate) },
             { key: 'upto', label: 'Measured up to', children: formatDate(data.measuredUpTo) },
-            { key: 'inv', label: 'Their invoice', children: data.invoiceNo ?? '-' },
+            { key: 'inv', label: 'Their invoice', children: data.invoiceNo ?? NO_VALUE },
             {
               key: 'due',
               label: 'Payment due',
@@ -155,7 +155,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               ),
             },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
-            { key: 'net', label: 'Net payable', children: <strong>{money(data.netPayable)}</strong> },
+            { key: 'net', label: 'Bill net', children: <strong>{money(data.netPayable)}</strong> },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
@@ -228,7 +228,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         ))}
                       <Divider style={{ margin: '6px 0' }} />
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
-                        <span>Net payable</span>
+                        <span>Bill net</span>
                         {money(data.netPayable)}
                       </div>
                       {debited > 0 ? (

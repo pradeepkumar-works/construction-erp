@@ -24,7 +24,7 @@ test('a progress entry is approved from its own page, and the stage bar and acti
   await footer.getByRole('button', { name: 'Approve' }).click();
   await page.locator('.ant-modal').getByRole('button', { name: 'Approve' }).click();
   await expect(stage).toContainText('Approved');
-  await expect(page.locator('.ant-card').filter({ hasText: 'Activity' }).last()).toContainText('Approved by');
+  await expect(page.locator('.ant-card').filter({ hasText: 'History' }).last()).toContainText('Approved by');
   await expect(footer.getByRole('button', { name: 'Approve' })).toHaveCount(0);
 });
 
@@ -55,8 +55,8 @@ test('a quick look opens the full page, whose link can be copied and whose secti
 test('the other approval types have their own pages too', async ({ page }) => {
   const md = await apiToken('md@demo.com');
   const pages: { list: string; api: string; heading: RegExp }[] = [
-    { list: '/expenses', api: '/expenses', heading: /^Site expense · EXP-/ },
-    { list: '/machinery', api: '/machinery-logs', heading: /^Machinery log · / },
+    { list: '/expenses', api: '/expenses', heading: /^EXP-[\w-]+ · / },
+    { list: '/machinery', api: '/machinery-logs', heading: /^\d{2} [A-Z][a-z]{2} \d{4} · / },
     { list: '/measurements', api: '/measurements', heading: /^Measurement · / },
     { list: '/vendor-bills', api: '/vendor-bills', heading: /^VB-\d{4}-\d{4} · / },
     { list: '/work-orders', api: '/work-orders', heading: /^WO-/ },

@@ -38,11 +38,11 @@ test('a WhatsApp message becomes a draft the sender saves from the page, or chan
     await send(text);
     await page.reload();
     const card = page.locator('[data-message-id]').filter({ hasText: text });
-    await expect(card.getByText('Material request, not saved', { exact: true })).toBeVisible();
+    await expect(card.getByText('Indent, not saved', { exact: true })).toBeVisible();
     await card.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText(/^Saved and sent for approval/)).toBeVisible();
+    await expect(page.getByText(/^Saved and submitted for approval/)).toBeVisible();
     await expect(card.getByText('Saved as drafted')).toBeVisible();
-    await expect(card.getByRole('link', { name: 'open the material request' })).toBeVisible();
+    await expect(card.getByRole('link', { name: 'open the indent' })).toBeVisible();
     const saved = (await api<List>(engineer, '/whatsapp/messages')).items.find((m) => m.text === text);
     expect(saved?.outcome).toBe('SAVED');
     const mr = await api<{ status: string; submittedBy: { id: string } | null; items: { itemName: string; quantity: string }[] }>(engineer, `/material-requests/${saved!.record!.id}`);
@@ -56,11 +56,11 @@ test('a WhatsApp message becomes a draft the sender saves from the page, or chan
     const other = page.locator('[data-message-id]').filter({ hasText: second });
     await other.getByRole('button', { name: 'Open form' }).click();
     await expect(page).toHaveURL(/\/material-requests/);
-    const form = formPanel(page, 'New material request');
+    const form = formPanel(page, 'New indent');
     await expect(form.getByLabel('Quantity of line 1')).toHaveValue('15');
     await form.getByLabel('Quantity of line 1').fill('18');
     await form.getByRole('button', { name: 'Submit request' }).click();
-    await expect(page.getByText('Material request submitted for approval')).toBeVisible();
+    await expect(page.getByText('Indent submitted for approval')).toBeVisible();
     await expect.poll(async () => (await api<List>(engineer, '/whatsapp/messages')).items.find((m) => m.text === second)?.outcome).toBe('CHANGED');
   } finally {
     await api(engineer, '/whatsapp/setup', { method: 'PUT', body: { enabled: false } });

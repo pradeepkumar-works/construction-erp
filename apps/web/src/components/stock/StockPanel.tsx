@@ -57,17 +57,17 @@ export function StockActions({ projectId }: { projectId?: string }) {
             icon={<ImportOutlined />}
             onClick={() => setOpen("receipt")}
           >
-            Receive (GRN)
+            Receive material (GRN)
           </Button>
         ) : null}
         {keeper ? (
           <Button icon={<ExportOutlined />} onClick={() => setOpen("issue")}>
-            Issue
+            Issue material
           </Button>
         ) : null}
         {adjuster ? (
           <Button icon={<SlidersOutlined />} onClick={() => setOpen("adjust")}>
-            Adjust
+            Adjust stock
           </Button>
         ) : null}
         <Dropdown
@@ -79,7 +79,7 @@ export function StockActions({ projectId }: { projectId?: string }) {
                 ? [
                     { key: "transfer", label: "Transfer to a site or store" },
                     { key: "site", label: "Return from site" },
-                    { key: "vendor", label: "Return to supplier" },
+                    { key: "vendor", label: "Return to vendor" },
                   ]
                 : []),
               ...(adjuster ? [{ key: "count", label: "Stock count" }] : []),
@@ -188,7 +188,7 @@ export function StockPanel({
             : []),
           {
             key: "register",
-            label: "Register",
+            label: "Receipts and issues",
             children: <StockEntries projectId={projectId} />,
           },
           ...(valuer

@@ -67,7 +67,7 @@ test('a frozen baseline shows how far the plan has moved since', async ({ page }
 
   await signIn(page, email);
   await page.goto(`/projects/${project.id}?tab=schedule`);
-  await page.locator('.baseline-info').getByRole('button', { name: 'Re-baseline' }).click();
+  await page.locator('.baseline-info').getByRole('button', { name: 'Replace baseline' }).click();
   const modal = page.locator('.ant-modal').filter({ hasText: 'Replace the baseline' });
   await modal.getByPlaceholder('Revised programme approved by the client').fill('Programme agreed at kick-off');
   await modal.getByRole('button', { name: 'Replace baseline' }).click();

@@ -11,7 +11,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { DownloadOutlined, FileExcelOutlined, FilePdfOutlined, FileWordOutlined, PrinterOutlined, SendOutlined } from '@/components/common/icons';
 import { useAuth } from '@/lib/auth';
 import { fetchOfficialIssue, useIssueOfficialReport, useOfficialIssues, useOfficialReport } from '@/lib/queries';
-import { formatDate, formatDayMonth } from '@/lib/format';
+import { formatDate, formatDayMonth, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { buildOfficialReportHtml, openOfficialReportPrint } from './officialHtml';
 import { issueLine } from './official-format';
 
@@ -97,7 +97,7 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
         onChange={(d) => d && setAnchor(d)}
         allowClear={false}
         disabledDate={(d) => d.isAfter(dayjs(), 'month')}
-        format="MMMM YYYY"
+        format={MONTH_PICKER_FORMAT}
       />
     );
 
@@ -285,7 +285,7 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
             {data.issue ? ` ${issueLine(data)}; this makes the next revision.` : ''}
           </Typography.Paragraph>
           <Form form={form} layout="vertical">
-            <Form.Item name="note" label="Note for the register (optional)">
+            <Form.Item name="note" label="Note for the register">
               <Input.TextArea rows={2} maxLength={500} placeholder={data.issue ? 'What changed since the last revision' : 'Sent to the PIU by email'} />
             </Form.Item>
           </Form>

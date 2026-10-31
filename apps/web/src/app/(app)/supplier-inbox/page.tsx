@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Descriptions, Drawer, Flex, Segmented, Table, Typography } from 'antd';
@@ -11,6 +11,7 @@ import {
   canApproveSupplierChange,
   canCheckSupplierInvoices,
   canManageSupplierLogins,
+  canPrepareSubcontractBill,
   canRecordVendorBill,
   type SupplierChangeDto,
   type SupplierInvoiceDto,
@@ -18,13 +19,14 @@ import {
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useSupplierChanges, useSupplierInbox, useSupplierInboxInvoice } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery, PhotoThumbs } from '@/components/common/AttachmentGallery';
-import { LinkButton } from '@/components/common/LinkButton';
 import { RecordLink } from '@/components/record/RecordLink';
 import { VendorBillFormModal } from '@/components/purchasing/VendorBillFormModal';
+import { OtherBillFormModal } from '@/components/purchasing/OtherBillFormModal';
+import { SubBillFormModal } from '@/components/subcontracts/SubBillFormModal';
 import { ChangeList } from '@/components/supplier/ChangeList';
 import { DecideChangeForm, ReturnInvoiceForm } from '@/components/supplier/StaffForms';
 import { InvoiceStageTag, Money } from '@/components/supplier/supplierUi';
@@ -108,12 +110,12 @@ function Invoices({ openId, setOpen }: { openId: string | null; setOpen: (id: st
           },
           { title: 'Supplier', dataIndex: 'vendorName', render: (v: string) => <span translate="no">{v}</span> },
           { title: 'Date', dataIndex: 'invoiceDate', width: 110, render: (v: string) => formatDate(v) },
-          { title: 'Against', key: 'against', width: 150, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? i.projectName ?? '-'}</span> },
+          { title: 'Against', key: 'against', width: 150, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? i.projectName ?? NO_VALUE}</span> },
           { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
           { title: 'File', key: 'file', width: 100, render: (_, i) => <PhotoThumbs attachments={i.attachments} /> },
           { title: 'Sent', dataIndex: 'createdAt', width: 150, render: (v: string, i) => <span>{formatDateTime(v)}<br /><Typography.Text type="secondary">{i.sentBy}</Typography.Text></span> },
           {
-            title: 'Where it is',
+            title: 'Status',
             key: 'stage',
             width: 180,
             render: (_, i) => (
@@ -138,6 +140,16 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
   const [recording, setRecording] = useState<SupplierInvoiceDto | null>(null);
   const waiting = i?.stage === 'SUBMITTED';
   const canBill = !!user && canRecordVendorBill(user.roleKey);
+  const canSubBill = !!user && canPrepareSubcontractBill(user.roleKey);
+  const recordWith = recording?.workOrderId ? 'WO' : recording?.purchaseOrderId ? 'PO' : recording ? 'OTHER' : null;
+  const otherStart = useMemo(
+    () =>
+      recording && !recording.workOrderId && !recording.purchaseOrderId
+        ? { projectId: recording.projectId ?? undefined, vendorId: recording.vendorId, invoiceNo: recording.invoiceNo, invoiceDate: recording.invoiceDate, amount: recording.amount, gstAmount: recording.gstAmount, notes: recording.notes }
+        : undefined,
+    [recording],
+  );
+  const saved = () => void qc.invalidateQueries({ queryKey: ['supplier-portal'] });
   return (
     <Drawer
       open={!!id}
@@ -147,14 +159,16 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
       extra={
         i && waiting ? (
           <Flex gap={8} wrap>
-            {i.purchaseOrderId && canBill ? (
+            {i.workOrderId ? (
+              canSubBill ? (
+                <Button type="primary" onClick={() => setRecording(i)}>
+                  New subcontractor bill
+                </Button>
+              ) : null
+            ) : canBill ? (
               <Button type="primary" onClick={() => setRecording(i)}>
-                Record bill
+                Record vendor bill
               </Button>
-            ) : i.workOrderId ? (
-              <LinkButton href="/subcontract-bills" type="primary">
-                Open subcontractor bills
-              </LinkButton>
             ) : null}
             <Button onClick={() => setReturning(i)}>Return</Button>
           </Flex>
@@ -165,7 +179,7 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
       {i ? (
         <>
           <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered style={{ marginBottom: 16 }}>
-            <Descriptions.Item label="Where it is" span={2}>
+            <Descriptions.Item label="Status" span={2}>
               <InvoiceStageTag stage={i.stage} />
               {i.bill ? (
                 <Link href={billHref(i.bill)} translate="no">
@@ -181,7 +195,7 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
             <Descriptions.Item label="Amount with GST">
               <Money value={i.amount} />
             </Descriptions.Item>
-            <Descriptions.Item label="Of which GST">{i.gstAmount ? <Money value={i.gstAmount} /> : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Of which GST">{i.gstAmount ? <Money value={i.gstAmount} /> : NO_VALUE}</Descriptions.Item>
             <Descriptions.Item label="Against">
               {i.purchaseOrderId ? (
                 <Link href={`/purchase-orders/${i.purchaseOrderId}`} translate="no">
@@ -192,11 +206,11 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
                   {i.woNo}
                 </Link>
               ) : (
-                '-'
+                NO_VALUE
               )}
             </Descriptions.Item>
             <Descriptions.Item label="Site">
-              <span translate="no">{i.projectName ?? '-'}</span>
+              <span translate="no">{i.projectName ?? NO_VALUE}</span>
             </Descriptions.Item>
             <Descriptions.Item label="Sent" span={2}>{`${formatDateTime(i.createdAt)} by ${i.sentBy}`}</Descriptions.Item>
             {i.notes ? (
@@ -214,21 +228,31 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
             Invoice file
           </Typography.Title>
           <AttachmentGallery attachments={i.attachments} />
-          {waiting && i.purchaseOrderId ? (
+          {waiting ? (
             <Typography.Paragraph type="secondary" style={{ marginTop: 16 }}>
-              Recording the bill with the same invoice number moves this invoice to Billed, and the supplier sees it.
+              {i.purchaseOrderId || i.workOrderId
+                ? 'A bill with the same invoice number moves this invoice to Billed, and the supplier sees it.'
+                : 'This invoice names no order, so it is recorded as a vendor bill for another service. A bill with the same invoice number moves it to Billed, and the supplier sees it.'}
             </Typography.Paragraph>
           ) : null}
         </>
       ) : null}
       <ReturnInvoiceForm invoice={returning} onClose={() => setReturning(null)} />
       <VendorBillFormModal
-        open={!!recording}
+        open={recordWith === 'PO'}
         purchaseOrderId={recording?.purchaseOrderId ?? undefined}
         fromInvoice={recording}
         onClose={() => setRecording(null)}
-        onSaved={() => void qc.invalidateQueries({ queryKey: ['supplier-portal'] })}
+        onSaved={saved}
       />
+      <SubBillFormModal
+        open={recordWith === 'WO'}
+        workOrderId={recording?.workOrderId ?? undefined}
+        fromInvoice={recording}
+        onClose={() => setRecording(null)}
+        onSaved={saved}
+      />
+      <OtherBillFormModal open={recordWith === 'OTHER'} kind="OTHER" start={otherStart} onClose={() => setRecording(null)} onSaved={saved} />
     </Drawer>
   );
 }
@@ -251,8 +275,8 @@ function Changes({ list }: { list: ReturnType<typeof useSupplierChanges> }) {
               <Button size="small" type="primary" onClick={() => setDeciding({ change: c, approve: true })} aria-label={`Approve ${c.vendorName}'s change`}>
                 Approve
               </Button>
-              <Button size="small" onClick={() => setDeciding({ change: c, approve: false })} aria-label={`Turn down ${c.vendorName}'s change`}>
-                Turn down
+              <Button size="small" onClick={() => setDeciding({ change: c, approve: false })} aria-label={`Reject ${c.vendorName}'s change`}>
+                Reject
               </Button>
             </Flex>
           ) : (

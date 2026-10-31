@@ -267,7 +267,7 @@ export function ProjectFormModal({
       form={form}
       layout="drawer"
       title={isEdit ? (project?.type === 'STORE' ? 'Edit store' : 'Edit project') : initialType === 'STORE' ? 'New central store' : 'New project'}
-      okText={isEdit ? 'Save changes' : 'Create project'}
+      okText="Save"
       onSubmit={(v) => mutation.mutateAsync(v)}
     >
       <Form form={form} layout="vertical">
@@ -338,7 +338,7 @@ export function ProjectFormModal({
         </FormSection>
         <FormSection title="Client and contract">
           <FormGrid cols={2}>
-            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'} {...(readState?.result.client ? read('clientName') : {})}>
+            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Client billing › Clients, or from the Contract tab.'} {...(readState?.result.client ? read('clientName') : {})}>
               <ClientSelect allowClear />
             </Form.Item>
             <Form.Item name="consultantName" label="Consultant / PMC">
@@ -363,13 +363,13 @@ export function ProjectFormModal({
                 </Form.Item>
               </>
             ) : null}
-            <Form.Item name="dates" label="Start / end date" {...read(readText(readState?.result.fields.completionDate) || !readText(readState?.result.fields.startDate) ? 'completionDate' : 'startDate')}>
+            <Form.Item name="dates" label="Start and completion dates" {...read(readText(readState?.result.fields.completionDate) || !readText(readState?.result.fields.startDate) ? 'completionDate' : 'startDate')}>
               <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
             </Form.Item>
             <Form.Item name="contractValue" label="Contract value" {...read('contractValue')}>
               <MoneyInput />
             </Form.Item>
-            <Form.Item name="contractModel" label="Contract type" tooltip="Item rate pays measured BOQ quantities. Lump sum and EPC pay in stages; their components are weighed by the billing breakup.">
+            <Form.Item name="contractModel" label="Contract type" tooltip="Item rate pays measured BOQ quantities. Lump sum and EPC pay in stages; each component's weight is its share in the contract's payment schedule.">
               <Select options={CONTRACT_MODELS.map((m) => ({ value: m, label: CONTRACT_MODEL_LABELS[m] }))} placeholder="Item rate" />
             </Form.Item>
           </FormGrid>
@@ -388,7 +388,7 @@ export function ProjectFormModal({
               name="copyFromProjectId"
               label="Copy from project"
               style={{ marginTop: 16, marginBottom: 0 }}
-              extra={`Its team and contract terms: deductions, GST, liquidated damages and periods. Without one, the client's usual terms, else ${STANDARD_TERMS.retentionPct}% retention, ${STANDARD_TERMS.tdsPct}% TDS, ${STANDARD_TERMS.gstTdsPct}% GST TDS and ${STANDARD_TERMS.labourCessPct}% cess.`}
+              extra={`Its team and contract terms: deductions, GST, liquidated damages and periods. Without one, the client's usual terms, else ${STANDARD_TERMS.securityDepositPct}% security deposit, ${STANDARD_TERMS.tdsPct}% TDS, ${STANDARD_TERMS.gstTdsPct}% GST TDS and ${STANDARD_TERMS.labourCessPct}% cess.`}
             >
               <ProjectSelect placeholder="None" style={{ width: '100%' }} aria-label={undefined} />
             </Form.Item>
@@ -397,7 +397,7 @@ export function ProjectFormModal({
         {!isEdit && typeDef && typeDef.breakdown.some((b) => !b.parentKey) ? (
           <FormSection title="Starting components">
             <Typography.Paragraph type="secondary">
-              Laid out on the Structure tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.
+              Laid out on the Components tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.
             </Typography.Paragraph>
             <FormGrid cols={3}>
               {typeDef.breakdown

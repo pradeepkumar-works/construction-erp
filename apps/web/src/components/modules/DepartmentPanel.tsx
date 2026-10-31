@@ -92,10 +92,7 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
           />
           {p.total > p.rows.length && (
             <Typography.Paragraph type="secondary" style={{ margin: '8px 0 0' }}>
-              The {p.rows.length} most urgent of {p.total}.{' '}
-              <Link href={p.href} className="text-link">
-                See them all
-              </Link>
+              The {p.rows.length} most urgent of {p.total}.
             </Typography.Paragraph>
           )}
         </>

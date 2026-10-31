@@ -6,10 +6,10 @@ import { Alert, App, Form, Input, Segmented, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { GrnQcStatus, StockEntryDto, StockLineDto } from '@erp/shared';
-import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS, certificateNeeded } from '@erp/shared';
+import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS, certificateNeeded, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { formatQty, inSentence } from '@/lib/format';
+import { formatDate, formatQty, inSentence } from '@/lib/format';
 import { useCertificateCategories } from '@/lib/queries';
 import { DatePicker } from '@/components/common/DatePicker';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -87,7 +87,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`QA/QC check · ${entry.entryNo}`} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        {entry.supplier ?? 'Material'} received on {entry.date}. The stock is not changed: send rejected material back with a return to supplier.
+        {entry.supplier ?? 'Material'} received on {formatDate(entry.date)}. The stock is not changed: send rejected material back with a return to vendor.
       </Typography.Paragraph>
       <Form form={form} layout="vertical" className="grn-qc-form">
         <Form.Item name="status" label="Result">
@@ -102,7 +102,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
             dataSource={entry.lines}
             columns={[
               { title: 'Item', dataIndex: 'itemName' },
-              { title: 'Received', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => `${formatQty(v)} ${l.unit}` },
+              { title: 'Received', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => `${formatQty(v)} ${unitLabel(l.unit)}` },
               {
                 title: 'Rejected',
                 key: 'rejected',
@@ -121,7 +121,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
             <Input {...CODE_INPUT} maxLength={60} placeholder="TC/24/88123" />
           </Form.Item>
           <Form.Item name="mtcDate" label="Certificate date">
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabled={!mtcNo} />
+            <DatePicker style={{ width: '100%' }} disabled={!mtcNo} />
           </Form.Item>
         </FormGrid>
         {needsMtc && !mtcNo && status !== 'REJECTED' ? (

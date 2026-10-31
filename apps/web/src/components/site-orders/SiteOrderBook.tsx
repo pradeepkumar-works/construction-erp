@@ -19,7 +19,7 @@ import {
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useDecideSiteOrder, useRecordSiteOrder, useSiteOrderAction, useWriteSiteOrder } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTag, toneOf } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -266,7 +266,7 @@ function SiteOrderDrawer({ data, portal, onClose }: { data: SiteOrderDto | null;
             bordered
             items={[
               { key: 'date', label: 'Written', children: formatDate(data.date) },
-              { key: 'comply', label: 'Comply by', children: data.complyBy ? formatDate(data.complyBy) : '-' },
+              { key: 'comply', label: 'Comply by', children: data.complyBy ? formatDate(data.complyBy) : NO_VALUE },
               { key: 'by', label: 'Written by', span: 2, children: `${data.issuedByName}${data.issuedByLevel ? `, ${CHECK_LEVEL_LABELS[data.issuedByLevel].toLowerCase()}` : ''}${data.fromPortal ? ' (in the portal)' : ''}` },
               ...(data.location ? [{ key: 'loc', label: 'Where', span: 2, children: data.location }] : []),
               ...(data.recordedByName ? [{ key: 'rec', label: 'Copied in by', span: 2, children: data.recordedByName }] : []),

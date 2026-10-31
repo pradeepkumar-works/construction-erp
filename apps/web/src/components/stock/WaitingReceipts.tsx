@@ -7,7 +7,7 @@ import type { ReceiptWait, StockEntryDto, StockEntrySortField } from '@erp/share
 import { LIST_SORT_FIELDS, RECEIPT_BILL_WITHIN_DAYS, RECEIPT_CHECK_WITHIN_DAYS, canCheckGrn, canRaiseDebitNote, canRecordVendorBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useWaitingReceipts } from '@/lib/queries';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -31,14 +31,14 @@ const WORDS: Record<ReceiptWait, { search: string; empty: string; intro: string;
   BILL: {
     search: 'Search goods received',
     empty: "Nothing waiting. Every receipt against an order has the supplier's bill.",
-    intro: `Goods received against an order in the last ${RECEIPT_BILL_WITHIN_DAYS} days whose order has no supplier bill yet, oldest first. Record the bill when it comes; it starts from what was received at the order's rates.`,
-    action: 'Record bill',
+    intro: `Goods received against an order in the last ${RECEIPT_BILL_WITHIN_DAYS} days whose order has no vendor bill yet, oldest first. Record the bill when it comes; it starts from what was received at the order's rates.`,
+    action: 'Record vendor bill',
   },
   DEBIT_NOTE: {
     search: 'Search rejected and returned material',
     empty: 'Nothing to raise. Every rejection and return has its debit note.',
-    intro: "Material QA/QC rejected or the store sent back to the supplier, with no debit note yet. The note takes it off the supplier's bill.",
-    action: 'Raise debit note',
+    intro: "Material QA/QC rejected or the store sent back to the vendor, with no debit note yet. The note takes it off the vendor's bill.",
+    action: 'New debit note',
   },
 };
 
@@ -93,12 +93,12 @@ export function WaitingReceipts({ waiting, projectId: fixedProject }: { waiting:
       {
         key: 'from',
         card: 'meta',
-        cardText: (r) => r.supplier ?? '-',
-        title: 'Supplier',
+        cardText: (r) => r.supplier ?? NO_VALUE,
+        title: 'Vendor',
         width: 220,
         render: (_, r) => (
           <div>
-            <span translate="no">{r.supplier ?? '-'}</span>
+            <span translate="no">{r.supplier ?? NO_VALUE}</span>
             {r.poNo ? (
               <div className="text-muted mono" style={{ fontSize: 12 }}>
                 <Link href={`/purchase-orders/${r.purchaseOrderId}`}>{r.poNo}</Link>

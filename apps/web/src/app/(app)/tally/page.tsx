@@ -20,7 +20,7 @@ import { api, errorMessage } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useTallyExports, useTallyPreview, useTallySettings } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
@@ -115,7 +115,7 @@ function ToExport() {
       <CardToolbar wrap gap={12} align="center">
         <Space>
           <Typography.Text>Up to the end of</Typography.Text>
-          <DatePicker picker="month" value={month} onChange={(d) => d && setMonth(d)} allowClear={false} format="MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
+          <DatePicker picker="month" value={month} onChange={(d) => d && setMonth(d)} allowClear={false} format={MONTH_PICKER_FORMAT} disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
         </Space>
         <Space wrap size={4}>
           {TALLY_VOUCHER_KINDS.filter((k) => data?.counts[k]).map((k) => (
@@ -147,7 +147,7 @@ function ToExport() {
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {data.held.map((h) => (
                   <li key={`${h.kind}:${h.sourceId}`}>
-                    {TALLY_VOUCHER_KIND_LABELS[h.kind]} {h.number} of {formatDate(h.date)} ({h.party}): {h.reason}
+                    <span translate="no">{h.number}</span> of {formatDate(h.date)} ({h.party}): {h.reason}
                   </li>
                 ))}
               </ul>
@@ -416,7 +416,7 @@ export default function TallyPage() {
     <div className="page-container">
       <PageHeader
         title="Tally export"
-        subtitle="Certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as TallyPrime vouchers, each sent once. Tally stays the books."
+        subtitle="Certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as TallyPrime vouchers, each sent once, for a company that keeps its books in Tally."
       />
       <Typography.Paragraph type="secondary" style={{ maxWidth: 900 }}>
         Once: set the ledger names under Ledgers, download the ledger masters and import them in TallyPrime (Import → Masters). Each month: export here and import

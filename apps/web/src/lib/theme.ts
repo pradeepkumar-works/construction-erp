@@ -274,7 +274,7 @@ const displayFigure = { fontFamily: DISPLAY_FONT, fontStretch: '85%', fontWeight
 /** Defaults for every instance of a component, passed to the root ConfigProvider with the theme. */
 export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 'form' | 'tabs' | 'card' | 'modal' | 'drawer'> = {
   // A field left empty says which one, so the error reads on its own (and in the form's summary).
-  form: { validateMessages: { required: '${label} is required', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } } },
+  form: { validateMessages: { required: 'Enter the ${label}', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } } },
   // Column titles are quiet small labels over the canvas header (Table tokens), so the figures below lead.
   table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap', fontSize: themeFontSize('fontSizeSM'), fontWeight: 600 } } } },
   statistic: { styles: { content: { ...tabularNums, ...displayFigure } } },

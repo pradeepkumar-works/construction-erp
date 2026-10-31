@@ -1,22 +1,9 @@
-import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
+import { SUBMISSION_TYPE_PLURAL_LABELS, type PendingApprovalDto, type SubmissionType } from '@erp/shared';
 
-/** Queue order of the groups, with the short names the filter and group headers use. */
-export const QUEUE_TYPES: [SubmissionType, string][] = [
-  ['PROGRESS', 'Progress'],
-  ['DPR', 'Daily reports'],
-  ['MATERIAL_REQUEST', 'Material requests'],
-  ['MACHINERY', 'Machinery'],
-  ['EXPENSE', 'Expenses'],
-  ['MEASUREMENT', 'Measurements'],
-  ['BILL', 'RA bills'],
-  ['SUPPLIER_CHOICE', 'Supplier choices'],
-  ['PURCHASE_ORDER', 'Purchase orders'],
-  ['VENDOR_BILL', 'Vendor bills'],
-  ['WORK_ORDER', 'Work orders'],
-  ['SUBCONTRACT_BILL', 'Subcontract bills'],
-  ['PAYMENT_REQUEST', 'Payment requests'],
-  ['INSPECTION', 'Inspections'],
-];
+const QUEUE_ORDER: SubmissionType[] = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'SUPPLIER_CHOICE', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST', 'INSPECTION'];
+
+/** Queue order of the groups, named as their lists are (the filter and the group headers). */
+export const QUEUE_TYPES: [SubmissionType, string][] = QUEUE_ORDER.map((t) => [t, SUBMISSION_TYPE_PLURAL_LABELS[t]]);
 
 export const QUEUE_TYPE_LABELS = Object.fromEntries(QUEUE_TYPES) as Record<SubmissionType, string>;
 

@@ -7,12 +7,13 @@ import type { RmcBatchDto, RmcBatchLineDto } from '@erp/shared';
 import { useRmcAction, useRmcBatch } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { errorMessage } from '@/lib/api';
-import { formatDateTime, formatQty } from '@/lib/format';
+import { formatDateTime, formatQty, NO_VALUE } from '@/lib/format';
 import { LinkButton } from '@/components/common/LinkButton';
 import { BatchStatusTag, M3 } from './rmcUi';
 import { DeliveryForm } from './BatchForms';
+import { unitLabel } from '@erp/shared';
 
-const variance = (v: number | null) => (v === null ? '-' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
+const variance = (v: number | null) => (v === null ? NO_VALUE : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
 
 /** A truck: its challan, what was weighed against the design, and delivery or cubes. */
 export function BatchDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
@@ -70,16 +71,16 @@ export function BatchDrawer({ id, onClose }: { id: string | null; onClose: () =>
               { key: 's', label: 'Status', children: <BatchStatusTag status={b.status} /> },
               { key: 'o', label: 'Order', children: <span translate="no">{b.orderNo}</span> },
               { key: 'c', label: 'Customer', children: <span translate="no">{b.customer}</span> },
-              { key: 'w', label: 'Pour at', children: b.site ?? '-' },
+              { key: 'w', label: 'Pour at', children: b.site ?? NO_VALUE },
               { key: 'g', label: 'Grade', children: <span translate="no">{`${b.grade} (${b.mixDesignCode})`}</span> },
               { key: 'q', label: 'Quantity', children: <M3 value={b.quantity} /> },
               { key: 't', label: 'Truck', children: <span translate="no">{[b.truck, b.driver].filter(Boolean).join(', ') || '-'}</span> },
               { key: 'p', label: 'Pumped', children: b.pumped ? 'Yes' : 'No' },
-              { key: 'sl', label: 'Slump at the plant', children: b.slumpMm === null ? '-' : <span translate="no">{`${b.slumpMm} mm`}</span> },
+              { key: 'sl', label: 'Slump at the plant', children: b.slumpMm === null ? NO_VALUE : <span translate="no">{`${b.slumpMm} mm`}</span> },
               { key: 'l', label: 'Left the plant', children: formatDateTime(b.dispatchedAt) },
               ...(b.plantBatchNo ? [{ key: 'pb', label: "Controller's batch", children: <span translate="no">{b.plantBatchNo}</span> }] : []),
               ...(b.status === 'DELIVERED' ? [{ key: 'd', label: 'Delivered', children: `${formatDateTime(b.deliveredAt)}${b.receivedBy ? `, received by ${b.receivedBy}` : ''}` }] : []),
-              { key: 'st', label: 'Stock issue', children: <span translate="no">{b.stockEntryNo ?? '-'}</span> },
+              { key: 'st', label: 'Stock issue', children: <span translate="no">{b.stockEntryNo ?? NO_VALUE}</span> },
               { key: 'i', label: 'Bill', children: <span translate="no">{b.invoiceNo ?? 'Not billed'}</span> },
               {
                 key: 'cube',
@@ -106,8 +107,8 @@ export function BatchDrawer({ id, onClose }: { id: string | null; onClose: () =>
             scroll={{ x: 520 }}
             columns={[
               { title: 'Material', dataIndex: 'itemName' },
-              { title: 'Design', key: 'd', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.designQty)} ${l.unit}`}</span> },
-              { title: 'Weighed', key: 'a', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.actualQty)} ${l.unit}`}</span> },
+              { title: 'Design', key: 'd', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.designQty)} ${unitLabel(l.unit)}`}</span> },
+              { title: 'Weighed', key: 'a', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.actualQty)} ${unitLabel(l.unit)}`}</span> },
               {
                 title: 'Variance',
                 dataIndex: 'variancePct',

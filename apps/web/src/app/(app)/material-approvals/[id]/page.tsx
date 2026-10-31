@@ -118,7 +118,7 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
       <Alert
         type={a.status === 'REJECTED' ? 'error' : 'warning'}
         showIcon
-        title={a.status === 'REJECTED' ? 'Rejected. Resubmit with another make, or withdraw the request.' : 'Back with us to revise and resubmit.'}
+        title={a.status === 'REJECTED' ? 'Rejected. Resubmit with another make, or withdraw the request.' : 'Returned to us to revise and resubmit.'}
         description={current?.comments ?? undefined}
         style={{ marginBottom: token.marginMD }}
       />

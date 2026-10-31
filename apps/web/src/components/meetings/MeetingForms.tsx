@@ -218,7 +218,7 @@ export function MeetingForm({ open, meeting, onClose, onSaved }: { open: boolean
                 showSearch={{ optionFilterProp: 'label' }}
                 disabled={!!meeting}
                 onChange={() => form.setFieldValue('actions', (form.getFieldValue('actions') as ActionValue[] | undefined)?.map((a) => ({ ...a, link: null })) ?? [])}
-                options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+                options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
               />
             </Form.Item>
             <Form.Item name="kind" label="Kind of meeting">

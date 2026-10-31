@@ -159,7 +159,7 @@ export function ImportTypes({ open, onClose }: { open: boolean; onClose: () => v
             have until you update them.
           </Typography.Paragraph>
           {group('Project types', types)}
-          {group('Component kinds', kinds)}
+          {group('Component types', kinds)}
         </>
       )}
     </Modal>

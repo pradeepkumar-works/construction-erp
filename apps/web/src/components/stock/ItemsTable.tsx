@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, MergeCellsOutlined, PlusOutlined } from '@/components/common/icons';
+import { MergeCellsOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField, PipeMaterial } from '@erp/shared';
 import { LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, pipeSizeLabel, pipeSizeOf } from '@erp/shared';
@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useItemDuplicates, useStockItems } from '@/lib/queries';
-import { formatDate, formatINR, RUPEE } from '@/lib/format';
+import { formatDate, formatINR, RUPEE, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -21,7 +21,8 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { MoreActions } from '@/components/record/MoreActions';
 import { ItemDuplicates } from './ItemDuplicates';
 import { MasterInput } from '@/components/masters/MasterInput';
 
@@ -67,6 +68,7 @@ export function ItemsTable() {
     },
     meta: FAIL_NOTICE,
   });
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async (i: ItemDto) => (await api.delete(`/stock/items/${i.id}`)).data,
     onSuccess: () => {
@@ -113,16 +115,16 @@ export function ItemsTable() {
           ),
         },
         { title: 'Unit', dataIndex: 'unit', width: 100, ...sort('unit') },
-        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">-</Typography.Text>) },
+        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>) },
         {
           key: 'rate',
-          title: 'Rate (₹)',
+          title: 'Rate',
           label: 'Rate',
           dataIndex: 'rate',
           width: 130,
           align: 'right',
           className: 'mono',
-          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">-</Typography.Text> : `${formatINR(v, true).replace(RUPEE, '')} / ${r.unit}`),
+          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">{NO_VALUE}</Typography.Text> : `${formatINR(v, true).replace(RUPEE, '')} / ${r.unit}`),
         },
         { key: 'projectCount', title: 'Projects with stock', dataIndex: 'projectCount', width: 160, align: 'center' },
         { title: 'Added', dataIndex: 'createdAt', width: 130, ...sort('createdAt'), render: (v) => formatDate(v) },
@@ -135,12 +137,13 @@ export function ItemsTable() {
                 locked: true,
                 width: 100,
                 render: (_: unknown, r: ItemDto) => (
-                  <Space size="small">
-                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                    <ConfirmDelete what={`item ${r.name}`} onConfirm={() => remove.mutateAsync(r)} disabled={r.projectCount > 0}>
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={r.projectCount > 0} title={r.projectCount > 0 ? 'Has stock movements' : undefined} aria-label="Delete" />
-                    </ConfirmDelete>
-                  </Space>
+                  <MoreActions inRow
+                    label={`Actions for ${r.name}`}
+                    items={[
+                      { key: 'edit', label: 'Edit', onSelect: () => open(r) },
+                      { key: 'delete', label: r.projectCount > 0 ? 'Delete (it has stock movements)' : 'Delete', danger: true, disabled: r.projectCount > 0, onSelect: () => askDelete({ what: `item ${r.name}`, onConfirm: () => remove.mutateAsync(r) }) },
+                    ]}
+                  />
                 ),
               } satisfies ListColumn<ItemDto>,
             ]
@@ -160,6 +163,7 @@ export function ItemsTable() {
 
   return (
     <>
+      {deleteDialog}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar wrap gap={8} align="center">
         <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, unit or category" aria-label="Search items" />
@@ -213,7 +217,7 @@ export function ItemsTable() {
           <Form.Item name="rate" label="Standard rate per unit" extra="Values material issued in the project cost view.">
             <MoneyInput />
           </Form.Item>
-          <Form.Item name="isFuel" valuePropName="checked" extra="Fuel goes into machines with Fuel issue, and shows in Machinery > Fuel.">
+          <Form.Item name="isFuel" valuePropName="checked" extra="Fuel goes into machines with a fuel issue, and shows in Machinery › Fuel.">
             <Checkbox>Fuel (diesel, petrol)</Checkbox>
           </Form.Item>
           <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>

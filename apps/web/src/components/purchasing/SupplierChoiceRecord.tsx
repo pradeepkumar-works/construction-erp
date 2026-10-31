@@ -39,7 +39,7 @@ const money = (v: string | number, strong?: boolean) =>
  */
 export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & { mode: RecordMode }) {
   const { data, isLoading, error, refetch } = useSupplierChoice(id ?? undefined);
-  const chosen = data ? (data.split ? 'Lowest per item, split between vendors' : (data.vendorName ?? 'A quotation since deleted')) : '';
+  const chosen = data ? (data.split ? 'L1 per item, over more than one vendor' : (data.vendorName ?? 'A quotation since deleted')) : '';
   const above = data && data.l1Amount !== null ? toNumber(data.amount) - toNumber(data.l1Amount) : 0;
 
   return (
@@ -78,14 +78,14 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
           facts: [
             {
               key: 'request',
-              label: 'Material request',
+              label: 'Indent',
               children: (
                 <Link href={`/requests-to-order/${data.materialRequestId}`} className="mono" translate="no">
                   {data.requestNo}
                 </Link>
               ),
             },
-            { key: 'chosen', label: 'Supplier', children: <span translate="no">{chosen}</span> },
+            { key: 'chosen', label: 'Vendor', children: <span translate="no">{chosen}</span> },
             { key: 'amount', label: 'Value of the order', children: money(data.amount, true) },
             {
               key: 'l1',
@@ -106,16 +106,16 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
               label: 'Still to order',
               children: `${data.itemsLeft} item${data.itemsLeft === 1 ? '' : 's'}${data.itemNames.length ? `: ${data.itemNames.join(', ')}${data.itemsLeft > data.itemNames.length ? '…' : ''}` : ''}`,
             },
-            ...(data.reason ? [{ key: 'reason', label: 'Why this supplier', span: 2, children: <span style={{ whiteSpace: 'pre-wrap' }}>{data.reason}</span> }] : []),
+            ...(data.reason ? [{ key: 'reason', label: 'Why this vendor', span: 2, children: <span style={{ whiteSpace: 'pre-wrap' }}>{data.reason}</span> }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],
-          lifecycle: submissionLifecycle(data, [{ title: 'Order raised', done: data.status === 'APPROVED' && data.itemsLeft === 0, content: data.status === 'APPROVED' ? (data.itemsLeft ? 'Purchase raises it' : 'Everything ordered') : undefined }]),
+          lifecycle: submissionLifecycle(data, [{ title: 'Order made', done: data.status === 'APPROVED' && data.itemsLeft === 0, content: data.status === 'APPROVED' ? (data.itemsLeft ? 'Purchase makes it' : 'Everything ordered') : undefined }]),
           sections: [
             ...(data.split
               ? [
                   {
                     key: 'split',
-                    title: 'Orders in the split',
+                    title: 'Orders, L1 per item',
                     count: data.splitVendors.length,
                     children: (
                       <Table
@@ -153,7 +153,7 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
                       render: (_, x) => (x.rank ? <AppTag tone={x.rank === 1 ? 'success' : 'neutral'} style={{ margin: 0 }}>{rankLabel(x.rank)}</AppTag> : <span className="text-muted">Part quote</span>),
                     },
                     {
-                      title: 'Supplier',
+                      title: 'Vendor',
                       key: 'vendor',
                       render: (_, x) => (
                         <span>

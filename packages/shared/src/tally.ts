@@ -1,6 +1,5 @@
 /** Tally export (TallyPrime XML): voucher kinds and the ledgers Nirmaan posts to, with their default names and groups. */
 import type { ExpenseCategory } from './enums';
-import { EXPENSE_CATEGORY_LABELS } from './labels';
 
 /** What a Nirmaan record becomes in Tally. */
 export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI'] as const;
@@ -106,4 +105,18 @@ export const loanLedgerName = (l: { lenderName: string; loanNo: string }) => `${
 export const TALLY_EXPENSE_GROUP = 'Direct Expenses';
 export const TALLY_CLIENT_GROUP = 'Sundry Debtors';
 export const TALLY_VENDOR_GROUP = 'Sundry Creditors';
-export const tallyExpenseDefault = (c: ExpenseCategory) => `Site ${EXPENSE_CATEGORY_LABELS[c]}`;
+/** Ledger names a company's Tally already holds, so they stay as first exported when the category's label changes. */
+const TALLY_EXPENSE_LEDGERS: Record<ExpenseCategory, string> = {
+  FUEL: 'Site Fuel',
+  TRANSPORT: 'Site Transport / hiring',
+  REPAIRS: 'Site Repairs & maintenance',
+  MATERIAL_LOCAL: 'Site Local material purchase',
+  LABOUR: 'Site Labour payment',
+  FOOD_WELFARE: 'Site Food & welfare',
+  TRAVEL: 'Site Travel',
+  RENT_UTILITIES: 'Site Rent & utilities',
+  OFFICE: 'Site Site office',
+  SAFETY: 'Site Safety items',
+  OTHER: 'Site Other',
+};
+export const tallyExpenseDefault = (c: ExpenseCategory) => TALLY_EXPENSE_LEDGERS[c];

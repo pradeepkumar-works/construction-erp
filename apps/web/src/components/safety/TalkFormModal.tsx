@@ -1,7 +1,8 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
-import { App, AutoComplete, Form, Input, InputNumber, Select } from 'antd';
+import { App, AutoComplete, Form, Input, InputNumber } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +11,6 @@ import { TOOLBOX_TOPICS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
@@ -48,7 +48,6 @@ export function TalkFormModal({
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { user } = useAuth();
-  const { data: projects } = useProjects();
 
   useEffect(() => {
     if (!open) return;
@@ -100,33 +99,33 @@ export function TalkFormModal({
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={680} title={talk ? `Change ${talk.talkNo}` : 'Record toolbox talk'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={680} title={talk ? `Edit ${talk.talkNo}` : 'Record toolbox talk'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!talk || !!prefill}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'What was it about?' }]}>
+        <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'Enter the topic' }]}>
           <AutoComplete options={TOOLBOX_TOPICS.map((t) => ({ value: t }))} showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} placeholder="Pick or type a topic" />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
-          <Form.Item name="conductedBy" label="Given by" rules={[{ required: true, whitespace: true, message: 'Who gave it?' }]}>
+          <Form.Item name="conductedBy" label="Given by" rules={[{ required: true, whitespace: true, message: 'Enter who gave the talk' }]}>
             <Input maxLength={120} />
           </Form.Item>
-          <Form.Item name="attendeeCount" label="Attended" rules={[{ required: true, message: 'How many?' }]}>
+          <Form.Item name="attendeeCount" label="Attended" rules={[{ required: true, message: 'Enter how many attended' }]}>
             <InputNumber min={1} max={2000} precision={0} inputMode="numeric" style={{ width: '100%' }} suffix="workers" />
           </Form.Item>
-          <Form.Item name="durationMinutes" label="Minutes">
+          <Form.Item name="durationMinutes" label="Duration (min)">
             <InputNumber min={1} max={480} precision={0} inputMode="numeric" style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="contractor" label="Contractor's gang">
-          <Input maxLength={200} placeholder="Optional" />
+        <Form.Item name="contractor" label="Contractor">
+          <Input maxLength={200} placeholder="Labour contractor or subcontractor; empty for our own workers" />
         </Form.Item>
         <Form.Item name="attendees" label="Names">
-          <Input.TextArea rows={2} maxLength={4000} placeholder="Optional; or attach the signed attendance sheet" />
+          <Input.TextArea rows={2} maxLength={4000} placeholder="Or attach the signed attendance sheet" />
         </Form.Item>
         <Form.Item name="notes" label="Points covered">
           <Input.TextArea rows={2} maxLength={2000} />

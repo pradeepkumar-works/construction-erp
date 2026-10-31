@@ -6,14 +6,15 @@ import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { BiometricDeviceDto, BiometricProtocol } from '@erp/shared';
-import { BIOMETRIC_PROTOCOLS, BIOMETRIC_PROTOCOL_LABELS } from '@erp/shared';
+import { BIOMETRIC_PROTOCOLS, BIOMETRIC_PROTOCOL_LABELS, BIOMETRIC_PROTOCOL_SHORT_LABELS } from '@erp/shared';
 import { API_ORIGIN, API_URL, errorMessage } from '@/lib/api';
 import { useBiometricAction, useBiometricDevices } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { DeviceCommands } from './DeviceCommands';
+import { MoreActions } from '@/components/record/MoreActions';
 
 interface Values {
   name: string;
@@ -37,7 +38,7 @@ function DeviceForm({ open, onClose, device, onSaved }: { open: boolean; onClose
       layout="modal"
       width={600}
       projectDefault={false}
-      title={device ? `Edit ${device.name}` : 'Register a device'}
+      title={device ? `Edit ${device.name}` : 'New device'}
       okText={device ? 'Save' : 'Register'}
       onSubmit={async (v) => {
         const body = { ...v, model: v.model?.trim() || null, serialNo: v.protocol === 'ADMS' ? v.serialNo?.trim() : null, projectId: v.projectId ?? null };
@@ -61,7 +62,7 @@ function DeviceForm({ open, onClose, device, onSaved }: { open: boolean; onClose
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Name the device, for example Gate terminal' }]}>
             <Input maxLength={80} placeholder="Gate terminal" />
           </Form.Item>
-          <Form.Item name="model" label="Make and model (optional)">
+          <Form.Item name="model" label="Make and model">
             <Input maxLength={80} placeholder="ZKTeco K40, eSSL X990" />
           </Form.Item>
         </FormGrid>
@@ -79,8 +80,8 @@ function DeviceForm({ open, onClose, device, onSaved }: { open: boolean; onClose
           </Form.Item>
         )}
         <FormGrid cols={2}>
-          <Form.Item name="projectId" label="Site" extra="Workers who punch on it are marked at this site. Leave blank for an office.">
-            <ProjectSelect placeholder="Head office" style={{ width: '100%' }} aria-label="Site" />
+          <Form.Item name="projectId" label="Project" extra="Workers who punch on it are marked at this project. Leave blank for an office.">
+            <ProjectSelect placeholder="Head office" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="utcOffsetMin" label="Device clock, minutes ahead of UTC" extra="India is 330">
             <InputNumber min={-720} max={840} step={30} style={{ width: '100%' }} />
@@ -149,19 +150,19 @@ export function Devices() {
 
   const columns: TableProps<BiometricDeviceDto>['columns'] = [
     { title: 'Device', key: 'name', width: 220, render: (_, d) => <span>{d.name}{d.model ? <Typography.Text type="secondary">{` · ${d.model}`}</Typography.Text> : null}</span> },
-    { title: 'Sends', dataIndex: 'protocol', width: 120, render: (v: BiometricProtocol) => ({ ADMS: 'ADMS', WEBHOOK: 'Webhook', FILE: 'Files' })[v] },
-    { title: 'Serial number', dataIndex: 'serialNo', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : '-') },
+    { title: 'Sends', dataIndex: 'protocol', width: 120, render: (v: BiometricProtocol) => BIOMETRIC_PROTOCOL_SHORT_LABELS[v] },
+    { title: 'Serial number', dataIndex: 'serialNo', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
-    { title: 'Last heard', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null, d) => (d.protocol === 'FILE' ? '-' : ago(v)) },
+    { title: 'Last heard', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null, d) => (d.protocol === 'FILE' ? NO_VALUE : ago(v)) },
     { title: 'Punches today', dataIndex: 'punchesToday', width: 120, align: 'right' },
-    { title: 'State', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag tone="success">On</AppTag> : <AppTag>Off</AppTag>) },
+    { title: 'Status', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag tone="success">On</AppTag> : <AppTag>Off</AppTag>) },
     {
       title: 'Commands',
       key: 'commands',
       width: 200,
       render: (_, d) =>
         d.protocol !== 'ADMS' ? (
-          '-'
+          NO_VALUE
         ) : (
           <div>
             {d.commandsFailed ? <AppTag tone="danger">{`${d.commandsFailed} failed`}</AppTag> : null}
@@ -173,23 +174,26 @@ export function Devices() {
     {
       title: '',
       key: 'x',
-      width: 340,
+      width: 140,
       render: (_, d) => (
-        <Space size={4} wrap>
-          <Button size="small" onClick={() => setSetup(d.id)} aria-label={`How to set up ${d.name}`}>
+        <Space size={4}>
+          <Button size="small" onClick={() => setSetup(d.id)} aria-label={`Set up ${d.name}`}>
             Set up
           </Button>
-          <Button size="small" onClick={() => setEditing({ device: d })} aria-label={`Edit ${d.name}`}>
-            Edit
-          </Button>
-          <Button size="small" onClick={() => run(act.mutateAsync({ method: 'patch', path: `/biometric/devices/${d.id}`, body: { isActive: !d.isActive } }), d.isActive ? `${d.name} switched off` : `${d.name} switched on`)} aria-label={`${d.isActive ? 'Switch off' : 'Switch on'} ${d.name}`}>
-            {d.isActive ? 'Switch off' : 'Switch on'}
-          </Button>
-          {d.protocol === 'ADMS' && d.isActive ? (
-            <Button size="small" onClick={() => run(act.mutateAsync({ path: `/biometric/devices/${d.id}/set-clock` }), `${d.name}'s clock is set when it next calls`)} aria-label={`Set the clock of ${d.name}`}>
-              Set the clock
-            </Button>
-          ) : null}
+          <MoreActions inRow
+            label={`More for ${d.name}`}
+            items={[
+              { key: 'edit', label: 'Edit', onSelect: () => setEditing({ device: d }) },
+              ...(d.protocol === 'ADMS' && d.isActive
+                ? [{ key: 'clock', label: 'Set the clock', onSelect: () => run(act.mutateAsync({ path: `/biometric/devices/${d.id}/set-clock` }), `${d.name}'s clock is set when it next calls`) }]
+                : []),
+              {
+                key: 'active',
+                label: d.isActive ? 'Switch off' : 'Switch on',
+                onSelect: () => run(act.mutateAsync({ method: 'patch', path: `/biometric/devices/${d.id}`, body: { isActive: !d.isActive } }), d.isActive ? `${d.name} switched off` : `${d.name} switched on`),
+              },
+            ]}
+          />
         </Space>
       ),
     },
@@ -202,7 +206,7 @@ export function Devices() {
           Fingerprint and face devices at sites and offices. A device that sends by itself (ADMS, as on ZKTeco and eSSL) or to a web address marks attendance as people punch; with any other device, import its punch file.
         </Typography.Paragraph>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({ device: null })}>
-          Register a device
+          New device
         </Button>
       </div>
       {error ? (

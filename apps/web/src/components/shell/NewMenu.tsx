@@ -14,6 +14,8 @@ export interface NewEntry {
   label: string;
   /** How Search (Ctrl K) offers it, in the words of the list's own button: "New daily report", "Record letter". */
   action: string;
+  /** Other words Search finds it by (an old name, the paper form's) */
+  keywords?: string;
   href: string;
   icon: React.ReactNode;
 }
@@ -25,7 +27,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
   const site: NewEntry[] = [
     { kind: 'dpr', label: 'Daily report', action: 'New daily report (DPR)', href: '/dpr', icon: <FileTextOutlined /> },
     { kind: 'progress', label: 'Progress entry', action: 'New progress entry', href: '/progress', icon: <LineChartOutlined /> },
-    { kind: 'material-request', label: 'Material request', action: 'New material request (MR)', href: '/material-requests', icon: <ShoppingCartOutlined /> },
+    { kind: 'material-request', label: 'Indent', action: 'New indent', keywords: 'material request mr', href: '/material-requests', icon: <ShoppingCartOutlined /> },
     ...(canSubmitExpense(role) ? [{ kind: 'expense' as const, label: 'Site expense', action: 'New site expense', href: '/expenses', icon: <WalletOutlined /> }] : []),
     ...(canRaiseRisk(role) ? [{ kind: 'risk' as const, label: 'Delay or risk', action: 'Record delay or risk', href: '/risks', icon: <AlertOutlined /> }] : []),
     ...(canRecordMeetings(role) ? [{ kind: 'meeting' as const, label: 'Meeting', action: 'Record meeting', href: '/meetings', icon: <CommentOutlined /> }] : []),
@@ -36,7 +38,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     ...(canPurchase(role) ? [{ kind: 'purchase-order' as const, label: 'Purchase order', action: 'New purchase order (PO)', href: '/purchase-orders', icon: <ContainerOutlined /> }] : []),
     ...(canManageTenders(role) ? [{ kind: 'tender' as const, label: 'Tender', action: 'Record tender', href: '/tenders', icon: <TrophyOutlined /> }] : []),
     ...(canManageDocuments(role) ? [{ kind: 'design-submission' as const, label: 'Design submission', action: 'New design submission', href: '/design-submissions', icon: <FileProtectOutlined /> }] : []),
-    ...(canManageDocuments(role) ? [{ kind: 'controlled-copy' as const, label: 'Controlled copies', action: 'Issue controlled copies', href: '/controlled-copies', icon: <CopyOutlined /> }] : []),
+    ...(canManageDocuments(role) ? [{ kind: 'controlled-copy' as const, label: 'Controlled copy', action: 'Issue controlled copies', href: '/controlled-copies', icon: <CopyOutlined /> }] : []),
     ...(canRunSubcontractEnquiries(role) ? [{ kind: 'subcontract-enquiry' as const, label: 'Subcontract enquiry', action: 'New subcontract enquiry', href: '/subcontract-enquiries', icon: <FileSearchOutlined /> }] : []),
     ...(canPrepareBill(role) ? [{ kind: 'ra-bill' as const, label: 'RA bill', action: 'New RA bill', href: '/bills', icon: <FileDoneOutlined /> }] : []),
     ...(canRequestPayment(role) && canViewPayables(role) ? [{ kind: 'payment-request' as const, label: 'Payment request', action: 'Request payment', href: '/payables?tab=requests', icon: <BankOutlined /> }] : []),

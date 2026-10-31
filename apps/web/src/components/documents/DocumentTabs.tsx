@@ -31,8 +31,8 @@ function ProjectLetters({ projectId }: { projectId: string }) {
       onChange={(k) => setTab(k as 'IN' | 'OUT')}
       destroyOnHidden
       items={[
-        { key: 'IN', label: 'Received', children: <LetterRegister direction="IN" projectId={projectId} /> },
-        { key: 'OUT', label: 'Sent', children: <LetterRegister direction="OUT" projectId={projectId} /> },
+        { key: 'IN', label: 'Inward', children: <LetterRegister direction="IN" projectId={projectId} /> },
+        { key: 'OUT', label: 'Outward', children: <LetterRegister direction="OUT" projectId={projectId} /> },
       ]}
     />
   );

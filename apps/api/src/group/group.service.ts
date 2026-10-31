@@ -57,7 +57,7 @@ export class GroupService {
         }),
         this.prisma.user.findMany({
           where: { organization: { groupId }, ...staff },
-          select: { loginId: true, fullName: true, email: true, isActive: true, organizationId: true, role: { select: { key: true, name: true } }, organization: { select: { name: true } } },
+          select: { loginId: true, fullName: true, email: true, isActive: true, organizationId: true, role: { select: { key: true } }, organization: { select: { name: true } } },
           orderBy: [{ fullName: 'asc' }, { organization: { name: 'asc' } }],
         }),
       ]);
@@ -66,9 +66,9 @@ export class GroupService {
       for (const u of users) {
         let p = people.get(u.loginId);
         if (!p) people.set(u.loginId, (p = { loginId: u.loginId, fullName: u.fullName, email: u.email, admin: admins.has(u.loginId), places: [] }));
-        p.places.push({ organizationId: u.organizationId, companyName: u.organization.name, roleKey: u.role.key as RoleKey, roleName: u.role.name, isActive: u.isActive });
+        p.places.push({ organizationId: u.organizationId, companyName: u.organization.name, roleKey: u.role.key as RoleKey, roleName: ROLE_LABELS[u.role.key as RoleKey], isActive: u.isActive });
       }
-      const mine = new Map(users.filter((u) => u.loginId === loginId && u.isActive).map((u) => [u.organizationId, u.role.name]));
+      const mine = new Map(users.filter((u) => u.loginId === loginId && u.isActive).map((u) => [u.organizationId, ROLE_LABELS[u.role.key as RoleKey]]));
       return {
         id: group.id,
         name: group.name,

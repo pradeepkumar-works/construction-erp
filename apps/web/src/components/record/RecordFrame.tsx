@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Dropdown, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
+import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
-import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, MoreOutlined, PrinterOutlined } from '@/components/common/icons';
+import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@/components/common/icons';
 import { useComments, type ApprovalTypeParam } from '@/lib/queries';
 import type { CommentKind } from '@erp/shared';
 import { CommentsSection } from '@/components/comments/CommentsSection';
@@ -17,6 +17,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ApprovalLevels } from './ApprovalLevels';
 import { StageBar } from './StageBar';
+import { MoreActions } from './MoreActions';
 import type { Lifecycle } from './lifecycle';
 import type { SubmissionBase } from '@erp/shared';
 
@@ -45,19 +46,6 @@ export interface RecordMenuAction {
   danger?: boolean;
   disabled?: boolean;
   onSelect: () => void;
-}
-
-/** The record's ⋯ menu, after its buttons. */
-function MoreMenu({ items, size }: { items: RecordMenuAction[]; size: ActionSize }) {
-  if (!items.length) return null;
-  return (
-    <Dropdown
-      trigger={['click']}
-      menu={{ items: items.map((i) => ({ key: i.key, label: i.label, icon: i.icon, danger: i.danger, disabled: i.disabled, onClick: i.onSelect })) }}
-    >
-      <Button size={size} icon={<MoreOutlined />} aria-label="More actions" />
-    </Dropdown>
-  );
 }
 
 export interface RecordFrameProps {
@@ -209,7 +197,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
           {record.activity && (
             <>
               <Divider titlePlacement="start" plain>
-                Activity
+                History
               </Divider>
               <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
             </>
@@ -255,7 +243,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
               <LinkButton href={record.href} size="small" icon={<ExpandOutlined />} aria-label="Open full page" />
             </Tooltip>
             {phone ? null : record.actions?.('small')}
-            {phone ? null : <MoreMenu items={more} size="small" />}
+            {phone ? null : <MoreActions items={more} size="small" />}
           </Space>
         ) : null
       }
@@ -263,7 +251,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
         hasContent(footerActions) || (phone && more.length) ? (
           <Flex wrap gap={token.marginXS} justify="flex-end" role="toolbar" aria-label="Record actions">
             {footerActions}
-            {phone ? <MoreMenu items={more} size="middle" /> : null}
+            {phone ? <MoreActions items={more} size="middle" /> : null}
           </Flex>
         ) : undefined
       }
@@ -293,7 +281,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
           {record.activity && (
             <>
               <Divider titlePlacement="start" plain>
-                Activity
+                History
               </Divider>
               <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
             </>
@@ -391,7 +379,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             {record.activity && (
               <Col xs={24} xl={7}>
                 <Card
-                  title="Activity"
+                  title="History"
                   size="small"
                   style={{ position: 'sticky', top: top + token.marginSM }}
                   styles={{ body: { maxHeight: `calc(100vh - ${top + 160}px)`, overflowY: 'auto' } }}
@@ -443,12 +431,12 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             {phone ? (
               <Flex wrap gap={token.marginXS} justify="flex-end" style={{ flex: 1 }}>
                 {record.actions?.('middle')}
-                <MoreMenu items={record.more ?? []} size="middle" />
+                <MoreActions items={record.more ?? []} size="middle" />
               </Flex>
             ) : (
               <Space wrap>
                 {record.actions?.('middle')}
-                <MoreMenu items={record.more ?? []} size="middle" />
+                <MoreActions items={record.more ?? []} size="middle" />
               </Space>
             )}
           </Flex>

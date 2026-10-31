@@ -2864,9 +2864,7 @@ export function useSendEnquiry(materialRequestId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: { vendorIds: string[]; closesOn: string; message?: string | null }) => (await api.post<EnquiryDto>(`/material-requests/${materialRequestId}/enquiries`, body)).data,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['quotations', 'enquiries', materialRequestId] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['quotations'] }),
   });
 }
 

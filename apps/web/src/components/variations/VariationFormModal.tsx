@@ -1,14 +1,15 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useMemo } from 'react';
 import { App, Button, Form, Input, Select, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, BoqItemDto, VariationCause, VariationDto } from '@erp/shared';
-import { VARIATION_CAUSES, VARIATION_CAUSE_LABELS, isUnapprovedExtra } from '@erp/shared';
+import { VARIATION_CAUSES, VARIATION_CAUSE_LABELS, isUnapprovedExtra, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useBoq, useProjects } from '@/lib/queries';
+import { useBoq } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -58,7 +59,6 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: projects } = useProjects();
   const editing = !!variation;
   const fixedProject = variation?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
@@ -112,7 +112,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
       return variation ? (await api.patch<VariationDto>(`/variations/${variation.id}`, body)).data : (await api.post<VariationDto>('/variations', { projectId: v.projectId, ...body })).data;
     },
     onSuccess: (v) => {
-      message.success(editing ? `${v.label} updated` : `${v.label} prepared`);
+      message.success(editing ? `${v.label} updated` : `${v.label} saved as a draft`);
       qc.invalidateQueries({ queryKey: ['variations'] });
       onSaved?.(v);
     },
@@ -125,7 +125,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
       onClose={onClose}
       form={form}
       title={variation ? `Edit ${variation.label}` : 'New variation'}
-      okText={editing ? 'Save' : 'Prepare'}
+      okText={editing ? 'Save' : 'Save draft'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       width={900}
       draftKey={editing ? undefined : `variation:${projectId ?? 'any'}`}
@@ -133,7 +133,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
       <Form form={form} layout="vertical">
         <FormSection title="Variation">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ lines: [{}] })} />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ lines: [{}] })} />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Give the variation a title' }]}>
@@ -186,7 +186,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
                         <Form.Item
                           name={[f.name, 'qty']}
                           label={isNew || extra ? 'Quantity' : 'Quantity added (− to omit)'}
-                          extra={b ? `BOQ quantity ${formatQty(b.revisedQty ?? b.originalQty)} ${b.unit}` : undefined}
+                          extra={b ? `BOQ quantity ${formatQty(b.revisedQty ?? b.originalQty)} ${unitLabel(b.unit)}` : undefined}
                           rules={[{ required: true, message: 'Enter the quantity' }, { validator: async (_, v) => (v === 0 ? Promise.reject(new Error('Enter a quantity other than 0')) : undefined) }]}
                         >
                           {/* A BOQ item's change can be negative (an omission). */}

@@ -31,7 +31,7 @@ test('a work order fills New project, and a BOQ scan imports its rows after a ch
   await expect(form.getByLabel('Location', { exact: true })).toHaveValue('Bhadrak');
   // The agreement date was hard to read; 18 months from the start give the end date.
   await expect(form.getByText(/Check this: hard to read/)).toBeVisible();
-  await expect(form.getByRole('textbox', { name: 'Start / end date' })).toHaveValue('15 Nov 2026');
+  await expect(form.getByRole('textbox', { name: 'Start and completion dates' })).toHaveValue('15 Nov 2026');
   await expect(form.getByRole('textbox', { name: 'End date', exact: true })).toHaveValue('14 May 2028');
   // The issuing office is not a client yet: add it from the read name, and it is picked.
   await form.getByRole('button', { name: 'Add client' }).click();
@@ -42,7 +42,7 @@ test('a work order fills New project, and a BOQ scan imports its rows after a ch
   await expect(form.getByText('is not in the client master')).toHaveCount(0);
 
   await form.getByLabel('Project code').fill(code);
-  await form.getByRole('button', { name: 'Create project' }).click();
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page).toHaveURL(/\/projects\/[0-9a-f-]{36}/);
 
   const pm = await apiToken('pm@demo.com');

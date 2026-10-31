@@ -158,13 +158,13 @@ export function CommandPalette({
       const p = project ? (projects ?? []).find((x) => x.id === project.key) : undefined;
       if (p) {
         return rank(
-          entries.map((e) => ({ key: `${e.kind}:${p.id}`, label: `${e.action} for ${p.name}`, hint: p.code, icon: () => e.icon, group: 'Actions', text: `${e.action} ${e.label} new`.toLowerCase(), go: () => start(e, p.id) })),
+          entries.map((e) => ({ key: `${e.kind}:${p.id}`, label: `${e.action} for ${p.name}`, hint: p.code, icon: () => e.icon, group: 'Actions', text: `${e.action} ${e.label} ${e.keywords ?? ''} new`.toLowerCase(), go: () => start(e, p.id) })),
           at[1],
         );
       }
     }
     return rank(
-      entries.map((e) => ({ key: e.kind, label: e.action, icon: () => e.icon, group: 'Actions', text: `${e.action} ${e.label} new`.toLowerCase(), go: () => start(e) })),
+      entries.map((e) => ({ key: e.kind, label: e.action, icon: () => e.icon, group: 'Actions', text: `${e.action} ${e.label} ${e.keywords ?? ''} new`.toLowerCase(), go: () => start(e) })),
       q,
     );
   }, [query, user, projectTargets, projects, withProjects, setProjectScope, router, onClose]);
@@ -244,7 +244,7 @@ export function CommandPalette({
     }
   };
 
-  const placeholder = withProjects ? 'Search pages, projects, numbers (PO-2026-0012), vendors, people, or “new DPR for …”' : 'Search pages';
+  const placeholder = withProjects ? 'Search pages, projects, numbers (PO-2026-0012), vendors, staff, or “new daily report for …”' : 'Search pages';
   const empty = results.length === 0 && !searching;
 
   return (

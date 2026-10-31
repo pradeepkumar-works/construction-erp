@@ -24,7 +24,7 @@ export const RMC_ORDER_STATUS_LABELS: Record<RmcOrderStatus, string> = { QUOTED:
 
 export const RMC_BATCH_STATUSES = ['DISPATCHED', 'DELIVERED', 'REJECTED'] as const;
 export type RmcBatchStatus = (typeof RMC_BATCH_STATUSES)[number];
-export const RMC_BATCH_STATUS_LABELS: Record<RmcBatchStatus, string> = { DISPATCHED: 'On the way', DELIVERED: 'Delivered', REJECTED: 'Turned back' };
+export const RMC_BATCH_STATUS_LABELS: Record<RmcBatchStatus, string> = { DISPATCHED: 'In transit', DELIVERED: 'Delivered', REJECTED: 'Turned back' };
 
 export const RMC_INVOICE_STATUSES = ['ISSUED', 'CANCELLED'] as const;
 export type RmcInvoiceStatus = (typeof RMC_INVOICE_STATUSES)[number];

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Col, Row, Select, Space, Statistic, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Statistic, Typography, theme } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
 import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ import { useListPage } from '@/lib/listPage';
 import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { OPEN_BILL_EXPORT, RECEIPT_EXPORT, RECEIVABLE_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -34,29 +34,30 @@ import { LocalDataTable } from '@/components/list/LocalDataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { MoreActions } from '@/components/record/MoreActions';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
-const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">-</span>);
+const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">{NO_VALUE}</span>);
 
 /** Ageing columns shared by the project and client tables (keys are stable: the column chooser keeps them). */
 function ageingColumns<T extends ProjectReceivableDto | ClientReceivableDto>(): ListColumn<T>[] {
   return [
-    { key: 'billed', title: 'Billed', dataIndex: 'billed', width: 130, align: 'right', render: (v) => money(v) },
-    { key: 'received', title: 'Received', dataIndex: 'received', width: 130, align: 'right', render: (v) => money(v) },
-    { key: 'deducted', title: 'Deducted', dataIndex: 'deducted', width: 120, align: 'right', render: (v) => money(v) },
+    { key: 'billed', title: 'Billed', dataIndex: 'billed', defaultHidden: true, width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'received', title: 'Received', dataIndex: 'received', defaultHidden: true, width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'deducted', title: 'Deducted', dataIndex: 'deducted', defaultHidden: true, width: 120, align: 'right', render: (v) => money(v) },
     { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => money(v, true) },
     { key: 'a0', title: '0-30 days', width: 110, align: 'right', render: (_, r) => money(r.ageing.current) },
     { key: 'a1', title: '31-60', label: '31-60 days', width: 110, align: 'right', render: (_, r) => money(r.ageing.days31to60) },
     { key: 'a2', title: '61-90', label: '61-90 days', width: 110, align: 'right', render: (_, r) => late(r.ageing.days61to90) },
     { key: 'a3', title: 'Over 90', label: 'Over 90 days', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
-    { key: 'notSent', title: 'Not sent yet', dataIndex: 'notSent', width: 120, align: 'right', render: (v) => money(v) },
+    { key: 'notSent', title: 'Not sent yet', dataIndex: 'notSent', defaultHidden: true, width: 120, align: 'right', render: (v) => money(v) },
     { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => money(v) },
-    { key: 'depositHeld', title: 'Deposit held', dataIndex: 'depositHeld', width: 120, align: 'right', render: (v) => money(v) },
+    { key: 'depositHeld', title: 'Security deposit held', dataIndex: 'depositHeld', defaultHidden: true, width: 140, align: 'right', render: (v) => money(v) },
   ];
 }
 
@@ -76,6 +77,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
   const kind = page.filters.kind as ReceiptKind | undefined;
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ReceiptDto | null>(null);
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const [billId, setBillId] = useState<string | null>(null);
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId, kind };
   const { data, isLoading, isFetching, error, refetch } = useReceipts(filters);
@@ -147,21 +149,29 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
             label: 'Actions',
             locked: true,
             fixed: 'right' as const,
-            width: 140,
+            width: 100,
             render: (_: unknown, r: ReceiptDto) =>
               r.exportedToTally ? (
                 <InTallyTag />
               ) : (
-                <Space size={4}>
-                  <Button size="small" onClick={() => setEditing(r)}>
-                    Edit
-                  </Button>
-                  <ConfirmDelete what={`the receipt of ${formatINR(r.amount)}${r.clientName ? ` from ${r.clientName}` : ''}`} notice="Receipt deleted" description={r.billId ? 'The bill goes back to outstanding.' : undefined} onConfirm={() => remove.mutateAsync(r.id)}>
-                    <Button size="small" danger>
-                      Delete
-                    </Button>
-                  </ConfirmDelete>
-                </Space>
+                <MoreActions inRow
+                  label={`Actions for the money received of ${formatINR(r.amount)}`}
+                  items={[
+                    { key: 'edit', label: 'Edit', onSelect: () => setEditing(r) },
+                    {
+                      key: 'delete',
+                      label: 'Delete',
+                      danger: true,
+                      onSelect: () =>
+                        askDelete({
+                          what: `the money received of ${formatINR(r.amount)}${r.clientName ? ` from ${r.clientName}` : ''}`,
+                          notice: 'Money received deleted',
+                          description: r.billId ? 'The bill goes back to outstanding.' : undefined,
+                          onConfirm: () => remove.mutateAsync(r.id),
+                        }),
+                    },
+                  ]}
+                />
               ),
           } satisfies ListColumn<ReceiptDto>,
         ]
@@ -221,6 +231,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
         emptyText={<EmptyArt art="entries" title={kind || page.params.q ? 'No receipt matches these filters' : 'No money received recorded yet'} />}
         emptyAction={newButton}
       />
+      {deleteDialog}
       <ReceiptFormModal
         open={formOpen || !!editing}
         receipt={editing}
@@ -298,7 +309,7 @@ export default function ReceivablesPage() {
     },
     { key: 'sentDate', title: 'Sent', dataIndex: 'sentDate', width: 110, card: 'date', render: (v) => formatDate(v) },
     { key: 'stage', title: 'With client', dataIndex: 'stage', width: 120, card: 'status', render: (s) => <BillStageTag stage={s} /> },
-    { key: 'invoiceAmount', title: 'Work + GST', dataIndex: 'invoiceAmount', width: 140, align: 'right', render: (v) => money(v), total: (rows) => sumMoney(rows.map((r) => r.invoiceAmount)) },
+    { key: 'invoiceAmount', title: 'Bill amount with GST', dataIndex: 'invoiceAmount', width: 140, align: 'right', render: (v) => money(v), total: (rows) => sumMoney(rows.map((r) => r.invoiceAmount)) },
     { key: 'settledAmount', title: 'Settled', dataIndex: 'settledAmount', width: 130, align: 'right', render: (v) => money(v), total: (rows) => sumMoney(rows.map((r) => r.settledAmount)) },
     { key: 'outstanding', title: 'Outstanding', dataIndex: 'outstanding', width: 140, align: 'right', card: 'amount', render: (v) => money(v, true), total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
     {
@@ -311,7 +322,7 @@ export default function ReceivablesPage() {
       sorter: true,
       sortOrder: page.sortOrderFor('daysOutstanding'),
       sortDirections: ['descend', 'ascend'],
-      render: (v: number) => <span style={{ color: v > 90 ? themeColor('colorErrorText') : v > 60 ? themeColor('orange7') : undefined }}>{v}</span>,
+      render: (v: number) => <span style={{ color: v > 90 ? themeColor('colorErrorText') : v > 60 ? themeColor('colorWarningText') : undefined }}>{v}</span>,
     },
   ];
   const openChoice = useColumnChoice('receivables-open', openColumns);
@@ -336,7 +347,7 @@ export default function ReceivablesPage() {
       ),
     },
     ...ageingColumns<Keyed<ProjectReceivableDto>>(),
-    { key: 'retentionReleaseDate', title: 'Retention due', dataIndex: 'retentionReleaseDate', width: 120, card: 'date', render: (v) => (v ? formatDate(v) : '-') },
+    { key: 'retentionReleaseDate', title: 'Retention due', dataIndex: 'retentionReleaseDate', width: 120, card: 'date', render: (v) => (v ? formatDate(v) : NO_VALUE) },
   ];
   const clientColumns: ListColumn<Keyed<ClientReceivableDto>>[] = [
     { key: 'clientName', title: 'Client', dataIndex: 'clientName', locked: true, card: 'title', fixed: 'left', width: 220, ellipsis: true },
@@ -358,7 +369,7 @@ export default function ReceivablesPage() {
     <div className="page-container">
       <PageHeader
         title="Receivables"
-        subtitle="What clients owe on the bills sent to them, by age, with the money received, what they deducted, and the retention and deposit they hold."
+        subtitle="What clients owe on the bills sent to them, by age, with the money received, what they deducted, and the retention and security deposit they hold."
         extra={<ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -383,9 +394,9 @@ export default function ReceivablesPage() {
           </Col>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
-              <Statistic title="Retention + deposit held" value={formatINRCompact(toNumber(t.retentionHeld) + toNumber(t.depositHeld))} />
+              <Statistic title="Retention and security deposit held" value={formatINRCompact(toNumber(t.retentionHeld) + toNumber(t.depositHeld))} />
               <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                Retention {formatINR(t.retentionHeld)} · deposit {formatINR(t.depositHeld)}
+                Retention {formatINR(t.retentionHeld)} · security deposit {formatINR(t.depositHeld)}
               </Typography.Text>
             </Card>
           </Col>

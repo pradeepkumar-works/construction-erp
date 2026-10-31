@@ -11,7 +11,7 @@ import { STAFF_LOAN_KINDS, STAFF_LOAN_KIND_LABELS, canRunPayroll } from '@erp/sh
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useEmployees, usePayrollAction, useStaffLoans } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -40,7 +40,7 @@ function LoanForm({ open, onClose }: { open: boolean; onClose: () => void }) {
       layout="modal"
       width={600}
       projectDefault={false}
-      title="Record a loan or advance"
+      title="New loan or advance"
       okText="Record"
       onSubmit={async (v) => {
         const l = await save.mutateAsync({ path: '/payroll/loans', body: { ...v, issuedOn: v.issuedOn.format('YYYY-MM-DD'), startMonth: v.startMonth.format('YYYY-MM'), note: v.note?.trim() || null } });
@@ -55,7 +55,7 @@ function LoanForm({ open, onClose }: { open: boolean; onClose: () => void }) {
           <Form.Item name="kind" label="What">
             <Select options={STAFF_LOAN_KINDS.map((k) => ({ value: k, label: STAFF_LOAN_KIND_LABELS[k] }))} />
           </Form.Item>
-          <Form.Item name="issuedOn" label="Given on" rules={[{ required: true, message: 'Pick the day it was given' }]}>
+          <Form.Item name="issuedOn" label="Given on" rules={[{ required: true, message: 'Choose the day it was given' }]}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Enter the amount given' }]}>
@@ -65,10 +65,10 @@ function LoanForm({ open, onClose }: { open: boolean; onClose: () => void }) {
             <MoneyInput min={1} />
           </Form.Item>
           <Form.Item name="startMonth" label="First recovered in" rules={[{ required: true, message: 'Choose the first month' }]}>
-            <DatePicker picker="month" format="MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker picker="month" format={MONTH_PICKER_FORMAT} style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="note" label="Note (optional)">
+        <Form.Item name="note" label="Note">
           <Input maxLength={300} />
         </Form.Item>
       </Form>
@@ -88,10 +88,10 @@ export function Loans() {
 
   const columns: TableProps<StaffLoanDto>['columns'] = [
     { title: 'Employee', key: 'e', width: 200, render: (_, l) => <span translate="no">{`${l.employeeName} (${l.employeeCode})`}</span> },
-    { title: 'What', dataIndex: 'kind', width: 130, render: (v: StaffLoanKind) => STAFF_LOAN_KIND_LABELS[v] },
+    { title: 'Type', dataIndex: 'kind', width: 130, render: (v: StaffLoanKind) => STAFF_LOAN_KIND_LABELS[v] },
     { title: 'Given on', dataIndex: 'issuedOn', width: 120, render: (v: string) => formatDate(v) },
     { title: 'Amount', dataIndex: 'amount', width: 120, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'A month', dataIndex: 'emi', width: 110, align: 'right', render: (v: string) => <Rupees value={v} /> },
+    { title: 'EMI', dataIndex: 'emi', width: 110, align: 'right', render: (v: string) => <Rupees value={v} /> },
     { title: 'From', dataIndex: 'startMonth', width: 140, render: (v: string) => monthLabel(v) },
     { title: 'Recovered', dataIndex: 'recovered', width: 120, align: 'right', render: (v: string) => <Rupees value={v} /> },
     { title: 'Left', dataIndex: 'balance', width: 120, align: 'right', render: (v: string) => <strong><Rupees value={v} /></strong> },
@@ -102,12 +102,12 @@ export function Loans() {
       render: (_, l) =>
         admin && Number(l.recovered) === 0 ? (
           <Popconfirm
-            title="Delete this entry?"
+            title="Delete this loan or advance?"
             okText="Delete"
             onConfirm={() =>
               act
                 .mutateAsync({ method: 'delete', path: `/payroll/loans/${l.id}` })
-                .then(() => message.success('Deleted'))
+                .then(() => message.success(`${STAFF_LOAN_KIND_LABELS[l.kind]} deleted`))
                 .catch((err) => message.error(errorMessage(err, 'Could not delete it. Try again.')))
             }
           >
@@ -128,7 +128,7 @@ export function Loans() {
         </span>
         {admin && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
-            Record a loan or advance
+            New loan or advance
           </Button>
         )}
       </div>

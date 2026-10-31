@@ -77,7 +77,7 @@ test('device punches mark attendance, and HR matches the numbers it does not kno
 
   // The gate terminal's setup shows what to enter on the device.
   await page.getByRole('tab', { name: 'Devices', exact: true }).click();
-  await page.getByRole('button', { name: 'How to set up Gate terminal' }).click();
+  await page.getByRole('button', { name: 'Set up Gate terminal' }).click();
   await expect(page.getByRole('dialog', { name: 'Set up Gate terminal' }).getByText(GATE_SN)).toBeVisible();
 });
 

@@ -34,6 +34,7 @@ import {
   type DprWorkOptionsDto,
   type MachineryLine,
   type ManpowerLine,
+  unitLabel,
 } from '@erp/shared';
 import { formatQty } from '@/lib/format';
 import { FormGrid } from '@/components/form/FormShell';
@@ -232,7 +233,7 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
                         <span translate="no">{componentLabel(a)}</span> ·{' '}
                       </>
                     )}
-                    <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${a.unit}`}</span> done
+                    <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${unitLabel(a.unit)}`}</span> done
                     {a.holdPoint ? (
                       <AppTag tone="pending" style={{ marginInlineStart: 6 }}>
                         Hold point
@@ -540,10 +541,10 @@ function LineDetails({
         }
       >
         {shows('crew') ? (
-          <Form.Item label="Crew">
+          <Form.Item label="Labour">
             <LineTable
               name={[field.name, 'labour']}
-              label={`Line ${n} crew`}
+              label={`Line ${n} labour`}
               addText="Add trade"
               newLine={() => ({ count: 1 })}
               columns={[
@@ -558,12 +559,12 @@ function LineDetails({
                 },
                 {
                   key: 'count',
-                  title: 'Nos',
+                  title: 'Workers',
                   width: 100,
                   align: 'right',
                   render: (f) => (
                     <Form.Item name={[f.name, 'count']} noStyle>
-                      <InputNumber min={0} precision={0} inputMode="numeric" aria-label={`Number of trade ${f.name + 1}`} style={{ width: '100%' }} />
+                      <InputNumber min={0} precision={0} inputMode="numeric" aria-label={`Workers of trade ${f.name + 1}`} style={{ width: '100%' }} />
                     </Form.Item>
                   ),
                 },
@@ -572,7 +573,7 @@ function LineDetails({
           </Form.Item>
         ) : null}
         {shows('machines') ? (
-          <Form.Item label="Machines">
+          <Form.Item label="Machinery">
             <LineTable
               name={[field.name, 'machines']}
               label={`Line ${n} machine`}
@@ -581,7 +582,7 @@ function LineDetails({
               columns={[
                 {
                   key: 'name',
-                  title: 'Equipment',
+                  title: 'Machine',
                   render: (f) => (
                     <Form.Item name={[f.name, 'name']} noStyle>
                       <AutoComplete placeholder="JCB 3DX" aria-label={`Machine ${f.name + 1}`} options={def.lines.machineNames.map((m) => ({ value: m }))} style={{ width: '100%' }} />
@@ -650,7 +651,7 @@ function LineDetails({
         <FormGrid cols={2}>
           {shows('workOrder') && options?.workOrders.length ? (
             <Form.Item name={[field.name, 'workOrderId']} label="Work order">
-              <Select allowClear placeholder="Done by our own crew" options={options.workOrders.map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }))} />
+              <Select allowClear placeholder="Departmental (our own workers)" options={options.workOrders.map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }))} />
             </Form.Item>
           ) : null}
           {shows('remarks') ? (

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { App, Avatar, Button, Card, Dropdown, Flex, Mentions, Typography, theme } from 'antd';
+import { App, Avatar, Button, Card, Dropdown, Flex, Mentions, Skeleton, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { GetRef } from 'antd';
 import { CheckCircleOutlined, EllipsisOutlined, MessageOutlined, UndoOutlined } from '@/components/common/icons';
@@ -286,7 +286,7 @@ export function CommentsSection({ kind, entityId }: { kind: CommentKind; entityI
     if (data && typeof window !== 'undefined' && window.location.hash === `#${COMMENTS_ANCHOR}`) document.getElementById(COMMENTS_ANCHOR)?.scrollIntoView({ block: 'start' });
   }, [data]);
 
-  if (isLoading) return <Typography.Text type="secondary">Loading comments…</Typography.Text>;
+  if (isLoading) return <Skeleton active title={false} paragraph={{ rows: 2 }} />;
   if (error || !data) return <Typography.Text type="secondary">{error ? errorMessage(error) : 'No comments'}</Typography.Text>;
 
   const open = data.threads.filter((t) => !t.resolvedAt);

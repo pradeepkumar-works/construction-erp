@@ -1,5 +1,6 @@
 'use client';
 
+import { revLabel } from './docUi';
 import React from 'react';
 import Link from 'next/link';
 import { Button, Checkbox, Typography } from 'antd';
@@ -59,7 +60,7 @@ export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { pr
             <Typography.Text>
               {r.items
                 .slice(0, 3)
-                .map((i) => `${i.docNo} Rev ${i.revision}`)
+                .map((i) => `${i.docNo} ${revLabel(i.revision)}`)
                 .join(', ')}
               {r.items.length > 3 ? ` +${r.items.length - 3}` : ''}
             </Typography.Text>

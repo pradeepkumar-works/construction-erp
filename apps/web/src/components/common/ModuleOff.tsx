@@ -23,7 +23,7 @@ export function ModuleOff({ module, user }: { module: SwitchableModule; user: Au
         title={<h1 className="heading-plain">{label} is turned off</h1>}
         subTitle={
           admin
-            ? 'Your company is not using it. Its records are kept, and turning it on again under Modules brings them back.'
+            ? 'Your company is not using it. Its records are kept, and turning it on again in Admin › Modules brings them back.'
             : 'Your company is not using it. Its records are kept; ask your admin if you need it.'
         }
         extra={

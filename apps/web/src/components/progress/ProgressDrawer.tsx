@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import type { ProgressEntryDto } from '@erp/shared';
-import { sectorLocation } from '@erp/shared';
+import { sectorLocation, unitLabel } from '@erp/shared';
 import { useProgressEntry } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -43,12 +43,12 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
           tags: <StatusTag status={data.status} />,
           facts: [
             { key: 'date', label: 'Date', children: formatDate(data.date) },
-            { key: 'qty', label: 'Quantity', children: `${formatQty(data.quantity)} ${data.unit}` },
+            { key: 'qty', label: 'Quantity', children: `${formatQty(data.quantity)} ${unitLabel(data.unit)}` },
             { key: 'activity', label: 'Activity', children: data.activityName },
             ...(data.dailyReportId ? [{ key: 'dpr', label: 'Daily report', children: <Link href={`/dpr/${data.dailyReportId}`}>DPR of {formatDate(data.date)}</Link> }] : []),
             { key: 'location', label: 'Location / chainage', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
-            { key: 'manpower', label: 'Manpower', children: data.manpowerCount ?? '-' },
-            { key: 'machinery', label: 'Machinery used', children: data.machineryUsed ?? '-' },
+            { key: 'manpower', label: 'Labour', children: data.manpowerCount ?? '-' },
+            { key: 'machinery', label: 'Machines used', children: data.machineryUsed ?? '-' },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],
           lifecycle: submissionLifecycle(data),

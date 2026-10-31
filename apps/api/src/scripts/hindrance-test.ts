@@ -114,7 +114,7 @@ const facts = (over: Partial<NoticeFacts> = {}): NoticeFacts => ({
   agreementNo: 'HB/2026/07',
   title: 'GF slab reinforcement drawings revised by the architect',
   description: null,
-  categoryLabel: 'Drawings & design',
+  categoryLabel: 'Drawings and design',
   activityName: 'Ground floor slab',
   delayStart: '2026-10-11',
   delayEnd: null,
@@ -132,7 +132,7 @@ test('notice letter: the clause, the dates, the DPR entries, the days lost and t
   const { subject, lines } = noticeLetter(facts());
   const text = lines.join('\n');
   assert.equal(subject, 'Notice of hindrance: GF slab reinforcement drawings revised by the architect');
-  assert.match(text, /Under Clause 5\.1 of the agreement HB\/2026\/07, we give you notice that the work of Ground floor slab at District Hospital Block B \(G\+3\) has been held up since 11 October 2026 \(drawings & design\)\./);
+  assert.match(text, /Under Clause 5\.1 of the agreement HB\/2026\/07, we give you notice that the work of Ground floor slab at District Hospital Block B \(G\+3\) has been held up since 11 October 2026 \(drawings and design\)\./);
   assert.match(text, /- 21 October 2026: First-floor column drawings revised/);
   assert.match(text, /The hindrance continues; so far 13 days have been lost\. Photographs taken at site \(2\) are enclosed\./);
   assert.match(text, /We reserve our right to an extension of time under Clause 5\.1 for the delay\./);

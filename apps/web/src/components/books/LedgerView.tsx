@@ -14,7 +14,7 @@ export function LedgerView({ data, isLoading, error, refetch, emptyText }: { dat
   if (error) return <QueryError error={error} onRetry={refetch} />;
   return (
     <>
-      {data?.truncated && <Alert type="info" showIcon title="Only the latest 2,000 entries show. Pick a shorter period to see the rest; the opening balance counts them." style={{ marginBottom: 12 }} />}
+      {data?.truncated && <Alert type="info" showIcon title="Only the latest 2,000 entries show. Choose a shorter period to see the rest; the opening balance counts them." style={{ marginBottom: 12 }} />}
       <Table<LedgerEntryDto>
         rowKey="lineId"
         size="small"

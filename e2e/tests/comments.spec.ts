@@ -46,13 +46,13 @@ test('a mention on a record’s page reaches the person, their reply comes back,
   // The managing director is told, and replies.
   const mine = await api<{ items: Notice[] }>(md, '/notifications?limit=20&typesVersion=5');
   const notice = mine.items.find((n) => n.type === 'COMMENT' && n.body.includes(String(stamp)))!;
-  expect(notice.title).toBe(`Suresh Nair mentioned you on Purchase Order ${notice.title.split('Purchase Order ')[1]}`);
+  expect(notice.title).toBe(`Suresh Nair mentioned you on Purchase order ${notice.title.split('Purchase order ')[1]}`);
   expect([notice.entityType, notice.entityId]).toEqual(['PURCHASE_ORDER', po.id]);
   const listed = await api<Threads>(md, `/comments?kind=PURCHASE_ORDER&entityId=${po.id}`);
   const root = listed.threads.find((t) => t.body.includes(String(stamp)))!;
   await api(md, '/comments', { method: 'POST', body: { kind: 'PURCHASE_ORDER', entityId: po.id, parentId: root.id, body: `Yes, release it. ${stamp}` } });
   const back = await api<{ items: Notice[] }>(pm, '/notifications?limit=20&typesVersion=5');
-  expect(back.items.some((n) => n.type === 'COMMENT' && n.title.startsWith('Rajesh Patnaik replied on Purchase Order') && n.body.includes(String(stamp)))).toBe(true);
+  expect(back.items.some((n) => n.type === 'COMMENT' && n.title.startsWith('Rajesh Patnaik replied on Purchase order') && n.body.includes(String(stamp)))).toBe(true);
 
   // The reply shows, and the thread is resolved from the page.
   await page.reload();

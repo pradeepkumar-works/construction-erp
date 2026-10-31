@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import {
   COPIED_TERMS,
+  ROLE_LABELS,
   nextProjectCode,
   termsFor,
   type NextProjectCodeDto,
@@ -150,7 +151,7 @@ export class ProjectsService {
       siteRadiusM: p.siteRadiusM,
       siteCheckInStrict: p.siteCheckInStrict,
       handedOverOn: dateOnly(handover?.completedOn ?? null),
-      members: p.members.map((m) => ({ id: m.id, userId: m.userId, fullName: m.user.fullName, roleKey: m.user.role.key as RoleKey, roleName: m.user.role.name, checkLevel: m.checkLevel })),
+      members: p.members.map((m) => ({ id: m.id, userId: m.userId, fullName: m.user.fullName, roleKey: m.user.role.key as RoleKey, roleName: ROLE_LABELS[m.user.role.key as RoleKey], checkLevel: m.checkLevel })),
       createdAt: iso(p.createdAt),
       updatedAt: iso(p.updatedAt),
     };

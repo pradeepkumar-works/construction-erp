@@ -6,7 +6,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { PortalDprDto } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
 import { usePortalDprs } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 
@@ -47,10 +47,10 @@ export function PortalDprs({ projectId }: { projectId: string }) {
         }}
         columns={[
           { title: 'Date', dataIndex: 'date', width: 120, render: (v: string) => formatDate(v) },
-          { title: 'Work executed', dataIndex: 'workExecuted', ellipsis: true },
-          { title: 'Manpower', dataIndex: 'totalManpower', width: 100, align: 'right' },
-          { title: 'Weather', dataIndex: 'weather', width: 100, render: (w: PortalDprDto['weather']) => (w ? WEATHER_LABELS[w] : '-') },
-          { title: 'Photos', key: 'photos', width: 80, align: 'right', render: (_, r) => r.attachments.length || '-' },
+          { title: 'Work done', dataIndex: 'workExecuted', ellipsis: true },
+          { title: 'Labour', dataIndex: 'totalManpower', width: 100, align: 'right' },
+          { title: 'Weather', dataIndex: 'weather', width: 100, render: (w: PortalDprDto['weather']) => (w ? WEATHER_LABELS[w] : NO_VALUE) },
+          { title: 'Photos', key: 'photos', width: 80, align: 'right', render: (_, r) => r.attachments.length || NO_VALUE },
         ]}
       />
       <Drawer open={!!open} onClose={() => setOpen(null)} size={820} title={open ? `Daily report, ${formatDate(open.date)}` : ''} destroyOnHidden>
@@ -62,16 +62,16 @@ export function PortalDprs({ projectId }: { projectId: string }) {
               bordered
               style={{ marginBottom: 16 }}
               items={[
-                { key: 'w', label: 'Weather', children: open.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[open.weather]}</AppTag> : '-' },
-                { key: 'c', label: 'Site condition', children: open.siteCondition ?? '-' },
-                { key: 'm', label: 'Total manpower', children: open.totalManpower },
+                { key: 'w', label: 'Weather', children: open.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[open.weather]}</AppTag> : NO_VALUE },
+                { key: 'c', label: 'Site condition', children: open.siteCondition ?? NO_VALUE },
+                { key: 'm', label: 'Total labour', children: open.totalManpower },
                 { key: 'by', label: 'Reported by', children: open.submittedByName },
-                { key: 'ap', label: 'Approved', children: `${open.reviewedByName ?? '-'}, ${formatDateTime(open.reviewedAt)}`, span: 2 },
+                { key: 'ap', label: 'Approved', children: `${open.reviewedByName ?? NO_VALUE}, ${formatDateTime(open.reviewedAt)}`, span: 2 },
               ]}
             />
-            <Section title="Work executed">{open.workExecuted}</Section>
+            <Section title="Work done">{open.workExecuted}</Section>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <Card size="small" title="Manpower">
+              <Card size="small" title="Labour">
                 {open.manpower.map((m, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>{m.category}</span>
@@ -87,13 +87,13 @@ export function PortalDprs({ projectId }: { projectId: string }) {
                         <span>{m.hours} h</span>
                       </div>
                     ))
-                  : '-'}
+                  : NO_VALUE}
               </Card>
             </div>
             <Section title="Material received">{open.materialReceived}</Section>
             <Section title="Tests conducted">{open.testsConducted}</Section>
             <Section title="Safety observations">{open.safetyObservations}</Section>
-            <Section title="Issues / hindrances">{open.issues}</Section>
+            <Section title="Issues and hindrances">{open.issues}</Section>
             <Section title="Next day plan">{open.nextDayPlan}</Section>
             <Divider titlePlacement="start" plain>
               Photos ({open.attachments.length})

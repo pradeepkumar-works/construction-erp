@@ -19,8 +19,8 @@ test.describe.serial('drawings and transmittals', () => {
 
   test('the project manager adds a drawing and issues a new revision', async ({ page }) => {
     await signIn(page, 'pm@demo.com');
-    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Documents', exact: true }).click();
-    await page.getByRole('button', { name: 'New document' }).click();
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Drawings and documents', exact: true }).click();
+    await page.getByRole('button', { name: 'New drawing or document' }).click();
     const modal = formPanel(page, 'New drawing or document');
     await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
     await modal.getByLabel('Number').fill(docNo);
@@ -38,8 +38,8 @@ test.describe.serial('drawings and transmittals', () => {
     const rev = page.locator('.ant-modal').filter({ hasText: `New revision of ${docNo}` });
     await expect(rev.getByLabel('Revision')).toHaveValue('R1');
     await rev.getByLabel('What changed').fill('Weep holes at 1.5 m centres');
-    await rev.getByRole('button', { name: 'Add revision' }).click();
-    await expect(page.getByText(`${docNo} Rev R1 recorded`)).toBeVisible();
+    await rev.getByRole('button', { name: 'Record revision' }).click();
+    await expect(page.getByText(`${docNo} R1 recorded`)).toBeVisible();
     await expect(drawer.getByRole('row', { name: /R0/ }).getByText('Superseded')).toBeVisible();
 
     const pm = await apiToken('pm@demo.com');
@@ -64,15 +64,15 @@ test.describe.serial('drawings and transmittals', () => {
     const drawer = page.locator('.ant-drawer-open');
     await drawer.getByRole('button', { name: 'Send' }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: 'New transmittal' });
-    await expect(modal.getByText(`${docNo} Rev R1`)).toBeVisible();
+    await expect(modal.getByText(`${docNo} R1`)).toBeVisible();
     await modal.getByLabel('To', { exact: true }).fill('Sri Jagannath Constructions');
     await modal.getByLabel('Copies').fill('2');
     await modal.getByRole('button', { name: 'Record transmittal' }).click();
     await expect(page.getByText(/TRN-\d{4}-\d{4} recorded/)).toBeVisible();
 
     const trn = page.locator('.ant-drawer-open').filter({ hasText: 'Transmittal TRN-' });
-    await trn.getByPlaceholder('Received by').fill('Site in-charge, SJC');
-    await trn.getByRole('button', { name: 'Acknowledged' }).click();
+    await trn.getByLabel('Received by').fill('Site in-charge, SJC');
+    await trn.getByRole('button', { name: 'Record acknowledgement' }).click();
     await expect(page.getByText(/TRN-\d{4}-\d{4} acknowledged/)).toBeVisible();
 
     const pm = await apiToken('pm@demo.com');

@@ -47,7 +47,7 @@ test('a new project, vendor and user are offered what the company already knows'
   await vendorForm.getByLabel('Vendor name').fill('Sahoo Traders');
   await vendorForm.getByLabel('GSTIN').fill('21ABCPT1234F1Z9');
   await expect(vendorForm.getByLabel('PAN')).toHaveValue('ABCPT1234F');
-  await vendorForm.getByRole('button', { name: 'Add vendor' }).click();
+  await vendorForm.getByRole('button', { name: 'Save vendor' }).click();
   await expect(vendorForm).toBeHidden();
 
   // New user: the projects they join are part of making them.
@@ -57,7 +57,7 @@ test('a new project, vendor and user are offered what the company already knows'
   await userForm.getByLabel('Full name').fill('Ravi Sahu');
   await userForm.getByLabel('Email').fill(`ravi-${stamp}@e2e.test`);
   await userForm.getByLabel('Projects').click();
-  await page.getByTitle(`RD-${year}-01 - E2E road package`).click();
+  await page.getByTitle(`RD-${year}-01 · E2E road package`).click();
   await page.keyboard.press('Escape');
   await userForm.getByRole('button', { name: 'Invite user' }).click();
   await expect(userForm).toBeHidden();

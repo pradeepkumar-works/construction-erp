@@ -94,7 +94,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
     },
     { title: 'Unit', dataIndex: 'unit', width: 70 },
     { title: 'Planned', dataIndex: 'plannedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
-    { title: 'Executed', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v, r) => (r.isSummary ? <span className="text-muted">-</span> : formatQty(v)) },
+    { title: 'Done', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v, r) => (r.isSummary ? <span className="text-muted">-</span> : formatQty(v)) },
     {
       title: 'Progress',
       dataIndex: 'progressPct',
@@ -104,7 +104,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
     },
     { title: 'Planned start', dataIndex: 'plannedStart', width: 120, render: (v) => formatDate(v), sorter: (a, b) => (a.plannedStart ?? '').localeCompare(b.plannedStart ?? '') },
     {
-      title: 'Planned end',
+      title: 'Planned finish',
       dataIndex: 'plannedEnd',
       width: 130,
       render: (v, r) => (
@@ -158,7 +158,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
           }}
         />
         {editor && project ? <Button onClick={() => setTemplateOpen(true)}>Add from template</Button> : null}
-        {editor && unlinked > 0 ? <Button onClick={() => setLinkOpen(true)}>Link to BOQ ({unlinked})</Button> : null}
+        {editor && unlinked > 0 ? <Button onClick={() => setLinkOpen(true)}>{`Link ${unlinked} ${unlinked === 1 ? 'activity' : 'activities'} to the BOQ`}</Button> : null}
         {editor && (
           <Button
             type="primary"

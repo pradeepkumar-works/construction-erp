@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Card, Flex, Result, Typography, theme } from 'antd';
 import { CheckSquareOutlined } from '@/components/common/icons';
 import type { NavNode, SubmissionType } from '@erp/shared';
-import { SUBMISSION_TYPE_LABELS, mayApprove, navDestination, navNodeForPath, projectTabHref, submissionListHref } from '@erp/shared';
+import { SUBMISSION_TYPE_PLURAL_LABELS, mayApprove, navDestination, navNodeForPath, projectTabHref, submissionListHref } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useLauncherBadges, usePendingApprovals } from '@/lib/queries';
 import { requestNew } from '@/lib/new-intent';
@@ -27,13 +27,6 @@ import s from './DepartmentHome.module.css';
 
 /** The department that holds the projects shows their progress above its pages. */
 const PROJECTS_DEPARTMENT = 'project-management';
-
-// "Vendor Bill" reads "Vendor bill"; a short form (RA, MB) keeps its capitals.
-const sentence = (label: string) =>
-  label
-    .split(' ')
-    .map((w, i) => (i === 0 || /^\(?[A-Z]{2,}/.test(w) ? w : w.toLowerCase()))
-    .join(' ');
 
 /** One page of a sub-module: its icon in its module's colours, its name, what waits there, and the line on what it is for.
  *  A project tab with no project chosen in the header asks for the project. */
@@ -124,7 +117,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
     <>
       {starts.slice(0, 4).map((e) => (
         <Button key={e.kind} icon={e.icon} onClick={() => requestNew(e.kind, () => router.push(e.href))}>
-          {e.label}
+          {e.action}
         </Button>
       ))}
     </>
@@ -132,7 +125,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
 
   return (
     <div className="page-container">
-      <PageHeader title={mod.label} subtitle={mod.description} extra={actions} />
+      <PageHeader title={`${mod.label} overview`} subtitle={mod.description} extra={actions} />
       <Flex vertical gap={24}>
         {waiting.length > 0 && (
           <Card size="small" title="Waiting for you">
@@ -142,7 +135,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
                   <Link href={`/approvals?type=${type}`} className="text-link">
                     <Flex align="center" justify="space-between" gap={token.marginSM} style={{ minHeight: 44, borderTop: i ? `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` : undefined }}>
                       <span>
-                        <CheckSquareOutlined aria-hidden /> {sentence(SUBMISSION_TYPE_LABELS[type])}: {w.count} to approve
+                        <CheckSquareOutlined aria-hidden /> {SUBMISSION_TYPE_PLURAL_LABELS[type]}: {w.count} to approve
                       </span>
                       {w.amount > 0 && (
                         <Typography.Text type="secondary" translate="no">

@@ -9,7 +9,7 @@ import { EMPLOYEE_EVENT_LABELS, EMPLOYEE_EVENT_LETTERS, canManageStaff, isExitEv
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useEmployeeEvents, useRemoveEmployeeEvent } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { EmployeeEventModal } from './EmployeeEventModal';
 import { printHrLetter } from './hrLetterPrint';
 
@@ -74,12 +74,12 @@ export function EmployeeService({ employee }: { employee: EmployeeDto }) {
         columns={[
           { title: 'From', dataIndex: 'effectiveDate', width: 110, render: (v: string) => formatDate(v) },
           {
-            title: 'What',
+            title: 'Event',
             dataIndex: 'type',
             width: 120,
             render: (v: EmployeeEventDto['type']) => <AppTag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</AppTag>,
           },
-          { title: 'Change', key: 'change', render: (_, r) => eventChange(r) || <Typography.Text type="secondary">-</Typography.Text> },
+          { title: 'Change', key: 'change', render: (_, r) => eventChange(r) || <Typography.Text type="secondary">{NO_VALUE}</Typography.Text> },
           { title: 'Letter', dataIndex: 'letterNo', width: 120, render: (v: string) => <span translate="no">{v}</span> },
           {
             title: 'Actions',
@@ -92,23 +92,23 @@ export function EmployeeService({ employee }: { employee: EmployeeDto }) {
                 </Button>
                 {isExitEvent(r.type) && r.type !== 'TERMINATED' && (
                   <Button size="small" onClick={() => print(r, true)}>
-                    Experience
+                    Experience letter
                   </Button>
                 )}
                 {admin && r.id === latest?.id && r.type !== 'JOINED' && (
                   <Popconfirm
-                    title={`Take back the ${EMPLOYEE_EVENT_LABELS[r.type].toLowerCase()}?`}
+                    title={`Cancel the ${EMPLOYEE_EVENT_LETTERS[r.type].toLowerCase()}?`}
                     description="The staff record goes back to how it was before."
-                    okText="Take back"
+                    okText="Cancel it" cancelText="Keep it"
                     onConfirm={() =>
                       remove
                         .mutateAsync(r.id)
-                        .then(() => message.success(`${EMPLOYEE_EVENT_LABELS[r.type]} taken back`))
-                        .catch((err) => message.error(errorMessage(err, 'Could not take it back. Try again.')))
+                        .then(() => message.success(`${EMPLOYEE_EVENT_LETTERS[r.type]} cancelled`))
+                        .catch((err) => message.error(errorMessage(err, 'It could not be cancelled. Try again.')))
                     }
                   >
                     <Button size="small" danger loading={remove.isPending}>
-                      Take back
+                      Cancel
                     </Button>
                   </Popconfirm>
                 )}

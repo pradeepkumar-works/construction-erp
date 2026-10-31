@@ -31,8 +31,8 @@ test('a type of the company’s own gives a new project its components', async (
   await made.getByLabel('Name').fill('Culvert works');
   // The code follows the name.
   await expect(made.getByLabel('Code')).toHaveValue('CULVERT_WORKS');
-  await chooseOption(made.getByLabel('Built on'), 'Road');
-  await made.getByRole('button', { name: 'Make type' }).click();
+  await chooseOption(made.getByLabel('Based on'), 'Road');
+  await made.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page).toHaveURL(/\/project-types\/CULVERT_WORKS$/);
   await expect(page.getByText('No starting components.')).toBeVisible();
 
@@ -40,7 +40,7 @@ test('a type of the company’s own gives a new project its components', async (
   await page.getByRole('button', { name: 'Edit' }).click();
   const edit = formPanel(page, 'Edit Culvert works');
   await edit.getByRole('button', { name: 'Add component' }).click();
-  await chooseOption(edit.getByLabel('Component kind', { exact: true }), 'Crossing');
+  await chooseOption(edit.getByLabel('Component type', { exact: true }), 'Crossing');
   await edit.getByLabel('Component name').fill('Box culvert');
   await edit.getByLabel('Usual number of copies').fill('3');
   await edit.getByRole('button', { name: 'Save type' }).click();
@@ -57,7 +57,7 @@ test('a type of the company’s own gives a new project its components', async (
   await chooseOption(form.getByLabel('Type', { exact: true }), 'Culvert works');
   await expect(form.getByLabel('Box culvert')).toHaveValue('3');
   await form.getByLabel('Box culvert').fill('2');
-  await form.getByRole('button', { name: 'Create project' }).click();
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(form).toBeHidden();
   const id = (await api<{ items: { id: string }[] }>(owner, '/projects?q=culverts')).items[0].id;
   const project = await api<{ type: string; typeCode: string; typeName: string }>(owner, `/projects/${id}`);

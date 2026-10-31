@@ -1,5 +1,6 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Skeleton, Space, Timeline, Typography } from 'antd';
@@ -15,7 +16,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { KindTag, RiskStatusTag, ScoreTag } from './riskUi';
 import { themeColor, themeFontSize } from '@/lib/theme';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { NoticeClock } from './NoticeClock';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'gray', UPDATED: 'blue', CLOSED: 'green', REOPENED: 'orange', DELETED: 'red' };
@@ -68,7 +68,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
         data && mayEdit ? (
           <Space wrap>
             <Button size="small" onClick={() => onEdit(data)}>
-              Update
+              Edit
             </Button>
             {data.status === 'CLOSED' ? (
               <Button size="small" loading={patch.isPending} onClick={() => patch.mutate({ status: 'OPEN' })}>
@@ -87,11 +87,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               </Button>
             )}
             {user && canApprove(user.roleKey) ? (
-              <ConfirmDelete what={data.riskNo} description="Only for an entry raised by mistake. A resolved one should be closed." onConfirm={() => remove.mutateAsync()}>
-                <Button size="small" danger loading={remove.isPending}>
-                  Delete
-                </Button>
-              </ConfirmDelete>
+              <DeleteInMenu what={data.riskNo} description="Only for an entry raised by mistake. A resolved one should be closed." onConfirm={() => remove.mutateAsync()} />
             ) : null}
           </Space>
         ) : null

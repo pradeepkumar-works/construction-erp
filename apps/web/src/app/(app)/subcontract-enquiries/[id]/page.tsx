@@ -9,7 +9,7 @@ import { DeleteOutlined, EditOutlined, MoreOutlined, PlusOutlined, RollbackOutli
 import { type ScEnquiryDetailDto, type ScEnquiryItemDto, type ScQuoteDto } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useScEnquiry, useScEnquiryAction } from '@/lib/queries';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, NO_VALUE, formatQty } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -17,9 +17,9 @@ import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { RankTag } from '@/components/tenders/tenderUi';
 import { AwardDialog, CancelDialog, InviteDialog, QuoteDrawer, ScEnquiryForm, ScEnquiryStatusTag } from '@/components/sc-enquiries/ScEnquiryForms';
 
-const money = (v: string | null | undefined, paise = true) => <span translate="no">{v === null || v === undefined ? '-' : formatINR(v, paise)}</span>;
+const money = (v: string | null | undefined, paise = true) => <span translate="no">{v === null || v === undefined ? NO_VALUE : formatINR(v, paise)}</span>;
 const pct = (v: string | null) => (v === null ? null : `${Math.abs(toNumber(v)).toFixed(2)}% ${toNumber(v) < 0 ? 'over' : 'under'}`);
-const qty = (v: string) => toNumber(v).toLocaleString('en-IN', { maximumFractionDigits: 3 });
+const qty = (v: string) => formatQty(v);
 
 /**
  * One subcontract enquiry: the comparative statement (each item's rate from every quote received, the
@@ -172,7 +172,7 @@ function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
         )}
         {stat(
           'Last day to quote',
-          e.closesOn ? <span translate="no">{formatDate(e.closesOn)}</span> : '-',
+          e.closesOn ? <span translate="no">{formatDate(e.closesOn)}</span> : NO_VALUE,
           e.decidedAt ? <span translate="no">{`${e.status === 'CANCELLED' ? 'Cancelled' : 'Awarded'} on ${formatDate(e.decidedAt)}`}</span> : isOpen ? (e.closed ? 'Quotes can still be entered' : 'Open for quotes') : null,
         )}
       </Row>
@@ -202,7 +202,7 @@ function EnquiryView({ e }: { e: ScEnquiryDetailDto }) {
               column={1}
               items={[
                 { key: 'project', label: 'Project', children: <span translate="no">{`${e.projectCode} ${e.projectName}`}</span> },
-                { key: 'scope', label: 'The rates include', children: e.scope ? <span style={{ whiteSpace: 'pre-wrap' }}>{e.scope}</span> : '-' },
+                { key: 'scope', label: 'The rates include', children: e.scope ? <span style={{ whiteSpace: 'pre-wrap' }}>{e.scope}</span> : NO_VALUE },
                 ...(e.decisionNote ? [{ key: 'note', label: e.status === 'CANCELLED' ? 'Why cancelled' : 'Why this quote', children: e.decisionNote }] : []),
                 { key: 'by', label: 'Created', children: <span translate="no">{`${e.createdByName}, ${formatDate(e.createdAt)}`}</span> },
               ]}
@@ -263,7 +263,7 @@ function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (
       <div style={{ textAlign: 'right' }}>
         <div translate="no">{q.vendorName}</div>
         <Flex gap={4} justify="flex-end" wrap>
-          {q.rank ? <RankTag rank={q.rank} /> : <AppTag>{q.complete ? '-' : `${q.priced} of ${e.items.length} priced`}</AppTag>}
+          {q.rank ? <RankTag rank={q.rank} /> : <AppTag>{q.complete ? NO_VALUE : `${q.priced} of ${e.items.length} priced`}</AppTag>}
           {q.awarded ? <AppTag tone="success">Awarded</AppTag> : null}
         </Flex>
         <Space size={0} style={{ marginTop: 4 }}>
@@ -297,7 +297,7 @@ function Comparison({ e, onQuote, onAward }: { e: ScEnquiryDetailDto; onQuote: (
       if (r.total === 'total') return <strong>{money(q.total)}</strong>;
       if (r.total === 'gst') return <span>{money(q.gst)}<Typography.Text type="secondary" style={small}>{`at ${toNumber(q.gstRate)}%`}</Typography.Text></span>;
       if (r.total === 'withGst') return money(q.totalWithGst);
-      return q.marginPct === null ? '-' : <Typography.Text type={toNumber(q.marginPct) < 0 ? 'danger' : undefined}>{pct(q.marginPct)}</Typography.Text>;
+      return q.marginPct === null ? NO_VALUE : <Typography.Text type={toNumber(q.marginPct) < 0 ? 'danger' : undefined}>{pct(q.marginPct)}</Typography.Text>;
     },
   });
 

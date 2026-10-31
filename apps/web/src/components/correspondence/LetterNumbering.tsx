@@ -73,7 +73,7 @@ function SeriesDialog({ editing, onClose }: { editing: LetterSeriesDto | 'new' |
             <Form.Item name="projectId" label="For" rules={[{ required: true, message: 'Choose the project, or head office' }]}>
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
-                options={[{ value: HO, label: 'Head office' }, ...(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))]}
+                options={[{ value: HO, label: 'Head office' }, ...(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))]}
                 onChange={(v) => form.setFieldValue('prefix', v === HO ? HEAD_OFFICE_PREFIX : letterPrefixOf(projects?.find((p) => p.id === v)?.code ?? ''))}
               />
             </Form.Item>
@@ -137,7 +137,7 @@ export function LetterNumbering() {
         subtitle="Each project and head office numbers its letters in and out in its own series, starting again each financial year. Choose which outward letters wait for their signatory, and then for head office, before they get a number."
         extra={
           manage ? (
-            <Button icon={<PlusOutlined />} onClick={() => setEditing('new')}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing('new')}>
               New series
             </Button>
           ) : null

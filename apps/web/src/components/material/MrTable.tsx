@@ -4,11 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { theme } from 'antd';
 import type { MaterialRequestDto, MaterialRequestSortField } from '@erp/shared';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatQty } from '@/lib/format';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
 import type { ListColumn } from '@/components/list/DataTable';
 import { RowActions } from '@/components/list/RowActions';
 import { RecordLink } from '@/components/record/RecordLink';
+import { unitLabel } from '@erp/shared';
 
 function ItemsCell({ row }: { row: MaterialRequestDto }) {
   const { token } = theme.useToken();
@@ -17,7 +18,7 @@ function ItemsCell({ row }: { row: MaterialRequestDto }) {
     <div>
       {row.items.slice(0, 3).map((i) => (
         <div key={i.id}>
-          {i.itemName} <span style={muted}>· {i.quantity} {i.unit}</span>
+          {i.itemName} <span style={muted}>· {formatQty(i.quantity)} {i.unit}</span>
         </div>
       ))}
       {row.items.length > 3 && <span style={muted}>+{row.items.length - 3} more</span>}
@@ -44,7 +45,7 @@ export function mrColumns({
     ...(showProject
       ? [{ card: 'meta' as const, cardText: (r: MaterialRequestDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: MaterialRequestDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
-    { card: 'meta', cardText: (r) => r.items.map((i) => `${i.itemName} ${i.quantity} ${i.unit}`).join(', '), key: 'items', title: 'Items', render: (_, r) => <ItemsCell row={r} /> },
+    { card: 'meta', cardText: (r) => r.items.map((i) => `${i.itemName} ${formatQty(i.quantity)} ${unitLabel(i.unit)}`).join(', '), key: 'items', title: 'Items', render: (_, r) => <ItemsCell row={r} /> },
     { defaultFrom: 1600, title: 'Priority', dataIndex: 'priority', width: 110, render: (p) => <PriorityTag priority={p} />, ...sort('priority') },
     { card: 'date', title: 'Required by', dataIndex: 'requiredDate', width: 130, render: (v) => formatDate(v), ...sort('requiredDate') },
     { defaultFrom: 1600, title: 'Raised on', dataIndex: 'createdAt', width: 130, render: (v) => formatDate(v), ...sort('createdAt') },

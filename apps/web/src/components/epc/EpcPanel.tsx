@@ -45,6 +45,15 @@ import { VendorSelect } from '@/components/common/SearchSelect';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
+const counted = (label: string, n: number) => (
+  <>
+    {label}{' '}
+    <Typography.Text type="secondary" translate="no">
+      {n}
+    </Typography.Text>
+  </>
+);
+
 const VIEWS = ['engineering', 'packages', 'inputs'] as const;
 type View = (typeof VIEWS)[number];
 const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
@@ -89,9 +98,9 @@ export function EpcPanel({ project }: { project: ProjectDetail }) {
         value={view}
         onChange={setView}
         options={[
-          { value: 'engineering', label: `Engineering (${data.deliverables.length})` },
-          { value: 'packages', label: `Packages (${data.packages.length})` },
-          { value: 'inputs', label: `Client inputs (${data.clientInputs.length})` },
+          { value: 'engineering', label: counted('Engineering', data.deliverables.length) },
+          { value: 'packages', label: counted('Packages', data.packages.length) },
+          { value: 'inputs', label: counted('Client inputs', data.clientInputs.length) },
         ]}
       />
 
@@ -150,7 +159,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
               { key: 't', title: 'Deliverables', align: 'right', render: (_, r) => <span translate="no">{r.total}</span> },
               { key: 's', title: 'Submitted', align: 'right', render: (_, r) => <span translate="no">{r.submitted}</span> },
               { key: 'a', title: 'Approved', align: 'right', render: (_, r) => <span translate="no">{`${r.approved} (${formatPct((100 * r.approved) / r.total)})`}</span> },
-              { key: 'l', title: 'Late', align: 'right', render: (_, r) => (r.late ? <AppTag tone="danger">{r.late}</AppTag> : '0') },
+              { key: 'l', title: 'Overdue', align: 'right', render: (_, r) => (r.late ? <AppTag tone="danger">{r.late}</AppTag> : '0') },
             ]}
           />
         </Section>
@@ -171,7 +180,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
               value={status}
               onChange={setStatus}
               style={{ width: 190 }}
-              options={[{ value: 'all', label: 'Any status' }, { value: 'late', label: 'Late' }, ...DELIVERABLE_STATUSES.map((st) => ({ value: st, label: DELIVERABLE_STATUS_LABELS[st] }))]}
+              options={[{ value: 'all', label: 'Any status' }, { value: 'late', label: 'Overdue' }, ...DELIVERABLE_STATUSES.map((st) => ({ value: st, label: DELIVERABLE_STATUS_LABELS[st] }))]}
             />
             {newButton}
           </Space>
@@ -225,7 +234,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
                     width: 120,
                     render: (_: unknown, d: DeliverableDto) => (
                       <Space size={0}>
-                        <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Change ${d.code}`} onClick={() => onEdit(d)} />
+                        <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${d.code}`} onClick={() => onEdit(d)} />
                         <ConfirmDelete what={`deliverable ${d.code}`} verb="Remove" notice={false} onConfirm={() => remove.mutateAsync(d.id)}>
                           <Button size="small" type="link" danger>
                             Remove
@@ -310,7 +319,7 @@ function DeliverableForm({ projectId, target, onClose }: { projectId: string; ta
       layout="modal"
       width={680}
       projectDefault={false}
-      title={d ? `Change ${d.code}` : 'New deliverable'}
+      title={d ? `Edit ${d.code}` : 'New deliverable'}
       okText="Save deliverable"
       onSubmit={async (v) => {
         await save.mutateAsync(v);
@@ -329,7 +338,7 @@ function DeliverableForm({ projectId, target, onClose }: { projectId: string; ta
             <Select
               allowClear
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder={structure?.elements.length ? 'The whole project' : 'No breakdown yet'}
+              placeholder={structure?.elements.length ? 'The whole project' : 'No components yet (Components tab)'}
               options={(structure?.elements ?? []).map((e) => ({ value: e.id, label: `${e.code} ${e.name}` }))}
             />
           </Form.Item>
@@ -520,7 +529,7 @@ function Packages({ data, onEdit }: { data: EpcDto; onEdit: (p: PackageDto | 'ne
                     width: 120,
                     render: (_: unknown, p: PackageDto) => (
                       <Space size={0}>
-                        <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Change ${p.code}`} onClick={() => onEdit(p)} />
+                        <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${p.code}`} onClick={() => onEdit(p)} />
                         <ConfirmDelete what={`package ${p.code}`} verb="Remove" notice={false} onConfirm={() => remove.mutateAsync(p.id)}>
                           <Button size="small" type="link" danger>
                             Remove
@@ -627,7 +636,7 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
       form={form}
       layout="drawer"
       projectDefault={false}
-      title={p ? `Change ${p.code}` : 'New equipment package'}
+      title={p ? `Edit ${p.code}` : 'New equipment package'}
       okText="Save package"
       onSubmit={async (v) => {
         await save.mutateAsync(v);
@@ -668,12 +677,12 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
             <Form.Item name="neededOn" label="Needed on site" extra="The day erection needs it; a package forecast after it is late">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="byShip" label="Comes by sea or air">
+            <Form.Item name="byShip" label="How it comes">
               <Segmented<'yes' | 'no'>
-                aria-label="Comes by sea or air"
+                aria-label="How it comes"
                 options={[
-                  { value: 'no', label: 'By road' },
-                  { value: 'yes', label: 'Imported' },
+                  { value: 'no', label: 'By road (from India)' },
+                  { value: 'yes', label: 'Imported (by sea or air)' },
                 ]}
               />
             </Form.Item>
@@ -796,7 +805,7 @@ function ClientInputs({ data, onEdit }: { data: EpcDto; onEdit: (m: ClientInputD
                   width: 120,
                   render: (_: unknown, m: ClientInputDto) => (
                     <Space size={0}>
-                      <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Change ${m.name}`} onClick={() => onEdit(m)} />
+                      <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${m.name}`} onClick={() => onEdit(m)} />
                       <ConfirmDelete what={m.name} verb="Remove" notice={false} onConfirm={() => remove.mutateAsync(m.id)}>
                         <Button size="small" type="link" danger>
                           Remove
@@ -848,7 +857,7 @@ function ClientInputForm({ projectId, target, onClose }: { projectId: string; ta
       form={form}
       layout="modal"
       projectDefault={false}
-      title={m ? `Change ${m.name}` : 'New client input'}
+      title={m ? `Edit ${m.name}` : 'New client input'}
       okText="Save"
       onSubmit={async (v) => {
         await save.mutateAsync(v);

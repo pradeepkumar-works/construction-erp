@@ -104,7 +104,7 @@ test('on a laptop the DPR list fits without sideways scroll', async ({ page }) =
   const { scroll, client } = await table.evaluate((e) => ({ scroll: e.scrollWidth, client: e.clientWidth }));
   expect(scroll).toBeLessThanOrEqual(client);
   // The columns that matter stay; the rest wait for a wider screen or the Columns menu.
-  for (const name of ['Date', 'Project', 'Work executed', 'Status']) await expect(page.getByRole('columnheader', { name, exact: true })).toBeVisible();
+  for (const name of ['Date', 'Project', 'Work done', 'Status']) await expect(page.getByRole('columnheader', { name, exact: true })).toBeVisible();
 });
 
 test('payables and receivables are lists with columns, and keep their search over a reload', async ({ page }) => {

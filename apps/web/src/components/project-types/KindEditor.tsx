@@ -24,6 +24,17 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { useSaveComponentKind } from '@/lib/queries';
 
+/** A spec's short name from its name: "Staging height" → stagingHeight. */
+const specKeyFrom = (name: string) =>
+  name
+    .replace(/[^A-Za-z ]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w, i) => (i ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w.toLowerCase()))
+    .join('')
+    .slice(0, 30);
+
 const STEP_KINDS: { value: ComponentStep['kind']; label: string }[] = [
   { value: 'plain', label: 'Activity' },
   { value: 'rcc', label: 'RCC (steel, shuttering, concrete)' },
@@ -150,8 +161,8 @@ function StepCard({ field, index, count, specs, onMove, onRemove }: { field: For
       </FormGrid>
       {kind === 'plain' ? (
         <FormGrid cols={2}>
-          <Form.Item name={[field.name, 'qtyFrom']} label="Quantity from" tooltip="Left empty, the planner fills the quantity in.">
-            <Select allowClear options={specs} placeholder="The planner fills it in" />
+          <Form.Item name={[field.name, 'qtyFrom']} label="Quantity from" tooltip="Left empty, the planning engineer fills the quantity in.">
+            <Select allowClear options={specs} placeholder="The planning engineer fills it in" />
           </Form.Item>
           <Form.Item name={[field.name, 'lumpSum']} valuePropName="checked" label="Lump sum">
             <Checkbox>One lump sum (quantity 1)</Checkbox>
@@ -240,7 +251,7 @@ export function KindEditor({ kind, editable, onClose, onUpdateProjects }: { kind
       width={960}
       allValues
       title={kind ? `${editable ? 'Edit' : 'View'} ${kind.name}` : ''}
-      okText="Save kind"
+      okText="Save"
       okDisabled={!editable || problems.length > 0}
       projectDefault={false}
       onSubmit={async (v) => {
@@ -250,15 +261,15 @@ export function KindEditor({ kind, editable, onClose, onUpdateProjects }: { kind
       }}
     >
       <Form form={form} layout="vertical" disabled={!editable}>
-        <FormSection title="Kind">
+        <FormSection title="Component type">
           <FormGrid cols={3}>
             <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name, e.g. Bridge pier' }]}>
               <Input maxLength={80} />
             </Form.Item>
             <Form.Item
               name="elementType"
-              label="Built on"
-              tooltip={kind?.components ? 'Components were laid out from it, so this stays; make a new kind instead.' : 'Where its components show in reports and stock checks.'}
+              label="Based on"
+              tooltip={kind?.components ? 'Components were made from it, so this stays; make a new component type instead.' : 'Where its components show in reports and stock checks.'}
             >
               <Select disabled={!!kind?.components} showSearch={{ optionFilterProp: 'label' }} options={WORK_ELEMENT_TYPES.map((t) => ({ value: t, label: WORK_ELEMENT_TYPE_LABELS[t] }))} />
             </Form.Item>
@@ -282,21 +293,21 @@ export function KindEditor({ kind, editable, onClose, onUpdateProjects }: { kind
           </Typography.Paragraph>
         ) : null}
         <FormSection title="Specs">
-          <Typography.Paragraph type="secondary">What the planner fills in for each component, such as the staging height. A step&apos;s quantity or its lifts are read from them. Up to {MAX_SPEC_FIELDS}.</Typography.Paragraph>
+          <Typography.Paragraph type="secondary">What the planning engineer fills in for each component, such as the staging height. A step&apos;s quantity or its lifts are read from them. Up to {MAX_SPEC_FIELDS}.</Typography.Paragraph>
           <LineTable
             name="specFields"
             label="Spec"
             addText="Add spec"
             newLine={() => ({ key: '', label: '', unit: 'm' })}
             columns={[
-              { key: 'label', title: 'Spec', render: (f) => <Form.Item name={[f.name, 'label']} noStyle rules={[{ required: true, whitespace: true, message: 'Name the spec' }]}><Input aria-label="Spec name" maxLength={60} placeholder="Staging height" /></Form.Item> },
+              { key: 'label', title: 'Spec', render: (f) => <Form.Item name={[f.name, 'label']} noStyle rules={[{ required: true, whitespace: true, message: 'Name the spec' }]}><Input aria-label="Spec name" maxLength={60} placeholder="Staging height" onBlur={(e) => { if (!form.getFieldValue(['specFields', f.name, 'key'])) form.setFieldValue(['specFields', f.name, 'key'], specKeyFrom(e.target.value)); }} /></Form.Item> },
               {
                 key: 'key',
-                title: 'Key',
+                title: 'Short name for formulas',
                 width: 160,
                 render: (f) => (
-                  <Form.Item name={[f.name, 'key']} noStyle rules={[{ required: true, pattern: /^[a-z][A-Za-z]{0,29}$/, message: 'Letters only, starting small, e.g. stagingM' }]}>
-                    <Input aria-label="Spec key" maxLength={30} placeholder="stagingM" translate="no" spellCheck={false} autoComplete="off" />
+                  <Form.Item name={[f.name, 'key']} noStyle rules={[{ required: true, pattern: /^[a-z][A-Za-z]{0,29}$/, message: 'Use letters only, starting with a small letter, e.g. stagingHeight' }]}>
+                    <Input aria-label="Short name for formulas" maxLength={30} placeholder="stagingHeight" translate="no" spellCheck={false} autoComplete="off" />
                   </Form.Item>
                 ),
               },

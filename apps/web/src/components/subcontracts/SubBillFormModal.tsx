@@ -15,6 +15,7 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
+import { unitLabel } from '@erp/shared';
 
 interface FormValues {
   workOrderId: string;
@@ -39,12 +40,15 @@ export function SubBillFormModal({
   open,
   bill,
   workOrderId,
+  fromInvoice,
   onClose,
   onSaved,
 }: {
   open: boolean;
   bill?: SubcontractBillDto | null;
   workOrderId?: string;
+  /** A subcontractor's invoice from the supplier portal: the bill takes its number and date, which links the two. */
+  fromInvoice?: { invoiceNo: string; invoiceDate: string } | null;
   onClose: () => void;
   onSaved?: (b: SubcontractBillDto) => void;
 }) {
@@ -72,8 +76,14 @@ export function SubBillFormModal({
         remarks: bill.remarks ?? undefined,
         docs: bill.attachments,
       });
-    else form.setFieldsValue({ workOrderId, billDate: dayjs(), measuredUpTo: dayjs() });
-  }, [open, bill, workOrderId, form]);
+    else
+      form.setFieldsValue({
+        workOrderId,
+        billDate: fromInvoice ? dayjs(fromInvoice.invoiceDate) : dayjs(),
+        measuredUpTo: dayjs(),
+        invoiceNo: fromInvoice?.invoiceNo,
+      });
+  }, [open, bill, workOrderId, fromInvoice, form]);
 
   const ownLines = (wo?.lines ?? []).filter((l) => !l.boqItemId);
   const boqLines = (wo?.lines ?? []).filter((l) => l.boqItemId);
@@ -117,7 +127,7 @@ export function SubBillFormModal({
       allValues
       title={bill ? `Edit ${bill.label}` : wo ? `New bill on ${wo.woNo} · ${wo.vendorName}` : 'New subcontractor bill'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
     >
       <Form form={form} layout="vertical" requiredMark="optional">
@@ -133,10 +143,10 @@ export function SubBillFormModal({
             </Form.Item>
           )}
           <FormGrid cols={2}>
-            <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
+            <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true, message: 'Pick the day work is measured up to' }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
+            <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true, message: 'Choose the day work is measured up to' }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="invoiceNo" label="Their invoice no.">
@@ -158,7 +168,7 @@ export function SubBillFormModal({
                 title="BOQ items are billed as measured"
                 description={
                   <span>
-                    {boqLines.map((l) => `${l.itemNo}: ${formatQty(l.measuredQty)} of ${formatQty(l.quantity)} ${l.unit} measured, ${formatQty(billedElsewhere(l))} billed before`).join(' · ')}. Only approved measurements tagged to {wo.woNo} count.
+                    {boqLines.map((l) => `${l.itemNo}: ${formatQty(l.measuredQty)} of ${formatQty(l.quantity)} ${unitLabel(l.unit)} measured, ${formatQty(billedElsewhere(l))} billed before`).join(' · ')}. Only approved measurements tagged to {wo.woNo} count.
                   </span>
                 }
               />

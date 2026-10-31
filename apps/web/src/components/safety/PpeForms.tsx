@@ -5,7 +5,7 @@ import { App, Button, Checkbox, Form, Input, Radio, Select, Space, Typography } 
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { PpeKind, PpeRegisterDto } from '@erp/shared';
-import { PPE_KINDS, PPE_KIND_LABELS, PPE_LIFE_DAYS } from '@erp/shared';
+import { PPE_ISSUE_STATUS_LABELS, PPE_KINDS, PPE_KIND_LABELS, PPE_LIFE_DAYS } from '@erp/shared';
 import { useClosePpe, useIssuePpe, useSetPpeRequired } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -135,8 +135,8 @@ export function ClosePpeModal({ open, onClose, item }: { open: boolean; onClose:
           <Radio.Group
             onChange={(e) => form.setFieldValue('recoverable', e.target.value === 'LOST')}
             options={[
-              { value: 'RETURNED', label: 'Handed back' },
-              { value: 'LOST', label: 'Lost or not returned' },
+              { value: 'RETURNED', label: PPE_ISSUE_STATUS_LABELS.RETURNED },
+              { value: 'LOST', label: PPE_ISSUE_STATUS_LABELS.LOST },
             ]}
           />
         </Form.Item>

@@ -517,7 +517,6 @@ export const CORE: Record<string, string> = {
   Construction: 'निर्माण',
   Consultancy: 'परामर्श',
   'Quality lab': 'गुणवत्ता प्रयोगशाला',
-  'Plant or RMC': 'प्लांट या RMC',
   Holding: 'होल्डिंग',
   'You are now working in {company}': 'अब आप {company} में काम कर रहे हैं',
   'Could not switch company': 'कंपनी नहीं बदल सकी',

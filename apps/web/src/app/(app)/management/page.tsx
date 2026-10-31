@@ -84,7 +84,7 @@ function Dashboard({ data }: { data: PortfolioDto }) {
     },
     {
       key: 'unbilled',
-      label: 'Done, not billed',
+      label: 'Work done, not billed',
       value: formatINRCompact(t.unbilled),
       note: 'Bill it to get paid',
       tone: toNumber(t.unbilled) > 0 && data.attention.some((a) => a.key === 'billing') ? 'danger' : undefined,

@@ -1,5 +1,6 @@
 'use client';
 
+import { MoreActions } from '@/components/record/MoreActions';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -151,11 +152,11 @@ function NeedFormModal({ open, onClose, need, projectId, onSaved }: { open: bool
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} draftKey={need ? undefined : 'drawing-need'} title={need ? `Edit ${need.docNo ?? need.title}` : 'Add drawing to the schedule'} okText={need ? 'Save' : 'Add drawing'} onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} draftKey={need ? undefined : 'drawing-need'} title={need ? `Edit ${need.docNo ?? need.title}` : 'New drawing'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="Drawing">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!(need || projectId)}>
-            <ProjectSelect allowClear={false} placeholder="Choose the project" />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" />
           </Form.Item>
           <Form.Item name="title" label="Drawing" rules={[{ required: true, whitespace: true, message: 'Say which drawing it is' }]}>
             <Input maxLength={200} placeholder="Second floor slab reinforcement" />
@@ -185,9 +186,9 @@ function NeedFormModal({ open, onClose, need, projectId, onSaved }: { open: bool
           </FormGrid>
           <Form.Item
             name="fromParty"
-            label="Addressed to"
-            extra="As a reminder letter is addressed"
-            rules={source && remindsByLetter(source) ? [{ required: true, whitespace: true, message: 'Say who issues it, such as the architect or the Executive Engineer' }] : []}
+            label="Issued by"
+            extra="Reminders are addressed to them"
+            rules={source && remindsByLetter(source) ? [{ required: true, whitespace: true, message: 'Enter who issues the drawing, such as the architect or the Executive Engineer' }] : []}
           >
             <Input maxLength={300} placeholder="The Executive Engineer, Building Division No. 1" />
           </Form.Item>
@@ -241,17 +242,17 @@ function ManyFormDrawer({ open, onClose, projectId }: { open: boolean; onClose: 
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={920} draftKey="drawing-needs" title="Add drawings to the schedule" okText="Add drawings" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={920} draftKey="drawing-needs" title="New drawings from a list" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="From">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
-            <ProjectSelect allowClear={false} placeholder="Choose the project" />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="source" label="Issued by">
               <Select options={DRAWING_SOURCES.map((s) => ({ value: s, label: DRAWING_SOURCE_LABELS[s] }))} />
             </Form.Item>
-            <Form.Item name="fromParty" label="Addressed to" rules={source && remindsByLetter(source) ? [{ required: true, whitespace: true, message: 'Say who issues them, such as the architect' }] : []}>
+            <Form.Item name="fromParty" label="Issued by" rules={source && remindsByLetter(source) ? [{ required: true, whitespace: true, message: 'Enter who issues the drawings, such as the architect' }] : []}>
               <Input maxLength={300} placeholder="The architect" />
             </Form.Item>
           </FormGrid>
@@ -424,9 +425,7 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
           ) : null}
           {may && !n.riskId && !n.lastLetterId ? (
             <Flex>
-              <Button danger onClick={() => confirmDelete({ what: n.docNo ?? n.title, onConfirm: () => remove.mutateAsync(), onDone: onClose })}>
-                Delete
-              </Button>
+              <MoreActions size="middle" items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => confirmDelete({ what: n.docNo ?? n.title, onConfirm: () => remove.mutateAsync(), onDone: onClose }) }]} />
             </Flex>
           ) : null}
         </Flex>
@@ -481,7 +480,7 @@ function ScheduleList() {
       { key: 'holds', title: 'Holds up', width: 160, ellipsis: true, defaultFrom: 1600, render: (_, r) => r.activityName ?? <Typography.Text type="secondary">-</Typography.Text> },
       {
         key: 'stands',
-        title: 'Stands',
+        title: 'Status',
         width: 220,
         card: 'meta',
         cardText: (r) => DRAWING_NEED_STATE_LABELS[r.state],
@@ -515,9 +514,9 @@ function ScheduleList() {
   const newButton = may ? (
     <Space.Compact>
       <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing('new')}>
-        Add drawing
+        New drawing
       </Button>
-      <Button onClick={() => setAdding(true)}>Add a list</Button>
+      <Button onClick={() => setAdding(true)}>New drawings from a list</Button>
     </Space.Compact>
   ) : null;
   const c = data?.counts;

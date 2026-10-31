@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { App, Form, Input, InputNumber, Select, TimePicker } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -9,7 +10,6 @@ import type { AttachmentDto, SafetyIncidentDto, SafetyIncidentType } from '@erp/
 import { INJURY_TYPES, SAFETY_INCIDENT_TYPES, SAFETY_INCIDENT_TYPE_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 
@@ -35,7 +35,6 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: projects } = useProjects();
   const type = Form.useWatch('type', form);
   const injury = !!type && INJURY_TYPES.includes(type);
   const editing = !!incident;
@@ -99,7 +98,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
       onClose={onClose}
       form={form}
       layout="drawer"
-      title={editing ? `Change ${incident?.incidentNo}` : nearMiss ? 'Report near miss' : 'Report incident'}
+      title={editing ? `Edit ${incident?.incidentNo}` : nearMiss ? 'Report near miss' : 'Report incident'}
       okText={editing ? 'Save' : 'Report'}
       draftKey={editing ? undefined : `${nearMiss ? 'near-miss' : 'incident'}:${projectId ?? 'any'}`}
       onSubmit={(v) => save.mutateAsync(v)}
@@ -107,7 +106,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
       <Form form={form} layout="vertical">
         <FormSection title="The incident">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || editing}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
           </Form.Item>
           <FormGrid cols={3}>
             <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Choose the type' }]}>
@@ -120,7 +119,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
               <TimePicker style={{ width: '100%' }} format="HH:mm" minuteStep={5} />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Where did it happen?' }]}>
+          <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Enter where it happened' }]}>
             <Input maxLength={200} placeholder="Chainage, block and floor, yard" />
           </Form.Item>
           <Form.Item name="description" label="What happened" rules={[{ required: true, whitespace: true, message: 'Describe what happened' }]}>
@@ -148,8 +147,8 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
               </Form.Item>
             </>
           ) : null}
-          <Form.Item name="contractor" label="Whose workers">
-            <Input maxLength={200} placeholder="Labour contractor or subcontractor" />
+          <Form.Item name="contractor" label="Contractor">
+            <Input maxLength={200} placeholder="Labour contractor or subcontractor; empty for our own workers" />
           </Form.Item>
           <Form.Item name="immediateAction" label="Immediate action">
             <Input.TextArea rows={2} maxLength={2000} placeholder="First aid given, area cordoned off, work stopped" />

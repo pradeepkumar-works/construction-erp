@@ -16,7 +16,7 @@ export type CopyDisposal = (typeof COPY_DISPOSALS)[number];
 export const COPY_DISPOSAL_LABELS: Record<CopyDisposal, string> = { RETURNED: 'Returned', DESTROYED: 'Destroyed on site', LOST: 'Reported lost' };
 
 export type CopyState = 'IN_FORCE' | 'TO_RECALL' | 'CLOSED';
-export const COPY_STATE_LABELS: Record<CopyState, string> = { IN_FORCE: 'In force', TO_RECALL: 'Superseded, to recall', CLOSED: 'Taken back' };
+export const COPY_STATE_LABELS: Record<CopyState, string> = { IN_FORCE: 'In force', TO_RECALL: 'Superseded, to withdraw', CLOSED: 'Withdrawn' };
 
 /** CC-03: the copy number printed and stamped on the sheet. */
 export const copyLabel = (n: number) => `CC-${String(n).padStart(2, '0')}`;

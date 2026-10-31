@@ -7,7 +7,7 @@ import { canApproveSupplierChange, type PasswordLinkDto, type SupplierChangeDto,
 import { useAuth } from '@/lib/auth';
 import { useSupplierAction, useVendorPortal } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
 import { PasswordLinkModal } from '@/components/users/PasswordLinkModal';
@@ -67,9 +67,9 @@ export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; 
           scroll={{ x: 680 }}
           columns={[
             { title: 'Name', dataIndex: 'fullName', render: (v: string, l) => <span translate="no">{v}<br /><Typography.Text type="secondary">{l.email}</Typography.Text></span> },
-            { title: 'Phone', dataIndex: 'phone', width: 140, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
+            { title: 'Phone', dataIndex: 'phone', width: 140, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
             { title: 'Since', dataIndex: 'createdAt', width: 110, render: (v: string) => formatDate(v) },
-            { title: 'State', key: 'state', width: 130, render: (_, l) => (!l.isActive ? <AppTag>Off</AppTag> : l.invitePending ? <AppTag tone="pending">Invite not used</AppTag> : <AppTag tone="success">Signed up</AppTag>) },
+            { title: 'Status', key: 'state', width: 130, render: (_, l) => (!l.isActive ? <AppTag>Off</AppTag> : l.invitePending ? <AppTag tone="pending">Invite not used</AppTag> : <AppTag tone="success">Signed up</AppTag>) },
             {
               title: 'Action',
               key: 'action',
@@ -99,7 +99,7 @@ export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; 
                   Approve
                 </Button>
                 <Button size="small" onClick={() => setDeciding({ change: c, approve: false })}>
-                  Turn down
+                  Reject
                 </Button>
               </Flex>
             ) : c.status === 'PENDING' && c.bank ? (

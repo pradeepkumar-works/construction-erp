@@ -10,6 +10,7 @@ import { AppTag, type TagTone } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import { CopyStateTag, IssueCopiesDialog, ReissueDialog, TakeBackDialog } from './ControlledCopies';
 
+const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 const TONE: Record<ImpactTone, TagTone> = { danger: 'danger', warning: 'pending', info: 'info' };
 const KEY_LABEL: Record<RevisionImpactItem['key'], string> = {
   copies: 'Copies',
@@ -39,7 +40,7 @@ export function ImpactList({ items }: { items: RevisionImpactItem[] }) {
                 {i.ids.map((id, k) => (
                   <React.Fragment key={id}>
                     {k ? ', ' : ''}
-                    <Link href={`/design-submissions/${id}`}>Open</Link>
+                    <Link href={`/design-submissions/${id}`} aria-label={`Open design submission ${k + 1} of ${i.ids!.length}`}>{i.ids!.length > 1 ? `Open ${k + 1}` : 'Open'}</Link>
                   </React.Fragment>
                 ))}
               </>
@@ -77,7 +78,7 @@ export function RevisionImpactPanel({ documentId, projectId, manage, buildable }
         </>
       ) : null}
       <Divider titlePlacement="start" plain>
-        {`Controlled copies (${out.length})`}
+        Controlled copies{out.length ? <Typography.Text type="secondary" translate="no">{` ${out.length}`}</Typography.Text> : null}
       </Divider>
       {manage && buildable ? (
         <Button size="small" icon={<PlusOutlined />} onClick={() => setIssuing(true)} style={{ marginBottom: token.marginXS }}>
@@ -96,22 +97,22 @@ export function RevisionImpactPanel({ documentId, projectId, manage, buildable }
             { title: 'Held by', dataIndex: 'holder', render: (v: string) => <span translate="no">{v}</span> },
             { title: 'Rev', dataIndex: 'revision', width: 60, render: (v: string) => <span translate="no">{v}</span> },
             { title: 'Issued', dataIndex: 'issuedOn', width: 110, render: (v: string) => <span translate="no">{formatDate(v)}</span> },
-            { title: 'Stands', key: 'state', width: 150, render: (_, c) => <CopyStateTag copy={c} /> },
+            { title: 'Status', key: 'state', width: 150, render: (_, c) => <CopyStateTag copy={c} /> },
             ...(manage
               ? [
                   {
-                    title: '',
+                    title: <span style={srOnly}>Actions</span>,
                     key: 'act',
                     width: 120,
                     render: (_: unknown, c: ControlledCopyDto) =>
                       c.state === 'TO_RECALL' ? (
                         <Flex vertical gap={4} align="start">
                           <Button size="small" onClick={() => setTakeBack(c)}>
-                            Take back
+                            Withdraw copy
                           </Button>
                           {buildable && !holding.has(c.holder.toLowerCase()) ? (
                             <Button size="small" type="link" onClick={() => setReissue(c)} style={{ paddingInline: 0 }}>
-                              {`Give ${c.currentRevision}`}
+                              {`Issue ${c.currentRevision}`}
                             </Button>
                           ) : null}
                         </Flex>

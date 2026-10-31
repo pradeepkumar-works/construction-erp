@@ -3,6 +3,7 @@
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
+import { navNode } from '@erp/shared';
 import { PageHeader } from '@/components/common/PageHeader';
 import { VariationsPanel } from '@/components/variations/VariationsPanel';
 
@@ -10,7 +11,7 @@ function VariationsPage() {
   const search = useSearchParams();
   return (
     <div className="page-container">
-      <PageHeader title="Variations" subtitle="Extra items and quantity changes claimed from the client. Approved variations update the BOQ and the revised contract value." />
+      <PageHeader title="Variations" subtitle={navNode('billing.variations')?.description} />
       <Card size="small">
         <VariationsPanel openId={search.get('id')} />
       </Card>

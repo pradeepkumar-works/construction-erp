@@ -8,9 +8,9 @@ import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { EquipmentDto, EquipmentPartDto, EquipmentPartKind } from '@erp/shared';
-import { EQUIPMENT_PART_KINDS, EQUIPMENT_PART_KIND_LABELS } from '@erp/shared';
+import { EQUIPMENT_PART_KINDS, EQUIPMENT_PART_KIND_LABELS, unitLabel } from '@erp/shared';
 import { useEquipmentParts, useSaveEquipmentPart } from '@/lib/queries';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -137,7 +137,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
             ) : null}
           </div>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
     {
@@ -159,7 +159,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
       ),
     },
     ...(data?.canSeeCost
-      ? [{ title: 'Cost', dataIndex: 'cost', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no">{formatINR(v)}</span>) }]
+      ? [{ title: 'Cost', dataIndex: 'cost', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatINR(v)}</span>) }]
       : []),
     ...(data?.canEdit
       ? [
@@ -209,7 +209,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
           <Typography.Paragraph type="secondary" style={small}>
             {machine?.name}. Latest {unit === 'km' ? 'odometer' : 'hour meter'} reading:{' '}
             <span className="mono" translate="no">
-              {data.currentMeter === null ? 'none yet' : `${formatQty(data.currentMeter)} ${unit}`}
+              {data.currentMeter === null ? 'none yet' : `${formatQty(data.currentMeter)} ${unitLabel(unit)}`}
             </span>
             . Life runs from fitting to removal, or to that reading while a part is still on.
           </Typography.Paragraph>
@@ -249,7 +249,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
             <Form.Item name="serialNo" label="Serial no." hidden={off}>
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item name="fittedOn" label="Fitted on" rules={[{ required: true, message: 'Pick the date it was fitted' }]} hidden={off}>
+            <Form.Item name="fittedOn" label="Fitted on" rules={[{ required: true, message: 'Choose the date it was fitted' }]} hidden={off}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="fittedMeter" label={`Meter when fitted (${unit})`} hidden={off}>
@@ -262,7 +262,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
             ) : null}
             {showRemoval ? (
               <>
-                <Form.Item name="removedOn" label="Came off on" rules={[{ required: off, message: 'Pick the date it came off' }]}>
+                <Form.Item name="removedOn" label="Came off on" rules={[{ required: off, message: 'Choose the date it came off' }]}>
                   <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
                 </Form.Item>
                 <Form.Item name="removedMeter" label={`Meter when it came off (${unit})`}>

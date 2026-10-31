@@ -6,7 +6,7 @@ import { PrinterOutlined } from '@/components/common/icons';
 import type { ManualPayslipCode, PayslipDto, PayslipLineDto } from '@erp/shared';
 import { MANUAL_PAYSLIP_CODES, PAYSLIP_CODES } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { formatINR } from '@/lib/format';
+import { formatINR, NO_VALUE } from '@/lib/format';
 import { usePayrollAction } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
@@ -36,7 +36,7 @@ function AdjustModal({ open, onClose, slip }: { open: boolean; onClose: () => vo
       width={680}
       projectDefault={false}
       title={`Add to ${slip.employeeName}'s payslip`}
-      okText="Save and work out again"
+      okText="Save and recalculate"
       onSubmit={async (v) => {
         const p = await save.mutateAsync({ method: 'put', path: `/payroll/payslips/${slip.id}/adjustments`, body: { lines: (v.lines ?? []).map((l) => ({ ...l, label: l.label?.trim() || undefined })) } });
         message.success(`Payslip worked out again: net pay ${formatINR(p.net)}`);
@@ -46,12 +46,12 @@ function AdjustModal({ open, onClose, slip }: { open: boolean; onClose: () => vo
         <Typography.Paragraph type="secondary">PF, ESI, professional tax and TDS are worked out again with these lines.</Typography.Paragraph>
         <LineTable
           name="lines"
-          label="Line"
+          label="Payslip"
           addText="Add a line"
           columns={[
             {
               key: 'code',
-              title: 'What',
+              title: 'Line type',
               width: 190,
               render: (field) => (
                 <Form.Item name={[field.name, 'code']} rules={[{ required: true, message: 'Choose what it is' }]} noStyle>
@@ -129,7 +129,7 @@ export function PayslipModal({ slip, open, onClose, editable }: { slip: PayslipD
           {shown.paidDays} of {shown.monthDays}
           {Number(shown.lopDays) ? `, loss of pay ${shown.lopDays}` : ''}
         </Descriptions.Item>
-        <Descriptions.Item label="Overtime">{Number(shown.overtimeHours) ? `${shown.overtimeHours} h` : '-'}</Descriptions.Item>
+        <Descriptions.Item label="Overtime">{Number(shown.overtimeHours) ? `${shown.overtimeHours} h` : NO_VALUE}</Descriptions.Item>
         <Descriptions.Item label="Gross">
           <Rupees value={shown.gross} />
         </Descriptions.Item>

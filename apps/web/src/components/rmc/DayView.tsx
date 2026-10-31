@@ -8,11 +8,12 @@ import { CarOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { RmcBatchDto, RmcOrderDto } from '@erp/shared';
 import { useRmcDay } from '@/lib/queries';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE, formatTime } from '@/lib/format';
 import { QueryError, PageSkeleton } from '@/components/common/QueryState';
 import { BatchStatusTag, M3, PlantFilter, m3, usePlantScope } from './rmcUi';
 import { DispatchForm } from './BatchForms';
 import { useRmcDrawers } from './Drawers';
+import { unitLabel } from '@erp/shared';
 
 /** The plant's day: the orders to pour and what each has had, the trucks sent, by grade, and the store against what is left to pour. */
 export function DayView() {
@@ -46,7 +47,7 @@ export function DayView() {
             </Col>
             <Col xs={12} md={6}>
               <Card size="small">
-                <Statistic title="Trucks" value={trucks} suffix={onTheWay ? <Typography.Text type="secondary" style={{ fontSize: 14 }}>{`${onTheWay} on the way`}</Typography.Text> : null} />
+                <Statistic title="Trucks" value={trucks} suffix={onTheWay ? <Typography.Text type="secondary" style={{ fontSize: 14 }}>{`${onTheWay} in transit`}</Typography.Text> : null} />
               </Card>
             </Col>
             <Col xs={12} md={6}>
@@ -98,7 +99,7 @@ export function DayView() {
                         setSending(o);
                       }}
                     >
-                      Send a truck
+                      New challan
                     </Button>
                   ) : null,
               },
@@ -117,11 +118,11 @@ export function DayView() {
             onRow={(b) => ({ onClick: () => openBatch(b.id), style: { cursor: 'pointer' } })}
             columns={[
               { title: 'Challan', dataIndex: 'batchNo', width: 140, render: (n: string) => <span translate="no">{n}</span> },
-              { title: 'Left', dataIndex: 'dispatchedAt', width: 80, render: (d: string) => dayjs(d).format('HH:mm') },
+              { title: 'Left', dataIndex: 'dispatchedAt', width: 80, render: (d: string) => formatTime(d) },
               { title: 'Customer', dataIndex: 'customer', ellipsis: true, render: (c: string) => <span translate="no">{c}</span> },
               { title: 'Grade', dataIndex: 'grade', width: 80, render: (g: string) => <span translate="no">{g}</span> },
               { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-              { title: 'Truck', dataIndex: 'truck', width: 140, render: (t: string | null) => <span translate="no">{t ?? '-'}</span> },
+              { title: 'Truck', dataIndex: 'truck', width: 140, render: (t: string | null) => <span translate="no">{t ?? NO_VALUE}</span> },
               { title: 'Status', dataIndex: 'status', width: 120, render: (s: RmcBatchDto['status']) => <BatchStatusTag status={s} /> },
             ]}
           />
@@ -137,8 +138,8 @@ export function DayView() {
             locale={{ emptyText: 'Nothing left to pour' }}
             columns={[
               { title: 'Material', dataIndex: 'itemName' },
-              { title: 'Needed', key: 'n', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.needed)} ${m.unit}`}</span> },
-              { title: 'In the store', key: 'i', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.inStock)} ${m.unit}`}</span> },
+              { title: 'Needed', key: 'n', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.needed)} ${unitLabel(m.unit)}`}</span> },
+              { title: 'In the store', key: 'i', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.inStock)} ${unitLabel(m.unit)}`}</span> },
               { title: '', dataIndex: 'short', width: 110, render: (s: boolean) => (s ? <AppTag tone="danger">Short</AppTag> : <AppTag tone="success">Enough</AppTag>) },
             ]}
           />

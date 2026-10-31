@@ -25,14 +25,14 @@ test('a make is requested, sent back, resubmitted as R1 and approved onto the pr
   await signIn(page, 'qaqc@demo.com');
   await page.goto('/material-approvals');
   await expect(page.getByRole('heading', { level: 1, name: 'Material approvals' })).toBeVisible();
-  await page.getByRole('button', { name: 'Request approval' }).first().click();
+  await page.getByRole('button', { name: 'Request material approval' }).first().click();
   const form = page.locator('.ant-drawer-open').filter({ hasText: 'Request material approval' });
   await chooseOption(form.getByLabel('Project'), 'BL-2026-02');
   await form.getByLabel('Material', { exact: true }).fill(material);
   await form.getByLabel('Make', { exact: true }).fill('Roff');
   await form.getByLabel('Model, grade or range').fill('Ultrabond, type 1');
   await form.getByLabel('To', { exact: true }).fill('Lakshmi Menon, PMC');
-  await form.getByRole('button', { name: 'Save draft' }).click();
+  await form.getByRole('button', { name: 'Save as draft' }).click();
   await expect(page.getByText(/Request MAR-\d{4}-\d{4} saved as a draft/)).toBeVisible();
   await expect(page).toHaveURL(/\/material-approvals\/[0-9a-f-]{36}$/);
   await expect(page.getByRole('heading', { level: 1, name: material })).toBeVisible();
@@ -54,7 +54,7 @@ test('a make is requested, sent back, resubmitted as R1 and approved onto the pr
   await expect(review.getByText('Write the reviewer’s comments', { exact: true })).toBeVisible();
   await review.getByLabel('Reviewer’s comments').fill('Use a type 2 adhesive for the large tiles.');
   await review.getByRole('button', { name: 'Record' }).click();
-  await expect(page.getByText('Back with us to revise and resubmit.')).toBeVisible();
+  await expect(page.getByText('Returned to us to revise and resubmit.')).toBeVisible();
 
   // R1 in another make.
   await page.getByRole('button', { name: 'Resubmit as R1' }).click();

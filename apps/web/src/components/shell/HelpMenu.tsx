@@ -73,7 +73,7 @@ export function useHelpMenu({ onTour, withSearch, withAsk = false }: { onTour: (
   ];
 
   const shortcuts: [string, string[]][] = [
-    ...(withSearch ? ([['Search pages and projects', searchShortcut().startsWith('⌘') ? ['⌘', 'K'] : ['Ctrl', 'K']]] as [string, string[]][]) : []),
+    ...(withSearch ? ([['Search pages, projects and records', searchShortcut().startsWith('⌘') ? ['⌘', 'K'] : ['Ctrl', 'K']]] as [string, string[]][]) : []),
     ...(withAsk ? ([[`Ask ${PRODUCT_NAME} a question`, askShortcutKeys()]] as [string, string[]][]) : []),
     ['Skip the menu to the page (first Tab on a page)', ['Tab', 'Enter']],
     ...(singleKeys

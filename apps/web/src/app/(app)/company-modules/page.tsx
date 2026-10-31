@@ -9,6 +9,7 @@ import { useNotify } from '@/lib/notify';
 import { useModuleSwitches, useSetModuleSwitch } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
+import { useNavMenu } from '@/components/shell/menu';
 
 /** One module: its switch, what it is, and why it cannot be turned on when the plan leaves it out. */
 function ModuleRow({ m, busy, onChange }: { m: ModuleSwitchDto; busy: boolean; onChange: (on: boolean) => void }) {
@@ -35,7 +36,8 @@ function ModuleRow({ m, busy, onChange }: { m: ModuleSwitchDto; busy: boolean; o
 function Modules({ data }: { data: ModuleSwitchesDto }) {
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const { refresh } = useAuth();
+  const { user, refresh } = useAuth();
+  const { settings } = useNavMenu(user);
   const set = useSetModuleSwitch();
   const notify = useNotify();
   const change = (m: ModuleSwitchDto, on: boolean) =>
@@ -62,7 +64,7 @@ function Modules({ data }: { data: ModuleSwitchesDto }) {
         />
       )}
       {sections.map((s) => (
-        <Card key={s.key} title={MODULE_LABELS[s.key]} size="small">
+        <Card key={s.key} title={settings.names[s.key]?.trim() || MODULE_LABELS[s.key]} size="small">
           <Flex vertical>
             {s.modules.map((m) => (
               <ModuleRow key={m.key} m={m} busy={set.isPending && set.variables?.key === m.key} onChange={(on) => change(m, on)} />
@@ -85,7 +87,7 @@ export default function CompanyModulesPage() {
   if (!user) return null;
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title="Modules" subtitle="Turn off what your company does not use. It leaves the sidebar, Search, New and Ask for everyone; its records are kept." />
+      <PageHeader title="Modules" subtitle="Turn off what your company does not use. It leaves the menu, Home, Search, New and Ask for everyone; its records are kept." />
       {!allowed ? (
         <Alert type="info" title="Only an admin can turn modules on and off." />
       ) : isLoading ? (

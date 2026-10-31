@@ -8,7 +8,7 @@ import { PAYMENT_MODE_LABELS, canBillRmc, type PaymentMode } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useRmcAction, useRmcInvoices, useRmcReceipts } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { InvoiceStatusTag, M3, PlantFilter, Rupees, usePlantScope } from './rmcUi';
 import { InvoiceForm, ReceiptForm } from './MoneyForms';
@@ -65,7 +65,7 @@ function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto
             items={[
               { key: 's', label: 'Status', children: <InvoiceStatusTag status={i.status} /> },
               { key: 'c', label: 'Customer', children: <span translate="no">{`${i.customer}${i.gstin ? `, GSTIN ${i.gstin}` : ''}`}</span> },
-              { key: 'o', label: 'Order', children: <span translate="no">{i.orderNo ?? '-'}</span> },
+              { key: 'o', label: 'Order', children: <span translate="no">{i.orderNo ?? NO_VALUE}</span> },
               { key: 'd', label: 'Date', children: formatDate(i.date) },
               { key: 'q', label: 'Concrete', children: <span translate="no"><M3 value={i.quantity} />{', '}<Rupees value={i.concrete} /></span> },
               ...(Number(i.pumping) ? [{ key: 'p', label: 'Pumping', children: <Rupees value={i.pumping} /> }] : []),
@@ -177,8 +177,8 @@ export function Bills() {
               { title: 'Date', dataIndex: 'date', width: 110, render: (d: string) => formatDate(d) },
               { title: 'Customer', dataIndex: 'customer', ellipsis: true, render: (c: string) => <span translate="no">{c}</span> },
               { title: 'Against', dataIndex: 'invoiceNo', width: 150, render: (n: string | null) => <span translate="no">{n ?? 'On account'}</span> },
-              { title: 'How', dataIndex: 'mode', width: 110, render: (m: string) => PAYMENT_MODE_LABELS[m as PaymentMode] ?? m },
-              { title: 'Reference', dataIndex: 'reference', width: 200, ellipsis: true, render: (r: string | null) => <span translate="no">{r ?? '-'}</span> },
+              { title: 'Payment mode', dataIndex: 'mode', width: 110, render: (m: string) => PAYMENT_MODE_LABELS[m as PaymentMode] ?? m },
+              { title: 'Reference', dataIndex: 'reference', width: 200, ellipsis: true, render: (r: string | null) => <span translate="no">{r ?? NO_VALUE}</span> },
               { title: 'Amount', dataIndex: 'amount', align: 'right', width: 140, render: (v: string) => <Rupees value={v} /> },
             ]}
           />

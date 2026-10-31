@@ -46,7 +46,7 @@ function RmcPage() {
             variant="page"
             destroyOnHidden
             items={[
-              { key: 'day', label: 'The day', children: <DayView /> },
+              { key: 'day', label: 'The day at the plant', children: <DayView /> },
               { key: 'orders', label: 'Quotes and orders', children: <Orders /> },
               {
                 key: 'batcher',
@@ -56,7 +56,7 @@ function RmcPage() {
                 attention: !!board?.late,
                 children: <Batcher />,
               },
-              { key: 'batches', label: 'Trucks and challans', children: <Batches /> },
+              { key: 'batches', label: 'Challans', children: <Batches /> },
               { key: 'designs', label: 'Mix designs', children: <MixDesigns /> },
               ...(sees ? [{ key: 'bills', label: 'Bills and money received', children: <Bills /> }] : []),
             ]}

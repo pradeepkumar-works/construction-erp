@@ -13,25 +13,25 @@ test('a new daily report keeps its draft through a refresh, and Start over clear
   let form = formPanel(page, 'New daily report');
   await expect(form).toBeVisible();
   const text = `Draft check ${Date.now()}`;
-  await form.getByLabel('Work executed').fill(text);
+  await form.getByLabel('Work done today').fill(text);
   await expect(form.getByText('Draft kept on this device')).toBeVisible();
 
   await page.reload();
   await page.getByRole('button', { name: /New daily report/ }).click();
   form = formPanel(page, 'New daily report');
   await expect(form.getByText(/^Brought back what you typed/)).toBeVisible();
-  await expect(form.getByLabel('Work executed')).toHaveValue(text);
+  await expect(form.getByLabel('Work done today')).toHaveValue(text);
 
   // Closing with changes asks first; the draft stays either way.
-  await form.getByLabel('Work executed').fill(`${text} and more`);
+  await form.getByLabel('Work done today').fill(`${text} and more`);
   await page.keyboard.press('Escape');
   const confirm = page.locator('.ant-modal-confirm').filter({ hasText: 'Close this form?' });
   await expect(confirm).toBeVisible();
   await confirm.getByRole('button', { name: 'Keep editing' }).click();
-  await expect(form.getByLabel('Work executed')).toHaveValue(`${text} and more`);
+  await expect(form.getByLabel('Work done today')).toHaveValue(`${text} and more`);
 
   await form.getByRole('button', { name: 'Start over' }).click();
-  await expect(form.getByLabel('Work executed')).toHaveValue('');
+  await expect(form.getByLabel('Work done today')).toHaveValue('');
   await form.getByRole('button', { name: 'Cancel' }).click();
   await expect(form).toBeHidden();
   await page.getByRole('button', { name: /New daily report/ }).click();
@@ -41,8 +41,8 @@ test('a new daily report keeps its draft through a refresh, and Start over clear
 test('a failed submit lists what is missing, and Enter in the item table adds a line', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   await page.goto('/material-requests');
-  await page.getByRole('button', { name: /New request|New material request/ }).first().click();
-  const form = formPanel(page, 'New material request');
+  await page.getByRole('button', { name: 'New indent' }).first().click();
+  const form = formPanel(page, 'New indent');
   await expect(form).toBeVisible();
 
   // Enter on the last line's quantity adds a line and moves to it.

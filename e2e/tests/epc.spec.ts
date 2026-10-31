@@ -93,11 +93,11 @@ test('deliverables, packages and client inputs drive the milestone payments of a
   await page.goto(`/projects/${epc.id}?tab=epc`);
   await expect(page.getByText('Engineering approved')).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
-  await page.getByText(/^Packages \(/).click();
+  await page.getByText(/^Packages \d+$/).click();
   await expect(page.getByText(/days late for site/).first()).toBeVisible();
   await expect(page.getByText(/reach(es)? site after it is needed/)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
-  await page.getByText(/^Client inputs \(/).click();
+  await page.getByText(/^Client inputs \d+$/).click();
   await expect(page.getByRole('button', { name: 'Record delay' })).toBeVisible();
   await page.goto(`/bills/${first.id}`);
   await expect(page.getByText(/^US\$/).first()).toBeVisible();

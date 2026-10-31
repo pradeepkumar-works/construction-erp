@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Card, Result, Select, Space, Switch, Tooltip, theme } from 'antd';
+import { Alert, App, Button, Card, Result, Select, Space, Switch, Tooltip, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useSearchParams } from 'next/navigation';
 import { EditOutlined, LinkOutlined, PlusOutlined } from '@/components/common/icons';
@@ -15,7 +15,7 @@ import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { USER_EXPORT } from '@/lib/exportColumns';
 import { ExportButton } from '@/components/common/ExportButton';
 import { useAuth } from '@/lib/auth';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { UserFormModal } from '@/components/users/UserFormModal';
@@ -37,6 +37,7 @@ function Sub({ children }: { children: React.ReactNode }) {
 export default function UsersPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { message, modal } = App.useApp();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<UserSummary | null>(null);
   const [linkResult, setLinkResult] = useState<{ name: string; email: string; invite: boolean; link: PasswordLinkDto } | null>(null);
@@ -49,10 +50,24 @@ export default function UsersPage() {
   });
 
   const toggle = useMutation({
-    mutationFn: async (vars: { id: string; isActive: boolean }) => api.patch(`/users/${vars.id}`, { isActive: vars.isActive }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    mutationFn: async (vars: { id: string; name: string; isActive: boolean }) => api.patch(`/users/${vars.id}`, { isActive: vars.isActive }),
+    onSuccess: (_, vars) => {
+      message.success(vars.isActive ? `${vars.name} can sign in again` : `${vars.name} is switched off`);
+      return qc.invalidateQueries({ queryKey: ['users'] });
+    },
     meta: FAIL_NOTICE,
   });
+  const setActive = (r: UserSummary, isActive: boolean) => {
+    if (isActive) return toggle.mutate({ id: r.id, name: r.fullName, isActive });
+    modal.confirm({
+      title: `Switch off ${r.fullName}'s login?`,
+      content: 'They can no longer sign in. Their records stay, and you can switch the login on again.',
+      okText: 'Switch off',
+      okButtonProps: { danger: true },
+      cancelText: 'Keep it on',
+      onOk: () => toggle.mutateAsync({ id: r.id, name: r.fullName, isActive }),
+    });
+  };
 
   const frame = useListFrame<UserSortField, UserSummary>({
     list: 'users',
@@ -86,15 +101,15 @@ export default function UsersPage() {
             </div>
           ),
         },
-        { key: 'phone', title: 'Phone', dataIndex: 'phone', width: 140, render: (v) => v ?? '-' },
-        { title: 'Role', dataIndex: 'roleName', width: 220, render: (v) => <AppTag style={{ margin: 0 }}>{v}</AppTag>, ...sort('role') },
+        { key: 'phone', title: 'Phone', dataIndex: 'phone', width: 140, render: (v) => v ?? NO_VALUE },
+        { title: 'Role', dataIndex: 'roleKey', width: 220, render: (k: RoleKey) => <AppTag style={{ margin: 0 }}>{ROLE_LABELS[k]}</AppTag>, ...sort('role') },
         { title: 'Created', dataIndex: 'createdAt', width: 130, render: (v) => formatDate(v), ...sort('createdAt') },
         {
           title: 'Active',
           dataIndex: 'isActive',
           width: 100,
           ...sort('isActive'),
-          render: (v: boolean, r) => <Switch size="small" checked={v} disabled={r.id === user?.id} aria-label={`${r.fullName} active`} onChange={(checked) => toggle.mutate({ id: r.id, isActive: checked })} />,
+          render: (v: boolean, r) => <Switch size="small" checked={v} disabled={r.id === user?.id} aria-label={`${r.fullName} active`} onChange={(checked) => setActive(r, checked)} />,
         },
         {
           title: '',
@@ -162,7 +177,7 @@ export default function UsersPage() {
     <div className="page-container">
       <PageHeader
         title="Users"
-        subtitle={`${data?.total ?? 0} users${roleKey || isActive !== undefined || page.params.q ? ' match' : ` in ${user?.organizationName ?? 'your organisation'}`}`}
+        subtitle={`${data?.total ?? 0} users${roleKey || isActive !== undefined || page.params.q ? ' match' : ` in ${user?.organizationName ?? 'your company'}`}`}
         extra={newButton}
       />
       {welcome && (
@@ -171,7 +186,7 @@ export default function UsersPage() {
           showIcon
           closable
           style={{ marginBottom: 16 }}
-          title={`${user?.organizationName ?? 'Your organisation'} is ready.`}
+          title={`${user?.organizationName ?? 'Your company'} is ready.`}
           description="Add your team with New user: each person gets an invite link to choose a password. Then create your first project; it starts with the standard activities for its type."
         />
       )}
@@ -182,7 +197,7 @@ export default function UsersPage() {
           <Select<RoleKey> allowClear placeholder="All roles" aria-label="Role" value={roleKey} onChange={(v) => page.setFilter('roleKey', v)} style={{ width: 220 }} options={ROLE_KEYS.map((r) => ({ value: r, label: ROLE_LABELS[r] }))} />
           <Select<'yes' | 'no'>
             allowClear
-            placeholder="Active or not"
+            placeholder="All users"
             aria-label="Active"
             value={page.filters.active as 'yes' | 'no' | undefined}
             onChange={(v) => page.setFilter('active', v)}

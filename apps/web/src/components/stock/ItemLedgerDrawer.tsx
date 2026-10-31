@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 import { Descriptions, Drawer, Table, Typography } from 'antd';
 import type { StockBalanceDto, StockEntryDto } from '@erp/shared';
 import { useStockEntries } from '@/lib/queries';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { StockTypeTag, entrySummary } from './StockTypeTag';
 import { StockEntryDrawer } from './StockEntryDrawer';
 import { RecordLink } from '@/components/record/RecordLink';
+import { unitLabel } from '@erp/shared';
 
 /** Movements of one item at one project, newest first. */
 export function ItemLedgerDrawer({ row, onClose }: { row: StockBalanceDto | null; onClose: () => void }) {
@@ -25,9 +26,9 @@ export function ItemLedgerDrawer({ row, onClose }: { row: StockBalanceDto | null
             column={3}
             style={{ marginBottom: 16 }}
             items={[
-              { key: 'r', label: 'Received', children: `${formatQty(row.received)} ${row.unit}` },
-              { key: 'i', label: 'Issued', children: `${formatQty(row.issued)} ${row.unit}` },
-              { key: 'a', label: 'Adjusted', children: `${formatQty(row.adjusted)} ${row.unit}` },
+              { key: 'r', label: 'Received', children: `${formatQty(row.received)} ${unitLabel(row.unit)}` },
+              { key: 'i', label: 'Issued', children: `${formatQty(row.issued)} ${unitLabel(row.unit)}` },
+              { key: 'a', label: 'Adjusted', children: `${formatQty(row.adjusted)} ${unitLabel(row.unit)}` },
               {
                 key: 'b',
                 label: 'Balance',
@@ -37,7 +38,7 @@ export function ItemLedgerDrawer({ row, onClose }: { row: StockBalanceDto | null
                   </Typography.Text>
                 ),
               },
-              { key: 'm', label: 'Minimum', children: row.minQty ? `${formatQty(row.minQty)} ${row.unit}` : '-' },
+              { key: 'm', label: 'Minimum', children: row.minQty ? `${formatQty(row.minQty)} ${unitLabel(row.unit)}` : NO_VALUE },
               { key: 'l', label: 'Last movement', children: formatDate(row.lastMovement) },
             ]}
           />

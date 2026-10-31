@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PriceVariationComponentDto, ProjectContractDto } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatPct } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
@@ -53,7 +53,7 @@ export function PriceVariationCard({ contract, editable }: { contract: ProjectCo
         locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No components yet. Add the ones in the contract's price variation clause." /> }}
         columns={[
           { title: 'Component', dataIndex: 'name' },
-          { title: 'Share of the work value', dataIndex: 'sharePct', align: 'right', render: (v: string) => `${v}%` },
+          { title: 'Share of the work done', dataIndex: 'sharePct', align: 'right', render: (v: string) => formatPct(v) },
           { title: 'Base index', dataIndex: 'baseIndex', align: 'right' },
         ]}
         summary={() =>

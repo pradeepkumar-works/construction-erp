@@ -7,7 +7,7 @@ import type { ItemDto, SorItemDto, TenderDetailDto, TenderItemDto, TenderLineKin
 import { TENDER_LINE_KINDS, TENDER_LINE_KIND_LABELS, sorPctLabel } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useTenderAction } from '@/lib/queries';
-import { formatINR, toNumber } from '@/lib/format';
+import { formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { CODE_INPUT, MoneyInput, QuantityInput } from '@/components/form/inputs';
@@ -298,7 +298,7 @@ export function TenderItemDrawer({ open, onClose, tender, item }: { open: boolea
                           <InputNumber aria-label="Wastage" min={0} max={100} precision={2} suffix="%" style={{ width: '100%' }} />
                         </Form.Item>
                       ) : (
-                        <Typography.Text type="secondary">-</Typography.Text>
+                        <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>
                       )
                     }
                   </Form.Item>

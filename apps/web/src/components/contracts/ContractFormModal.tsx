@@ -45,7 +45,7 @@ const PCT_HELP: Record<ContractPercentField, string> = {
   tdsPct: 'Section 194C, usually 1% or 2%',
   gstTdsPct: 'Government clients deduct 2%',
   labourCessPct: 'BOCW cess, usually 1%',
-  gstRate: 'Charged on the work value',
+  gstRate: 'Charged on the work done',
 };
 
 /** Edit a project's contract terms: client, agreement, value and dates, advance and the bill percentages. */
@@ -149,7 +149,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                 <Input />
               </Form.Item>
               <Form.Item name="agreementNo" label="Agreement no.">
-                <Input placeholder="04/EE/R&B/2025-26" />
+                <Input placeholder="e.g. 04/EE/RD/2025-26" />
               </Form.Item>
               <Form.Item name="agreementDate" label="Agreement date">
                 <DatePicker style={{ width: '100%' }} />
@@ -179,7 +179,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               </Form.Item>
             </FormGrid>
           </FormSection>
-          <FormSection title="Deductions and GST on each bill (% of the work value)">
+          <FormSection title="Deductions and GST on each bill (% of the work done this bill)">
             <FormGrid cols={4}>
               {CONTRACT_PERCENT_FIELDS.map((k) => (
                 <Form.Item key={k} name={k} label={`${CONTRACT_PERCENT_LABELS[k]} %`} tooltip={PCT_HELP[k]}>
@@ -197,7 +197,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               </Form.Item>
             </FormGrid>
             <FormGrid cols={3}>
-              <Form.Item name="mobilisationAdvance" label="Mobilisation advance" tooltip="Advance received from the client; recovered from bills at the advance recovery %">
+              <Form.Item name="mobilisationAdvance" label="Mobilisation advance" tooltip="Advance received from the client; recovered from bills at the mobilisation advance recovery %">
                 <MoneyInput prefix={moneyPrefix(typed)} />
               </Form.Item>
               <Form.Item name="defectLiabilityMonths" label="Defect liability (months)">
@@ -245,7 +245,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               </Form.Item>
             </FormGrid>
             <Form.Item name="priceVariation" label="Price variation" valuePropName="checked">
-              <Checkbox>Contract has a price variation clause</Checkbox>
+              <Checkbox>Contract has a price variation (price adjustment) clause</Checkbox>
             </Form.Item>
           </FormSection>
         </Form>

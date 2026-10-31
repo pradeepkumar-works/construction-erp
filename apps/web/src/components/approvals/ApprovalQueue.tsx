@@ -5,7 +5,7 @@ import { Button, Checkbox, Flex, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { CaretDownOutlined, CaretRightOutlined } from '@/components/common/icons';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
-import { formatDateTime, formatINR, timeAgo } from '@/lib/format';
+import { formatDateTime, formatINR, inSentence, timeAgo } from '@/lib/format';
 import { decidedInPlace, queueKey, TYPE_COLORS, type QueueGroup } from './queue';
 
 interface Props {
@@ -58,7 +58,7 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
               {bulk && (
                 <Tooltip title={other ? 'Approve one type at a time' : undefined}>
                   <Checkbox
-                    aria-label={`Select all ${g.label.toLowerCase()}`}
+                    aria-label={`Select all ${inSentence(g.label)}`}
                     checked={ticked > 0 && ticked === keys.length}
                     indeterminate={ticked > 0 && ticked < keys.length}
                     disabled={other}
