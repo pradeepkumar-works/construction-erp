@@ -307,4 +307,8 @@ export const COMMON: Record<string, string> = {
   'You were signed out. Sign in again.': 'आप साइन आउट हो गए। फिर से साइन इन करें।',
   'Could not upload: Nirmaan cannot be reached. Check your signal and try again.': 'अपलोड नहीं हुआ: Nirmaan से संपर्क नहीं हो रहा। सिग्नल देखकर फिर कोशिश करें।',
   'Cannot reach Nirmaan. Check your signal and try again.': 'Nirmaan से संपर्क नहीं हो रहा। सिग्नल देखकर फिर कोशिश करें।',
+  'Payment Request': 'भुगतान अनुरोध',
+  'Supplier (portal)': 'सप्लायर (पोर्टल)',
+  'Access requests': 'एक्सेस की माँग',
+  'Hydraulic pressure test': 'हाइड्रोलिक प्रेशर टेस्ट',
 };

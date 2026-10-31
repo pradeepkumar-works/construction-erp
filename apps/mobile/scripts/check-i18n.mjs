@@ -24,8 +24,11 @@ for (const file of walk(join(root, 'src/i18n/hi')).filter((f) => !f.endsWith('in
 }
 
 const missing = new Map();
+/** Shared label maps a screen passes to t() by key (`t(ROLE_LABELS[role])`): every value needs Hindi too. */
+const labelMaps = new Map();
 for (const file of [...walk(join(root, 'app')), ...walk(join(root, 'src'))].filter((f) => /\.tsx?$/.test(f) && !f.includes('/i18n/'))) {
   const text = readFileSync(file, 'utf8');
+  for (const m of text.matchAll(/\bt\(\s*([A-Z][A-Z0-9_]*_LABELS)\[/g)) if (!labelMaps.has(m[1])) labelMaps.set(m[1], file.replace(root, ''));
   for (const m of text.matchAll(new RegExp(String.raw`\bt\(\s*${str}`, 'g'))) {
     if (m[1] === '`' && m[2].includes('${')) {
       problems.push(`template literal in t() at ${file.replace(root, '')}: use {placeholders}`);
@@ -37,7 +40,13 @@ for (const file of [...walk(join(root, 'app')), ...walk(join(root, 'src'))].filt
 }
 
 // The navigation tree's names, descriptions and groups reach t() as values (Home's tiles, the module screens, launcher phase 4).
-const { NAV_TREE, AREA_MODULES, DEPARTMENT_MODULES, HOME_TABS } = await import('@erp/shared');
+const shared = await import('@erp/shared');
+const { NAV_TREE, AREA_MODULES, DEPARTMENT_MODULES, HOME_TABS } = shared;
+for (const [name, file] of labelMaps) {
+  const map = shared[name];
+  if (!map || typeof map !== 'object') continue; // a map of the phone's own, not from @erp/shared
+  for (const en of Object.values(map)) if (typeof en === 'string' && !dict.has(en)) missing.set(en, `${name} (${file})`);
+}
 for (const n of NAV_TREE.filter((x) => x.status === 'live')) {
   for (const en of [n.label, n.description, n.group, typeof n.nav === 'string' ? n.nav : undefined]) if (en && !dict.has(en)) missing.set(en, `NAV_TREE ${n.id}`);
 }
