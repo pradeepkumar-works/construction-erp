@@ -306,7 +306,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
 
         {shows('manpower') || shows('machinery') ? (
           <FormSection
-            title="Manpower and machinery"
+            title="Labour and machinery"
             extra={
               !editing && attendanceSheet ? (
                 filledFrom === attendanceSheet.id && !manpowerEdited ? (
@@ -343,27 +343,27 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                 <Form.Item label={dprLabel(def, 'manpower')} required={dprRequires(def, 'manpower')}>
                   <LineTable
                     name="manpower"
-                    label="Manpower"
+                    label="Labour"
                     addText="Add category"
                     newLine={() => ({ count: 1 })}
                     columns={[
                       {
                         key: 'category',
-                        title: 'Category',
+                        title: 'Trade',
                         render: (f) => (
-                          <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: '' }]}>
-                            <Select style={{ width: '100%', minWidth: 120 }} placeholder="Category" aria-label={`Manpower category ${f.name + 1}`} options={def.lines.crewCategories.map((c) => ({ value: c, label: c }))} />
+                          <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: 'Choose the trade' }]}>
+                            <Select style={{ width: '100%', minWidth: 120 }} placeholder="Trade" aria-label={`Trade ${f.name + 1}`} options={def.lines.crewCategories.map((c) => ({ value: c, label: c }))} />
                           </Form.Item>
                         ),
                       },
                       {
                         key: 'count',
-                        title: 'Nos',
+                        title: 'Workers',
                         width: 90,
                         align: 'right',
                         render: (f) => (
-                          <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
-                            <InputNumber min={0} precision={0} placeholder="Nos" inputMode="numeric" aria-label={`Number of manpower category ${f.name + 1}`} style={{ width: '100%' }} />
+                          <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: 'Enter the number of workers' }]}>
+                            <InputNumber min={0} precision={0} placeholder="Workers" inputMode="numeric" aria-label={`Workers of trade ${f.name + 1}`} style={{ width: '100%' }} />
                           </Form.Item>
                         ),
                       },
@@ -381,10 +381,10 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                     columns={[
                       {
                         key: 'name',
-                        title: 'Equipment',
+                        title: 'Machine',
                         render: (f) => (
-                          <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: '' }]}>
-                            <AutoComplete placeholder="Equipment" aria-label={`Equipment ${f.name + 1}`} options={def.lines.machineNames.map((m) => ({ value: m }))} style={{ width: '100%', minWidth: 120 }} />
+                          <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: 'Enter the machine' }]}>
+                            <AutoComplete placeholder="Machine" aria-label={`Machine ${f.name + 1}`} options={def.lines.machineNames.map((m) => ({ value: m }))} style={{ width: '100%', minWidth: 120 }} />
                           </Form.Item>
                         ),
                       },
@@ -394,8 +394,8 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                         width: 90,
                         align: 'right',
                         render: (f) => (
-                          <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: '' }]}>
-                            <InputNumber min={0} max={24} placeholder="Hrs" inputMode="decimal" aria-label={`Hours of equipment ${f.name + 1}`} style={{ width: '100%' }} />
+                          <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: 'Enter the hours' }]}>
+                            <InputNumber min={0} max={24} placeholder="Hours" inputMode="decimal" aria-label={`Hours of machine ${f.name + 1}`} style={{ width: '100%' }} />
                           </Form.Item>
                         ),
                       },

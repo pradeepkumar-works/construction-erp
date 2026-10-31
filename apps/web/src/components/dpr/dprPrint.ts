@@ -114,7 +114,7 @@ ${PRINT_FONT_LINKS}
     <div><b>Submitted by</b>${esc(d.submittedByName)}</div>
     <div><b>Submitted at</b>${esc(formatDateTime(d.submittedAt))}</div>
     <div><b>Reviewed by</b>${esc(d.reviewedByName ?? '-')}</div>
-    <div><b>Total manpower</b>${esc(d.totalManpower)}${crew ? ` (${esc(crew.onLines)} on the work lines)` : ''}</div>
+    <div><b>Total labour</b>${esc(d.totalManpower)}${crew ? ` (${esc(crew.onLines)} on the work lines)` : ''}</div>
     ${filledExtra(ownFieldsOf(def, 'DAY'), d.extra)
       .map((x) => `<div><b>${esc(x.field.label)}</b>${esc(x.text)}</div>`)
       .join('')}
@@ -126,13 +126,13 @@ ${PRINT_FONT_LINKS}
 
   <div class="cols">
     <div>
-      <h2>Manpower</h2>
-      <table><thead><tr><th>Category</th><th class="num">Count</th></tr></thead>
+      <h2>Labour</h2>
+      <table><thead><tr><th>Trade</th><th class="num">Workers</th></tr></thead>
       <tbody>${manpowerRows || '<tr><td colspan="2" class="muted">None recorded</td></tr>'}<tr><th>Total</th><th class="num">${esc(d.totalManpower)}</th></tr></tbody></table>
     </div>
     <div>
       <h2>Machinery</h2>
-      <table><thead><tr><th>Equipment</th><th class="num">Hours</th></tr></thead>
+      <table><thead><tr><th>Machine</th><th class="num">Hours</th></tr></thead>
       <tbody>${machineryRows || '<tr><td colspan="2" class="muted">None recorded</td></tr>'}</tbody></table>
     </div>
   </div>

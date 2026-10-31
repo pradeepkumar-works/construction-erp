@@ -153,7 +153,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           <Form.Item name="quantity" label="Quantity executed" rules={[{ required: true, message: 'Enter the quantity done' }]} {...aiFlagItem(draft, 'quantity', quantity)}>
             <QuantityInput unit={activity?.unit} />
           </Form.Item>
-          <Form.Item name="manpowerCount" label="Manpower">
+          <Form.Item name="manpowerCount" label="Labour">
             <InputNumber style={{ width: '100%' }} min={0} precision={0} inputMode="numeric" />
           </Form.Item>
           <Form.Item name="location" label="Location">
@@ -161,7 +161,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           </Form.Item>
         </FormGrid>
         <SectorInputs projectId={selectedProject} />
-        <Form.Item name="machineryUsed" label="Machinery used">
+        <Form.Item name="machineryUsed" label="Machines used">
           <Input placeholder="Excavator x1, Tipper x4" />
         </Form.Item>
         <Form.Item name="remarks" label="Remarks">

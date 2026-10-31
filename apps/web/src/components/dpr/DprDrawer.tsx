@@ -94,7 +94,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
             { key: 'date', label: 'Date', children: formatDate(data.date) },
             { key: 'weather', label: 'Weather', children: data.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[data.weather]}</AppTag> : '-' },
             { key: 'cond', label: 'Site condition', children: data.siteCondition ?? '-' },
-            { key: 'mp', label: 'Total manpower', children: data.totalManpower },
+            { key: 'mp', label: 'Total labour', children: data.totalManpower },
             ...filledExtra(ownFieldsOf(def, 'DAY'), data.extra).map((x) => ({ key: `own-${x.field.key}`, label: x.field.label, children: <span translate="no">{x.text}</span> })),
             ...(formFact ? [formFact] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
@@ -121,20 +121,20 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
               : { key: 'work', title: 'Work executed', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.workExecuted || <span className="text-muted">-</span>}</div> },
             {
               key: 'resources',
-              title: 'Manpower and machinery',
+              title: 'Labour and machinery',
               children: (
                 <>
                   {crewNote(data) ? <Typography.Paragraph style={{ marginBottom: 12 }}>{crewNote(data)}</Typography.Paragraph> : null}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-                    <Section title="Manpower">
+                    <Section title="Labour">
                       <Table<ManpowerLine>
                         size="small"
                         rowKey={(r, i) => `${r.category}-${i}`}
                         pagination={false}
                         dataSource={data.manpower}
                         columns={[
-                          { title: 'Category', dataIndex: 'category' },
-                          { title: 'Count', dataIndex: 'count', align: 'right', width: 80 },
+                          { title: 'Trade', dataIndex: 'category' },
+                          { title: 'Workers', dataIndex: 'count', align: 'right', width: 90 },
                         ]}
                         summary={() => (
                           <Table.Summary.Row>
@@ -155,7 +155,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
                         pagination={false}
                         dataSource={data.machinery}
                         columns={[
-                          { title: 'Equipment', dataIndex: 'name' },
+                          { title: 'Machine', dataIndex: 'name' },
                           { title: 'Hours', dataIndex: 'hours', align: 'right', width: 80 },
                         ]}
                       />
