@@ -65,7 +65,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
   const people = useMemo(() => {
     if (!project) return [];
     const list = [
-      ...(project.projectManagerId ? [{ value: project.projectManagerId, label: `${project.projectManagerName} (Project Manager)` }] : []),
+      ...(project.projectManagerId ? [{ value: project.projectManagerId, label: `${project.projectManagerName} (project manager)` }] : []),
       ...project.members.filter((m) => m.userId !== project.projectManagerId).map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` })),
     ];
     if (ncr?.actionById && !list.some((o) => o.value === ncr.actionById)) list.push({ value: ncr.actionById, label: ncr.actionByName ?? 'Current' });
@@ -139,7 +139,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
       form={form}
       layout="modal"
       width={680}
-      title={ncr ? `Update ${ncr.ncrNo}` : 'New NCR'}
+      title={ncr ? `Edit ${ncr.ncrNo}` : 'New NCR'}
       okText={editing ? 'Save' : 'Save NCR'}
       draftKey={draftKey}
       onSubmit={(v) => mutation.mutateAsync(v)}
@@ -149,8 +149,8 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Select project"
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            placeholder="Choose the project"
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             onChange={() => form.setFieldsValue({ activityId: undefined, actionById: undefined })}
           />
         </Form.Item>
@@ -180,10 +180,10 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="actionById" label="To be rectified by">
+          <Form.Item name="actionById" label="Action by">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={people} placeholder="Site engineer or contractor's in-charge" />
           </Form.Item>
-          <Form.Item name="dueDate" label="Rectify by">
+          <Form.Item name="dueDate" label="Due">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>

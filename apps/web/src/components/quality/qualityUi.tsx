@@ -12,7 +12,7 @@ const SEVERITY_TAG: Record<NcrSeverity, string> = { MINOR: 'gold', MAJOR: 'orang
 const STATUS_TAG: Record<NcrStatus, string> = { OPEN: 'red', ACTION_TAKEN: 'blue', CLOSED: 'default' };
 
 export const TestResultTag = ({ result }: { result: TestResult }) => (
-  <AppTag color={RESULT_TAG[result]} style={{ margin: 0 }}>
+  <AppTag color={RESULT_TAG[result]} dot style={{ margin: 0 }}>
     {TEST_RESULT_LABELS[result]}
   </AppTag>
 );
@@ -24,7 +24,7 @@ export const SeverityTag = ({ severity }: { severity: NcrSeverity }) => (
 );
 
 export const NcrStatusTag = ({ status }: { status: NcrStatus }) => (
-  <AppTag color={STATUS_TAG[status]} style={{ margin: 0 }}>
+  <AppTag color={STATUS_TAG[status]} dot style={{ margin: 0 }}>
     {NCR_STATUS_LABELS[status]}
   </AppTag>
 );

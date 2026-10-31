@@ -3,6 +3,7 @@
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
+import { navNode } from '@erp/shared';
 import { PageHeader } from '@/components/common/PageHeader';
 import { SafetyPanel, type SafetyTab } from '@/components/safety/SafetyPanel';
 
@@ -13,7 +14,7 @@ function SafetyPage() {
   const id = search.get('id') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Safety" subtitle="Incidents and near misses with their root cause and corrective action, toolbox talks, permits to work for risky jobs, and the PPE each worker has." />
+      <PageHeader title="Safety" subtitle={navNode('safety')?.description} />
       <Card size="small">
         <SafetyPanel key={`${tab ?? ''}|${id ?? ''}`} initialTab={tab} initialId={id} />
       </Card>

@@ -43,9 +43,9 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
     fixedProject,
     statusLabels: VARIATION_STATUS_LABELS,
     moreViews: [
-      { key: 'draft', label: 'Not sent', filters: { status: 'DRAFT' } },
-      { key: 'submitted', label: 'With the client', filters: { status: 'SUBMITTED' } },
-      { key: 'approved', label: 'Approved', filters: { status: 'APPROVED' } },
+      { key: 'draft', label: VARIATION_STATUS_LABELS.DRAFT, filters: { status: 'DRAFT' } },
+      { key: 'submitted', label: VARIATION_STATUS_LABELS.SUBMITTED, filters: { status: 'SUBMITTED' } },
+      { key: 'approved', label: VARIATION_STATUS_LABELS.APPROVED, filters: { status: 'APPROVED' } },
     ],
     columns: (sortOrderFor): ListColumn<VariationDto>[] => {
       const sort = (key: SortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });

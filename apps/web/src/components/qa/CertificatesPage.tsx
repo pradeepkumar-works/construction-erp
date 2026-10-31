@@ -42,7 +42,7 @@ function CategoryChooser() {
   return (
     <Card title="Material that needs a certificate" style={{ marginBottom: token.margin }}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        A receipt with an item in one of these categories waits on this page until the maker&apos;s test certificate number is entered on its QA/QC check.
+        A GRN with an item in one of these categories waits on this page until the manufacturer&apos;s test certificate (MTC) number is entered on its QA/QC check.
       </Typography.Paragraph>
       {data.canEdit ? (
         <Flex gap={token.marginSM} wrap align="center">
@@ -82,7 +82,7 @@ export function CertificatesPage() {
     <div className="page-container">
       <PageHeader
         title="Test certificates"
-        subtitle="Receipts of material that needs the maker's test certificate and came without one, newest first."
+        subtitle="GRNs of material that needs the manufacturer's test certificate (MTC) and came without one, newest first."
         crumbs={[{ title: 'Masters', href: '/masters' }, { title: 'Test certificates' }]}
       />
       <CategoryChooser />
@@ -101,9 +101,9 @@ export function CertificatesPage() {
           onRow={(r) => ({ onClick: () => setOpenId(r.id) })}
           locale={{ emptyText: <EmptyArt art="entries" title="Every receipt that needs a certificate has one" /> }}
           columns={[
-            { title: 'Day', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
+            { title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
             {
-              title: 'Receipt',
+              title: 'GRN',
               key: 'entry',
               render: (_, r) => (
                 <Flex vertical gap={2}>

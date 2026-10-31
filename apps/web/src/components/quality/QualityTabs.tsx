@@ -39,7 +39,7 @@ export function QualityTabs({ projectId, tab, onTab, openId, withChecklists }: {
         items={[
           { key: 'inspections', ...count('Inspections', summary?.inspectionsWaiting, 'waiting for QA/QC'), children: <InspectionList projectId={projectId} /> },
           ...(checker ? [{ key: 'grns', ...count('Material to check', unchecked?.total, 'not checked'), children: <WaitingReceipts waiting="CHECK" projectId={projectId} /> }] : []),
-          { key: 'tests', ...count('Tests', summary?.testsOverdue, 'results overdue'), children: <TestList projectId={projectId} initialOpenId={tab === 'tests' ? openId : undefined} onOpenNcr={setNcrId} /> },
+          { key: 'tests', ...count('Material tests', summary?.testsOverdue, 'results overdue'), children: <TestList projectId={projectId} initialOpenId={tab === 'tests' ? openId : undefined} onOpenNcr={setNcrId} /> },
           { key: 'ncrs', ...count('NCRs', summary?.ncrsOpen, 'not closed'), children: <NcrList projectId={projectId} onOpen={setNcrId} /> },
           ...(withChecklists ? [{ key: 'checklists', label: 'Checklists', children: <ChecklistsPanel /> }] : []),
         ]}

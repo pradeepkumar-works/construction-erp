@@ -1,8 +1,10 @@
 'use client';
 
+import { auditActionLabel } from '@/components/common/AuditTrail';
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Select, Skeleton, Space, Timeline, Typography } from 'antd';
-import { CheckOutlined, DeleteOutlined, EditOutlined, RedoOutlined } from '@/components/common/icons';
+import { CheckOutlined, EditOutlined, RedoOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, NcrDto } from '@erp/shared';
 import { canActOnNcr, canApprove, canRaiseNcr } from '@erp/shared';
@@ -20,7 +22,6 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { NcrStatusTag, SeverityTag } from './qualityUi';
 import { NcrFormModal, useMasterOptions } from './NcrFormModal';
 import { themeFontSize } from '@/lib/theme';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'red', ACTION_TAKEN: 'blue', CLOSED: 'green', REOPENED: 'orange', UPDATED: 'gray' };
 
@@ -164,9 +165,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               </Button>
             ) : null}
             {mayDelete ? (
-              <ConfirmDelete what={data.ncrNo} description="Only for an NCR raised by mistake." onConfirm={() => remove.mutateAsync()}>
-                <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete NCR" />
-              </ConfirmDelete>
+              <DeleteInMenu what={data.ncrNo} description="Only for an NCR raised by mistake." onConfirm={() => remove.mutateAsync()} />
             ) : null}
           </Space>
         ) : null
@@ -200,8 +199,8 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
               { key: 'location', label: 'Location', children: data.location ?? '-' },
               ...(data.testNo || data.inspectionNo ? [{ key: 'source', label: 'Found by', children: [data.testNo, data.inspectionNo].filter(Boolean).join(', '), span: 2 }] : []),
-              { key: 'who', label: 'To be rectified by', children: data.actionByName ?? '-' },
-              { key: 'due', label: 'Rectify by', children: data.dueDate ? <span className={data.overdue ? 'text-danger' : undefined}>{formatDate(data.dueDate)}{data.overdue ? ' (overdue)' : ''}</span> : '-' },
+              { key: 'who', label: 'Action by', children: data.actionByName ?? '-' },
+              { key: 'due', label: 'Due', children: data.dueDate ? <span className={data.overdue ? 'text-danger' : undefined}>{formatDate(data.dueDate)}{data.overdue ? ' (overdue)' : ''}</span> : '-' },
             ]}
           />
           <Divider titlePlacement="start" plain>
@@ -240,7 +239,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               color: HISTORY_COLORS[h.action] ?? 'blue',
               content: (
                 <div>
-                  <Typography.Text strong>{(h.action.charAt(0) + h.action.slice(1).toLowerCase()).replace(/_/g, ' ')}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
+                  <Typography.Text strong>{auditActionLabel(h.action)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}
                   </div>

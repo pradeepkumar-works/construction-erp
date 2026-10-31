@@ -1,5 +1,6 @@
 'use client';
 
+import { MoreActions } from '@/components/record/MoreActions';
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -268,7 +269,7 @@ function NcrModal({ target, onClose }: { target: { audit: QaAuditDto; finding: Q
     () =>
       project
         ? [
-            ...(project.projectManagerId ? [{ value: project.projectManagerId, label: `${project.projectManagerName} (Project Manager)` }] : []),
+            ...(project.projectManagerId ? [{ value: project.projectManagerId, label: `${project.projectManagerName} (project manager)` }] : []),
             ...project.members.filter((m) => m.userId !== project.projectManagerId).map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` })),
           ]
         : [],
@@ -294,7 +295,7 @@ function NcrModal({ target, onClose }: { target: { audit: QaAuditDto; finding: Q
         {target && isExternalAudit(target.audit.kind) ? ' The NCR is marked as raised by the client.' : ''}
       </Typography.Paragraph>
       <Form form={form} layout="vertical">
-        <Form.Item name="actionById" label="To be rectified by">
+        <Form.Item name="actionById" label="Action by">
           <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={people} placeholder="Site engineer or contractor's in-charge" />
         </Form.Item>
         <Form.Item name="category" label="Category">
@@ -321,7 +322,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
     mutationFn: async (f: QaAuditFindingDto) => (await api.post<QaAuditDto>(`/qa/audits/${id}/findings/${f.id}/reopen`)).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['quality'] });
-      notify.saved('Finding opened again');
+      notify.saved('Finding reopened');
     },
     meta: FAIL_NOTICE,
   });
@@ -356,7 +357,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
             size="small"
             items={[
               { key: 'project', label: 'Project', children: <Link href={`/projects/${audit.projectId}`}>{audit.projectName}</Link> },
-              { key: 'date', label: 'On', children: formatDate(audit.date) },
+              { key: 'date', label: 'Date', children: formatDate(audit.date) },
               { key: 'visitor', label: audit.kind === 'INTERNAL' ? 'Audited by' : 'Who visited', children: audit.visitor ?? '-' },
               ...(audit.score !== null ? [{ key: 'score', label: 'Score', children: <span translate="no">{`${audit.score} / 100`}</span> }] : []),
               { key: 'by', label: 'Recorded by', children: audit.createdByName },
@@ -396,8 +397,8 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
                   ),
                 },
                 { title: 'Severity', dataIndex: 'severity', width: 100, render: (v: NcrSeverity) => <AppTag tone={SEVERITY_TONE[v]}>{NCR_SEVERITY_LABELS[v]}</AppTag> },
-                { title: 'By', dataIndex: 'dueOn', width: 110, render: (v: string | null) => (v ? formatDate(v) : '-') },
-                { title: 'Stands', key: 'state', width: 150, render: (_, f) => <FindingStateTag f={f} /> },
+                { title: 'Due', dataIndex: 'dueOn', width: 110, render: (v: string | null) => (v ? formatDate(v) : '-') },
+                { title: 'Status', key: 'state', width: 150, render: (_, f) => <FindingStateTag f={f} /> },
                 ...(mayRecord
                   ? [
                       {
@@ -416,7 +417,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
                             </Flex>
                           ) : f.state === 'CLOSED' && !f.ncrId ? (
                             <Button size="small" loading={reopen.isPending && reopen.variables?.id === f.id} onClick={() => reopen.mutate(f)}>
-                              Open again
+                              Reopen
                             </Button>
                           ) : null,
                       },
@@ -435,9 +436,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
           ) : null}
           {mayRecord && !audit.findings.some((f) => f.ncrId) ? (
             <Flex>
-              <Button danger onClick={() => confirmDelete({ what: audit.auditNo, onConfirm: () => remove.mutateAsync(), onDone: onClose })}>
-                Delete
-              </Button>
+              <MoreActions size="middle" items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => confirmDelete({ what: audit.auditNo, onConfirm: () => remove.mutateAsync(), onDone: onClose }) }]} />
             </Flex>
           ) : null}
         </Flex>
@@ -466,7 +465,7 @@ export function AuditsPage() {
     initialFilters: params.get('open') === '1' ? { open: '1' } : undefined,
     chipLabels: { kind: (v) => QA_AUDIT_KIND_LABELS[v as QaAuditKind] ?? v, open: () => 'Findings open' },
     columns: (sortOrderFor): ListColumn<QaAuditDto>[] => [
-      { key: 'date', title: 'On', dataIndex: 'date', width: 110, render: (v) => formatDate(v), sorter: true, sortOrder: sortOrderFor('date'), sortDirections: ['descend', 'ascend'] },
+      { key: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), sorter: true, sortOrder: sortOrderFor('date'), sortDirections: ['descend', 'ascend'] },
       { key: 'auditNo', title: 'No.', dataIndex: 'auditNo', width: 140, className: 'mono' },
       { key: 'project', title: 'Project', dataIndex: 'projectName', width: 180, ellipsis: true },
       {

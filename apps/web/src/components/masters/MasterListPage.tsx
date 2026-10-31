@@ -93,7 +93,7 @@ export function MasterListPage({ slug }: { slug: string }) {
     setBusyCode(e.code);
     try {
       await save.mutateAsync({ code: e.code, isActive: !e.isActive });
-      notify.success(`${e.name} ${e.isActive ? 'switched off' : 'switched on'}`);
+      notify.success(`${e.name} ${e.isActive ? 'is no longer in use' : 'is in use'}`);
     } catch (err) {
       notify.failed(err, () => toggle(e));
     } finally {
@@ -109,7 +109,7 @@ export function MasterListPage({ slug }: { slug: string }) {
         { header: 'Name', value: (e: MasterEntryDto) => e.name, width: 32 },
         { header: 'Hindi name', value: (e) => e.nameHi ?? '', width: 28 },
         { header: 'Standard', value: (e) => (e.standard ? 'Yes' : 'No'), width: 10 },
-        { header: 'Switched on', value: (e) => (e.isActive ? 'Yes' : 'No'), width: 12 },
+        { header: 'In use', value: (e) => (e.isActive ? 'Yes' : 'No'), width: 12 },
         { header: 'Records', value: (e) => e.inUse ?? 0, width: 10 },
       ],
       list.entries,
@@ -143,7 +143,7 @@ export function MasterListPage({ slug }: { slug: string }) {
         <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
           <Input.Search allowClear placeholder={`Find a ${list.singular}`} aria-label={`Find a ${list.singular}`} value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
           <Typography.Text type="secondary">
-            {list.entries.filter((e) => e.isActive).length} of {list.entries.length} switched on. Forms suggest the ones switched on; records keep their words.
+            {list.entries.filter((e) => e.isActive).length} of {list.entries.length} in use. Forms suggest the ones in use; records keep their words.
           </Typography.Text>
         </Flex>
         <Table<MasterEntryDto>
@@ -168,10 +168,10 @@ export function MasterListPage({ slug }: { slug: string }) {
             { title: 'Hindi name', dataIndex: 'nameHi', render: (v: string | null) => (v ? <span lang="hi">{v}</span> : <Typography.Text type="secondary">-</Typography.Text>) },
             { title: 'Records', dataIndex: 'inUse', width: 100, align: 'right', render: (v: number | null) => <span translate="no">{v ? v : '-'}</span> },
             {
-              title: 'Switched on',
+              title: 'In use',
               key: 'active',
               width: 120,
-              render: (_, e) => <Switch size="small" checked={e.isActive} disabled={!manage} loading={busyCode === e.code} onChange={() => void toggle(e)} aria-label={`${e.name} switched on`} />,
+              render: (_, e) => <Switch size="small" checked={e.isActive} disabled={!manage} loading={busyCode === e.code} onChange={() => void toggle(e)} aria-label={`${e.name} in use`} />,
             },
             ...(manage
               ? [

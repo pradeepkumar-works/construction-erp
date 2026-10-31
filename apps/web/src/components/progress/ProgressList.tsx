@@ -6,7 +6,7 @@ import { PlusOutlined } from '@/components/common/icons';
 import type { AiDraftDto, ProgressEntryDto } from '@erp/shared';
 import { LIST_SORT_FIELDS } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
-import { useProgressList, LIST_START } from '@/lib/queries';
+import { useDprWorkOptions, useProgressList, useProjects, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PROGRESS_EXPORT } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
@@ -20,8 +20,16 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { progressColumns } from './ProgressTable';
 import { ProgressDrawer } from './ProgressDrawer';
 import { ProgressFormModal } from './ProgressFormModal';
+import { DprFormModal } from '@/components/dpr/DprFormModal';
 
 const KEYS = ['status', 'mine', 'from', 'to'] as const;
+
+/** Whether the company records progress only in the DPR. The flag is the company's; any project it can see reads it. */
+export function useProgressFromDpr(projectId?: string, enabled = true): boolean {
+  const { data: projects } = useProjects();
+  const anyProject = projectId ?? projects?.[0]?.id;
+  return !!useDprWorkOptions(enabled ? anyProject : undefined).data?.progressFromDpr;
+}
 
 /**
  * Server-paged list with views, search, project / status / date filters, sortable and choosable columns, bulk approve
@@ -30,6 +38,7 @@ const KEYS = ['status', 'mine', 'from', 'to'] as const;
 export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?: string; newLabel?: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [dprOpen, setDprOpen] = useState(false);
   const [editing, setEditing] = useState<ProgressEntryDto | null>(null);
   // A draft from Ask Nirmaan (AI item 71) the form opens with
   const [prefill, setPrefill] = useState<AiDraftDto | null>(null);
@@ -48,6 +57,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status };
   const { data, isLoading, isFetching, error, refetch } = useProgressList(filters);
   const approve = useBulkApprove<ProgressEntryDto>('progress');
+  const dprOnly = useProgressFromDpr(fixedProject ?? frame.projectId, !!newLabel);
 
   const exportRows = async () => {
     const rows = await fetchAllPages<ProgressEntryDto>('/progress', { ...filters });
@@ -56,15 +66,20 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
   };
 
   useNewIntent('progress', !!newLabel, (draft) => {
+    if (dprOnly) return setDprOpen(true);
     setPrefill(draft ?? null);
     setFormOpen(true);
   });
 
-  const newButton = newLabel ? (
+  const newButton = !newLabel ? null : dprOnly ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setDprOpen(true)}>
+      New daily report
+    </Button>
+  ) : (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
       {newLabel}
     </Button>
-  ) : null;
+  );
 
   return (
     <>
@@ -108,6 +123,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
       />
       <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); setPrefill(null); }} prefill={prefill} projectId={fixedProject} defaultProjectId={frame.projectId} />
+      {dprOnly ? <DprFormModal open={dprOpen} onClose={() => setDprOpen(false)} projectId={fixedProject} defaultProjectId={frame.projectId} /> : null}
     </>
   );
 }

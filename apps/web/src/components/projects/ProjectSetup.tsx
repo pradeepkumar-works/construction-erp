@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { App, Button, Flex, Progress, Typography, theme } from 'antd';
+import { Button, Flex, Progress, Typography, theme } from 'antd';
 import { CheckCircleOutlined, ExclamationCircleOutlined } from '@/components/common/icons';
 import { sectorStepOf, type ProjectDetail, type ProjectSetupDto, type SetupStepDto } from '@erp/shared';
 import { useHideProjectSetup, useProjectSetup } from '@/lib/queries';
+import { useNotify } from '@/lib/notify';
 import { formatINRCompact } from '@/lib/format';
 import { Section } from '@/components/common/Section';
 
@@ -58,7 +59,7 @@ function stepText(s: SetupStepDto, project: ProjectDetail, setup: ProjectSetupDt
  */
 export function ProjectSetup({ project }: { project: ProjectDetail }) {
   const { token } = theme.useToken();
-  const { message } = App.useApp();
+  const notify = useNotify();
   const { data } = useProjectSetup(project.id);
   const hide = useHideProjectSetup(project.id);
   if (!data?.show) return null;
@@ -74,10 +75,10 @@ export function ProjectSetup({ project }: { project: ProjectDetail }) {
           type="text"
           loading={hide.isPending}
           onClick={() =>
-            hide.mutate(true, { onSuccess: () => message.success('Setup checklist hidden for everyone on the project') })
+            hide.mutate(true, { onSuccess: () => notify.done('Setup checklist hidden for everyone on the project', () => hide.mutateAsync(false)) })
           }
         >
-          Hide
+          Hide for everyone
         </Button>
       }
     >

@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useBoq, useProjectSetup } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
-import { formatINR, formatINRCompact, formatQty, toNumber, RUPEE } from '@/lib/format';
+import { formatINR, formatINRCompact, formatPct, formatQty, toNumber, RUPEE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
@@ -86,12 +86,12 @@ export function BoqTab({ projectId }: { projectId: string }) {
         Description: i.description,
         Unit: i.unit,
         Rate: toNumber(i.rate),
-        'Original qty': toNumber(i.originalQty),
+        'BOQ qty': toNumber(i.originalQty),
         'Revised qty': i.revisedQty !== null ? toNumber(i.revisedQty) : '',
-        'Executed qty': toNumber(i.executedQty),
+        'Done qty': toNumber(i.executedQty),
         'Balance qty': toNumber(i.balanceQty),
         'Measured qty': toNumber(i.measuredQty),
-        'Measured awaiting approval': toNumber(i.pendingMeasuredQty),
+        'Measured, waiting for approval': toNumber(i.pendingMeasuredQty),
         'Measured value': toNumber(i.measuredAmount),
         Amount: toNumber(i.amount),
         Section: i.section ?? '',
@@ -123,10 +123,10 @@ export function BoqTab({ projectId }: { projectId: string }) {
     },
     { title: 'Unit', dataIndex: 'unit', width: 60 },
     { title: 'Rate (₹)', dataIndex: 'rate', width: 120, align: 'right', className: 'mono', render: (v) => formatINR(v, true).replace(RUPEE, '') },
-    { title: 'Original qty', dataIndex: 'originalQty', width: 100, align: 'right', className: 'mono', render: (v) => formatQty(v) },
+    { title: 'BOQ qty', dataIndex: 'originalQty', width: 100, align: 'right', className: 'mono', render: (v) => formatQty(v) },
     { title: 'Revised qty', dataIndex: 'revisedQty', width: 95, align: 'right', className: 'mono', render: (v) => (v === null ? <span className="text-muted">-</span> : formatQty(v)) },
     {
-      title: 'Executed',
+      title: 'Done',
       dataIndex: 'executedQty',
       width: 140,
       className: 'mono',
@@ -136,13 +136,13 @@ export function BoqTab({ projectId }: { projectId: string }) {
         return (
           <div>
             <div style={{ textAlign: 'right' }}>{formatQty(v)}</div>
-            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? themeColor('colorSuccess') : BRAND.colors.primary} aria-label={`${pct}% executed`} />
+            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? themeColor('colorSuccess') : BRAND.colors.primary} aria-label={`${pct}% done`} />
           </div>
         );
       },
     },
     {
-      title: <Tooltip title="Approved measurement book quantity; awaiting approval below it">Measured</Tooltip>,
+      title: <Tooltip title="Approved measurement book quantity; waiting for approval below it">Measured</Tooltip>,
       dataIndex: 'measuredQty',
       width: 110,
       align: 'right',
@@ -152,7 +152,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
           <div>{toNumber(v) ? formatQty(v) : <span className="text-muted">-</span>}</div>
           {toNumber(r.pendingMeasuredQty) ? (
             <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-              +{formatQty(r.pendingMeasuredQty)} pending
+              +{formatQty(r.pendingMeasuredQty)} waiting
             </div>
           ) : null}
         </div>
@@ -204,8 +204,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
         <Space size={24} wrap>
           <Statistic title="BOQ items" value={totals.count} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           <Statistic title="BOQ amount" value={formatINR(totals.amount)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-          <Statistic title="Executed value" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-          <Statistic title="Measured value (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="Value of work done" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="Measured value (approved measurements)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           {gap ? (
             <p data-testid="boq-gap" style={{ margin: 0, maxWidth: 420, color: themeColor('colorWarningText'), fontSize: themeFontSize('fontSizeSM') }}>
               <ExclamationCircleOutlined aria-hidden style={{ marginRight: 6 }} />
@@ -293,14 +293,14 @@ export function BoqTab({ projectId }: { projectId: string }) {
             },
             { title: 'Items', dataIndex: 'count', width: 80, align: 'right' },
             { title: 'Amount', dataIndex: 'amount', width: 160, align: 'right', className: 'mono', render: (v: number) => formatINR(v) },
-            { title: 'Share', dataIndex: 'share', width: 90, align: 'right', className: 'mono', render: (v: number) => `${v.toFixed(1)}%` },
+            { title: 'Share', dataIndex: 'share', width: 90, align: 'right', className: 'mono', render: (v: number) => formatPct(v) },
             {
-              title: 'Executed value',
+              title: 'Value of work done',
               dataIndex: 'executed',
               width: 200,
               render: (v: number, r) => {
                 const pct = r.amount > 0 ? Math.min(100, Math.round((v / r.amount) * 1000) / 10) : 0;
-                return <Progress percent={pct} size="small" aria-label={`${r.name ?? 'No section'}: ${pct}% executed`} format={() => formatINR(v)} />;
+                return <Progress percent={pct} size="small" aria-label={`${r.name ?? 'No section'}: ${pct}% done`} format={() => formatINR(v)} />;
               },
             },
           ]}

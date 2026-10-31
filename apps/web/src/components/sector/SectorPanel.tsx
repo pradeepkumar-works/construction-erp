@@ -10,13 +10,13 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { ChainageStrip } from './ChainageStrip';
 import { SectorMatrixTable } from './SectorMatrixTable';
 import { PipelineCard } from './PipelineCard';
-import { SectorSettingsModal } from './SectorSettingsModal';
+import { SectorSettingsModal, sectorSetWhat } from './SectorSettingsModal';
 import { Section } from '@/components/common/Section';
 
 /** Tab label for a project's sector view: what its type locates work by (item 134). */
 export const sectorTabLabel = (project: Pick<ProjectDetail, 'type' | 'locations'>) => {
   const k = sectorKinds(project);
-  return k.village ? 'Villages and pipeline' : k.floor ? 'Floors' : 'Chainage';
+  return k.village ? 'Villages' : k.floor ? 'Floors' : 'Chainage';
 };
 
 /** What the strip runs along: a main, a road, or the work's own chainage. */
@@ -43,7 +43,7 @@ export function SectorPanel({ project, editable }: { project: ProjectDetail; edi
           {missing ? <Alert style={{ flex: 1 }} type="info" showIcon title={missing} /> : <div style={{ flex: 1 }} />}
           {editable ? (
             <Button icon={<SettingOutlined />} onClick={() => setSettings(true)}>
-              Sector settings
+              {`Set ${sectorSetWhat(project)}`}
             </Button>
           ) : null}
         </div>

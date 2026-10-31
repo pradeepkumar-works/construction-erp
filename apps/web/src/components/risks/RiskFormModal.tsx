@@ -166,7 +166,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
       open={open}
       onClose={onClose}
       form={form}
-      title={risk ? `Update ${risk.riskNo}` : isDelay ? 'Record delay' : 'New risk'}
+      title={risk ? `Edit ${risk.riskNo}` : isDelay ? 'Record delay' : 'New risk'}
       okText={editing ? 'Save' : isDelay ? 'Record delay' : 'Save risk'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       layout="drawer"
@@ -188,8 +188,8 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Select project"
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            placeholder="Choose the project"
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             onChange={() => form.setFieldsValue({ activityId: undefined, ownerId: undefined })}
           />
         </Form.Item>
@@ -198,7 +198,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Choose the category' }]}>
-            <Select placeholder="Select" options={RISK_CATEGORIES.map((c) => ({ value: c, label: RISK_CATEGORY_LABELS[c] }))} />
+            <Select placeholder="Choose the category" options={RISK_CATEGORIES.map((c) => ({ value: c, label: RISK_CATEGORY_LABELS[c] }))} />
           </Form.Item>
           <Form.Item name="activityId" label="Activity affected (optional)">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
@@ -227,7 +227,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
             </FormGrid>
             <FormGrid cols={3}>
               <Form.Item name="responsibleParty" label="Caused by">
-                <Select allowClear placeholder="Select" options={DELAY_PARTIES.map((p) => ({ value: p, label: DELAY_PARTY_LABELS[p] }))} />
+                <Select allowClear placeholder="Choose who caused it" options={DELAY_PARTIES.map((p) => ({ value: p, label: DELAY_PARTY_LABELS[p] }))} />
               </Form.Item>
               <Form.Item name="eotClaimed" label="Extension of time" valuePropName="checked">
                 <Checkbox>EOT claimed from the client</Checkbox>

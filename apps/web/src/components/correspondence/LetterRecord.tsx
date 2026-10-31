@@ -105,7 +105,7 @@ function storyOf(l: LetterDto): { key: string; at: string; text: React.ReactNode
         </span>
       ),
     });
-  if (l.sentForApprovalAt) out.push({ key: 'sent', at: l.sentForApprovalAt, text: `Sent to ${l.signatoryName ?? 'the signatory'} for approval` });
+  if (l.sentForApprovalAt) out.push({ key: 'sent', at: l.sentForApprovalAt, text: `Sent to ${l.signatoryName ?? 'the signatory'} for signature` });
   if (l.signedAt) out.push({ key: 'signed', at: l.signedAt, text: `Signed by ${l.signedByName ?? l.signatoryName ?? 'the signatory'}; sent to head office for the seal` });
   if (l.approvedAt) out.push({ key: 'approved', at: l.approvedAt, text: l.signedAt ? `Sealed at head office and numbered ${l.letterNo ?? ''}` : `Signed by ${l.signatoryName ?? 'the signatory'} and numbered ${l.letterNo ?? ''}` });
   if (l.dispatchedOn) out.push({ key: 'dispatched', at: `${l.dispatchedOn}T23:59:00`, text: `Dispatched by ${l.mode ? LETTER_MODE_LABELS[l.mode].toLowerCase() : 'hand'}${l.docketNo ? `, ${l.docketNo}` : ''}` });
@@ -194,7 +194,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
       case 'close':
         return run('close', (l) => `${letterLabel(l)} closed`, { note: v.note?.trim() || null });
       case 'send':
-        return run('send-for-approval', (l) => `Sent to ${l.signatoryName} for approval`, { signatoryId: v.signatoryId });
+        return run('send-for-approval', (l) => `Sent to ${l.signatoryName} for signature`, { signatoryId: v.signatoryId });
       case 'return':
         return run('return', () => 'Returned to the writer with your changes', { note: v.note?.trim() });
       case 'dispatch':
@@ -266,7 +266,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
         {c.sign ? (
           <>
             <Button size={size} type="primary" loading={post.isPending} onClick={() => run('approve', (l) => (l.letterNo ? `Signed: ${l.letterNo}` : 'Signed; sent to head office for the seal'))}>
-              {data.signedAt ? 'Seal and number' : data.needsSeal ? 'Sign and send to head office' : 'Approve and number'}
+              {data.signedAt ? 'Seal and number' : data.needsSeal ? 'Sign and send to head office' : 'Sign and number'}
             </Button>
             <Button size={size} onClick={() => start('return')}>
               Return with changes
@@ -277,7 +277,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
           <>
             {needsApproval ? (
               <Button size={size} type="primary" icon={<SendOutlined />} onClick={() => start('send')}>
-                Send for approval
+                Send for signature
               </Button>
             ) : (
               <>
@@ -311,7 +311,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
   const titles: Record<Action, string> = {
     mark: data?.markedToId ? 'Forward the letter' : 'Mark the letter',
     close: 'Close the letter',
-    send: needsApproval ? 'Send for approval' : 'Send for signature',
+    send: 'Send for signature',
     return: 'Return with changes',
     dispatch: data?.dispatchedOn ? 'Record delivery' : 'Record dispatch',
   };
@@ -362,7 +362,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
             { key: 'date', label: 'Dated', children: formatDate(data.letterDate) },
             ...(isIn ? [{ key: 'received', label: 'Received on', children: data.receivedOn ? formatDate(data.receivedOn) : '-' }] : []),
             { key: 'ref', label: isIn ? 'Their reference' : 'Reference', children: data.theirRef ?? '-' },
-            ...(data.mode ? [{ key: 'mode', label: isIn ? 'Came by' : 'Sent by', children: `${LETTER_MODE_LABELS[data.mode]}${data.docketNo ? `, ${data.docketNo}` : ''}` }] : []),
+            ...(data.mode ? [{ key: 'mode', label: isIn ? 'Came through' : 'Sent through', children: `${LETTER_MODE_LABELS[data.mode]}${data.docketNo ? `, ${data.docketNo}` : ''}` }] : []),
             {
               key: 'reply',
               label: isIn ? 'Reply needed by' : 'Their reply by',
@@ -419,7 +419,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
               ? [
                   {
                     key: 'thread',
-                    title: 'Thread',
+                    title: 'Replies and earlier letters',
                     count: (data.inReplyTo ? 1 : 0) + data.replies.length,
                     children: (
                       <Flex vertical gap={8}>
@@ -468,10 +468,10 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
                 <Select showSearch={{ optionFilterProp: 'label' }} options={(people ?? []).filter((p) => p.id !== data?.markedToId).map((p) => ({ value: p.id, label: `${p.fullName} · ${p.roleName}` }))} />
               </Form.Item>
               <FormGrid cols={2}>
-                <Form.Item name="action" label="To" rules={[{ required: true, message: 'Choose what they do' }]}>
+                <Form.Item name="action" label="Action" rules={[{ required: true, message: 'Choose what they do' }]}>
                   <Select options={LETTER_ACTIONS.map((a) => ({ value: a, label: LETTER_ACTION_LABELS[a], title: LETTER_ACTION_HINTS[a] }))} />
                 </Form.Item>
-                <Form.Item name="dueOn" label="By">
+                <Form.Item name="dueOn" label="Due by">
                   <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
               </FormGrid>
@@ -501,7 +501,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
           {action === 'dispatch' ? (
             <>
               <FormGrid cols={2}>
-                <Form.Item name="mode" label="Sent by" rules={[{ required: true, message: 'Choose how it went' }]}>
+                <Form.Item name="mode" label="Sent through" rules={[{ required: true, message: 'Choose how it went' }]}>
                   <Select options={LETTER_MODES.map((m) => ({ value: m, label: LETTER_MODE_LABELS[m] }))} />
                 </Form.Item>
                 <Form.Item

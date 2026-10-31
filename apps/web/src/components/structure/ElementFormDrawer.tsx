@@ -36,7 +36,7 @@ const kindOptions = (kinds: ComponentKindDto[], first: string[], current: string
   const rest = offered.filter((k) => !first.includes(k.code));
   return [
     ...(usual.length ? [{ label: 'Usual for this project', options: usual.map(opt) }] : []),
-    { label: usual.length ? 'Other kinds' : 'Kinds', options: rest.map(opt) },
+    { label: usual.length ? 'Other component types' : 'Component types', options: rest.map(opt) },
   ];
 };
 
@@ -166,11 +166,11 @@ export function ElementFormDrawer({
       <Form form={form} layout="vertical">
         <FormSection title="Component">
           <FormGrid cols={2}>
-            <Form.Item name="kindCode" label="Kind" rules={[{ required: true, message: 'Choose what it is, e.g. Overhead tank' }]} tooltip={isEdit ? 'Its activities stay as they are; the kind changes what it is counted as.' : undefined}>
+            <Form.Item name="kindCode" label="Component type" rules={[{ required: true, message: 'Choose what it is, e.g. Overhead tank' }]} tooltip={isEdit ? 'Its activities stay as they are; the kind changes what it is counted as.' : undefined}>
               <Select showSearch={{ optionFilterProp: 'label' }} loading={!kinds} placeholder="Overhead tank" options={kindOptions(kinds ?? [], typeKinds, element ? kindCodeOf(element) : undefined)} />
             </Form.Item>
-            <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, min: 2, message: 'Name it, e.g. OHT 650 KL, Ward 4' }]}>
-              <Input placeholder="OHT 650 KL, Ward 4" />
+            <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, min: 2, message: 'Enter the name, e.g. OHT 650 kL, Ward 4' }]}>
+              <Input placeholder="OHT 650 kL, Ward 4" />
             </Form.Item>
             <Form.Item name="parentId" label="Inside" tooltip={hasSubs ? 'It has sub-components of its own, so it stays a component' : 'Leave empty for a component of the project'}>
               <Select
@@ -185,7 +185,7 @@ export function ElementFormDrawer({
               <Form.Item name="code" label="Number" tooltip="Outline number, e.g. 8 or 8.1. Left empty, the next free one.">
                 <Input placeholder="Next free" />
               </Form.Item>
-              <Form.Item name="weightPct" label="Weight" tooltip="Share of the project, or of its component, %. Lump sum contracts usually take the billing breakup. Left empty, it shares what is left by BOQ value.">
+              <Form.Item name="weightPct" label="Weight" tooltip="Share of the project, or of its component, %. Lump sum contracts usually take its share in the payment schedule. Left empty, it shares what is left by BOQ value.">
                 <InputNumber min={0} max={100} step={0.5} suffix="%" style={{ width: '100%' }} placeholder="Auto" />
               </Form.Item>
             </FormGrid>
@@ -225,7 +225,7 @@ function PlanLines({ onQty }: { onQty: (key: string, qty: number | null) => void
   const form = Form.useFormInstance<FormValues>();
   // `preserve`: the lines are set before their table (the Form.List) is drawn.
   const lines: PlanLine[] = Form.useWatch('lines', { form, preserve: true }) ?? [];
-  if (!lines.length) return <Typography.Paragraph type="secondary">This kind has no activities of its own; add its parts as sub-components.</Typography.Paragraph>;
+  if (!lines.length) return <Typography.Paragraph type="secondary">This component type has no activities of its own; add its parts as sub-components.</Typography.Paragraph>;
   return (
     <>
       <Typography.Paragraph type="secondary">

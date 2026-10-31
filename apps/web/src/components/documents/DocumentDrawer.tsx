@@ -1,5 +1,7 @@
 'use client';
 
+import { auditActionLabel } from '@/components/common/AuditTrail';
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Alert, Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Timeline, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, SendOutlined } from '@/components/common/icons';
@@ -67,9 +69,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
             ) : null}
             <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit document" />
             {!sent ? (
-              <ConfirmDelete what={`document ${data.docNo}`} description="All its revisions and files go with it." onConfirm={() => removeDoc.mutateAsync()}>
-                <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete document" />
-              </ConfirmDelete>
+              <DeleteInMenu what={`document ${data.docNo}`} description="All its revisions and files go with it." onConfirm={() => removeDoc.mutateAsync()} />
             ) : null}
           </Space>
         ) : null
@@ -177,7 +177,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
               key: h.id,
               content: (
                 <div>
-                  <Typography.Text strong>{(h.action.charAt(0) + h.action.slice(1).toLowerCase()).replace(/_/g, ' ')}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
+                  <Typography.Text strong>{auditActionLabel(h.action)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   {h.note ? <span> · {h.note}</span> : null}
                   <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}

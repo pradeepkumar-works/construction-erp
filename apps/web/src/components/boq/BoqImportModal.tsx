@@ -127,7 +127,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
         setMapping(auto);
         setFileName(file.name);
       } catch (err) {
-        setParseError(err instanceof Error ? err.message : 'Could not parse the file');
+        setParseError(err instanceof Error ? err.message : 'That file could not be read. Save it as .xlsx and try again.');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -153,14 +153,10 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
           section: get(r, 'section') || undefined,
           sorRef: get(r, 'sorRef') || undefined,
         };
-        const problems: string[] = [];
-        if (!row.itemNo) problems.push('item no');
-        if (!row.description) problems.push('description');
-        if (!row.unit) problems.push('unit');
-        if (!row.rate || Number.isNaN(Number(row.rate))) problems.push('rate');
-        if (!row.originalQty || Number.isNaN(Number(row.originalQty))) problems.push('quantity');
-        if (row.revisedQty && Number.isNaN(Number(row.revisedQty))) problems.push('revised qty');
-        if (problems.length) row.error = `Invalid ${problems.join(', ')}`;
+        const blank = [!row.itemNo && 'item no.', !row.description && 'description', !row.unit && 'unit', !row.rate && 'rate', !row.originalQty && 'quantity'].filter(Boolean);
+        const notNumber = [row.rate && Number.isNaN(Number(row.rate)) && 'rate', row.originalQty && Number.isNaN(Number(row.originalQty)) && 'quantity', row.revisedQty && Number.isNaN(Number(row.revisedQty)) && 'revised qty'].filter(Boolean);
+        const problems = [blank.length ? `Fill in the ${blank.join(', ')}` : '', ...notNumber.map((f) => `Enter the ${f} as a number`)].filter(Boolean);
+        if (problems.length) row.error = problems.join('. ');
         return row;
       })
       .filter((r) => r.itemNo || r.description || r.rate || r.originalQty);
@@ -233,7 +229,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
       }
       destroyOnHidden
     >
-      <StageBar current={readState ? 2 : step} label="Import steps" items={readState ? [{ title: 'Read file' }, { title: 'Check the rows' }, { title: 'Import' }] : [{ title: 'Upload file' }, { title: 'Map columns' }, { title: 'Preview & import' }]} style={{ marginBottom: 16 }} />
+      <StageBar current={readState ? 2 : step} label="Import steps" items={readState ? [{ title: 'Read file' }, { title: 'Check the rows' }, { title: 'Import' }] : [{ title: 'Upload file' }, { title: 'Map columns' }, { title: 'Preview and import' }]} style={{ marginBottom: 16 }} />
       {parseError && <Alert type="error" showIcon title={parseError} style={{ marginBottom: 12 }} />}
 
       {rows.length === 0 ? (
@@ -242,7 +238,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
             <InboxOutlined />
           </p>
           <p className="ant-upload-text">Click or drag an .xlsx / .csv file here</p>
-          <p className="ant-upload-hint">First sheet is read. The header row should contain Item No, Description, Unit, Rate and Quantity. Use the template if unsure.</p>
+          <p className="ant-upload-hint">First sheet is read. The header row should hold Item no., Description, Unit, Rate and Quantity. Use the template if unsure.</p>
         </Upload.Dragger>
       ) : null}
       {rows.length === 0 ? (
@@ -307,7 +303,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
           <Typography.Text type="secondary">
             File: <strong>{fileName}</strong> · {rows.length} row{rows.length === 1 ? '' : 's'} found. Map each BOQ field to a column from your sheet.
           </Typography.Text>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 16px', margin: '12px 0 16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px 16px', margin: '12px 0 16px' }}>
             {FIELDS.map((f) => (
               <div key={f.key}>
                 <div style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 2 }}>
@@ -316,7 +312,8 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
                 <Select
                   allowClear
                   style={{ width: '100%' }}
-                  placeholder="Select column"
+                  placeholder="Choose the column"
+                  aria-label={`Column for ${f.label}`}
                   value={mapping[f.key]}
                   status={f.required && !mapping[f.key] ? 'error' : undefined}
                   onChange={(v) => setMapping((m) => ({ ...m, [f.key]: v }))}

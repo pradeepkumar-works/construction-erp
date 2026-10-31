@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { Button, Card, Checkbox, Drawer, Flex, Form, Input, InputNumber, Select, Statistic, Switch, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CALIBRATION_RESULTS, CALIBRATION_RESULT_LABELS, calibrationDaysFor, canManageQaPlan, type AttachmentDto, type CalibrationResult, type QaInstrumentDto } from '@erp/shared';
+import { CALIBRATION_RESULTS, CALIBRATION_RESULT_LABELS, CALIBRATION_SOON_DAYS, calibrationDaysFor, canManageQaPlan, type AttachmentDto, type CalibrationResult, type QaInstrumentDto } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useInstrument, useInstruments, useMasterList, useQaLabs } from '@/lib/queries';
@@ -123,11 +123,11 @@ function InstrumentDialog({ editing, onClose }: { editing: QaInstrumentDto | 'ne
             <ProjectSelect placeholder="Head office or a lab" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="labId" label="In the lab">
-            <Select allowClear placeholder="None" showSearch={{ optionFilterProp: 'label' }} options={(labs ?? []).filter((l) => l.active || l.id === inst?.labId).map((l) => ({ value: l.id, label: l.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={(labs ?? []).filter((l) => l.active || l.id === inst?.labId).map((l) => ({ value: l.id, label: l.name }))} />
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="notes" label="Notes">
+          <Form.Item name="notes" label="Remarks">
             <Input maxLength={1000} />
           </Form.Item>
           <Form.Item name="active" label="In use" valuePropName="checked">
@@ -179,7 +179,7 @@ function CalibrateDialog({ inst, onClose }: { inst: QaInstrumentDto | null; onCl
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={!!inst} onClose={onClose} form={form} layout="modal" width={560} projectDefault={false} title={inst ? `Calibrate ${inst.name}` : 'Calibrate'} okText="Record calibration" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={!!inst} onClose={onClose} form={form} layout="modal" width={560} projectDefault={false} title={inst ? `Record calibration of ${inst.name}` : 'Record calibration'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="calibratedOn" label="Calibrated on" rules={[{ required: true, message: 'Pick the day it was calibrated' }]}>
@@ -242,11 +242,11 @@ function InstrumentDrawer({ id, onClose }: { id: string | null; onClose: () => v
             locale={{ emptyText: 'Not calibrated yet' }}
             scroll={{ x: 560 }}
             columns={[
-              { title: 'On', dataIndex: 'calibratedOn', render: (v: string) => formatDate(v) },
+              { title: 'Calibrated on', dataIndex: 'calibratedOn', render: (v: string) => formatDate(v) },
               { title: 'Certificate', key: 'cert', render: (_, c) => <span translate="no">{[c.certificateNo, c.agency].filter(Boolean).join(', ') || '-'}</span> },
               { title: 'Result', dataIndex: 'result', render: (v: CalibrationResult) => <AppTag tone={v === 'FAILED' ? 'danger' : 'success'}>{CALIBRATION_RESULT_LABELS[v]}</AppTag> },
               { title: 'Next due', dataIndex: 'nextDueOn', render: (v: string | null) => (v ? formatDate(v) : '-') },
-              { title: 'File', key: 'files', render: (_, c) => (c.attachments.length ? <AttachmentGallery attachments={c.attachments} size={48} /> : '-') },
+              { title: 'Certificate', key: 'files', render: (_, c) => (c.attachments.length ? <AttachmentGallery attachments={c.attachments} size={48} /> : '-') },
             ]}
           />
         </Flex>
@@ -295,7 +295,7 @@ export function CalibrationPage() {
           <>
             <Flex gap={token.marginXL} wrap style={{ marginBottom: token.margin }}>
               <Statistic title="Overdue" value={data.overdue} styles={{ content: data.overdue ? { color: token.colorErrorText } : undefined }} />
-              <Statistic title={`Due in ${15} days`} value={data.dueSoon} />
+              <Statistic title={`Due in the next ${CALIBRATION_SOON_DAYS} days`} value={data.dueSoon} />
               <Statistic title="Out of use" value={data.outOfUse} />
             </Flex>
             <Table<QaInstrumentDto>
@@ -360,7 +360,7 @@ export function CalibrationPage() {
                         render: (_: unknown, i: QaInstrumentDto) => (
                           <Flex gap={4} align="center">
                             <Button size="small" icon={<CheckCircleOutlined />} onClick={() => setCalibrating(i)}>
-                              Calibrated
+                              Record calibration
                             </Button>
                             <Button type="text" icon={<EditOutlined />} aria-label={`Edit ${i.name}`} onClick={() => setEditing(i)} />
                             <ConfirmDelete what={i.name} description={i.lastCalibratedOn ? 'It has calibrations, so it is switched off and kept with them.' : undefined} verb={i.lastCalibratedOn ? 'Remove' : 'Delete'} onConfirm={() => remove.mutateAsync(i.id)}>

@@ -65,7 +65,7 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
             </div>
           ),
         },
-        { title: 'Passes at', key: 'spec', width: 130, render: (_, r) => specRange(r.specMin, r.specMax, r.unit) ?? <Sub>-</Sub> },
+        { title: 'Limits', key: 'spec', width: 130, render: (_, r) => specRange(r.specMin, r.specMax, r.unit) ?? <Sub>-</Sub> },
         { title: 'Readings', key: 'readings', width: 240, render: (_, r) => <ReadingsSummary t={r} /> },
         { key: 'openNcrs', title: 'NCRs', label: 'Open NCRs', dataIndex: 'openNcrs', width: 80, align: 'right', render: (v: number) => (v ? <Typography.Text type="danger">{v} open</Typography.Text> : <Sub>-</Sub>), total: (rows) => rows.reduce((n, r) => n + r.openNcrs, 0) || '-' },
         { title: 'Result', dataIndex: 'result', fixed: 'right' as const, width: 100, ...sort('result'), render: (v: TestResult) => <TestResultTag result={v} /> },

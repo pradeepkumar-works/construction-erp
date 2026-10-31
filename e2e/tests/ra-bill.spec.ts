@@ -73,6 +73,6 @@ test('a site engineer has no RA bills', async ({ page }) => {
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
   await openProjectTab(page, 'Money');
-  await expect(projectTabs(page, 'Money').getByText('Expenses', { exact: true })).toBeVisible();
+  await expect(projectTabs(page, 'Money').getByText('Site expenses', { exact: true })).toBeVisible();
   await expect(projectTabs(page, 'Money').getByText('RA bills', { exact: true })).toHaveCount(0);
 });

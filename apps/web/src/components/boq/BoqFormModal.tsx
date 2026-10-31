@@ -94,7 +94,7 @@ export function BoqFormModal({ open, onClose, projectId, item, sections = [] }: 
           <Form.Item name="rate" label="Rate" rules={[{ required: true, message: 'Enter the rate' }]}>
             <MoneyInput />
           </Form.Item>
-          <Form.Item name="originalQty" label="Original qty" rules={[{ required: true, message: 'Enter the quantity' }]}>
+          <Form.Item name="originalQty" label="BOQ qty" rules={[{ required: true, message: 'Enter the quantity' }]}>
             <QuantityInput unit={unit} />
           </Form.Item>
           <Form.Item name="revisedQty" label="Revised qty">
@@ -109,7 +109,7 @@ export function BoqFormModal({ open, onClose, projectId, item, sections = [] }: 
             <Select
               allowClear
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder={structure?.elements.length ? 'None' : 'No breakdown yet'}
+              placeholder={structure?.elements.length ? 'None' : 'No components yet (Components tab)'}
               options={(structure?.elements ?? []).map((e) => ({ value: e.id, label: `${e.code} ${e.name}` }))}
             />
           </Form.Item>

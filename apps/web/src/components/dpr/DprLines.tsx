@@ -78,12 +78,12 @@ export function DprWorkLines({ lines, def }: { lines: DprLineDto[]; def?: DprFor
               },
               { key: 'today', title: 'Today', align: 'right', width: 100, render: (_, l) => <span translate="no">{`${formatQty(l.quantity)} ${l.unit}`}</span> },
               { key: 'previous', title: 'Up to previous', align: 'right', width: 110, render: (_, l) => <span translate="no">{formatQty(l.previous)}</span> },
-              { key: 'cumulative', title: 'Cumulative / scope', align: 'right', width: 140, render: (_, l) => <span translate="no">{`${formatQty(l.cumulative)} / ${formatQty(l.scope)}`}</span> },
+              { key: 'cumulative', title: 'Cumulative / planned', align: 'right', width: 140, render: (_, l) => <span translate="no">{`${formatQty(l.cumulative)} / ${formatQty(l.scope)}`}</span> },
               { key: 'pct', title: '%', align: 'right', width: 64, render: (_, l) => <span translate="no">{l.pct === null ? '-' : formatPct(l.pct)}</span> },
               { key: 'balance', title: 'Balance', align: 'right', width: 90, render: (_, l) => <span translate="no">{formatQty(l.balance)}</span> },
               {
                 key: 'resources',
-                title: 'Crew, machines, material',
+                title: 'Labour, machines, material',
                 width: 220,
                 render: (_, l) => {
                   const parts = [crew(l), machines(l), material(l)].filter(Boolean);
@@ -139,7 +139,7 @@ export function DprLineTotals({ lines }: { lines: DprLineDto[] }) {
             pagination={false}
             dataSource={hours}
             columns={[
-              { key: 'name', title: 'Equipment', dataIndex: 'name' },
+              { key: 'name', title: 'Machine', dataIndex: 'name' },
               { key: 'hours', title: 'Hours', align: 'right', width: 80, render: (_, m) => <span translate="no">{formatQty(m.hours)}</span> },
             ]}
           />

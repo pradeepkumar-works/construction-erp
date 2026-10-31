@@ -97,7 +97,7 @@ test('deliverables, packages and client inputs drive the milestone payments of a
   await expect(page.getByText(/days late for site/).first()).toBeVisible();
   await expect(page.getByText(/reach(es)? site after it is needed/)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
-  await page.getByText(/^Client inputs \(/).click();
+  await page.getByText(/^Client inputs \d+$/).click();
   await expect(page.getByRole('button', { name: 'Record delay' })).toBeVisible();
   await page.goto(`/bills/${first.id}`);
   await expect(page.getByText(/^US\$/).first()).toBeVisible();

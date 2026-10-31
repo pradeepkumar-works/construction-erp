@@ -1,8 +1,9 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, InputNumber, Skeleton, Space, Table, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, WarningOutlined } from '@/components/common/icons';
+import { EditOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { QualityTestDto, QualityTestReadingDto } from '@erp/shared';
 import { TEST_KIND_LABELS, canEditTest, canRaiseNcr, canRecordTest, specRange } from '@erp/shared';
@@ -19,7 +20,6 @@ import { TestFormModal } from './TestFormModal';
 import { NcrFormModal, type NcrPrefill } from './NcrFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeFontSize } from '@/lib/theme';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** One reading's value with a Save button; a recorded value can be corrected the same way. */
 function ReadingInput({ test, reading }: { test: QualityTestDto; reading: QualityTestReadingDto }) {
@@ -112,9 +112,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
               </Button>
             ) : null}
             {mayEdit ? (
-              <ConfirmDelete what={`test ${data.testNo}`} description="Its NCRs stay on record." onConfirm={() => remove.mutateAsync()}>
-                <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete test" />
-              </ConfirmDelete>
+              <DeleteInMenu what={`test ${data.testNo}`} description="Its NCRs stay on record." onConfirm={() => remove.mutateAsync()} />
             ) : null}
           </Space>
         ) : null
@@ -165,7 +163,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
                 ? [
                     {
                       key: 'instrument',
-                      label: 'Tested on',
+                      label: 'Instrument',
                       span: 2,
                       children: (
                         <Space size={4} wrap>
@@ -206,7 +204,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
             </Typography.Paragraph>
           ) : null}
           <Divider titlePlacement="start" plain>
-            NCRs ({ncrs?.total ?? 0})
+            NCRs{ncrs?.total ? <Typography.Text type="secondary" translate="no">{` ${ncrs.total}`}</Typography.Text> : null}
           </Divider>
           {ncrs?.items.length ? (
             ncrs.items.map((n) => (

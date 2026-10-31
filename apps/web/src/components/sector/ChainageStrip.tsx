@@ -89,7 +89,7 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
                 <>
                   <div style={{ fontWeight: 600 }}>{start !== null && end !== null ? `${Math.round((l.coveredM / length) * 100)}%` : `${formatQty(l.coveredM)} m`}</div>
                   <div className="text-muted">
-                    {(l.coveredM / 1000).toFixed(2)} km{l.pendingM ? ` + ${(l.pendingM / 1000).toFixed(2)} waiting` : ''}
+                    {formatQty(l.coveredM / 1000)} km{l.pendingM ? ` + ${formatQty(l.pendingM / 1000)} waiting` : ''}
                   </div>
                 </>
               )}

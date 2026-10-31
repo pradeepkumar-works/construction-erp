@@ -22,6 +22,7 @@ import {
   type DesignSubmissionKind,
   type DesignSubmissionStatus,
   type DrawingSource,
+  statusForCode,
 } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useDesignSubmissionAction, useDocuments } from '@/lib/queries';
@@ -57,8 +58,7 @@ export function DesignStatusTag({ status, purpose, daysLate }: { status: DesignS
 }
 
 const CODE_TONE: Record<DesignCode, 'success' | 'pending' | 'danger'> = { A: 'success', B: 'success', C: 'pending', D: 'danger' };
-const CODE_WORDS: Record<DesignCode, string> = { A: 'approved', B: 'approved with comments', C: 'revise and resubmit', D: 'rejected' };
-export const codeLabel = (code: DesignCode, purpose: DesignPurpose) => `Code ${code}, ${purpose === 'VETTING' && (code === 'A' || code === 'B') ? (code === 'A' ? 'vetted' : 'vetted with remarks') : CODE_WORDS[code]}`;
+export const codeLabel = (code: DesignCode, purpose: DesignPurpose) => `Code ${code}, ${designStatusLabel(statusForCode(code), purpose).toLowerCase()}`;
 export function CodeTag({ code, purpose }: { code: DesignCode; purpose: DesignPurpose }) {
   return <AppTag tone={CODE_TONE[code]}>{codeLabel(code, purpose)}</AppTag>;
 }

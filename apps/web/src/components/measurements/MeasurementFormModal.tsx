@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { Alert, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -10,7 +11,7 @@ import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useBoq, useProjects, useWorkOrders } from '@/lib/queries';
+import { useBoq, useWorkOrders } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -74,7 +75,6 @@ export function MeasurementFormModal({
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!sheet;
   const fixedProject = sheet?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
@@ -141,7 +141,7 @@ export function MeasurementFormModal({
       layout="drawer"
       width={900}
       title={sheet ? `${editActionLabel(sheet.status)} · ${sheet.mbNo}` : 'New measurement'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       // Lines filled in from elsewhere are not a draft of their own.
       draftKey={editing || prefill ? undefined : `measurement:${projectId ?? 'any'}`}
@@ -150,18 +150,18 @@ export function MeasurementFormModal({
         {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
         <FormSection title="What and where">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
+            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item
               name="boqItemId"
               label="BOQ item"
               rules={[{ required: true, message: 'Choose the BOQ item' }]}
-              extra={item ? `Contract ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · awaiting approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
+              extra={item ? `BOQ qty ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · waiting for approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
             >
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
-                placeholder="Select BOQ item"
+                placeholder="Choose the BOQ item"
                 disabled={!selectedProject}
                 options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description} (${b.unit})` }))}
                 onChange={() => form.setFieldValue('workOrderId', undefined)}
@@ -172,8 +172,8 @@ export function MeasurementFormModal({
             </Form.Item>
           </FormGrid>
           {woOptions.length > 0 && (
-            <Form.Item name="workOrderId" label="Done by (work order)" extra="Tag the subcontractor's work so it goes in their bill. Leave empty for departmental work.">
-              <Select allowClear placeholder="Departmental (no work order)" options={woOptions} />
+            <Form.Item name="workOrderId" label="Work order" extra="Tag the subcontractor's work so it goes in their bill. Leave empty for departmental work.">
+              <Select allowClear placeholder="Departmental (our own workers)" options={woOptions} />
             </Form.Item>
           )}
           <SectorInputs projectId={selectedProject} />
@@ -190,7 +190,7 @@ export function MeasurementFormModal({
             <Input maxLength={200} placeholder="Grid, side or zone, e.g. LHS, grid C4-D7" />
           </Form.Item>
         </FormSection>
-        <FormSection title="Measurements">
+        <FormSection title="Measurement lines">
           <div style={{ ...LINE_GRID, fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorTextDescription'), marginBottom: 4 }}>
             <span>Description</span>
             <span>Nos</span>

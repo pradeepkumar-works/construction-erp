@@ -58,10 +58,10 @@ test('a view saved and shared shows for the company, and only its owner can chan
 test('columns can be hidden and stay hidden, and Reset brings them back', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/dpr');
-  const header = page.locator('.ant-table-thead th').filter({ hasText: /^Work executed$/ });
+  const header = page.locator('.ant-table-thead th').filter({ hasText: /^Work done$/ });
   await expect(header).toBeVisible();
   await page.getByRole('button', { name: 'Columns' }).click();
-  await page.getByRole('checkbox', { name: 'Work executed' }).uncheck();
+  await page.getByRole('checkbox', { name: 'Work done' }).uncheck();
   await expect(header).toHaveCount(0);
   await page.reload();
   await expect(page.locator('.ant-table-thead th').filter({ hasText: /^Date$/ })).toBeVisible();
@@ -101,8 +101,8 @@ test('figures add up in a total row for the page', async ({ page }) => {
   await expect(rows(page).nth(1)).toBeVisible();
   const summary = page.locator('.ant-table-summary');
   await expect(summary).toContainText('Total, this page');
-  // The manpower total is the sum of the rows' manpower.
-  const index = await page.locator('.ant-table-thead th').allInnerTexts().then((h) => h.findIndex((t) => t.trim() === 'Manpower'));
+  // The labour total is the sum of the rows' labour.
+  const index = await page.locator('.ant-table-thead th').allInnerTexts().then((h) => h.findIndex((t) => t.trim() === 'Labour'));
   const cells = await rows(page).evaluateAll((trs, i) => trs.map((tr) => Number((tr.children[i] as HTMLElement).innerText.trim() || 0)), index);
   await expect(summary.locator('td').nth(index)).toHaveText(String(cells.reduce((a, b) => a + b, 0)));
 });

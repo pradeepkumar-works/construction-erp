@@ -1,5 +1,6 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Progress, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
@@ -225,6 +226,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
       <Section title="Snags and defects">
         <Flex gap={8} wrap align="center" style={{ paddingBottom: token.paddingSM }}>
           <Segmented<DefectPhase | 'ALL'>
+            aria-label="Show snags or defects"
             value={phase}
             onChange={(v) => {
               setPhase(v);
@@ -245,10 +247,10 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
             style={{ width: 170 }}
             aria-label="Status"
             options={[
-              { value: 'PENDING', label: 'Open or fixed' },
-              { value: 'OPEN', label: 'Open' },
-              { value: 'FIXED', label: 'Fixed, to check' },
-              { value: 'CLOSED', label: 'Closed' },
+              { value: 'PENDING', label: `${DEFECT_STATUS_LABELS.OPEN} or ${DEFECT_STATUS_LABELS.FIXED.toLowerCase()}` },
+              { value: 'OPEN', label: DEFECT_STATUS_LABELS.OPEN },
+              { value: 'FIXED', label: DEFECT_STATUS_LABELS.FIXED },
+              { value: 'CLOSED', label: DEFECT_STATUS_LABELS.CLOSED },
               { value: 'ALL', label: 'All' },
             ]}
           />
@@ -319,9 +321,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
                 </Button>
               ) : null}
               {closer ? (
-                <ConfirmDelete what={`${d.defectNo} “${d.title}”`} onConfirm={() => removeDefect.mutateAsync(d.id)}>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label="Delete" />
-                </ConfirmDelete>
+                <DeleteInMenu what={`${d.defectNo} “${d.title}”`} onConfirm={() => removeDefect.mutateAsync(d.id)} />
               ) : null}
             </Space>
           ) : null

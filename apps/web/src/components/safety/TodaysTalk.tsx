@@ -60,7 +60,7 @@ export function TodaysTalk({
             placeholder="Choose the project"
             value={chosen}
             onChange={setChosen}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />
         ) : null}
         {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
