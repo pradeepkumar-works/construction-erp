@@ -165,27 +165,27 @@ export class VendorBillsService {
       equipmentCode: r.equipment?.code ?? null,
       equipmentName: r.equipment?.name ?? null,
       hireMonth: dateOnly(r.hireMonth),
-      fuelLitres: dec(r.fuelLitres)!,
-      fuelRate: money(r.fuelRate)!,
-      fuelRecovery: money(r.fuelRecovery)!,
+      fuelLitres: dec(r.fuelLitres),
+      fuelRate: money(r.fuelRate),
+      fuelRecovery: money(r.fuelRecovery),
       expenseCategory: r.expenseCategory,
-      debitNoteAmount: money(r.debitNoteAmount)!,
+      debitNoteAmount: money(r.debitNoteAmount),
       ...(sources ? { sources } : {}),
       invoiceNo: r.invoiceNo,
-      invoiceDate: dateOnly(r.invoiceDate)!,
-      dueDate: dateOnly(r.dueDate)!,
-      freight: money(r.freight)!,
-      subtotal: money(r.subtotal)!,
-      gstAmount: money(r.gstAmount)!,
-      total: money(r.total)!,
+      invoiceDate: dateOnly(r.invoiceDate),
+      dueDate: dateOnly(r.dueDate),
+      freight: money(r.freight),
+      subtotal: money(r.subtotal),
+      gstAmount: money(r.gstAmount),
+      total: money(r.total),
       matched: r.matched,
       exceptions: r.exceptions,
-      advanceAdjusted: money(r.advanceAdjusted)!,
-      payable: money(payable)!,
-      poAdvancePaid: money(advancePaid)!,
-      poAdvanceAvailable: money(Prisma.Decimal.max(advancePaid.sub(adjustedElsewhere), 0))!,
-      paidAmount: money(r.paidAmount)!,
-      outstanding: money(Prisma.Decimal.max(payable.sub(r.paidAmount), 0))!,
+      advanceAdjusted: money(r.advanceAdjusted),
+      payable: money(payable),
+      poAdvancePaid: money(advancePaid),
+      poAdvanceAvailable: money(Prisma.Decimal.max(advancePaid.sub(adjustedElsewhere), 0)),
+      paidAmount: money(r.paidAmount),
+      outstanding: money(Prisma.Decimal.max(payable.sub(r.paidAmount), 0)),
       paidDate: dateOnly(r.paidDate),
       remarks: r.remarks,
       lines: r.lines.map((l) => {
@@ -195,11 +195,11 @@ export class VendorBillsService {
           purchaseOrderLineId: l.purchaseOrderLineId,
           itemName: pl?.itemName ?? l.description ?? '',
           unit: pl?.unit ?? l.unit ?? '',
-          quantity: dec(l.quantity)!,
-          rate: money(l.rate)!,
+          quantity: dec(l.quantity),
+          rate: money(l.rate),
           gstRate: l.gstRate.toString(),
-          amount: money(l.amount)!,
-          gstAmount: money(l.gstAmount)!,
+          amount: money(l.amount),
+          gstAmount: money(l.gstAmount),
           poRate: pl ? money(pl.rate) : null,
           poGstRate: pl ? pl.gstRate.toString() : null,
           receivedQty: pl ? dec(sum(pl.stockTxns, (t) => t.quantity)) : null,
@@ -216,8 +216,8 @@ export class VendorBillsService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -274,8 +274,8 @@ export class VendorBillsService {
       const logs = await this.prisma.machineryLog.findMany({ where: { vendorBillId: id }, orderBy: { date: 'asc' }, select: { id: true, date: true, hoursWorked: true, idleHours: true, dieselLitres: true } });
       return logs.map((l) => ({
         id: l.id,
-        label: dateOnly(l.date)!,
-        date: dateOnly(l.date)!,
+        label: dateOnly(l.date),
+        date: dateOnly(l.date),
         detail: `${dec(l.hoursWorked)} h worked${l.idleHours.gt(0) ? `, ${dec(l.idleHours)} h idle` : ''}${l.dieselLitres ? `, ${dec(l.dieselLitres)} L diesel` : ''}`,
         quantity: dec(l.hoursWorked),
         amount: null,
@@ -283,7 +283,7 @@ export class VendorBillsService {
     }
     if (kind === 'SERVICE') {
       const jobs = await this.prisma.maintenanceJob.findMany({ where: { vendorBillId: id }, orderBy: { date: 'asc' }, include: { equipment: { select: { code: true } } } });
-      return jobs.map((j) => ({ id: j.id, label: j.jobNo, date: dateOnly(j.closedDate ?? j.date)!, detail: `${j.equipment.code}: ${j.description}`, quantity: null, amount: money(j.labourCost.add(j.partsCost)) }));
+      return jobs.map((j) => ({ id: j.id, label: j.jobNo, date: dateOnly(j.closedDate ?? j.date), detail: `${j.equipment.code}: ${j.description}`, quantity: null, amount: money(j.labourCost.add(j.partsCost)) }));
     }
     return undefined;
   }
@@ -444,19 +444,19 @@ export class VendorBillsService {
       vendorId: f.eq.vendor?.id ?? null,
       vendorName: f.eq.vendor?.name ?? null,
       projectId: q.projectId,
-      month: dateOnly(f.from)!,
+      month: dateOnly(f.from),
       rate: money(f.eq.rate),
       rateUnit: f.eq.rateUnit,
       hireMinHours: dec(f.eq.hireMinHours),
       hireFuelBy: f.eq.hireFuelBy,
       hireOperator: f.eq.hireOperator,
-      logs: f.logs.map((l) => ({ id: l.id, date: dateOnly(l.date)!, hoursWorked: dec(l.hoursWorked)!, idleHours: dec(l.idleHours)!, breakdownHours: dec(l.breakdownHours)!, dieselLitres: dec(l.dieselLitres) })),
+      logs: f.logs.map((l) => ({ id: l.id, date: dateOnly(l.date), hoursWorked: dec(l.hoursWorked), idleHours: dec(l.idleHours), breakdownHours: dec(l.breakdownHours), dieselLitres: dec(l.dieselLitres) })),
       pendingLogs: f.pendingLogs,
-      workedHours: dec(f.workedHours)!,
+      workedHours: dec(f.workedHours),
       workedDays: f.workedDays,
-      hireQuantity: dec(f.hireQuantity)!,
-      minTopUpHours: dec(f.minTopUp)!,
-      fuelLitres: dec(f.fuelLitres)!,
+      hireQuantity: dec(f.hireQuantity),
+      minTopUpHours: dec(f.minTopUp),
+      fuelLitres: dec(f.fuelLitres),
       existingBill: f.existing,
     };
   }
@@ -473,14 +473,14 @@ export class VendorBillsService {
     return jobs.map((j) => ({
       id: j.id,
       jobNo: j.jobNo,
-      date: dateOnly(j.date)!,
+      date: dateOnly(j.date),
       closedDate: dateOnly(j.closedDate),
       equipmentCode: j.equipment.code,
       equipmentName: j.equipment.name,
       description: j.description,
       workshop: j.workshop,
-      labourCost: money(j.labourCost)!,
-      partsCost: money(j.partsCost)!,
+      labourCost: money(j.labourCost),
+      partsCost: money(j.partsCost),
     }));
   }
 
@@ -497,7 +497,7 @@ export class VendorBillsService {
     const exceptions: string[] = [];
     if (kind === 'HIRE') {
       const equipmentId = current?.equipmentId ?? input.equipmentId;
-      const month = current?.hireMonth ? dateOnly(current.hireMonth)!.slice(0, 7) : input.hireMonth;
+      const month = current?.hireMonth ? dateOnly(current.hireMonth).slice(0, 7) : input.hireMonth;
       if (!equipmentId) throw new BadRequestException('Choose the hired machine');
       if (!month) throw new BadRequestException('Choose the month billed');
       await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`HIRE:${equipmentId}:${projectId}:${month}`}))`;

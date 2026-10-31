@@ -77,7 +77,7 @@ export class AiReadService {
   /** The client in the master with the work order's issuing office's name, when exactly one has it (its own list, active ones). */
   private async matchClient(user: RequestUser, name: string | null): Promise<{ id: string; name: string } | null> {
     if (!name) return null;
-    const found = (await this.clients.list(user, { q: name, pageSize: 5 } as never)).items;
+    const found = (await this.clients.list(user, { q: name, pageSize: 5 })).items;
     // The same name only: a search hit like "Roads Division II" is another office, and picking it would bill the wrong one.
     const same = found.filter((c) => normName(c.name) === normName(name));
     return same.length === 1 ? { id: same[0].id, name: same[0].name } : null;
@@ -125,14 +125,14 @@ export class AiReadService {
 
     // The same state, PAN and entity (the first 14 characters) is the same vendor even when one of the two GSTINs has
     // its last, check character wrong; the read one's is verified, so the note points at the master's.
-    const byPan = gstin ? (await this.vendors.list(user, { q: norm(gstin).slice(2, 12), pageSize: 10 } as never)).items.filter((v) => v.gstin && norm(v.gstin).slice(0, 14) === norm(gstin).slice(0, 14)) : [];
+    const byPan = gstin ? (await this.vendors.list(user, { q: norm(gstin).slice(2, 12), pageSize: 10 })).items.filter((v) => v.gstin && norm(v.gstin).slice(0, 14) === norm(gstin).slice(0, 14)) : [];
     const byGstin = byPan.filter((v) => norm(v.gstin!) === norm(gstin!));
-    const byName = !byPan.length && name ? (await this.vendors.list(user, { q: name, pageSize: 5 } as never)).items : [];
+    const byName = !byPan.length && name ? (await this.vendors.list(user, { q: name, pageSize: 5 })).items : [];
     const vendor = byGstin[0] ?? (byPan.length === 1 ? byPan[0] : undefined) ?? (byName.length === 1 ? byName[0] : undefined);
     if (!vendor) return result(null, null, gstin ? `No vendor in the master has GSTIN ${gstin}.` : 'The vendor could not be found in the master.');
     const masterNote = !byGstin.length && byPan[0] === vendor ? `${vendor.name}'s GSTIN in the vendor master is ${vendor.gstin}, which differs from the invoice's ${gstin} in its last character; ${gstinChecksumOk(gstin!) ? 'the invoice\'s is the valid one, so correct the master' : 'check which is right'}.` : null;
     const withNote = (note: string | null) => [masterNote, note].filter(Boolean).join(' ') || null;
-    const orders = (await this.purchaseOrders.list(user, { vendorId: vendor.id, status: 'APPROVED', pageSize: 50, sortBy: 'poDate', sortOrder: 'desc' } as never)).items;
+    const orders = (await this.purchaseOrders.list(user, { vendorId: vendor.id, status: 'APPROVED', pageSize: 50, sortBy: 'poDate', sortOrder: 'desc' })).items;
     if (!orders.length) return result(null, { id: vendor.id, name: vendor.name }, withNote(`${vendor.name} has no approved purchase order you can see.`));
     const poNo = readText(read.fields.poNo);
     const printed = poNo ? orders.find((o) => norm(o.poNo) === norm(poNo) || norm(o.poNo).endsWith(norm(poNo))) : undefined;

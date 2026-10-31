@@ -86,7 +86,7 @@ function facts(r: Loaded, needsApproval = false) {
     freight: qt.freight.toString(),
     lines: qt.lines.map((l) => ({ materialRequestItemId: l.materialRequestItemId, rate: l.rate.toString(), gstRate: l.gstRate.toString() })),
   }));
-  const enquiries = r.enquiries.map((e) => ({ closesOn: dateOnly(e.closesOn)!, invited: e.tokens.length, replied: e.tokens.filter((t) => t.respondedAt).length }));
+  const enquiries = r.enquiries.map((e) => ({ closesOn: dateOnly(e.closesOn), invited: e.tokens.length, replied: e.tokens.filter((t) => t.respondedAt).length }));
   const finalised = !!r.finalisedAt && (!!r.finalQuotationId || r.finalSplit) && (!needsApproval || !!r.supplierChoice);
   const final = finalised ? { quotationId: r.finalQuotationId, split: r.finalSplit, approval: needsApproval ? r.supplierChoice!.status : null } : null;
   return { toOrder, quotations, enquiries, final, ranked: rankQuotations(quotations, toOrder) };
@@ -189,7 +189,7 @@ export class RequestsToOrderService {
       requestNo: r.requestNo,
       projectId: r.projectId,
       projectName: r.project.name,
-      requiredDate: dateOnly(r.requiredDate)!,
+      requiredDate: dateOnly(r.requiredDate),
       priority: r.priority,
       submittedByName: r.submittedBy.fullName,
       approvedAt: iso(r.reviewedAt),

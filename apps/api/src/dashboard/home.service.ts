@@ -69,7 +69,7 @@ const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
 /** A My work card; `urgency` is how many days its most pressing entry is overdue or late (see MyWorkCard.urgencyDays). */
 const card = (count: number, items: MyWorkItem[], amount: D | null = null, urgency: number | null = 0): MyWorkCard => ({
   count,
-  amount: amount === null ? null : money(amount)!,
+  amount: amount === null ? null : money(amount),
   items: items.slice(0, TOP),
   urgencyDays: count > 0 ? urgency : null,
 });
@@ -406,7 +406,7 @@ export class HomeService {
       select: { entryNo: true, date: true, type: true, supplier: true, vendor: { select: { name: true } }, project: { select: { name: true } }, purchaseOrder: { select: { vendor: { select: { name: true } } } } },
       orderBy: { date: 'asc' },
     });
-    return rows.map((g) => ({ entryNo: g.entryNo, date: dateOnly(g.date)!, type: g.type, from: g.purchaseOrder?.vendor.name ?? g.vendor?.name ?? g.supplier, projectName: g.project.name }));
+    return rows.map((g) => ({ entryNo: g.entryNo, date: dateOnly(g.date), type: g.type, from: g.purchaseOrder?.vendor.name ?? g.vendor?.name ?? g.supplier, projectName: g.project.name }));
   }
 
   /** Leave and overtime waiting on the caller (the same rule as the Staff page's Waiting on me), oldest first. */
@@ -423,7 +423,7 @@ export class HomeService {
     const items = [
       ...leave.map((l) => ({
         label: `${l.employee.fullName} · ${LEAVE_TYPE_LABELS[l.type]}`,
-        note: `${span(dateOnly(l.fromDate)!, dateOnly(l.toDate)!)}, ${Number(l.days)} day${l.days.eq(1) ? '' : 's'}`,
+        note: `${span(dateOnly(l.fromDate), dateOnly(l.toDate))}, ${Number(l.days)} day${l.days.eq(1) ? '' : 's'}`,
         projectName: l.employee.project?.name ?? null,
         amount: null,
         href: `/staff?tab=leave&leave=${l.id}`,
@@ -431,11 +431,11 @@ export class HomeService {
       })),
       ...overtime.map((o) => ({
         label: `${o.employee.fullName} · Overtime`,
-        note: `${Number(o.overtimeHours ?? 0)} hours on ${formatDay(dateOnly(o.date)!)}`,
+        note: `${Number(o.overtimeHours ?? 0)} hours on ${formatDay(dateOnly(o.date))}`,
         projectName: o.employee.project?.name ?? null,
         amount: null,
         href: '/staff?tab=overtime',
-        waited: daysBetween(dateOnly(o.date)!, today) - 2,
+        waited: daysBetween(dateOnly(o.date), today) - 2,
       })),
     ].sort((a, b) => b.waited - a.waited);
     return { count: leaveCount + overtimeCount, items };
@@ -461,7 +461,7 @@ export class HomeService {
     });
     return rows.map((g) => ({
       entryNo: g.entryNo,
-      date: dateOnly(g.date)!,
+      date: dateOnly(g.date),
       purchaseOrderId: g.purchaseOrderId!,
       poNo: g.purchaseOrder!.poNo,
       vendorName: g.purchaseOrder!.vendor.name,
@@ -523,8 +523,8 @@ export class HomeService {
     if (payments) {
       const now = payments.filter((p) => isToday(p.paymentDate));
       out.payments = {
-        today: money(sumOf(now, (p) => p.amount))!,
-        yesterday: money(sumOf(payments.filter((p) => !isToday(p.paymentDate)), (p) => p.amount))!,
+        today: money(sumOf(now, (p) => p.amount)),
+        yesterday: money(sumOf(payments.filter((p) => !isToday(p.paymentDate)), (p) => p.amount)),
         countToday: now.length,
         rows: [...now]
           .sort((a, b) => b.amount.cmp(a.amount))
@@ -533,7 +533,7 @@ export class HomeService {
             party: p.vendor.name,
             reference: p.vendorBill?.billNo ?? (p.subcontractBill ? `${p.subcontractBill.workOrder.woNo} bill ${p.subcontractBill.billNo}` : null) ?? p.purchaseOrder?.poNo ?? p.workOrder?.woNo ?? p.reference,
             projectName: p.project.name,
-            amount: money(p.amount)!,
+            amount: money(p.amount),
             href: p.vendorBill
               ? submissionHref('VENDOR_BILL', p.vendorBill.id)
               : p.subcontractBill
@@ -550,8 +550,8 @@ export class HomeService {
       const client = new Map(projects.map((p) => [p.id, p.client?.name ?? p.clientName ?? p.name]));
       const now = receipts.filter((r) => isToday(r.receiptDate));
       out.receipts = {
-        today: money(sumOf(now, (r) => r.amount))!,
-        yesterday: money(sumOf(receipts.filter((r) => !isToday(r.receiptDate)), (r) => r.amount))!,
+        today: money(sumOf(now, (r) => r.amount)),
+        yesterday: money(sumOf(receipts.filter((r) => !isToday(r.receiptDate)), (r) => r.amount)),
         countToday: now.length,
         rows: [...now]
           .sort((a, b) => b.amount.cmp(a.amount))
@@ -560,7 +560,7 @@ export class HomeService {
             party: client.get(r.projectId) ?? r.project.name,
             reference: r.bill ? billLabel(r.bill.billNo, r.bill.isFinal, r.bill.omYear !== null) : r.reference,
             projectName: r.project.name,
-            amount: money(r.amount)!,
+            amount: money(r.amount),
             href: r.bill ? `/bills/${r.bill.id}` : null,
           })),
       };
@@ -578,7 +578,7 @@ export class HomeService {
         }))
         .sort((a, b) => b.daysOverdue - a.daysOverdue);
       const overdue = rows.filter((r) => r.daysOverdue > 0);
-      out.receivables = { outstanding: receivables.totals.outstanding, overdue: money(sumOf(overdue, (r) => new Prisma.Decimal(r.outstanding)))!, overdueCount: overdue.length, rows: rows.slice(0, COMPANY_TODAY_ROWS) };
+      out.receivables = { outstanding: receivables.totals.outstanding, overdue: money(sumOf(overdue, (r) => new Prisma.Decimal(r.outstanding))), overdueCount: overdue.length, rows: rows.slice(0, COMPANY_TODAY_ROWS) };
     }
     if (payables) {
       const rows: DueRowDto[] = payables.openBills.map((b) => ({ label: `${b.billLabel} · ${b.vendorName}`, projectName: b.projectName, outstanding: b.outstanding, daysOverdue: -b.daysToDue, href: submissionHref(b.billType, b.billId) }));
@@ -595,7 +595,7 @@ export class HomeService {
         items.set(r.itemId, i);
       }
       out.fuel = {
-        items: [...items.values()].map((i) => ({ ...i, issued: dec(i.issued)!, closing: dec(i.closing)! })),
+        items: [...items.values()].map((i) => ({ ...i, issued: dec(i.issued), closing: dec(i.closing) })),
         rows: fuel.rows
           .map((r) => ({ projectId: r.projectId, projectName: r.projectName, itemName: r.itemName, unit: r.unit, issued: r.issuedToMachines, closing: r.closing, belowMin: r.minLevel !== null && new Prisma.Decimal(r.closing).lt(r.minLevel) }))
           .sort((a, b) => Number(b.belowMin) - Number(a.belowMin) || new Prisma.Decimal(a.closing).cmp(b.closing)),
@@ -617,14 +617,14 @@ export class HomeService {
     const anyAmount = [...modules.values()].some((m) => m.amount !== null);
     out.approvals = {
       total: submitted.length,
-      amount: seesAmounts && anyAmount ? money([...modules.values()].reduce((s, m) => s.add(m.amount ?? ZERO), ZERO))! : null,
+      amount: seesAmounts && anyAmount ? money([...modules.values()].reduce((s, m) => s.add(m.amount ?? ZERO), ZERO)) : null,
       oldestDays: submitted.length ? waitedDays(submitted[0].submittedAt) : null,
-      modules: [...modules.values()].sort((a, b) => b.count - a.count || b.oldestDays - a.oldestDays).map((m) => ({ ...m, amount: m.amount === null ? null : money(m.amount)! })),
+      modules: [...modules.values()].sort((a, b) => b.count - a.count || b.oldestDays - a.oldestDays).map((m) => ({ ...m, amount: m.amount === null ? null : money(m.amount) })),
     };
     const withAmount = waiting.filter((w) => w.amount !== null);
     out.waitingWithOthers = {
       count: waiting.length,
-      amount: withAmount.length ? money(sumOf(withAmount, (w) => new Prisma.Decimal(w.amount!)))! : null,
+      amount: withAmount.length ? money(sumOf(withAmount, (w) => new Prisma.Decimal(w.amount!))) : null,
       oldestDays: waiting.length ? waitedDays(waiting[0].waitingSince) : null,
     };
     return out;
@@ -727,7 +727,7 @@ export class HomeService {
     const byMonth = <T>(rows: T[], date: (r: T) => Date, value: (r: T) => D) => {
       const m = new Map<string, D>();
       for (const r of rows) m.set(monthOf(date(r)), (m.get(monthOf(date(r))) ?? ZERO).add(value(r)));
-      return months.map((k) => money(m.get(k) ?? ZERO)!);
+      return months.map((k) => money(m.get(k) ?? ZERO));
     };
     const valueOf = (p: (typeof progress)[number]) => (p.activity.boqItem ? p.quantity.mul(p.activity.boqItem.rate) : ZERO);
     const inWindow = progress.filter((p) => p.date >= from && p.date <= to);
@@ -742,14 +742,14 @@ export class HomeService {
     if (receipts) out.cashIn = byMonth(receipts, (r) => r.receiptDate, (r) => r.amount);
     if (payments) out.cashOut = byMonth(payments, (p) => p.paymentDate, (p) => p.amount);
     if (cost) {
-      out.cost = months.map((k) => money(cost.months.get(k) ?? ZERO)!);
+      out.cost = months.map((k) => money(cost.months.get(k) ?? ZERO));
       out.costByHead = cost.heads;
     }
     if (billedToDate) {
       const billed = new Map(billedToDate.map((b) => [b.projectId, b._sum.grossAmount ?? ZERO]));
       out.billingVsContract = projects
         .filter((p) => p.revisedContractValue && Number(p.revisedContractValue) > 0)
-        .map((p) => ({ projectId: p.id, projectCode: p.code, projectName: p.name, contractValue: p.revisedContractValue!, billed: money(billed.get(p.id) ?? ZERO)! }))
+        .map((p) => ({ projectId: p.id, projectCode: p.code, projectName: p.name, contractValue: p.revisedContractValue!, billed: money(billed.get(p.id) ?? ZERO) }))
         .sort((a, b) => a.projectCode.localeCompare(b.projectCode));
     }
     return out;

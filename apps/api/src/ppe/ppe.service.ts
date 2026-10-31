@@ -65,7 +65,7 @@ export class PpeService {
       trade: r.worker.trade,
       kind: r.kind,
       size: r.size,
-      issuedOn: dateOnly(r.issuedOn)!,
+      issuedOn: dateOnly(r.issuedOn),
       replaceBy,
       status: r.status,
       dueForReplacement: r.status === 'ISSUED' && !!replaceBy && replaceBy < today,
@@ -76,7 +76,7 @@ export class PpeService {
       issuedById: r.issuedById,
       issuedByName: r.issuedBy.fullName,
       closedByName: r.closedBy?.fullName ?? null,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -102,7 +102,7 @@ export class PpeService {
     const openOf = new Map<string, { id: string; kind: PpeKind; issuedOn: string; replaceBy: string | null }[]>();
     for (const o of open) {
       const list = openOf.get(o.workerId) ?? [];
-      list.push({ id: o.id, kind: o.kind, issuedOn: dateOnly(o.issuedOn)!, replaceBy: dateOnly(o.replaceBy) });
+      list.push({ id: o.id, kind: o.kind, issuedOn: dateOnly(o.issuedOn), replaceBy: dateOnly(o.replaceBy) });
       openOf.set(o.workerId, list);
     }
     const required = project.ppeRequired as PpeKind[];
@@ -138,7 +138,7 @@ export class PpeService {
         lostThisYear: lost,
       },
       byContractor: [...byContractor.values()].sort((a, b) => b.missingAny - a.missingAny || a.contractor.localeCompare(b.contractor)),
-      leftWithKit: away.map((a) => ({ issueId: a.id, workerName: a.worker.name, workerNo: a.worker.workerNo, contractor: a.worker.contractor, kind: a.kind, issuedOn: dateOnly(a.issuedOn)! })),
+      leftWithKit: away.map((a) => ({ issueId: a.id, workerName: a.worker.name, workerNo: a.worker.workerNo, contractor: a.worker.contractor, kind: a.kind, issuedOn: dateOnly(a.issuedOn) })),
       canIssue: canIssuePpe(user.roleKey),
       canSetRequired: canManageSafety(user.roleKey),
     };
@@ -237,7 +237,7 @@ export class PpeService {
     if (!row) throw new NotFoundException('PPE issue not found');
     await this.access.assertCanIssuePpe(user, row.projectId);
     if (row.status !== 'ISSUED') throw new ConflictException('This item is already closed: refresh the register');
-    const issuedOn = dateOnly(row.issuedOn)!;
+    const issuedOn = dateOnly(row.issuedOn);
     if (dto.on < issuedOn || dto.on > todayIn()) throw new BadRequestException('Enter a date between the issue date and today');
     const recoverable = dto.recoverable ?? dto.status === 'LOST';
     await this.prisma.ppeIssue.update({

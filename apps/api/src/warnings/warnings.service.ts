@@ -374,7 +374,7 @@ export class WarningsService {
           plannedStart: dateOnly(a.plannedStart),
           plannedEnd: dateOnly(a.plannedEnd),
           baselineEnd: dateOnly(a.baselineEnd),
-          entries: a.progressEntries.map((e) => ({ date: dateOnly(e.date)!, qty: n(e.quantity) })),
+          entries: a.progressEntries.map((e) => ({ date: dateOnly(e.date), qty: n(e.quantity) })),
         },
         today,
       );
@@ -605,7 +605,7 @@ export class WarningsService {
       const tolerance = eq.fuelTolerancePct ? n(eq.fuelTolerancePct) : FUEL_TOLERANCE_DEFAULT_PCT;
       const f = fuelNormCheck(
         ls.map((l) => {
-          const date = dateOnly(l.date)!;
+          const date = dateOnly(l.date);
           return {
             date,
             hoursWorked: n(l.hoursWorked),
@@ -620,7 +620,7 @@ export class WarningsService {
       );
       if (!f) continue;
       const p = byId.get(ls[ls.length - 1].projectId);
-      const usedLogs = ls.filter((l) => dateOnly(l.date)! >= f.from && dateOnly(l.date)! <= f.to);
+      const usedLogs = ls.filter((l) => dateOnly(l.date) >= f.from && dateOnly(l.date) <= f.to);
       const litres = usedLogs.reduce((s, l) => s + litresOf(l), 0);
       const sensed = usedLogs.filter((l) => burnt.has(`${id}|${dateOnly(l.date)}`)).length;
       const use = unit === 'KM_PER_LITRE' ? usedLogs.reduce((s, l) => s + (l.meterStart && l.meterEnd ? n(l.meterEnd) - n(l.meterStart) : 0), 0) : usedLogs.reduce((s, l) => s + n(l.hoursWorked), 0);
@@ -774,7 +774,7 @@ export class WarningsService {
     const out: (Draft & { days: number })[] = [];
     for (const l of loans) {
       const o = emiOverdue(
-        l.emis.map((e) => ({ no: e.no, dueDate: dateOnly(e.dueDate)!, emi: n(e.emi), paidOn: dateOnly(e.paidOn) })),
+        l.emis.map((e) => ({ no: e.no, dueDate: dateOnly(e.dueDate), emi: n(e.emi), paidOn: dateOnly(e.paidOn) })),
         today,
       );
       if (!o) continue;
@@ -1228,7 +1228,7 @@ export class WarningsService {
    * 35 days, so a 28-day result long overdue does not keep warning here (the tests due list chases that).
    */
   private async cubesEarly(user: RequestUser, today: string): Promise<Draft[]> {
-    const from = dateOnly(new Date(Date.parse(`${today}T00:00:00Z`) - 35 * 86_400_000))!;
+    const from = dateOnly(new Date(Date.parse(`${today}T00:00:00Z`) - 35 * 86_400_000));
     const tests = await this.quality.listTests(user, { kind: 'CONCRETE_CUBE', result: 'PENDING', from, page: 1, pageSize: MAX_PAGE_SIZE });
     return tests.items.flatMap((t) => {
       const grade = concreteGrade(t.title);
@@ -1301,7 +1301,7 @@ export class WarningsService {
     const byId = new Map(orders.map((o) => [o.id, o]));
     const out: Draft[] = [];
 
-    for (const g of splitOrders(orders.map((o) => ({ id: o.id, poNo: o.poNo, vendorId: o.vendorId, projectId: o.projectId, date: dateOnly(o.poDate)!, total: n(o.total), reviewedById: o.reviewedById, limit: limitOf(o.reviewedBy?.role.key) })))) {
+    for (const g of splitOrders(orders.map((o) => ({ id: o.id, poNo: o.poNo, vendorId: o.vendorId, projectId: o.projectId, date: dateOnly(o.poDate), total: n(o.total), reviewedById: o.reviewedById, limit: limitOf(o.reviewedBy?.role.key) })))) {
       const first = byId.get(g.orders[0].id)!;
       const approver = first.reviewedBy?.fullName ?? 'the approver';
       out.push({
@@ -1336,7 +1336,7 @@ export class WarningsService {
         detail: `${o.submittedBy.fullName} raised the order to ${o.vendor.name} (${rupees(n(o.total))}) and made its receipt ${entryNo}. With no second person between the order and the gate, what came is only their word.`,
         action: 'Have the store check the receipt against the challan, and keep ordering and receiving with different people',
         impact: { text: rupees(n(o.total)), inr: Math.round(n(o.total)), days: null },
-        working: [`${o.poNo} raised by ${o.submittedBy.fullName} on ${day(dateOnly(o.poDate)!)}`, `${entryNo} made by the same person`],
+        working: [`${o.poNo} raised by ${o.submittedBy.fullName} on ${day(dateOnly(o.poDate))}`, `${entryNo} made by the same person`],
         facts: [
           { label: 'Order', value: o.poNo },
           { label: 'Receipt', value: entryNo },
@@ -1348,8 +1348,8 @@ export class WarningsService {
       });
     }
 
-    const changed = changes.map((c) => ({ vendorId: c.entityId, date: dateOnly(c.createdAt)!, note: c.note, by: c.actor.fullName }));
-    for (const { payment: p, change, days } of paidAfterBankChange(changed, payments.map((p) => ({ ...p, date: dateOnly(p.paymentDate)! })))) {
+    const changed = changes.map((c) => ({ vendorId: c.entityId, date: dateOnly(c.createdAt), note: c.note, by: c.actor.fullName }));
+    for (const { payment: p, change, days } of paidAfterBankChange(changed, payments.map((p) => ({ ...p, date: dateOnly(p.paymentDate) })))) {
       const by = changed.find((c) => c === change)?.by;
       out.push({
         key: `bankpay:${p.id}`,
@@ -1453,7 +1453,7 @@ export class WarningsService {
     });
     const out: Draft[] = [];
     for (const p of projects) {
-      const dates = new Set(reports.filter((r) => r.projectId === p.id).map((r) => dateOnly(r.date)!));
+      const dates = new Set(reports.filter((r) => r.projectId === p.id).map((r) => dateOnly(r.date)));
       const gap = dprGap(dates, today, dateOnly(p.startDate));
       if (!gap) continue;
       const last = [...dates].sort().pop();
@@ -1490,7 +1490,7 @@ export class WarningsService {
     for (const t of issues) {
       const k = `${t.projectId}:${t.itemId}`;
       if (!pairs.has(k)) pairs.set(k, { projectId: t.projectId, itemId: t.itemId, issues: [] });
-      pairs.get(k)!.issues.push({ date: dateOnly(t.date)!, qty: Math.abs(n(t.quantity)) });
+      pairs.get(k)!.issues.push({ date: dateOnly(t.date), qty: Math.abs(n(t.quantity)) });
     }
     const itemIds = [...new Set(issues.map((t) => t.itemId))];
     const [balances, items, receipts, orders] = await Promise.all([
@@ -1518,7 +1518,7 @@ export class WarningsService {
     for (const [k, pair] of pairs) {
       const item = itemOf.get(pair.itemId);
       if (!item) continue;
-      const lead = leadDays(receipts.filter((r) => r.itemId === pair.itemId && r.purchaseOrderLine).map((r) => ({ poDate: dateOnly(r.purchaseOrderLine!.purchaseOrder.poDate)!, received: dateOnly(r.date)! })));
+      const lead = leadDays(receipts.filter((r) => r.itemId === pair.itemId && r.purchaseOrderLine).map((r) => ({ poDate: dateOnly(r.purchaseOrderLine!.purchaseOrder.poDate), received: dateOnly(r.date) })));
       const name = item.name.trim().toLowerCase();
       const onOrder = orders
         .filter((o) => o.projectId === pair.projectId)
@@ -1577,7 +1577,7 @@ export class WarningsService {
     const dueOf = new Map(pos.map((p) => [p.id, dateOnly(p.deliveryBy)]));
     const byVendor = new Map<string, Delivery[]>();
     for (const e of entries) {
-      const date = dateOnly(e.date)!;
+      const date = dateOnly(e.date);
       const due = dueOf.get(e.purchaseOrderId!);
       const list = byVendor.get(e.vendorId!) ?? [];
       list.push({ date, late: !!due && date > due, qty: e.lines.reduce((s, l) => s + n(l.quantity), 0), rejectedQty: e.lines.reduce((s, l) => s + n(l.rejectedQty), 0) });
@@ -1626,7 +1626,7 @@ export class WarningsService {
     for (const l of logs) {
       const m = byMachine.get(l.equipmentId) ?? { name: `${l.equipment.code} ${l.equipment.name}`, projectId: l.projectId, days: [] };
       m.projectId = l.projectId;
-      m.days.push({ date: dateOnly(l.date)!, worked: n(l.hoursWorked), idle: n(l.idleHours), breakdown: n(l.breakdownHours) });
+      m.days.push({ date: dateOnly(l.date), worked: n(l.hoursWorked), idle: n(l.idleHours), breakdown: n(l.breakdownHours) });
       byMachine.set(l.equipmentId, m);
     }
     const byId = new Map(projects.map((p) => [p.id, p]));

@@ -2,19 +2,33 @@ import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { todayIn } from '../notifications/time';
 
-/** Decimal -> string, Date -> ISO string (date-only columns -> YYYY-MM-DD). */
-export const dec = (v: Prisma.Decimal | number | null | undefined): string | null =>
-  v === null || v === undefined ? null : new Prisma.Decimal(v).toFixed(3).replace(/\.?0+$/, '') || '0';
+/** Decimal -> string, Date -> ISO string (date-only columns -> YYYY-MM-DD). Null in is null out; a value in is a string. */
+export function dec(v: Prisma.Decimal | number): string;
+export function dec(v: Prisma.Decimal | number | null | undefined): string | null;
+export function dec(v: Prisma.Decimal | number | null | undefined): string | null {
+  return v === null || v === undefined ? null : new Prisma.Decimal(v).toFixed(3).replace(/\.?0+$/, '') || '0';
+}
 
-export const money = (v: Prisma.Decimal | number | null | undefined): string | null =>
-  v === null || v === undefined ? null : new Prisma.Decimal(v).toFixed(2);
+export function money(v: Prisma.Decimal | number): string;
+export function money(v: Prisma.Decimal | number | null | undefined): string | null;
+export function money(v: Prisma.Decimal | number | null | undefined): string | null {
+  return v === null || v === undefined ? null : new Prisma.Decimal(v).toFixed(2);
+}
 
 /** An exchange rate (item 130), to six places without trailing zeros. */
 export const fxRate = (v: Prisma.Decimal | null | undefined): string | null => (v ? v.toFixed(6).replace(/\.?0+$/, '') : null);
 
-export const dateOnly = (d: Date | null | undefined): string | null => (d ? d.toISOString().slice(0, 10) : null);
+export function dateOnly(d: Date): string;
+export function dateOnly(d: Date | null | undefined): string | null;
+export function dateOnly(d: Date | null | undefined): string | null {
+  return d ? d.toISOString().slice(0, 10) : null;
+}
 
-export const iso = (d: Date | null | undefined): string | null => (d ? d.toISOString() : null);
+export function iso(d: Date): string;
+export function iso(d: Date | null | undefined): string | null;
+export function iso(d: Date | null | undefined): string | null {
+  return d ? d.toISOString() : null;
+}
 
 export const pct = (executed: Prisma.Decimal | number, planned: Prisma.Decimal | number): number => {
   const p = new Prisma.Decimal(planned);

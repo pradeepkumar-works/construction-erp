@@ -134,17 +134,17 @@ const emptyTotals = (): Totals => ({
   openBills: 0,
 });
 const totalsDto = (t: Totals): PayableTotalsDto => ({
-  billed: money(t.billed)!,
-  paid: money(t.paid)!,
-  deducted: money(t.deducted)!,
-  outstanding: money(t.outstanding)!,
-  overdue: money(t.overdue)!,
-  dueSoon: money(t.dueSoon)!,
-  ageing: { notDue: money(t.ageing[0])!, days1to30: money(t.ageing[1])!, days31to60: money(t.ageing[2])!, days61to90: money(t.ageing[3])!, over90: money(t.ageing[4])! },
-  msmeAtRisk: money(t.msmeAtRisk)!,
-  retentionHeld: money(t.retentionHeld)!,
-  tdsDeducted: money(t.tdsDeducted)!,
-  advanceOutstanding: money(t.advanceOutstanding)!,
+  billed: money(t.billed),
+  paid: money(t.paid),
+  deducted: money(t.deducted),
+  outstanding: money(t.outstanding),
+  overdue: money(t.overdue),
+  dueSoon: money(t.dueSoon),
+  ageing: { notDue: money(t.ageing[0]), days1to30: money(t.ageing[1]), days31to60: money(t.ageing[2]), days61to90: money(t.ageing[3]), over90: money(t.ageing[4]) },
+  msmeAtRisk: money(t.msmeAtRisk),
+  retentionHeld: money(t.retentionHeld),
+  tdsDeducted: money(t.tdsDeducted),
+  advanceOutstanding: money(t.advanceOutstanding),
 });
 
 /**
@@ -178,17 +178,17 @@ export class PayablesService {
       billLabel: r.vendorBill || r.subcontractBill ? targetLabel(r) : r.purchaseOrder || r.workOrder ? `Advance on ${targetLabel(r)}` : `On account (${r.paymentRequest?.requestNo ?? ''})`,
       paymentRequestId: r.paymentRequestId,
       requestNo: r.paymentRequest?.requestNo ?? null,
-      paymentDate: dateOnly(r.paymentDate)!,
-      amount: money(r.amount)!,
+      paymentDate: dateOnly(r.paymentDate),
+      amount: money(r.amount),
       mode: r.mode,
       reference: r.reference,
-      tdsAmount: money(r.tdsAmount)!,
-      otherDeduction: money(r.otherDeduction)!,
+      tdsAmount: money(r.tdsAmount),
+      otherDeduction: money(r.otherDeduction),
       otherDeductionNote: r.otherDeductionNote,
-      settledAmount: money(settles(r))!,
+      settledAmount: money(settles(r)),
       remarks: r.remarks,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
       exportedToTally: !!r.tallyExportId,
     };
   }
@@ -567,11 +567,11 @@ export class PayablesService {
           projectId: p.id,
           projectCode: p.code,
           projectName: p.name,
-          billDate: dateOnly(billDate)!,
-          dueDate: dateOnly(dueDate)!,
-          payable: money(payable)!,
-          paid: money(paid)!,
-          outstanding: money(outstanding)!,
+          billDate: dateOnly(billDate),
+          dueDate: dateOnly(dueDate),
+          payable: money(payable),
+          paid: money(paid),
+          outstanding: money(outstanding),
           daysToDue,
           msmeFlag,
           request: null,
@@ -628,7 +628,7 @@ export class PayablesService {
     for (const b of openBills) {
       const mine = requests.filter((r) => (r.vendorBillId ?? r.subcontractBillId) === b.billId);
       const r = mine.find((x) => x.status === 'APPROVED') ?? mine[0];
-      if (r) b.request = { id: r.id, requestNo: r.requestNo, status: r.status, amount: money(r.amount)!, unpaid: money(r.status === 'APPROVED' ? Prisma.Decimal.max(r.amount.sub(r.paidAmount), ZERO) : ZERO)! };
+      if (r) b.request = { id: r.id, requestNo: r.requestNo, status: r.status, amount: money(r.amount), unpaid: money(r.status === 'APPROVED' ? Prisma.Decimal.max(r.amount.sub(r.paidAmount), ZERO) : ZERO) };
     }
 
     const vendors: VendorPayableDto[] = [...byVendor.values()]

@@ -55,7 +55,7 @@ const normDto = (n: NormRow): MaterialNormDto => ({
   wastagePct: n.wastagePct.toFixed(2).replace(/\.?0+$/, '') || '0',
   note: n.note,
   updatedByName: n.updatedBy.fullName,
-  updatedAt: iso(n.updatedAt)!,
+  updatedAt: iso(n.updatedAt),
 });
 
 const addDays = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
@@ -88,7 +88,7 @@ const activityNormDto = (n: ActivityNormRow): ActivityNormDto => ({
   wastagePct: pctStr(n.wastagePct),
   note: n.note,
   updatedByName: n.updatedBy.fullName,
-  updatedAt: iso(n.updatedAt)!,
+  updatedAt: iso(n.updatedAt),
 });
 
 /**
@@ -173,7 +173,7 @@ export class ReconciliationService {
     // The work front is a position at the period's end: since the first DPR that reported material, all it says was
     // used against what was issued from a week before it (material for that first day's work came then). Issues before
     // were never checked against use.
-    const frontFrom = firstUse ? dateOnly(firstUse.date)! : null;
+    const frontFrom = firstUse ? dateOnly(firstUse.date) : null;
     const [front, usedSince] = frontFrom
       ? await Promise.all([
           this.prisma.stockTxn
@@ -189,7 +189,7 @@ export class ReconciliationService {
       const m = front.get(itemId) ?? { issued: ZERO, returned: ZERO };
       const net = m.issued.minus(m.returned);
       const use = usedSince.get(itemId) ?? ZERO;
-      return { atFrontQty: dec(net.minus(use))!, front: frontFlag(net, use, reportsUse) };
+      return { atFrontQty: dec(net.minus(use)), front: frontFlag(net, use, reportsUse) };
     };
 
     const itemIds = [...new Set([...result.map((r) => r.itemId), ...movements.keys(), ...usedOf.keys()])];
@@ -212,15 +212,15 @@ export class ReconciliationService {
         itemName: item.name,
         unit: item.unit,
         rate: seeValues ? money(item.rate) : null,
-        theoreticalQty: dec(r.theoretical)!,
-        allowedQty: dec(r.allowed)!,
-        issuedQty: dec(r.issued)!,
-        returnedQty: dec(r.returned)!,
-        consumedQty: dec(r.consumed)!,
-        varianceQty: dec(r.variance)!,
+        theoreticalQty: dec(r.theoretical),
+        allowedQty: dec(r.allowed),
+        issuedQty: dec(r.issued),
+        returnedQty: dec(r.returned),
+        consumedQty: dec(r.consumed),
+        varianceQty: dec(r.variance),
         variancePct: r.variancePct,
         status: r.status,
-        excessQty: dec(r.excess)!,
+        excessQty: dec(r.excess),
         excessValue: value ? money(value) : null,
         lines: r.lines.map((l) => {
           const n = normById.get(l.normId)!;
@@ -231,19 +231,19 @@ export class ReconciliationService {
             itemNo: n.itemNo,
             description: n.description,
             unit: n.unit,
-            executedQty: dec(l.executed)!,
+            executedQty: dec(l.executed),
             qtyPerUnit: norm6(l.qtyPerUnit),
             wastagePct: pctStr(l.wastagePct),
-            theoreticalQty: dec(l.theoretical)!,
+            theoreticalQty: dec(l.theoretical),
           };
         }),
-        openingQty: dec(b.opening)!,
-        receivedQty: dec(b.received)!,
-        closingQty: dec(b.closing)!,
-        usedQty: dec(use)!,
-        neededQty: dec(need.theoretical)!,
-        neededAllowedQty: dec(need.allowed)!,
-        usedVarianceQty: dec(use.minus(need.theoretical))!,
+        openingQty: dec(b.opening),
+        receivedQty: dec(b.received),
+        closingQty: dec(b.closing),
+        usedQty: dec(use),
+        neededQty: dec(need.theoretical),
+        neededAllowedQty: dec(need.allowed),
+        usedVarianceQty: dec(use.minus(need.theoretical)),
         usedVariancePct: need.theoretical.gt(0) ? Math.round(use.minus(need.theoretical).div(need.theoretical).mul(1000).toNumber()) / 10 : null,
         usedStatus: reportsUse ? reconciliationStatus(need.theoretical, need.allowed, use) : null,
         ...atFront(r.itemId),
@@ -257,7 +257,7 @@ export class ReconciliationService {
       .filter((id) => !normed.has(id))
       .map((id) => {
         const m = movements.get(id) ?? { issued: ZERO, returned: ZERO };
-        return { itemId: id, itemName: items.get(id)?.name ?? '', unit: items.get(id)?.unit ?? '', consumedQty: dec(m.issued.minus(m.returned))!, usedQty: dec(usedOf.get(id) ?? ZERO)!, ...atFront(id) };
+        return { itemId: id, itemName: items.get(id)?.name ?? '', unit: items.get(id)?.unit ?? '', consumedQty: dec(m.issued.minus(m.returned)), usedQty: dec(usedOf.get(id) ?? ZERO), ...atFront(id) };
       })
       .filter((r) => Number(r.consumedQty) > 0 || Number(r.usedQty) > 0)
       .sort((a, b) => a.itemName.localeCompare(b.itemName));
@@ -511,21 +511,21 @@ export class ReconciliationService {
           itemName: item.name,
           unit: item.unit,
           rate: seeValues ? money(item.rate) : null,
-          theoreticalQty: dec(r.theoretical)!,
-          allowedQty: dec(r.allowed)!,
-          issuedQty: dec(r.issued)!,
-          varianceQty: dec(r.variance)!,
+          theoreticalQty: dec(r.theoretical),
+          allowedQty: dec(r.allowed),
+          issuedQty: dec(r.issued),
+          varianceQty: dec(r.variance),
           variancePct: r.variancePct,
           status: r.status,
-          excessQty: dec(r.excess)!,
+          excessQty: dec(r.excess),
           excessValue: seeValues && item.rate ? money(r.excess.mul(item.rate)) : null,
-          recoveredQty: dec(recovered)!,
-          toRecoverQty: dec(toRecover)!,
+          recoveredQty: dec(recovered),
+          toRecoverQty: dec(toRecover),
           lines: r.lines
             .filter((l) => l.executed.gt(0))
             .map((l) => {
               const b = normById.get(l.normId)!.boqItem;
-              return { boqItemNo: b.itemNo, description: b.description, unit: b.unit, measuredQty: dec(l.executed)!, qtyPerUnit: norm6(l.qtyPerUnit), wastagePct: pctStr(l.wastagePct), theoreticalQty: dec(l.theoretical)! };
+              return { boqItemNo: b.itemNo, description: b.description, unit: b.unit, measuredQty: dec(l.executed), qtyPerUnit: norm6(l.qtyPerUnit), wastagePct: pctStr(l.wastagePct), theoreticalQty: dec(l.theoretical) };
             }),
         };
       });
@@ -549,15 +549,15 @@ export class ReconciliationService {
             itemId: x.itemId,
             itemName: x.item.name,
             unit: x.item.unit,
-            quantity: dec(x.quantity)!,
-            rate: money(x.rate)!,
-            amount: money(x.amount)!,
+            quantity: dec(x.quantity),
+            rate: money(x.rate),
+            amount: money(x.amount),
             note: x.note,
             billId: x.subcontractBillId,
             billLabel: x.subcontractBill ? label(x.subcontractBill) : null,
             billStatus: x.subcontractBill?.status ?? null,
             createdByName: x.createdBy.fullName,
-            createdAt: iso(x.createdAt)!,
+            createdAt: iso(x.createdAt),
             canCancel: !x.subcontractBill || (x.subcontractBill.status !== 'APPROVED' && x.subcontractBill.status !== 'SUBMITTED'),
           }),
         ),
@@ -641,8 +641,8 @@ export class ReconciliationService {
           itemId: g.itemId,
           itemName: item.name,
           unit: item.unit,
-          lostQty: dec(g.lost)!,
-          gainedQty: dec(g.gained)!,
+          lostQty: dec(g.lost),
+          gainedQty: dec(g.gained),
           rate: seeValues ? money(item.rate) : null,
           lostValue: seeValues && item.rate ? money(g.lost.mul(item.rate)) : null,
           entries: g.entries,

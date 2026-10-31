@@ -148,8 +148,8 @@ export class ProjectsService {
       siteCheckInStrict: p.siteCheckInStrict,
       handedOverOn: dateOnly(handover?.completedOn ?? null),
       members: p.members.map((m) => ({ id: m.id, userId: m.userId, fullName: m.user.fullName, roleKey: m.user.role.key as RoleKey, roleName: m.user.role.name })),
-      createdAt: iso(p.createdAt)!,
-      updatedAt: iso(p.updatedAt)!,
+      createdAt: iso(p.createdAt),
+      updatedAt: iso(p.updatedAt),
     };
   }
 
