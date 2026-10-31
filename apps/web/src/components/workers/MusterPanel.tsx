@@ -78,7 +78,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       },
     })),
     { title: 'Man-days', dataIndex: 'manDays', width: 90, align: 'right', fixed: 'right' },
-    { title: 'OT h', dataIndex: 'otHours', width: 60, align: 'right', fixed: 'right' },
+    { title: 'Overtime (h)', dataIndex: 'otHours', width: 100, align: 'right', fixed: 'right' },
     { title: 'Wages', dataIndex: 'wages', width: 110, align: 'right', fixed: 'right', render: (v) => formatINR(v) },
   ];
 

@@ -71,7 +71,7 @@ export default function SupplierOrdersPage() {
                     { title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
                     { title: 'Due by', dataIndex: 'dueBy', width: 110, render: (v: string | null) => formatDate(v) },
                     { title: 'Value', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
-                    { title: 'State', key: 'state', width: 120, render: (_, o) => (o.closed ? <AppTag>Closed</AppTag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
+                    { title: 'Status', key: 'state', width: 120, render: (_, o) => (o.closed ? <AppTag>Closed</AppTag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
                     {
                       title: 'Action',
                       key: 'action',
@@ -201,7 +201,7 @@ function Dispatches({ list }: { list: ReturnType<typeof useSupplierDispatches> }
               <Typography.Text translate="no">{d.lines.map((l) => `${l.itemName} ${formatQty(l.quantity)} ${l.unit}`).join(', ')}</Typography.Text>
             ),
           },
-          { title: 'State', dataIndex: 'status', width: 120, render: (s: SupplierDispatchDto['status'], d) => (d.grn ? <span><DispatchStatusTag status={s} /> <span translate="no">{d.grn.entryNo}</span></span> : <DispatchStatusTag status={s} />) },
+          { title: 'Status', dataIndex: 'status', width: 120, render: (s: SupplierDispatchDto['status'], d) => (d.grn ? <span><DispatchStatusTag status={s} /> <span translate="no">{d.grn.entryNo}</span></span> : <DispatchStatusTag status={s} />) },
           {
             title: 'Action',
             key: 'action',

@@ -51,7 +51,7 @@ function AdjustModal({ open, onClose, slip }: { open: boolean; onClose: () => vo
           columns={[
             {
               key: 'code',
-              title: 'What',
+              title: 'Line type',
               width: 190,
               render: (field) => (
                 <Form.Item name={[field.name, 'code']} rules={[{ required: true, message: 'Choose what it is' }]} noStyle>

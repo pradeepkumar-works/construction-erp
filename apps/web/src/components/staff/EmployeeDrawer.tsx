@@ -176,8 +176,8 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
                     columns={[
                       { title: 'Date', dataIndex: 'date', width: 130, render: (v: string) => dayjs(v).format('ddd DD MMM') },
                       { title: 'Status', dataIndex: 'status', width: 100, render: (v: StaffAttendanceDto['status']) => <AttendanceTag status={v} /> },
-                      { title: 'In / out', key: 'io', width: 110, render: (_, r) => (r.checkIn ? `${clock(r.checkIn)} - ${clock(r.checkOut)}` : '-') },
-                      { title: 'OT h', dataIndex: 'overtimeHours', width: 60, align: 'right', render: (v: string | null) => (v && Number(v) ? v : '') },
+                      { title: 'In and out', key: 'io', width: 130, render: (_, r) => (r.checkIn ? `${clock(r.checkIn)} to ${clock(r.checkOut)}` : '-') },
+                      { title: 'Overtime (h)', dataIndex: 'overtimeHours', width: 100, align: 'right', render: (v: string | null) => (v && Number(v) ? v : '') },
                       { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
                       { title: 'Note', dataIndex: 'note', ellipsis: true },
                     ]}

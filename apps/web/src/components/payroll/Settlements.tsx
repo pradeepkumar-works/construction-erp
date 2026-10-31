@@ -153,7 +153,7 @@ function SettlementModal({ s, onClose, onRedo, onPay }: { s: FinalSettlementDto 
     >
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
         <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered>
-          <Descriptions.Item label="Stage">
+          <Descriptions.Item label="Status">
             <SettlementStatusTag status={s.status} />
           </Descriptions.Item>
           <Descriptions.Item label="Designation">{s.designation}</Descriptions.Item>
@@ -223,7 +223,7 @@ export function Settlements() {
     { title: 'Settlement', dataIndex: 'settlementNo', width: 140, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Employee', key: 'e', width: 220, render: (_, s) => <span translate="no">{`${s.employeeName} (${s.employeeCode})`}</span> },
     { title: 'Last day', dataIndex: 'lastWorkingDay', width: 120, render: (v: string) => formatDate(v) },
-    { title: 'Stage', dataIndex: 'status', width: 150, render: (v: FinalSettlementDto['status']) => <SettlementStatusTag status={v} /> },
+    { title: 'Status', dataIndex: 'status', width: 150, render: (v: FinalSettlementDto['status']) => <SettlementStatusTag status={v} /> },
     { title: 'Gratuity', dataIndex: 'gratuity', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : '-') },
     {
       title: 'Net',

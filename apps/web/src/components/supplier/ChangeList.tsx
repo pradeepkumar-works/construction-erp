@@ -34,7 +34,7 @@ export function ChangeList({ changes, extra, vendorColumn }: { changes: Supplier
           ),
         },
         {
-          title: 'State',
+          title: 'Status',
           key: 'status',
           width: 200,
           render: (_, c) => (

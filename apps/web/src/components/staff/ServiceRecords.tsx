@@ -43,7 +43,7 @@ export function ServiceRecords({ onOpen }: { onOpen: (employeeId: string) => voi
         </span>
       ),
     },
-    { title: 'What', dataIndex: 'type', width: 130, render: (v: EmployeeEventType) => <AppTag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</AppTag> },
+    { title: 'Event', dataIndex: 'type', width: 130, render: (v: EmployeeEventType) => <AppTag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</AppTag> },
     { title: 'Change', key: 'change', ellipsis: true, render: (_, r) => eventChange(r) || '-' },
     { title: 'Letter', dataIndex: 'letterNo', width: 130, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Recorded by', dataIndex: 'createdByName', width: 160, ellipsis: true },
@@ -72,7 +72,7 @@ export function ServiceRecords({ onOpen }: { onOpen: (employeeId: string) => voi
       <Space wrap style={{ marginBottom: 12 }}>
         <Select
           allowClear
-          placeholder="Every kind"
+          placeholder="All kinds"
           aria-label="Kind of event"
           style={{ width: 180 }}
           value={type}

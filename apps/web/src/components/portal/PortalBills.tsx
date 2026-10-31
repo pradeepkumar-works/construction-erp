@@ -36,7 +36,7 @@ export function PortalBills({ bills, openId, onOpen }: { bills: UseQueryResult<P
           { title: 'Sent', dataIndex: 'sentDate', width: 120, render: (v: string | null) => formatDate(v) },
           { title: 'Work done', dataIndex: 'grossAmount', align: 'right', render: (v: string) => formatINR(v) },
           { title: 'Net payable', dataIndex: 'netPayable', align: 'right', render: (v: string) => formatINR(v) },
-          { title: 'Stage', dataIndex: 'stage', width: 140, render: (s: PortalBillDto['stage']) => <BillStageTag stage={s} /> },
+          { title: 'Status', dataIndex: 'stage', width: 140, render: (s: PortalBillDto['stage']) => <BillStageTag stage={s} /> },
           { title: 'Certificate', key: 'cert', width: 200, render: (_, b) => (b.certifiedDate ? `${b.certificateNo ?? ''} ${formatDate(b.certifiedDate)}`.trim() : '-') },
         ]}
       />

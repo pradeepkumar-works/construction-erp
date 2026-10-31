@@ -185,7 +185,7 @@ function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: strin
         style={{ marginBottom: token.marginLG }}
         columns={[
           { key: 'feature', title: 'Used for', dataIndex: 'feature', render: (f: AiFeature) => AI_FEATURE_LABELS[f] },
-          { key: 'count', title: 'How many', dataIndex: 'count', align: 'right', render: (n: number) => n.toLocaleString('en-IN') },
+          { key: 'count', title: 'Count', dataIndex: 'count', align: 'right', render: (n: number) => n.toLocaleString('en-IN') },
           { key: 'spent', title: 'Used', dataIndex: 'spentInr', align: 'right', render: (v: number) => formatINR(v) },
         ]}
       />
@@ -275,7 +275,7 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
         <Select
           allowClear
           aria-label="Person"
-          placeholder="Everyone"
+          placeholder="All people"
           value={userId}
           onChange={setUserId}
           style={{ width: 220 }}

@@ -75,7 +75,7 @@ export function HolidayList() {
         columns={[
           { title: 'Date', dataIndex: 'date', width: 180, render: (v: string) => dayjs(v).format('ddd DD MMM YYYY') },
           { title: 'Holiday', dataIndex: 'name' },
-          { title: 'Where', dataIndex: 'projectName', render: (v: string | null) => v ?? 'Every site' },
+          { title: 'Site', dataIndex: 'projectName', render: (v: string | null) => v ?? 'Every site' },
           ...(admin
             ? [
                 {

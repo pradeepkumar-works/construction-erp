@@ -61,8 +61,8 @@ export function SalaryRuns() {
   const columns: TableProps<PayrollRunDto>['columns'] = [
     { title: 'Run', dataIndex: 'runNo', width: 170, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Month', dataIndex: 'month', width: 140, render: (v: string) => monthLabel(v) },
-    { title: 'Staff of', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Whole company' },
-    { title: 'Stage', dataIndex: 'status', width: 170, render: (v: PayrollRunDto['status']) => <RunStatusTag status={v} /> },
+    { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Whole company' },
+    { title: 'Status', dataIndex: 'status', width: 170, render: (v: PayrollRunDto['status']) => <RunStatusTag status={v} /> },
     { title: 'Employees', dataIndex: 'employees', width: 100, align: 'right' },
     { title: 'Net pay', dataIndex: 'net', width: 140, align: 'right', render: (v: string) => <Rupees value={v} /> },
     { title: 'Paid on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : '-') },

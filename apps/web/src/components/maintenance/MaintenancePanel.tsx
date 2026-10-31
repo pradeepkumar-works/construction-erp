@@ -129,7 +129,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       ),
     },
     { title: 'Due', key: 'due', width: 220, render: (_, r) => <span className={r.state === 'OVERDUE' ? 'text-danger' : undefined}>{serviceLeft(r.hoursLeft, r.daysLeft)}</span> },
-    { title: 'State', dataIndex: 'state', width: 100, render: (v) => <ServiceStateTag state={v} /> },
+    { title: 'Status', dataIndex: 'state', width: 100, render: (v) => <ServiceStateTag state={v} /> },
     ...(manager
       ? [
           {

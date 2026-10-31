@@ -239,8 +239,8 @@ function CompanyLogCard() {
         scroll={{ x: 640 }}
         columns={[
           { title: 'When', dataIndex: 'createdAt', width: 170, render: (v: string) => formatDateTime(v) },
-          { title: 'What', dataIndex: 'action', width: 160, render: (a: string) => LOG_LABELS[a] ?? a },
-          { title: 'Who', dataIndex: 'actorName', width: 180 },
+          { title: 'Action', dataIndex: 'action', width: 160, render: (a: string) => LOG_LABELS[a] ?? 'Other' },
+          { title: 'By', dataIndex: 'actorName', width: 180 },
           { title: 'Detail', dataIndex: 'note', render: (v: string | null) => v ?? '-' },
         ]}
       />

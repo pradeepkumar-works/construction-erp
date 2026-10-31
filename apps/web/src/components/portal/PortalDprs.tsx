@@ -93,7 +93,7 @@ export function PortalDprs({ projectId }: { projectId: string }) {
             <Section title="Material received">{open.materialReceived}</Section>
             <Section title="Tests conducted">{open.testsConducted}</Section>
             <Section title="Safety observations">{open.safetyObservations}</Section>
-            <Section title="Issues / hindrances">{open.issues}</Section>
+            <Section title="Issues and hindrances">{open.issues}</Section>
             <Section title="Next day plan">{open.nextDayPlan}</Section>
             <Divider titlePlacement="start" plain>
               Photos ({open.attachments.length})

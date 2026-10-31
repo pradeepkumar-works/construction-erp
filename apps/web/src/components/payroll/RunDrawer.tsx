@@ -139,7 +139,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
             />
           )}
           <Descriptions size="small" bordered column={{ xs: 1, sm: 2, lg: 3 }}>
-            <Descriptions.Item label="Stage">
+            <Descriptions.Item label="Status">
               <RunStatusTag status={run.status} />
             </Descriptions.Item>
             <Descriptions.Item label="Employees">{run.employees}</Descriptions.Item>

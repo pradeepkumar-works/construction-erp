@@ -74,7 +74,7 @@ export function EmployeeService({ employee }: { employee: EmployeeDto }) {
         columns={[
           { title: 'From', dataIndex: 'effectiveDate', width: 110, render: (v: string) => formatDate(v) },
           {
-            title: 'What',
+            title: 'Event',
             dataIndex: 'type',
             width: 120,
             render: (v: EmployeeEventDto['type']) => <AppTag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</AppTag>,

@@ -98,8 +98,8 @@ export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: strin
         searchLabel="Search leave requests"
         extra={newButton}
       >
-        <Select<LeaveType> allowClear placeholder="Any leave" aria-label="Leave type" style={{ width: 170 }} value={type} onChange={(v) => page.setFilter('type', v)} options={LEAVE_TYPES.map((t) => ({ value: t, label: LEAVE_TYPE_LABELS[t] }))} />
-        <Select<LeaveStatus> allowClear placeholder="Any status" aria-label="Status" style={{ width: 140 }} value={status} onChange={(v) => page.setFilter('status', v)} options={LEAVE_STATUSES.map((s) => ({ value: s, label: LEAVE_STATUS_LABELS[s] }))} />
+        <Select<LeaveType> allowClear placeholder="All leave types" aria-label="Leave type" style={{ width: 170 }} value={type} onChange={(v) => page.setFilter('type', v)} options={LEAVE_TYPES.map((t) => ({ value: t, label: LEAVE_TYPE_LABELS[t] }))} />
+        <Select<LeaveStatus> allowClear placeholder="All statuses" aria-label="Status" style={{ width: 140 }} value={status} onChange={(v) => page.setFilter('status', v)} options={LEAVE_STATUSES.map((s) => ({ value: s, label: LEAVE_STATUS_LABELS[s] }))} />
         <Checkbox checked={toDecide} onChange={(e) => page.setFilter('toDecide', e.target.checked ? '1' : undefined)}>
           Waiting for me
         </Checkbox>

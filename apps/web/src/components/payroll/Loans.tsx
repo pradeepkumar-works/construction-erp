@@ -88,10 +88,10 @@ export function Loans() {
 
   const columns: TableProps<StaffLoanDto>['columns'] = [
     { title: 'Employee', key: 'e', width: 200, render: (_, l) => <span translate="no">{`${l.employeeName} (${l.employeeCode})`}</span> },
-    { title: 'What', dataIndex: 'kind', width: 130, render: (v: StaffLoanKind) => STAFF_LOAN_KIND_LABELS[v] },
+    { title: 'Type', dataIndex: 'kind', width: 130, render: (v: StaffLoanKind) => STAFF_LOAN_KIND_LABELS[v] },
     { title: 'Given on', dataIndex: 'issuedOn', width: 120, render: (v: string) => formatDate(v) },
     { title: 'Amount', dataIndex: 'amount', width: 120, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'A month', dataIndex: 'emi', width: 110, align: 'right', render: (v: string) => <Rupees value={v} /> },
+    { title: 'EMI', dataIndex: 'emi', width: 110, align: 'right', render: (v: string) => <Rupees value={v} /> },
     { title: 'From', dataIndex: 'startMonth', width: 140, render: (v: string) => monthLabel(v) },
     { title: 'Recovered', dataIndex: 'recovered', width: 120, align: 'right', render: (v: string) => <Rupees value={v} /> },
     { title: 'Left', dataIndex: 'balance', width: 120, align: 'right', render: (v: string) => <strong><Rupees value={v} /></strong> },

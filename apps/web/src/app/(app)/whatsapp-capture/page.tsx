@@ -125,7 +125,7 @@ function Capture() {
             <Select
               aria-label="Show messages that are"
               allowClear
-              placeholder="Any state"
+              placeholder="All states"
               style={{ minWidth: 180 }}
               value={state}
               onChange={(v) => {

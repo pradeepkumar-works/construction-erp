@@ -202,8 +202,8 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar filters={frame.filterState} projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" searchLabel="Search vendors" extra={<ExportButton onExport={exportRows} />}>
-        <Select<VendorKind> allowClear placeholder="Any vendor kind" aria-label="Vendor kind" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
-        <Select<MsmeCategory> allowClear placeholder="Any MSME status" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
+        <Select<VendorKind> allowClear placeholder="All vendor kinds" aria-label="Vendor kind" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
+        <Select<MsmeCategory> allowClear placeholder="All MSME statuses" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
       </ListToolbar>
       <DataTable<VendorDto>
         columns={frame.columns}

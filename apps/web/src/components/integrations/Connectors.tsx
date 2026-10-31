@@ -89,7 +89,7 @@ export function Connectors() {
 
   const columns: TableProps<ConnectorAgentDto>['columns'] = [
     { title: 'Connector', dataIndex: 'name', width: 200 },
-    { title: 'State', dataIndex: 'state', width: 150, render: (s: AgentState) => <AppTag tone={STATE_TONE[s]}>{AGENT_STATE_LABELS[s]}</AppTag> },
+    { title: 'Status', dataIndex: 'state', width: 150, render: (s: AgentState) => <AppTag tone={STATE_TONE[s]}>{AGENT_STATE_LABELS[s]}</AppTag> },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
     { title: 'Computer', dataIndex: 'hostname', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : '-') },
     { title: 'Version', dataIndex: 'version', width: 90, render: (v: string | null) => (v ? <span translate="no">{v}</span> : '-') },

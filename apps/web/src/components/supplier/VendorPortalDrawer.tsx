@@ -69,7 +69,7 @@ export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; 
             { title: 'Name', dataIndex: 'fullName', render: (v: string, l) => <span translate="no">{v}<br /><Typography.Text type="secondary">{l.email}</Typography.Text></span> },
             { title: 'Phone', dataIndex: 'phone', width: 140, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
             { title: 'Since', dataIndex: 'createdAt', width: 110, render: (v: string) => formatDate(v) },
-            { title: 'State', key: 'state', width: 130, render: (_, l) => (!l.isActive ? <AppTag>Off</AppTag> : l.invitePending ? <AppTag tone="pending">Invite not used</AppTag> : <AppTag tone="success">Signed up</AppTag>) },
+            { title: 'Status', key: 'state', width: 130, render: (_, l) => (!l.isActive ? <AppTag>Off</AppTag> : l.invitePending ? <AppTag tone="pending">Invite not used</AppTag> : <AppTag tone="success">Signed up</AppTag>) },
             {
               title: 'Action',
               key: 'action',

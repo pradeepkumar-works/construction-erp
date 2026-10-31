@@ -99,7 +99,7 @@ export function DeviceCommands() {
       ),
     },
     {
-      title: 'State',
+      title: 'Status',
       key: 'state',
       width: 300,
       render: (_, c) => (

@@ -69,7 +69,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
     { title: <Tooltip title="Loss of pay: absent, leave without pay, the other half of half days">LOP</Tooltip>, dataIndex: 'lopDays', width: 65, align: 'right', render: n },
     { title: 'Paid days', dataIndex: 'paidDays', width: 90, align: 'right', render: (v: number) => <strong>{v}</strong> },
     { title: <Tooltip title="Approved overtime hours">OT h</Tooltip>, dataIndex: 'overtimeHours', width: 70, align: 'right', render: n },
-    { title: <Tooltip title="Overtime hours still waiting for the site manager or HR; not paid until approved">OT waiting</Tooltip>, dataIndex: 'overtimePendingHours', width: 90, align: 'right', render: n },
+    { title: <Tooltip title="Overtime hours still waiting for the site manager or HR; not paid until approved">Overtime waiting (h)</Tooltip>, dataIndex: 'overtimePendingHours', width: 90, align: 'right', render: n },
     { title: <Tooltip title="Sundays and holidays worked: comp-off earned">Off worked</Tooltip>, dataIndex: 'offDaysWorked', width: 95, align: 'right', render: n },
     { title: 'On rolls', key: 'rolls', width: 200, render: (_, r) => (r.leftOn ? `Left ${formatDate(r.leftOn)}` : r.joinedOn && r.joinedOn >= (data?.from ?? '') ? `Joined ${formatDate(r.joinedOn)}` : '') },
   ];

@@ -133,7 +133,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
       ),
     },
     {
-      title: 'In / out',
+      title: 'In and out',
       key: 'time',
       width: 150,
       render: (_, r) => {

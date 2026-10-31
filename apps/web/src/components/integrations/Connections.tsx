@@ -430,7 +430,7 @@ export function Connections() {
         </span>
       ),
     },
-    { title: 'State', dataIndex: 'health', width: 200, render: (h: ConnectionHealth) => <AppTag tone={HEALTH_TONE[h]}>{CONNECTION_HEALTH_LABELS[h]}</AppTag> },
+    { title: 'Status', dataIndex: 'health', width: 200, render: (h: ConnectionHealth) => <AppTag tone={HEALTH_TONE[h]}>{CONNECTION_HEALTH_LABELS[h]}</AppTag> },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Any site' },
     { title: 'Comes in by', key: 'by', width: 180, render: (_, c) => {
         const t = INTEGRATION_KIND_INFO[c.kind].transport;

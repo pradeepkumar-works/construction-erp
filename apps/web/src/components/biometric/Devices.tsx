@@ -154,7 +154,7 @@ export function Devices() {
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
     { title: 'Last heard', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null, d) => (d.protocol === 'FILE' ? '-' : ago(v)) },
     { title: 'Punches today', dataIndex: 'punchesToday', width: 120, align: 'right' },
-    { title: 'State', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag tone="success">On</AppTag> : <AppTag>Off</AppTag>) },
+    { title: 'Status', dataIndex: 'isActive', width: 90, render: (v: boolean) => (v ? <AppTag tone="success">On</AppTag> : <AppTag>Off</AppTag>) },
     {
       title: 'Commands',
       key: 'commands',

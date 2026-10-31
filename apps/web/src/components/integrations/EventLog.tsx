@@ -53,7 +53,7 @@ export function EventLog() {
         <Select
           allowClear
           aria-label="Result"
-          placeholder="Any result"
+          placeholder="All results"
           style={{ minWidth: 160 }}
           value={status}
           onChange={setStatus}

@@ -82,7 +82,7 @@ export function DeviceUsers() {
   const columns: TableProps<BiometricUserDto>['columns'] = [
     { title: 'User number', dataIndex: 'pin', width: 120, render: (v: string) => <span translate="no">{v}</span> },
     {
-      title: 'Who',
+      title: 'Person',
       key: 'who',
       render: (_, u) =>
         u.employeeName ? (

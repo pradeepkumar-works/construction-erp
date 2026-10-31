@@ -65,7 +65,7 @@ export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
               </strong>
             ),
           },
-          { title: 'State', key: 'state', width: 150, render: (_, r) => <DebitNoteTag note={r} /> },
+          { title: 'Status', key: 'state', width: 150, render: (_, r) => <DebitNoteTag note={r} /> },
         ]}
       />
       <DebitNoteFormModal open={raising} bill={bill} onClose={() => setRaising(false)} />
