@@ -112,13 +112,13 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
                       <DprWorkLines lines={data.lines} def={def} />
                       {data.workExecuted && data.workExecuted !== linesSummary(data.lines) ? (
                         <div style={{ marginTop: 12 }}>
-                          <Note title="Work executed">{data.workExecuted}</Note>
+                          <Note title="Work done today">{data.workExecuted}</Note>
                         </div>
                       ) : null}
                     </>
                   ),
                 }
-              : { key: 'work', title: 'Work executed', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.workExecuted || <span className="text-muted">-</span>}</div> },
+              : { key: 'work', title: 'Work done today', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.workExecuted || <span className="text-muted">-</span>}</div> },
             {
               key: 'resources',
               title: 'Labour and machinery',

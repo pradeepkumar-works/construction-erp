@@ -77,7 +77,7 @@ export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
       out.push({
         key: 'cost',
         level: pct <= 90 ? 'success' : pct <= 100 ? 'warning' : 'error',
-        text: `Cost: ${formatPct(pct)} of work value`,
+        text: `Cost: ${formatPct(pct)} of the value of work done`,
         detail: 'Cost booked so far against the value of approved work (progress × BOQ rate).',
       });
     }
@@ -86,7 +86,7 @@ export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
       out.push({
         key: 'billing',
         level: pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'error',
-        text: `Billed: ${formatPct(pct)} of work value`,
+        text: `Billed: ${formatPct(pct)} of the value of work done`,
         detail: 'Approved RA bills against the value of approved work. Work not yet billed is cash still to ask for.',
       });
     }

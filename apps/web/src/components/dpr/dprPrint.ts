@@ -37,7 +37,7 @@ function workTable(lines: DprLineDto[], def: DprFormDef): string {
     .join('');
   const used = materialUsed(lines).map((m) => `<tr><td>${esc(m.itemName)}</td><td class="num">${esc(formatQty(m.quantity))} ${esc(m.unit)}</td></tr>`).join('');
   return `${pipeTable(lines)}<h2>Work done</h2>
-  <table class="lines"><thead><tr><th class="num">S.No</th><th>Component</th><th>Sub-component</th><th>Activity</th><th>Unit</th><th class="num">Scope</th><th class="num">Up to previous</th><th class="num">Today</th><th class="num">Cumulative</th><th class="num">%</th><th class="num">Balance</th><th>Remark</th></tr></thead><tbody>${rows}</tbody></table>
+  <table class="lines"><thead><tr><th class="num">S.No</th><th>Component</th><th>Sub-component</th><th>Activity</th><th>Unit</th><th class="num">Planned</th><th class="num">Up to previous</th><th class="num">Today</th><th class="num">Cumulative</th><th class="num">%</th><th class="num">Balance</th><th>Remark</th></tr></thead><tbody>${rows}</tbody></table>
   ${crew ? `<h2>Crew, machines and material by line</h2><table class="lines"><thead><tr><th class="num">S.No</th><th>Crew</th><th>Machines</th><th>Material used</th></tr></thead><tbody>${crew}</tbody></table>` : ''}
   ${used ? `<h2>Material used</h2><table><thead><tr><th>Item</th><th class="num">Used</th></tr></thead><tbody>${used}</tbody></table>` : ''}`;
 }
@@ -120,9 +120,9 @@ ${PRINT_FONT_LINKS}
       .join('')}
   </div>
 
-  ${lines.length ? workTable(lines, def) : `<h2>Work executed</h2>
+  ${lines.length ? workTable(lines, def) : `<h2>Work done</h2>
   <p>${para(d.workExecuted)}</p>`}
-  ${lines.length && d.workExecuted && d.workExecuted !== linesSummary(lines) ? `<h2>Work executed</h2><p>${para(d.workExecuted)}</p>` : ''}
+  ${lines.length && d.workExecuted && d.workExecuted !== linesSummary(lines) ? `<h2>Work done</h2><p>${para(d.workExecuted)}</p>` : ''}
 
   <div class="cols">
     <div>

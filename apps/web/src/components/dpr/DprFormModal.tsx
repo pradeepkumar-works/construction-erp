@@ -288,7 +288,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           ) : null}
           <Form.Item
             name="workExecuted"
-            label={watchedLines?.some((l) => l?.activityId) ? 'Other work and notes' : 'Work executed'}
+            label={watchedLines?.some((l) => l?.activityId) ? 'Other work and notes' : 'Work done today'}
             extra={watchedLines?.some((l) => l?.activityId) ? 'Left empty, it is written from the lines.' : undefined}
             style={{ marginTop: 16 }}
             dependencies={['lines']}

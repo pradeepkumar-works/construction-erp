@@ -69,7 +69,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
     },
     { key: 'physicalProgressPct', title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} aria-label={`${Math.round(v * 10) / 10}% done`} /> },
     { title: 'Start date', label: 'Start date', dataIndex: 'startDate', width: 120, defaultHidden: true, render: (v) => formatDate(v), ...sort('startDate') },
-    { card: 'date', title: 'End date', label: 'End date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
+    { card: 'date', title: 'Completion date', label: 'Completion date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
     {
       key: 'pendingApprovals',
       title: 'Pending',

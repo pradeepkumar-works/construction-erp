@@ -86,9 +86,9 @@ export function BoqTab({ projectId }: { projectId: string }) {
         Description: i.description,
         Unit: i.unit,
         Rate: toNumber(i.rate),
-        'Original qty': toNumber(i.originalQty),
+        'BOQ qty': toNumber(i.originalQty),
         'Revised qty': i.revisedQty !== null ? toNumber(i.revisedQty) : '',
-        'Executed qty': toNumber(i.executedQty),
+        'Done qty': toNumber(i.executedQty),
         'Balance qty': toNumber(i.balanceQty),
         'Measured qty': toNumber(i.measuredQty),
         'Measured awaiting approval': toNumber(i.pendingMeasuredQty),
@@ -123,10 +123,10 @@ export function BoqTab({ projectId }: { projectId: string }) {
     },
     { title: 'Unit', dataIndex: 'unit', width: 60 },
     { title: 'Rate (₹)', dataIndex: 'rate', width: 120, align: 'right', className: 'mono', render: (v) => formatINR(v, true).replace(RUPEE, '') },
-    { title: 'Original qty', dataIndex: 'originalQty', width: 100, align: 'right', className: 'mono', render: (v) => formatQty(v) },
+    { title: 'BOQ qty', dataIndex: 'originalQty', width: 100, align: 'right', className: 'mono', render: (v) => formatQty(v) },
     { title: 'Revised qty', dataIndex: 'revisedQty', width: 95, align: 'right', className: 'mono', render: (v) => (v === null ? <span className="text-muted">-</span> : formatQty(v)) },
     {
-      title: 'Executed',
+      title: 'Done',
       dataIndex: 'executedQty',
       width: 140,
       className: 'mono',
@@ -136,7 +136,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         return (
           <div>
             <div style={{ textAlign: 'right' }}>{formatQty(v)}</div>
-            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? themeColor('colorSuccess') : BRAND.colors.primary} aria-label={`${pct}% executed`} />
+            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? themeColor('colorSuccess') : BRAND.colors.primary} aria-label={`${pct}% done`} />
           </div>
         );
       },
@@ -204,8 +204,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
         <Space size={24} wrap>
           <Statistic title="BOQ items" value={totals.count} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           <Statistic title="BOQ amount" value={formatINR(totals.amount)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-          <Statistic title="Executed value" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
-          <Statistic title="Measured value (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="Value of work done" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="Measured value (approved measurements)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           {gap ? (
             <p data-testid="boq-gap" style={{ margin: 0, maxWidth: 420, color: themeColor('colorWarningText'), fontSize: themeFontSize('fontSizeSM') }}>
               <ExclamationCircleOutlined aria-hidden style={{ marginRight: 6 }} />
@@ -295,12 +295,12 @@ export function BoqTab({ projectId }: { projectId: string }) {
             { title: 'Amount', dataIndex: 'amount', width: 160, align: 'right', className: 'mono', render: (v: number) => formatINR(v) },
             { title: 'Share', dataIndex: 'share', width: 90, align: 'right', className: 'mono', render: (v: number) => `${v.toFixed(1)}%` },
             {
-              title: 'Executed value',
+              title: 'Value of work done',
               dataIndex: 'executed',
               width: 200,
               render: (v: number, r) => {
                 const pct = r.amount > 0 ? Math.min(100, Math.round((v / r.amount) * 1000) / 10) : 0;
-                return <Progress percent={pct} size="small" aria-label={`${r.name ?? 'No section'}: ${pct}% executed`} format={() => formatINR(v)} />;
+                return <Progress percent={pct} size="small" aria-label={`${r.name ?? 'No section'}: ${pct}% done`} format={() => formatINR(v)} />;
               },
             },
           ]}

@@ -157,7 +157,7 @@ export function MeasurementFormModal({
               name="boqItemId"
               label="BOQ item"
               rules={[{ required: true, message: 'Choose the BOQ item' }]}
-              extra={item ? `Contract ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · awaiting approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
+              extra={item ? `BOQ qty ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · waiting for approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
             >
               <Select
                 showSearch={{ optionFilterProp: 'label' }}

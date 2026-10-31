@@ -187,7 +187,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
           </p>
         )}
 
-        <Section title="Planned vs executed by activity" style={{ marginTop: token.margin }} loading={isLoading}>
+        <Section title="Planned and done by activity" style={{ marginTop: token.margin }} loading={isLoading}>
           <Table
             size="small"
             rowKey="activityId"
@@ -197,7 +197,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
             columns={[
               { title: 'Activity', dataIndex: 'name' },
               { title: 'Planned', dataIndex: 'plannedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
-              { title: 'Executed', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
+              { title: 'Done', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
               {
                 title: 'Progress',
                 dataIndex: 'progressPct',
@@ -222,8 +222,8 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
               { key: 'wo', label: 'Work order', children: project.workOrderNo ?? '-' },
               { key: 'location', label: 'Location', children: project.location ?? '-' },
               ...(project.siteAddress ? [{ key: 'siteAddress', label: 'Delivery address', children: project.siteAddress }] : []),
-              { key: 'start', label: 'Start', children: formatDate(project.startDate) },
-              { key: 'end', label: 'End', children: formatDate(project.endDate) },
+              { key: 'start', label: 'Start date', children: formatDate(project.startDate) },
+              { key: 'end', label: 'Completion date', children: formatDate(project.endDate) },
               { key: 'pm', label: 'Project manager', children: project.projectManagerName ?? '-' },
               ...(project.description ? [{ key: 'desc', label: 'Description', children: project.description }] : []),
             ]}

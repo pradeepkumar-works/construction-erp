@@ -363,7 +363,7 @@ export function ProjectFormModal({
                 </Form.Item>
               </>
             ) : null}
-            <Form.Item name="dates" label="Start / end date" {...read(readText(readState?.result.fields.completionDate) || !readText(readState?.result.fields.startDate) ? 'completionDate' : 'startDate')}>
+            <Form.Item name="dates" label="Start and completion dates" {...read(readText(readState?.result.fields.completionDate) || !readText(readState?.result.fields.startDate) ? 'completionDate' : 'startDate')}>
               <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
             </Form.Item>
             <Form.Item name="contractValue" label="Contract value" {...read('contractValue')}>

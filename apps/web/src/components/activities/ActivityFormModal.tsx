@@ -128,7 +128,7 @@ export function ActivityFormModal({
           <Form.Item name="plannedQty" label="Planned qty" rules={[{ required: true, message: 'Enter the planned quantity' }]}>
             <QuantityInput unit={unit} />
           </Form.Item>
-          <Form.Item name="dates" label="Planned start / end">
+          <Form.Item name="dates" label="Planned start and finish">
             <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
           </Form.Item>
           <Form.Item name="responsibleId" label="Responsible">

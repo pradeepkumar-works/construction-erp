@@ -150,7 +150,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>
-          <Form.Item name="quantity" label="Quantity executed" rules={[{ required: true, message: 'Enter the quantity done' }]} {...aiFlagItem(draft, 'quantity', quantity)}>
+          <Form.Item name="quantity" label="Quantity done" rules={[{ required: true, message: 'Enter the quantity done' }]} {...aiFlagItem(draft, 'quantity', quantity)}>
             <QuantityInput unit={activity?.unit} />
           </Form.Item>
           <Form.Item name="manpowerCount" label="Labour">
