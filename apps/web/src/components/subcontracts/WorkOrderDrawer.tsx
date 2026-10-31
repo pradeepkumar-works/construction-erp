@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useWorkOrder } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -155,7 +155,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
             { key: 'title', label: 'Work', span: 2, children: data.title },
             { key: 'value', label: 'Value before GST', children: <strong>{money(data.value)}</strong> },
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
-            { key: 'period', label: 'Period', children: `${data.startDate ? formatDate(data.startDate) : '-'} to ${data.endDate ? formatDate(data.endDate) : '-'}` },
+            { key: 'period', label: 'Period', children: `${data.startDate ? formatDate(data.startDate) : NO_VALUE} to ${data.endDate ? formatDate(data.endDate) : NO_VALUE}` },
             { key: 'gst', label: 'GST on their bills', children: formatPct(data.gstRate) },
             { key: 'ret', label: 'Retention', children: formatPct(data.retentionPct) },
             { key: 'tds', label: 'TDS (194C)', children: formatPct(data.tdsPct) },
@@ -175,7 +175,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                   '-'
                 ),
             },
-            { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : '-' },
+            { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : NO_VALUE },
             ...(approved ? [{ key: 'billed', label: 'Billed', children: <Progress percent={data.billedPct} size="small" style={{ maxWidth: 320, margin: 0 }} format={() => `${formatPct(data.billedPct)} · ${formatINR(data.billedAmount, true)}`} aria-label={`${formatPct(data.billedPct)} billed`} /> }] : []),
             ...(data.supplierAcceptedAt
               ? [{ key: 'accepted', label: 'Subcontractor accepted', children: `${formatDateTime(data.supplierAcceptedAt)}${data.supplierAcceptedBy ? ` by ${data.supplierAcceptedBy}` : ''}${data.supplierNote ? `: ${data.supplierNote}` : ''}` }]
@@ -227,7 +227,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                                     {formatQty(v)}
                                   </Typography.Text>
                                 ) : (
-                                  <span className="text-muted">-</span>
+                                  <span className="text-muted">{NO_VALUE}</span>
                                 ),
                             },
                             { title: 'Billed', dataIndex: 'billedQty', width: 100, align: 'right' as const, render: (v: string) => <span className="mono" translate="no">{formatQty(v)}</span> },

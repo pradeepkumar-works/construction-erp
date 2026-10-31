@@ -18,6 +18,7 @@ import { Salaries } from '@/components/payroll/Salaries';
 import { Loans } from '@/components/payroll/Loans';
 import { Settlements } from '@/components/payroll/Settlements';
 import { PayrollSettings } from '@/components/payroll/PayrollSettings';
+import { MONTH_PICKER_FORMAT } from '@/lib/format';
 
 const STAFF_TABS = ['runs', 'salaries', 'loans', 'settlements', 'staff', 'settings'] as const;
 
@@ -30,7 +31,7 @@ function MonthInputs({ kind }: { kind: 'staff' | 'contractors' }) {
   return (
     <>
       <div style={{ padding: '12px 12px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <DatePicker picker="month" format="MMM YYYY" allowClear={false} value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
+        <DatePicker picker="month" format={MONTH_PICKER_FORMAT} allowClear={false} value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />
       </div>
       {kind === 'staff' ? <StaffPayroll month={m} projectId={projectId} /> : <ContractorMonth month={m} projectId={projectId} />}

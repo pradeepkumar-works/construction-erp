@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useMakeCheck, usePurchaseOrder } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { DispatchStatusTag } from '@/components/supplier/supplierUi';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -163,10 +163,10 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                 ]
               : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
-            { key: 'mr', label: 'Indent', children: data.requestNo ? <Link href={`/material-requests/${data.materialRequestId}`}>{data.requestNo}</Link> : '-' },
-            { key: 'deliver', label: 'Deliver by', children: data.deliveryBy ? formatDate(data.deliveryBy) : '-' },
-            { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? '-' },
-            { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : '-') },
+            { key: 'mr', label: 'Indent', children: data.requestNo ? <Link href={`/material-requests/${data.materialRequestId}`}>{data.requestNo}</Link> : NO_VALUE },
+            { key: 'deliver', label: 'Deliver by', children: data.deliveryBy ? formatDate(data.deliveryBy) : NO_VALUE },
+            { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? NO_VALUE },
+            { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : NO_VALUE) },
             ...(approved ? [{ key: 'recv', label: 'Received', children: <Progress percent={data.receivedPct} size="small" style={{ maxWidth: 240, margin: 0 }} format={() => formatPct(data.receivedPct)} aria-label={`${formatPct(data.receivedPct)} received`} /> }] : []),
             ...(data.selectionReason ? [{ key: 'why', label: 'Why this vendor', span: 2, children: data.selectionReason }] : []),
             ...(approved && (data.supplierEmailedAt || data.supplierEmailError)
@@ -302,7 +302,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                         columns={[
                           { title: 'Challan', dataIndex: 'dispatchNo', render: (v: string) => <span className="mono" translate="no">{v}</span> },
                           { title: 'Sent', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
-                          { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
+                          { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
                           {
                             title: 'Status',
                             dataIndex: 'status',

@@ -11,7 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useBillableJobs, useEquipment, useHirePreview, useProjects, useVendorBill } from '@/lib/queries';
 import { VendorSelect } from '@/components/common/SearchSelect';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatQty, toNumber, NO_VALUE, MONTH_PICKER_FORMAT, formatMonthLong } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -177,7 +177,7 @@ export function OtherBillFormModal({
   const hireLines = useMemo(() => {
     if (kind !== 'HIRE' || !p) return [];
     const rate = toNumber(hireRate);
-    const out = [{ key: 'hire', label: `${p.equipmentCode} ${p.equipmentName}, hire for ${dayjs(p.month).format('MMMM YYYY')}`, unit: RATE_WORD[p.rateUnit], quantity: toNumber(hireQuantity) }];
+    const out = [{ key: 'hire', label: `${p.equipmentCode} ${p.equipmentName}, hire for ${formatMonthLong(p.month)}`, unit: RATE_WORD[p.rateUnit], quantity: toNumber(hireQuantity) }];
     if (toNumber(p.minTopUpHours) > 0 && p.rateUnit === 'HOUR') out.push({ key: 'min', label: `Minimum ${formatQty(p.hireMinHours)} hours a month: hours not worked`, unit: 'hour', quantity: toNumber(p.minTopUpHours) });
     return out.map((l) => ({ ...l, rate, amount: Math.round(l.quantity * rate * 100) / 100 }));
   }, [kind, p, hireQuantity, hireRate]);
@@ -292,7 +292,7 @@ export function OtherBillFormModal({
                   />
                 </Form.Item>
                 <Form.Item name="hireMonth" label="Month billed" rules={[{ required: true, message: 'Choose the month billed' }]}>
-                  <DatePicker picker="month" format="MMM YYYY" allowClear={false} disabled={!!bill} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
+                  <DatePicker picker="month" format={MONTH_PICKER_FORMAT} allowClear={false} disabled={!!bill} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
                 </Form.Item>
               </FormGrid>
             ) : (
@@ -327,7 +327,7 @@ export function OtherBillFormModal({
               <Alert type="info" showIcon style={{ marginBottom: 12 }} title={preview.isFetching ? 'Reading the approved logs…' : 'Choose the project, the hired machine and the month; the bill fills in from its approved logs.'} />
             ) : (
               <>
-                {p.existingBill ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`${p.equipmentCode} for ${dayjs(p.month).format('MMMM YYYY')} is already billed on ${p.existingBill.billNo}`} /> : null}
+                {p.existingBill ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`${p.equipmentCode} for ${formatMonthLong(p.month)} is already billed on ${p.existingBill.billNo}`} /> : null}
                 {!p.vendorId ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`Link ${p.equipmentCode} to its hire agency first, in Machinery › ${p.equipmentCode} › Edit`} /> : null}
                 <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {[
@@ -397,7 +397,7 @@ export function OtherBillFormModal({
                       {j.equipmentCode} · {j.description}
                       <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                         {' '}
-                        · closed {j.closedDate ? formatDate(j.closedDate) : '-'} · labour {formatINR(j.labourCost, true)}, parts {formatINR(j.partsCost, true)}
+                        · closed {j.closedDate ? formatDate(j.closedDate) : NO_VALUE} · labour {formatINR(j.labourCost, true)}, parts {formatINR(j.partsCost, true)}
                       </Typography.Text>
                     </Checkbox>
                   ))}

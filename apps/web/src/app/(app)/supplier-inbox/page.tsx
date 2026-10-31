@@ -19,7 +19,7 @@ import {
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useSupplierChanges, useSupplierInbox, useSupplierInboxInvoice } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery, PhotoThumbs } from '@/components/common/AttachmentGallery';
@@ -110,7 +110,7 @@ function Invoices({ openId, setOpen }: { openId: string | null; setOpen: (id: st
           },
           { title: 'Supplier', dataIndex: 'vendorName', render: (v: string) => <span translate="no">{v}</span> },
           { title: 'Date', dataIndex: 'invoiceDate', width: 110, render: (v: string) => formatDate(v) },
-          { title: 'Against', key: 'against', width: 150, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? i.projectName ?? '-'}</span> },
+          { title: 'Against', key: 'against', width: 150, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? i.projectName ?? NO_VALUE}</span> },
           { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
           { title: 'File', key: 'file', width: 100, render: (_, i) => <PhotoThumbs attachments={i.attachments} /> },
           { title: 'Sent', dataIndex: 'createdAt', width: 150, render: (v: string, i) => <span>{formatDateTime(v)}<br /><Typography.Text type="secondary">{i.sentBy}</Typography.Text></span> },
@@ -195,7 +195,7 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
             <Descriptions.Item label="Amount with GST">
               <Money value={i.amount} />
             </Descriptions.Item>
-            <Descriptions.Item label="Of which GST">{i.gstAmount ? <Money value={i.gstAmount} /> : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Of which GST">{i.gstAmount ? <Money value={i.gstAmount} /> : NO_VALUE}</Descriptions.Item>
             <Descriptions.Item label="Against">
               {i.purchaseOrderId ? (
                 <Link href={`/purchase-orders/${i.purchaseOrderId}`} translate="no">
@@ -210,7 +210,7 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
               )}
             </Descriptions.Item>
             <Descriptions.Item label="Site">
-              <span translate="no">{i.projectName ?? '-'}</span>
+              <span translate="no">{i.projectName ?? NO_VALUE}</span>
             </Descriptions.Item>
             <Descriptions.Item label="Sent" span={2}>{`${formatDateTime(i.createdAt)} by ${i.sentBy}`}</Descriptions.Item>
             {i.notes ? (

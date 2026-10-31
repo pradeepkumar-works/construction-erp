@@ -12,7 +12,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayrollAction, usePayrollRun, type PayrollFileDto } from '@/lib/queries';
 import { downloadXlsx } from '@/lib/exportExcel';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 import { PayslipModal } from './PayslipModal';
@@ -158,8 +158,8 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
               <Rupees value={run.employerCost} />
             </Descriptions.Item>
             <Descriptions.Item label="Prepared by">{run.preparedByName}</Descriptions.Item>
-            <Descriptions.Item label="Approved by">{run.approvedByName ? `${run.approvedByName}, ${formatDateTime(run.approvedAt)}` : '-'}</Descriptions.Item>
-            <Descriptions.Item label="Paid">{run.paidOn ? `${formatDate(run.paidOn)}${run.paymentRef ? `, ${run.paymentRef}` : ''}` : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Approved by">{run.approvedByName ? `${run.approvedByName}, ${formatDateTime(run.approvedAt)}` : NO_VALUE}</Descriptions.Item>
+            <Descriptions.Item label="Paid">{run.paidOn ? `${formatDate(run.paidOn)}${run.paymentRef ? `, ${run.paymentRef}` : ''}` : NO_VALUE}</Descriptions.Item>
           </Descriptions>
           <Space wrap>
             {run.can.edit && (

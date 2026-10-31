@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { usePaymentRequest, useVendorPayments } from '@/lib/queries';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -49,7 +49,7 @@ export const requestTargetHref = (r: Pick<PaymentRequestDto, 'vendorBillId' | 's
             : null;
 
 /** Who a request pays: the party, or for a fund request into an imprest (v6 item 107) its holder. */
-export const requestPayee = (r: Pick<PaymentRequestDto, 'vendorName' | 'imprestHolderName'>) => r.vendorName ?? (r.imprestHolderName ? `${r.imprestHolderName}'s imprest` : '-');
+export const requestPayee = (r: Pick<PaymentRequestDto, 'vendorName' | 'imprestHolderName'>) => r.vendorName ?? (r.imprestHolderName ? `${r.imprestHolderName}'s imprest` : NO_VALUE);
 
 /** Paying an approved request: a fund request into an imprest is released, anything else paid. */
 export const requestReleases = (r: Pick<PaymentRequestDto, 'kind' | 'imprestId'>) => r.kind === 'FUND_REQUEST' && !!r.imprestId;
@@ -195,7 +195,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
               {
                 key: 'neededBy',
                 label: 'Needed by',
-                children: data.neededBy ? formatDate(data.neededBy) : '-',
+                children: data.neededBy ? formatDate(data.neededBy) : NO_VALUE,
               },
               {
                 key: 'mode',

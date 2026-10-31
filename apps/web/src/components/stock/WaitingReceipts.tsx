@@ -7,7 +7,7 @@ import type { ReceiptWait, StockEntryDto, StockEntrySortField } from '@erp/share
 import { LIST_SORT_FIELDS, RECEIPT_BILL_WITHIN_DAYS, RECEIPT_CHECK_WITHIN_DAYS, canCheckGrn, canRaiseDebitNote, canRecordVendorBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useWaitingReceipts } from '@/lib/queries';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -93,12 +93,12 @@ export function WaitingReceipts({ waiting, projectId: fixedProject }: { waiting:
       {
         key: 'from',
         card: 'meta',
-        cardText: (r) => r.supplier ?? '-',
+        cardText: (r) => r.supplier ?? NO_VALUE,
         title: 'Supplier',
         width: 220,
         render: (_, r) => (
           <div>
-            <span translate="no">{r.supplier ?? '-'}</span>
+            <span translate="no">{r.supplier ?? NO_VALUE}</span>
             {r.poNo ? (
               <div className="text-muted mono" style={{ fontSize: 12 }}>
                 <Link href={`/purchase-orders/${r.purchaseOrderId}`}>{r.poNo}</Link>

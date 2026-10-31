@@ -8,11 +8,11 @@ import type { ContractCurrency, RaBillDto, RaBillStageLineDto, SlippageLineDto }
 import { STAGE_TRIGGER_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { formatDate, formatMoney, formatPct, toNumber } from '@/lib/format';
+import { formatDate, formatMoney, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 
-const pct = (v: string | number | null) => (v === null ? '-' : <span className="mono" translate="no">{formatPct(v, { digits: toNumber(v) % 1 ? 2 : 0 })}</span>);
+const pct = (v: string | number | null) => (v === null ? NO_VALUE : <span className="mono" translate="no">{formatPct(v, { digits: toNumber(v) % 1 ? 2 : 0 })}</span>);
 const money = (v: string, c: ContractCurrency) => <span className="mono" translate="no">{formatMoney(v, c, true)}</span>;
 
 /**

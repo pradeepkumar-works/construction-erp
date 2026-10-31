@@ -29,7 +29,7 @@ import {
 } from "@erp/shared";
 import { useNotify } from "@/lib/notify";
 import { useTender, useTenderAction } from "@/lib/queries";
-import { formatDate, formatINR, toNumber } from "@/lib/format";
+import { formatDate, formatINR, formatQty, toNumber, NO_VALUE } from "@/lib/format";
 import { PageHeader } from "@/components/common/PageHeader";
 import { PageSkeleton, QueryError } from "@/components/common/QueryState";
 import { LinkButton } from "@/components/common/LinkButton";
@@ -56,7 +56,7 @@ type Tab = "boq" | "bids" | "details";
 const today = () => new Date().toLocaleDateString("en-CA");
 const money = (v: string | null | undefined) => (
   <span translate="no">
-    {v === null || v === undefined ? "-" : formatINR(v, true)}
+    {v === null || v === undefined ? NO_VALUE : formatINR(v, true)}
   </span>
 );
 const pctNote = (pct: string | null | undefined) =>
@@ -733,7 +733,7 @@ function BoqTab({
                 align: "right",
                 width: 110,
                 render: (_, i) => (
-                  <span translate="no">{`${toNumber(i.qty).toLocaleString("en-IN")} ${i.unit}`}</span>
+                  <span translate="no">{`${formatQty(i.qty)} ${i.unit}`}</span>
                 ),
               },
               {
@@ -886,7 +886,7 @@ function BidsTab({
             title: "On the SOR",
             align: "right",
             width: 140,
-            render: (_, b) => (b.pct === null ? "-" : sorPctLabel(b.pct)),
+            render: (_, b) => (b.pct === null ? NO_VALUE : sorPctLabel(b.pct)),
           },
           {
             key: "gap",
@@ -971,17 +971,17 @@ function DetailsTab({ tender: t }: { tender: TenderDetailDto }) {
               {
                 key: "nit",
                 label: "NIT number",
-                children: <span translate="no">{t.nitNo ?? "-"}</span>,
+                children: <span translate="no">{t.nitNo ?? NO_VALUE}</span>,
               },
               {
                 key: "client",
                 label: "Client",
-                children: <span translate="no">{t.clientName ?? "-"}</span>,
+                children: <span translate="no">{t.clientName ?? NO_VALUE}</span>,
               },
               {
                 key: "location",
                 label: "Location",
-                children: t.location ?? "-",
+                children: t.location ?? NO_VALUE,
               },
               {
                 key: "published",
@@ -1003,7 +1003,7 @@ function DetailsTab({ tender: t }: { tender: TenderDetailDto }) {
                 label: "Time for completion",
                 children: t.completionMonths
                   ? `${t.completionMonths} months`
-                  : "-",
+                  : NO_VALUE,
               },
               {
                 key: "estimate",
@@ -1094,7 +1094,7 @@ function DetailsTab({ tender: t }: { tender: TenderDetailDto }) {
                     label: "Amount",
                     children: money(t.emd.amount),
                   },
-                  { key: "bank", label: "Bank", children: t.emd.issuer ?? "-" },
+                  { key: "bank", label: "Bank", children: t.emd.issuer ?? NO_VALUE },
                   {
                     key: "valid",
                     label: "Valid until",

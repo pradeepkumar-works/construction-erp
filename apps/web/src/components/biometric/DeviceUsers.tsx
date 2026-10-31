@@ -7,7 +7,7 @@ import type { TableProps } from 'antd';
 import type { BiometricUserDto } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useBiometricAction, useBiometricUsers, useEmployees, useWorkers } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 import { MoreOutlined } from '@/components/common/icons';
@@ -105,8 +105,8 @@ export function DeviceUsers() {
       ),
     },
     { title: 'Punches, 30 days', dataIndex: 'punches', width: 140, align: 'right' },
-    { title: 'Waiting to mark', dataIndex: 'unmatched', width: 140, align: 'right', render: (v: number) => (v ? <strong>{v}</strong> : '-') },
-    { title: 'Last punch', dataIndex: 'lastPunchAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : '-') },
+    { title: 'Waiting to mark', dataIndex: 'unmatched', width: 140, align: 'right', render: (v: number) => (v ? <strong>{v}</strong> : NO_VALUE) },
+    { title: 'Last punch', dataIndex: 'lastPunchAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : NO_VALUE) },
     {
       title: '',
       key: 'x',

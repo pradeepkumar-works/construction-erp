@@ -14,7 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { useStockBalances } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { STOCK_BALANCE_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -100,7 +100,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
       {formatQty(v)} <Typography.Text type="secondary">{r.unit}</Typography.Text>
     </span>
   );
-  const nil = <Typography.Text type="secondary">-</Typography.Text>;
+  const nil = <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>;
   const frame = useListFrame<StockBalanceSortField, StockRow>({
     list: 'stock-balances',
     url: false,

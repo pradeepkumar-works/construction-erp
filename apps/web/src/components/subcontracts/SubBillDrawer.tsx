@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useSubcontractBill } from '@/lib/queries';
-import { formatDate, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -139,7 +139,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             { key: 'date', label: 'Bill date', children: formatDate(data.billDate) },
             { key: 'upto', label: 'Measured up to', children: formatDate(data.measuredUpTo) },
-            { key: 'inv', label: 'Their invoice', children: data.invoiceNo ?? '-' },
+            { key: 'inv', label: 'Their invoice', children: data.invoiceNo ?? NO_VALUE },
             {
               key: 'due',
               label: 'Payment due',

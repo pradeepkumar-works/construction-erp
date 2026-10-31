@@ -7,7 +7,7 @@ import type { MaterialRequestDto, MaterialRequestItemDto, RequestLineStockDto } 
 import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useIndentCheck, useMaterialRequest, useRequestStock } from '@/lib/queries';
-import { formatDate, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -99,7 +99,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
                   columns={[
                     { title: '#', key: 'idx', width: 40, render: (_, __, i) => i + 1 },
                     { title: 'Item', dataIndex: 'itemName' },
-                    { title: 'Specification', dataIndex: 'specification', render: (v) => v ?? <span className="text-muted">-</span> },
+                    { title: 'Specification', dataIndex: 'specification', render: (v) => v ?? <span className="text-muted">{NO_VALUE}</span> },
                     { title: 'Qty', dataIndex: 'quantity', align: 'right', width: 90, render: (v) => formatQty(v) },
                     { title: 'Unit', dataIndex: 'unit', width: 80 },
                     ...(data.status === 'APPROVED'
@@ -181,7 +181,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
 /** A line's stock (v5 item 95): at the request's own site, and how much the other sites hold, listed in a popover. */
 function StockCell({ line, loading }: { line: RequestLineStockDto | undefined; loading: boolean }) {
   if (loading) return <span className="text-muted">…</span>;
-  if (!line) return <span className="text-muted">-</span>;
+  if (!line) return <span className="text-muted">{NO_VALUE}</span>;
   const elsewhere = line.others.reduce((s, o) => s + toNumber(o.balance), 0);
   return (
     <div>

@@ -25,7 +25,7 @@ import { useAuth } from "@/lib/auth";
 import { useTenders } from "@/lib/queries";
 import { useListPage } from "@/lib/listPage";
 import { useNewIntent } from "@/lib/new-intent";
-import { formatDate, formatINR } from "@/lib/format";
+import { formatDate, formatINR, NO_VALUE } from "@/lib/format";
 import { PageHeader } from "@/components/common/PageHeader";
 import { PageSkeleton, QueryError } from "@/components/common/QueryState";
 import { ListToolbar } from "@/components/common/ListToolbar";
@@ -110,7 +110,7 @@ function TendersPage() {
       width: 200,
       render: (_, r) => (
         <div translate="no">
-          {r.clientName ?? "-"}
+          {r.clientName ?? NO_VALUE}
           {r.location ? (
             <Typography.Text
               type="secondary"
@@ -158,7 +158,7 @@ function TendersPage() {
       defaultFrom: 1280,
       render: (_, r) => (
         <span translate="no">
-          {r.estimatedValue ? formatINR(r.estimatedValue) : "-"}
+          {r.estimatedValue ? formatINR(r.estimatedValue) : NO_VALUE}
         </span>
       ),
     },
@@ -214,7 +214,7 @@ function TendersPage() {
       width: 130,
       defaultFrom: 1280,
       render: (_, r) => (
-        <span translate="no">{r.emdAmount ? formatINR(r.emdAmount) : "-"}</span>
+        <span translate="no">{r.emdAmount ? formatINR(r.emdAmount) : NO_VALUE}</span>
       ),
     },
   ];

@@ -19,7 +19,7 @@ import {
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useAttendanceCheck } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, formatQty, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -168,7 +168,7 @@ function AttendanceCheck() {
       <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.margin }}>
         <DatePicker
           picker="month"
-          format="MMM YYYY"
+          format={MONTH_PICKER_FORMAT}
           allowClear={false}
           aria-label="Month"
           value={dayjs(`${month}-01`)}

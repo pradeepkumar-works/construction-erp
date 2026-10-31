@@ -7,7 +7,7 @@ import type { BiometricCommandDto, BiometricCommandStatus, BiometricUserDto } fr
 import { BIOMETRIC_COMMAND_KIND_LABELS, BIOMETRIC_COMMAND_STATUS_LABELS, DEVICE_NAME_MAX } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useBiometricAction, useBiometricCommands, useBiometricDevices } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
 import { Section } from '@/components/common/Section';
 import { QueryError } from '@/components/common/QueryState';
@@ -76,7 +76,7 @@ export function OnDevicesTag({ u }: { u: BiometricUserDto }) {
   if (u.commandsWaiting) return <AppTag tone="pending">{`Waiting for ${u.commandsWaiting} ${u.commandsWaiting === 1 ? 'device' : 'devices'}`}</AppTag>;
   if (u.commandsFailed) return <AppTag tone="danger">{`Failed on ${u.commandsFailed} ${u.commandsFailed === 1 ? 'device' : 'devices'}`}</AppTag>;
   if (u.onDevices) return <AppTag tone="success">{`On ${u.onDevices} ${u.onDevices === 1 ? 'device' : 'devices'}`}</AppTag>;
-  return <span className="text-muted">-</span>;
+  return <span className="text-muted">{NO_VALUE}</span>;
 }
 
 /** What the ADMS devices were asked to do and whether they did it; one not handed over yet can be taken back. */

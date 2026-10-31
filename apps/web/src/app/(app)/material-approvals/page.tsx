@@ -20,7 +20,7 @@ import { useApprovedMakes, useMaterialApprovalAction, useMaterialApprovals } fro
 import { useListPage } from '@/lib/listPage';
 import { useNewIntent } from '@/lib/new-intent';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -255,7 +255,7 @@ function MaterialApprovalsPage() {
           {stat('With the reviewer', s.underReview, s.overdue ? `${s.overdue} past the reply date` : 'None past its reply date', s.overdue ? 'danger' : undefined)}
           {stat('Returned to us', s.withUs, 'To revise and resubmit, or rejected')}
           {stat('Approved this month', s.approvedThisMonth, 'Including approved as noted')}
-          {stat('Days to a decision', s.avgDaysToDecide ?? '-', 'Average over the last 90 days')}
+          {stat('Days to a decision', s.avgDaysToDecide ?? NO_VALUE, 'Average over the last 90 days')}
         </Row>
       ) : null}
       <Card size="small">

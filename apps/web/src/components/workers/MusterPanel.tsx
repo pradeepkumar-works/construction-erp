@@ -7,7 +7,7 @@ import type { TableProps } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { MusterDto, MusterRowDto, OutputRowDto, StaffAttendanceStatus } from '@erp/shared';
 import { useMuster, useWorkerOutput } from '@/lib/queries';
-import { formatINR, formatQty } from '@/lib/format';
+import { formatINR, formatQty, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
@@ -104,7 +104,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
     <div className="muster-panel">
       <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Choose the project" allowClear={false} /> : null}
-        <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format="MMM YYYY" allowClear={false} aria-label="Month" />
+        <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format={MONTH_PICKER_FORMAT} allowClear={false} aria-label="Month" />
         <div style={{ flex: 1 }} />
         {m ? (
           <ExportButton

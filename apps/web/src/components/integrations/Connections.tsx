@@ -9,7 +9,7 @@ import type { ConnectionHealth, FeedAuth, FeedPollResultDto, IntegrationConnecti
 import { BATCH_SINCE_DAYS, CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO, WEIGH_BAUDS, WEIGH_MIN_KG, WEIGH_STABLE_SECONDS, WEIGHBRIDGE_SOURCES, WEIGHBRIDGE_SOURCE_LABELS } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
 import { useConnectorAgents, useIntegrationAction, useIntegrationConnections, useRmcPlants, useStockItems } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -385,7 +385,7 @@ function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; 
             ) : transport === 'POLL' ? (
               <Descriptions.Item label="Feed address">
                 <span translate="no" style={{ wordBreak: 'break-all' }}>
-                  {str(c.config.url) ?? '-'}
+                  {str(c.config.url) ?? NO_VALUE}
                 </span>
                 <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
                   Nirmaan reads it every hour. Match each machine it reports on under Devices.
@@ -393,7 +393,7 @@ function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; 
               </Descriptions.Item>
             ) : (
               <Descriptions.Item label="Web address">
-                <span translate="no">{c.hookPathHint ? `${API_URL}${c.hookPathHint}` : '-'}</span>
+                <span translate="no">{c.hookPathHint ? `${API_URL}${c.hookPathHint}` : NO_VALUE}</span>
                 <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
                   Only its last four characters are kept here. Lost it? Make a new one.
                 </Typography.Paragraph>

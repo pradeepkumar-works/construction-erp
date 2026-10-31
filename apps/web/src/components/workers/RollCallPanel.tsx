@@ -18,6 +18,7 @@ import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useProjectScope } from '@/lib/project-scope';
 import { themeFontSize } from '@/lib/theme';
+import { formatMonthLong } from '@/lib/format';
 
 interface Mark {
   status: StaffAttendanceStatus | null;
@@ -230,7 +231,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
       ) : (
         <>
           {data?.locked ? (
-            <Alert type="info" showIcon style={{ margin: 12 }} title={`Payroll for ${dayjs(dateStr).format('MMMM YYYY')} is approved (${data.lockedByRun}), so this roll call can no longer change.`} />
+            <Alert type="info" showIcon style={{ margin: 12 }} title={`Payroll for ${formatMonthLong(dateStr)} is approved (${data.lockedByRun}), so this roll call can no longer change.`} />
           ) : null}
           {data ? (
             <div className="roll-call-summary text-muted" style={{ padding: '8px 12px', fontSize: themeFontSize('fontSizeSM') }}>

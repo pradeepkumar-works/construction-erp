@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { usePurchaseOrders } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PURCHASE_ORDER_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -64,7 +64,7 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
     },
     { card: 'meta', cardText: (r) => r.vendorName, title: 'Vendor', ...sort('vendor'), render: (_, r) => <TwoLine top={r.vendorName} sub={r.lines.map((l) => l.itemName).join(', ')} /> },
     ...(showProject ? [{ card: 'meta' as const, cardText: (r: PurchaseOrderDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: PurchaseOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
-    { defaultFrom: 1400, key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests/${r.materialRequestId}`} className="mono" translate="no">{v}</Link> : '-') },
+    { defaultFrom: 1400, key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests/${r.materialRequestId}`} className="mono" translate="no">{v}</Link> : NO_VALUE) },
     { card: 'amount', title: 'Total', dataIndex: 'total', width: 150, align: 'right', ...sort('total'), render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.total)) },
     { card: 'date', cardText: (r) => formatDate(r.poDate), title: 'Raised on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     {
@@ -80,7 +80,7 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
         </Space>
       ),
     },
-    { defaultFrom: 1600, key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} aria-label={`${r.receivedPct}% received`} /> : '-') },
+    { defaultFrom: 1600, key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} aria-label={`${r.receivedPct}% received`} /> : NO_VALUE) },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="purchase_order" row={r} amount={r.total} href={`/purchase-orders/${r.id}`} onOpen={onOpen} /> },
   ];
 }

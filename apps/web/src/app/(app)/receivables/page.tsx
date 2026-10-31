@@ -17,7 +17,7 @@ import { useListPage } from '@/lib/listPage';
 import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { OPEN_BILL_EXPORT, RECEIPT_EXPORT, RECEIVABLE_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -42,7 +42,7 @@ function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
-const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">-</span>);
+const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">{NO_VALUE}</span>);
 
 /** Ageing columns shared by the project and client tables (keys are stable: the column chooser keeps them). */
 function ageingColumns<T extends ProjectReceivableDto | ClientReceivableDto>(): ListColumn<T>[] {
@@ -347,7 +347,7 @@ export default function ReceivablesPage() {
       ),
     },
     ...ageingColumns<Keyed<ProjectReceivableDto>>(),
-    { key: 'retentionReleaseDate', title: 'Retention due', dataIndex: 'retentionReleaseDate', width: 120, card: 'date', render: (v) => (v ? formatDate(v) : '-') },
+    { key: 'retentionReleaseDate', title: 'Retention due', dataIndex: 'retentionReleaseDate', width: 120, card: 'date', render: (v) => (v ? formatDate(v) : NO_VALUE) },
   ];
   const clientColumns: ListColumn<Keyed<ClientReceivableDto>>[] = [
     { key: 'clientName', title: 'Client', dataIndex: 'clientName', locked: true, card: 'title', fixed: 'left', width: 220, ellipsis: true },

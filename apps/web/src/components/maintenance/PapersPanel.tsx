@@ -13,7 +13,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useDrivers, useEquipmentDocuments } from '@/lib/queries';
 import { EquipmentSelect, useEquipmentItem } from '@/components/common/SearchSelect';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -107,7 +107,7 @@ export function PapersPanel() {
         key: 'n',
         render: (_, r) => (
           <div>
-            {r.number ?? '-'}
+            {r.number ?? NO_VALUE}
             <Sub>{[r.issuer, r.notes].filter(Boolean).join(' · ') || ' '}</Sub>
           </div>
         ),
@@ -210,10 +210,10 @@ export function PapersPanel() {
     columns: (): ListColumn<DriverDto>[] =>
   [
       { key: 'name', title: 'Driver / operator', locked: true, render: (_, r) => <div>{manager ? <RecordLink onOpen={() => openDriver(r)} strong>{r.name}</RecordLink> : r.name}{r.isActive ? null : <Typography.Text type="secondary"> (left)</Typography.Text>}<Sub>{r.phone ?? ' '}</Sub></div> },
-      { title: 'Licence', key: 'l', render: (_, r) => <div>{r.licenceNo ?? '-'}<Sub>{r.licenceClass ?? ' '}</Sub></div> },
-      { key: 'licenceValidTo', title: 'Valid to', dataIndex: 'licenceValidTo', width: 120, render: (v: string | null) => (v ? formatDate(v) : '-') },
+      { title: 'Licence', key: 'l', render: (_, r) => <div>{r.licenceNo ?? NO_VALUE}<Sub>{r.licenceClass ?? ' '}</Sub></div> },
+      { key: 'licenceValidTo', title: 'Valid to', dataIndex: 'licenceValidTo', width: 120, render: (v: string | null) => (v ? formatDate(v) : NO_VALUE) },
       { title: '', key: 's', label: 'Validity', width: 120, render: (_, r) => <ExpiryTag state={r.licenceState} daysLeft={r.daysLeft} /> },
-      { title: 'Drives', key: 'e', width: 220, render: (_, r) => (r.equipmentCode ? <span><b className="mono" translate="no">{r.equipmentCode}</b> {r.equipmentName}</span> : <Typography.Text type="secondary">-</Typography.Text>) },
+      { title: 'Drives', key: 'e', width: 220, render: (_, r) => (r.equipmentCode ? <span><b className="mono" translate="no">{r.equipmentCode}</b> {r.equipmentName}</span> : <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>) },
       ...(manager
         ? [
             {

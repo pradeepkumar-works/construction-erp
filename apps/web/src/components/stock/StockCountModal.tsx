@@ -11,7 +11,7 @@ import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useStockBalances } from '@/lib/queries';
-import { formatQty } from '@/lib/format';
+import { formatQty, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { themeFontSize } from '@/lib/theme';
@@ -158,7 +158,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
               align: 'right',
               render: (_, r) => {
                 const c = counts[r.itemId];
-                if (!filled(c)) return <span className="text-muted">-</span>;
+                if (!filled(c)) return <span className="text-muted">{NO_VALUE}</span>;
                 const d = Number(c) - Number(r.balance);
                 return <Typography.Text type={d < 0 ? 'danger' : d > 0 ? 'success' : 'secondary'}>{d === 0 ? 'matches' : `${d > 0 ? '+' : ''}${formatQty(String(d))}`}</Typography.Text>;
               },

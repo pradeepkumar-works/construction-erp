@@ -9,7 +9,7 @@ import type { PortalBillDto, RaBillItemDto } from '@erp/shared';
 import { isGuest } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCertifyAsClient, usePortalBill } from '@/lib/queries';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BillStageTag } from '@/components/bills/billUi';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -37,7 +37,7 @@ export function PortalBills({ bills, openId, onOpen }: { bills: UseQueryResult<P
           { title: 'Work done', dataIndex: 'grossAmount', align: 'right', render: (v: string) => formatINR(v) },
           { title: 'Net payable', dataIndex: 'netPayable', align: 'right', render: (v: string) => formatINR(v) },
           { title: 'Status', dataIndex: 'stage', width: 140, render: (s: PortalBillDto['stage']) => <BillStageTag stage={s} /> },
-          { title: 'Certificate', key: 'cert', width: 200, render: (_, b) => (b.certifiedDate ? `${b.certificateNo ?? ''} ${formatDate(b.certifiedDate)}`.trim() : '-') },
+          { title: 'Certificate', key: 'cert', width: 200, render: (_, b) => (b.certifiedDate ? `${b.certificateNo ?? ''} ${formatDate(b.certifiedDate)}`.trim() : NO_VALUE) },
         ]}
       />
       <PortalBillDrawer id={openId} onClose={() => onOpen(null)} />
@@ -79,7 +79,7 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
               { key: 'stage', label: 'Stage', children: <BillStageTag stage={data.stage} /> },
               { key: 'date', label: 'Bill date', children: `${formatDate(data.billDate)} (measured up to ${formatDate(data.measuredUpTo)})` },
               { key: 'sent', label: 'Sent', children: formatDate(data.sentDate) },
-              { key: 'cert', label: 'Certificate', children: data.certifiedDate ? `${data.certificateNo ?? '-'}, ${formatDate(data.certifiedDate)}` : '-' },
+              { key: 'cert', label: 'Certificate', children: data.certifiedDate ? `${data.certificateNo ?? NO_VALUE}, ${formatDate(data.certifiedDate)}` : NO_VALUE },
               { key: 'gross', label: 'Work done this bill', children: formatINR(data.grossAmount) },
               ...(data.claimedGross && data.claimedGross !== data.grossAmount ? [{ key: 'claimed', label: 'Claimed', children: formatINR(data.claimedGross) }] : []),
               ...(data.pvLines.length ? [{ key: 'pv', label: 'Price variation', children: formatINR(data.pvAmount) }] : []),
@@ -133,7 +133,7 @@ function BillItemsTable({ items }: { items: RaBillItemDto[] }) {
         { title: 'Rate', dataIndex: 'rate', align: 'right', width: 110, render: (v: string) => formatINR(v, true) },
         { title: 'Previous', dataIndex: 'prevQty', align: 'right', width: 100, render: (v: string) => formatQty(v) },
         { title: 'This bill', dataIndex: 'thisQty', align: 'right', width: 100, render: (v: string) => formatQty(v) },
-        { title: 'Certified', dataIndex: 'certifiedQty', align: 'right', width: 100, render: (v: string | null) => (v == null ? '-' : formatQty(v)) },
+        { title: 'Certified', dataIndex: 'certifiedQty', align: 'right', width: 100, render: (v: string | null) => (v == null ? NO_VALUE : formatQty(v)) },
         { title: 'Amount', dataIndex: 'amount', align: 'right', width: 130, render: (v: string) => formatINR(v) },
       ]}
     />

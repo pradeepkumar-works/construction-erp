@@ -12,7 +12,7 @@ import { BILLING_BASIS_LABELS, PACKAGE_STAGES, PACKAGE_STAGE_LABELS, STAGE_TRIGG
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useBillingBreakup, useEpc, useStockItems } from '@/lib/queries';
-import { formatMoney, formatMonthShort, formatPct, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
+import { formatMoney, formatMonthShort, formatPct, inContract, moneyPrefix, outOfContract, toNumber, NO_VALUE } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
@@ -20,7 +20,7 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
-const moneyOf = (c: ContractCurrency | undefined) => (v: string | null) => (v ? <span className="mono" translate="no">{formatMoney(v, c)}</span> : '-');
+const moneyOf = (c: ContractCurrency | undefined) => (v: string | null) => (v ? <span className="mono" translate="no">{formatMoney(v, c)}</span> : NO_VALUE);
 const TRIGGER_COLORS: Record<StageTrigger, string> = { EVENT: 'purple', PROGRESS: 'blue', SUPPLY: 'cyan', TEST: 'geekblue' };
 const VISUALLY_HIDDEN: React.CSSProperties = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
 const numOrNull = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
@@ -256,7 +256,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
               },
               { title: 'Value', dataIndex: 'value', key: 'value', align: 'right', render: money },
               { title: 'Stages', key: 'stages', align: 'right', render: (_, c) => (hasParts(c) ? 'In its parts' : c.basis === 'STAGES' ? c.stages.length : 'Measured') },
-              { title: 'Billed', dataIndex: 'billedPct', key: 'billed', render: (v: number, c) => (c.basis === 'STAGES' ? <Pct value={v} label={`${c.code} ${c.name}: billed`} /> : '-') },
+              { title: 'Billed', dataIndex: 'billedPct', key: 'billed', render: (v: number, c) => (c.basis === 'STAGES' ? <Pct value={v} label={`${c.code} ${c.name}: billed`} /> : NO_VALUE) },
               ...(data.canEdit
                 ? [
                     {
@@ -372,7 +372,7 @@ function MilestoneGrid({ data }: { data: BillingBreakupDto }) {
               const behind = ended && target !== null && actual !== null && actual < target - 0.05;
               return (
                 <span className="mono" translate="no" style={{ whiteSpace: 'nowrap', color: behind ? themeColor('colorErrorText') : undefined }}>
-                  {target === null ? '–' : Math.round(target)}
+                  {target === null ? NO_VALUE : Math.round(target)}
                   {actual !== null ? ` / ${Math.round(actual)}` : ''}
                   {behind ? (
                     <>

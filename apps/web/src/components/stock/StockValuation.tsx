@@ -7,7 +7,7 @@ import type { TableProps } from 'antd';
 import type { StockValuationRowDto } from '@erp/shared';
 import { STOCK_AGEING_BUCKETS } from '@erp/shared';
 import { useStockValuation } from '@/lib/queries';
-import { formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -41,7 +41,7 @@ export function StockValuation({ projectId }: { projectId?: string }) {
       key: `age${i}`,
       width: 110,
       align: 'right' as const,
-      render: (_: unknown, r: StockValuationRowDto) => (Number(r.ageingQty[i]) === 0 ? <span className="text-muted">-</span> : <span className="mono" translate="no">{formatQty(r.ageingQty[i])}</span>),
+      render: (_: unknown, r: StockValuationRowDto) => (Number(r.ageingQty[i]) === 0 ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatQty(r.ageingQty[i])}</span>),
     })),
   ];
 

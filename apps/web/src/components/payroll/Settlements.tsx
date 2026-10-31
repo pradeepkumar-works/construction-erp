@@ -11,7 +11,7 @@ import { canRunPayroll } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayrollAction, useSettlements, useSettlementsDue } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -157,7 +157,7 @@ function SettlementModal({ s, onClose, onRedo, onPay }: { s: FinalSettlementDto 
             <SettlementStatusTag status={s.status} />
           </Descriptions.Item>
           <Descriptions.Item label="Designation">{s.designation}</Descriptions.Item>
-          <Descriptions.Item label="Joined on">{s.joinedOn ? formatDate(s.joinedOn) : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Joined on">{s.joinedOn ? formatDate(s.joinedOn) : NO_VALUE}</Descriptions.Item>
           <Descriptions.Item label="Last working day">{formatDate(s.lastWorkingDay)}</Descriptions.Item>
         </Descriptions>
         <Descriptions size="small" column={1} bordered title="Owed to them">
@@ -224,7 +224,7 @@ export function Settlements() {
     { title: 'Employee', key: 'e', width: 220, render: (_, s) => <span translate="no">{`${s.employeeName} (${s.employeeCode})`}</span> },
     { title: 'Last day', dataIndex: 'lastWorkingDay', width: 120, render: (v: string) => formatDate(v) },
     { title: 'Status', dataIndex: 'status', width: 150, render: (v: FinalSettlementDto['status']) => <SettlementStatusTag status={v} /> },
-    { title: 'Gratuity', dataIndex: 'gratuity', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : '-') },
+    { title: 'Gratuity', dataIndex: 'gratuity', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
     {
       title: 'Net',
       dataIndex: 'net',
@@ -232,7 +232,7 @@ export function Settlements() {
       align: 'right',
       render: (v: string) => (Number(v) >= 0 ? <Rupees value={v} /> : <span>owes <Rupees value={Math.abs(Number(v))} /></span>),
     },
-    { title: 'Settled on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : '-') },
+    { title: 'Settled on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : NO_VALUE) },
   ];
 
   return (

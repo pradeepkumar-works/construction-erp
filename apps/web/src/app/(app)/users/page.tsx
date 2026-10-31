@@ -15,7 +15,7 @@ import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { USER_EXPORT } from '@/lib/exportColumns';
 import { ExportButton } from '@/components/common/ExportButton';
 import { useAuth } from '@/lib/auth';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { UserFormModal } from '@/components/users/UserFormModal';
@@ -101,7 +101,7 @@ export default function UsersPage() {
             </div>
           ),
         },
-        { key: 'phone', title: 'Phone', dataIndex: 'phone', width: 140, render: (v) => v ?? '-' },
+        { key: 'phone', title: 'Phone', dataIndex: 'phone', width: 140, render: (v) => v ?? NO_VALUE },
         { title: 'Role', dataIndex: 'roleName', width: 220, render: (v) => <AppTag style={{ margin: 0 }}>{v}</AppTag>, ...sort('role') },
         { title: 'Created', dataIndex: 'createdAt', width: 130, render: (v) => formatDate(v), ...sort('createdAt') },
         {

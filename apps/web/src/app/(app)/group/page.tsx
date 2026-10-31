@@ -16,13 +16,14 @@ import { CompanyForm } from '@/components/group/CompanyForm';
 import { PlaceForm } from '@/components/group/PlaceForm';
 import { useAuth } from '@/lib/auth';
 import { useGroup, useMakeGroup, useSetGroupAdmin } from '@/lib/queries';
+import { NO_VALUE } from '@/lib/format';
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
 
-const code = (v: string | null) => (v ? <span translate="no">{v}</span> : <span className="text-muted">-</span>);
+const code = (v: string | null) => (v ? <span translate="no">{v}</span> : <span className="text-muted">{NO_VALUE}</span>);
 
 function CompaniesTab({ group, onEdit }: { group: GroupDto; onEdit: (c: GroupCompanyDto) => void }) {
   const columns = useMemo<ListColumn<GroupCompanyDto>[]>(

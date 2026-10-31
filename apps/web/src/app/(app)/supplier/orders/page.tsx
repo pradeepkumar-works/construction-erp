@@ -8,7 +8,7 @@ import { AppTabs } from '@/components/common/AppTabs';
 import type { SupplierDispatchDto, SupplierOrderDto } from '@erp/shared';
 import { useSupplierAction, useSupplierDispatches, useSupplierOrders } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDate, formatDateTime, formatQty } from '@/lib/format';
+import { formatDate, formatDateTime, formatQty, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AcceptForm, DispatchForm } from '@/components/supplier/SupplierForms';
@@ -124,13 +124,13 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
             <Descriptions.Item label="Site">
               <span translate="no">{o.projectName}</span>
             </Descriptions.Item>
-            <Descriptions.Item label={o.kind === 'PO' ? 'Deliver to' : 'Work'}>{o.kind === 'PO' ? (o.deliveryAddress ?? '-') : o.title}</Descriptions.Item>
+            <Descriptions.Item label={o.kind === 'PO' ? 'Deliver to' : 'Work'}>{o.kind === 'PO' ? (o.deliveryAddress ?? NO_VALUE) : o.title}</Descriptions.Item>
             <Descriptions.Item label="Dated">{formatDate(o.date)}</Descriptions.Item>
             <Descriptions.Item label={o.kind === 'PO' ? 'Deliver by' : 'Finish by'}>{formatDate(o.dueBy)}</Descriptions.Item>
             <Descriptions.Item label={o.kind === 'PO' ? 'Total with GST' : 'Value before GST'}>
               <Money value={o.amount} />
             </Descriptions.Item>
-            <Descriptions.Item label="Payment">{o.paymentTerms ?? (o.paymentDays != null ? `${o.paymentDays} days from invoice` : '-')}</Descriptions.Item>
+            <Descriptions.Item label="Payment">{o.paymentTerms ?? (o.paymentDays != null ? `${o.paymentDays} days from invoice` : NO_VALUE)}</Descriptions.Item>
             <Descriptions.Item label="Accepted" span={2}>
               {o.acceptedAt ? `${formatDateTime(o.acceptedAt)} by ${o.acceptedBy ?? 'you'}${o.supplierNote ? `: ${o.supplierNote}` : ''}` : o.closed ? 'Closed' : 'Not yet'}
             </Descriptions.Item>
@@ -193,7 +193,7 @@ function Dispatches({ list }: { list: ReturnType<typeof useSupplierDispatches> }
           { title: 'Challan', dataIndex: 'dispatchNo', width: 140, render: (v: string) => <span translate="no">{v}</span> },
           { title: 'Order', dataIndex: 'poNo', width: 140, render: (v: string) => <span translate="no">{v}</span> },
           { title: 'Sent', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
-          { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
+          { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
           {
             title: 'What',
             key: 'lines',

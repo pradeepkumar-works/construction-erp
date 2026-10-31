@@ -1,17 +1,17 @@
 import type { HealthLevel, ReportCell, ReportColumnKind } from '@erp/shared';
 import type { TagTone } from '@/components/common/AppTag';
-import { formatDate, formatINR, formatINRCompact, formatPct, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, formatPct, formatQty, NO_VALUE, formatCount } from '@/lib/format';
 
 /**
  * How a management report's cell reads, on the screen, in print and in Excel (ARCHITECTURE "Management dashboard and
  * reports"). The API sends numbers as numbers and leaves the words to the column's kind.
  */
 
-const plural = (n: number, one: string) => `${n.toLocaleString('en-IN')} ${n === 1 ? one : `${one}s`}`;
+const plural = (n: number, one: string) => `${formatCount(n)} ${n === 1 ? one : `${one}s`}`;
 
 /** The cell as text; an empty cell is a dash. */
 export function cellText(kind: ReportColumnKind, v: ReportCell | undefined, compact = false): string {
-  if (v === null || v === undefined || v === '') return '–';
+  if (v === null || v === undefined || v === '') return NO_VALUE;
   switch (kind) {
     case 'money':
       return compact ? formatINRCompact(v) : formatINR(v);

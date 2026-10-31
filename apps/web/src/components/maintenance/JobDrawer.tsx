@@ -13,7 +13,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useMaintenanceJob, useStockBalances } from '@/lib/queries';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -171,12 +171,12 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
             <Descriptions.Item label="At">{j.projectName ?? 'Yard'}</Descriptions.Item>
             <Descriptions.Item label="Date">{formatDate(j.date)}</Descriptions.Item>
             <Descriptions.Item label="Reported by">{j.reportedByName}</Descriptions.Item>
-            <Descriptions.Item label="Meter">{j.meterReading ? formatQty(j.meterReading) : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Meter">{j.meterReading ? formatQty(j.meterReading) : NO_VALUE}</Descriptions.Item>
             <Descriptions.Item label={j.kind === 'BREAKDOWN' ? 'Fault' : 'Work to do'} span={2}>
               <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{j.description}</Typography.Paragraph>
             </Descriptions.Item>
             <Descriptions.Item label="Workshop" span={2}>
-              {j.workshop ?? '-'}
+              {j.workshop ?? NO_VALUE}
             </Descriptions.Item>
             {j.status === 'CLOSED' ? (
               <>
@@ -186,7 +186,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                 <Descriptions.Item label="Closed">
                   {formatDate(j.closedDate)} by {j.closedByName}
                 </Descriptions.Item>
-                <Descriptions.Item label="Downtime">{j.downtimeHours ? `${formatQty(j.downtimeHours)} h` : '-'}</Descriptions.Item>
+                <Descriptions.Item label="Downtime">{j.downtimeHours ? `${formatQty(j.downtimeHours)} h` : NO_VALUE}</Descriptions.Item>
               </>
             ) : null}
             <Descriptions.Item label="Labour">{formatINR(j.labourCost)}</Descriptions.Item>
@@ -218,7 +218,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                 { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
                 { title: 'Spare', dataIndex: 'itemName' },
                 { title: 'Qty', key: 'q', width: 100, align: 'right', render: (_, r) => `${formatQty(r.quantity)} ${r.unit}` },
-                { title: 'Value', dataIndex: 'value', width: 110, align: 'right', render: (v) => (v ? formatINR(v) : '-') },
+                { title: 'Value', dataIndex: 'value', width: 110, align: 'right', render: (v) => (v ? formatINR(v) : NO_VALUE) },
               ]}
             />
           ) : (

@@ -23,7 +23,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useComplianceDoc, useComplianceDocs } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { SearchBox } from '@/components/common/SearchBox';
@@ -153,10 +153,10 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
             ) : null}
           </div>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
-    { title: 'Valid to', dataIndex: 'expiresOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : <span className="text-muted">-</span>) },
+    { title: 'Valid to', dataIndex: 'expiresOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : <span className="text-muted">{NO_VALUE}</span>) },
     { title: '', key: 'stand', width: 150, render: (_, d) => <StandTag d={d} /> },
   ];
 
@@ -310,8 +310,8 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
                   onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
                   columns={[
                     { title: 'Number', dataIndex: 'reference' },
-                    { title: 'Valid', key: 'v', render: (_, h) => `${h.issuedOn ? formatDate(h.issuedOn) : '?'} to ${h.expiresOn ? formatDate(h.expiresOn) : '-'}` },
-                    { title: 'Amount', dataIndex: 'amount', align: 'right', render: (v: string | null) => (v ? formatINR(v) : '-') },
+                    { title: 'Valid', key: 'v', render: (_, h) => `${h.issuedOn ? formatDate(h.issuedOn) : '?'} to ${h.expiresOn ? formatDate(h.expiresOn) : NO_VALUE}` },
+                    { title: 'Amount', dataIndex: 'amount', align: 'right', render: (v: string | null) => (v ? formatINR(v) : NO_VALUE) },
                   ]}
                 />
               </>

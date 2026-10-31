@@ -6,6 +6,7 @@ import type { SupplierChangeDto, SupplierInviteResultDto, SupplierInvoiceDto } f
 import { useSupplierAction } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
 import { EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule } from '@/components/form/inputs';
+import { NO_VALUE } from '@/lib/format';
 
 /** Accounts send a supplier's invoice back with what to fix (v6 item 105); the supplier resends it with the same number. */
 export function ReturnInvoiceForm({ invoice, onClose }: { invoice: SupplierInvoiceDto | null; onClose: () => void }) {
@@ -64,7 +65,7 @@ export function DecideChangeForm({ decision, onClose }: { decision: { change: Su
           <div style={{ marginBottom: 12 }}>
             {c.changes.map((x) => (
               <div key={x.field}>
-                {x.label}: <span translate="no">{x.from ?? '-'}</span> to <span translate="no">{x.to ?? '-'}</span>
+                {x.label}: <span translate="no">{x.from ?? NO_VALUE}</span> to <span translate="no">{x.to ?? NO_VALUE}</span>
               </div>
             ))}
           </div>

@@ -8,7 +8,7 @@ import { AppTabs } from '@/components/common/AppTabs';
 import dayjs, { type Dayjs } from 'dayjs';
 import { PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, type PaymentMode, SUPPLIER_STATEMENT_KIND_LABELS, type SupplierBillDto, type SupplierPaymentDto, type SupplierStatementRowDto } from '@erp/shared';
 import { useSupplierStatement } from '@/lib/queries';
-import { formatDate, formatINR, STATUS_COLORS, toNumber } from '@/lib/format';
+import { formatDate, formatINR, STATUS_COLORS, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Money } from '@/components/supplier/supplierUi';
@@ -135,7 +135,7 @@ function Payments({ payments }: { payments: SupplierPaymentDto[] }) {
         { title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
         { title: 'Against', dataIndex: 'against', render: (v: string) => <span translate="no">{v}</span> },
         { title: 'Mode', dataIndex: 'mode', width: 110, render: (m: string) => PAYMENT_MODE_LABELS[m as PaymentMode] ?? m },
-        { title: 'Reference', dataIndex: 'reference', width: 160, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
+        { title: 'Reference', dataIndex: 'reference', width: 160, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
         { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'TDS', dataIndex: 'tds', width: 110, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Other deduction', dataIndex: 'otherDeduction', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },

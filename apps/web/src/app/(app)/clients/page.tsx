@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useClientsPage } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -69,15 +69,15 @@ export default function ClientsPage() {
           </div>
         ),
       },
-      { key: 'gstin', title: 'GSTIN', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
-      { key: 'stateCode', title: 'State', dataIndex: 'stateCode', width: 170, render: (v: string | null) => (v ? `${v} ${GST_STATES[v] ?? ''}` : '-') },
+      { key: 'gstin', title: 'GSTIN', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : NO_VALUE) },
+      { key: 'stateCode', title: 'State', dataIndex: 'stateCode', width: 170, render: (v: string | null) => (v ? `${v} ${GST_STATES[v] ?? ''}` : NO_VALUE) },
       {
         title: 'Contact',
         key: 'contact',
         render: (_, c) => (
           <div>
             {c.contactPerson && <div>{c.contactPerson}</div>}
-            <Sub>{[c.phone, c.email].filter(Boolean).join(' · ') || (c.contactPerson ? '' : '-')}</Sub>
+            <Sub>{[c.phone, c.email].filter(Boolean).join(' · ') || (c.contactPerson ? '' : NO_VALUE)}</Sub>
           </div>
         ),
       },

@@ -9,7 +9,7 @@ import type { AgentState, ConnectorAgentDto, ConnectorPairCodeDto } from '@erp/s
 import { AGENT_STATE_LABELS } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
 import { useConnectorAgents, useIntegrationAction } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { DISPLAY_FONT } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -91,8 +91,8 @@ export function Connectors() {
     { title: 'Connector', dataIndex: 'name', width: 200 },
     { title: 'Status', dataIndex: 'state', width: 150, render: (s: AgentState) => <AppTag tone={STATE_TONE[s]}>{AGENT_STATE_LABELS[s]}</AppTag> },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
-    { title: 'Computer', dataIndex: 'hostname', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : '-') },
-    { title: 'Version', dataIndex: 'version', width: 90, render: (v: string | null) => (v ? <span translate="no">{v}</span> : '-') },
+    { title: 'Computer', dataIndex: 'hostname', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },
+    { title: 'Version', dataIndex: 'version', width: 90, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },
     { title: 'Last called in', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : 'Never') },
     { title: 'Reads', dataIndex: 'connections', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
     {

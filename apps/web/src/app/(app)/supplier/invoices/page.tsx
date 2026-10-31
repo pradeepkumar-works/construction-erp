@@ -5,7 +5,7 @@ import { App, Button, Flex, Table, Typography } from 'antd';
 import type { SupplierInvoiceDto } from '@erp/shared';
 import { useSupplierAction, useSupplierInvoices } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PhotoThumbs } from '@/components/common/AttachmentGallery';
@@ -55,7 +55,7 @@ export default function SupplierInvoicesPage() {
           columns={[
             { title: 'Invoice', dataIndex: 'invoiceNo', width: 150, render: (v: string) => <span translate="no">{v}</span> },
             { title: 'Date', dataIndex: 'invoiceDate', width: 110, render: (v: string) => formatDate(v) },
-            { title: 'Against', key: 'against', width: 140, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? '-'}</span> },
+            { title: 'Against', key: 'against', width: 140, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? NO_VALUE}</span> },
             { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
             {
               title: 'Status',

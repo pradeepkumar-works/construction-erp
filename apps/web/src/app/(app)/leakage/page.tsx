@@ -11,7 +11,7 @@ import dayjs from 'dayjs';
 import { LEAKAGE_SECTION_LABELS, canSeeLeakage, type LeakageFlagDto, type LeakageSection } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useLeakage } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -143,7 +143,7 @@ function Leakage() {
       <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.margin }}>
         <DatePicker
           picker="month"
-          format="MMM YYYY"
+          format={MONTH_PICKER_FORMAT}
           allowClear={false}
           aria-label="Month"
           value={dayjs(`${month}-01`)}

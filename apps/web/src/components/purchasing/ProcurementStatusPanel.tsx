@@ -12,7 +12,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { useProcurementStatus } from '@/lib/queries';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { rangePresets } from '@/lib/dates';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -109,7 +109,7 @@ export function ProcurementStatusPanel() {
       ),
     },
     { title: 'Received', key: 'pct', width: 150, render: (_, r) => <Progress percent={r.receivedPct} size="small" aria-label={`${r.receivedPct}% received`} /> },
-    { title: 'Still to come', dataIndex: 'pendingValue', width: 140, align: 'right', render: (v: string) => (Number(v) ? formatINR(v) : '-') },
+    { title: 'Still to come', dataIndex: 'pendingValue', width: 140, align: 'right', render: (v: string) => (Number(v) ? formatINR(v) : NO_VALUE) },
     {
       title: '',
       key: 'state',
@@ -176,8 +176,8 @@ export function ProcurementStatusPanel() {
                 { title: 'Item', dataIndex: 'itemName' },
                 { title: 'Ordered', dataIndex: 'ordered', align: 'right', width: 120, render: (v: string, l) => `${formatQty(v)} ${l.unit}` },
                 { title: 'Received', dataIndex: 'received', align: 'right', width: 120, render: (v: string) => formatQty(v) },
-                { title: 'Pending', dataIndex: 'pending', align: 'right', width: 120, render: (v: string) => (Number(v) > 0 ? <Typography.Text type="warning">{formatQty(v)}</Typography.Text> : '-') },
-                { title: 'Pending value', dataIndex: 'pendingValue', align: 'right', width: 140, render: (v: string) => (Number(v) ? formatINR(v) : '-') },
+                { title: 'Pending', dataIndex: 'pending', align: 'right', width: 120, render: (v: string) => (Number(v) > 0 ? <Typography.Text type="warning">{formatQty(v)}</Typography.Text> : NO_VALUE) },
+                { title: 'Pending value', dataIndex: 'pendingValue', align: 'right', width: 140, render: (v: string) => (Number(v) ? formatINR(v) : NO_VALUE) },
               ]}
             />
           ),

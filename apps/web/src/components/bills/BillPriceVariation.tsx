@@ -11,7 +11,7 @@ import type { RaBillDto, RaBillPvLineDto } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useContract } from '@/lib/queries';
-import { formatINR, formatPct, toNumber, formatMonth } from '@/lib/format';
+import { formatINR, formatPct, toNumber, formatMonth, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
@@ -161,7 +161,7 @@ function IndicesModal({ open, bill, components, onClose }: { open: boolean; bill
       <Form form={form} layout="vertical" className="bill-pv-form" requiredMark="optional">
         <FormGrid cols={2}>
           <Form.Item name="indexMonth" label="Indices for" rules={[{ required: true, message: 'Choose the month' }]}>
-            <DatePicker picker="month" format="MMM YYYY" allowClear={false} style={{ width: '100%' }} />
+            <DatePicker picker="month" format={MONTH_PICKER_FORMAT} allowClear={false} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="note" label="Source" extra="e.g. RBI WPI, provisional">
             <Input maxLength={300} />

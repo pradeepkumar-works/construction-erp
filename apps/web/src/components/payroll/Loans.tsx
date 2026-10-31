@@ -11,7 +11,7 @@ import { STAFF_LOAN_KINDS, STAFF_LOAN_KIND_LABELS, canRunPayroll } from '@erp/sh
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useEmployees, usePayrollAction, useStaffLoans } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -65,7 +65,7 @@ function LoanForm({ open, onClose }: { open: boolean; onClose: () => void }) {
             <MoneyInput min={1} />
           </Form.Item>
           <Form.Item name="startMonth" label="First recovered in" rules={[{ required: true, message: 'Choose the first month' }]}>
-            <DatePicker picker="month" format="MMM YYYY" style={{ width: '100%' }} />
+            <DatePicker picker="month" format={MONTH_PICKER_FORMAT} style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="note" label="Note">

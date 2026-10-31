@@ -7,7 +7,7 @@ import type { ProcurementStatusRowDto, RoleKey } from '@erp/shared';
 import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProcurementStatus } from '@/lib/queries';
-import { formatDate, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { LocalDataTable } from '@/components/list/LocalDataTable';
 import { type ListColumn } from '@/components/list/DataTable';
 import { ReceiptModal } from './ReceiptModal';
@@ -57,7 +57,7 @@ export function DeliveriesExpected({ projectId }: { projectId?: string }) {
     {
       key: 'due',
       card: 'date',
-      cardText: (r) => (r.deliveryBy ? formatDate(r.deliveryBy) : '-'),
+      cardText: (r) => (r.deliveryBy ? formatDate(r.deliveryBy) : NO_VALUE),
       title: 'Due by',
       width: 140,
       render: (_, r) => (

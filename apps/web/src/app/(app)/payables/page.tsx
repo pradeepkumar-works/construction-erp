@@ -18,7 +18,7 @@ import { useListPage } from '@/lib/listPage';
 import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYABLE_BILL_EXPORT, PAYABLE_VENDOR_EXPORT, VENDOR_PAYMENT_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -44,7 +44,7 @@ import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { RowMenu } from '@/components/list/RowMenu';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
-const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">-</span>);
+const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">{NO_VALUE}</span>);
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
 
@@ -339,7 +339,7 @@ export default function PayablesPage() {
             <div style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.request.status === 'APPROVED' ? `Approved, ${formatINR(r.request.unpaid)} to pay` : SUBMISSION_STATUS_LABELS[r.request.status]}</div>
           </div>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
     ...(accounts || requester

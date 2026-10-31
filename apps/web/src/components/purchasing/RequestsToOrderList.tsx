@@ -7,7 +7,7 @@ import { Select, Typography, theme } from 'antd';
 import type { OrderStage, RequestToOrderDto } from '@erp/shared';
 import { ORDER_STAGES, ORDER_STAGE_LABELS, rankLabel } from '@erp/shared';
 import { useRequestsToOrder } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import dayjs from 'dayjs';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -142,7 +142,7 @@ function columns(showProject: boolean): ListColumn<RequestToOrderDto>[] {
             <Sub><span translate="no">{r.l2.vendorName}</span></Sub>
           </div>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
     { key: 'quotes', defaultFrom: 1800, title: 'Quotations', dataIndex: 'quotations', width: 90, align: 'right' },

@@ -1,5 +1,5 @@
 import type { OfficialFactDto, OfficialReportDto } from '@erp/shared';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { cellText } from '@/components/management/report-format';
 
 /**
@@ -8,7 +8,7 @@ import { cellText } from '@/components/management/report-format';
  * or a % looks the same in all of them.
  */
 
-export const factText = (f: OfficialFactDto) => (f.value === null || f.value === '' ? '–' : f.kind ? cellText(f.kind, f.value) : String(f.value));
+export const factText = (f: OfficialFactDto) => (f.value === null || f.value === '' ? NO_VALUE : f.kind ? cellText(f.kind, f.value) : String(f.value));
 
 /** "Rev 0, issued 2 Nov 2026 by Ramesh Kumar", or "Draft, not issued". */
 export function issueLine(r: OfficialReportDto): string {

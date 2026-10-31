@@ -13,7 +13,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useBill } from '@/lib/queries';
-import { formatDate, formatINR, formatMoney, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatMoney, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -198,14 +198,14 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   {data.client.gstin && <span className="text-muted"> · GSTIN <span translate="no">{data.client.gstin}</span>{data.client.stateCode ? ` (${GST_STATES[data.client.stateCode] ?? data.client.stateCode})` : ''}</span>}
                 </span>
               ) : (
-                data.clientName ?? '-'
+                data.clientName ?? NO_VALUE
               ),
             },
             data.om
               ? { key: 'upto', label: 'O&M period', children: `${data.om.label}, to ${formatDate(data.om.to)}` }
               : { key: 'upto', label: 'Measurements up to', children: formatDate(data.measuredUpTo) },
-            { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : '-' },
-            { key: 'wo', label: 'Work order', children: data.workOrderNo ?? '-' },
+            { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : NO_VALUE },
+            { key: 'wo', label: 'Work order', children: data.workOrderNo ?? NO_VALUE },
             ...(data.om ? [] : [{ key: 'sheets', label: 'Measurement sheets', children: data.measurementCount }]),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 3 }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
@@ -322,7 +322,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         columns={[
                           { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
                           { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
-                          { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
+                          { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono" translate="no">{v}</span> : NO_VALUE) },
                           { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatMoney(v, data, true)}</strong> },
                           { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono" translate="no">{formatMoney(v, data, true)}</span> },
                           { title: 'By', dataIndex: 'createdByName', width: 140 },

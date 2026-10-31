@@ -13,7 +13,7 @@ import type { GstInwardRowDto, GstOutwardRowDto } from '@erp/shared';
 import { canViewGstRegisters } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useGstRegisters } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, toNumber, NO_VALUE, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { CONSTRUCTION_SAC, GST_SOURCE_LABELS, downloadGstWorkbook, hsnSummary, placeOfSupply } from '@/lib/gstExport';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -131,7 +131,7 @@ function GstRegistersPage() {
             </AppTag>
           )}
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-            <span className="mono" translate="no">{r.supplierGstin ?? '-'}</span> · {GST_SOURCE_LABELS[r.source]} {r.ref} · {r.projectCode}
+            <span className="mono" translate="no">{r.supplierGstin ?? NO_VALUE}</span> · {GST_SOURCE_LABELS[r.source]} {r.ref} · {r.projectCode}
           </div>
         </div>
       ),
@@ -155,7 +155,7 @@ function GstRegistersPage() {
             picker="month"
             value={range}
             allowClear={false}
-            format="MMM YYYY"
+            format={MONTH_PICKER_FORMAT}
             disabledDate={(d) => d.isAfter(dayjs(), 'month')}
             onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])}
             aria-label="Months"

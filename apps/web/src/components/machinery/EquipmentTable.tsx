@@ -27,7 +27,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useProjects } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { EQUIPMENT_EXPORT } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
@@ -206,11 +206,11 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
             </div>
           ),
         },
-        { title: 'Category', dataIndex: 'category', width: 130, ...sort('category'), render: (v: string | null) => v ?? <Sub>-</Sub> },
+        { title: 'Category', dataIndex: 'category', width: 130, ...sort('category'), render: (v: string | null) => v ?? <Sub>{NO_VALUE}</Sub> },
         { title: 'Owned or hired', dataIndex: 'ownership', width: 120, ...sort('ownership'), render: (o: EquipmentOwnership) => <OwnershipTag ownership={o} /> },
         ...(fixedProject ? [] : [{ title: 'Deployed at', dataIndex: 'projectName', width: 240, ellipsis: true, ...sort('project'), render: (v: string | null) => v ?? <Sub>Yard / unassigned</Sub> } satisfies ListColumn<EquipmentDto>]),
         ...(mayManage
-          ? [{ title: 'Rate', key: 'rate', width: 150, align: 'right' as const, render: (_: unknown, r: EquipmentDto) => (r.rate === null ? '-' : `${formatINR(r.rate)} ${EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit]}`) } satisfies ListColumn<EquipmentDto>]
+          ? [{ title: 'Rate', key: 'rate', width: 150, align: 'right' as const, render: (_: unknown, r: EquipmentDto) => (r.rate === null ? NO_VALUE : `${formatINR(r.rate)} ${EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit]}`) } satisfies ListColumn<EquipmentDto>]
           : []),
         { key: 'lastLogDate', title: 'Last log', dataIndex: 'lastLogDate', width: 120, render: (v: string | null) => (v ? formatDate(v) : <Sub>never</Sub>) },
         {

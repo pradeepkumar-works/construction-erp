@@ -10,7 +10,7 @@ import dayjs from 'dayjs';
 import type { EquipmentDto, EquipmentPartDto, EquipmentPartKind } from '@erp/shared';
 import { EQUIPMENT_PART_KINDS, EQUIPMENT_PART_KIND_LABELS } from '@erp/shared';
 import { useEquipmentParts, useSaveEquipmentPart } from '@/lib/queries';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -137,7 +137,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
             ) : null}
           </div>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
     {
@@ -159,7 +159,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
       ),
     },
     ...(data?.canSeeCost
-      ? [{ title: 'Cost', dataIndex: 'cost', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no">{formatINR(v)}</span>) }]
+      ? [{ title: 'Cost', dataIndex: 'cost', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatINR(v)}</span>) }]
       : []),
     ...(data?.canEdit
       ? [

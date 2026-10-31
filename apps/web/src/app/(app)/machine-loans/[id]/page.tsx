@@ -11,7 +11,7 @@ import { EQUIPMENT_LOAN_STATUS_LABELS, LOAN_DISBURSAL_LABELS, PAYMENT_MODE_LABEL
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useMachineLoan } from '@/lib/queries';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, formatQty } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -192,7 +192,7 @@ export default function MachineLoanPage() {
               column={1}
               items={[
                 { key: 'paid', label: 'Interest paid', children: <span translate="no">{formatINR(loan.interestPaid, true)}</span> },
-                { key: 'hours', label: 'Hours worked since the loan', children: `${toNumber(loan.hoursWorked).toLocaleString('en-IN')} h` },
+                { key: 'hours', label: 'Hours worked since the loan', children: `${formatQty(loan.hoursWorked)} h` },
                 { key: 'perHour', label: 'Interest a working hour', children: loan.interestPerHour ? <span translate="no">{formatINR(loan.interestPerHour, true)}</span> : 'No hours logged yet' },
                 { key: 'toCome', label: 'Interest still to come', children: <span translate="no">{formatINR(loan.interestToCome, true)}</span> },
               ]}

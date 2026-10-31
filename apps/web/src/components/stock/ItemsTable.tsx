@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useItemDuplicates, useStockItems } from '@/lib/queries';
-import { formatDate, formatINR, RUPEE } from '@/lib/format';
+import { formatDate, formatINR, RUPEE, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -115,7 +115,7 @@ export function ItemsTable() {
           ),
         },
         { title: 'Unit', dataIndex: 'unit', width: 100, ...sort('unit') },
-        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">-</Typography.Text>) },
+        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>) },
         {
           key: 'rate',
           title: 'Rate',
@@ -124,7 +124,7 @@ export function ItemsTable() {
           width: 130,
           align: 'right',
           className: 'mono',
-          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">-</Typography.Text> : `${formatINR(v, true).replace(RUPEE, '')} / ${r.unit}`),
+          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">{NO_VALUE}</Typography.Text> : `${formatINR(v, true).replace(RUPEE, '')} / ${r.unit}`),
         },
         { key: 'projectCount', title: 'Projects with stock', dataIndex: 'projectCount', width: 160, align: 'center' },
         { title: 'Added', dataIndex: 'createdAt', width: 130, ...sort('createdAt'), render: (v) => formatDate(v) },

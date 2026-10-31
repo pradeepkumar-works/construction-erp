@@ -6,6 +6,7 @@ import type { TableProps } from 'antd';
 import { RecordLink } from '@/components/record/RecordLink';
 import { usePrefetch } from '@/lib/prefetch';
 import type { ListColumn } from './DataTable';
+import { NO_VALUE } from '@/lib/format';
 
 /** What a column is on a phone's card: its name, its status tag, the amount, the date, or part of the line under the name. */
 export type CardRole = 'title' | 'status' | 'amount' | 'date' | 'meta';
@@ -155,9 +156,9 @@ export function ListCards<T extends { id: string }>({
           {pageRows.map((row, i) => {
             const index = (local ? (current - 1) * pageSize : 0) + i;
             const titleNode = fields.title ? cellOf(fields.title, row, index) : null;
-            const title = (fields.title?.cardText ? textOf(fields.title.cardText(row)) : textOf(titleNode)) || '-';
+            const title = (fields.title?.cardText ? textOf(fields.title.cardText(row)) : textOf(titleNode)) || NO_VALUE;
             const text = (c?: ListColumn<T>) => (c ? (c.cardText ? textOf(c.cardText(row)) : textOf(cellOf(c, row, index))) : '');
-            const meta = fields.meta.map((c) => text(c)).filter((t) => t && t !== '-').join(' · ');
+            const meta = fields.meta.map((c) => text(c)).filter((t) => t && t !== '-' && t !== NO_VALUE).join(' · ');
             const date = text(fields.date);
             const amount = text(fields.amount);
             const statusNode = fields.status ? cellOf(fields.status, row, index) : null;
@@ -206,7 +207,7 @@ export function ListCards<T extends { id: string }>({
                   {date || amount ? (
                     <div className="list-card-foot">
                       <span>{date}</span>
-                      {amount && amount !== '-' ? <span className="mono list-card-amount" translate="no">{amount}</span> : null}
+                      {amount && amount !== '-' && amount !== NO_VALUE ? <span className="mono list-card-amount" translate="no">{amount}</span> : null}
                     </div>
                   ) : null}
                 </div>

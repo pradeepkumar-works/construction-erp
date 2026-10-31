@@ -7,7 +7,7 @@ import type { BudgetBoqItemDto, CostHead, ProjectBudgetDto } from '@erp/shared';
 import { COST_HEADS, COST_HEAD_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
@@ -152,7 +152,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
                   </Form.Item>
                 ),
               },
-              { title: 'Budget', key: 'amount', width: 130, align: 'right', render: (_, r) => <span className="mono" translate="no">{rates?.[r.boqItemId] !== null && rates?.[r.boqItemId] !== undefined ? formatINR(toNumber(r.qty) * rates[r.boqItemId]!) : '-'}</span> },
+              { title: 'Budget', key: 'amount', width: 130, align: 'right', render: (_, r) => <span className="mono" translate="no">{rates?.[r.boqItemId] !== null && rates?.[r.boqItemId] !== undefined ? formatINR(toNumber(r.qty) * rates[r.boqItemId]!) : NO_VALUE}</span> },
             ]}
           />
           <div style={{ textAlign: 'right', marginTop: 8 }}>

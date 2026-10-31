@@ -12,7 +12,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useUrlTab } from '@/lib/url-state';
 import { useComparative, useFinaliseL1, useLastRates, useMaterialRequest, useRequestToOrder } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
@@ -242,10 +242,10 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
             title: 'Valid until',
             dataIndex: 'validUntil',
             width: 130,
-            render: (v: string | null) => (v ? v < today ? <AppTag tone="danger" style={{ margin: 0 }}>Expired {formatDate(v)}</AppTag> : formatDate(v) : <span className="text-muted">-</span>),
+            render: (v: string | null) => (v ? v < today ? <AppTag tone="danger" style={{ margin: 0 }}>Expired {formatDate(v)}</AppTag> : formatDate(v) : <span className="text-muted">{NO_VALUE}</span>),
           },
-          { title: 'Delivery', dataIndex: 'deliveryDays', width: 100, align: 'right', render: (v: number | null) => (v != null ? `${v} days` : <span className="text-muted">-</span>) },
-          { title: 'Payment', dataIndex: 'paymentTerms', width: 150, ellipsis: true, render: (v: string | null) => v ?? <span className="text-muted">-</span> },
+          { title: 'Delivery', dataIndex: 'deliveryDays', width: 100, align: 'right', render: (v: number | null) => (v != null ? `${v} days` : <span className="text-muted">{NO_VALUE}</span>) },
+          { title: 'Payment', dataIndex: 'paymentTerms', width: 150, ellipsis: true, render: (v: string | null) => v ?? <span className="text-muted">{NO_VALUE}</span> },
           {
             title: 'Items quoted',
             key: 'covers',
@@ -264,7 +264,7 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
               const x = ranked.get(q.id);
               return (
                 <div>
-                  <strong className="mono" translate="no">{x ? formatINR(x.total, true) : '-'}</strong>
+                  <strong className="mono" translate="no">{x ? formatINR(x.total, true) : NO_VALUE}</strong>
                   {x?.rank ? <div><AppTag tone={x.rank === 1 ? 'success' : 'neutral'} style={{ margin: 0 }}>{rankLabel(x.rank)}</AppTag></div> : null}
                 </div>
               );
@@ -371,11 +371,11 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
           <Muted>{l1 ? <span translate="no">{l1.vendorName}</span> : 'Every quotation leaves out an item'}</Muted>
         </Col>
         <Col xs={12} lg={6}>
-          <Statistic title="L2 is higher by" value={l1 && l2 ? formatINR(l2.total - l1.total) : '-'} valueRender={(v) => <span translate="no">{v}</span>} />
+          <Statistic title="L2 is higher by" value={l1 && l2 ? formatINR(l2.total - l1.total) : NO_VALUE} valueRender={(v) => <span translate="no">{v}</span>} />
           <Muted>{l1 && l2 ? <><span translate="no">{l2.vendorName}</span>, {pct(l2.total, l1.total)} more</> : 'Only one complete quotation'}</Muted>
         </Col>
         <Col xs={12} lg={6}>
-          <Statistic title="L1 per item" value={split ? formatINR(split.total) : '-'} valueRender={(v) => <span translate="no">{v}</span>} />
+          <Statistic title="L1 per item" value={split ? formatINR(split.total) : NO_VALUE} valueRender={(v) => <span translate="no">{v}</span>} />
           <Muted>
             {split
               ? l1
@@ -387,7 +387,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
           </Muted>
         </Col>
         <Col xs={12} lg={6}>
-          <Statistic title="Against the last orders" value={priced.length && l1Same ? formatINR(l1OnPriced - atLast) : '-'} valueRender={(v) => <span translate="no">{v}</span>} />
+          <Statistic title="Against the last orders" value={priced.length && l1Same ? formatINR(l1OnPriced - atLast) : NO_VALUE} valueRender={(v) => <span translate="no">{v}</span>} />
           <Muted>
             {priced.length && l1Same
               ? `L1 is ${l1OnPriced >= atLast ? 'above' : 'below'} the last rates on ${priced.length} of ${lastLines.length} item${lastLines.length === 1 ? '' : 's'} (${pct(l1OnPriced, atLast)})`
@@ -434,10 +434,10 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
             key: 'gap',
             width: 150,
             align: 'right',
-            render: (_, x) => (l1 && x.rank && x.rank > 1 ? <span translate="no">{formatINR(x.total - l1.total)}<Muted>{pct(x.total, l1.total)}</Muted></span> : <span className="text-muted">-</span>),
+            render: (_, x) => (l1 && x.rank && x.rank > 1 ? <span translate="no">{formatINR(x.total - l1.total)}<Muted>{pct(x.total, l1.total)}</Muted></span> : <span className="text-muted">{NO_VALUE}</span>),
           },
-          { title: 'Delivery', key: 'days', width: 100, align: 'right', render: (_, x) => { const d = byId.get(x.quotationId)?.deliveryDays; return d != null ? `${d} days` : <span className="text-muted">-</span>; } },
-          { title: 'Payment', key: 'terms', width: 150, ellipsis: true, render: (_, x) => byId.get(x.quotationId)?.paymentTerms ?? <span className="text-muted">-</span> },
+          { title: 'Delivery', key: 'days', width: 100, align: 'right', render: (_, x) => { const d = byId.get(x.quotationId)?.deliveryDays; return d != null ? `${d} days` : <span className="text-muted">{NO_VALUE}</span>; } },
+          { title: 'Payment', key: 'terms', width: 150, ellipsis: true, render: (_, x) => byId.get(x.quotationId)?.paymentTerms ?? <span className="text-muted">{NO_VALUE}</span> },
           ...(buyer
             ? [
                 {

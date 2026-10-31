@@ -6,7 +6,7 @@ import { Alert, Col, Descriptions, Flex, Row, Segmented, Skeleton, Statistic, Ta
 import type { EarnedValueActivityDto, EarnedValueDto, EarnedValuePointDto, EvBasis } from '@erp/shared';
 import { EV_BAC_SOURCE_LABELS, EV_BASIS_LABELS, EV_BASES } from '@erp/shared';
 import { useEarnedValue } from '@/lib/queries';
-import { formatDate, formatINR, formatPct, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { Section, SectionStack } from '@/components/common/Section';
 import { ChartCard } from '@/components/home/ChartCard';
@@ -23,8 +23,8 @@ const RED = themeColor('colorErrorText');
 const GREEN = themeColor('colorSuccessText');
 const big = (color?: string) => ({ content: { fontSize: themeFontSize('fontSizeXL'), color } });
 const small = { fontSize: themeFontSize('fontSizeSM') };
-const inr = (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no">{formatINR(v)}</span>);
-const signed = (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : toNumber(v) > 0 ? GREEN : undefined }}>{formatINR(v)}</span>);
+const inr = (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatINR(v)}</span>);
+const signed = (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : toNumber(v) > 0 ? GREEN : undefined }}>{formatINR(v)}</span>);
 /** An index read in words, with 0.95 to 1.05 counted as on plan. */
 const indexColor = (v: number | null) => (v === null ? undefined : v < 0.95 ? RED : v > 1.05 ? GREEN : undefined);
 
@@ -91,25 +91,25 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
           ) : null}
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="Schedule index (SPI)" value={data.spi ?? '-'} precision={data.spi === null ? undefined : 2} styles={big(indexColor(data.spi))} />
+              <Statistic title="Schedule index (SPI)" value={data.spi ?? NO_VALUE} precision={data.spi === null ? undefined : 2} styles={big(indexColor(data.spi))} />
               <div className="text-muted" style={small}>
                 {data.spi === null ? 'Nothing planned yet' : toNumber(data.sv) < 0 ? `${formatINR(-toNumber(data.sv))} of work behind plan` : `${formatINR(data.sv)} of work ahead of plan`}
               </div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Cost index (CPI)" value={data.cpi ?? '-'} precision={data.cpi === null ? undefined : 2} styles={big(indexColor(data.cpi))} />
+              <Statistic title="Cost index (CPI)" value={data.cpi ?? NO_VALUE} precision={data.cpi === null ? undefined : 2} styles={big(indexColor(data.cpi))} />
               <div className="text-muted" style={small}>
                 {data.cpi === null ? 'Nothing spent or earned yet' : `${formatINR(data.cpi, true)} of work for each ${formatINR(1)} spent`}
               </div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Forecast finish" value={data.forecastFinish ? formatDate(data.forecastFinish) : '-'} styles={big(data.daysLate !== null && data.daysLate > 0 ? RED : undefined)} />
+              <Statistic title="Forecast finish" value={data.forecastFinish ? formatDate(data.forecastFinish) : NO_VALUE} styles={big(data.daysLate !== null && data.daysLate > 0 ? RED : undefined)} />
               <div className="text-muted" style={small}>
                 {data.daysLate === null ? `Planned ${formatDate(data.plannedFinish)}` : data.daysLate > 0 ? `${data.daysLate} days after the planned ${formatDate(data.plannedFinish)}` : data.daysLate < 0 ? `${-data.daysLate} days before the planned ${formatDate(data.plannedFinish)}` : 'On the planned day'}
               </div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Estimate at completion" value={data.eac ? formatINR(data.eac) : '-'} styles={big(data.vac && toNumber(data.vac) < 0 ? RED : undefined)} />
+              <Statistic title="Estimate at completion" value={data.eac ? formatINR(data.eac) : NO_VALUE} styles={big(data.vac && toNumber(data.vac) < 0 ? RED : undefined)} />
               <div className="text-muted" style={small}>
                 {data.vac === null ? `Budget ${formatINR(data.bac)}` : toNumber(data.vac) < 0 ? `${formatINR(-toNumber(data.vac))} over the budget of ${formatINR(data.bac)}` : `${formatINR(data.vac)} under the budget of ${formatINR(data.bac)}`}
               </div>
@@ -143,11 +143,11 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
                 {
                   key: 'es',
                   label: 'Work done was planned by',
-                  children: data.earnedOn ? formatDate(data.earnedOn) : '-',
+                  children: data.earnedOn ? formatDate(data.earnedOn) : NO_VALUE,
                 },
                 { key: 'eac2', label: 'Estimate at completion, if the delay also costs', children: inr(data.eacWithSchedule) },
                 { key: 'etc', label: 'Estimate to complete', children: inr(data.etc) },
-                { key: 'tcpi', label: 'Cost index needed to finish on budget', children: data.tcpi === null ? '-' : <span style={{ color: data.tcpi > 1.1 ? RED : undefined }}>{data.tcpi.toFixed(2)}</span> },
+                { key: 'tcpi', label: 'Cost index needed to finish on budget', children: data.tcpi === null ? NO_VALUE : <span style={{ color: data.tcpi > 1.1 ? RED : undefined }}>{data.tcpi.toFixed(2)}</span> },
               ]}
             />
           </Section>

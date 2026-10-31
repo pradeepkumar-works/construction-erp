@@ -24,7 +24,7 @@ import { VendorPortalDrawer } from '@/components/supplier/VendorPortalDrawer';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const usedOn = (r: { expenseCount: number; equipmentCount: number; grnCount: number }) =>
@@ -102,7 +102,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         width: 190,
         render: (_, v) => (
           <div>
-            <div className="mono" translate="no">{v.gstin ?? '-'}</div>
+            <div className="mono" translate="no">{v.gstin ?? NO_VALUE}</div>
             <Sub>{[v.pan, v.stateCode ? GST_STATES[v.stateCode] : null].filter(Boolean).join(' · ')}</Sub>
           </div>
         ),
@@ -118,7 +118,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
               {MSME_CATEGORY_LABELS[v.msmeCategory]}
             </AppTag>
           ) : (
-            <Sub>-</Sub>
+            <Sub>{NO_VALUE}</Sub>
           ),
       },
       {
@@ -129,7 +129,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         render: (_, v) => (
           <div>
             {v.contactPerson && <div>{v.contactPerson}</div>}
-            <Sub>{[v.phone, v.email].filter(Boolean).join(' · ') || (v.contactPerson ? '' : '-')}</Sub>
+            <Sub>{[v.phone, v.email].filter(Boolean).join(' · ') || (v.contactPerson ? '' : NO_VALUE)}</Sub>
           </div>
         ),
       },
@@ -146,7 +146,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
                     <Sub>{[v.bankIfsc, v.bankName].filter(Boolean).join(' · ')}</Sub>
                   </div>
                 ) : (
-                  <Sub>-</Sub>
+                  <Sub>{NO_VALUE}</Sub>
                 ),
             } satisfies ListColumn<VendorDto>,
           ]
@@ -243,7 +243,7 @@ function UnlistedTab({ editable, onAdd }: { editable: boolean; onAdd: (u: Unlist
         locale={{ emptyText: 'Every vendor name in use is in the master' }}
         columns={[
           { title: 'Name as typed', dataIndex: 'name', render: (v: string) => <Typography.Text strong>{v}</Typography.Text> },
-          { title: 'GSTIN typed with it', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
+          { title: 'GSTIN typed with it', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : NO_VALUE) },
           { title: 'Used on', key: 'used', width: 220, render: (_, u) => usedOn(u) },
           ...(editable
             ? [

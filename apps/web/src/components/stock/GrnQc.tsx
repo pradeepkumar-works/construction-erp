@@ -121,7 +121,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
             <Input {...CODE_INPUT} maxLength={60} placeholder="TC/24/88123" />
           </Form.Item>
           <Form.Item name="mtcDate" label="Certificate date">
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabled={!mtcNo} />
+            <DatePicker style={{ width: '100%' }} disabled={!mtcNo} />
           </Form.Item>
         </FormGrid>
         {needsMtc && !mtcNo && status !== 'REJECTED' ? (

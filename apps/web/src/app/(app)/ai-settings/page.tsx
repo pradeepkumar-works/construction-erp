@@ -11,7 +11,7 @@ import { AI_EXPORT_MAX_ROWS, AI_FEATURE_LABELS, AI_ROLE_CHOICES, BILLING_STATUS_
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useNotify } from '@/lib/notify';
-import { formatDateTime, formatINR, formatMonth } from '@/lib/format';
+import { formatDateTime, formatINR, formatMonth, formatCount } from '@/lib/format';
 import { downloadXlsx } from '@/lib/exportExcel';
 import { useAiConversation, useAiConversations, useAiSettings, useUpdateAiSettings } from '@/lib/queries';
 import { askShortcutLabel } from '@/lib/shortcuts';
@@ -165,7 +165,7 @@ function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: strin
         column={{ xs: 1, sm: 3 }}
         items={[
           { key: 'spent', label: 'Used', children: current ? `${formatINR(data.spentThisMonthInr)} of ${formatINR(data.effectiveCapInr)}` : formatINR(data.spentThisMonthInr) },
-          { key: 'questions', label: 'Questions', children: data.questionsThisMonth.toLocaleString('en-IN') },
+          { key: 'questions', label: 'Questions', children: formatCount(data.questionsThisMonth) },
         ]}
       />
       {current && <Progress percent={pct} status={pct >= 100 ? 'exception' : 'normal'} aria-label={`${pct}% of the monthly allowance used`} style={{ maxWidth: 480 }} />}
@@ -183,7 +183,7 @@ function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: strin
         style={{ marginBottom: token.marginLG }}
         columns={[
           { key: 'feature', title: 'Used for', dataIndex: 'feature', render: (f: AiFeature) => AI_FEATURE_LABELS[f] },
-          { key: 'count', title: 'Count', dataIndex: 'count', align: 'right', render: (n: number) => n.toLocaleString('en-IN') },
+          { key: 'count', title: 'Count', dataIndex: 'count', align: 'right', render: (n: number) => formatCount(n) },
           { key: 'spent', title: 'Used', dataIndex: 'spentInr', align: 'right', render: (v: number) => formatINR(v) },
         ]}
       />

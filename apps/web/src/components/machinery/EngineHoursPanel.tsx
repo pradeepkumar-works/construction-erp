@@ -8,7 +8,7 @@ import { canLogMachinery, canManageIntegrations, distanceText } from '@erp/share
 import { useAuth } from '@/lib/auth';
 import { useMachineDays } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -25,7 +25,7 @@ import { fuelTags } from './FuelTanks';
 
 const hrs = (v: string | null) =>
   v === null ? (
-    <span className="text-muted">-</span>
+    <span className="text-muted">{NO_VALUE}</span>
   ) : (
     <span className="mono" translate="no">
       {formatQty(v)} h
@@ -88,7 +88,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
       align: 'right',
       render: (v: string | null, d) =>
         v === null ? (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ) : (
           <div>
             <span className="mono" translate="no">

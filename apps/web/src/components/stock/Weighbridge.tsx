@@ -8,7 +8,7 @@ import { canKeepStock, canManageIntegrations, kgToUnit, shortSupply, weighNet, W
 import { useAuth } from '@/lib/auth';
 import { useProjects, useReceivableOrders, useWeighbridge, useWeighTicket, type WeightInput } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDateTime, formatQty, formatTime } from '@/lib/format';
+import { formatDateTime, formatQty, formatTime, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -23,7 +23,7 @@ import { StockEntryDrawer } from './StockEntryDrawer';
 const small = { fontSize: themeFontSize('fontSizeSM') };
 const kg = (v: string | number | null) =>
   v === null ? (
-    <span className="text-muted">-</span>
+    <span className="text-muted">{NO_VALUE}</span>
   ) : (
     <span className="mono" translate="no">
       {formatQty(v)} kg
@@ -182,7 +182,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
         </div>
       </div>
     ) : (
-      <span className="text-muted">-</span>
+      <span className="text-muted">{NO_VALUE}</span>
     );
 
   const openColumns: TableProps<WeighTicketDto>['columns'] = [
@@ -239,7 +239,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
       key: 'challan',
       width: 120,
       align: 'right',
-      render: (_, t) => (t.challanQty !== null ? <span className="mono" translate="no">{`${formatQty(t.challanQty)} ${t.unit ?? ''}`}</span> : <span className="text-muted">-</span>),
+      render: (_, t) => (t.challanQty !== null ? <span className="mono" translate="no">{`${formatQty(t.challanQty)} ${t.unit ?? ''}`}</span> : <span className="text-muted">{NO_VALUE}</span>),
     },
     {
       title: 'Check',
@@ -280,7 +280,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
       key: 'net',
       width: 190,
       align: 'right',
-      render: (_, t) => (t.netKg !== null ? netCell(t) : <span className="text-muted">-</span>),
+      render: (_, t) => (t.netKg !== null ? netCell(t) : <span className="text-muted">{NO_VALUE}</span>),
     },
     {
       title: 'GRN',

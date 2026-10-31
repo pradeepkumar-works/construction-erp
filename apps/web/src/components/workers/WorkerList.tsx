@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useWorkers } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -97,8 +97,8 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
       { key: 'dailyWage', title: 'Wage / day', dataIndex: 'dailyWage', width: 110, align: 'right', render: (v: string) => formatINR(v) },
       { key: 'effectiveOtRate', title: 'OT / hour', dataIndex: 'effectiveOtRate', width: 100, align: 'right', render: (v: string, w) => (w.otRate ? formatINR(v, true) : <Sub as="span">{formatINR(v, true)}</Sub>) },
       ...(!fixedProject ? [{ key: 'projectName', title: 'Project', dataIndex: 'projectName', width: 220, render: (v: string | null) => v ?? <Sub as="span">Not posted</Sub> } satisfies ListColumn<WorkerDto>] : []),
-      { title: 'ID', key: 'id', width: 170, render: (_, w) => (w.idType ? `${WORKER_ID_TYPE_LABELS[w.idType]} ${w.idNumber ?? ''}` : <Sub as="span">-</Sub>) },
-      { key: 'lastSeenOn', title: 'Last on site', dataIndex: 'lastSeenOn', width: 120, render: (v: string | null, w) => (w.leftOn ? <Sub as="span">Left {formatDate(w.leftOn)}</Sub> : v ? formatDate(v) : <Sub as="span">-</Sub>) },
+      { title: 'ID', key: 'id', width: 170, render: (_, w) => (w.idType ? `${WORKER_ID_TYPE_LABELS[w.idType]} ${w.idNumber ?? ''}` : <Sub as="span">{NO_VALUE}</Sub>) },
+      { key: 'lastSeenOn', title: 'Last on site', dataIndex: 'lastSeenOn', width: 120, render: (v: string | null, w) => (w.leftOn ? <Sub as="span">Left {formatDate(w.leftOn)}</Sub> : v ? formatDate(v) : <Sub as="span">{NO_VALUE}</Sub>) },
       ...(editor
         ? [
             {

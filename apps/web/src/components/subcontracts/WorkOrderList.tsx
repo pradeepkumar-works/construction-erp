@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useWorkOrders, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { WORK_ORDER_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -76,7 +76,7 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
       render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.value), 0)),
     },
-    { defaultFrom: 1400, title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} aria-label={`${r.billedPct}% billed`} /> : '-') },
+    { defaultFrom: 1400, title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} aria-label={`${r.billedPct}% billed`} /> : NO_VALUE) },
     { key: 'submittedByName', title: 'Raised by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {
       card: 'status',

@@ -10,7 +10,7 @@ import { INSPECTION_STATUS_LABELS, checklistCounts, isGuest } from '@erp/shared'
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useWitnessInspection } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -52,7 +52,7 @@ export function PortalInspections({ inspections, openId, onOpen }: { inspections
           { title: 'Location', dataIndex: 'location', ellipsis: true },
           { title: 'Ready on', dataIndex: 'date', width: 120, render: (v: string) => formatDate(v) },
           { title: 'Status', dataIndex: 'status', width: 120, render: (s: PortalInspectionDto['status']) => <StatusTag status={s} labels={INSPECTION_STATUS_LABELS} /> },
-          { title: 'Attended', key: 'w', width: 160, render: (_, r) => (r.witnessedAt ? `${r.witnessedByName ?? ''}, ${formatDate(r.witnessedAt)}` : '-') },
+          { title: 'Attended', key: 'w', width: 160, render: (_, r) => (r.witnessedAt ? `${r.witnessedByName ?? ''}, ${formatDate(r.witnessedAt)}` : NO_VALUE) },
         ]}
       />
       <PortalInspectionDrawer data={open} onClose={() => onOpen(null)} />
@@ -105,12 +105,12 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
               { key: 'activity', label: 'Activity', children: data.activityName, span: 2 },
               { key: 'loc', label: 'Location', children: data.location, span: 2 },
               { key: 'date', label: 'Ready on', children: formatDate(data.date) },
-              { key: 'by', label: 'Requested by', children: data.submittedByName ?? '-' },
-              { key: 'remarks', label: 'Remarks', children: data.remarks ?? '-', span: 2 },
+              { key: 'by', label: 'Requested by', children: data.submittedByName ?? NO_VALUE },
+              { key: 'remarks', label: 'Remarks', children: data.remarks ?? NO_VALUE, span: 2 },
               ...(data.reviewedByName
                 ? [
                     { key: 'insp', label: 'Inspected by', children: `${data.reviewedByName}${data.reviewedAt ? `, ${formatDateTime(data.reviewedAt)}` : ''}`, span: 2 },
-                    { key: 'note', label: "Inspector's note", children: data.reviewNote ?? '-', span: 2 },
+                    { key: 'note', label: "Inspector's note", children: data.reviewNote ?? NO_VALUE, span: 2 },
                   ]
                 : []),
               ...(data.witnessedAt

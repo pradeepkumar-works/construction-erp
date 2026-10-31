@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import type { FuelIssueDto, FuelPositionRowDto } from '@erp/shared';
 import { useFuelPosition } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
@@ -21,7 +21,7 @@ import { FuelTanks } from './FuelTanks';
 const RED = themeColor('colorErrorText');
 const q = (v: string, unit: string, muted = true) =>
   toNumber(v) === 0 && muted ? (
-    <span className="text-muted">-</span>
+    <span className="text-muted">{NO_VALUE}</span>
   ) : (
     <span className="mono" translate="no">
       {formatQty(v)} {unit}
@@ -123,7 +123,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
       ),
     },
     { title: 'Quantity', dataIndex: 'litres', width: 110, align: 'right', render: (v: string, r) => q(v, r.unit, false) },
-    { title: 'Meter', dataIndex: 'meterReading', width: 100, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono">{formatQty(v)}</span>) },
+    { title: 'Meter', dataIndex: 'meterReading', width: 100, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono">{formatQty(v)}</span>) },
     { title: 'By', dataIndex: 'createdByName', width: 150, ellipsis: true },
   ];
 

@@ -9,7 +9,7 @@ import { EMPLOYEE_EVENT_LABELS, EMPLOYEE_EVENT_LETTERS, canManageStaff, isExitEv
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useEmployeeEvents, useRemoveEmployeeEvent } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { EmployeeEventModal } from './EmployeeEventModal';
 import { printHrLetter } from './hrLetterPrint';
 
@@ -79,7 +79,7 @@ export function EmployeeService({ employee }: { employee: EmployeeDto }) {
             width: 120,
             render: (v: EmployeeEventDto['type']) => <AppTag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</AppTag>,
           },
-          { title: 'Change', key: 'change', render: (_, r) => eventChange(r) || <Typography.Text type="secondary">-</Typography.Text> },
+          { title: 'Change', key: 'change', render: (_, r) => eventChange(r) || <Typography.Text type="secondary">{NO_VALUE}</Typography.Text> },
           { title: 'Letter', dataIndex: 'letterNo', width: 120, render: (v: string) => <span translate="no">{v}</span> },
           {
             title: 'Actions',

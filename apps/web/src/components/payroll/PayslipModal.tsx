@@ -6,7 +6,7 @@ import { PrinterOutlined } from '@/components/common/icons';
 import type { ManualPayslipCode, PayslipDto, PayslipLineDto } from '@erp/shared';
 import { MANUAL_PAYSLIP_CODES, PAYSLIP_CODES } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { formatINR } from '@/lib/format';
+import { formatINR, NO_VALUE } from '@/lib/format';
 import { usePayrollAction } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
@@ -129,7 +129,7 @@ export function PayslipModal({ slip, open, onClose, editable }: { slip: PayslipD
           {shown.paidDays} of {shown.monthDays}
           {Number(shown.lopDays) ? `, loss of pay ${shown.lopDays}` : ''}
         </Descriptions.Item>
-        <Descriptions.Item label="Overtime">{Number(shown.overtimeHours) ? `${shown.overtimeHours} h` : '-'}</Descriptions.Item>
+        <Descriptions.Item label="Overtime">{Number(shown.overtimeHours) ? `${shown.overtimeHours} h` : NO_VALUE}</Descriptions.Item>
         <Descriptions.Item label="Gross">
           <Rupees value={shown.gross} />
         </Descriptions.Item>

@@ -20,7 +20,7 @@ import { api, errorMessage } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useTallyExports, useTallyPreview, useTallySettings } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
@@ -115,7 +115,7 @@ function ToExport() {
       <CardToolbar wrap gap={12} align="center">
         <Space>
           <Typography.Text>Up to the end of</Typography.Text>
-          <DatePicker picker="month" value={month} onChange={(d) => d && setMonth(d)} allowClear={false} format="MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
+          <DatePicker picker="month" value={month} onChange={(d) => d && setMonth(d)} allowClear={false} format={MONTH_PICKER_FORMAT} disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
         </Space>
         <Space wrap size={4}>
           {TALLY_VOUCHER_KINDS.filter((k) => data?.counts[k]).map((k) => (

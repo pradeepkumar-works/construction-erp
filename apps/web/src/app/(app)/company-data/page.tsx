@@ -11,12 +11,11 @@ import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useCancelCompanyDeletion, useCompanyDeletion, useCompanyExportManifest, useCompanyLog, useRequestCompanyDeletion, useSetSupportAccess, useSupportAccess } from '@/lib/queries';
 import { buildCompanyExport, type ExportProgress } from '@/lib/companyExport';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE, formatCount, formatBytes } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { themeFontSize } from '@/lib/theme';
 
-const bytes = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 
 function ExportCard() {
   const { message } = App.useApp();
@@ -55,7 +54,7 @@ function ExportCard() {
             photo and document. It is yours to keep, or to move to another system.
           </Typography.Paragraph>
           <Typography.Paragraph type="secondary">
-            {data.tables.length} tables, {rows.toLocaleString('en-IN')} rows, {data.files} files ({bytes(data.fileBytes)}). The download is built in this
+            {data.tables.length} tables, {formatCount(rows)} rows, {data.files} files ({formatBytes(data.fileBytes)}). The download is built in this
             browser; keep the tab open until it finishes. It is recorded in the audit log.
           </Typography.Paragraph>
           {progress ? (
@@ -241,7 +240,7 @@ function CompanyLogCard() {
           { title: 'When', dataIndex: 'createdAt', width: 170, render: (v: string) => formatDateTime(v) },
           { title: 'Action', dataIndex: 'action', width: 160, render: (a: string) => LOG_LABELS[a] ?? 'Other' },
           { title: 'By', dataIndex: 'actorName', width: 180 },
-          { title: 'Detail', dataIndex: 'note', render: (v: string | null) => v ?? '-' },
+          { title: 'Detail', dataIndex: 'note', render: (v: string | null) => v ?? NO_VALUE },
         ]}
       />
     </Card>

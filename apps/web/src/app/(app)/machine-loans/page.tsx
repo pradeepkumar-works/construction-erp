@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useMachineLoans } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
 import { useNewIntent } from '@/lib/new-intent';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -151,7 +151,7 @@ function MachineLoansPage() {
                   { key: 'lender', title: 'Lender', render: (_, l) => <span translate="no">{l.lenderName}</span> },
                   { key: 'loans', title: 'Loans', dataIndex: 'loans', align: 'right', width: 80 },
                   { key: 'owed', title: 'Owed', align: 'right', render: (_, l) => <span translate="no">{formatINR(l.outstanding)}</span> },
-                  { key: 'overdue', title: 'Overdue', align: 'right', render: (_, l) => (toNumber(l.overdueAmount) ? <Typography.Text type="danger">{formatINR(l.overdueAmount)}</Typography.Text> : '-') },
+                  { key: 'overdue', title: 'Overdue', align: 'right', render: (_, l) => (toNumber(l.overdueAmount) ? <Typography.Text type="danger">{formatINR(l.overdueAmount)}</Typography.Text> : NO_VALUE) },
                   { key: 'due', title: 'Due in 30 days', align: 'right', render: (_, l) => <span translate="no">{formatINR(l.dueIn30)}</span> },
                 ]}
               />

@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useOvertimeToDecide } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { CheckInPlaceTag, clock } from './staffUi';
 
@@ -50,7 +50,7 @@ export function OvertimeList() {
         </span>
       ),
     },
-    { title: 'Site', dataIndex: 'projectName', width: 220, ellipsis: true, render: (v: string | null) => v ?? '-' },
+    { title: 'Site', dataIndex: 'projectName', width: 220, ellipsis: true, render: (v: string | null) => v ?? NO_VALUE },
     {
       title: 'In and out',
       key: 'times',
@@ -58,7 +58,7 @@ export function OvertimeList() {
       render: (_, r) => (r.checkIn ? <span translate="no">{`${clock(r.checkIn)} to ${clock(r.checkOut)}`}</span> : <Typography.Text type="secondary">In the register</Typography.Text>),
     },
     { title: 'Overtime', dataIndex: 'overtimeHours', width: 100, align: 'right', render: (v: string) => <span translate="no">{v} h</span> },
-    { title: 'Mark-in place', key: 'place', width: 200, render: (_, r) => (r.checkInPlace ? <CheckInPlaceTag place={r.checkInPlace} /> : '-') },
+    { title: 'Mark-in place', key: 'place', width: 200, render: (_, r) => (r.checkInPlace ? <CheckInPlaceTag place={r.checkInPlace} /> : NO_VALUE) },
     {
       title: '',
       key: 'actions',

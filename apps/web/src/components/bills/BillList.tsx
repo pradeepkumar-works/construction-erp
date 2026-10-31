@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useBills, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { BILL_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -69,7 +69,7 @@ function billColumns({ showProject, onOpen, sortOrderFor }: { showProject: boole
     { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', ...sort('netPayable'), render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
     { title: 'Prepared on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     { card: 'status', title: 'Status', dataIndex: 'status', width: 150, ...sort('status'), render: (s) => <StatusTag status={s} /> },
-    { defaultFrom: 1400, title: 'With client', dataIndex: 'stage', width: 140, ...sort('stage'), render: (s, r) => (r.status === 'APPROVED' ? <BillStageTag stage={s} /> : '-') },
+    { defaultFrom: 1400, title: 'With client', dataIndex: 'stage', width: 140, ...sort('stage'), render: (s, r) => (r.status === 'APPROVED' ? <BillStageTag stage={s} /> : NO_VALUE) },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="bill" row={r} amount={r.grossAmount} href={`/bills/${r.id}`} onOpen={onOpen} /> },
   ];
 }

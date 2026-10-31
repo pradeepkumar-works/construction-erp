@@ -7,7 +7,7 @@ import type { MachineryLogDto } from '@erp/shared';
 import { EQUIPMENT_OWNERSHIP_LABELS, distanceText, hoursAboveEngine } from '@erp/shared';
 import { AppTag } from '@/components/common/AppTag';
 import { useMachineryLog } from '@/lib/queries';
-import { formatDate, formatQty, toNumber, inSentence } from '@/lib/format';
+import { formatDate, formatQty, toNumber, inSentence, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -66,19 +66,19 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
           facts: [
             { key: 'eq', label: 'Equipment', children: `${data.equipmentCode} ${data.equipmentName} (${inSentence(EQUIPMENT_OWNERSHIP_LABELS[data.ownership])})` },
             { key: 'date', label: 'Date', children: formatDate(data.date) },
-            { key: 'op', label: 'Operator', children: data.operatorName ?? '-' },
+            { key: 'op', label: 'Operator', children: data.operatorName ?? NO_VALUE },
             { key: 'worked', label: 'Hours worked', children: h(data.hoursWorked) },
             { key: 'idle', label: 'Idle', children: h(data.idleHours) },
             { key: 'down', label: 'Breakdown', children: h(data.breakdownHours) },
-            { key: 'diesel', label: 'Fuel filled', children: data.dieselLitres === null ? '-' : `${formatQty(data.dieselLitres)} L` },
+            { key: 'diesel', label: 'Fuel filled', children: data.dieselLitres === null ? NO_VALUE : `${formatQty(data.dieselLitres)} L` },
             ...(data.fuelIssuedLitres ? [{ key: 'fuel', label: 'Fuel issue', children: `${formatQty(data.fuelIssuedLitres)} L from the store` }] : []),
             {
               key: 'meter',
               label: 'Hour meter',
-              children: data.meterStart === null && data.meterEnd === null ? '-' : `${data.meterStart ?? '?'} → ${data.meterEnd ?? '?'}${meterRun !== null ? ` (${formatQty(meterRun)})` : ''}`,
+              children: data.meterStart === null && data.meterEnd === null ? NO_VALUE : `${data.meterStart ?? '?'} → ${data.meterEnd ?? '?'}${meterRun !== null ? ` (${formatQty(meterRun)})` : ''}`,
             },
             ...(data.engine ? [{ key: 'engine', label: 'Engine (tracker)', children: <EngineFact log={data} /> }] : []),
-            { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
+            { key: 'activity', label: 'Activity', children: data.activityName ?? NO_VALUE },
             ...(data.vendorBillId ? [{ key: 'bill', label: 'Billed on', children: <Link href={`/vendor-bills/${data.vendorBillId}`} className="mono">{data.vendorBillNo}</Link> }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],

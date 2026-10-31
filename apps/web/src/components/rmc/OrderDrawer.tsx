@@ -8,7 +8,7 @@ import { canBillRmc } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useRmcAction, useRmcBatches, useRmcOrder } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BatchStatusTag, M3, OrderStatusTag, Rupees } from './rmcUi';
 import { OrderForm } from './OrderForm';
@@ -89,7 +89,7 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
               { key: 's', label: 'Status', children: <OrderStatusTag status={o.status} /> },
               { key: 'c', label: 'Customer', children: <span translate="no">{o.customer}</span> },
               { key: 'p', label: 'Plant', children: <span translate="no">{o.plantName}</span> },
-              { key: 'w', label: 'Pour at', children: o.site ?? '-' },
+              { key: 'w', label: 'Pour at', children: o.site ?? NO_VALUE },
               { key: 'g', label: 'Grade', children: <span translate="no">{`${o.grade} (${o.mixDesignCode})`}</span> },
               { key: 'q', label: 'Quantity', children: <M3 value={o.quantity} /> },
               { key: 'r', label: 'Rate per m³', children: <Rupees value={o.rate} /> },
@@ -119,10 +119,10 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
             columns={[
               { title: 'Challan', dataIndex: 'batchNo', width: 140, render: (n: string) => <span translate="no">{n}</span> },
               { title: 'Left the plant', dataIndex: 'dispatchedAt', width: 170, render: (d: string) => formatDateTime(d) },
-              { title: 'Truck', dataIndex: 'truck', render: (t: string | null) => <span translate="no">{t ?? '-'}</span> },
+              { title: 'Truck', dataIndex: 'truck', render: (t: string | null) => <span translate="no">{t ?? NO_VALUE}</span> },
               { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
               { title: 'Status', dataIndex: 'status', width: 120, render: (s: RmcBatchDto['status']) => <BatchStatusTag status={s} /> },
-              { title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? '-'}</span> },
+              { title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? NO_VALUE}</span> },
             ]}
           />
         </>

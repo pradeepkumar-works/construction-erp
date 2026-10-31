@@ -10,7 +10,7 @@ import type { PayrollRunDetailDto, PayrollRunDto } from '@erp/shared';
 import { canRunPayroll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePayrollAction, usePayrollRuns } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormShell } from '@/components/form/FormShell';
@@ -40,7 +40,7 @@ function NewRunModal({ open, onClose, onCreated }: { open: boolean; onClose: () 
     >
       <Form form={form} layout="vertical" initialValues={{ month: (dayjs().date() <= 15 ? dayjs().subtract(1, 'month') : dayjs()).startOf('month') }}>
         <Form.Item name="month" label="Month" rules={[{ required: true, message: 'Choose the month' }]}>
-          <DatePicker picker="month" format="MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
+          <DatePicker picker="month" format={MONTH_PICKER_FORMAT} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
         </Form.Item>
         <Form.Item name="projectId" label="Project" extra="Leave blank for the whole company. Choose a project to pay its staff on their own run.">
           <ProjectSelect placeholder="Whole company" style={{ width: '100%' }} />
@@ -65,7 +65,7 @@ export function SalaryRuns() {
     { title: 'Status', dataIndex: 'status', width: 170, render: (v: PayrollRunDto['status']) => <RunStatusTag status={v} /> },
     { title: 'Employees', dataIndex: 'employees', width: 100, align: 'right' },
     { title: 'Net pay', dataIndex: 'net', width: 140, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'Paid on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : '-') },
+    { title: 'Paid on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : NO_VALUE) },
   ];
   const newButton = runs ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>

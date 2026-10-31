@@ -9,7 +9,7 @@ import { DeleteOutlined } from '@/components/common/icons';
 import type { ExcessRecoveryDto, ReconciliationStatus, SubconMaterialDto, SubconMaterialLineDto, SubconReconciliationDto } from '@erp/shared';
 import { SUBMISSION_STATUS_LABELS } from '@erp/shared';
 import { useCancelRecovery, useRecoverExcess, useSubconReconciliation } from '@/lib/queries';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -104,7 +104,7 @@ function WorkOrderBlock({
             ) : null}
           </>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
     ...(canRecover

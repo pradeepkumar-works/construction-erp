@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useStockEntry } from '@/lib/queries';
-import { formatDate, formatDateTime, formatQty } from '@/lib/format';
+import { formatDate, formatDateTime, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { StockTypeTag } from './StockTypeTag';
@@ -109,10 +109,10 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
               ...(data.type === 'RECEIPT'
                 ? [
                     ...(data.poNo ? [{ key: 'po', label: 'Purchase order', children: data.poNo }] : []),
-                    { key: 'mr', label: 'Indent', children: data.requestNo ?? '-' },
-                    { key: 'supplier', label: 'Vendor', children: data.supplier ?? '-' },
-                    { key: 'challan', label: 'Challan no.', children: data.challanNo ?? '-' },
-                    { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? '-' },
+                    { key: 'mr', label: 'Indent', children: data.requestNo ?? NO_VALUE },
+                    { key: 'supplier', label: 'Vendor', children: data.supplier ?? NO_VALUE },
+                    { key: 'challan', label: 'Challan no.', children: data.challanNo ?? NO_VALUE },
+                    { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? NO_VALUE },
                     {
                       key: 'qc',
                       label: 'QA/QC',
@@ -130,39 +130,39 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
                 : []),
               ...(data.type === 'TRANSFER_OUT'
                 ? [
-                    { key: 'to', label: 'Sent to', children: data.toProjectId ? <Link href={`/projects/${data.toProjectId}?tab=stock`}>{data.toProjectName}</Link> : (data.issuedTo ?? '-') },
+                    { key: 'to', label: 'Sent to', children: data.toProjectId ? <Link href={`/projects/${data.toProjectId}?tab=stock`}>{data.toProjectName}</Link> : (data.issuedTo ?? NO_VALUE) },
                     { key: 'state', label: 'Received', children: data.transferInNo ? `Yes, as ${data.transferInNo}` : 'Not yet: in transit' },
-                    { key: 'challan', label: 'Challan no.', children: data.challanNo ?? '-' },
-                    { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? '-' },
+                    { key: 'challan', label: 'Challan no.', children: data.challanNo ?? NO_VALUE },
+                    { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? NO_VALUE },
                   ]
                 : []),
               ...(data.type === 'TRANSFER_IN'
                 ? [
-                    { key: 'from', label: 'From', children: data.fromProjectName ?? data.supplier ?? '-' },
-                    { key: 'out', label: 'Sent as', children: data.transferOutNo ?? '-' },
+                    { key: 'from', label: 'From', children: data.fromProjectName ?? data.supplier ?? NO_VALUE },
+                    { key: 'out', label: 'Sent as', children: data.transferOutNo ?? NO_VALUE },
                   ]
                 : []),
               ...(data.type === 'RETURN_TO_VENDOR'
                 ? [
-                    { key: 'supplier', label: 'Vendor', children: data.supplier ?? '-' },
-                    { key: 'challan', label: 'Debit note / challan', children: data.challanNo ?? '-' },
+                    { key: 'supplier', label: 'Vendor', children: data.supplier ?? NO_VALUE },
+                    { key: 'challan', label: 'Debit note / challan', children: data.challanNo ?? NO_VALUE },
                   ]
                 : []),
               ...(data.type === 'ISSUE' || data.type === 'RETURN_FROM_SITE'
                 ? [
-                    { key: 'to', label: data.type === 'ISSUE' ? 'Issued to' : 'Returned by', children: data.issuedTo ?? '-' },
+                    { key: 'to', label: data.type === 'ISSUE' ? 'Issued to' : 'Returned by', children: data.issuedTo ?? NO_VALUE },
                     ...(data.equipmentCode
                       ? [{ key: 'machine', label: 'Into machine', children: `${data.equipmentCode}${data.meterReading ? ` at meter ${formatQty(data.meterReading)}` : ''}` }]
                       : []),
                     ...(data.woNo ? [{ key: 'wo', label: 'Work order', children: `${data.woNo}${data.subcontractBillId ? ', recovered in their bill' : ', to be recovered from their next bill'}` }] : []),
-                    { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
+                    { key: 'activity', label: 'Activity', children: data.activityName ?? NO_VALUE },
                   ]
                 : []),
               ...(data.adjustmentReason ? [{ key: 'reason', label: 'Reason', children: STOCK_ADJUSTMENT_REASON_LABELS[data.adjustmentReason], span: 2 }] : []),
               {
                 key: 'remarks',
                 label: data.adjustmentReason ? 'Details' : data.type === 'ADJUSTMENT' || data.type === 'RETURN_TO_VENDOR' ? 'Reason' : 'Remarks',
-                children: data.remarks ?? '-',
+                children: data.remarks ?? NO_VALUE,
                 span: 2,
               },
               { key: 'by', label: 'Entered by', children: `${data.createdByName}, ${formatDateTime(data.createdAt)}`, span: 2 },
@@ -185,7 +185,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
               },
               { title: 'Unit', dataIndex: 'unit', width: 80 },
               ...(anyRejected
-                ? [{ title: 'Rejected', dataIndex: 'rejectedQty', align: 'right' as const, width: 110, render: (v: string | null) => (v && Number(v) > 0 ? <Typography.Text type="danger">{formatQty(v)}</Typography.Text> : '-') }]
+                ? [{ title: 'Rejected', dataIndex: 'rejectedQty', align: 'right' as const, width: 110, render: (v: string | null) => (v && Number(v) > 0 ? <Typography.Text type="danger">{formatQty(v)}</Typography.Text> : NO_VALUE) }]
                 : []),
             ]}
           />

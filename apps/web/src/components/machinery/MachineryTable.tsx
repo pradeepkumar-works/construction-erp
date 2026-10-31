@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { theme } from 'antd';
 import type { MachineryLogDto, MachineryLogSortField } from '@erp/shared';
-import { formatDate, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import type { ListColumn } from '@/components/list/DataTable';
 import { RowActions } from '@/components/list/RowActions';
@@ -60,7 +60,7 @@ export function machineryColumns({
       width: 100,
       align: 'right',
       className: 'mono',
-      render: (v) => (v === null ? '-' : `${formatQty(v)} L`),
+      render: (v) => (v === null ? NO_VALUE : `${formatQty(v)} L`),
       total: (rows) => `${formatQty(sum(rows.map((r) => r.dieselLitres)))} L`,
     },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, defaultFrom: 1400, ...sort('submittedBy') },

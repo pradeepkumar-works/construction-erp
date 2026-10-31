@@ -8,7 +8,7 @@ import type { TableProps } from 'antd';
 import type { ProjectCostSummaryDto } from '@erp/shared';
 import { PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useCostSummary } from '@/lib/queries';
-import { formatINR, formatPct, toNumber } from '@/lib/format';
+import { formatINR, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -96,7 +96,7 @@ export function CostOverview() {
     { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
     { title: 'Money in', dataIndex: 'cashIn', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
     { title: 'Money out', dataIndex: 'cashOut', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashOut) - toNumber(b.cashOut) },
-    { title: 'Cost %', dataIndex: 'costPct', width: 90, align: 'right', render: (v: number | null) => (v === null ? <span className="text-muted">-</span> : formatPct(v)), sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },
+    { title: 'Cost %', dataIndex: 'costPct', width: 90, align: 'right', render: (v: number | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : formatPct(v)), sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },
   ];
 
   return (

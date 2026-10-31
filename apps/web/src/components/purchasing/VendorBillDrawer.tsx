@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useVendorBill } from '@/lib/queries';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatQty, toNumber, NO_VALUE, formatMonthLong } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -135,7 +135,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               : [
                   { key: 'kind', label: 'Kind', children: VENDOR_BILL_KIND_LABELS[data.kind] },
                   ...(data.equipmentCode
-                    ? [{ key: 'machine', label: 'Machine', children: `${data.equipmentCode} · ${data.equipmentName ?? ''}${data.hireMonth ? `, ${dayjs(data.hireMonth).format('MMMM YYYY')}` : ''}` }]
+                    ? [{ key: 'machine', label: 'Machine', children: `${data.equipmentCode} · ${data.equipmentName ?? ''}${data.hireMonth ? `, ${formatMonthLong(data.hireMonth)}` : ''}` }]
                     : []),
                   ...(data.expenseCategory ? [{ key: 'head', label: 'Cost head', children: EXPENSE_CATEGORY_LABELS[data.expenseCategory] }] : []),
                 ]),
@@ -379,7 +379,7 @@ function BillSources({ kind, rows }: { kind: VendorBillDto['kind']; rows: Vendor
         },
         ...(hire ? [] : [{ title: 'Closed', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) }]),
         { title: hire ? 'Hours' : 'Work', dataIndex: 'detail' },
-        ...(hire ? [] : [{ title: 'Labour and parts', dataIndex: 'amount', width: 150, align: 'right' as const, render: (v: string | null) => (v ? money(v) : '-') }]),
+        ...(hire ? [] : [{ title: 'Labour and parts', dataIndex: 'amount', width: 150, align: 'right' as const, render: (v: string | null) => (v ? money(v) : NO_VALUE) }]),
       ]}
     />
   );

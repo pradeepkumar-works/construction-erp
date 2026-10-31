@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useLeaveBalances, useLeaveHistory, useLeaveRequest } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { LeaveStatusTag, days, leaveSpan } from './staffUi';
 import { themeFontSize } from '@/lib/theme';
@@ -101,7 +101,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
               { title: 'For the year', dataIndex: 'entitled', align: 'right', render: (v: number | null) => v ?? 'No limit' },
               { title: 'Taken', dataIndex: 'taken', align: 'right' },
               { title: 'Waiting', dataIndex: 'pending', align: 'right' },
-              { title: 'Left', dataIndex: 'left', align: 'right', render: (v: number | null) => (v === null ? '-' : <Typography.Text strong type={v < 0 ? 'danger' : undefined}>{v}</Typography.Text>) },
+              { title: 'Left', dataIndex: 'left', align: 'right', render: (v: number | null) => (v === null ? NO_VALUE : <Typography.Text strong type={v < 0 ? 'danger' : undefined}>{v}</Typography.Text>) },
             ]}
           />
           <Divider titlePlacement="start" plain>

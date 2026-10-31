@@ -11,7 +11,7 @@ import { TAX_REGIMES, TAX_REGIME_LABELS, canRunPayroll } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useEmployees, usePayrollAction, useSalaryStructures } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -202,8 +202,8 @@ export function Salaries() {
     { title: 'From', dataIndex: 'effectiveFrom', width: 120, render: (v: string) => formatDate(v) },
     { title: 'Gross a month', dataIndex: 'gross', width: 130, align: 'right', render: (v: string) => <Rupees value={v} /> },
     { title: 'PF', dataIndex: 'employeePf', width: 90, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'ESI', dataIndex: 'employeeEsi', width: 80, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : '-') },
-    { title: 'TDS a month', dataIndex: 'monthlyTds', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : '-') },
+    { title: 'ESI', dataIndex: 'employeeEsi', width: 80, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
+    { title: 'TDS a month', dataIndex: 'monthlyTds', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
     { title: 'Regime', dataIndex: 'taxRegime', width: 110, render: (v: TaxRegime) => TAX_REGIME_LABELS[v] },
     { title: 'CTC a year', dataIndex: 'ctcAnnual', width: 140, align: 'right', render: (v: string) => <Rupees value={v} /> },
     ...(admin
