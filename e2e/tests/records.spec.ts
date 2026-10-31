@@ -24,7 +24,7 @@ test('a progress entry is approved from its own page, and the stage bar and acti
   await footer.getByRole('button', { name: 'Approve' }).click();
   await page.locator('.ant-modal').getByRole('button', { name: 'Approve' }).click();
   await expect(stage).toContainText('Approved');
-  await expect(page.locator('.ant-card').filter({ hasText: 'Activity' }).last()).toContainText('Approved by');
+  await expect(page.locator('.ant-card').filter({ hasText: 'History' }).last()).toContainText('Approved by');
   await expect(footer.getByRole('button', { name: 'Approve' })).toHaveCount(0);
 });
 

@@ -209,7 +209,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
           {record.activity && (
             <>
               <Divider titlePlacement="start" plain>
-                Activity
+                History
               </Divider>
               <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
             </>
@@ -293,7 +293,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
           {record.activity && (
             <>
               <Divider titlePlacement="start" plain>
-                Activity
+                History
               </Divider>
               <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
             </>
@@ -391,7 +391,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             {record.activity && (
               <Col xs={24} xl={7}>
                 <Card
-                  title="Activity"
+                  title="History"
                   size="small"
                   style={{ position: 'sticky', top: top + token.marginSM }}
                   styles={{ body: { maxHeight: `calc(100vh - ${top + 160}px)`, overflowY: 'auto' } }}
