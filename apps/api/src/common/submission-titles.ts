@@ -1,12 +1,12 @@
-import { FUND_PURPOSE_LABELS, subBillLabel, type FundPurpose, type PaymentRequestKind } from '@erp/shared';
+import { FUND_PURPOSE_LABELS, unitLabel, subBillLabel, type FundPurpose, type PaymentRequestKind } from '@erp/shared';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** "13 Oct 2026". Dates are stored as UTC midnight, so the UTC fields are the calendar day. */
 export const titleDate = (d: Date): string => `${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 
-/** "GSB laying: 392 Cum on 13 Oct 2026". */
-export const progressTitle = (activity: string, qty: string, unit: string, date: Date) => `${activity}: ${Number(qty)} ${unit} on ${titleDate(date)}`;
+/** "GSB laying: 392 m³ on 13 Oct 2026". */
+export const progressTitle = (activity: string, qty: string, unit: string, date: Date) => `${activity}: ${Number(qty)} ${unitLabel(unit)} on ${titleDate(date)}`;
 
 /** "DPR for 13 Oct 2026". */
 export const dprTitle = (date: Date) => `DPR for ${titleDate(date)}`;

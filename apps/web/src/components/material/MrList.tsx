@@ -81,7 +81,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         onStatus={frame.setStatus}
         search={page.search}
         onSearch={page.setSearch}
-        searchPlaceholder="Search request no., items, people"
+        searchPlaceholder="Search indent no., items, people"
         searchLabel="Search indents"
         extra={
           <>

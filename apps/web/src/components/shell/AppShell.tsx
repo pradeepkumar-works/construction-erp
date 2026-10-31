@@ -422,7 +422,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                 {approver && pendingCount > 0 && (
                   <Link href="/approvals">
                     <AppTag tone="pending" style={{ margin: 0 }}>
-                      {pendingCount} pending
+                      {pendingCount} waiting
                     </AppTag>
                   </Link>
                 )}
