@@ -120,6 +120,9 @@ export function AppTabs({ items, variant = 'section', extra, sticky = variant ==
   const page = variant === 'page';
   // A page's bar runs to the card's edges (its hairline too), with the tabs and buttons in line with the card's padding.
   // One wrapper only: antd styles the bar as `.ant-tabs > .ant-tabs-nav` or `.ant-tabs > div > .ant-tabs-nav`.
+  // Off a phone the tabs keep their full width and the buttons drop to a line of their own when both do not fit, since
+  // antd would otherwise hide tabs behind its overflow button (inside the tablist, which axe refuses).
+  const wraps = !!extra && !phone;
   const renderTabBar: TabsProps['renderTabBar'] = (props, DefaultTabBar) => (
     <div
       ref={bar}
@@ -128,12 +131,21 @@ export function AppTabs({ items, variant = 'section', extra, sticky = variant ==
         alignItems: 'center',
         gap: token.marginXS,
         marginBottom: page ? 0 : token.marginSM,
+        ...(wraps ? { flexWrap: 'wrap' } : {}),
         ...(page && extra ? { paddingInlineEnd: token.paddingSM } : {}),
         ...(sticks ? { position: 'sticky', top, zIndex: 4, background: token.colorBgContainer } : {}),
       }}
     >
-      <DefaultTabBar {...props} style={{ ...(props.style as React.CSSProperties), flex: 1, minWidth: 0, marginBottom: 0, ...(page ? { paddingInline: token.paddingSM } : {}) }} />
-      {extra}
+      <DefaultTabBar
+        {...props}
+        style={{
+          ...(props.style as React.CSSProperties),
+          ...(wraps ? { flex: '1 0 auto', maxWidth: '100%' } : { flex: 1, minWidth: 0 }),
+          marginBottom: 0,
+          ...(page ? { paddingInline: token.paddingSM } : {}),
+        }}
+      />
+      {wraps ? <div style={{ marginInlineStart: 'auto' }}>{extra}</div> : extra}
     </div>
   );
 
