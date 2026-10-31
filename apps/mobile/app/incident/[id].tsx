@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { SafetyIncidentDto } from '@erp/shared';
 import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, canManageSafety } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
-import { AttachmentGallery, PhotoChecks, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
+import { AttachmentGallery, PhotoChecks, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, RecordHead, Screen } from '../../src/components';
 import { INCIDENT_TONE } from '../../src/components/safetyTone';
-import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
+import { colors, spacing, toneIcon } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -54,16 +54,20 @@ export default function IncidentScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
-      <View style={styles.head}>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
-          {data.incidentNo} · {data.projectName}
-        </Text>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.location}</Text>
-        <View style={styles.pills}>
-          <Pill text={t(SAFETY_INCIDENT_TYPE_LABELS[data.type])} {...tone} />
-          <Pill text={t(SAFETY_INCIDENT_STATUS_LABELS[data.status])} {...(data.status === 'OPEN' ? { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.open } : { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.closed })} />
-        </View>
-      </View>
+      <RecordHead
+        caption={`${data.incidentNo} · ${data.projectName}`}
+        title={data.location}
+        pills={
+          <>
+            <Pill text={t(SAFETY_INCIDENT_TYPE_LABELS[data.type])} {...tone} />
+            <Pill text={t(SAFETY_INCIDENT_STATUS_LABELS[data.status])} {...(data.status === 'OPEN' ? { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.open } : { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.closed })} />
+          </>
+        }
+        more={[
+          { label: t('Safety at this project'), icon: 'medkit-outline', onPress: () => router.push(`/safety?projectId=${data.projectId}`) },
+          { label: t('Open project'), icon: 'business-outline', onPress: () => router.push(`/project/${data.projectId}`) },
+        ]}
+      />
       <ErrorBanner message={actionError} />
       <Card>
         <KeyValue label={t('When')} value={`${formatDate(data.date)}${data.time ? `, ${data.time}` : ''}`} />
@@ -94,12 +98,10 @@ export default function IncidentScreen() {
           <Button title={t('Close incident')} icon="checkmark-circle" onPress={startClose} />
         )
       ) : null}
-      <Button title={t('Safety at this project')} variant="ghost" icon="medkit-outline" onPress={() => router.push(`/safety?projectId=${data.projectId}`)} />
+
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { marginBottom: spacing.md, gap: spacing.xs },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
 });

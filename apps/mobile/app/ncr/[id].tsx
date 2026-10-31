@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { NcrDto } from '@erp/shared';
 import { NCR_SEVERITY_LABELS, NCR_STATUS_LABELS, canActOnNcr, canRaiseNcr } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useAuth } from '../../src/auth/AuthContext';
-import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, Screen, type LocalPhoto } from '../../src/components';
+import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, RecordHead, Screen, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
 import { NCR_STATUS_TONE, SEVERITY_TONE } from '../../src/components/qualityTone';
 import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
@@ -29,6 +29,7 @@ export default function NcrScreen() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const router = useRouter();
   const errorSummary = useErrorSummary();
 
   if (loading && !data) return <Loading />;
@@ -65,17 +66,21 @@ export default function NcrScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard scrollRef={errorSummary.scrollRef}>
-      <View style={styles.head}>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
-          {data.ncrNo} · {data.projectName}
-        </Text>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.title}</Text>
-        <View style={styles.pills}>
-          <Pill text={t(NCR_STATUS_LABELS[data.status])} {...NCR_STATUS_TONE[data.status]} />
-          <Pill text={t(NCR_SEVERITY_LABELS[data.severity])} {...SEVERITY_TONE[data.severity]} />
-          {data.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
-        </View>
-      </View>
+      <RecordHead
+        caption={`${data.ncrNo} · ${data.projectName}`}
+        title={data.title}
+        pills={
+          <>
+            <Pill text={t(NCR_STATUS_LABELS[data.status])} {...NCR_STATUS_TONE[data.status]} />
+            <Pill text={t(NCR_SEVERITY_LABELS[data.severity])} {...SEVERITY_TONE[data.severity]} />
+            {data.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
+          </>
+        }
+        more={[
+          { label: t('Tests and NCRs'), icon: 'flask-outline', onPress: () => router.push('/quality?show=ncrs') },
+          { label: t('Open project'), icon: 'business-outline', onPress: () => router.push(`/project/${data.projectId}`) },
+        ]}
+      />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={actionError} />
       <Card>
@@ -129,8 +134,6 @@ export default function NcrScreen() {
 }
 
 const styles = StyleSheet.create({
-  head: { marginBottom: spacing.md, gap: 4 },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs },
   row: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   flex: { flex: 1 },
   mt: { marginTop: spacing.md },

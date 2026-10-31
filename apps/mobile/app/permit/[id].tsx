@@ -6,7 +6,7 @@ import { PERMIT_PRECAUTIONS, WORK_PERMIT_TYPE_LABELS, canEditSafetyRecord, canMa
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
-import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
+import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, RecordHead, Screen } from '../../src/components';
 import { Checklist, permitStatus, permitWindow } from '../../src/components/safetyTone';
 import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { formatDateTime } from '../../src/utils/format';
@@ -58,17 +58,15 @@ export default function PermitScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
-      <View style={styles.head}>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
-          {data.permitNo} · {data.projectName}
-        </Text>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>
-          {t(WORK_PERMIT_TYPE_LABELS[data.type])} · {data.location}
-        </Text>
-        <View style={styles.pills}>
-          <Pill text={st.text} fg={st.fg} bg={st.bg} icon={st.icon} />
-        </View>
-      </View>
+      <RecordHead
+        caption={`${data.permitNo} · ${data.projectName}`}
+        title={`${t(WORK_PERMIT_TYPE_LABELS[data.type])} · ${data.location}`}
+        pills={<Pill text={st.text} fg={st.fg} bg={st.bg} icon={st.icon} />}
+        more={[
+          { label: t('Safety at this project'), icon: 'medkit-outline', onPress: () => router.push(`/safety?projectId=${data.projectId}&show=permits`) },
+          { label: t('Open project'), icon: 'business-outline', onPress: () => router.push(`/project/${data.projectId}`) },
+        ]}
+      />
       <ErrorBanner message={actionError} />
       <Card>
         <KeyValue label={t('The work')} value={data.description} multiline />
@@ -129,14 +127,11 @@ export default function PermitScreen() {
       ) : data.status === 'ISSUED' && mayClose ? (
         <Button title={t('Close permit')} icon="lock-closed" onPress={() => open('close')} />
       ) : null}
-      <Button title={t('Safety at this project')} variant="ghost" icon="medkit-outline" onPress={() => router.push(`/safety?projectId=${data.projectId}&show=permits`)} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { marginBottom: spacing.md, gap: spacing.xs },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
   precaution: { paddingVertical: 4, color: colors.text },
   actions: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
   flex: { flex: 1 },

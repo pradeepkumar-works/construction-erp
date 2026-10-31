@@ -402,4 +402,5 @@ export const QUALITY: Record<string, string> = {
   'Why it is not right yet': 'अभी क्यों ठीक नहीं है',
   'Snags at this project': 'इस प्रोजेक्ट की कमियाँ',
   'Say what was done to put it right': 'बताएँ इसे ठीक करने के लिए क्या किया गया',
+  'Delays and risks at this project': 'इस प्रोजेक्ट की देरी और जोखिम',
 };

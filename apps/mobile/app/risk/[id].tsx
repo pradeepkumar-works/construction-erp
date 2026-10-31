@@ -6,7 +6,7 @@ import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_KIND_LABELS, RISK_LEVEL_
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
-import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
+import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, RecordHead, Screen } from '../../src/components';
 import { LEVEL_TONE, RISK_STATUS_TONE } from '../../src/components/riskTone';
 import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
@@ -49,17 +49,21 @@ export default function RiskScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
-      <View style={styles.head}>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
-          {data.riskNo} · {t(RISK_KIND_LABELS[data.kind])} · {data.projectName}
-        </Text>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.title}</Text>
-        <View style={styles.pills}>
-          <Pill text={t(RISK_STATUS_LABELS[data.status])} {...RISK_STATUS_TONE[data.status]} />
-          <Pill text={`${t('Score {n}', { n: data.score })} · ${t(RISK_LEVEL_LABELS[level])}`} {...LEVEL_TONE[level]} />
-          {data.overdue ? <Pill text={t('Action overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
-        </View>
-      </View>
+      <RecordHead
+        caption={`${data.riskNo} · ${t(RISK_KIND_LABELS[data.kind])} · ${data.projectName}`}
+        title={data.title}
+        pills={
+          <>
+            <Pill text={t(RISK_STATUS_LABELS[data.status])} {...RISK_STATUS_TONE[data.status]} />
+            <Pill text={`${t('Score {n}', { n: data.score })} · ${t(RISK_LEVEL_LABELS[level])}`} {...LEVEL_TONE[level]} />
+            {data.overdue ? <Pill text={t('Action overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
+          </>
+        }
+        more={[
+          { label: t('Open project'), icon: 'business-outline', onPress: () => router.push(`/project/${data.projectId}`) },
+          { label: t('Delays and risks at this project'), icon: 'alert-circle-outline', onPress: () => router.push(`/risks?projectId=${data.projectId}`) },
+        ]}
+      />
       <ErrorBanner message={actionError} />
       {data.kind === 'DELAY' ? (
         <Card title={t('Delay')}>
@@ -119,14 +123,11 @@ export default function RiskScreen() {
           </View>
         )
       ) : null}
-      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { marginBottom: spacing.md, gap: spacing.xs },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
   daysBox: { alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.dangerSoft, borderRadius: 12 },
   days: { fontSize: 32, fontWeight: '800', color: colors.danger },
   actions: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
