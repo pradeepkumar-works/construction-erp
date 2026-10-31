@@ -447,6 +447,10 @@ and the pre-delivery checklist.
 - pnpm 10 blocks postinstall scripts unless listed in root `package.json` `pnpm.onlyBuiltDependencies`.
 - `SEED_ON_BUILD=true` on the Vercel API project re-runs the demo seed on every deploy (idempotent).
   Set it to `false` once real data exists.
+- The live demo no longer takes the full seed (`SEED_ON_BUILD=false`). A new module's demo data is a step in `modulesPass`
+  (`prisma/seed.ts`) that writes only what its module is missing; it reaches the live demo with `SEED_MODULES_ON_BUILD=true`
+  for one deploy (`seed.ts --modules`: missing demo users added, nothing existing changed). A child company's go in
+  `seed-group-modules.ts`.
 - Uploads: `STORAGE_MODE=db` on Vercel (bytes in `Attachment.data`, served by
   `GET /api/uploads/:id/content`), `BLOB_READ_WRITE_TOKEN` switches to Vercel Blob, local disk otherwise.
 - Demo accounts: see README (all `password123`).
