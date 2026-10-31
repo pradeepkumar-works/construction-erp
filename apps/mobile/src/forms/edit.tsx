@@ -5,7 +5,7 @@ import type { AttachmentDto, SubmissionBase } from '@erp/shared';
 import { absoluteUrl } from '../config';
 import type { LocalPhoto } from '../components';
 import { useOffline, type OutboxItem, type OutboxPhoto } from '../offline';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 
 /** Existing attachments shown in the PhotoPicker as already-uploaded photos (so they can be kept or removed). */
@@ -36,8 +36,8 @@ export function OutboxRefusal({ item }: { item: OutboxItem | null }) {
     <View style={[styles.note, styles.refused]}>
       <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
       <View style={styles.body}>
-        <Text style={[styles.label, styles.refusedLabel]}>{t('Refused')}</Text>
-        <Text style={typography.body}>{item.error}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={[styles.label, styles.refusedLabel]}>{t('Refused')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{item.error}</Text>
       </View>
     </View>
   );
@@ -51,8 +51,8 @@ export function ReviewerNote({ entry }: { entry: SubmissionBase | null }) {
     <View style={styles.note}>
       <Ionicons name="chatbox-ellipses-outline" size={18} color={colors.warning} />
       <View style={styles.body}>
-        <Text style={styles.label}>{entry.reviewedByName ? t('{name} asked', { name: entry.reviewedByName }) : t('Reviewer note')}</Text>
-        <Text style={typography.body}>{entry.reviewNote}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.label}>{entry.reviewedByName ? t('{name} asked', { name: entry.reviewedByName }) : t('Reviewer note')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{entry.reviewNote}</Text>
       </View>
     </View>
   );

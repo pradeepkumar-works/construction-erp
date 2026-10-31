@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { colors, maxFontScale, radius, spacing } from '../theme';
 import { clampPct, fmtPct } from '../utils/format';
 
 export function ProgressBar({ value, showLabel = true, color, height = 10 }: { value: number; showLabel?: boolean; color?: string; height?: number }) {
@@ -11,7 +11,7 @@ export function ProgressBar({ value, showLabel = true, color, height = 10 }: { v
       <View style={[styles.track, { height }]}>
         <View style={[styles.fill, { width: `${pct}%`, backgroundColor: fill, height }]} />
       </View>
-      {showLabel ? <Text style={styles.label}>{fmtPct(value)}</Text> : null}
+      {showLabel ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.label}>{fmtPct(value)}</Text> : null}
     </View>
   );
 }

@@ -176,7 +176,7 @@ export function PhotoPicker({ label, photos, onChange, max = 10 }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.label} maxFontSizeMultiplier={maxFontScale}>
-        {label ?? t('Photos')} <Text style={styles.count}>({photos.length}/{max})</Text>
+        {label ?? t('Photos')} <Text maxFontSizeMultiplier={maxFontScale} style={styles.count}>({photos.length}/{max})</Text>
       </Text>
       <View style={styles.actions}>
         <Touchable onPress={takePhoto} disabled={busy || full} accessibilityRole="button" accessibilityHint={t('The camera opens again after each photo. Press Back when you are done.')} style={[styles.actionBtn, (busy || full) && styles.disabled]}>
@@ -212,7 +212,7 @@ export function PhotoPicker({ label, photos, onChange, max = 10 }: Props) {
                 ) : p.error ? (
                   <Touchable onPress={() => retry(p)} style={[styles.overlay, styles.overlayError]} accessibilityRole="button" accessibilityLabel={t('Retry upload of photo {n}', { n: i + 1 })}>
                     <Ionicons name="refresh" size={22} color={colors.onOverlay} />
-                    <Text style={styles.overlayText}>{t('Retry')}</Text>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={styles.overlayText}>{t('Retry')}</Text>
                   </Touchable>
                 ) : p.queued ? (
                   <Touchable onPress={() => (online ? retry(p) : undefined)} style={styles.okMark} hitSlop={slopFor(18)} accessibilityRole="button" accessibilityLabel={t('Waiting for connection')} accessibilityHint={online ? t('Uploads it now') : undefined}>

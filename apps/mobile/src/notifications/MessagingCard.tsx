@@ -5,7 +5,7 @@ import { useApi, useFetch } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { Button, Card, ErrorBanner, Input } from '../components';
-import { colors, spacing, typography } from '../theme';
+import { colors, maxFontScale, spacing, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 
 /** The user's own opt-in for alerts on WhatsApp and by SMS, with a test message. */
@@ -65,7 +65,7 @@ export function MessagingCard() {
 
   return (
     <Card title={t('WhatsApp and SMS')}>
-      <Text style={[typography.caption, styles.gap]}>{t('Approval requests, send-backs, the morning digest and the DPR, test and payment reminders on your phone. WhatsApp first; SMS when WhatsApp does not get through.')}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t('Approval requests, send-backs, the morning digest and the DPR, test and payment reminders on your phone. WhatsApp first; SMS when WhatsApp does not get through.')}</Text>
       <ErrorBanner message={error ?? prefs.error} />
       <Input
         label={t('Mobile number')}
@@ -81,14 +81,14 @@ export function MessagingCard() {
         hint={sendTo ? t('Messages go to {phone}', { phone: formatPhone(sendTo) }) : undefined}
       />
       <View style={styles.row}>
-        <Text style={typography.body}>{t('Alerts on WhatsApp')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{t('Alerts on WhatsApp')}</Text>
         <Switch value={whatsapp} onValueChange={setWhatsapp} trackColor={{ true: colors.success }} accessibilityLabel={t('Alerts on WhatsApp')} />
       </View>
       <View style={styles.row}>
-        <Text style={typography.body}>{t('Alerts by SMS')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{t('Alerts by SMS')}</Text>
         <Switch value={sms} onValueChange={setSms} trackColor={{ true: colors.success }} accessibilityLabel={t('Alerts by SMS')} />
       </View>
-      {notReady ? <Text style={[typography.caption, styles.gap]}>{t("WhatsApp and SMS are not set up on the server yet. Alerts start once your company's account is connected.")}</Text> : null}
+      {notReady ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t("WhatsApp and SMS are not set up on the server yet. Alerts start once your company's account is connected.")}</Text> : null}
       <Button title={t('Save')} onPress={() => void save()} loading={busy === 'save'} disabled={!dirty || ((whatsapp || sms) && !sendTo)} />
       <View style={styles.tests}>
         <Button title={t('Test WhatsApp')} variant="secondary" onPress={() => void test('WHATSAPP')} loading={busy === 'WHATSAPP'} disabled={!sendTo} />

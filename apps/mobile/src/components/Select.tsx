@@ -41,9 +41,9 @@ export function Select<V extends string>({ label, value, options, onChange, plac
   return (
     <View style={styles.container}>
       {label ? (
-        <Text style={styles.label}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.label}>
           {label}
-          {required ? <Text style={styles.req}> *</Text> : null}
+          {required ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.req}> *</Text> : null}
         </Text>
       ) : null}
       <Touchable
@@ -67,12 +67,12 @@ export function Select<V extends string>({ label, value, options, onChange, plac
         </View>
         <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
       </Touchable>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.error}>{error}</Text> : null}
 
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={[typography.h2, styles.flex]} accessibilityRole="header">
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.h2, styles.flex]} accessibilityRole="header">
               {label ?? t('Select')}
             </Text>
             <IconButton icon="close" size={26} color={colors.text} onPress={() => setOpen(false)} accessibilityLabel={t('Close')} />
@@ -88,7 +88,7 @@ export function Select<V extends string>({ label, value, options, onChange, plac
             keyExtractor={(o) => o.value}
             keyboardShouldPersistTaps="handled"
             ItemSeparatorComponent={() => <View style={styles.sep} />}
-            ListEmptyComponent={<Text style={styles.empty}>{emptyText ?? t('No options')}</Text>}
+            ListEmptyComponent={<Text maxFontSizeMultiplier={maxFontScale} style={styles.empty}>{emptyText ?? t('No options')}</Text>}
             renderItem={({ item }) => {
               const active = item.value === value;
               return (
@@ -103,8 +103,8 @@ export function Select<V extends string>({ label, value, options, onChange, plac
                   accessibilityState={{ selected: active }}
                 >
                   <View style={styles.flex}>
-                    <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>{item.label}</Text>
-                    {item.hint ? <Text style={styles.hint}>{item.hint}</Text> : null}
+                    <Text maxFontSizeMultiplier={maxFontScale} style={[styles.rowLabel, active && styles.rowLabelActive]}>{item.label}</Text>
+                    {item.hint ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.hint}>{item.hint}</Text> : null}
                   </View>
                   {active ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
                 </Touchable>

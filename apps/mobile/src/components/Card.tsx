@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { colors, radius, shadow, spacing, typography } from '../theme';
+import { colors, maxFontScale, radius, shadow, spacing, typography } from '../theme';
 import { Touchable } from './Touchable';
 
 interface Props {
@@ -18,13 +18,13 @@ interface Props {
 }
 
 export function Card({ children, onPress, style, title, right: rightProp, count, accessibilityRole = 'button', accessibilityLabel, accessibilityHint }: Props) {
-  const right = count !== undefined ? <Text style={typography.caption}>{count}</Text> : rightProp;
+  const right = count !== undefined ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{count}</Text> : rightProp;
   const content = (
     <>
       {(title || right) && (
         <View style={styles.header}>
           {title ? (
-            <Text style={typography.h3} accessibilityRole={onPress ? undefined : 'header'}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.h3} accessibilityRole={onPress ? undefined : 'header'}>
               {title}
             </Text>
           ) : (

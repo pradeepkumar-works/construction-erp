@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors, spacing, typography } from '../theme';
+import { colors, maxFontScale, spacing, typography } from '../theme';
 import { phoneRoute } from './links';
 
 /**
@@ -21,8 +21,8 @@ export function AnswerText({ text }: { text: string }) {
                 const m = l.match(/^\s*([-*•]|\d+[.)])\s+(.*)$/)!;
                 return (
                   <View key={j} style={styles.item}>
-                    <Text style={styles.bullet}>{/\d/.test(m[1]) ? m[1] : '•'}</Text>
-                    <Text style={styles.text}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={styles.bullet}>{/\d/.test(m[1]) ? m[1] : '•'}</Text>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={styles.text}>
                       <Inline text={m[2]} />
                     </Text>
                   </View>
@@ -33,7 +33,7 @@ export function AnswerText({ text }: { text: string }) {
         }
         const heading = lines.length === 1 && /^#{1,4}\s+/.test(lines[0]);
         return (
-          <Text key={i} style={[styles.text, styles.block, heading && styles.heading]}>
+          <Text maxFontSizeMultiplier={maxFontScale} key={i} style={[styles.text, styles.block, heading && styles.heading]}>
             <Inline text={heading ? lines[0].replace(/^#{1,4}\s+/, '') : lines.join('\n')} />
           </Text>
         );
@@ -51,12 +51,12 @@ function Inline({ text }: { text: string }) {
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
     if (m.index > last) parts.push(text.slice(last, m.index));
-    if (m[1]) parts.push(<Text key={m.index} style={styles.bold}>{m[1]}</Text>);
+    if (m[1]) parts.push(<Text maxFontSizeMultiplier={maxFontScale} key={m.index} style={styles.bold}>{m[1]}</Text>);
     else {
       const route = phoneRoute(m[3]);
       parts.push(
         route ? (
-          <Text key={m.index} style={styles.link} accessibilityRole="link" onPress={() => router.push(route as never)}>
+          <Text maxFontSizeMultiplier={maxFontScale} key={m.index} style={styles.link} accessibilityRole="link" onPress={() => router.push(route as never)}>
             {m[2]}
           </Text>
         ) : (

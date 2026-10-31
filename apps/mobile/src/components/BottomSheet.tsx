@@ -2,7 +2,7 @@ import React from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, touch, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 import { IconButton, Touchable } from './Touchable';
 
@@ -45,11 +45,11 @@ export function BottomSheet({
           <View style={styles.head}>
             <View style={styles.flex}>
               {title ? (
-                <Text style={typography.h2} accessibilityRole="header">
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2} accessibilityRole="header">
                   {title}
                 </Text>
               ) : null}
-              {subtitle ? <Text style={[typography.caption, styles.subtitle]}>{subtitle}</Text> : null}
+              {subtitle ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.subtitle]}>{subtitle}</Text> : null}
             </View>
             <IconButton icon="close" color={colors.textMuted} filled={colors.neutralSoft} onPress={close} disabled={!dismissable} accessibilityLabel={t('Close')} style={styles.close} />
           </View>
@@ -77,7 +77,7 @@ export function SheetActions({ actions, onClose }: { actions: SheetAction[]; onC
             style={styles.action}
           >
             <Ionicons name={a.icon} size={22} color={a.tone === 'danger' ? colors.danger : colors.primary} />
-            <Text style={[typography.bodyStrong, { color: fg }]}>{a.label}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.bodyStrong, { color: fg }]}>{a.label}</Text>
           </Touchable>
         );
       })}

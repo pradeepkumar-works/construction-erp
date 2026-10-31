@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, type AccessibilityActionEvent, type Accessibili
 import { Ionicons } from '@expo/vector-icons';
 import type { SubmissionStatus } from '@erp/shared';
 import type { OutboxType } from '../offline/types';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, typography } from '../theme';
 import { StatusBadge } from './StatusBadge';
 import { Touchable } from './Touchable';
 
@@ -65,17 +65,17 @@ export function SubmissionRow({ type, title, subtitle, meta, status, onPress, st
         <Ionicons name={TYPE_ICON[type]} size={22} color={colors.primary} />
       </View>
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.title} numberOfLines={2}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.subtitle} numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
         <View style={styles.metaRow}>
           {status ? <StatusBadge status={status} /> : null}
-          {meta ? <Text style={styles.meta}>{meta}</Text> : null}
+          {meta ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.meta}>{meta}</Text> : null}
         </View>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />

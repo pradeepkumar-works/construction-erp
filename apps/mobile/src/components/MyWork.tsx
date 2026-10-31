@@ -4,7 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SUBMISSION_TYPE_LABELS, mayApprove, type MyWorkCard, type MyWorkDto, type RoleKey } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
-import { colors, fontSize, radius, spacing, touch, typography } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../theme';
 import { formatMoneyCompact } from '../utils/format';
 import { useT } from '../i18n/LanguageContext';
 import { Card } from './Card';
@@ -157,8 +157,8 @@ export function MyWorkPanel({ data, loading, title = true, webUrl = null }: { da
           <View style={styles.clear}>
             <Ionicons name="checkmark-circle" size={22} color={colors.success} />
             <View style={styles.flex}>
-              <Text style={typography.bodyStrong}>{t('All caught up')}</Text>
-              <Text style={typography.caption}>{t('Nothing waits for you right now.')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{t('All caught up')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Nothing waits for you right now.')}</Text>
             </View>
           </View>
         </Card>
@@ -206,32 +206,32 @@ function WorkCard({ title, icon, tone, count, amount, rows, route, web, openWeb 
           <Ionicons name={icon} size={20} color={c.fg} />
         </View>
         <View style={styles.flex}>
-          <Text style={typography.bodyStrong} numberOfLines={2}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong} numberOfLines={2}>
             {title}
           </Text>
-          {total ? <Text style={typography.caption}>{total}</Text> : null}
+          {total ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{total}</Text> : null}
         </View>
-        <Text style={[styles.count, { color: c.fg }]}>{count}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={[styles.count, { color: c.fg }]}>{count}</Text>
       </Touchable>
       {rows.map((r) => (
         <Touchable key={r.key} onPress={go(r.route, r.web)} disabled={!r.route && !r.web} accessibilityRole={r.route || r.web ? 'link' : 'text'} accessibilityHint={!r.route && r.web ? t('Opens on the web') : undefined} style={styles.item}>
           <View style={styles.flex}>
-            <Text style={typography.body} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.body} numberOfLines={1}>
               {r.label}
             </Text>
             {r.note ? (
-              <Text style={typography.caption} numberOfLines={1}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
                 {r.note}
               </Text>
             ) : null}
           </View>
-          {r.right ? <Text style={styles.right}>{r.right}</Text> : null}
+          {r.right ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.right}>{r.right}</Text> : null}
           {r.route ? <Ionicons name="chevron-forward" size={16} color={colors.textMuted} /> : r.web ? <Ionicons name="open-outline" size={16} color={colors.textMuted} /> : null}
         </Touchable>
       ))}
       {rest > 0 && rows.length > 0 && (route || web) ? (
         <Touchable onPress={go(route, web)} accessibilityRole="link" style={styles.moreBtn}>
-          <Text style={styles.more}>{t('{n} more', { n: rest })}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.more}>{t('{n} more', { n: rest })}</Text>
         </Touchable>
       ) : null}
     </Card>

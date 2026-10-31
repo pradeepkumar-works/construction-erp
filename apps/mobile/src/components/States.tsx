@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fontSize, spacing, typography } from '../theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../theme';
 import { ILLUSTRATIONS, type EmptyArt } from '../illustrations';
 import { Button } from './Button';
 import { Skeleton } from './Skeleton';
@@ -13,7 +13,7 @@ export function Loading({ text, variant = 'list' }: { text?: string; variant?: '
   return (
     <View style={styles.skeleton}>
       <Skeleton variant={variant} label={text ?? t('Loading…')} />
-      {text ? <Text style={styles.text}>{text}</Text> : null}
+      {text ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.text}>{text}</Text> : null}
     </View>
   );
 }
@@ -39,8 +39,8 @@ export function EmptyState({
       ) : (
         <Ionicons name={icon} size={44} color={colors.textMuted} />
       )}
-      <Text style={styles.title}>{title}</Text>
-      {subtitle ? <Text style={styles.text}>{subtitle}</Text> : null}
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.title}>{title}</Text>
+      {subtitle ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.text}>{subtitle}</Text> : null}
       {action ? <View style={styles.action}>{action}</View> : null}
     </View>
   );
@@ -51,8 +51,8 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   return (
     <View style={styles.center}>
       <Ionicons name="cloud-offline-outline" size={44} color={colors.danger} />
-      <Text style={styles.title}>{t('Could not load')}</Text>
-      <Text style={styles.text}>{t(message)}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.title}>{t('Could not load')}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.text}>{t(message)}</Text>
       {onRetry ? (
         <View style={styles.action}>
           <Button title={t('Try again')} onPress={onRetry} variant="secondary" icon="refresh" />
@@ -72,7 +72,7 @@ export function ErrorBanner({ message }: { message: string | null }) {
   return (
     <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
       <Ionicons name="alert-circle" size={20} color={colors.danger} />
-      <Text style={styles.bannerText}>{t(message)}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.bannerText}>{t(message)}</Text>
     </View>
   );
 }

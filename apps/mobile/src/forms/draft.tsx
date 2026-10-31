@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../auth/AuthContext';
 import { Button, type LocalPhoto } from '../components';
 import { useT } from '../i18n/LanguageContext';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, typography } from '../theme';
 import { formatDateTime } from '../utils/format';
 import { kvGet, kvRemove, kvSet } from '../utils/kv';
 
@@ -151,7 +151,7 @@ export function DraftNotice({ draft, onStartOver }: { draft: FormDraft; onStartO
   return (
     <View style={styles.notice} accessibilityLiveRegion="polite">
       <Ionicons name="document-text-outline" size={20} color={colors.primary} />
-      <Text style={styles.text}>{t('Your draft from {when} is back. Check it and send it.', { when: formatDateTime(draft.restoredAt) })}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.text}>{t('Your draft from {when} is back. Check it and send it.', { when: formatDateTime(draft.restoredAt) })}</Text>
       <Button
         title={t('Start over')}
         variant="ghost"

@@ -1,15 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { colors, spacing, typography } from '../theme';
+import { colors, maxFontScale, spacing, typography } from '../theme';
 
 /** `count` is how many the section holds, on the right (never "Title (3)"). */
 export function SectionTitle({ title, right, count, style }: { title: string; right?: React.ReactNode; count?: number; style?: ViewStyle }) {
   return (
     <View style={[styles.sectionRow, style]}>
-      <Text style={typography.h3} accessibilityRole="header">
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.h3} accessibilityRole="header">
         {title}
       </Text>
-      {count !== undefined ? <Text style={typography.caption}>{count}</Text> : right}
+      {count !== undefined ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{count}</Text> : right}
     </View>
   );
 }
@@ -19,9 +19,9 @@ export function KeyValue({ label, value, multiline }: { label: string; value: Re
   const isEmpty = value === null || value === undefined || value === '';
   return (
     <View style={[styles.kv, multiline && styles.kvCol]}>
-      <Text style={[styles.kvLabel, multiline && styles.kvLabelCol]}>{label}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[styles.kvLabel, multiline && styles.kvLabelCol]}>{label}</Text>
       {typeof value === 'string' || typeof value === 'number' || isEmpty ? (
-        <Text style={[styles.kvValue, multiline && styles.kvValueCol, isEmpty && styles.muted]}>{isEmpty ? '—' : String(value)}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={[styles.kvValue, multiline && styles.kvValueCol, isEmpty && styles.muted]}>{isEmpty ? '—' : String(value)}</Text>
       ) : (
         <View style={styles.kvValueWrap}>{value}</View>
       )}
@@ -37,8 +37,8 @@ export function Divider() {
 export function Stat({ label, value, tone = colors.primary }: { label: string; value: string | number; tone?: string }) {
   return (
     <View style={styles.stat}>
-      <Text style={[styles.statValue, { color: tone }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[styles.statValue, { color: tone }]}>{value}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={styles.statLabel}>{label}</Text>
     </View>
   );
 }

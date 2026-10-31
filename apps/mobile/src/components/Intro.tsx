@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PRODUCT_NAME } from '@erp/shared';
 import { ILLUSTRATIONS } from '../illustrations';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, typography } from '../theme';
 import { Button } from './Button';
 import { useT } from '../i18n/LanguageContext';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
@@ -79,10 +79,10 @@ export function Intro({ onDone }: { onDone: () => void }) {
         {SLIDES.map((s) => (
           <View key={s.title} style={[styles.slide, { width, height: pagerHeight || undefined }]}>
             <Image source={s.art} style={{ width: art, height: art }} accessibilityIgnoresInvertColors />
-            <Text style={styles.title} accessibilityRole="header">
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.title} accessibilityRole="header">
               {t(s.title)}
             </Text>
-            <Text style={styles.text}>{t(s.text)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.text}>{t(s.text)}</Text>
           </View>
         ))}
       </ScrollView>
@@ -92,7 +92,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
         ))}
       </View>
       <View style={styles.footer}>
-        <Text style={styles.brand}>{PRODUCT_NAME.toUpperCase()}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.brand}>{PRODUCT_NAME.toUpperCase()}</Text>
         <Button title={last ? t('Get started') : t('Next')} onPress={next} icon={last ? 'log-in-outline' : 'arrow-forward'} />
       </View>
     </SafeAreaView>

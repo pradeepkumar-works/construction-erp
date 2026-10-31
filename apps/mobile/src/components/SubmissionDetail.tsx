@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { ApprovalStageDto, AttachmentDto, ReviewDecision, SubmissionBase, SubmissionType } from '@erp/shared';
 import { absoluteUrl } from '../config';
-import { colors, fontSize, radius, spacing, typography } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing, typography } from '../theme';
 import { formatDateTime } from '../utils/format';
 import { takenAtFromName } from '../utils/photoTime';
 import { IconButton, Touchable } from './Touchable';
@@ -35,8 +35,8 @@ export function SubmissionHeader({ item, title, subtitle, labels }: { item: Subm
     <Card>
       <View style={styles.headRow}>
         <View style={styles.flex}>
-          <Text style={typography.h2}>{title}</Text>
-          {subtitle ? <Text style={[typography.caption, styles.subtitle]}>{subtitle}</Text> : null}
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{title}</Text>
+          {subtitle ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.subtitle]}>{subtitle}</Text> : null}
         </View>
         <IconButton icon="ellipsis-horizontal" filled={colors.primarySoft} onPress={() => setMore(true)} accessibilityLabel={t('More actions')} style={styles.more} />
       </View>
@@ -54,8 +54,8 @@ export function SubmissionHeader({ item, title, subtitle, labels }: { item: Subm
         <View style={styles.note}>
           <Ionicons name="chatbox-ellipses-outline" size={18} color={colors.info} />
           <View style={styles.flex}>
-            <Text style={styles.noteLabel}>{t('Reviewer note')}</Text>
-            <Text style={styles.noteText}>{item.reviewNote}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.noteLabel}>{t('Reviewer note')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.noteText}>{item.reviewNote}</Text>
           </View>
         </View>
       ) : null}
@@ -85,7 +85,7 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
             >
               <Image source={{ uri: absoluteUrl(a.url) }} style={styles.thumb} contentFit="cover" transition={150} />
               {taken ? (
-                <Text style={styles.stamp} numberOfLines={1}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={styles.stamp} numberOfLines={1}>
                   {formatDateTime(taken)}
                 </Text>
               ) : null}
@@ -96,7 +96,7 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
       {files.map((f) => (
         <View key={f.id} style={styles.fileRow}>
           <Ionicons name="document-attach-outline" size={20} color={colors.textMuted} />
-          <Text style={styles.fileName} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.fileName} numberOfLines={1}>
             {f.fileName}
           </Text>
         </View>
@@ -104,7 +104,7 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
       <Modal visible={!!open} transparent animationType="fade" onRequestClose={() => setOpen(null)}>
         <Touchable style={styles.lightbox} onPress={() => setOpen(null)} accessibilityRole="button" accessibilityLabel={t('Close photo')} pressedStyle={styles.lightboxPressed}>
           {open ? <Image source={{ uri: absoluteUrl(open.url) }} style={styles.full} contentFit="contain" /> : null}
-          {open && takenAtFromName(open.fileName) ? <Text style={styles.lightboxStamp}>{t('Taken {time}', { time: formatDateTime(takenAtFromName(open.fileName)) })}</Text> : null}
+          {open && takenAtFromName(open.fileName) ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.lightboxStamp}>{t('Taken {time}', { time: formatDateTime(takenAtFromName(open.fileName)) })}</Text> : null}
           <View style={styles.lightboxClose}>
             <Ionicons name="close-circle" size={36} color={colors.onOverlay} />
           </View>
@@ -203,7 +203,7 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
 
   return (
     <Card title={t('Review')}>
-      <Text style={[typography.caption, styles.reviewHint]}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.reviewHint]}>
         {t('This entry is awaiting your decision.')}
         {stage && stage.levels > 1 ? ` ${t('Level {level} of {levels}.', { level: stage.level, levels: stage.levels })}` : ''}
       </Text>
@@ -241,7 +241,7 @@ function StageCard({ stage }: { stage: ApprovalStageDto }) {
       <KeyValue label={t('Waiting with')} value={who || t('No approver yet')} />
       {stage.waitingSince ? <KeyValue label={t('Since')} value={formatDateTime(stage.waitingSince)} /> : null}
       {stage.escalated ? <KeyValue label={t('Escalated')} value={t('Yes, the next level can decide it too')} /> : null}
-      {stage.reason ? <Text style={[typography.caption, styles.stageReason]}>{stage.reason}</Text> : null}
+      {stage.reason ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.stageReason]}>{stage.reason}</Text> : null}
     </Card>
   );
 }
@@ -264,7 +264,7 @@ export function SubmitterActions({ type, item }: { type: SubmissionType; item: S
       : t('The approver asked for changes. Update the entry and resubmit it.');
   return (
     <Card title={draft ? t('Draft') : t('Needs your attention')}>
-      <Text style={[typography.caption, styles.reviewHint]}>{hint}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.reviewHint]}>{hint}</Text>
       <Button title={draft ? t('Edit and submit') : t('Edit and resubmit')} icon="create-outline" onPress={() => router.push({ pathname: path, params: { editId: item.id } })} />
     </Card>
   );

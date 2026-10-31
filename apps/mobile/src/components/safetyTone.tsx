@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { SafetyIncidentType, WorkPermitDto, WorkPermitStatus } from '@erp/shared';
 import { WORK_PERMIT_STATUS_LABELS } from '@erp/shared';
-import { colors, radius, spacing, toneIcon, touch, typography, type Tone } from '../theme';
+import { colors, maxFontScale, radius, spacing, type Tone, toneIcon, touch, typography } from '../theme';
 import { Touchable } from './Touchable';
 import { formatDateTime } from '../utils/format';
 import { useT } from '../i18n/LanguageContext';
@@ -39,13 +39,13 @@ export function Checklist({ label, items, value, onChange }: { label?: string; i
   const t = useT();
   return (
     <View style={styles.container}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.label}>{label}</Text> : null}
       {items.map((item) => {
         const on = value.includes(item);
         return (
           <Touchable key={item} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => onChange(on ? value.filter((v) => v !== item) : [...value, item])} style={styles.row}>
             <Ionicons name={on ? 'checkbox' : 'square-outline'} size={24} color={on ? colors.success : colors.textMuted} />
-            <Text style={[typography.body, styles.text]}>{t(item)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.text]}>{t(item)}</Text>
           </Touchable>
         );
       })}

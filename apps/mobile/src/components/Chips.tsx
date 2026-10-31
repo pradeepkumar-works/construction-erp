@@ -24,7 +24,7 @@ export function Chips<V extends string>({ label, value, options, onChange, clear
       {label ? (
         <Text style={styles.label} maxFontSizeMultiplier={maxFontScale}>
           {label}
-          {required ? <Text style={styles.req}> *</Text> : null}
+          {required ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.req}> *</Text> : null}
         </Text>
       ) : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row} keyboardShouldPersistTaps="handled" accessibilityRole="radiogroup" accessibilityLabel={name}>

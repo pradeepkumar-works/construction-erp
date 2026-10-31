@@ -8,7 +8,7 @@ import { request } from '../api/client';
 import { BottomSheet } from '../components/BottomSheet';
 import { Button } from '../components/Button';
 import { useT } from '../i18n/LanguageContext';
-import { colors, spacing, typography } from '../theme';
+import { colors, maxFontScale, spacing, typography } from '../theme';
 import { kvGet, kvSet } from '../utils/kv';
 import { configureForegroundHandler, getPushRegistration, notificationRoute, openNotificationRoute, pushOff, pushPermission, type PushRegistration } from './push';
 
@@ -217,7 +217,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     <Ctx.Provider value={value}>
       {children}
       <BottomSheet visible={explain && !!user} onClose={notNow} title={t('Turn on notifications?')} subtitle={t('So you hear when an entry needs you.')}>
-        <Text style={[typography.body, styles.text]}>{t('Approvals waiting for you, entries sent back to you, and the daily DPR reminder. Your phone asks next; you can change it later under Profile.')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.text]}>{t('Approvals waiting for you, entries sent back to you, and the daily DPR reminder. Your phone asks next; you can change it later under Profile.')}</Text>
         <View style={styles.buttons}>
           <Button title={t('Not now')} variant="ghost" onPress={notNow} style={styles.flex} />
           <Button title={t('Turn on')} icon="notifications-outline" onPress={turnOn} style={styles.flex2} />

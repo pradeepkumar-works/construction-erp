@@ -7,7 +7,7 @@ import { useFetch } from '../api/hooks';
 import { fetchProjects } from '../api/lists';
 import { Button, Screen, confirmResult, type LocalPhoto, type SelectOption } from '../components';
 import type { OutboxPhoto } from '../offline/types';
-import { colors, spacing, typography } from '../theme';
+import { colors, maxFontScale, spacing, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 
 /** Projects the user can submit against, as Select options (cached on the device for offline use). */
@@ -50,8 +50,8 @@ export function SubmitSuccess({ title, subtitle, detailHref, onAnother }: { titl
       <View style={styles.iconWrap}>
         <Ionicons name="checkmark" size={48} color={colors.textOnPrimary} />
       </View>
-      <Text style={[typography.h1, styles.text]}>{title}</Text>
-      <Text style={[typography.body, styles.text, styles.sub]}>{subtitle}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.h1, styles.text]}>{title}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.text, styles.sub]}>{subtitle}</Text>
       <View style={styles.actions}>
         {detailHref ? <Button title={t('View submission')} icon="open-outline" onPress={() => router.replace(detailHref)} /> : null}
         {onAnother ? <Button title={t('Submit another')} variant="secondary" onPress={onAnother} /> : null}
@@ -81,9 +81,9 @@ export function QueuedSuccess({
       <View style={[styles.iconWrap, styles.iconQueued]}>
         <Ionicons name="cloud-upload-outline" size={48} color={colors.textOnPrimary} />
       </View>
-      <Text style={[typography.h1, styles.text]}>{title}</Text>
-      <Text style={[typography.body, styles.text, styles.sub]}>{subtitle}</Text>
-      <Text style={[typography.caption, styles.text, styles.sub]}>{note ?? t('It will be sent for approval automatically as soon as the phone is back online. You can check it under Outbox.')}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.h1, styles.text]}>{title}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.text, styles.sub]}>{subtitle}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.text, styles.sub]}>{note ?? t('It will be sent for approval automatically as soon as the phone is back online. You can check it under Outbox.')}</Text>
       <View style={styles.actions}>
         <Button title={t('View outbox')} icon="cloud-upload-outline" onPress={() => router.replace('/outbox')} />
         {onAnother ? <Button title={t('Submit another')} variant="secondary" onPress={onAnother} /> : null}
