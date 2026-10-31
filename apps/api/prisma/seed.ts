@@ -2056,7 +2056,7 @@ const CONTRACTS: Record<string, {
 
 /** Clients from the projects' client names, and contract terms for projects that have none yet. */
 async function seedContracts(organizationId: string) {
-  const projects = await prisma.project.findMany({ where: { organizationId }, orderBy: { code: 'asc' } });
+  const projects = await prisma.project.findMany({ where: { organizationId, code: { in: DEMO_PROJECT_CODES } }, orderBy: { code: 'asc' } });
   for (const project of projects) {
     const c = CONTRACTS[project.type];
     if (!c || project.agreementNo) continue;
@@ -2082,7 +2082,7 @@ async function seedContracts(organizationId: string) {
 
 /** Liquidated damages terms (v4 item 50) on seeded contracts that have none: 0.5% of the contract value per week, capped at 10%. */
 async function seedLdTerms(organizationId: string) {
-  await prisma.project.updateMany({ where: { organizationId, agreementNo: { not: null }, ldRatePct: 0 }, data: { ldRatePct: D('0.5'), ldPeriod: 'WEEK', ldCapPct: D(10) } });
+  await prisma.project.updateMany({ where: { organizationId, code: { in: DEMO_PROJECT_CODES }, agreementNo: { not: null }, ldRatePct: 0 }, data: { ldRatePct: D('0.5'), ldPeriod: 'WEEK', ldCapPct: D(10) } });
 }
 
 /** Price variation formulas (v4 item 50) by project type: component, share of the work value (%), base index (WPI-like). */
@@ -2807,7 +2807,7 @@ async function seedQuality(organizationId: string) {
   const checklists = new Map((await prisma.checklistTemplate.findMany({ where: { organizationId } })).map((c) => [c.name, c]));
   for (const [activity, [checklist, holdPoint]] of Object.entries(ACTIVITY_CHECKLISTS)) {
     const c = checklists.get(checklist);
-    if (c) await prisma.activity.updateMany({ where: { organizationId, name: activity, checklistTemplateId: null }, data: { checklistTemplateId: c.id, holdPoint: !!holdPoint } });
+    if (c) await prisma.activity.updateMany({ where: { organizationId, project: { code: { in: DEMO_PROJECT_CODES } }, name: activity, checklistTemplateId: null }, data: { checklistTemplateId: c.id, holdPoint: !!holdPoint } });
   }
   if ((await prisma.inspection.count({ where: { organizationId } })) > 0) return;
   const qa = await prisma.user.findFirst({ where: { organizationId, email: 'qaqc@demo.com' } });
@@ -4509,6 +4509,23 @@ async function seedAttendanceCheck(organizationId: string) {
   // The roll call's last six days but the latest, which is left as the site marked it (the biometric test punches then).
   const dates = [...new Set(roll.map((r) => iso(r.date)))].sort().slice(-6, -1);
   if (dates.length < 4) return;
+  // The head count kept on those days. Where the sheets came from an older seed than the roll call (the live demo),
+  // a day has none: its sheet is then the roll call's own count beside the latest sheet's other lines.
+  const latest = await prisma.attendanceSheet.findFirst({ where: { projectId: project.id }, orderBy: { date: 'desc' }, include: { lines: { orderBy: { sortOrder: 'asc' } } } });
+  for (const d of dates) {
+    const date = new Date(`${d}T00:00:00Z`);
+    if (!latest || (await prisma.attendanceSheet.count({ where: { projectId: project.id, date } }))) continue;
+    const present = roll.filter((r) => iso(r.date) === d && r.status !== 'ABSENT');
+    const lines = [
+      ...latest.lines.filter((l) => l.contractor !== sjc.name).map(({ contractor, vendorId, category, count }) => ({ contractor, vendorId, category, count })),
+      ...[...new Set(present.map((r) => r.worker.trade))].map((category) => ({ contractor: sjc.name, vendorId: sjc.id, category, count: present.filter((r) => r.worker.trade === category).length })),
+    ];
+    const total = lines.reduce((s, l) => s + l.count, 0);
+    const sheet = await prisma.attendanceSheet.create({
+      data: { organizationId, projectId: project.id, date, totalWorkers: total, recordedById: latest.recordedById, lines: { create: lines.map((l, i) => ({ ...l, sortOrder: i })) } },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'ATTENDANCE', entityId: sheet.id, action: 'CREATED', actorId: latest.recordedById, note: `${d}: ${total} workers`, createdAt: date } });
+  }
 
   // Enrol the crew (the first five already are) and punch them in and out on the gate terminal.
   const workers = [...new Map(roll.map((r) => [r.workerId, r.worker])).values()];
