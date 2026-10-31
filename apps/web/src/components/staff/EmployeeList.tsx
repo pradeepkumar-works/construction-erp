@@ -8,7 +8,7 @@ import type { EmployeeDto, EmployeeSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canManageStaff } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useEmployees } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -54,7 +54,7 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
           ),
         },
         { title: 'Designation', dataIndex: 'designation', width: 180, defaultHidden: true, ...sort('designation') },
-        { key: 'department', title: 'Department', dataIndex: 'department', width: 160, render: (v: string | null) => v ?? '-' },
+        { key: 'department', title: 'Department', dataIndex: 'department', width: 160, render: (v: string | null) => v ?? NO_VALUE },
         { title: 'Posted at', dataIndex: 'projectName', width: 260, ellipsis: true, ...sort('project'), render: (v: string | null) => v ?? 'Head office' },
         { key: 'userEmail', title: 'Login', dataIndex: 'userEmail', width: 200, ellipsis: true, render: (v: string | null) => v ?? <Sub>None</Sub> },
         { key: 'joinedOn', title: 'Joined', dataIndex: 'joinedOn', width: 120, render: (v: string | null) => formatDate(v) },
@@ -80,7 +80,7 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search name, code, designation"
-        searchLabel="Search employees"
+        searchLabel="Search staff"
         extra={newButton}
       >
         <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>

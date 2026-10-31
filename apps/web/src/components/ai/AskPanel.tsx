@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { App, Button, Drawer, Empty, Flex, Result, Spin, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { ArrowLeftOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, DislikeFilled, DislikeOutlined, HistoryOutlined, LikeFilled, LikeOutlined, PlusOutlined, ReloadOutlined } from '@/components/common/icons';
+import { ArrowLeftOutlined, ClockCircleOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, DislikeFilled, DislikeOutlined, HistoryOutlined, LikeFilled, LikeOutlined, LockOutlined, PlusOutlined, ReloadOutlined } from '@/components/common/icons';
+import { ResultMark } from '@/components/common/ResultMark';
+import dayjs from 'dayjs';
+import { formatDayMonth, formatINR } from '@/lib/format';
 import { Bubble, Prompts, Sender, Welcome } from '@ant-design/x';
 import type { BubbleItemType } from '@ant-design/x';
 import XMarkdown, { type ComponentProps } from '@ant-design/x-markdown';
@@ -15,7 +18,7 @@ import { AI_QUESTION_MAX, PRODUCT_NAME } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { streamAsk } from '@/lib/ai';
 import { useProjectScope } from '@/lib/project-scope';
-import { useAiFeedback, useAiThreads, useDeleteAiThread, useProjects } from '@/lib/queries';
+import { useAiFeedback, useAiSettings, useAiThreads, useDeleteAiThread, useProjects } from '@/lib/queries';
 import { useStickyTop } from '@/lib/sticky';
 import { askShortcutLabel } from '@/lib/shortcuts';
 import { SparkleIcon } from './SparkleIcon';
@@ -510,47 +513,66 @@ function CitationLink({ href, children }: { href: string; children: React.ReactN
 
 function OffState({ status, onNavigate }: { status?: AiStatusDto; onNavigate: () => void }) {
   const router = useRouter();
+  const capped = status?.reason === 'CAP_REACHED';
+  const settingsData = useAiSettings(!!status?.canManage && capped).data;
   if (!status) return null;
+  const go = (href: string) => () => {
+    onNavigate();
+    router.push(href);
+  };
   const settings = status.canManage ? (
-    <Button
-      type="primary"
-      onClick={() => {
-        onNavigate();
-        router.push('/ai-settings');
-      }}
-    >
+    <Button type="primary" onClick={go('/ai-settings')}>
       Open Ask {PRODUCT_NAME} settings
     </Button>
   ) : null;
-  if (status.reason === 'CAP_REACHED') {
-    return <Result status="info" title="This month's allowance is used up" subTitle={status.canManage ? 'Raise the monthly allowance to keep asking this month.' : 'An admin can raise the monthly allowance in Admin.'} extra={settings} />;
-  }
-  if (status.reason === 'READ_ONLY') {
-    const billing = status.canManage ? (
-      <Button
-        type="primary"
-        onClick={() => {
-          onNavigate();
-          router.push('/billing');
-        }}
-      >
-        Open Subscription
-      </Button>
-    ) : null;
+  const subscription = status.canManage ? (
+    <Button type="primary" onClick={go('/billing')}>
+      Open Subscription
+    </Button>
+  ) : null;
+  if (capped) {
+    const plan = settingsData?.plan;
+    const restarts = formatDayMonth(dayjs().add(1, 'month').startOf('month'));
+    if (status.canManage && plan && settingsData.effectiveCapInr >= plan.allowanceInr)
+      return (
+        <Result
+          icon={<ResultMark icon={<ClockCircleOutlined />} />}
+          title="This month's allowance is used up"
+          subTitle={`The plan's ${formatINR(plan.allowanceInr)} for this month is used up. It starts again on ${restarts}, or change the plan in Admin › Subscription.`}
+          extra={subscription}
+        />
+      );
     return (
       <Result
-        status="info"
+        icon={<ResultMark icon={<ClockCircleOutlined />} />}
+        title="This month's allowance is used up"
+        subTitle={status.canManage ? 'Raise the monthly allowance to keep asking this month.' : `It starts again on ${restarts}. An admin can raise the allowance in Admin › Ask ${PRODUCT_NAME} settings.`}
+        extra={settings}
+      />
+    );
+  }
+  if (status.reason === 'READ_ONLY') {
+    return (
+      <Result
+        icon={<ResultMark icon={<LockOutlined />} />}
         title={`Ask ${PRODUCT_NAME} is paused`}
-        subTitle={`The ${PRODUCT_NAME} trial or subscription has ended, so the company is read-only. ${status.canManage ? 'Renew it under Subscription to ask again.' : 'An admin can renew it under Admin > Subscription.'}`}
-        extra={billing}
+        subTitle={`The ${PRODUCT_NAME} trial or subscription has ended, so the company is read-only. ${status.canManage ? 'Renew it in Admin › Subscription to ask again.' : 'An admin can renew it in Admin › Subscription.'}`}
+        extra={subscription}
       />
     );
   }
   if (status.reason === 'ROLE_OFF') {
-    return <Result status="info" title={`Ask ${PRODUCT_NAME} is not open to your role`} subTitle="Your company's admin chooses which roles can use it." />;
+    return <Result icon={<ResultMark icon={<LockOutlined />} />} title={`Ask ${PRODUCT_NAME} is not open to your role`} subTitle="Your company's admin chooses which roles can use it." />;
   }
   if (status.reason === 'NOT_CONFIGURED') {
-    return <Result status="info" title={`Ask ${PRODUCT_NAME} is not set up yet`} subTitle="The server needs an AI key before anyone can ask questions." />;
+    return <Result icon={<ResultMark icon={<SparkleIcon />} />} title={`Ask ${PRODUCT_NAME} is not set up yet`} subTitle={`Ask ${PRODUCT_NAME} support to turn it on for your company.`} />;
   }
-  return <Result status="info" title={`Ask ${PRODUCT_NAME} is switched off`} subTitle={status.canManage ? 'Switch it on for your company to ask questions about your records.' : 'An admin can switch it on in Admin.'} extra={settings} />;
+  return (
+    <Result
+      icon={<ResultMark icon={<SparkleIcon />} />}
+      title={`Ask ${PRODUCT_NAME} is switched off`}
+      subTitle={status.canManage ? 'Switch it on for your company to ask questions about your records.' : `An admin can switch it on in Admin › Ask ${PRODUCT_NAME} settings.`}
+      extra={settings}
+    />
+  );
 }

@@ -8,7 +8,7 @@ import { TeamOutlined } from '@/components/common/icons';
 import type { ProjectCostDto } from '@erp/shared';
 import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
 import { useProjectCost } from '@/lib/queries';
-import { formatINR, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
+import { formatINR, formatPct, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CostBar, CostHeadTitle, CostLegend } from './CostBar';
 import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
@@ -18,7 +18,7 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { Section, SectionStack } from '@/components/common/Section';
 
 const money = (v: string) => <span className="mono" translate="no">{formatINR(v)}</span>;
-const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: themeColor('gold7') }}>no rate</span> : <span className="mono" translate="no">{`${formatINR(v, true)} ${suffix}`}</span>);
+const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: themeColor('colorWarningText') }}>No rate</span> : <span className="mono" translate="no">{`${formatINR(v, true)} ${suffix}`}</span>);
 
 /** One project's cost heads, month by month, and what makes them up. */
 export function ProjectCostPanel({ projectId }: { projectId: string }) {
@@ -43,7 +43,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
           {missing.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Part of the cost is not counted because a rate is missing" description={missing.join('; ') + '. Set rates in the item master, the equipment master or Labour rates.'} /> : null}
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="Executed value" value={formatINR(data.executedValue)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Work done" value={formatINR(data.executedValue)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
             </Col>
             <Col xs={12} md={6}>
               <Statistic title="Measured (approved MB)" value={formatINR(data.measuredValue)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
@@ -53,7 +53,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
             </Col>
             <Col xs={12} md={6}>
               <Statistic
-                title={`Margin${data.costPct !== null ? ` (cost ${data.costPct}% of executed)` : ''}`}
+                title={`Margin${data.costPct !== null ? ` (cost ${formatPct(data.costPct)} of work done)` : ''}`}
                 value={formatINR(data.margin)}
                 styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: toNumber(data.margin) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }}
               />
@@ -64,13 +64,13 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
               <Statistic title="Billed (approved RA bills)" value={formatINR(data.billedValue)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Cash in from the client" value={formatINR(data.cashIn)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
+              <Statistic title="Money in from the client" value={formatINR(data.cashIn)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
             </Col>
             <Col xs={12} md={6}>
               <Statistic title="Vendor and subcontractor bills (incl. GST)" value={formatINR(data.payableBilled)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Cash out to them" value={formatINR(data.cashOut)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
+              <Statistic title="Money out to them" value={formatINR(data.cashOut)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
             </Col>
           </Row>
           <Section style={{ marginTop: 16 }} title="Cost heads" extra={<CostLegend />}>
@@ -91,7 +91,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                 scroll={{ x: 760 }}
                 columns={[
                   { title: 'Month', dataIndex: 'month', width: 100, render: (v) => formatMonth(v) },
-                  { title: 'Executed value', dataIndex: 'executedValue', width: 140, align: 'right', render: money },
+                  { title: 'Work done', dataIndex: 'executedValue', width: 140, align: 'right', render: money },
                   { title: 'Cost', dataIndex: 'total', width: 130, align: 'right', render: money },
                   {
                     title: '',
@@ -210,7 +210,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                         { title: 'Work order', dataIndex: 'woNo', width: 150, render: (v, r) => <Link href={`/work-orders/${r.workOrderId}`} className="mono">{v}</Link> },
                         { title: 'Subcontractor', dataIndex: 'vendorName' },
                         { title: 'Bills', dataIndex: 'bills', width: 80, align: 'right' },
-                        { title: 'Work value', dataIndex: 'amount', width: 140, align: 'right', render: money },
+                        { title: 'Work done', dataIndex: 'amount', width: 140, align: 'right', render: money },
                       ]}
                     />
                   ),

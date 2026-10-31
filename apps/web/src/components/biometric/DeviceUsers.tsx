@@ -7,7 +7,7 @@ import type { TableProps } from 'antd';
 import type { BiometricUserDto } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useBiometricAction, useBiometricUsers, useEmployees, useWorkers } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 import { MoreOutlined } from '@/components/common/icons';
@@ -82,7 +82,7 @@ export function DeviceUsers() {
   const columns: TableProps<BiometricUserDto>['columns'] = [
     { title: 'User number', dataIndex: 'pin', width: 120, render: (v: string) => <span translate="no">{v}</span> },
     {
-      title: 'Who',
+      title: 'Person',
       key: 'who',
       render: (_, u) =>
         u.employeeName ? (
@@ -105,15 +105,15 @@ export function DeviceUsers() {
       ),
     },
     { title: 'Punches, 30 days', dataIndex: 'punches', width: 140, align: 'right' },
-    { title: 'Waiting to mark', dataIndex: 'unmatched', width: 140, align: 'right', render: (v: number) => (v ? <strong>{v}</strong> : '-') },
-    { title: 'Last punch', dataIndex: 'lastPunchAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : '-') },
+    { title: 'Waiting to mark', dataIndex: 'unmatched', width: 140, align: 'right', render: (v: number) => (v ? <strong>{v}</strong> : NO_VALUE) },
+    { title: 'Last punch', dataIndex: 'lastPunchAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : NO_VALUE) },
     {
       title: '',
       key: 'x',
       width: 140,
       render: (_, u) => (
         <Space size={4}>
-          <Button size="small" type={u.employeeId || u.workerId ? 'default' : 'primary'} onClick={() => setMatching({ user: u })} aria-label={`${u.employeeId || u.workerId ? 'Change' : 'Match'} user number ${u.pin}`}>
+          <Button size="small" onClick={() => setMatching({ user: u })} aria-label={`${u.employeeId || u.workerId ? 'Change' : 'Match'} user number ${u.pin}`}>
             {u.employeeId || u.workerId ? 'Change' : 'Match'}
           </Button>
           {digits(u) ? (

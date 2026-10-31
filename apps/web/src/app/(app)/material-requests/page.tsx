@@ -10,7 +10,7 @@ function MaterialRequestsPage() {
   const search = useSearchParams();
   return (
     <div className="page-container">
-      <PageHeader title="Indents" subtitle="Raised from site, with vendor quotations and the purchase orders raised on them" />
+      <PageHeader title="Indents" subtitle="Indents raised from site, with vendor quotations and the purchase orders made on them" />
       <Card size="small">
         <MrList newLabel="New indent" openId={search.get('id')} />
       </Card>

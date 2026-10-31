@@ -45,7 +45,7 @@ export function ReceiveTransferModal({ open, onClose, transfer }: { open: boolea
         ]}
       />
       <Form form={form} layout="vertical">
-        <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
+        <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Choose the date' }]}>
           <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(transfer.date), 'day')} />
         </Form.Item>
         <Form.Item name="remarks" label="Remarks">

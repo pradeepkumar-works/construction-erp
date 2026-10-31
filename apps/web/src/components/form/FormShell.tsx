@@ -10,7 +10,7 @@ import { PRODUCT_NAME, navNode, navNodeAt } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import { api, describeError } from '@/lib/api';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, inSentence } from '@/lib/format';
 import { setLeaveGuard } from '@/lib/leave-guard';
 import { handledInPlace } from '@/lib/notify';
 import { useProjectScope } from '@/lib/project-scope';
@@ -46,6 +46,8 @@ export interface FormShellProps<T> {
   footerExtra?: React.ReactNode;
   /** Disables the submit button, e.g. while a required lookup loads */
   okDisabled?: boolean;
+  /** The close button's words where "Cancel" would read as the action itself (cancelling a debit note). */
+  cancelText?: string;
   /**
    * A new entry's empty Project field starts on the header's project, or the user's only project (default on). Turn it
    * off where the project must be a deliberate choice.
@@ -124,7 +126,7 @@ const focusIn = (el: HTMLElement) => {
  * The form component keeps its own fields and defaults and passes `onSubmit` (usually `mutation.mutateAsync`) instead
  * of the Form's `onFinish`.
  */
-export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, secondaryText, allValues, layout = 'drawer', width, draftKey, footerExtra, okDisabled, projectDefault = true, aiDraft, children }: FormShellProps<T>) {
+export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, secondaryText, allValues, layout = 'drawer', width, draftKey, footerExtra, okDisabled, cancelText = 'Cancel', projectDefault = true, aiDraft, children }: FormShellProps<T>) {
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const { user } = useAuth();
@@ -381,7 +383,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       <Flex gap={token.marginXS} align="center" wrap>
         {footerExtra}
         <Button onClick={requestClose} disabled={!!submitting}>
-          Cancel
+          {cancelText}
         </Button>
         {secondaryText && (
           <Button onClick={() => void submit(true)} loading={submitting === 'secondary'} disabled={okDisabled || !!submitting}>
@@ -407,7 +409,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
           title={aiDraft.note ?? `Filled in by Ask ${PRODUCT_NAME} from what you wrote`}
           description={
             <>
-              Check each field before you {okText.toLowerCase()}. Nothing is saved until you do.
+              Check each field before you {inSentence(okText)}. Nothing is saved until you do.
               {aiDraft.flags.length > 0 && (
                 <ul aria-label="To check" style={{ margin: `${token.marginXXS}px 0 0`, paddingInlineStart: token.paddingMD }}>
                   {aiDraft.flags.map((f, i) => (
@@ -474,7 +476,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
                       >
                         {p.label}
                       </Typography.Link>
-                      {p.message && p.message !== p.label ? <Typography.Text type="secondary">{` · ${whole ? 'Required' : p.message}`}</Typography.Text> : null}
+                      {p.message && p.message !== p.label ? <Typography.Text type="secondary">{` · ${whole ? `Enter the ${inSentence(p.label)}` : p.message}`}</Typography.Text> : null}
                     </li>
                   );
                 })}

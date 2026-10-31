@@ -6,7 +6,7 @@ import { CheckOutlined, DeleteOutlined, EditOutlined, RollbackOutlined, SendOutl
 import type { BookLineDto, BookVoucherDto } from '@erp/shared';
 import { useBookVoucher, useBooksAction } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -82,7 +82,7 @@ export function VoucherDrawer({ id, onClose }: { id: string | null; onClose: () 
               </Button>
             )}
             {v.canSubmit && (
-              <Button size="small" type="primary" icon={<SendOutlined />} loading={act.isPending} onClick={() => run(`/books/vouchers/${v.id}/submit`, (r) => `${r.voucherNo} sent for approval`)}>
+              <Button size="small" type="primary" icon={<SendOutlined />} loading={act.isPending} onClick={() => run(`/books/vouchers/${v.id}/submit`, (r) => `${r.voucherNo} submitted for approval`)}>
                 Submit for approval
               </Button>
             )}
@@ -132,7 +132,7 @@ export function VoucherDrawer({ id, onClose }: { id: string | null; onClose: () 
                 sourceLabel(v.source)
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="Reference">{v.reference ? <span translate="no">{v.reference}</span> : '—'}</Descriptions.Item>
+            <Descriptions.Item label="Reference">{v.reference ? <span translate="no">{v.reference}</span> : NO_VALUE}</Descriptions.Item>
             {v.party && <Descriptions.Item label="Party">{v.party}</Descriptions.Item>}
             <Descriptions.Item label="Project">{v.projectName ?? 'Head office'}</Descriptions.Item>
             {v.preparedByName && <Descriptions.Item label="Made by">{v.preparedByName}</Descriptions.Item>}

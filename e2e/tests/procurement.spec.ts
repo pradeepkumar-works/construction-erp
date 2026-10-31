@@ -21,7 +21,7 @@ test('QA/QC records a GRN as partly accepted with the rejected quantity', async 
 
   await signIn(page, 'qaqc@demo.com');
   await page.goto('/stock');
-  await page.getByRole('tab', { name: 'Register' }).click();
+  await page.getByRole('tab', { name: 'Receipts and issues' }).click();
   await page.getByPlaceholder('Search entry, item, supplier, MR').fill(grn.entryNo);
   await page.locator('.ant-table-row').getByText(grn.entryNo, { exact: true }).click();
   await page.getByRole('button', { name: /QA\/QC check/ }).click();
@@ -89,7 +89,7 @@ test('the unit master adds a unit that quantity fields then suggest', async ({ p
 test('date filters offer financial years', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/stock');
-  await page.getByRole('tab', { name: 'Register' }).click();
+  await page.getByRole('tab', { name: 'Receipts and issues' }).click();
   const from = page.getByPlaceholder('From');
   await from.click();
   const fy = page.locator('.ant-picker-presets li').filter({ hasText: /^FY \d{4}-\d{2}$/ }).first();

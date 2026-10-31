@@ -93,7 +93,7 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
           <Select options={LEAVE_TYPES.map((t) => ({ value: t, label: LEAVE_TYPE_LABELS[t] }))} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="fromDate" label="From" rules={[{ required: true, message: 'Pick the first day' }]}>
+          <Form.Item name="fromDate" label="From" rules={[{ required: true, message: 'Choose the first day' }]}>
             <DatePicker
               style={{ width: '100%' }}
              
@@ -103,7 +103,7 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
               }}
             />
           </Form.Item>
-          <Form.Item name="toDate" label="To" rules={[{ required: true, message: 'Pick the last day' }]}>
+          <Form.Item name="toDate" label="To" rules={[{ required: true, message: 'Choose the last day' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => !!from && d.isBefore(from, 'day')} />
           </Form.Item>
         </FormGrid>

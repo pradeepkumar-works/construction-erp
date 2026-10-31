@@ -12,7 +12,7 @@ import { BILLING_BASIS_LABELS, PACKAGE_STAGES, PACKAGE_STAGE_LABELS, STAGE_TRIGG
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useBillingBreakup, useEpc, useStockItems } from '@/lib/queries';
-import { formatMoney, formatMonthShort, formatPct, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
+import { formatMoney, formatMonthShort, formatPct, inContract, moneyPrefix, outOfContract, toNumber, NO_VALUE } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
@@ -20,7 +20,7 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
-const moneyOf = (c: ContractCurrency | undefined) => (v: string | null) => (v ? <span className="mono" translate="no">{formatMoney(v, c)}</span> : '-');
+const moneyOf = (c: ContractCurrency | undefined) => (v: string | null) => (v ? <span className="mono" translate="no">{formatMoney(v, c)}</span> : NO_VALUE);
 const TRIGGER_COLORS: Record<StageTrigger, string> = { EVENT: 'purple', PROGRESS: 'blue', SUPPLY: 'cyan', TEST: 'geekblue' };
 const VISUALLY_HIDDEN: React.CSSProperties = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
 const numOrNull = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
@@ -61,7 +61,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
     mutationFn: async (replace: boolean) => (await api.post<BillingBreakupDto>(`/projects/${projectId}/billing-breakup/standard`, { replace })).data,
     onSuccess: (d) => {
       saved(d);
-      message.success(`Break-up made: ${d.components.length} components from the project's structure`);
+      message.success(`Payment schedule made: ${d.components.length} components from the project's structure`);
     },
     meta: FAIL_NOTICE,
   });
@@ -74,8 +74,8 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
     onSuccess: saved,
   });
 
-  if (isLoading) return <Section title="Billing break-up" loading />;
-  if (error || !data) return <QueryError error={error ?? new Error('Billing break-up not found')} onRetry={() => refetch()} />;
+  if (isLoading) return <Section title="Payment schedule" loading />;
+  if (error || !data) return <QueryError error={error ?? new Error('Payment schedule not found')} onRetry={() => refetch()} />;
   if (!billsByStages(data.contractModel)) return null;
 
   const hasParts = (c: BillingComponentDto) => data.components.some((k) => k.parentId === c.id);
@@ -131,8 +131,8 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
 
   const standardButton = data.canEdit && !data.hasBills ? (
     data.components.length ? (
-      <Popconfirm title="Make the break-up again from the structure?" description="The components and stages there are now are replaced." okText="Make it again" onConfirm={() => standard.mutateAsync(true)}>
-        <Button loading={standard.isPending}>Make it again from the structure</Button>
+      <Popconfirm title="Rebuild the payment schedule from the structure?" description="The components and stages there are now are replaced." okText="Rebuild" onConfirm={() => standard.mutateAsync(true)}>
+        <Button loading={standard.isPending}>Rebuild from the structure</Button>
       </Popconfirm>
     ) : (
       <Button type="primary" loading={standard.isPending} onClick={() => standard.mutate(false)}>
@@ -144,7 +144,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
   return (
     <>
       <Section
-        title="Billing break-up"
+        title="Payment schedule"
         extra={
           <Space wrap>
             {standardButton}
@@ -169,7 +169,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Unit-rate items paid at">
             <span className="mono" translate="no">rate × {data.tenderFactor}</span>
           </Descriptions.Item>
-          <Descriptions.Item label="Advance recovered">
+          <Descriptions.Item label="Mobilisation advance recovered">
             {data.advanceRecoveryFromPct && data.advanceRecoveryToPct ? `From ${formatPct(data.advanceRecoveryFromPct)} to ${formatPct(data.advanceRecoveryToPct)} of the contract executed` : 'A % of each bill'}
           </Descriptions.Item>
         </Descriptions>
@@ -245,7 +245,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
                 align: 'right',
                 render: (_, c) =>
                   c.sharePct === null ? (
-                    '-'
+                    NO_VALUE
                   ) : (
                     <Tooltip title={c.parentId ? `${formatPct(c.sharePct, { digits: 2 })} of its component, ${formatPct(c.effectiveSharePct, { digits: 2 })} of the lump sum` : undefined}>
                       <span className="mono" translate="no">
@@ -256,7 +256,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
               },
               { title: 'Value', dataIndex: 'value', key: 'value', align: 'right', render: money },
               { title: 'Stages', key: 'stages', align: 'right', render: (_, c) => (hasParts(c) ? 'In its parts' : c.basis === 'STAGES' ? c.stages.length : 'Measured') },
-              { title: 'Billed', dataIndex: 'billedPct', key: 'billed', render: (v: number, c) => (c.basis === 'STAGES' ? <Pct value={v} label={`${c.code} ${c.name}: billed`} /> : '-') },
+              { title: 'Billed', dataIndex: 'billedPct', key: 'billed', render: (v: number, c) => (c.basis === 'STAGES' ? <Pct value={v} label={`${c.code} ${c.name}: billed`} /> : NO_VALUE) },
               ...(data.canEdit
                 ? [
                     {
@@ -285,7 +285,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
       {data.components.length ? (
         <>
           <Section
-            title="Milestone grid"
+            title="Milestone targets"
             extra={
               data.canEditTerms ? (
                 <Button icon={<EditOutlined />} onClick={() => setGrid(true)}>
@@ -301,14 +301,14 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
             extra={
               data.canEditTerms ? (
                 <Button icon={<EditOutlined />} onClick={() => setTiers(true)}>
-                  Edit tiers
+                  Edit slabs
                 </Button>
               ) : null
             }
           >
             <Typography.Paragraph type="secondary">
-              Each bill withholds, for every component behind its target, the tier&apos;s % of the work not done. It is released as the component catches up.
-              {data.defaultTiers ? ' These are the usual tiers; set the contract’s own if it has them.' : ''}
+              Each bill withholds, for every component behind its target, the slab&apos;s % of the work not done. It is released as the component catches up.
+              {data.defaultTiers ? ' These are the usual slabs; set the contract’s own if it has them.' : ''}
             </Typography.Paragraph>
             <Table
               rowKey="fromPct"
@@ -372,7 +372,7 @@ function MilestoneGrid({ data }: { data: BillingBreakupDto }) {
               const behind = ended && target !== null && actual !== null && actual < target - 0.05;
               return (
                 <span className="mono" translate="no" style={{ whiteSpace: 'nowrap', color: behind ? themeColor('colorErrorText') : undefined }}>
-                  {target === null ? '–' : Math.round(target)}
+                  {target === null ? NO_VALUE : Math.round(target)}
                   {actual !== null ? ` / ${Math.round(actual)}` : ''}
                   {behind ? (
                     <>
@@ -429,7 +429,7 @@ function ComponentModal({ data, component, onClose, onSaved }: { data: BillingBr
   });
   const parents = data.components.filter((c) => !c.parentId && c.basis === 'STAGES' && c.id !== editing?.id && !c.stages.length);
   return (
-    <FormShell open={!!component} onClose={onClose} form={form} layout="modal" title={editing ? `Change ${editing.code} ${editing.name}` : 'Add component'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={!!component} onClose={onClose} form={form} layout="modal" title={editing ? `Edit ${editing.code} ${editing.name}` : 'Add component'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical" requiredMark="optional">
         <FormGrid cols={2}>
           <Form.Item name="code" label="Code" rules={[{ required: true, whitespace: true, message: 'Give it a code, e.g. 8.4' }]}>
@@ -543,7 +543,7 @@ function StageModal({ projectId, epc, target, onClose, onSaved }: { projectId: s
       form={form}
       layout="modal"
       width={640}
-      title={target ? `${s ? 'Change stage' : 'Add stage'} of ${target.component.code} ${target.component.name}` : ''}
+      title={target ? `${s ? 'Edit stage' : 'Add stage'} of ${target.component.code} ${target.component.name}` : ''}
       okText="Save"
       onSubmit={(v) => save.mutateAsync(v)}
     >
@@ -648,11 +648,11 @@ function TermsModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
         <Form.Item name="lumpSumValue" label="Lump sum the components share" extra="Empty takes the contract value. Leave out what unit-rate items are paid for.">
           <MoneyInput prefix={moneyPrefix(data)} />
         </Form.Item>
-        <Form.Item name="tenderFactor" label="Tender factor" extra="Lump sum ÷ the estimate; unit-rate items are paid at their rate × this">
+        <Form.Item name="tenderFactor" label="Tender factor (quoted ÷ estimate)" extra="Lump sum ÷ the estimate; unit-rate items are paid at their rate × this">
           <InputNumber min={0.5} max={2} step={0.0001} style={{ width: '100%' }} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="advanceRecoveryFromPct" label="Advance recovered from (%)" extra="Of the contract executed; empty recovers a % of each bill">
+          <Form.Item name="advanceRecoveryFromPct" label="Mobilisation advance recovered from (%)" extra="Of the contract executed; empty recovers a % of each bill">
             <InputNumber min={0} max={100} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
@@ -713,7 +713,7 @@ function GridModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto; 
       ).data,
     onSuccess: (d) => {
       onSaved(d);
-      message.success('Milestone grid saved');
+      message.success('Milestone targets saved');
     },
     meta: FAIL_NOTICE,
   });
@@ -724,7 +724,7 @@ function GridModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto; 
       form={form}
       layout="drawer"
       width={1100}
-      title="Milestone grid"
+      title="Milestone targets"
       okText="Save"
       onSubmit={(v) => save.mutateAsync(v)}
       footerExtra={
@@ -774,14 +774,14 @@ function TiersModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
       (await api.put<BillingBreakupDto>(`/projects/${data.projectId}/billing-breakup/tiers`, { tiers: (v.tiers ?? []).map((t) => ({ fromPct: String(t.fromPct), toPct: numOrNull(t.toPct), withheldPct: String(t.withheldPct) })) })).data,
     onSuccess: (d) => {
       onSaved(d);
-      message.success('Slippage tiers saved');
+      message.success('Slippage slabs saved');
     },
     meta: FAIL_NOTICE,
   });
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Withheld for slippage" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
-        <Typography.Paragraph type="secondary">Each tier starts where the one before ends; leave the last one open-ended. Remove them all to go back to the usual tiers.</Typography.Paragraph>
+        <Typography.Paragraph type="secondary">Each slab starts where the one before ends; leave the last one open-ended. Remove them all to go back to the usual slabs.</Typography.Paragraph>
         <Form.List name="tiers">
           {(fields, { add, remove }) => (
             <>
@@ -802,7 +802,7 @@ function TiersModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
                 </Space>
               ))}
               <Button icon={<PlusOutlined />} onClick={() => add()} disabled={fields.length >= 10}>
-                Add tier
+                Add slab
               </Button>
             </>
           )}

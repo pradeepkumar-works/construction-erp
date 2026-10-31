@@ -94,10 +94,10 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Pick the date it is needed by' }]} {...aiFlagItem(draft, 'requiredDate', requiredDate)}>
+          <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Choose the date it is needed by' }]} {...aiFlagItem(draft, 'requiredDate', requiredDate)}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="priority" label="Priority" rules={[{ required: true, message: 'Choose the priority' }]}>

@@ -182,7 +182,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
           </Typography.Paragraph>
         )}
         <FormGrid cols={3}>
-          <Form.Item name="paymentDate" label="Paid on" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="paymentDate" label="Paid on" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="amount" label="Amount paid" rules={[{ required: true, message: 'Enter the amount' }]}>
@@ -205,7 +205,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
             <MoneyInput />
           </Form.Item>
           <Form.Item name="otherDeductionNote" label="Deducted for">
-            <Input maxLength={200} placeholder="Short supply debit note" />
+            <Input maxLength={200} placeholder="e.g. Short supply debit note" />
           </Form.Item>
         </FormGrid>
         {billType === 'SUBCONTRACT_BILL' && <Typography.Paragraph type="secondary">Their TDS, retention and recoveries are already deducted in the bill&apos;s net payable.</Typography.Paragraph>}

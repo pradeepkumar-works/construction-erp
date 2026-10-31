@@ -235,7 +235,7 @@ export function VendorBillFormModal({
       allValues
       title={bill ? `Edit ${bill.billNo}` : 'Record vendor bill'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       okDisabled={!po}
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
     >
@@ -266,7 +266,7 @@ export function VendorBillFormModal({
         ) : null}
         <FormSection title="Invoice">
           <FormGrid cols={4}>
-            <Form.Item name="purchaseOrderId" label="Purchase order" rules={[{ required: true, message: 'Pick the PO this invoice is for' }]}>
+            <Form.Item name="purchaseOrderId" label="Purchase order" rules={[{ required: true, message: 'Choose the PO this invoice is for' }]}>
               {bill || purchaseOrderId ? (
                 <Select disabled options={po ? [{ value: po.id, label: `${po.poNo} · ${po.vendorName}` }] : []} />
               ) : (
@@ -282,7 +282,7 @@ export function VendorBillFormModal({
             <Form.Item name="invoiceNo" label="Vendor's invoice no." rules={[{ required: true, whitespace: true, message: 'Enter the invoice number' }]} {...readFieldProps(readState, 'invoiceNo', setActiveRead)}>
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead, dateProblem)}>
+            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Choose the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead, dateProblem)}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="freight" label="Freight" extra={po && toNumber(po.freight) > 0 ? `PO freight ${formatINR(po.freight, true)}` : undefined} {...readFieldProps(readState, 'freight', setActiveRead)}>
@@ -375,7 +375,7 @@ export function VendorBillFormModal({
               ]}
             />
           ) : (
-            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Pick the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
+            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Choose the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
           )}
         </FormSection>
         {po && (

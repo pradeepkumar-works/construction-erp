@@ -7,16 +7,18 @@ import type { TableProps } from 'antd';
 import { DownloadOutlined, PrinterOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { PayrollRunDetailDto, PayslipDto } from '@erp/shared';
+import { PAYSLIP_CODES } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayrollAction, usePayrollRun, type PayrollFileDto } from '@/lib/queries';
 import { downloadXlsx } from '@/lib/exportExcel';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 import { PayslipModal } from './PayslipModal';
 import { RunStatusTag, Rupees, monthLabel, saveText } from './payrollUi';
 import { openPayslips } from './payslipPrint';
+import { openableRow } from '@/components/list/openableRow';
 
 const amount = (p: PayslipDto, code: string) => Number(p.lines.find((l) => l.code === code)?.amount ?? 0);
 
@@ -44,10 +46,10 @@ function StepModal({ run, step, onClose }: { run: PayrollRunDetailDto; step: 'se
       <Form form={form} layout="vertical" initialValues={{ paidOn: dayjs() }}>
         {step === 'pay' ? (
           <>
-            <Form.Item name="paidOn" label="Paid on" rules={[{ required: true, message: 'Pick the day the bank paid it' }]}>
+            <Form.Item name="paidOn" label="Paid on" rules={[{ required: true, message: 'Choose the day the bank paid it' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="paymentRef" label="Bank reference (optional)">
+            <Form.Item name="paymentRef" label="Bank reference">
               <Input maxLength={80} placeholder="NEFT batch or UTR" />
             </Form.Item>
           </>
@@ -100,7 +102,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
       { header: 'Posted at', value: (p) => p.projectName ?? 'Head office', width: 28 },
       { header: 'Days paid', value: (p) => Number(p.paidDays) },
       { header: 'Loss of pay', value: (p) => Number(p.lopDays) },
-      ...(['BASIC', 'DA', 'HRA', 'CONVEYANCE', 'SPECIAL', 'OTHER', 'OVERTIME', 'ARREARS', 'BONUS', 'OTHER_EARNING'] as const).map((c) => ({ header: c === 'OTHER_EARNING' ? 'Other earning' : c.charAt(0) + c.slice(1).toLowerCase().replace('_', ' '), value: (p: PayslipDto) => amount(p, c) })),
+      ...(['BASIC', 'DA', 'HRA', 'CONVEYANCE', 'SPECIAL', 'OTHER', 'OVERTIME', 'ARREARS', 'BONUS', 'OTHER_EARNING'] as const).map((c) => ({ header: c === 'DA' || c === 'HRA' ? c : PAYSLIP_CODES[c].label, value: (p: PayslipDto) => amount(p, c) })),
       { header: 'Gross', value: (p) => Number(p.gross) },
       ...(['PF', 'ESI', 'PT', 'TDS', 'LOAN', 'ADVANCE', 'OTHER_DEDUCTION'] as const).map((c) => ({ header: c === 'OTHER_DEDUCTION' ? 'Other deduction' : c === 'LOAN' ? 'Loan' : c === 'ADVANCE' ? 'Advance' : c, value: (p: PayslipDto) => amount(p, c) })),
       { header: 'Deductions', value: (p) => Number(p.deductions) },
@@ -138,7 +140,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
             />
           )}
           <Descriptions size="small" bordered column={{ xs: 1, sm: 2, lg: 3 }}>
-            <Descriptions.Item label="Stage">
+            <Descriptions.Item label="Status">
               <RunStatusTag status={run.status} />
             </Descriptions.Item>
             <Descriptions.Item label="Employees">{run.employees}</Descriptions.Item>
@@ -157,17 +159,17 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
               <Rupees value={run.employerCost} />
             </Descriptions.Item>
             <Descriptions.Item label="Prepared by">{run.preparedByName}</Descriptions.Item>
-            <Descriptions.Item label="Approved by">{run.approvedByName ? `${run.approvedByName}, ${formatDateTime(run.approvedAt)}` : '-'}</Descriptions.Item>
-            <Descriptions.Item label="Paid">{run.paidOn ? `${formatDate(run.paidOn)}${run.paymentRef ? `, ${run.paymentRef}` : ''}` : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Approved by">{run.approvedByName ? `${run.approvedByName}, ${formatDateTime(run.approvedAt)}` : NO_VALUE}</Descriptions.Item>
+            <Descriptions.Item label="Paid">{run.paidOn ? `${formatDate(run.paidOn)}${run.paymentRef ? `, ${run.paymentRef}` : ''}` : NO_VALUE}</Descriptions.Item>
           </Descriptions>
           <Space wrap>
             {run.can.edit && (
               <Button loading={act.isPending} onClick={() => run_(`/payroll/runs/${run.id}/recompute`, 'Worked out again from attendance and salaries')}>
-                Work out again
+                Recalculate
               </Button>
             )}
             {run.can.submit && (
-              <Button type="primary" loading={act.isPending} onClick={() => run_(`/payroll/runs/${run.id}/submit`, `${run.runNo} sent for approval`)}>
+              <Button type="primary" loading={act.isPending} onClick={() => run_(`/payroll/runs/${run.id}/submit`, `${run.runNo} submitted for approval`)}>
                 Submit for approval
               </Button>
             )}
@@ -210,7 +212,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
                 ],
               }}
             >
-              <Button icon={<DownloadOutlined />}>Files</Button>
+              <Button icon={<DownloadOutlined />}>Download files</Button>
             </Dropdown>
             <Button icon={<PrinterOutlined />} disabled={!run.payslips.length} onClick={() => openPayslips(run.payslips, company)}>
               Print payslips
@@ -223,7 +225,8 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
             dataSource={run.payslips}
             pagination={false}
             scroll={{ x: 726, y: 480 }}
-            onRow={(p) => ({ onClick: () => setSlipFor(p.employeeId), style: { cursor: 'pointer' } })}
+            rowClassName="row-click"
+            onRow={(p) => openableRow(() => setSlipFor(p.employeeId))}
             locale={{ emptyText: 'No payslips: set salaries first' }}
           />
           <Typography.Text type="secondary">Open a payslip to see its lines{run.can.edit ? ' or add arrears, a bonus or a deduction' : ''}.</Typography.Text>

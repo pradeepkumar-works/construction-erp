@@ -7,7 +7,7 @@ import type { MaterialRequestDto, MaterialRequestItemDto, RequestLineStockDto } 
 import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useIndentCheck, useMaterialRequest, useRequestStock } from '@/lib/queries';
-import { formatDate, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -57,15 +57,15 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
       open={open}
       onClose={onClose}
       drawerSize={purchasing ? 960 : 680}
-      kind="Material request"
-      list={{ href: '/material-requests', label: 'Material requests' }}
+      kind="Indent"
+      list={{ href: '/material-requests', label: 'Indents' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
       record={
         data && {
           href: `/material-requests/${data.id}`,
-          title: `Material request · ${data.requestNo}`,
+          title: `${data.requestNo} · ${data.projectName}`,
           tags: (
             <>
               <StatusTag status={data.status} />
@@ -77,10 +77,9 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
             </>
           ),
           facts: [
-            { key: 'no', label: 'Request no.', children: data.requestNo },
             { key: 'priority', label: 'Priority', children: <PriorityTag priority={data.priority} /> },
             { key: 'req', label: 'Required by', children: formatDate(data.requiredDate) },
-            { key: 'count', label: 'Line items', children: data.items.length },
+            { key: 'count', label: 'Items', children: data.items.length },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],
@@ -100,7 +99,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
                   columns={[
                     { title: '#', key: 'idx', width: 40, render: (_, __, i) => i + 1 },
                     { title: 'Item', dataIndex: 'itemName' },
-                    { title: 'Specification', dataIndex: 'specification', render: (v) => v ?? <span className="text-muted">-</span> },
+                    { title: 'Specification', dataIndex: 'specification', render: (v) => v ?? <span className="text-muted">{NO_VALUE}</span> },
                     { title: 'Qty', dataIndex: 'quantity', align: 'right', width: 90, render: (v) => formatQty(v) },
                     { title: 'Unit', dataIndex: 'unit', width: 80 },
                     ...(data.status === 'APPROVED'
@@ -163,7 +162,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
               ) : null}
               {mayReceive ? (
                 <Button type="primary" size={size} icon={<ImportOutlined />} onClick={() => setReceiving(true)}>
-                  Receive material
+                  Receive material (GRN)
                 </Button>
               ) : null}
               <EditResubmitButton entry={data} onEdit={onEdit} size={size} />
@@ -182,7 +181,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
 /** A line's stock (v5 item 95): at the request's own site, and how much the other sites hold, listed in a popover. */
 function StockCell({ line, loading }: { line: RequestLineStockDto | undefined; loading: boolean }) {
   if (loading) return <span className="text-muted">…</span>;
-  if (!line) return <span className="text-muted">-</span>;
+  if (!line) return <span className="text-muted">{NO_VALUE}</span>;
   const elsewhere = line.others.reduce((s, o) => s + toNumber(o.balance), 0);
   return (
     <div>

@@ -30,7 +30,7 @@ const CHOICES: { value: Choice; label: string }[] = [
   { value: 'DAILY', label: 'Daily' },
   { value: 'WEEKLY', label: 'Weekly' },
   { value: 'MONTHLY', label: 'Monthly (MPR)' },
-  { value: 'CUSTOM', label: 'Any dates' },
+  { value: 'CUSTOM', label: 'Custom dates' },
 ];
 
 function Reports() {
@@ -57,7 +57,7 @@ function Reports() {
       aria-label="Project"
       value={projectId}
       onChange={setProjectId}
-      options={(projects ?? []).filter((p) => p.type !== 'STORE' && p.type !== 'PLANT').map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+      options={(projects ?? []).filter((p) => p.type !== 'STORE' && p.type !== 'PLANT').map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
     />
   );
 

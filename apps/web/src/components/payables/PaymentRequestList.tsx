@@ -13,7 +13,7 @@ import { useNewIntent } from '@/lib/new-intent';
 import { useProjectScope } from '@/lib/project-scope';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYMENT_REQUEST_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -182,7 +182,7 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
       cardText: (r) => (r.neededBy ? `Needed by ${formatDate(r.neededBy)}` : ''),
       width: 120,
       ...sort('neededBy'),
-      render: (v: string | null) => (v ? formatDate(v) : '-'),
+      render: (v: string | null) => (v ? formatDate(v) : NO_VALUE),
     },
     {
       title: 'Status',

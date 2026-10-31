@@ -18,7 +18,7 @@ import { useListPage } from '@/lib/listPage';
 import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYABLE_BILL_EXPORT, PAYABLE_VENDOR_EXPORT, VENDOR_PAYMENT_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -40,10 +40,11 @@ import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { VendorSelect } from '@/components/common/SearchSelect';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { RowMenu } from '@/components/list/RowMenu';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
-const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">-</span>);
+const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">{NO_VALUE}</span>);
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
 
@@ -57,8 +58,8 @@ function DueText({ days }: { days: number }) {
 /** The ageing columns of the by-vendor and by-project tables (keys are stable: the column chooser keeps them). */
 function ageingColumns<T extends PayableTotalsDto>(): ListColumn<T>[] {
   return [
-    { key: 'billed', title: 'Billed', dataIndex: 'billed', width: 130, align: 'right', render: (v) => money(v) },
-    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'billed', title: 'Billed', dataIndex: 'billed', defaultHidden: true, width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'paid', title: 'Paid', dataIndex: 'paid', defaultHidden: true, width: 130, align: 'right', render: (v) => money(v) },
     { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => money(v, true) },
     { key: 'a0', title: 'Not due', width: 110, align: 'right', render: (_, r) => money(r.ageing.notDue) },
     { key: 'a1', title: '1-30 late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days1to30) },
@@ -67,7 +68,7 @@ function ageingColumns<T extends PayableTotalsDto>(): ListColumn<T>[] {
     { key: 'a4', title: 'Over 90', label: 'Over 90 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
     { key: 'msmeAtRisk', title: 'MSME at risk', dataIndex: 'msmeAtRisk', width: 120, align: 'right', render: (v) => late(v) },
     { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => money(v) },
-    { key: 'advanceOutstanding', title: 'Advance not adjusted', label: 'Advance paid, not yet adjusted on bills', dataIndex: 'advanceOutstanding', width: 150, align: 'right', render: (v) => money(v) },
+    { key: 'advanceOutstanding', title: 'Advance not adjusted', label: 'Advance paid, not yet adjusted on bills', dataIndex: 'advanceOutstanding', defaultHidden: true, width: 150, align: 'right', render: (v) => money(v) },
   ];
 }
 
@@ -91,6 +92,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
   const page = useListPage<VendorPaymentSortField>({ keys: NO_KEYS, sortBy: 'paymentDate', sortOrder: 'desc', sortFields: LIST_SORT_FIELDS.vendorPayments, url: false, scope: `${projectId}:${vendorId}` });
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<VendorPaymentDto | null>(null);
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const [request, setRequest] = useState<string | null>(null);
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId, vendorId };
   const { data, isLoading, isFetching, error, refetch } = useVendorPayments(filters);
@@ -158,21 +160,24 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
             label: 'Actions',
             locked: true,
             fixed: 'right' as const,
-            width: 140,
+            width: 100,
             render: (_: unknown, r: VendorPaymentDto) =>
               r.exportedToTally ? (
                 <InTallyTag />
               ) : (
-                <Space size={4}>
-                  <Button size="small" onClick={() => setEditing(r)}>
-                    Edit
-                  </Button>
-                  <ConfirmDelete what={`the payment of ${formatINR(r.amount)} to ${r.vendorName}`} notice="Payment deleted" description="The bill goes back to outstanding." onConfirm={() => remove.mutateAsync(r.id)}>
-                    <Button size="small" danger>
-                      Delete
-                    </Button>
-                  </ConfirmDelete>
-                </Space>
+                <RowMenu
+                  label={`Actions for the payment of ${formatINR(r.amount)} to ${r.vendorName}`}
+                  items={[
+                    { key: 'edit', label: 'Edit', onSelect: () => setEditing(r) },
+                    {
+                      key: 'delete',
+                      label: 'Delete',
+                      danger: true,
+                      onSelect: () =>
+                        askDelete({ what: `the payment of ${formatINR(r.amount)} to ${r.vendorName}`, notice: 'Payment deleted', description: 'The bill goes back to outstanding.', onConfirm: () => remove.mutateAsync(r.id) }),
+                    },
+                  ]}
+                />
               ),
           } satisfies ListColumn<VendorPaymentDto>,
         ]
@@ -221,6 +226,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No payment matches this search' : 'No payments recorded yet'} />}
         emptyAction={newButton}
       />
+      {deleteDialog}
       <PaymentFormModal
         open={formOpen || !!editing}
         payment={editing}
@@ -333,7 +339,7 @@ export default function PayablesPage() {
             <div style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.request.status === 'APPROVED' ? `Approved, ${formatINR(r.request.unpaid)} to pay` : SUBMISSION_STATUS_LABELS[r.request.status]}</div>
           </div>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
     ...(accounts || requester
@@ -351,13 +357,13 @@ export default function PayablesPage() {
               // Pay against an approved request; pay directly only when the company does not ask for one; else ask.
               if (accounts && req?.status === 'APPROVED' && toNumber(req.unpaid) > 0)
                 return (
-                  <Button size="small" type="primary" onClick={() => setPaying({ ...r, payable: req.amount, outstanding: String(Math.min(toNumber(req.unpaid), toNumber(r.outstanding))), billLabel: `${req.requestNo} · ${r.billLabel}`, paymentRequestId: req.id })}>
+                  <Button size="small" onClick={() => setPaying({ ...r, payable: req.amount, outstanding: String(Math.min(toNumber(req.unpaid), toNumber(r.outstanding))), billLabel: `${req.requestNo} · ${r.billLabel}`, paymentRequestId: req.id })}>
                     Pay
                   </Button>
                 );
               if (accounts && !needRequest)
                 return (
-                  <Button size="small" type={r.daysToDue <= 7 ? 'primary' : 'default'} onClick={() => setPaying(r)}>
+                  <Button size="small" onClick={() => setPaying(r)}>
                     Pay
                   </Button>
                 );

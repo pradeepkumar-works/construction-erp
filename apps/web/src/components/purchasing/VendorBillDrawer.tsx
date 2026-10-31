@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useVendorBill } from '@/lib/queries';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatPct, formatQty, toNumber, NO_VALUE, formatMonthLong } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -34,11 +34,11 @@ const money = (v: string | number) => <span className="mono" translate="no">{for
 export const MatchTag = ({ matched, po = true }: { matched: boolean; po?: boolean }) =>
   matched ? (
     <AppTag tone="success" style={{ margin: 0 }}>
-      {po ? 'Matches PO' : 'Checked'}
+      {po ? 'Matches' : 'Checked'}
     </AppTag>
   ) : (
     <AppTag tone="danger" style={{ margin: 0 }}>
-      Exceptions
+      Does not match
     </AppTag>
   );
 
@@ -135,7 +135,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               : [
                   { key: 'kind', label: 'Kind', children: VENDOR_BILL_KIND_LABELS[data.kind] },
                   ...(data.equipmentCode
-                    ? [{ key: 'machine', label: 'Machine', children: `${data.equipmentCode} · ${data.equipmentName ?? ''}${data.hireMonth ? `, ${dayjs(data.hireMonth).format('MMMM YYYY')}` : ''}` }]
+                    ? [{ key: 'machine', label: 'Machine', children: `${data.equipmentCode} · ${data.equipmentName ?? ''}${data.hireMonth ? `, ${formatMonthLong(data.hireMonth)}` : ''}` }]
                     : []),
                   ...(data.expenseCategory ? [{ key: 'head', label: 'Cost head', children: EXPENSE_CATEGORY_LABELS[data.expenseCategory] }] : []),
                 ]),
@@ -163,7 +163,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 </span>
               ),
             },
-            ...(fuel > 0 ? [{ key: 'fuel', label: 'Diesel recovered', children: <span>{money(data.fuelRecovery)} <span className="text-muted">for {formatQty(data.fuelLitres)} L at {formatINR(data.fuelRate, true)}</span></span> }] : []),
+            ...(fuel > 0 ? [{ key: 'fuel', label: 'Fuel recovered', children: <span>{money(data.fuelRecovery)} <span className="text-muted">for {formatQty(data.fuelLitres)} L at {formatINR(data.fuelRate, true)}</span></span> }] : []),
             ...(debited > 0 ? [{ key: 'debit', label: 'Debit notes', children: money(data.debitNoteAmount) }] : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
@@ -219,7 +219,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         dataIndex: 'gstRate',
                         width: 80,
                         align: 'right',
-                        render: (v, l) => <Typography.Text type={toNumber(v) !== toNumber(l.poGstRate) ? 'danger' : undefined}>{v}%</Typography.Text>,
+                        render: (v, l) => <Typography.Text type={toNumber(v) !== toNumber(l.poGstRate) ? 'danger' : undefined}>{formatPct(v)}</Typography.Text>,
                       },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
                       { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => money(v) },
@@ -227,7 +227,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                       { title: 'Line', dataIndex: 'itemName' },
                       { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 130, align: 'right', render: (v) => money(v) },
-                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => `${v}%` },
+                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => formatPct(v) },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
                       { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => money(v) },
                     ]}
@@ -365,7 +365,7 @@ function BillSources({ kind, rows }: { kind: VendorBillDto['kind']; rows: Vendor
       scroll={{ x: 560 }}
       columns={[
         {
-          title: hire ? 'Log of' : 'Job card',
+          title: hire ? 'Machine' : 'Job card',
           dataIndex: 'label',
           width: 140,
           render: (v: string, r) =>
@@ -379,7 +379,7 @@ function BillSources({ kind, rows }: { kind: VendorBillDto['kind']; rows: Vendor
         },
         ...(hire ? [] : [{ title: 'Closed', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) }]),
         { title: hire ? 'Hours' : 'Work', dataIndex: 'detail' },
-        ...(hire ? [] : [{ title: 'Labour and parts', dataIndex: 'amount', width: 150, align: 'right' as const, render: (v: string | null) => (v ? money(v) : '-') }]),
+        ...(hire ? [] : [{ title: 'Labour and parts', dataIndex: 'amount', width: 150, align: 'right' as const, render: (v: string | null) => (v ? money(v) : NO_VALUE) }]),
       ]}
     />
   );

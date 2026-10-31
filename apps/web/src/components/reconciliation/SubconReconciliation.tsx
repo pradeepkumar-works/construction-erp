@@ -9,7 +9,7 @@ import { DeleteOutlined } from '@/components/common/icons';
 import type { ExcessRecoveryDto, ReconciliationStatus, SubconMaterialDto, SubconMaterialLineDto, SubconReconciliationDto } from '@erp/shared';
 import { SUBMISSION_STATUS_LABELS } from '@erp/shared';
 import { useCancelRecovery, useRecoverExcess, useSubconReconciliation } from '@/lib/queries';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -104,7 +104,7 @@ function WorkOrderBlock({
             ) : null}
           </>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
     ...(canRecover
@@ -250,7 +250,7 @@ function RecoverModal({ projectId, target, onClose }: { projectId: string; targe
       width={560}
       projectDefault={false}
       title={target ? `Recover ${target.item.itemName} from ${target.wo.vendorName}` : 'Recover material'}
-      okText="Raise the recovery"
+      okText="Save recovery"
       footerExtra={
         q && r ? (
           <span className="mono" translate="no">

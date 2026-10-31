@@ -8,7 +8,7 @@ import { canLogMachinery, canManageIntegrations, distanceText } from '@erp/share
 import { useAuth } from '@/lib/auth';
 import { useMachineDays } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -25,7 +25,7 @@ import { fuelTags } from './FuelTanks';
 
 const hrs = (v: string | null) =>
   v === null ? (
-    <span className="text-muted">-</span>
+    <span className="text-muted">{NO_VALUE}</span>
   ) : (
     <span className="mono" translate="no">
       {formatQty(v)} h
@@ -88,7 +88,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
       align: 'right',
       render: (v: string | null, d) =>
         v === null ? (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ) : (
           <div>
             <span className="mono" translate="no">
@@ -116,7 +116,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
           </Space>
         ) : mayLog && Number(d.engineHours) > 0 ? (
           <Button size="small" onClick={() => setPrefill({ projectId: d.projectId, equipmentId: d.equipmentId, equipmentLabel: `${d.equipmentCode} - ${d.equipmentName}`, date: d.date })} aria-label={`Make the log for ${d.equipmentCode} on ${formatDate(d.date)}`}>
-            Make the log
+            New machinery log
           </Button>
         ) : (
           <span className="text-muted">{Number(d.engineHours) > 0 ? 'No log' : 'Did not run'}</span>
@@ -154,8 +154,8 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
     <EmptyLine title="No engine hours yet">
       <p style={{ margin: '4px 0 8px' }}>
         {data?.unmatchedDevices
-          ? `${data.unmatchedDevices} tracker${data.unmatchedDevices === 1 ? ' is' : 's are'} not matched to a machine yet. Match them in Admin, Connections, Devices.`
-          : "Connect the fleet's GPS trackers or a machine maker's feed in Admin, Connections, and each machine's engine hours show here by the day."}
+          ? `${data.unmatchedDevices} tracker${data.unmatchedDevices === 1 ? ' is' : 's are'} not matched to a machine yet. Match them in Admin › Connections › Devices.`
+          : "Connect the fleet's GPS trackers or a machine maker's feed in Admin › Connections, and each machine's engine hours show here by the day."}
       </p>
       {admin ? <LinkButton href="/connections?tab=devices">Open connections</LinkButton> : null}
     </EmptyLine>

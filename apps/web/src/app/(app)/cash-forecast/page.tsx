@@ -180,7 +180,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
             value={direction}
             onChange={setDirection}
             options={[
-              { value: 'ALL', label: `All (${data.items.length})` },
+              { value: 'ALL', label: <span>All <span className="text-muted" translate="no">{data.items.length}</span></span> },
               { value: 'IN', label: 'Money in' },
               { value: 'OUT', label: 'Money out' },
             ]}

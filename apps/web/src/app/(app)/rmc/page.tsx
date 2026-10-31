@@ -46,7 +46,7 @@ function RmcPage() {
             variant="page"
             destroyOnHidden
             items={[
-              { key: 'day', label: 'The day', children: <DayView /> },
+              { key: 'day', label: 'The day at the plant', children: <DayView /> },
               { key: 'orders', label: 'Quotes and orders', children: <Orders /> },
               {
                 key: 'batcher',

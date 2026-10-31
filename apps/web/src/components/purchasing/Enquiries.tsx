@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { Alert, App, Button, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
-import { AppTag } from '@/components/common/AppTag';
+import { AppTag, type TagTone } from '@/components/common/AppTag';
 import { CopyOutlined, WhatsAppOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { ENQUIRY_DEFAULT_DAYS, ENQUIRY_VENDOR_STATE_LABELS, MAX_PAGE_SIZE, whatsAppShareUrl, type EnquiryDto, type EnquiryVendorDto, type EnquiryVendorState, type MaterialRequestDto } from '@erp/shared';
@@ -12,7 +12,7 @@ import { formatDate, formatDateTime } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 
-const STATE_COLOR: Record<EnquiryVendorState, string | undefined> = { QUOTED: 'green', OPENED: 'blue', SENT: undefined, NOT_SENT: 'orange', EXPIRED: undefined };
+const STATE_TONE: Record<EnquiryVendorState, TagTone> = { QUOTED: 'success', OPENED: 'info', SENT: 'neutral', NOT_SENT: 'pending', EXPIRED: 'neutral' };
 
 interface FormValues {
   vendorIds: string[];
@@ -56,21 +56,21 @@ export function EnquiryFormModal({ open, request, onClose, onSent }: { open: boo
     >
       <Form form={form} layout="vertical">
         <Typography.Paragraph type="secondary">
-          Each supplier gets a link to type rates, GST, freight and delivery days for the {request.items.length} item{request.items.length === 1 ? '' : 's'} on this request. No sign-in is needed; their answer lands on the comparative statement.
+          Each vendor gets a link to type rates, GST, freight and delivery days for the {request.items.length} item{request.items.length === 1 ? '' : 's'} on this indent. No sign-in is needed; their answer lands on the comparative statement.
         </Typography.Paragraph>
-        <Form.Item name="vendorIds" label="Suppliers" rules={[{ required: true, message: 'Choose at least one supplier' }]}>
+        <Form.Item name="vendorIds" label="Vendors" rules={[{ required: true, message: 'Choose at least one vendor' }]}>
           <Select
             mode="multiple"
             showSearch={{ optionFilterProp: 'label' }}
             loading={vendors.isLoading}
-            placeholder="Type a supplier's name"
+            placeholder="Type a vendor's name"
             options={list.map((v) => ({ value: v.id, label: v.email ? `${v.name} (${v.email})` : `${v.name} (no email)` }))}
           />
         </Form.Item>
-        <Form.Item name="closesOn" label="Quotes by" rules={[{ required: true, message: 'Pick the last day to quote' }]} extra="The links stop working after this day.">
+        <Form.Item name="closesOn" label="Quotations by" rules={[{ required: true, message: 'Choose the last day for quotations' }]} extra="The links stop working after this day.">
           <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
         </Form.Item>
-        <Form.Item name="message" label="Note to suppliers">
+        <Form.Item name="message" label="Note to vendors">
           <Input.TextArea rows={2} maxLength={1000} placeholder="Delivery to site, unloading, brands accepted…" />
         </Form.Item>
         {noEmail.length ? (
@@ -108,14 +108,14 @@ export function EnquirySentModal({ enquiry, request, onClose }: { enquiry: Enqui
           {emailed.length ? <Alert type="success" showIcon title={`Emailed to ${emailed.map((v) => v.vendorName).join(', ')}.`} /> : null}
           {byHand.length ? (
             <>
-              <Typography.Text>Send these links yourself (WhatsApp, SMS or email). Each works once, for that supplier only, until {formatDate(enquiry.closesOn)}.</Typography.Text>
+              <Typography.Text>Send these links yourself (WhatsApp, SMS or email). Each works once, for that vendor only, until {formatDate(enquiry.closesOn)}.</Typography.Text>
               {byHand.map((v) => (
                 <div key={v.vendorId}>
                   <Typography.Text strong translate="no">{v.vendorName}</Typography.Text>
                   {v.emailError ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>Not emailed: {v.emailError}</div> : null}
                   {v.link ? (
                     <Space.Compact style={{ width: '100%', marginTop: 4 }}>
-                      <Input readOnly value={v.link} aria-label={`Quote link for ${v.vendorName}`} onFocus={(e) => e.target.select()} />
+                      <Input readOnly value={v.link} aria-label={`Quotation link for ${v.vendorName}`} onFocus={(e) => e.target.select()} />
                       <Button icon={<CopyOutlined />} onClick={() => copy(v)}>
                         Copy
                       </Button>
@@ -124,7 +124,7 @@ export function EnquirySentModal({ enquiry, request, onClose }: { enquiry: Enqui
                       </Button>
                     </Space.Compact>
                   ) : (
-                    <Alert type="warning" showIcon title="The server does not know the web address, so it cannot make a link. Set WEB_URL on the API." />
+                    <Alert type="warning" showIcon title="Links cannot be made yet. Ask your administrator to finish setting up the web address." />
                   )}
                 </div>
               ))}
@@ -154,12 +154,12 @@ export function EnquiriesList({ requestId }: { requestId: string }) {
         { title: 'Sent', dataIndex: 'sentAt', width: 170, render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>by {r.sentBy}</div></div> },
         { title: 'Closes', dataIndex: 'closesOn', width: 110, render: (v) => formatDate(v) },
         {
-          title: 'State',
+          title: 'Status',
           key: 'state',
           width: 170,
           render: (_, r) => (
             <div>
-              <AppTag color={STATE_COLOR[r.state]} style={{ margin: 0 }}>
+              <AppTag tone={STATE_TONE[r.state]} style={{ margin: 0 }}>
                 {ENQUIRY_VENDOR_STATE_LABELS[r.state]}
               </AppTag>
               {r.respondedAt ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{formatDateTime(r.respondedAt)}</div> : null}

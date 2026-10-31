@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Descriptions, Drawer, Table, Typography } from 'antd';
 import type { StockBalanceDto, StockEntryDto } from '@erp/shared';
 import { useStockEntries } from '@/lib/queries';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { StockTypeTag, entrySummary } from './StockTypeTag';
 import { StockEntryDrawer } from './StockEntryDrawer';
 import { RecordLink } from '@/components/record/RecordLink';
@@ -37,7 +37,7 @@ export function ItemLedgerDrawer({ row, onClose }: { row: StockBalanceDto | null
                   </Typography.Text>
                 ),
               },
-              { key: 'm', label: 'Minimum', children: row.minQty ? `${formatQty(row.minQty)} ${row.unit}` : '-' },
+              { key: 'm', label: 'Minimum', children: row.minQty ? `${formatQty(row.minQty)} ${row.unit}` : NO_VALUE },
               { key: 'l', label: 'Last movement', children: formatDate(row.lastMovement) },
             ]}
           />

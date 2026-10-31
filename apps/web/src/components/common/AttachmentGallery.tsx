@@ -6,6 +6,7 @@ import { PaperClipOutlined } from '@/components/common/icons';
 import type { AttachmentDto } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { themeColor } from '@/lib/theme';
+import { NO_VALUE } from '@/lib/format';
 
 export function AttachmentGallery({ attachments, size = 96 }: { attachments: AttachmentDto[]; size?: number }) {
   if (!attachments || attachments.length === 0) return <Typography.Text type="secondary">No photos</Typography.Text>;
@@ -40,7 +41,7 @@ export function AttachmentGallery({ attachments, size = 96 }: { attachments: Att
 
 export function PhotoThumbs({ attachments, size = 36, max = 3 }: { attachments: AttachmentDto[]; size?: number; max?: number }) {
   const images = (attachments ?? []).filter((a) => a.mimeType?.startsWith('image/'));
-  if (images.length === 0) return <span className="text-muted">-</span>;
+  if (images.length === 0) return <span className="text-muted">{NO_VALUE}</span>;
   const shown = images.slice(0, max);
   return (
     <Image.PreviewGroup>

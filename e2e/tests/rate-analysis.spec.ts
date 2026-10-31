@@ -79,7 +79,7 @@ test('recover bricks a subcontractor used over the norm on their next bill', asy
   await section.getByRole('row').filter({ hasText: bricks.itemName }).getByRole('button', { name: 'Recover on next bill' }).click();
   const form = formPanel(page, `Recover ${bricks.itemName} from ${wo.vendorName}`);
   await form.getByLabel('Quantity').fill('100');
-  await form.getByRole('button', { name: 'Raise the recovery' }).click();
+  await form.getByRole('button', { name: 'Save recovery' }).click();
   await expect(page.getByText(new RegExp(`will come off ${wo.vendorName}'s next bill|added to`))).toBeVisible();
   await expect(section.getByText('Raised for recovery')).toBeVisible();
 
@@ -104,7 +104,7 @@ test('a stock adjustment for damage shows in the wastage report', async ({ page 
 
   await signIn(page, 'pm2@demo.com');
   await page.goto(`/projects/${project.id}?tab=stock`);
-  await page.getByRole('button', { name: /Adjust$/ }).click();
+  await page.getByRole('button', { name: 'Adjust stock', exact: true }).click();
   const form = formPanel(page, 'Adjust stock');
   await chooseOption(form.getByLabel('Reason'), 'Damaged');
   await form.getByLabel('Details').fill('Two bags set hard after the rain got into the store');

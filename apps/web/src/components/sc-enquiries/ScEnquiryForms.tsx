@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { GST_RATES, SC_ENQUIRY_STATUS_LABELS, rankLabel, type ScEnquiryDetailDto, type ScEnquiryStatus, type ScQuoteDto } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useBoq, useProjects, useScEnquiryAction, useVendorsPage } from '@/lib/queries';
-import { formatINR, toNumber } from '@/lib/format';
+import { formatINR, toNumber, NO_VALUE, formatQty } from '@/lib/format';
 import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
@@ -89,7 +89,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
       layout="drawer"
       width={980}
       title={enquiry ? `Edit ${enquiry.enquiryNo}` : 'New subcontract enquiry'}
-      okText={enquiry ? 'Save' : 'Create enquiry'}
+      okText="Save enquiry"
       allValues
       draftKey={enquiry ? undefined : 'sc-enquiry:new'}
       onSubmit={async (v) => {
@@ -121,7 +121,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
                 showSearch={{ optionFilterProp: 'label' }}
                 disabled={!!enquiry}
                 onChange={() => form.setFieldValue('items', [{}])}
-                options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+                options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
               />
             </Form.Item>
             <Form.Item name="closesOn" label="Last day to quote">
@@ -214,7 +214,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
                         </Form.Item>
                         {b ? (
                           <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
-                            {`BOQ ${toNumber(b.revisedQty ?? b.originalQty).toLocaleString('en-IN')}`}
+                            {`BOQ ${formatQty(b.revisedQty ?? b.originalQty)}`}
                           </Typography.Text>
                         ) : null}
                       </>
@@ -359,7 +359,7 @@ export function QuoteDrawer({ enquiry, quote, onClose }: { enquiry: ScEnquiryDet
                     <span translate="no">{it.itemNo ? `${it.itemNo} ` : ''}</span>
                     {it.description}
                     <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
-                      {`${toNumber(it.quantity).toLocaleString('en-IN')} ${it.unit}${it.clientRate ? ` · client ${formatINR(it.clientRate)}` : ''}`}
+                      {`${formatQty(it.quantity)} ${it.unit}${it.clientRate ? ` · client ${formatINR(it.clientRate)}` : ''}`}
                     </Typography.Text>
                   </div>
                 ) : null;
@@ -380,7 +380,7 @@ export function QuoteDrawer({ enquiry, quote, onClose }: { enquiry: ScEnquiryDet
               title: 'Amount',
               width: 150,
               align: 'right',
-              render: (_, n) => <span className="mono" translate="no">{amount(n) === null ? '-' : formatINR(amount(n)!, true)}</span>,
+              render: (_, n) => <span className="mono" translate="no">{amount(n) === null ? NO_VALUE : formatINR(amount(n)!, true)}</span>,
             },
           ]}
           footer={() => (

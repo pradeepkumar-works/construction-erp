@@ -43,7 +43,7 @@ export default function SupplierEnquiriesPage() {
             { title: 'Items', key: 'items', width: 80, align: 'right', render: (_, e) => e.lines.length },
             { title: 'Needed by', dataIndex: 'requiredDate', width: 120, render: (v: string) => formatDate(v) },
             { title: 'Quote by', dataIndex: 'closesOn', width: 120, render: (v: string) => formatDate(v) },
-            { title: 'State', key: 'state', width: 190, render: (_, e) => stateOf(e) },
+            { title: 'Status', key: 'state', width: 190, render: (_, e) => stateOf(e) },
             {
               title: 'Action',
               key: 'action',

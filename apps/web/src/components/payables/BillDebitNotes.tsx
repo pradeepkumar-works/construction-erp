@@ -30,7 +30,7 @@ export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
         <Typography.Text type="secondary">Short supply, billed in excess, rejected or returned material, a rate difference: taken off what is unpaid.</Typography.Text>
         {raiser && toNumber(bill.outstanding) > 0 ? (
           <Button size="small" onClick={() => setRaising(true)}>
-            Raise debit note
+            New debit note
           </Button>
         ) : null}
       </div>
@@ -65,7 +65,7 @@ export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
               </strong>
             ),
           },
-          { title: 'State', key: 'state', width: 150, render: (_, r) => <DebitNoteTag note={r} /> },
+          { title: 'Status', key: 'state', width: 150, render: (_, r) => <DebitNoteTag note={r} /> },
         ]}
       />
       <DebitNoteFormModal open={raising} bill={bill} onClose={() => setRaising(false)} />

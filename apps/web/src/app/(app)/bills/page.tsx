@@ -10,7 +10,7 @@ function BillsPage() {
   const search = useSearchParams();
   return (
     <div className="page-container">
-      <PageHeader title="RA bills" subtitle="Running-account bills from the approved measurements, with GST and the contract deductions, through approval, the client's certificate and payment." />
+      <PageHeader title="RA bills" subtitle="Running account bills from the approved measurements, with GST and the contract deductions, through approval, the client's certificate and payment." />
       <Card size="small">
         <BillList openId={search.get('id')} />
       </Card>

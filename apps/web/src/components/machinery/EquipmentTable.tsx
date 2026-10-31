@@ -6,7 +6,7 @@ import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, theme }
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
-import { DeleteOutlined, EditOutlined, PlusOutlined, ToolOutlined } from '@/components/common/icons';
+import { PlusOutlined, ToolOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField, FuelNormUnit, HireFuelBy } from '@erp/shared';
 import {
@@ -27,7 +27,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useProjects } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { EQUIPMENT_EXPORT } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
@@ -42,7 +42,8 @@ import { OwnershipTag } from './hours';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { RowMenu } from '@/components/list/RowMenu';
 import { EquipmentPartsDrawer } from './EquipmentPartsDrawer';
 import { MasterInput } from '@/components/masters/MasterInput';
 
@@ -123,6 +124,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
     },
     meta: FAIL_NOTICE,
   });
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async (e: EquipmentDto) => (await api.delete(`/equipment/${e.id}`)).data,
     onSuccess: () => {
@@ -204,11 +206,11 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
             </div>
           ),
         },
-        { title: 'Category', dataIndex: 'category', width: 130, ...sort('category'), render: (v: string | null) => v ?? <Sub>-</Sub> },
-        { title: 'Owned / hired', dataIndex: 'ownership', width: 120, ...sort('ownership'), render: (o: EquipmentOwnership) => <OwnershipTag ownership={o} /> },
+        { title: 'Category', dataIndex: 'category', width: 130, ...sort('category'), render: (v: string | null) => v ?? <Sub>{NO_VALUE}</Sub> },
+        { title: 'Owned or hired', dataIndex: 'ownership', width: 120, ...sort('ownership'), render: (o: EquipmentOwnership) => <OwnershipTag ownership={o} /> },
         ...(fixedProject ? [] : [{ title: 'Deployed at', dataIndex: 'projectName', width: 240, ellipsis: true, ...sort('project'), render: (v: string | null) => v ?? <Sub>Yard / unassigned</Sub> } satisfies ListColumn<EquipmentDto>]),
         ...(mayManage
-          ? [{ title: 'Rate', key: 'rate', width: 150, align: 'right' as const, render: (_: unknown, r: EquipmentDto) => (r.rate === null ? '-' : `${formatINR(r.rate)} ${EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit]}`) } satisfies ListColumn<EquipmentDto>]
+          ? [{ title: 'Rate', key: 'rate', width: 150, align: 'right' as const, render: (_: unknown, r: EquipmentDto) => (r.rate === null ? NO_VALUE : `${formatINR(r.rate)} ${EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit]}`) } satisfies ListColumn<EquipmentDto>]
           : []),
         { key: 'lastLogDate', title: 'Last log', dataIndex: 'lastLogDate', width: 120, render: (v: string | null) => (v ? formatDate(v) : <Sub>never</Sub>) },
         {
@@ -217,17 +219,18 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           label: 'Actions',
           locked: true,
           fixed: 'right' as const,
-          width: mayManage ? 120 : 56,
+          width: mayManage ? 96 : 56,
           render: (_: unknown, r: EquipmentDto) => (
             <Space size="small">
               <Button type="text" size="small" icon={<ToolOutlined />} onClick={() => setPartsOf(r)} aria-label={`Tyres and batteries of ${r.code}`} title="Tyres and batteries" />
               {mayManage ? (
-                <>
-                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                  <ConfirmDelete what={`machine ${r.code}`} onConfirm={() => remove.mutateAsync(r)} disabled={!!r.lastLogDate}>
-                    <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={!!r.lastLogDate} title={r.lastLogDate ? 'Has logs; mark it inactive instead' : undefined} aria-label="Delete" />
-                  </ConfirmDelete>
-                </>
+                <RowMenu
+                  label={`Actions for ${r.code}`}
+                  items={[
+                    { key: 'edit', label: 'Edit', onSelect: () => open(r) },
+                    { key: 'delete', label: r.lastLogDate ? 'Delete (it has logs; mark it inactive instead)' : 'Delete', danger: true, disabled: !!r.lastLogDate, onSelect: () => askDelete({ what: `machine ${r.code}`, onConfirm: () => remove.mutateAsync(r) }) },
+                  ]}
+                />
               ) : null}
             </Space>
           ),
@@ -250,6 +253,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
 
   return (
     <>
+      {deleteDialog}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
@@ -343,7 +347,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           </FormSection>
           <FormSection title="Ownership and rate">
             <FormGrid cols={2}>
-              <Form.Item name="ownership" label="Owned / hired" rules={[{ required: true, message: 'Choose owned or hired' }]}>
+              <Form.Item name="ownership" label="Owned or hired" rules={[{ required: true, message: 'Choose owned or hired' }]}>
                 <Select options={EQUIPMENT_OWNERSHIPS.map((o) => ({ value: o, label: EQUIPMENT_OWNERSHIP_LABELS[o] }))} />
               </Form.Item>
               <Form.Item name="supplier" label="Hire agency" hidden={formOwnership !== 'HIRED'}>
@@ -363,7 +367,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 <Form.Item name="hireMinHours" label="Minimum hours a month" extra="Paid for even if not worked">
                   <QuantityInput unit="hour" />
                 </Form.Item>
-                <Form.Item name="hireFuelBy" label="Diesel">
+                <Form.Item name="hireFuelBy" label="Fuel">
                   <Select allowClear placeholder="Not agreed" options={HIRE_FUEL_BY.map((f) => ({ value: f, label: HIRE_FUEL_BY_LABELS[f] }))} />
                 </Form.Item>
                 <Form.Item name="hireOperator" label="Operator">
@@ -399,7 +403,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           </FormSection>
           <FormSection title="Deployment and service">
             <Form.Item name="projectId" label="Deployed at">
-              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
             <FormGrid cols={3}>
               <Form.Item name="serviceIntervalHours" label="Service every (hours)" tooltip="Working hours from the daily logs; leave blank for no hour schedule">

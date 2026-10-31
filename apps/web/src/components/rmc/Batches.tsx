@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { RmcBatchDto, RmcBatchStatus } from '@erp/shared';
 import { useRmcBatches } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BatchStatusTag, M3, PlantFilter, usePlantScope } from './rmcUi';
 import { useRmcDrawers } from './Drawers';
@@ -38,7 +38,7 @@ export function Batches() {
           onChange={(v) => (setStatus(v as RmcBatchStatus | 'all'), setPage(1))}
           options={[
             { value: 'all', label: 'All' },
-            { value: 'DISPATCHED', label: 'On the way' },
+            { value: 'DISPATCHED', label: 'In transit' },
             { value: 'DELIVERED', label: 'Delivered' },
             { value: 'REJECTED', label: 'Turned back' },
           ]}
@@ -65,9 +65,9 @@ export function Batches() {
             { title: 'Order', dataIndex: 'orderNo', width: 140, render: (n: string) => <span translate="no">{n}</span> },
             { title: 'Grade', dataIndex: 'grade', width: 80, render: (g: string) => <span translate="no">{g}</span> },
             { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-            { title: 'Truck', dataIndex: 'truck', width: 140, render: (t: string | null) => <span translate="no">{t ?? '-'}</span> },
+            { title: 'Truck', dataIndex: 'truck', width: 140, render: (t: string | null) => <span translate="no">{t ?? NO_VALUE}</span> },
             { title: 'Status', dataIndex: 'status', width: 120, render: (s: RmcBatchStatus) => <BatchStatusTag status={s} /> },
-            { title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? '-'}</span> },
+            { title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? NO_VALUE}</span> },
           ]}
         />
       )}

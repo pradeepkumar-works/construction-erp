@@ -7,7 +7,7 @@ import type { BiometricCommandDto, BiometricCommandStatus, BiometricUserDto } fr
 import { BIOMETRIC_COMMAND_KIND_LABELS, BIOMETRIC_COMMAND_STATUS_LABELS, DEVICE_NAME_MAX } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useBiometricAction, useBiometricCommands, useBiometricDevices } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
 import { Section } from '@/components/common/Section';
 import { QueryError } from '@/components/common/QueryState';
@@ -76,7 +76,7 @@ export function OnDevicesTag({ u }: { u: BiometricUserDto }) {
   if (u.commandsWaiting) return <AppTag tone="pending">{`Waiting for ${u.commandsWaiting} ${u.commandsWaiting === 1 ? 'device' : 'devices'}`}</AppTag>;
   if (u.commandsFailed) return <AppTag tone="danger">{`Failed on ${u.commandsFailed} ${u.commandsFailed === 1 ? 'device' : 'devices'}`}</AppTag>;
   if (u.onDevices) return <AppTag tone="success">{`On ${u.onDevices} ${u.onDevices === 1 ? 'device' : 'devices'}`}</AppTag>;
-  return <span className="text-muted">-</span>;
+  return <span className="text-muted">{NO_VALUE}</span>;
 }
 
 /** What the ADMS devices were asked to do and whether they did it; one not handed over yet can be taken back. */
@@ -85,7 +85,7 @@ export function DeviceCommands() {
   const { data, isLoading, error, refetch } = useBiometricCommands();
   const act = useBiometricAction();
   const columns: TableProps<BiometricCommandDto>['columns'] = [
-    { title: 'Asked', dataIndex: 'createdAt', width: 170, render: (v: string, c) => <span>{formatDateTime(v)}<div className="text-muted">{c.createdByName}</div></span> },
+    { title: 'Requested', dataIndex: 'createdAt', width: 170, render: (v: string, c) => <span>{formatDateTime(v)}<div className="text-muted">{c.createdByName}</div></span> },
     { title: 'Device', dataIndex: 'deviceName', width: 170 },
     {
       title: 'Command',
@@ -99,7 +99,7 @@ export function DeviceCommands() {
       ),
     },
     {
-      title: 'State',
+      title: 'Status',
       key: 'state',
       width: 300,
       render: (_, c) => (
@@ -122,7 +122,7 @@ export function DeviceCommands() {
             onClick={() =>
               act
                 .mutateAsync({ path: `/biometric/commands/${c.id}/cancel` })
-                .then(() => message.success('Command taken back'))
+                .then(() => message.success('Command cancelled'))
                 .catch((err) => message.error(errorMessage(err, 'Could not take it back. Try again.')))
             }
           >

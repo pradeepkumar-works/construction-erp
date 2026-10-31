@@ -141,7 +141,7 @@ function ImportStatement({
   );
 }
 
-/** Pick the bank book entry a statement line is: same side, not yet matched, nearest amount and day first. */
+/** Choose the bank book entry a statement line is: same side, not yet matched, nearest amount and day first. */
 function MatchPicker({
   line,
   book,

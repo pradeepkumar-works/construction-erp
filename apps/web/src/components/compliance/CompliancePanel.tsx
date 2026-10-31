@@ -23,7 +23,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useComplianceDoc, useComplianceDocs } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { SearchBox } from '@/components/common/SearchBox';
@@ -34,6 +34,7 @@ import { ExpiryTag } from '@/components/maintenance/maintenanceUi';
 import { RecordLink } from '@/components/record/RecordLink';
 import { ComplianceFormModal, type ComplianceAction } from './ComplianceForms';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { openableRow } from '@/components/list/openableRow';
 
 const KIND_COLORS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'blue', EMD: 'cyan', INSURANCE: 'purple', LICENCE: 'geekblue' };
 const STATUS_COLORS: Record<ComplianceDocStatus, string> = { ACTIVE: 'green', RENEWED: 'default', RELEASED: 'default', INVOKED: 'red' };
@@ -153,10 +154,10 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
             ) : null}
           </div>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
-    { title: 'Valid to', dataIndex: 'expiresOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : <span className="text-muted">-</span>) },
+    { title: 'Valid to', dataIndex: 'expiresOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : <span className="text-muted">{NO_VALUE}</span>) },
     { title: '', key: 'stand', width: 150, render: (_, d) => <StandTag d={d} /> },
   ];
 
@@ -218,7 +219,8 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           columns={columns}
           pagination={false}
           scroll={{ x: 900 }}
-          onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
+          rowClassName="row-click"
+          onRow={(r) => openableRow(() => setOpenId(r.id))}
           locale={{ emptyText: status === 'ACTIVE' && !state && !q && kind === 'ALL' && !projectId ? 'Nothing in the register yet. Add your bank guarantees, EMDs, insurance policies and licences with New guarantee or licence.' : 'Nothing matches' }}
         />
       )}
@@ -241,11 +243,11 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
                     Renew
                   </Button>
                   <Button size="small" onClick={() => setAction({ kind: 'release', doc: d })}>
-                    Release
+                    Record release
                   </Button>
                   {canBeInvoked(d.kind) ? (
                     <Button size="small" danger onClick={() => setAction({ kind: 'invoke', doc: d })}>
-                      Invoked
+                      Record invocation
                     </Button>
                   ) : null}
                 </>
@@ -307,11 +309,12 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
                   size="small"
                   pagination={false}
                   dataSource={d.history}
-                  onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
+                  rowClassName="row-click"
+                  onRow={(r) => openableRow(() => setOpenId(r.id))}
                   columns={[
                     { title: 'Number', dataIndex: 'reference' },
-                    { title: 'Valid', key: 'v', render: (_, h) => `${h.issuedOn ? formatDate(h.issuedOn) : '?'} to ${h.expiresOn ? formatDate(h.expiresOn) : '-'}` },
-                    { title: 'Amount', dataIndex: 'amount', align: 'right', render: (v: string | null) => (v ? formatINR(v) : '-') },
+                    { title: 'Valid', key: 'v', render: (_, h) => `${h.issuedOn ? formatDate(h.issuedOn) : '?'} to ${h.expiresOn ? formatDate(h.expiresOn) : NO_VALUE}` },
+                    { title: 'Amount', dataIndex: 'amount', align: 'right', render: (v: string | null) => (v ? formatINR(v) : NO_VALUE) },
                   ]}
                 />
               </>

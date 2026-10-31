@@ -7,7 +7,7 @@ import { FileExcelOutlined } from '@/components/common/icons';
 import type { StockAdjustmentReason, WastageRowDto } from '@erp/shared';
 import { STOCK_ADJUSTMENT_REASON_LABELS } from '@erp/shared';
 import { useWastageReport } from '@/lib/queries';
-import { formatINR, toNumber } from '@/lib/format';
+import { formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
@@ -49,8 +49,8 @@ export function WastageReport({ projectId }: { projectId: string }) {
   const columns: TableProps<WastageRowDto>['columns'] = [
     { title: 'Reason', dataIndex: 'reason', width: 150, render: (r: StockAdjustmentReason | null) => (r ? reasonLabel(r) : <span className="text-muted">Not given</span>) },
     { title: 'Item', dataIndex: 'itemName' },
-    { title: 'Written off', dataIndex: 'lostQty', width: 140, align: 'right', render: (v: string, r) => (toNumber(v) > 0 ? qty(v, r.unit) : <span className="text-muted">-</span>) },
-    { title: 'Found', dataIndex: 'gainedQty', width: 120, align: 'right', render: (v: string, r) => (toNumber(v) > 0 ? qty(v, r.unit) : <span className="text-muted">-</span>) },
+    { title: 'Written off', dataIndex: 'lostQty', width: 140, align: 'right', render: (v: string, r) => (toNumber(v) > 0 ? qty(v, r.unit) : <span className="text-muted">{NO_VALUE}</span>) },
+    { title: 'Found', dataIndex: 'gainedQty', width: 120, align: 'right', render: (v: string, r) => (toNumber(v) > 0 ? qty(v, r.unit) : <span className="text-muted">{NO_VALUE}</span>) },
     { title: 'Entries', dataIndex: 'entries', width: 80, align: 'right' },
     ...(values
       ? [
@@ -61,13 +61,13 @@ export function WastageReport({ projectId }: { projectId: string }) {
             align: 'right' as const,
             render: (v: string | null) =>
               v === null ? (
-                <span className="text-muted">no rate</span>
+                <span className="text-muted">No rate</span>
               ) : toNumber(v) > 0 ? (
                 <span className="mono" translate="no" style={{ color: RED }}>
                   {formatINR(v)}
                 </span>
               ) : (
-                <span className="text-muted">-</span>
+                <span className="text-muted">{NO_VALUE}</span>
               ),
           },
         ]

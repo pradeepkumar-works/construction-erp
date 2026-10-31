@@ -68,32 +68,32 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
 
   const unit = meterUnit(machine?.fuelNormUnit);
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={640} title="Fuel issue" okText="Save fuel issue" onSubmit={submit}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={640} title="Record fuel issue" okText="Save fuel issue" onSubmit={submit}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Select project"
+            placeholder="Choose the project"
             onChange={() => form.setFieldsValue({ equipmentId: undefined, itemId: undefined })}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Choose the machine the fuel went into' }]} extra={machine?.fuelNorm && machine.fuelNormUnit ? `Norm ${fuelNormText(machine.fuelNorm, machine.fuelNormUnit)}` : undefined}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder={scope ? 'Machine on this site' : 'Pick the project first'}
+              placeholder={scope ? 'Machine on this site' : 'Choose the project first'}
               disabled={!scope}
               loading={machines.isLoading}
-              options={(machines.data?.items ?? []).map((m) => ({ value: m.id, label: `${m.code} - ${m.name}` }))}
+              options={(machines.data?.items ?? []).map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))}
             />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="itemId" label="Fuel" rules={[{ required: true, message: 'Choose the fuel' }]}>
             <Select
-              placeholder={scope ? 'Fuel in the store' : 'Pick the project first'}
+              placeholder={scope ? 'Fuel in the store' : 'Choose the project first'}
               disabled={!scope}
               loading={fuel.isLoading}
               options={fuels.map((f) => ({ value: f.itemId, label: `${f.itemName} (${formatQty(f.balance)} ${f.unit} in stock)` }))}

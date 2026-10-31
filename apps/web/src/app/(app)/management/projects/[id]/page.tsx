@@ -15,7 +15,7 @@ import {
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementProject } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, formatPct, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LinkButton } from '@/components/common/LinkButton';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -67,7 +67,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
     {
       key: 'contract',
       label: 'Contract value',
-      value: m.contractValue === null ? '–' : formatINRCompact(m.contractValue),
+      value: m.contractValue === null ? NO_VALUE : formatINRCompact(m.contractValue),
       note: p.clientName ?? undefined,
     },
     {
@@ -78,7 +78,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
     },
     {
       key: 'unbilled',
-      label: 'Done, not billed',
+      label: 'Work done, not billed',
       value: formatINRCompact(m.unbilled),
       note:
         m.unbilledDays !== null
@@ -109,9 +109,9 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
   ];
   const facts: [string, React.ReactNode][] = [
     ['Schedule', PORTFOLIO_SCHEDULE_LABELS[s.state]],
-    ['Time gone', s.elapsed === null ? '–' : formatPct(s.elapsed)],
-    ['Completion date', s.completionDate ? formatDate(s.completionDate) : '–'],
-    ['Plan finishes', s.plannedFinish ? formatDate(s.plannedFinish) : '–'],
+    ['Time gone', s.elapsed === null ? NO_VALUE : formatPct(s.elapsed)],
+    ['Completion date', s.completionDate ? formatDate(s.completionDate) : NO_VALUE],
+    ['Plan finishes', s.plannedFinish ? formatDate(s.plannedFinish) : NO_VALUE],
     ['Late activities', String(s.lateActivities)],
     ['Days late', s.daysLate === null ? 'None' : days(s.daysLate)],
   ];
@@ -286,7 +286,7 @@ function CostHeads({ data }: { data: PortfolioProjectDetailDto }) {
             title: 'Budget',
             align: 'right',
             className: 'mono',
-            render: (_, h) => <span translate="no">{h.budget === null ? '–' : formatINRCompact(h.budget)}</span>,
+            render: (_, h) => <span translate="no">{h.budget === null ? NO_VALUE : formatINRCompact(h.budget)}</span>,
           },
           {
             key: 'forecast',
@@ -297,7 +297,7 @@ function CostHeads({ data }: { data: PortfolioProjectDetailDto }) {
               const over = h.forecast !== null && h.budget !== null && toNumber(h.forecast) > toNumber(h.budget);
               return (
                 <span translate="no" style={{ color: over ? token.colorErrorText : undefined }}>
-                  {h.forecast === null ? '–' : formatINRCompact(h.forecast)}
+                  {h.forecast === null ? NO_VALUE : formatINRCompact(h.forecast)}
                 </span>
               );
             },
@@ -313,7 +313,7 @@ function CostHeads({ data }: { data: PortfolioProjectDetailDto }) {
       >
         {anyBudget
           ? 'The grey track is the budget, the blue bar what is spent and red what is spent past it; the upright line is the forecast at completion.'
-          : 'This project has no cost budget yet, so the bars only compare the heads. Set one on the project’s Budget tab.'}
+          : 'This project has no cost budget yet, so the bars only compare the heads. Set one on the project’s Budget and cash flow tab.'}
       </Typography.Paragraph>
     </>
   );
@@ -428,7 +428,7 @@ function OpenItems({ data }: { data: PortfolioProjectDetailDto }) {
                   title: 'Amount',
                   align: 'right',
                   className: 'mono',
-                  render: (_, w) => (w.amount === null ? '–' : money(w.amount)),
+                  render: (_, w) => (w.amount === null ? NO_VALUE : money(w.amount)),
                 },
               ]}
             />
@@ -436,7 +436,7 @@ function OpenItems({ data }: { data: PortfolioProjectDetailDto }) {
         },
         {
           key: 'risks',
-          label: 'Risks and delays',
+          label: 'Delays and risks',
           count: data.risks.length,
           countLabel: 'open',
           children: (
@@ -470,12 +470,12 @@ function OpenItems({ data }: { data: PortfolioProjectDetailDto }) {
                   title: 'Days lost',
                   align: 'right',
                   className: 'mono',
-                  render: (_, r) => (r.daysLost === null ? '–' : r.daysLost),
+                  render: (_, r) => (r.daysLost === null ? NO_VALUE : r.daysLost),
                 },
                 {
                   key: 'due',
                   title: 'Due',
-                  render: (_, r) => (r.dueDate ? formatDate(r.dueDate) : '–'),
+                  render: (_, r) => (r.dueDate ? formatDate(r.dueDate) : NO_VALUE),
                 },
               ]}
             />

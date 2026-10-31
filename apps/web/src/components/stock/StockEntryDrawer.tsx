@@ -2,33 +2,23 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Typography } from 'antd';
-import { DeleteOutlined, FileExcelOutlined, ImportOutlined, SafetyCertificateOutlined } from '@/components/common/icons';
+import { Button, Descriptions, Divider, Drawer, Dropdown, Skeleton, Space, Table, Typography } from 'antd';
+import { FileTextOutlined, ImportOutlined, MoreOutlined, SafetyCertificateOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { StockEntryDto, StockEntryType, StockLineDto } from '@erp/shared';
+import type { StockEntryDto, StockLineDto } from '@erp/shared';
 import { STOCK_ADJUSTMENT_REASON_LABELS, canAdjustStock, canCheckGrn, canKeepStock, canRaiseDebitNote } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useStockEntry } from '@/lib/queries';
-import { formatDate, formatDateTime, formatQty } from '@/lib/format';
+import { formatDate, formatDateTime, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { StockTypeTag } from './StockTypeTag';
 import { ReceiveTransferModal } from './ReceiveTransferModal';
 import { GrnQcModal, GrnQcTag } from './GrnQc';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { DebitNoteFormModal, type DebitNoteGrn } from '@/components/payables/DebitNoteFormModal';
-
-const KIND: Record<StockEntryType, string> = {
-  RECEIPT: 'Goods received note',
-  ISSUE: 'Issue slip',
-  ADJUSTMENT: 'Stock adjustment',
-  TRANSFER_OUT: 'Transfer out',
-  TRANSFER_IN: 'Transfer in',
-  RETURN_TO_VENDOR: 'Return to supplier',
-  RETURN_FROM_SITE: 'Return from site',
-};
 
 /** What a debit note starts from: a GRN's rejected quantities, or what went back to the supplier (v5 item 91). */
 export function debitNoteFrom(e: StockEntryDto): DebitNoteGrn | null {
@@ -55,7 +45,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
     meta: FAIL_NOTICE,
   });
   const mayDelete = !!user && canAdjustStock(user.roleKey);
-  const kind = data ? KIND[data.type] : '';
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const [receiving, setReceiving] = useState(false);
   const [checking, setChecking] = useState(false);
   const mayCheck = !!data && data.type === 'RECEIPT' && !!user && canCheckGrn(user.roleKey);
@@ -71,7 +61,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
       open={!!id}
       onClose={onClose}
       size={640}
-      title={data ? <Space>{`${kind} · ${data.entryNo}`}<StockTypeTag type={data.type} /></Space> : 'Stock entry'}
+      title={data ? <Space>{data.entryNo}<StockTypeTag type={data.type} /></Space> : 'Stock entry'}
       extra={
         <Space>
           {mayCheck ? (
@@ -80,8 +70,8 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
             </Button>
           ) : null}
           {debit ? (
-            <Button size="small" icon={<FileExcelOutlined />} onClick={() => setDebiting(true)}>
-              Raise debit note
+            <Button size="small" icon={<FileTextOutlined />} onClick={() => setDebiting(true)}>
+              New debit note
             </Button>
           ) : null}
           {canReceive ? (
@@ -90,11 +80,15 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
             </Button>
           ) : null}
           {data && mayDelete ? (
-          <ConfirmDelete what={data.entryNo} description="Its quantities come off the stock register." onConfirm={() => remove.mutateAsync()}>
-            <Button danger size="small" icon={<DeleteOutlined />} loading={remove.isPending}>
-              Delete
-            </Button>
-          </ConfirmDelete>
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [{ key: 'delete', label: 'Delete', danger: true }],
+                onClick: () => askDelete({ what: data.entryNo, description: 'Its quantities come off the stock register.', onConfirm: () => remove.mutateAsync() }),
+              }}
+            >
+              <Button size="small" icon={<MoreOutlined />} aria-label={`More for ${data.entryNo}`} loading={remove.isPending} />
+            </Dropdown>
           ) : null}
         </Space>
       }
@@ -115,10 +109,10 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
               ...(data.type === 'RECEIPT'
                 ? [
                     ...(data.poNo ? [{ key: 'po', label: 'Purchase order', children: data.poNo }] : []),
-                    { key: 'mr', label: 'Material request', children: data.requestNo ?? '-' },
-                    { key: 'supplier', label: 'Supplier', children: data.supplier ?? '-' },
-                    { key: 'challan', label: 'Challan no.', children: data.challanNo ?? '-' },
-                    { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? '-' },
+                    { key: 'mr', label: 'Indent', children: data.requestNo ?? NO_VALUE },
+                    { key: 'supplier', label: 'Vendor', children: data.supplier ?? NO_VALUE },
+                    { key: 'challan', label: 'Challan no.', children: data.challanNo ?? NO_VALUE },
+                    { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? NO_VALUE },
                     {
                       key: 'qc',
                       label: 'QA/QC',
@@ -136,39 +130,39 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
                 : []),
               ...(data.type === 'TRANSFER_OUT'
                 ? [
-                    { key: 'to', label: 'Sent to', children: data.toProjectId ? <Link href={`/projects/${data.toProjectId}?tab=stock`}>{data.toProjectName}</Link> : (data.issuedTo ?? '-') },
-                    { key: 'state', label: 'Received', children: data.transferInNo ? `Yes, as ${data.transferInNo}` : 'Not yet (in transit)' },
-                    { key: 'challan', label: 'Challan no.', children: data.challanNo ?? '-' },
-                    { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? '-' },
+                    { key: 'to', label: 'Sent to', children: data.toProjectId ? <Link href={`/projects/${data.toProjectId}?tab=stock`}>{data.toProjectName}</Link> : (data.issuedTo ?? NO_VALUE) },
+                    { key: 'state', label: 'Received', children: data.transferInNo ? `Yes, as ${data.transferInNo}` : 'Not yet: in transit' },
+                    { key: 'challan', label: 'Challan no.', children: data.challanNo ?? NO_VALUE },
+                    { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? NO_VALUE },
                   ]
                 : []),
               ...(data.type === 'TRANSFER_IN'
                 ? [
-                    { key: 'from', label: 'From', children: data.fromProjectName ?? data.supplier ?? '-' },
-                    { key: 'out', label: 'Sent as', children: data.transferOutNo ?? '-' },
+                    { key: 'from', label: 'From', children: data.fromProjectName ?? data.supplier ?? NO_VALUE },
+                    { key: 'out', label: 'Sent as', children: data.transferOutNo ?? NO_VALUE },
                   ]
                 : []),
               ...(data.type === 'RETURN_TO_VENDOR'
                 ? [
-                    { key: 'supplier', label: 'Supplier', children: data.supplier ?? '-' },
-                    { key: 'challan', label: 'Debit note / challan', children: data.challanNo ?? '-' },
+                    { key: 'supplier', label: 'Vendor', children: data.supplier ?? NO_VALUE },
+                    { key: 'challan', label: 'Debit note / challan', children: data.challanNo ?? NO_VALUE },
                   ]
                 : []),
               ...(data.type === 'ISSUE' || data.type === 'RETURN_FROM_SITE'
                 ? [
-                    { key: 'to', label: data.type === 'ISSUE' ? 'Issued to' : 'Returned by', children: data.issuedTo ?? '-' },
+                    { key: 'to', label: data.type === 'ISSUE' ? 'Issued to' : 'Returned by', children: data.issuedTo ?? NO_VALUE },
                     ...(data.equipmentCode
                       ? [{ key: 'machine', label: 'Into machine', children: `${data.equipmentCode}${data.meterReading ? ` at meter ${formatQty(data.meterReading)}` : ''}` }]
                       : []),
                     ...(data.woNo ? [{ key: 'wo', label: 'Work order', children: `${data.woNo}${data.subcontractBillId ? ', recovered in their bill' : ', to be recovered from their next bill'}` }] : []),
-                    { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
+                    { key: 'activity', label: 'Activity', children: data.activityName ?? NO_VALUE },
                   ]
                 : []),
               ...(data.adjustmentReason ? [{ key: 'reason', label: 'Reason', children: STOCK_ADJUSTMENT_REASON_LABELS[data.adjustmentReason], span: 2 }] : []),
               {
                 key: 'remarks',
                 label: data.adjustmentReason ? 'Details' : data.type === 'ADJUSTMENT' || data.type === 'RETURN_TO_VENDOR' ? 'Reason' : 'Remarks',
-                children: data.remarks ?? '-',
+                children: data.remarks ?? NO_VALUE,
                 span: 2,
               },
               { key: 'by', label: 'Entered by', children: `${data.createdByName}, ${formatDateTime(data.createdAt)}`, span: 2 },
@@ -191,7 +185,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
               },
               { title: 'Unit', dataIndex: 'unit', width: 80 },
               ...(anyRejected
-                ? [{ title: 'Rejected', dataIndex: 'rejectedQty', align: 'right' as const, width: 110, render: (v: string | null) => (v && Number(v) > 0 ? <Typography.Text type="danger">{formatQty(v)}</Typography.Text> : '-') }]
+                ? [{ title: 'Rejected', dataIndex: 'rejectedQty', align: 'right' as const, width: 110, render: (v: string | null) => (v && Number(v) > 0 ? <Typography.Text type="danger">{formatQty(v)}</Typography.Text> : NO_VALUE) }]
                 : []),
             ]}
           />
@@ -208,6 +202,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
       {data && mayCheck ? <GrnQcModal entry={data} open={checking} onClose={() => setChecking(false)} /> : null}
       {debit ? <DebitNoteFormModal open={debiting} grn={debit} onClose={() => setDebiting(false)} /> : null}
       {data && canReceive ? <ReceiveTransferModal open={receiving} onClose={() => setReceiving(false)} transfer={data} /> : null}
+      {deleteDialog}
     </Drawer>
   );
 }

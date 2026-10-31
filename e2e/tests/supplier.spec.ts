@@ -83,11 +83,11 @@ test('a dispatch note becomes a GRN and a returned invoice reaches the supplier'
   await acc.goto('/supplier-inbox');
   await acc.getByRole('link', { name: invoiceNo }).or(acc.getByRole('button', { name: invoiceNo })).first().click();
   const inv = acc.locator('.ant-drawer').filter({ hasText: `Invoice ${invoiceNo}` });
-  await expect(inv.getByRole('button', { name: 'Record bill' })).toBeVisible();
+  await expect(inv.getByRole('button', { name: 'Record vendor bill' })).toBeVisible();
   await inv.getByRole('button', { name: 'Return', exact: true }).click();
   const back = acc.locator('.ant-modal').filter({ hasText: `Return invoice ${invoiceNo}` });
   await back.getByLabel('What to fix').fill('Our GSTIN is missing on the invoice');
-  await back.getByRole('button', { name: 'Return to supplier' }).click();
+  await back.getByRole('button', { name: 'Return to vendor' }).click();
   await expect(acc.getByText(`${invoiceNo} returned to`)).toBeVisible();
   await accContext.close();
 

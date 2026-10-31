@@ -44,7 +44,7 @@ export function PlantFilter() {
       placeholder="All plants"
       value={plantId}
       onChange={(v) => setPlantId(v)}
-      options={plants.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+      options={plants.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
       style={{ minWidth: 220 }}
     />
   );

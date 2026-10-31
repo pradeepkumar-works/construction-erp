@@ -11,7 +11,8 @@ import { CODE_INPUT, MoneyInput, upper } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivities, useProjects } from '@/lib/queries';
+import { useActivities } from '@/lib/queries';
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { formatINR } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -42,7 +43,6 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!expense;
   const fixedProject = expense?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
@@ -121,7 +121,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       onClose={onClose}
       form={form}
       title={expense ? `${editActionLabel(expense.status)} · ${expense.expenseNo}` : 'New site expense'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       layout="modal"
       width={680}
@@ -131,18 +131,18 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       <Form form={form} layout="vertical">
         {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+          <ProjectSelect allowClear={false} placeholder="Choose the project" onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Choose the category' }]} {...aiFlagItem(draft, 'category', category)}>
-            <Select placeholder="Select" options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: EXPENSE_CATEGORY_LABELS[c] }))} />
+            <Select placeholder="Choose the category" options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: EXPENSE_CATEGORY_LABELS[c] }))} />
           </Form.Item>
-          <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
+          <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="description" label="What was it for" rules={[{ required: true, whitespace: true, message: 'Say what it was for' }]}>
-          <Input maxLength={300} placeholder="Hydraulic hose for grader GRD-01" />
+          <Input maxLength={300} placeholder="e.g. Hydraulic hose for grader GRD-01" />
         </Form.Item>
         <FormGrid cols={3}>
           <Form.Item name="vendor" label="Vendor">
@@ -165,8 +165,8 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           <Form.Item
             name="gstAmount"
             label="GST on bill"
-            tooltip={`Leave empty to use ${rate ?? 0}% of the amount. A typed value must be within ₹${GST_TOLERANCE} of it.`}
-            rules={[{ validator: async (_, v) => (v === undefined || v === null || Math.abs(Number(v) - computedGst) <= GST_TOLERANCE ? undefined : Promise.reject(new Error(`Expected about ₹${computedGst.toFixed(2)}`))) }]}
+            tooltip={`Leave empty to use ${rate ?? 0}% of the amount. A typed value must be within ${formatINR(GST_TOLERANCE, true)} of it.`}
+            rules={[{ validator: async (_, v) => (v === undefined || v === null || Math.abs(Number(v) - computedGst) <= GST_TOLERANCE ? undefined : Promise.reject(new Error(`Enter about ${formatINR(computedGst, true)}, or leave it empty`))) }]}
           >
             <MoneyInput placeholder={computedGst.toFixed(2)} />
           </Form.Item>
@@ -180,7 +180,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true, message: 'Choose how it was paid' }]} {...aiFlagItem(draft, 'paymentMode', paymentMode)}>
             <Select options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
-          <Form.Item name="activityId" label="Activity (optional)">
+          <Form.Item name="activityId" label="Activity">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
         </FormGrid>

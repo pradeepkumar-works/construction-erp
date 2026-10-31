@@ -16,13 +16,14 @@ import { CompanyForm } from '@/components/group/CompanyForm';
 import { PlaceForm } from '@/components/group/PlaceForm';
 import { useAuth } from '@/lib/auth';
 import { useGroup, useMakeGroup, useSetGroupAdmin } from '@/lib/queries';
+import { NO_VALUE } from '@/lib/format';
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
 
-const code = (v: string | null) => (v ? <span translate="no">{v}</span> : <span className="text-muted">-</span>);
+const code = (v: string | null) => (v ? <span translate="no">{v}</span> : <span className="text-muted">{NO_VALUE}</span>);
 
 function CompaniesTab({ group, onEdit }: { group: GroupDto; onEdit: (c: GroupCompanyDto) => void }) {
   const columns = useMemo<ListColumn<GroupCompanyDto>[]>(
@@ -54,7 +55,7 @@ function CompaniesTab({ group, onEdit }: { group: GroupDto; onEdit: (c: GroupCom
       { key: 'pan', title: 'PAN', width: 130, defaultFrom: 1280, render: (_, c) => code(c.pan) },
       { key: 'cin', title: 'CIN', width: 220, defaultHidden: true, render: (_, c) => code(c.cin) },
       { key: 'people', title: 'People', width: 90, align: 'right', render: (_, c) => <span translate="no">{c.people}</span> },
-      { key: 'yourRole', title: 'Your role', width: 170, card: 'meta', cardText: (c) => (c.yourRole ? `You: ${c.yourRole}` : 'You have no place here'), render: (_, c) => c.yourRole ?? <span className="text-muted">No place</span> },
+      { key: 'yourRole', title: 'Your role', width: 170, card: 'meta', cardText: (c) => (c.yourRole ? `You: ${c.yourRole}` : 'You have no access here'), render: (_, c) => c.yourRole ?? <span className="text-muted">No place</span> },
       {
         key: 'actions',
         title: '',
@@ -158,8 +159,8 @@ function PeopleTab({ group, myEmail, onGive }: { group: GroupDto; myEmail: strin
         fixed: 'right',
         card: false,
         render: (_, p) => (
-          <Button size="small" icon={<UserAddOutlined />} aria-label={`Give ${p.fullName} a place`} disabled={p.places.filter((x) => x.isActive).length >= group.companies.length} onClick={() => onGive(p)}>
-            Give a place
+          <Button size="small" icon={<UserAddOutlined />} aria-label={`Add ${p.fullName} to a company`} disabled={p.places.filter((x) => x.isActive).length >= group.companies.length} onClick={() => onGive(p)}>
+            Add to company
           </Button>
         ),
       },
@@ -170,7 +171,7 @@ function PeopleTab({ group, myEmail, onGive }: { group: GroupDto; myEmail: strin
   return (
     <>
       <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
-        Everyone with a place in a company of the group. A place in another company uses the same sign-in. New people are added from Users in their own company.
+        Everyone with access to a company of the group. Access to another company uses the same sign-in. New people are added from Users in their own company.
       </Typography.Paragraph>
       <DataTable<PersonRow>
         columns={columns}
@@ -202,11 +203,11 @@ function MakeGroup({ companyName }: { companyName: string }) {
     <Card size="small">
       <Result
         icon={<ResultMark />}
-        title="Make a group to run more than one company"
+        title="New group, to run more than one company"
         subTitle={`A group holds your companies, such as a construction company, a consultancy and a quality lab. Each keeps its own projects, people, books and menu; you sign in once and switch between them. ${companyName} becomes its first company.`}
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-            Make a group
+            New group
           </Button>
         }
       />
@@ -216,8 +217,8 @@ function MakeGroup({ companyName }: { companyName: string }) {
         form={form}
         layout="modal"
         width={440}
-        title="Make a group"
-        okText="Make group"
+        title="New group"
+        okText="Save"
         projectDefault={false}
         onSubmit={async (v) => {
           await make.mutateAsync(v.name.trim());
@@ -263,7 +264,7 @@ export default function GroupPage() {
         extra={newButton}
       />
       {!allowed ? (
-        <Result icon={<ResultMark kind="no-access" />} title="Group admins only" subTitle="Ask a group admin to give you a place in another company, or to make you an admin." />
+        <Result icon={<ResultMark kind="no-access" />} title="Group admins only" subTitle="Ask a group admin to add you to another company, or to make you an admin." />
       ) : isLoading ? (
         <PageSkeleton shape="list" header={false} />
       ) : error ? (

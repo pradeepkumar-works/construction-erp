@@ -26,6 +26,7 @@ import { EmptyLine } from "@/components/common/EmptyArt";
 import { HOVER_INTENT_MS, usePrefetch } from "@/lib/prefetch";
 import { useIsPhone, useWidthsReached } from "@/lib/screen";
 import { ListCards, type CardRole } from "./ListCards";
+import { ROW_OWN_CONTROLS } from "./openableRow";
 
 /** A list column: antd's, with a stable `key`, a plain-text `label` for the column chooser, and an optional page total. */
 export type ListColumn<T> = TableColumnType<T> & {
@@ -246,7 +247,7 @@ export function DataTable<T extends { id: string }>({
     </div>
   ) : failed ? (
     <Typography.Text type="secondary">
-      The list could not be loaded.
+      The list could not load. Try again in a moment.
     </Typography.Text>
   ) : (
     <div>
@@ -393,8 +394,8 @@ export function DataTable<T extends { id: string }>({
           >
             <Button
               size="small"
-              type={wrap ? "primary" : "default"}
-              ghost={wrap}
+              color="default"
+              variant={wrap ? "filled" : "outlined"}
               icon={<LineHeightOutlined />}
               aria-pressed={wrap}
               aria-label="Wrap long text"
@@ -469,7 +470,7 @@ export function DataTable<T extends { id: string }>({
                       // Links, buttons, checkboxes, switches and menus in the row do their own thing.
                       if (
                         (e.target as HTMLElement).closest(
-                          "a, button, input, label, .ant-dropdown, .ant-checkbox-wrapper, .ant-image, .ant-switch",
+                          ROW_OWN_CONTROLS,
                         )
                       )
                         return;
@@ -500,7 +501,7 @@ export function DataTable<T extends { id: string }>({
                               </span>
                             ) : i === 0 ? (
                               <Typography.Text type="secondary">
-                                Total, this page
+                                Page total
                               </Typography.Text>
                             ) : null}
                           </Table.Summary.Cell>

@@ -38,9 +38,8 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
   });
 
   await signIn(page, 'procurement@demo.com');
-  await page.goto(`/material-requests?id=${mr.id}`);
-  const drawer = page.locator('.ant-drawer').filter({ hasText: 'Quotations and purchase orders' });
-  await drawer.getByRole('button', { name: 'Record quotation' }).click();
+  await page.goto(`/requests-to-order/${mr.id}?tab=quotations`);
+  await page.getByRole('button', { name: 'Record quotation' }).click();
   let modal = formPanel(page, 'Record quotation');
   await chooseOption(modal.getByLabel('Vendor'), 'Sahoo Auto');
   await modal.getByLabel('Their quotation no.').fill('SAP/E2E/1');
@@ -48,10 +47,10 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
   await modal.getByRole('button', { name: 'Save quotation' }).click();
   await expect(page.getByText('Quotation from Sahoo Auto Parts added')).toBeVisible();
 
-  // The cheaper quotation is the lowest; raise the PO on it.
-  const raise = drawer.getByRole('button', { name: 'Raise PO', exact: true });
-  await expect(raise).toHaveCount(2);
-  await raise.and(page.locator('.ant-btn-primary')).click();
+  // The cheaper quotation is L1; finalise it and make the PO on it.
+  await page.getByRole('tab', { name: /Finalise L1/ }).click();
+  await page.getByRole('row').filter({ hasText: 'Sahoo Auto Parts' }).getByRole('button', { name: 'Finalise L1', exact: true }).click();
+  await page.getByRole('button', { name: 'New purchase order on Sahoo Auto Parts' }).click();
   modal = formPanel(page, `Purchase order for ${mr.requestNo}`);
   await expect(modal.getByLabel('Rate of line 1')).toHaveValue('85');
   await expect(modal.getByLabel('Quantity of line 1')).toHaveValue('100');

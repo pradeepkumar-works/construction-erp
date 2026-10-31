@@ -3,7 +3,7 @@ import { DELAY_PARTY_LABELS, PRODUCT_NAME, PROJECT_TYPE_LABELS } from '@erp/shar
 import { fileUrl } from '@/lib/api';
 import { BRAND } from '@/lib/brand';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
-import { formatDate, formatDateTime, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 
 const esc = (v: unknown) =>
   String(v ?? '')
@@ -11,7 +11,7 @@ const esc = (v: unknown) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 const n = (v: string) => esc(formatQty(v));
-const inr = (v: string | null) => (v === null ? '-' : esc(formatINR(v)));
+const inr = (v: string | null) => (v === null ? NO_VALUE : esc(formatINR(v)));
 const none = (cols: number, text = 'Nothing recorded in this period') => `<tr><td colspan="${cols}" class="muted">${text}</td></tr>`;
 
 export type ReportKind = 'WEEKLY' | 'MONTHLY' | 'CUSTOM';
@@ -43,11 +43,11 @@ export function buildProgressReportHtml(r: ProgressReportDto, kind: ReportKind, 
   const delays = r.delays
     .map(
       (d) =>
-        `<tr><td class="c">${esc(d.riskNo)}</td><td>${esc(d.title)}${d.activityName ? `<br/><span class="muted">${esc(d.activityName)}</span>` : ''}</td><td class="c">${esc(formatDate(d.from))} to ${d.to ? esc(formatDate(d.to)) : 'date'}</td><td class="num">${esc(d.daysInPeriod)}</td><td>${d.responsibleParty ? esc(DELAY_PARTY_LABELS[d.responsibleParty]) : '-'}${d.eotClaimed ? ' (EOT claimed)' : ''}</td></tr>`,
+        `<tr><td class="c">${esc(d.riskNo)}</td><td>${esc(d.title)}${d.activityName ? `<br/><span class="muted">${esc(d.activityName)}</span>` : ''}</td><td class="c">${esc(formatDate(d.from))} to ${d.to ? esc(formatDate(d.to)) : 'date'}</td><td class="num">${esc(d.daysInPeriod)}</td><td>${d.responsibleParty ? esc(DELAY_PARTY_LABELS[d.responsibleParty]) : NO_VALUE}${d.eotClaimed ? ' (EOT claimed)' : ''}</td></tr>`,
     )
     .join('');
   const risks = r.risks
-    .map((x) => `<tr><td class="c">${esc(x.riskNo)}</td><td>${esc(x.title)}</td><td class="num">${esc(x.score)}</td><td>${esc(x.mitigation ?? '-')}</td><td>${esc(x.ownerName ?? '-')}</td><td class="c">${esc(formatDate(x.dueDate))}</td></tr>`)
+    .map((x) => `<tr><td class="c">${esc(x.riskNo)}</td><td>${esc(x.title)}</td><td class="num">${esc(x.score)}</td><td>${esc(x.mitigation ?? NO_VALUE)}</td><td>${esc(x.ownerName ?? NO_VALUE)}</td><td class="c">${esc(formatDate(x.dueDate))}</td></tr>`)
     .join('');
   const next = r.nextPeriod.map((a) => `<tr><td>${esc(a.name)}</td><td class="num">${n(a.balanceQty)} ${esc(a.unit)}</td><td class="c">${esc(formatDate(a.plannedEnd))}</td></tr>`).join('');
   const photos = r.photos.map((ph) => `<figure><img src="${esc(fileUrl(ph.url))}" alt=""/><figcaption>${esc(ph.caption)}</figcaption></figure>`).join('');
@@ -105,14 +105,14 @@ ${PRINT_FONT_LINKS}
   <div class="meta">
     <div style="grid-column: span 2"><b>Project</b>${esc(p.code)} · ${esc(p.name)}</div>
     <div><b>Type</b>${esc(PROJECT_TYPE_LABELS[p.type])}</div>
-    <div><b>Location</b>${esc(p.location ?? '-')}</div>
-    <div><b>Client</b>${esc(p.clientName ?? '-')}</div>
-    <div><b>Consultant</b>${esc(p.consultantName ?? '-')}</div>
-    <div><b>Work order</b>${esc(p.workOrderNo ?? '-')}</div>
+    <div><b>Location</b>${esc(p.location ?? NO_VALUE)}</div>
+    <div><b>Client</b>${esc(p.clientName ?? NO_VALUE)}</div>
+    <div><b>Consultant</b>${esc(p.consultantName ?? NO_VALUE)}</div>
+    <div><b>Work order</b>${esc(p.workOrderNo ?? NO_VALUE)}</div>
     <div><b>Contract value</b>${inr(p.contractValue)}</div>
     <div><b>Start</b>${esc(formatDate(p.startDate))}</div>
     <div><b>Completion</b>${esc(formatDate(p.endDate))}</div>
-    <div><b>Project manager</b>${esc(p.projectManagerName ?? '-')}</div>
+    <div><b>Project manager</b>${esc(p.projectManagerName ?? NO_VALUE)}</div>
     <div><b>Approved DPRs</b>${esc(r.dpr.approved)} of ${esc(r.dpr.days)} days${r.dpr.rainyDays ? ` · ${esc(r.dpr.rainyDays)} rainy` : ''}</div>
   </div>
 
@@ -121,9 +121,9 @@ ${PRINT_FONT_LINKS}
   <div class="kpis">
     <div class="kpi"><b>Physical progress</b><span>${esc(r.physical.atEndPct)}%</span><small>${gain >= 0 ? '+' : ''}${esc(gain)} points this period (from ${esc(r.physical.atStartPct)}%)</small>
       <div class="bar"><i style="width:${Math.min(100, r.physical.atEndPct)}%"></i>${r.timeElapsedPct !== null ? `<i class="t" style="width:${Math.min(100, r.timeElapsedPct)}%"></i>` : ''}</div></div>
-    <div class="kpi"><b>Time elapsed</b><span>${r.timeElapsedPct === null ? '-' : `${esc(r.timeElapsedPct)}%`}</span><small>of the contract period</small></div>
-    <div class="kpi"><b>Value executed this period</b><span>${inr(r.financial.periodValue)}</span><small>measured ${inr(r.financial.measuredPeriodValue)}</small></div>
-    <div class="kpi"><b>Value executed to date</b><span>${inr(r.financial.cumulativeValue)}</span><small>${r.financial.contractPct === null ? '' : `${esc(r.financial.contractPct)}% of contract · `}measured ${inr(r.financial.measuredCumulativeValue)}</small></div>
+    <div class="kpi"><b>Time elapsed</b><span>${r.timeElapsedPct === null ? NO_VALUE : `${esc(r.timeElapsedPct)}%`}</span><small>of the contract period</small></div>
+    <div class="kpi"><b>Value of work done this period</b><span>${inr(r.financial.periodValue)}</span><small>measured ${inr(r.financial.measuredPeriodValue)}</small></div>
+    <div class="kpi"><b>Value of work done to date</b><span>${inr(r.financial.cumulativeValue)}</span><small>${r.financial.contractPct === null ? '' : `${esc(r.financial.contractPct)}% of contract · `}measured ${inr(r.financial.measuredCumulativeValue)}</small></div>
   </div>
 
   <h2>2. Activity progress</h2>

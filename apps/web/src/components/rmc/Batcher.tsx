@@ -170,7 +170,7 @@ export function Batcher() {
         </div>
       ),
     },
-    { title: 'State', key: 'health', width: 170, render: (_, c) => <AppTag tone={HEALTH_TONE[c.health as ConnectionHealth]}>{CONNECTION_HEALTH_LABELS[c.health as ConnectionHealth]}</AppTag> },
+    { title: 'Status', key: 'health', width: 170, render: (_, c) => <AppTag tone={HEALTH_TONE[c.health as ConnectionHealth]}>{CONNECTION_HEALTH_LABELS[c.health as ConnectionHealth]}</AppTag> },
     { title: 'Last batch read', key: 'last', width: 170, render: (_, c) => (c.lastEventAt ? formatDateTime(c.lastEventAt) : <span className="text-muted">None yet</span>) },
     {
       title: 'Columns',

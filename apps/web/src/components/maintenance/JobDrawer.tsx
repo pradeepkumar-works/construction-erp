@@ -13,7 +13,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useMaintenanceJob, useStockBalances } from '@/lib/queries';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -171,12 +171,12 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
             <Descriptions.Item label="At">{j.projectName ?? 'Yard'}</Descriptions.Item>
             <Descriptions.Item label="Date">{formatDate(j.date)}</Descriptions.Item>
             <Descriptions.Item label="Reported by">{j.reportedByName}</Descriptions.Item>
-            <Descriptions.Item label="Meter">{j.meterReading ? formatQty(j.meterReading) : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Meter">{j.meterReading ? formatQty(j.meterReading) : NO_VALUE}</Descriptions.Item>
             <Descriptions.Item label={j.kind === 'BREAKDOWN' ? 'Fault' : 'Work to do'} span={2}>
               <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{j.description}</Typography.Paragraph>
             </Descriptions.Item>
             <Descriptions.Item label="Workshop" span={2}>
-              {j.workshop ?? '-'}
+              {j.workshop ?? NO_VALUE}
             </Descriptions.Item>
             {j.status === 'CLOSED' ? (
               <>
@@ -186,7 +186,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                 <Descriptions.Item label="Closed">
                   {formatDate(j.closedDate)} by {j.closedByName}
                 </Descriptions.Item>
-                <Descriptions.Item label="Downtime">{j.downtimeHours ? `${formatQty(j.downtimeHours)} h` : '-'}</Descriptions.Item>
+                <Descriptions.Item label="Downtime">{j.downtimeHours ? `${formatQty(j.downtimeHours)} h` : NO_VALUE}</Descriptions.Item>
               </>
             ) : null}
             <Descriptions.Item label="Labour">{formatINR(j.labourCost)}</Descriptions.Item>
@@ -214,11 +214,11 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
               className="spares-table"
               dataSource={j.spares}
               columns={[
-                { title: 'Slip', dataIndex: 'entryNo', width: 130, className: 'mono' },
+                { title: 'Fuel issue', dataIndex: 'entryNo', width: 130, className: 'mono' },
                 { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
                 { title: 'Spare', dataIndex: 'itemName' },
                 { title: 'Qty', key: 'q', width: 100, align: 'right', render: (_, r) => `${formatQty(r.quantity)} ${r.unit}` },
-                { title: 'Value', dataIndex: 'value', width: 110, align: 'right', render: (v) => (v ? formatINR(v) : '-') },
+                { title: 'Value', dataIndex: 'value', width: 110, align: 'right', render: (v) => (v ? formatINR(v) : NO_VALUE) },
               ]}
             />
           ) : (
@@ -239,7 +239,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
         <Form form={closeForm} layout="vertical">
           {j?.kind === 'SERVICE' ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Closing a service restarts the machine's service schedule from this date." /> : null}
           <FormGrid cols={3}>
-            <Form.Item name="closedDate" label="Back in work on" rules={[{ required: true, message: 'Pick the date' }]}>
+            <Form.Item name="closedDate" label="Back in work on" rules={[{ required: true, message: 'Choose the date' }]}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!j && d.isBefore(dayjs(j.date), 'day'))} allowClear={false} />
             </Form.Item>
             <Form.Item name="downtimeHours" label="Working hours lost">
@@ -249,7 +249,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
               <QuantityInput />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="workDone" label="Work done" rules={[{ required: true, whitespace: true, message: 'What was done?' }]}>
+          <Form.Item name="workDone" label="Work done" rules={[{ required: true, whitespace: true, message: 'Enter what was done' }]}>
             <Input.TextArea rows={3} maxLength={2000} />
           </Form.Item>
           <FormGrid cols={3}>
@@ -269,7 +269,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
       <FormShell open={issuing} onClose={() => setIssuing(false)} form={spareForm} layout="modal" title={`Issue spares for ${j?.jobNo ?? ''}`} okText="Issue" onSubmit={(v) => spares.mutateAsync(v)} width={620}>
         <Form form={spareForm} layout="vertical">
           <Typography.Paragraph type="secondary">From the store at {j?.projectName}. The issue slip is linked to this job card.</Typography.Paragraph>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} style={{ maxWidth: 220 }}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]} style={{ maxWidth: 220 }}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           {!stock.isLoading && !items.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Nothing is in stock at this project." /> : null}
@@ -281,7 +281,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                   const row = items.find((i) => i.itemId === itemId);
                   return (
                     <div key={f.key} data-line-label={`Spare ${f.name + 1}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick a spare' }]}>
+                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Choose a spare' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
                           placeholder="Spare or lubricant"

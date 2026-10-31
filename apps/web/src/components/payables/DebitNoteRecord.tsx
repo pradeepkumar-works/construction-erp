@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Form, Input, Table, Typography } from 'antd';
+import { Form, Input, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DebitNoteDto, DebitNoteLineDto } from '@erp/shared';
@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useDebitNote } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatPct, formatQty, NO_VALUE } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 
@@ -56,11 +56,11 @@ function CancelDebitNoteModal({ note, onClose }: { note: DebitNoteDto | null; on
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={!!note} onClose={onClose} form={form} layout="modal" title={`Cancel ${note?.noteNo ?? 'debit note'}`} okText="Cancel the note" onSubmit={(v) => cancel.mutateAsync(v)}>
+    <FormShell open={!!note} onClose={onClose} form={form} layout="modal" title={`Cancel ${note?.noteNo ?? 'debit note'}`} okText="Cancel debit note" cancelText="Keep it" onSubmit={(v) => cancel.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Typography.Paragraph>The note stops reducing {note?.billLabel}, and what it took off becomes payable again.</Typography.Paragraph>
         <Form.Item name="note" label="Why it is cancelled" rules={[{ required: true, whitespace: true, message: 'Say why the note is cancelled' }]}>
-          <Input.TextArea rows={2} maxLength={500} placeholder="Supplier replaced the short bags" />
+          <Input.TextArea rows={2} maxLength={500} placeholder="e.g. Supplier replaced the short bags" />
         </Form.Item>
       </Form>
     </FormShell>
@@ -145,9 +145,9 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                     scroll={{ x: 640 }}
                     columns={[
                       { title: 'What for', dataIndex: 'description' },
-                      { title: 'Quantity', key: 'qty', width: 120, align: 'right', render: (_, l) => (l.quantity ? `${formatQty(l.quantity)} ${l.unit ?? ''}` : '-') },
-                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v: string | null) => (v ? money(v) : '-') },
-                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => `${v}%` },
+                      { title: 'Quantity', key: 'qty', width: 120, align: 'right', render: (_, l) => (l.quantity ? `${formatQty(l.quantity)} ${l.unit ?? ''}` : NO_VALUE) },
+                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v: string | null) => (v ? money(v) : NO_VALUE) },
+                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => formatPct(v) },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => money(v, true) },
                     ]}
                     summary={() => (
@@ -166,12 +166,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                 ),
               },
             ],
-            actions: (size) =>
-              raiser && !data.cancelledAt ? (
-                <Button size={size} danger disabled={data.exportedToTally} title={data.exportedToTally ? 'In a Tally export: undo that export first' : undefined} onClick={() => setCancelling(true)}>
-                  Cancel note
-                </Button>
-              ) : null,
+            more: raiser && !data.cancelledAt ? [{ key: 'cancel', label: data.exportedToTally ? 'Cancel debit note (undo its Tally export first)' : 'Cancel debit note', danger: true, disabled: data.exportedToTally, onSelect: () => setCancelling(true) }] : [],
           }
         }
       />

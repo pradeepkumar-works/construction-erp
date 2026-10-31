@@ -11,7 +11,7 @@ import { FRONT_FLAG_HINTS, FRONT_FLAG_LABELS, RECONCILIATION_STATUS_HINTS, RECON
 import { useAuth } from '@/lib/auth';
 import { useUrlTab } from '@/lib/url-state';
 import { useProjectReconciliation, useRemoveActivityNorm, useRemoveMaterialNorm } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
@@ -46,7 +46,7 @@ export function StatusCell({ status }: { status: ReconciliationStatus }) {
 }
 
 export function FrontCell({ qtyValue, unit, flag }: { qtyValue: string | null; unit: string; flag: FrontFlag | null }) {
-  if (qtyValue === null) return <span className="text-muted">-</span>;
+  if (qtyValue === null) return <span className="text-muted">{NO_VALUE}</span>;
   return (
     <>
       {qty(qtyValue, unit)}
@@ -117,7 +117,7 @@ export function ReconciliationPanel({ projectId, network = false }: { projectId:
               { key: 'kits', label: 'Kits', children: <KitsView projectId={projectId} /> },
             ]
           : []),
-        { key: 'exceptions', label: 'Exceptions', children: <ExceptionsView projectId={projectId} /> },
+        { key: 'exceptions', label: 'Needs a look', children: <ExceptionsView projectId={projectId} /> },
         { key: 'subcontractors', label: 'Subcontractors', children: <SubconReconciliation projectId={projectId} /> },
         { key: 'wastage', label: 'Wastage', children: <WastageReport projectId={projectId} /> },
         { key: 'estimate', label: cost ? 'Estimate' : 'Rate analysis', children: <EstimatePanel projectId={projectId} /> },
@@ -246,7 +246,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
     },
     { title: 'Variance', key: 'variance', width: 140, align: 'right', render: (_, r) => <VarianceCell r={r} /> },
     { title: 'Status', dataIndex: 'status', width: 150, render: (s: ReconciliationStatus) => <StatusCell status={s} /> },
-    { title: 'Excess', dataIndex: 'excessQty', width: 110, align: 'right', render: (v: string, r) => (toNumber(v) > 0 ? qty(v, r.unit) : <span className="text-muted">-</span>) },
+    { title: 'Excess', dataIndex: 'excessQty', width: 110, align: 'right', render: (v: string, r) => (toNumber(v) > 0 ? qty(v, r.unit) : <span className="text-muted">{NO_VALUE}</span>) },
     { title: 'Used per DPR', key: 'used', width: 150, align: 'right', render: (_, r) => <UsedCell r={r} /> },
     { title: 'At work front', dataIndex: 'atFrontQty', width: 170, align: 'right', render: (v: string | null, r) => <FrontCell qtyValue={v} unit={r.unit} flag={r.front} /> },
     ...(values
@@ -268,7 +268,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
                   {formatINR(v)}
                 </span>
               ) : (
-                <span className="text-muted">-</span>
+                <span className="text-muted">{NO_VALUE}</span>
               ),
           },
         ]
@@ -276,7 +276,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
   ];
 
   const lineColumns = (unit: string): TableProps<ReconciliationLineDto>['columns'] => [
-    { title: 'BOQ item', dataIndex: 'itemNo', width: 80, className: 'mono', render: (v: string, l) => (l.activityId ? <Tooltip title="An activity's own norm">{v || '-'}</Tooltip> : v) },
+    { title: 'BOQ item', dataIndex: 'itemNo', width: 80, className: 'mono', render: (v: string, l) => (l.activityId ? <Tooltip title="An activity's own norm">{v || NO_VALUE}</Tooltip> : v) },
     { title: 'Description', dataIndex: 'description', ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}>{v}</Tooltip> },
     { title: 'Work done', dataIndex: 'executedQty', width: 140, align: 'right', render: (v: string, l) => qty(v, l.unit) },
     { title: 'Norm', dataIndex: 'qtyPerUnit', width: 170, align: 'right', render: (v: string, l) => <span className="mono" translate="no">{`${v} ${unit} / ${l.unit}`}</span> },
@@ -297,7 +297,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
       ellipsis: { showTitle: false },
       render: (v: string | null, r) => (
         <Tooltip title={`Last set by ${r.updatedByName ?? 'someone'} on ${formatDateTime(r.updatedAt)}`}>
-          <span>{v ?? <span className="text-muted">-</span>}</span>
+          <span>{v ?? <span className="text-muted">{NO_VALUE}</span>}</span>
         </Tooltip>
       ),
     },
@@ -326,7 +326,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
   ];
 
   const activityNormColumns: TableProps<ActivityNormDto>['columns'] = [
-    { title: 'Component', dataIndex: 'elementLabel', width: 200, ellipsis: { showTitle: false }, render: (v: string | null) => (v ? <Tooltip title={v}>{v}</Tooltip> : <span className="text-muted">-</span>) },
+    { title: 'Component', dataIndex: 'elementLabel', width: 200, ellipsis: { showTitle: false }, render: (v: string | null) => (v ? <Tooltip title={v}>{v}</Tooltip> : <span className="text-muted">{NO_VALUE}</span>) },
     { title: 'Activity', dataIndex: 'activityName', ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}>{v}</Tooltip> },
     { title: 'Store item', dataIndex: 'itemName', width: 200 },
     { title: 'Per unit', dataIndex: 'qtyPerUnit', width: 170, align: 'right', render: (v: string, r) => <span className="mono" translate="no">{`${v} ${r.itemUnit} / ${r.activityUnit}`}</span> },

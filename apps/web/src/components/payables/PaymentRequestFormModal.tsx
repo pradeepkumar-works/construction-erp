@@ -193,7 +193,7 @@ function BillRequestFormModal({ open, onClose, target, request }: { open: boolea
       layout="modal"
       width={640}
       title={title}
-      okText={editing ? 'Resubmit for approval' : 'Send for approval'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing || target ? undefined : 'payment-request'}
     >

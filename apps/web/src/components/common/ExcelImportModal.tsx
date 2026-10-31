@@ -94,8 +94,8 @@ export function ExcelImportModal({
         setRaw(json);
         setMapping(auto);
         setFileName(file.name);
-      } catch (err) {
-        setParseError(err instanceof Error ? `The file could not be read: ${err.message}` : 'The file could not be read. Save it as .xlsx and try again.');
+      } catch {
+        setParseError('The file could not be read. Save it as .xlsx and try again.');
       }
     };
     reader.readAsArrayBuffer(file);

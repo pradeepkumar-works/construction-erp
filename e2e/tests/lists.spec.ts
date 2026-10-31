@@ -100,7 +100,7 @@ test('figures add up in a total row for the page', async ({ page }) => {
   await page.goto('/dpr');
   await expect(rows(page).nth(1)).toBeVisible();
   const summary = page.locator('.ant-table-summary');
-  await expect(summary).toContainText('Total, this page');
+  await expect(summary).toContainText('Page total');
   // The labour total is the sum of the rows' labour.
   const index = await page.locator('.ant-table-thead th').allInnerTexts().then((h) => h.findIndex((t) => t.trim() === 'Labour'));
   const cells = await rows(page).evaluateAll((trs, i) => trs.map((tr) => Number((tr.children[i] as HTMLElement).innerText.trim() || 0)), index);
@@ -118,9 +118,9 @@ test('the other approval lists have the same views, chips, columns and totals', 
 
   // A list's own view goes in the address bar and shows as a chip.
   await page.goto('/vendor-bills');
-  await page.getByRole('tab', { name: 'With exceptions' }).click();
+  await page.getByRole('tab', { name: 'Does not match' }).click();
   await expect(page).toHaveURL(/\/vendor-bills\?exceptions=1$/);
-  await expect(page.locator('.ant-tag').filter({ hasText: 'With exceptions' })).toBeVisible();
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Does not match' })).toBeVisible();
 
   // Dates now filter work orders too; the chip takes them off.
   await page.goto('/work-orders?from=2026-01-01');
@@ -131,7 +131,7 @@ test('the other approval lists have the same views, chips, columns and totals', 
   // Expenses add up on the page, and a row opens its entry.
   await page.goto('/expenses');
   await expect(rows(page).nth(1)).toBeVisible();
-  await expect(page.locator('.ant-table-summary')).toContainText('Total, this page');
+  await expect(page.locator('.ant-table-summary')).toContainText('Page total');
   const expenseNo = (await rows(page).first().locator('td.mono').first().innerText()).trim();
   await rows(page).first().locator('td').nth(2).click();
   await expect(page.locator('.ant-drawer')).toContainText(expenseNo);
@@ -175,8 +175,8 @@ test('registers have views, and lists in a tab keep chips and columns', async ({
   await expect(page.locator('.ant-tag').filter({ hasText: 'Delays' })).toBeVisible();
 
   await page.goto('/stock');
-  await page.getByRole('tab', { name: 'Register' }).click();
-  const register = page.getByRole('tabpanel', { name: 'Register' });
+  await page.getByRole('tab', { name: 'Receipts and issues' }).click();
+  const register = page.getByRole('tabpanel', { name: 'Receipts and issues' });
   await expect(register.getByRole('button', { name: 'Columns' })).toBeVisible();
   const chip = register.locator('.ant-tag').filter({ hasText: 'Type: Issue' });
   // Under trace recording a click in this tab's drop-downs is sometimes lost (not seen by hand), so pick again if needed.

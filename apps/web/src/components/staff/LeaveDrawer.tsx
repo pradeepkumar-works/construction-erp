@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Popconfirm, Space, Table, Timeline, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Popconfirm, Space, Table, Timeline, Typography } from 'antd';
 import type { LeaveRequestDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useLeaveBalances, useLeaveHistory, useLeaveRequest } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { LeaveStatusTag, days, leaveSpan } from './staffUi';
 import { themeFontSize } from '@/lib/theme';
@@ -101,7 +101,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
               { title: 'For the year', dataIndex: 'entitled', align: 'right', render: (v: number | null) => v ?? 'No limit' },
               { title: 'Taken', dataIndex: 'taken', align: 'right' },
               { title: 'Waiting', dataIndex: 'pending', align: 'right' },
-              { title: 'Left', dataIndex: 'left', align: 'right', render: (v: number | null) => (v === null ? '-' : <Typography.Text strong type={v < 0 ? 'danger' : undefined}>{v}</Typography.Text>) },
+              { title: 'Left', dataIndex: 'left', align: 'right', render: (v: number | null) => (v === null ? NO_VALUE : <Typography.Text strong type={v < 0 ? 'danger' : undefined}>{v}</Typography.Text>) },
             ]}
           />
           <Divider titlePlacement="start" plain>
@@ -124,7 +124,11 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
         </>
       )}
       <Modal open={rejecting} title="Reject leave" okText="Reject" okButtonProps={{ danger: true, disabled: !note.trim() }} confirmLoading={act.isPending} onOk={() => act.mutate('reject')} onCancel={() => setRejecting(false)} destroyOnHidden>
-        <Input.TextArea rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why, so they can plan again" aria-label="Reason for rejecting" />
+        <Form layout="vertical" component={false}>
+          <Form.Item label="Reason for rejecting" htmlFor="leave-reject-reason" style={{ marginBottom: 0 }}>
+            <Input.TextArea id="leave-reject-reason" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why, so they can plan again" />
+          </Form.Item>
+        </Form>
       </Modal>
     </Drawer>
   );

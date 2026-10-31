@@ -24,13 +24,13 @@ test('record payments against a sent RA bill until it is paid', async ({ page })
   await signIn(page, 'accounts@demo.com');
   await page.goto(`/bills?id=${bill.id}`);
   const drawer = page.locator('.ant-drawer').filter({ hasText: 'Abstract of cost' });
-  await drawer.getByRole('button', { name: 'Record payment' }).click();
-  let modal = formPanel(page, 'Payment received');
+  await drawer.getByRole('button', { name: 'Record money received' }).click();
+  let modal = formPanel(page, 'Record money received');
   // The first payment comes with the bill's deductions filled in; the client pays part of the rest.
   await expect(modal.getByLabel('Retention', { exact: true })).not.toHaveValue('');
   await modal.getByLabel('Amount received').fill('100000');
   await modal.getByLabel('UTR / cheque / advice no.').fill('E2E-UTR-1');
-  await modal.getByRole('button', { name: 'Record' }).click();
+  await modal.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText(/recorded against RA bill 1/)).toBeVisible();
   await expect(drawer.getByText('E2E-UTR-1', { exact: true })).toBeVisible();
   await expect(drawer.getByText('Sent to client')).toBeVisible();
@@ -39,11 +39,11 @@ test('record payments against a sent RA bill until it is paid', async ({ page })
   expect(Number(open?.outstanding)).toBeGreaterThan(0);
 
   // The second payment is the balance.
-  await drawer.getByRole('button', { name: 'Record payment' }).click();
-  modal = formPanel(page, 'Payment received');
+  await drawer.getByRole('button', { name: 'Record money received' }).click();
+  modal = formPanel(page, 'Record money received');
   // The amount shows grouped the Indian way once filled in (1,23,456.5).
   await expect(modal.getByLabel('Amount received')).toHaveValue(new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(open!.outstanding)));
-  await modal.getByRole('button', { name: 'Record' }).click();
+  await modal.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(drawer.locator('.ant-drawer-title').getByText('Paid')).toBeVisible();
 
   await page.goto('/receivables');

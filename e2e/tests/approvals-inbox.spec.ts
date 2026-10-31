@@ -36,9 +36,9 @@ test('the project manager works through the queue from the keyboard', async ({ p
   await expect(page.getByRole('group', { name: 'Stage' })).toContainText('Waiting');
 
   await page.keyboard.press('a');
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Note (optional)' });
-  await modal.getByLabel('Note (optional)').fill('Checked on site');
-  await modal.getByLabel('Note (optional)').press('Control+Enter');
+  const modal = page.getByRole('dialog', { name: 'Approve' });
+  await modal.getByLabel('Note', { exact: true }).fill('Checked on site');
+  await modal.getByLabel('Note', { exact: true }).press('Control+Enter');
   await expect(page.getByText('Approved', { exact: true }).first()).toBeVisible();
   await expect(one.item).toHaveCount(0);
   await expect(current).toHaveCount(1);

@@ -107,7 +107,7 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
       width={760}
       projectDefault={false}
       title={editing ? `Edit tender · ${tender.tenderNo}` : 'New tender'}
-      okText={editing ? 'Save' : 'Record tender'}
+      okText="Save"
       draftKey={editing ? undefined : 'tender'}
       onSubmit={async (v) => {
         const body = {
@@ -140,14 +140,14 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
       <Form form={form} layout="vertical">
         <FormSection title="Notice">
           <Form.Item name="title" label="Name of work" rules={[{ required: true, whitespace: true, message: 'Enter the name of work as the notice gives it' }]}>
-            <Input.TextArea autoSize={{ minRows: 1, maxRows: 3 }} maxLength={300} placeholder="Improvement of Khurda-Begunia road, km 0.000 to 14.200" />
+            <Input.TextArea autoSize={{ minRows: 1, maxRows: 3 }} maxLength={300} placeholder="e.g. Improvement of a district road, km 0.000 to 14.200" />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="nitNo" label="NIT number">
-              <Input maxLength={80} placeholder="OWD/RD/NIT-14/2026-27" {...CODE_INPUT} />
+              <Input maxLength={80} placeholder="e.g. RD/NIT-14/2026-27" {...CODE_INPUT} />
             </Form.Item>
             <Form.Item name="tenderNo" label="Our number" extra={editing ? undefined : 'Leave blank for the next number'} rules={editing ? [{ required: true, whitespace: true, message: 'Enter our tender number' }] : undefined}>
-              <Input maxLength={40} placeholder="TND-2026-0005" {...CODE_INPUT} />
+              <Input maxLength={40} placeholder="e.g. TND-2026-0005" {...CODE_INPUT} />
             </Form.Item>
           </FormGrid>
           <FormGrid cols={2}>
@@ -157,14 +157,14 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
             <Form.Item noStyle shouldUpdate={(a, b) => a.clientId !== b.clientId}>
               {() => (
                 <Form.Item name="clientName" label="Client not in the master">
-                  <Input maxLength={160} disabled={!!form.getFieldValue('clientId')} placeholder="Executive Engineer, R&B Division" />
+                  <Input maxLength={160} disabled={!!form.getFieldValue('clientId')} placeholder="e.g. Executive Engineer, Roads Division" />
                 </Form.Item>
               )}
             </Form.Item>
           </FormGrid>
           <FormGrid cols={2}>
             <Form.Item name="location" label="Location">
-              <Input maxLength={160} placeholder="Khurda" />
+              <Input maxLength={160} placeholder="e.g. District name" />
             </Form.Item>
             <Form.Item name="verticalCode" label="Vertical">
               <Select allowClear placeholder="No vertical" options={(verticals?.entries ?? []).filter((e) => e.isActive || e.code === tender?.verticalCode).map((e) => ({ value: e.code, label: e.name }))} />
@@ -216,14 +216,14 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
             <Form.Item noStyle shouldUpdate={(a, b) => a.emdAmount !== b.emdAmount}>
               {() => (
                 <Form.Item name="emdReference" label="DD, BG or receipt no." rules={form.getFieldValue('emdAmount') ? [{ required: true, whitespace: true, message: "Enter the EMD's DD, BG or receipt number" }] : undefined}>
-                  <Input maxLength={80} placeholder="DD 004512" {...CODE_INPUT} />
+                  <Input maxLength={80} placeholder="e.g. DD 004512" {...CODE_INPUT} />
                 </Form.Item>
               )}
             </Form.Item>
           </FormGrid>
           <FormGrid cols={2}>
             <Form.Item name="emdIssuer" label="Bank">
-              <Input maxLength={120} placeholder="State Bank of India" />
+              <Input maxLength={120} placeholder="e.g. the bank’s name" />
             </Form.Item>
             <Form.Item name="emdExpiresOn" label="Valid until">
               <DatePicker style={{ width: '100%' }} />
@@ -232,7 +232,7 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
         </FormSection>
         <FormSection title="Note and documents">
           <Form.Item name="note" label="Note">
-            <Input.TextArea autoSize={{ minRows: 2, maxRows: 5 }} maxLength={1000} placeholder="Pre-bid meeting on 4 Nov; site visit done" />
+            <Input.TextArea autoSize={{ minRows: 2, maxRows: 5 }} maxLength={1000} placeholder="e.g. Pre-bid meeting on 4 Nov; site visit done" />
           </Form.Item>
           <Form.Item name="docs" label="Documents" extra="The notice, the client's BOQ, corrigenda (photo or PDF)">
             <PhotoUpload max={8} />

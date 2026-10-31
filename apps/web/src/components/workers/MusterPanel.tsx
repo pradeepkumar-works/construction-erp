@@ -7,7 +7,7 @@ import type { TableProps } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { MusterDto, MusterRowDto, OutputRowDto, StaffAttendanceStatus } from '@erp/shared';
 import { useMuster, useWorkerOutput } from '@/lib/queries';
-import { formatINR, formatQty } from '@/lib/format';
+import { formatINR, formatQty, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
@@ -78,7 +78,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       },
     })),
     { title: 'Man-days', dataIndex: 'manDays', width: 90, align: 'right', fixed: 'right' },
-    { title: 'OT h', dataIndex: 'otHours', width: 60, align: 'right', fixed: 'right' },
+    { title: 'Overtime (h)', dataIndex: 'otHours', width: 100, align: 'right', fixed: 'right' },
     { title: 'Wages', dataIndex: 'wages', width: 110, align: 'right', fixed: 'right', render: (v) => formatINR(v) },
   ];
 
@@ -103,8 +103,8 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
   return (
     <div className="muster-panel">
       <CardToolbar wrap gap={8} align="center">
-        {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Pick a project" allowClear={false} /> : null}
-        <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format="MMM YYYY" allowClear={false} aria-label="Month" />
+        {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Choose the project" allowClear={false} /> : null}
+        <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format={MONTH_PICKER_FORMAT} allowClear={false} aria-label="Month" />
         <div style={{ flex: 1 }} />
         {m ? (
           <ExportButton
@@ -118,7 +118,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       {muster.error ? <QueryError error={muster.error} onRetry={() => muster.refetch()} /> : null}
       {!projectId ? (
         <div className="text-muted" style={{ padding: 16 }}>
-          Pick a project to see its muster roll.
+          Choose a project to see its muster roll.
         </div>
       ) : (
         <>

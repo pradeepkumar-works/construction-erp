@@ -92,10 +92,10 @@ export function Punches() {
   const columns: TableProps<BiometricPunchDto>['columns'] = [
     { title: 'Time', dataIndex: 'time', width: 80, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'User number', dataIndex: 'pin', width: 120, render: (v: string) => <span translate="no">{v}</span> },
-    { title: 'Who', key: 'who', ellipsis: true, render: (_, p) => (p.personName ? <span translate="no">{`${p.personName} (${p.personCode})`}</span> : <Typography.Text type="secondary">Not matched</Typography.Text>) },
+    { title: 'Person', key: 'who', ellipsis: true, render: (_, p) => (p.personName ? <span translate="no">{`${p.personName} (${p.personCode})`}</span> : <Typography.Text type="secondary">Not matched</Typography.Text>) },
     { title: 'Device', dataIndex: 'deviceName', width: 180, ellipsis: true },
     { title: 'Attendance', dataIndex: 'result', width: 140, render: (v: BiometricPunchResult) => <AppTag color={RESULT_COLOR[v]}>{BIOMETRIC_PUNCH_RESULT_LABELS[v]}</AppTag> },
-    { title: 'Why', dataIndex: 'note', ellipsis: true, render: (v: string | null) => v ?? '' },
+    { title: 'Note', dataIndex: 'note', ellipsis: true, render: (v: string | null) => v ?? '' },
   ];
 
   return (
@@ -103,8 +103,8 @@ export function Punches() {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <Space wrap>
           <DatePicker value={date} onChange={(d) => d && setDate(d)} allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} aria-label="Day" />
-          <Select allowClear placeholder="Every device" value={deviceId} onChange={setDeviceId} options={(devices ?? []).map((d) => ({ value: d.id, label: d.name }))} style={{ minWidth: 180 }} aria-label="Device" />
-          <Select allowClear placeholder="Any result" value={result} onChange={setResult} options={BIOMETRIC_PUNCH_RESULTS.map((r) => ({ value: r, label: BIOMETRIC_PUNCH_RESULT_LABELS[r] }))} style={{ minWidth: 150 }} aria-label="Attendance" />
+          <Select allowClear placeholder="All devices" value={deviceId} onChange={setDeviceId} options={(devices ?? []).map((d) => ({ value: d.id, label: d.name }))} style={{ minWidth: 180 }} aria-label="Device" />
+          <Select allowClear placeholder="All results" value={result} onChange={setResult} options={BIOMETRIC_PUNCH_RESULTS.map((r) => ({ value: r, label: BIOMETRIC_PUNCH_RESULT_LABELS[r] }))} style={{ minWidth: 150 }} aria-label="Attendance" />
         </Space>
         <Button icon={<UploadOutlined />} onClick={() => setImporting(true)}>
           Import punch file

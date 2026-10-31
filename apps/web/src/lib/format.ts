@@ -15,6 +15,12 @@ export function toNumber(value: string | number | null | undefined): number {
 /** ₹ and a no-break space, so the symbol never wraps away from its figure (docs/WRITING.md). */
 export const RUPEE = '₹\u00A0';
 
+/** An empty cell or value: an en dash, so it never reads as a minus sign. */
+export const NO_VALUE = '–';
+
+/** How a month picker shows its month: "Oct 2026", as `formatMonth` writes it. */
+export const MONTH_PICKER_FORMAT = 'MMM YYYY';
+
 /** Full INR with Indian digit grouping: ₹ 18,65,00,000 */
 export function formatINR(value: string | number | null | undefined, decimals = false): string {
   const n = toNumber(value);
@@ -63,12 +69,26 @@ export function formatMoneyCompact(rupees: string | number | null | undefined, c
 }
 
 export function formatQty(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === '') return '-';
+  if (value === null || value === undefined || value === '') return NO_VALUE;
   return num.format(toNumber(value));
 }
 
+/** A count of things, grouped the Indian way: "1,23,456". */
+export function formatCount(value: number | null | undefined): string {
+  return value === null || value === undefined ? NO_VALUE : inr.format(value);
+}
+
+/** A file size: "820 KB", "12.4 MB". */
+export function formatBytes(value: number | null | undefined): string {
+  if (value === null || value === undefined) return NO_VALUE;
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 ** 2) return `${Math.round(value / 1024)} KB`;
+  if (value < 1024 ** 3) return `${(value / 1024 ** 2).toFixed(1)} MB`;
+  return `${(value / 1024 ** 3).toFixed(1)} GB`;
+}
+
 export function formatDate(value: string | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return NO_VALUE;
   const d = dayjs(value);
   return d.isValid() ? d.format('DD MMM YYYY') : value;
 }
@@ -80,14 +100,14 @@ export function formatLongDay(value: Date | string): string {
 }
 
 export function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return NO_VALUE;
   const d = dayjs(value);
   return d.isValid() ? d.format('DD MMM YYYY, HH:mm') : value;
 }
 
 /** The time of day only, 24-hour: "07:45". */
 export function formatTime(value: string | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return NO_VALUE;
   const d = dayjs(value);
   return d.isValid() ? d.format('HH:mm') : value;
 }
@@ -193,7 +213,7 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */
 export function timeAgo(value: string | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return NO_VALUE;
   const d = dayjs(value);
   if (!d.isValid()) return value;
   const min = Math.max(0, Math.floor((Date.now() - d.valueOf()) / 60000));
@@ -223,28 +243,35 @@ export function dayLabel(value: string): string {
 
 /** "Oct 2026": a month on its own (a bill's index month, a cost row). */
 export function formatMonth(value: string | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return NO_VALUE;
   const d = dayjs(value.length === 7 ? `${value}-01` : value);
   return d.isValid() ? d.format('MMM YYYY') : value;
 }
 
+/** "October 2026": a month in a sentence or a heading (a payslip, a hire bill's line). */
+export function formatMonthLong(value: string | null | undefined): string {
+  if (!value) return NO_VALUE;
+  const d = dayjs(value.length === 7 ? `${value}-01` : value);
+  return d.isValid() ? d.format('MMMM YYYY') : value;
+}
+
 /** "Oct": a month's short name, from YYYY-MM or a date (a home tile's "Billed in Oct"). */
 export function formatMonthName(value: string | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return NO_VALUE;
   const d = dayjs(value.length === 7 ? `${value}-01` : value);
   return d.isValid() ? d.format('MMM') : value;
 }
 
 /** "Oct 26": a month on a chart's axis or in its table, where the year is short. */
 export function formatMonthShort(value: string | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return NO_VALUE;
   const d = dayjs(value.length === 7 ? `${value}-01` : value);
   return d.isValid() ? d.format('MMM YY') : value;
 }
 
 /** "15 Oct": a day inside a range whose year is given once ("15 Oct to 21 Oct 2026"). */
 export function formatDayMonth(value: string | dayjs.Dayjs | null | undefined): string {
-  if (!value) return '-';
+  if (!value) return NO_VALUE;
   const d = dayjs(value);
   return d.isValid() ? d.format('DD MMM') : String(value);
 }

@@ -7,7 +7,7 @@ import { FileExcelOutlined } from '@/components/common/icons';
 import type { UtilisationGroupDto, UtilisationRowDto } from '@erp/shared';
 import { useFleetUtilisation } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatQty, toNumber } from '@/lib/format';
+import { formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
@@ -24,7 +24,7 @@ const hours = (v: string) => (
 
 /** A share with a thin bar; under half reads in the warning colour. */
 function Share({ pct, label }: { pct: number | null; label: string }) {
-  if (pct === null) return <span className="text-muted">-</span>;
+  if (pct === null) return <span className="text-muted">{NO_VALUE}</span>;
   const low = pct < 50;
   return (
     <div style={{ minWidth: 90 }}>
@@ -86,19 +86,19 @@ export function UtilisationPanel({ projectId: fixedProject }: { projectId?: stri
         </div>
       ),
     },
-    { title: 'Owned / hired', dataIndex: 'ownership', width: 110, render: (o: UtilisationRowDto['ownership']) => <OwnershipTag ownership={o} /> },
+    { title: 'Owned or hired', dataIndex: 'ownership', width: 110, render: (o: UtilisationRowDto['ownership']) => <OwnershipTag ownership={o} /> },
     { title: 'Days', dataIndex: 'daysOnSite', width: 70, align: 'right' },
     { title: 'Worked', dataIndex: 'workedHours', width: 100, align: 'right', render: hours },
     { title: 'Idle', dataIndex: 'idleHours', width: 90, align: 'right', render: hours },
-    { title: 'Breakdown', dataIndex: 'breakdownHours', width: 100, align: 'right', render: (v: string) => (toNumber(v) > 0 ? <span style={{ color: themeColor('colorErrorText') }}>{hours(v)}</span> : <span className="text-muted">-</span>) },
+    { title: 'Breakdown', dataIndex: 'breakdownHours', width: 100, align: 'right', render: (v: string) => (toNumber(v) > 0 ? <span style={{ color: themeColor('colorErrorText') }}>{hours(v)}</span> : <span className="text-muted">{NO_VALUE}</span>) },
     { title: 'Utilisation', dataIndex: 'utilisationPct', width: 120, render: (v: number | null, r) => <Share pct={v} label={`Utilisation of ${r.code}`} /> },
     { title: 'Availability', dataIndex: 'availabilityPct', width: 120, render: (v: number | null, r) => <Share pct={v} label={`Availability of ${r.code}`} /> },
     {
-      title: 'Fuel an hour',
+      title: 'Litres an hour',
       dataIndex: 'fuelPerHour',
       width: 110,
       align: 'right',
-      render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no">{formatQty(v)} L</span>),
+      render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatQty(v)} L</span>),
     },
   ];
 
@@ -129,13 +129,13 @@ export function UtilisationPanel({ projectId: fixedProject }: { projectId?: stri
         <>
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="Utilisation" value={f.utilisationPct ?? '-'} suffix={f.utilisationPct === null ? undefined : '%'} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Utilisation" value={f.utilisationPct ?? NO_VALUE} suffix={f.utilisationPct === null ? undefined : '%'} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
               <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {periodLabel(period)}
               </div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Availability" value={f.availabilityPct ?? '-'} suffix={f.availabilityPct === null ? undefined : '%'} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+              <Statistic title="Availability" value={f.availabilityPct ?? NO_VALUE} suffix={f.availabilityPct === null ? undefined : '%'} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
             </Col>
             <Col xs={12} md={6}>
               <Statistic title="Worked" value={formatQty(f.workedHours)} suffix="h" styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />

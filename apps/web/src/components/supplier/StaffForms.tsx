@@ -6,6 +6,7 @@ import type { SupplierChangeDto, SupplierInviteResultDto, SupplierInvoiceDto } f
 import { useSupplierAction } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
 import { EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule } from '@/components/form/inputs';
+import { NO_VALUE } from '@/lib/format';
 
 /** Accounts send a supplier's invoice back with what to fix (v6 item 105); the supplier resends it with the same number. */
 export function ReturnInvoiceForm({ invoice, onClose }: { invoice: SupplierInvoiceDto | null; onClose: () => void }) {
@@ -21,7 +22,7 @@ export function ReturnInvoiceForm({ invoice, onClose }: { invoice: SupplierInvoi
       width={520}
       projectDefault={false}
       title={invoice ? `Return invoice ${invoice.invoiceNo}` : 'Return the invoice'}
-      okText="Return to supplier"
+      okText="Return to vendor"
       onSubmit={async (v) => {
         if (!invoice) return;
         await send.mutateAsync({ path: `/supplier-portal/invoices/${invoice.id}/return`, body: { note: v.note.trim() } });
@@ -51,12 +52,12 @@ export function DecideChangeForm({ decision, onClose }: { decision: { change: Su
       layout="modal"
       width={560}
       projectDefault={false}
-      title={c ? `${decision?.approve ? 'Approve' : 'Turn down'} ${c.vendorName}'s change` : 'Decide the change'}
-      okText={decision?.approve ? 'Approve' : 'Turn down'}
+      title={c ? `${decision?.approve ? 'Approve' : 'Reject'} ${c.vendorName}'s change` : 'Decide the change'}
+      okText={decision?.approve ? 'Approve' : 'Reject'}
       onSubmit={async (v) => {
         if (!decision || !c) return;
         await send.mutateAsync({ path: `/supplier-portal/changes/${c.id}/decide`, body: { approve: decision.approve, note: v.note?.trim() || null } });
-        message.success(decision.approve ? `${c.vendorName}'s details updated` : `${c.vendorName}'s change turned down`);
+        message.success(decision.approve ? `${c.vendorName}'s details updated` : `${c.vendorName}'s change rejected`);
       }}
     >
       <Form form={form} layout="vertical">
@@ -64,7 +65,7 @@ export function DecideChangeForm({ decision, onClose }: { decision: { change: Su
           <div style={{ marginBottom: 12 }}>
             {c.changes.map((x) => (
               <div key={x.field}>
-                {x.label}: <span translate="no">{x.from ?? '-'}</span> to <span translate="no">{x.to ?? '-'}</span>
+                {x.label}: <span translate="no">{x.from ?? NO_VALUE}</span> to <span translate="no">{x.to ?? NO_VALUE}</span>
               </div>
             ))}
           </div>
@@ -72,7 +73,7 @@ export function DecideChangeForm({ decision, onClose }: { decision: { change: Su
         {c?.bank && decision?.approve ? (
           <Typography.Paragraph type="secondary">Payments go to the new account from now on. Call the supplier on a number you already had to confirm it first.</Typography.Paragraph>
         ) : null}
-        <Form.Item name="note" label={decision?.approve ? 'Note (optional)' : 'Why (the supplier sees this)'} rules={decision?.approve ? [] : [{ required: true, whitespace: true, message: 'Say why, so the supplier knows what to send' }]}>
+        <Form.Item name="note" label={decision?.approve ? 'Note' : 'Why (the supplier sees this)'} rules={decision?.approve ? [] : [{ required: true, whitespace: true, message: 'Say why, so the supplier knows what to send' }]}>
           <Input.TextArea rows={3} maxLength={500} />
         </Form.Item>
       </Form>
@@ -110,7 +111,7 @@ export function InviteLoginForm({ vendor, onClose, onInvited }: { vendor: { id: 
         <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Enter their email' }, emailRule]}>
           <Input {...EMAIL_INPUT} autoComplete="off" />
         </Form.Item>
-        <Form.Item name="phone" label="Phone (optional)" rules={[phoneRule]}>
+        <Form.Item name="phone" label="Phone" rules={[phoneRule]}>
           <Input {...PHONE_INPUT} autoComplete="off" />
         </Form.Item>
       </Form>

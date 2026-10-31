@@ -9,10 +9,11 @@ import type { ConnectionHealth, FeedAuth, FeedPollResultDto, IntegrationConnecti
 import { BATCH_SINCE_DAYS, CONNECTION_HEALTH_LABELS, FEED_AUTHS, FEED_AUTH_LABELS, INTEGRATION_KINDS, INTEGRATION_KIND_INFO, WEIGH_BAUDS, WEIGH_MIN_KG, WEIGH_STABLE_SECONDS, WEIGHBRIDGE_SOURCES, WEIGHBRIDGE_SOURCE_LABELS } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
 import { useConnectorAgents, useIntegrationAction, useIntegrationConnections, useRmcPlants, useStockItems } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { RowMenu } from '@/components/list/RowMenu';
 
 export const HEALTH_TONE: Record<ConnectionHealth, TagTone> = { LIVE: 'success', FAILING: 'danger', QUIET: 'pending', NOT_SET_UP: 'info', OFF: 'neutral' };
 
@@ -142,20 +143,20 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             <Input maxLength={80} placeholder="Fleet trackers" />
           </Form.Item>
           {dispenser ? (
-            <Form.Item name="projectId" label="Site" extra="Its fills are issued from this site's store" rules={[{ required: true, message: 'Choose the site whose store the dispenser pours from' }]}>
-              <ProjectSelect placeholder="Choose the site" style={{ width: '100%' }} aria-label="Site" />
+            <Form.Item name="projectId" label="Project" extra="Its fills are issued from this project's store" rules={[{ required: true, message: 'Choose the project whose store the dispenser pours from' }]}>
+              <ProjectSelect placeholder="Choose the project" style={{ width: '100%' }} />
             </Form.Item>
           ) : bridge ? (
-            <Form.Item name="projectId" label="Site" extra="Its weights go to this site's store" rules={[{ required: true, message: 'Choose the site the weighbridge is at' }]}>
-              <ProjectSelect placeholder="Choose the site" style={{ width: '100%' }} aria-label="Site" />
+            <Form.Item name="projectId" label="Project" extra="Its weights go to this project's store" rules={[{ required: true, message: 'Choose the project the weighbridge is at' }]}>
+              <ProjectSelect placeholder="Choose the project" style={{ width: '100%' }} />
             </Form.Item>
           ) : batcher ? (
             <Form.Item name="projectId" label="Plant" extra="Its batches wait for challans on this plant's RMC page" rules={[{ required: true, message: 'Choose the RMC plant the controller batches for' }]}>
-              <Select loading={plants.isLoading} placeholder="Choose the plant" options={(plants.data ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <Select loading={plants.isLoading} placeholder="Choose the plant" options={(plants.data ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
           ) : (
-            <Form.Item name="projectId" label="Site (optional)" extra="Where its readings belong when they do not say">
-              <ProjectSelect allowClear placeholder="Any site" style={{ width: '100%' }} aria-label="Site" />
+            <Form.Item name="projectId" label="Project" extra="Where its readings belong when they do not say">
+              <ProjectSelect allowClear placeholder="Any project" style={{ width: '100%' }} />
             </Form.Item>
           )}
         </FormGrid>
@@ -173,7 +174,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           <Form.Item
             name="agentId"
             label="Read by the Connector"
-            extra={liveAgents.length ? 'The Connector on the computer that can reach the device' : 'Add a Connector on the Connectors tab first'}
+            extra={liveAgents.length ? 'The Connector on the computer that can reach the device' : 'Make a new Connector on the Connectors tab first'}
             rules={[{ required: true, message: 'Choose the Connector that reads it' }]}
           >
             <Select loading={agents.isLoading} options={liveAgents.map((a) => ({ value: a.id, label: a.hostname ? `${a.name} (${a.hostname})` : a.name }))} placeholder="Choose a Connector" />
@@ -247,7 +248,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                   <Input maxLength={2000} placeholder="https://login.maker.example/oauth/token" translate="no" />
                 </Form.Item>
                 <FormGrid cols={2}>
-                  <Form.Item name="clientId" label="Client id" rules={[{ required: true, whitespace: true, message: 'Enter the client id the maker gave you' }]}>
+                  <Form.Item name="clientId" label="Client ID" rules={[{ required: true, whitespace: true, message: 'Enter the client ID the maker gave you' }]}>
                     <Input maxLength={200} translate="no" />
                   </Form.Item>
                   <Form.Item name="scope" label="Scope (if the maker asks for one)">
@@ -266,9 +267,9 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
               ? `${CREDENTIAL_LABEL[auth]}${connection?.secretLast4 ? ` (saved, ends ${connection.secretLast4})` : ''}`
               : connection?.secretLast4
                 ? `Key or password (saved, ends ${connection.secretLast4})`
-                : 'Key or password (optional)'
+                : 'Key or password'
           }
-          extra={polled ? 'Saved sealed and shown only as its last four characters.' : 'For a service that asks for one. It is saved sealed and shown only as its last four characters.'}
+          extra={polled ? 'Saved encrypted; only the last four characters are shown.' : 'For a service that asks for one. It is saved encrypted; only the last four characters are shown.'}
           rules={polled && !connection?.secretLast4 ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }] : undefined}
         >
           <Input.Password maxLength={2000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />
@@ -385,7 +386,7 @@ function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; 
             ) : transport === 'POLL' ? (
               <Descriptions.Item label="Feed address">
                 <span translate="no" style={{ wordBreak: 'break-all' }}>
-                  {str(c.config.url) ?? '-'}
+                  {str(c.config.url) ?? NO_VALUE}
                 </span>
                 <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
                   Nirmaan reads it every hour. Match each machine it reports on under Devices.
@@ -393,7 +394,7 @@ function SetUp({ c, onClose, onAddress }: { c: IntegrationConnectionDto | null; 
               </Descriptions.Item>
             ) : (
               <Descriptions.Item label="Web address">
-                <span translate="no">{c.hookPathHint ? `${API_URL}${c.hookPathHint}` : '-'}</span>
+                <span translate="no">{c.hookPathHint ? `${API_URL}${c.hookPathHint}` : NO_VALUE}</span>
                 <Typography.Paragraph type="secondary" style={{ margin: '4px 0 0' }}>
                   Only its last four characters are kept here. Lost it? Make a new one.
                 </Typography.Paragraph>
@@ -430,7 +431,7 @@ export function Connections() {
         </span>
       ),
     },
-    { title: 'State', dataIndex: 'health', width: 200, render: (h: ConnectionHealth) => <AppTag tone={HEALTH_TONE[h]}>{CONNECTION_HEALTH_LABELS[h]}</AppTag> },
+    { title: 'Status', dataIndex: 'health', width: 200, render: (h: ConnectionHealth) => <AppTag tone={HEALTH_TONE[h]}>{CONNECTION_HEALTH_LABELS[h]}</AppTag> },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Any site' },
     { title: 'Comes in by', key: 'by', width: 180, render: (_, c) => {
         const t = INTEGRATION_KIND_INFO[c.kind].transport;
@@ -443,27 +444,27 @@ export function Connections() {
     {
       title: '',
       key: 'x',
-      width: 250,
+      width: 140,
       render: (_, c) => (
-        <Space size={4} wrap>
+        <Space size={4}>
           <Button size="small" onClick={() => setSetupId(c.id)} aria-label={`Set up ${c.name}`}>
             Set up
           </Button>
-          <Button size="small" onClick={() => setEditing({ c })} aria-label={`Edit ${c.name}`}>
-            Edit
-          </Button>
-          <Button
-            size="small"
-            aria-label={`${c.isActive ? 'Switch off' : 'Switch on'} ${c.name}`}
-            onClick={() =>
-              act
-                .mutateAsync({ method: 'patch', path: `/integrations/connections/${c.id}`, body: { isActive: !c.isActive } })
-                .then(() => message.success(c.isActive ? `${c.name} switched off` : `${c.name} switched on`))
-                .catch((err) => message.error(errorMessage(err, 'That did not go through. Try again.')))
-            }
-          >
-            {c.isActive ? 'Switch off' : 'Switch on'}
-          </Button>
+          <RowMenu
+            label={`More for ${c.name}`}
+            items={[
+              { key: 'edit', label: 'Edit', onSelect: () => setEditing({ c }) },
+              {
+                key: 'active',
+                label: c.isActive ? 'Switch off' : 'Switch on',
+                onSelect: () =>
+                  act
+                    .mutateAsync({ method: 'patch', path: `/integrations/connections/${c.id}`, body: { isActive: !c.isActive } })
+                    .then(() => message.success(c.isActive ? `${c.name} switched off` : `${c.name} switched on`))
+                    .catch((err) => message.error(errorMessage(err, 'That did not go through. Try again.'))),
+              },
+            ]}
+          />
         </Space>
       ),
     },

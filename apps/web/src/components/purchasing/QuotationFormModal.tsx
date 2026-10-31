@@ -103,13 +103,13 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
       <Form form={form} layout="vertical">
         <FormSection title="Quotation">
           <FormGrid cols={2}>
-            <Form.Item name="vendorId" label="Vendor" rules={[{ required: true, message: 'Pick the vendor' }]}>
+            <Form.Item name="vendorId" label="Vendor" rules={[{ required: true, message: 'Choose the vendor' }]}>
               <VendorSelect prefer={['SUPPLIER']} disabled={!!quotation} selected={quotation ? { value: quotation.vendorId, label: quotation.vendorName } : null} />
             </Form.Item>
             <Form.Item name="quoteRef" label="Their quotation no.">
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item name="quoteDate" label="Quotation date" rules={[{ required: true, message: 'Pick the quotation date' }]}>
+            <Form.Item name="quoteDate" label="Quotation date" rules={[{ required: true, message: 'Choose the quotation date' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="validUntil" label="Valid until">

@@ -6,22 +6,24 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, OpenBillDto, PaymentMode, RaBillDto, ReceiptDto, ReceiptKind } from '@erp/shared';
-import { RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS, isForeign } from '@erp/shared';
+import { BILL_DEDUCTION_LABELS, RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS, isForeign } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useBill, useProjects, useReceivables } from '@/lib/queries';
+import { useBill, useReceivables } from '@/lib/queries';
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { formatDate, formatINR, formatMoney, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
+// In the bill's own order and words, so the client's deductions are copied off the bill line by line.
 const DEDUCTIONS = [
-  ['tdsAmount', 'TDS (income tax)', 'tds'],
-  ['gstTdsAmount', 'GST TDS', 'gstTds'],
-  ['retentionAmount', 'Retention', 'retention'],
-  ['securityDepositAmount', 'Security deposit', 'securityDeposit'],
-  ['advanceRecoveryAmount', 'Advance recovery', 'advanceRecovery'],
-  ['labourCessAmount', 'Labour welfare cess', 'labourCess'],
-  ['otherDeduction', 'Other deduction', 'other'],
+  ['retentionAmount', BILL_DEDUCTION_LABELS.retention, 'retention'],
+  ['securityDepositAmount', BILL_DEDUCTION_LABELS.securityDeposit, 'securityDeposit'],
+  ['advanceRecoveryAmount', BILL_DEDUCTION_LABELS.advanceRecovery, 'advanceRecovery'],
+  ['tdsAmount', BILL_DEDUCTION_LABELS.tds, 'tds'],
+  ['gstTdsAmount', BILL_DEDUCTION_LABELS.gstTds, 'gstTds'],
+  ['labourCessAmount', BILL_DEDUCTION_LABELS.labourCess, 'labourCess'],
+  ['otherDeduction', BILL_DEDUCTION_LABELS.other, 'other'],
 ] as const;
 type DeductionField = (typeof DEDUCTIONS)[number][0];
 
@@ -48,7 +50,6 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: projects } = useProjects();
   const { data: receivables } = useReceivables(undefined, open && !bill && !receipt);
   const watchedKind = Form.useWatch('kind', form) as ReceiptKind | undefined;
   // The kind switch is only shown for a new receipt without a bill; the submitted values leave out fields that are not shown.
@@ -135,8 +136,8 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
       open={open}
       onClose={onClose}
       form={form}
-      title={editing ? 'Correct receipt' : bill ? `Payment received · ${bill.billLabel}` : 'Record money received'}
-      okText={editing ? 'Save' : 'Record'}
+      title={editing ? (bill ? `Edit money received · ${bill.billLabel}` : 'Edit money received') : bill ? `Record money received · ${bill.billLabel}` : 'Record money received'}
+      okText="Save"
       onSubmit={(v) => mutation.mutateAsync(v)}
       width={680}
     >
@@ -146,7 +147,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             <Segmented options={(['BILL', 'RETENTION_RELEASE', 'DEPOSIT_RELEASE'] as ReceiptKind[]).map((k) => ({ value: k, label: RECEIPT_KIND_LABELS[k] }))} />
           </Form.Item>
         )}
-        <FormSection title="Payment">
+        <FormSection title="Money received">
           {kind === 'BILL' ? (
             <Form.Item name="billId" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]} hidden={!!bill || editing}>
               <Select
@@ -158,17 +159,17 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             </Form.Item>
           ) : (
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={editing}>
-              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <ProjectSelect allowClear={false} placeholder="Choose the project" />
             </Form.Item>
           )}
           {kind === 'BILL' && target && !editing && (
             <Typography.Paragraph type="secondary">
-              {target.billLabel} of {formatDate(target.billDate)}: work + GST {fm(target.invoiceAmount)}, settled so far {fm(target.settledAmount)}, outstanding{' '}
+              {target.billLabel} of {formatDate(target.billDate)}: bill amount with GST {fm(target.invoiceAmount)}, settled so far {fm(target.settledAmount)}, outstanding{' '}
               <strong>{fm(target.outstanding)}</strong>.
             </Typography.Paragraph>
           )}
           <FormGrid cols={3}>
-            <Form.Item name="receiptDate" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
+            <Form.Item name="receiptDate" label="Received on" rules={[{ required: true, message: 'Choose the date' }]}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="amount" label="Amount received" rules={[{ required: true, message: 'Enter the amount received' }]}>
@@ -182,7 +183,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             <Form.Item
               name="exchangeRate"
               label={`Day's rate (₹ to 1 ${cur!.currency})`}
-              extra={`The bank's rate on the day. The contract is kept at ₹ ${cur!.exchangeRate}; the difference is booked to exchange difference. Empty takes the contract rate.`}
+              extra={`The bank's rate on the day. The contract is kept at ${formatINR(cur!.exchangeRate, true)}; the difference is booked to exchange difference. Empty takes the contract rate.`}
             >
               <InputNumber<number> style={{ width: '100%' }} min={0.000001} precision={6} controls={false} inputMode="decimal" placeholder={cur!.exchangeRate ?? undefined} />
             </Form.Item>

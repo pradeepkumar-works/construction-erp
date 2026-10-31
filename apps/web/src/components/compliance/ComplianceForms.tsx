@@ -44,8 +44,8 @@ const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const str = (n?: number | null) => (n === null || n === undefined ? null : String(n));
 const t = (v?: string) => v?.trim() || null;
 
-const TITLES: Record<ComplianceAction['kind'], string> = { new: 'New guarantee or licence', edit: 'Edit entry', renew: 'Renew', release: 'Record the release', invoke: 'Record it as invoked' };
-const OK: Record<ComplianceAction['kind'], string> = { new: 'Save', edit: 'Save', renew: 'Renew', release: 'Released', invoke: 'Invoked' };
+const TITLES: Record<ComplianceAction['kind'], string> = { new: 'New guarantee or licence', edit: 'Edit guarantee or licence', renew: 'Renew guarantee', release: 'Record release', invoke: 'Record invocation' };
+const OK: Record<ComplianceAction['kind'], string> = { new: 'Save', edit: 'Save', renew: 'Renew guarantee', release: 'Record release', invoke: 'Record invocation' };
 
 export function ComplianceFormModal({ action, onClose, onDone }: { action: ComplianceAction | null; onClose: () => void; onDone?: (id: string) => void }) {
   const [form] = Form.useForm<Values>();
@@ -231,7 +231,7 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
               <Form.Item name="issuedOn" label="Starts on">
                 <DatePicker style={{ width: '100%' }} allowClear={false} />
               </Form.Item>
-              <Form.Item name="expiresOn" label="Valid to" rules={[{ required: true, message: 'Pick the new expiry date' }]}>
+              <Form.Item name="expiresOn" label="Valid to" rules={[{ required: true, message: 'Choose the new expiry date' }]}>
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
               {guarantee ? (

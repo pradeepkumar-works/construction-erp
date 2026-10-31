@@ -9,7 +9,7 @@ import type { PortalBillDto, RaBillItemDto } from '@erp/shared';
 import { isGuest } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCertifyAsClient, usePortalBill } from '@/lib/queries';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BillStageTag } from '@/components/bills/billUi';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -34,10 +34,10 @@ export function PortalBills({ bills, openId, onOpen }: { bills: UseQueryResult<P
           { title: 'Bill', dataIndex: 'billLabel', width: 160 },
           { title: 'Bill date', dataIndex: 'billDate', width: 120, render: (v: string) => formatDate(v) },
           { title: 'Sent', dataIndex: 'sentDate', width: 120, render: (v: string | null) => formatDate(v) },
-          { title: 'Work value', dataIndex: 'grossAmount', align: 'right', render: (v: string) => formatINR(v) },
+          { title: 'Work done', dataIndex: 'grossAmount', align: 'right', render: (v: string) => formatINR(v) },
           { title: 'Net payable', dataIndex: 'netPayable', align: 'right', render: (v: string) => formatINR(v) },
-          { title: 'Stage', dataIndex: 'stage', width: 140, render: (s: PortalBillDto['stage']) => <BillStageTag stage={s} /> },
-          { title: 'Certificate', key: 'cert', width: 200, render: (_, b) => (b.certifiedDate ? `${b.certificateNo ?? ''} ${formatDate(b.certifiedDate)}`.trim() : '-') },
+          { title: 'Status', dataIndex: 'stage', width: 140, render: (s: PortalBillDto['stage']) => <BillStageTag stage={s} /> },
+          { title: 'Certificate', key: 'cert', width: 200, render: (_, b) => (b.certifiedDate ? `${b.certificateNo ?? ''} ${formatDate(b.certifiedDate)}`.trim() : NO_VALUE) },
         ]}
       />
       <PortalBillDrawer id={openId} onClose={() => onOpen(null)} />
@@ -79,14 +79,14 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
               { key: 'stage', label: 'Stage', children: <BillStageTag stage={data.stage} /> },
               { key: 'date', label: 'Bill date', children: `${formatDate(data.billDate)} (measured up to ${formatDate(data.measuredUpTo)})` },
               { key: 'sent', label: 'Sent', children: formatDate(data.sentDate) },
-              { key: 'cert', label: 'Certificate', children: data.certifiedDate ? `${data.certificateNo ?? '-'}, ${formatDate(data.certifiedDate)}` : '-' },
-              { key: 'gross', label: 'Work value this bill', children: formatINR(data.grossAmount) },
+              { key: 'cert', label: 'Certificate', children: data.certifiedDate ? `${data.certificateNo ?? NO_VALUE}, ${formatDate(data.certifiedDate)}` : NO_VALUE },
+              { key: 'gross', label: 'Work done this bill', children: formatINR(data.grossAmount) },
               ...(data.claimedGross && data.claimedGross !== data.grossAmount ? [{ key: 'claimed', label: 'Claimed', children: formatINR(data.claimedGross) }] : []),
               ...(data.pvLines.length ? [{ key: 'pv', label: 'Price variation', children: formatINR(data.pvAmount) }] : []),
               { key: 'gst', label: `GST ${data.gstRate}%`, children: formatINR(data.gstAmount) },
               { key: 'ded', label: 'Deductions', children: formatINR(data.totalDeductions) },
               { key: 'net', label: 'Net payable', children: <strong>{formatINR(data.netPayable)}</strong> },
-              { key: 'upto', label: 'Work value up to date', children: formatINR(data.grossUpto) },
+              { key: 'upto', label: 'Work done up to date', children: formatINR(data.grossUpto) },
             ]}
           />
           <Typography.Title level={5}>Abstract of cost</Typography.Title>
@@ -133,7 +133,7 @@ function BillItemsTable({ items }: { items: RaBillItemDto[] }) {
         { title: 'Rate', dataIndex: 'rate', align: 'right', width: 110, render: (v: string) => formatINR(v, true) },
         { title: 'Previous', dataIndex: 'prevQty', align: 'right', width: 100, render: (v: string) => formatQty(v) },
         { title: 'This bill', dataIndex: 'thisQty', align: 'right', width: 100, render: (v: string) => formatQty(v) },
-        { title: 'Certified', dataIndex: 'certifiedQty', align: 'right', width: 100, render: (v: string | null) => (v == null ? '-' : formatQty(v)) },
+        { title: 'Certified', dataIndex: 'certifiedQty', align: 'right', width: 100, render: (v: string | null) => (v == null ? NO_VALUE : formatQty(v)) },
         { title: 'Amount', dataIndex: 'amount', align: 'right', width: 130, render: (v: string) => formatINR(v) },
       ]}
     />
@@ -155,7 +155,7 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
     if (!bill) return;
     const items = lines.filter((l) => v.qty[l.boqItemId] != null && v.qty[l.boqItemId] !== Number(l.thisQty)).map((l) => ({ boqItemId: l.boqItemId, certifiedQty: String(v.qty[l.boqItemId]) }));
     const out = await certify.mutateAsync({ id: bill.id, date: v.date.format('YYYY-MM-DD'), certificateNo: v.certificateNo?.trim() || null, items });
-    message.success(`${out.billLabel} certified: work value ${formatINR(out.grossAmount)}`);
+    message.success(`${out.billLabel} certified: work done ${formatINR(out.grossAmount)}`);
   };
 
   return (
@@ -163,7 +163,7 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
       <Typography.Paragraph type="secondary">Enter the quantity you pass for each item. Items you leave as they are pass as claimed. The contractor's QS and project manager are told.</Typography.Paragraph>
       <Form form={form} layout="vertical" requiredMark={false}>
         <FormGrid cols={2}>
-          <Form.Item name="date" label="Certificate date" rules={[{ required: true, message: 'Pick the certificate date' }]}>
+          <Form.Item name="date" label="Certificate date" rules={[{ required: true, message: 'Choose the certificate date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="certificateNo" label="Certificate no.">
