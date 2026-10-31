@@ -8,8 +8,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 /** An empty string clears a field. */
 const blank = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
 
-/* ---------- labs ---------- */
-
 export class SaveLabDto {
   @ApiProperty({ example: 'Kalinga Testing Labs, Bhubaneswar' }) @trim() @IsString() @IsNotEmpty() @MaxLength(120) name: string;
   @ApiProperty({ enum: LAB_KINDS }) @IsIn(LAB_KINDS as unknown as string[]) kind: LabKind;
@@ -30,8 +28,6 @@ export class LabSamplesQuery extends PageQuery {
   @ApiPropertyOptional({ enum: ['AT_LAB', 'REPORTED'], description: 'Omitted = both' }) @IsOptional() @IsIn(['AT_LAB', 'REPORTED']) state?: 'AT_LAB' | 'REPORTED';
   @ApiPropertyOptional({ description: 'Only reports later than the lab usually takes' }) @IsOptional() @QueryBool() @IsBoolean() late?: boolean;
 }
-
-/* ---------- instruments and calibration ---------- */
 
 export class SaveInstrumentDto {
   @ApiProperty({ example: 'CTM 2000 kN, site lab' }) @trim() @IsString() @IsNotEmpty() @MaxLength(120) name: string;
@@ -64,8 +60,6 @@ export class RecordCalibrationDto {
   @ApiPropertyOptional() @IsOptional() @blank() @IsString() @MaxLength(1000) remarks?: string | null;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayMaxSize(10) @IsUUID('all', { each: true }) attachmentIds?: string[];
 }
-
-/* ---------- test certificates ---------- */
 
 export class CertificateCategoriesDto {
   @ApiProperty({ type: [String], example: ['steel', 'cement', 'pipes-and-fittings'], description: 'Item categories (Masters › Item categories) by code' })

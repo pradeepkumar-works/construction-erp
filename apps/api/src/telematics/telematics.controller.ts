@@ -17,7 +17,7 @@ export class MachineDayQuery {
   @ApiProperty({ example: '2026-10-07' }) @IsDateString() date: string;
 }
 
-/** Engine hours from trackers and makers' feeds (item 146), and the tank and dispenser fills (item 147). */
+/** Engine hours from trackers and makers' feeds, and the tank and dispenser fills. */
 @ApiTags('telematics')
 @ApiBearerAuth()
 @Controller('telematics')

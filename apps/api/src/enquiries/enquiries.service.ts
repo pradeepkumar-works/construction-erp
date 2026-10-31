@@ -55,7 +55,7 @@ function endOfDayIst(day: Date): Date {
 }
 
 /**
- * Enquiries (v5 item 95): an approved material request's lines sent to chosen vendors, each with a one-time link to a
+ * Enquiries: an approved material request's lines sent to chosen vendors, each with a one-time link to a
  * page where they type their rates (no sign-in). The raw token lives only in the link; the table keeps its SHA-256, as
  * for password links. The reply becomes that vendor's quotation on the request, marked as from the supplier, so it
  * lands on the comparative statement with the ones entered by hand.
@@ -194,7 +194,7 @@ export class EnquiriesService {
     }
     await this.audit.log(user, 'ENQUIRY', enquiry.id, 'CREATED', `${mr.requestNo} to ${vendors.map((v) => v.name).join(', ')}`);
     const row = await this.prisma.enquiry.findUniqueOrThrow({ where: { id: enquiry.id }, include });
-    // A vendor with supplier-portal logins (v6 item 105) also finds it there.
+    // A vendor with supplier-portal logins also finds it there.
     for (const t of row.tokens)
       await this.notifications.notifyVendor(user.organizationId, t.vendorId, {
         title: `Enquiry for ${mr.requestNo}`,
@@ -205,8 +205,6 @@ export class EnquiriesService {
       });
     return this.toDto(row, links);
   }
-
-  /* ---------- the supplier's page (no sign-in) ---------- */
 
   /** The link's row, looked up across companies (the page has no signed-in user). */
   private async byToken(token: string) {
@@ -230,8 +228,6 @@ export class EnquiriesService {
     if (!row.openedAt && !row.respondedAt) await withoutTenant(() => this.prisma.enquiryToken.update({ where: { id: row.id }, data: { openedAt: new Date() } }));
     return this.info(row);
   }
-
-  /* ---------- the supplier portal (v6 item 105): the same enquiries, for a signed-in supplier ---------- */
 
   /** The enquiries sent to a vendor, newest first. */
   async forVendor(organizationId: string, vendorId: string): Promise<SupplierEnquiryDto[]> {

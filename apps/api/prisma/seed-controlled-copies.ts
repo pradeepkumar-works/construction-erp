@@ -1,5 +1,5 @@
 /**
- * Demo controlled copies (item 138 part 3): on the hospital, the slab reinforcement went to R1 two days ago, the site
+ * Demo controlled copies: on the hospital, the slab reinforcement went to R1 two days ago, the site
  * office has its new print and the gangs still hold R0; the foundation and ground floor drawings are in force. On the
  * road, the plan and profile went to R1 twelve days ago and two R0 prints are still out, which the watch list shows.
  * Runs once per company (when it has none yet), after the demo documents.

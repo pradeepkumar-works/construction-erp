@@ -49,7 +49,7 @@ export interface SiteOrderInput {
 }
 
 /**
- * The site order book (item 172, ARCHITECTURE "Consultant checks"): the engineer's written instructions to the site, numbered
+ * The site order book (ARCHITECTURE "Consultant checks"): the engineer's written instructions to the site, numbered
  * per project. The client's engineer or a consultant writes one in the portal, or staff copy one in from the paper book; the
  * site replies with its compliance and the engineer accepts it (or sends it back). Where an order stands is
  * `siteOrderState` in `@erp/shared/consultant-checks.ts`.

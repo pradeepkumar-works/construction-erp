@@ -1,5 +1,5 @@
 /**
- * The supplier portal's tests (v6 item 105): the statement's running balance, what a bill is worth to the supplier,
+ * The supplier portal's tests: the statement's running balance, what a bill is worth to the supplier,
  * what is left to send on an order, dispatch notes against it, where an invoice stands, and profile changes, with no
  * database. CI runs it after the build:
  *

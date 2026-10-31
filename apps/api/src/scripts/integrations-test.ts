@@ -1,5 +1,5 @@
 /**
- * The integration layer's tests (item 139): secrets and pairing codes, keys sealed under INTEGRATION_KEY, a
+ * The integration layer's tests: secrets and pairing codes, keys sealed under INTEGRATION_KEY, a
  * connection's health and a Connector's state, a batch of readings and a generic message, with no database. CI runs
  * it after the build:
  *

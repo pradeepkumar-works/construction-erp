@@ -36,7 +36,7 @@ const byRoll = (a: { contractor: string; trade: string; name: string }, b: { con
   a.contractor.localeCompare(b.contractor) || a.trade.localeCompare(b.trade) || a.name.localeCompare(b.name);
 
 /**
- * Named worker register (v4 item 44): contractor labour by name, the daily roll call per project, the monthly
+ * Named worker register: contractor labour by name, the daily roll call per project, the monthly
  * muster with wages, and output per man-day against approved progress. The roll call keeps the day's head-count
  * sheet in step, so the DPR's manpower and the labour cost keep working from it.
  */
@@ -331,7 +331,7 @@ export class WorkersService {
 
   /**
    * The day's head-count sheet from the named workers' marks at the project: after a roll call, and after biometric
-   * punches (v6 item 101) mark workers. `by` is who the sheet records as having changed it.
+   * punches mark workers. `by` is who the sheet records as having changed it.
    */
   async recountHeadCount(tx: Prisma.TransactionClient, by: Pick<RequestUser, 'id' | 'organizationId'>, projectId: string, date: Date) {
     const roll = await tx.worker.findMany({ where: this.rollWhere(by.organizationId, projectId, date), select: { contractor: true, trade: true, attendance: { where: { date, projectId }, select: { status: true } } } });

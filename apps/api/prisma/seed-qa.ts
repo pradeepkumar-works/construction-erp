@@ -1,5 +1,5 @@
 /**
- * Demo QA/QC plans (item 137): the building and road projects' quality plans from the standard ones, the demo tests
+ * Demo QA/QC plans: the building and road projects' quality plans from the standard ones, the demo tests
  * counted under them, and the building's pour register: three slab and column pours with passed cards and 28-day cubes
  * (with the ground floor slab's, four results for the IS 456 check), one poured yesterday without a passed card and short
  * of cubes, and one planned for tomorrow waiting for its card. Runs once per company (when it has no plan yet), after the

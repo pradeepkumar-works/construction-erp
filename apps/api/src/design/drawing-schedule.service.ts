@@ -53,7 +53,7 @@ const plusDays = (day: string, n: number) => {
 };
 
 /**
- * The drawing schedule (item 138 part 1, ARCHITECTURE "Design and drawings"): the drawings each project needs, matched to
+ * The drawing schedule (ARCHITECTURE "Design and drawings"): the drawings each project needs, matched to
  * the register by number as they arrive. A late one is chased by a draft letter through `CorrespondenceService.create`
  * (to be approved and numbered like any other) and recorded as a delay through `RisksService.create`, so the notice clock
  * and the extension of time claim run from the register.

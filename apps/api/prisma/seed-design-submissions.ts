@@ -1,5 +1,5 @@
 /**
- * Demo design submissions (item 138 part 2): on the road, which we design, the typical cross sections approved by the
+ * Demo design submissions: on the road, which we design, the typical cross sections approved by the
  * Authority's Engineer, the pipe culvert vetted by a state engineering college with one remark and then sent for approval,
  * now late with the reviewer; on the hospital, the slab concreting method statement approved with comments (one still to
  * answer) and the plumbing riser shop drawing with the architect. Dates sit against the register's revisions. Runs once

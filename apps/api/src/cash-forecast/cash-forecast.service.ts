@@ -64,7 +64,7 @@ interface Clients {
 }
 
 /**
- * The 13-week cash forecast and billing readiness (AI item 122). Every figure comes from the module's own records and
+ * The 13-week cash forecast and billing readiness. Every figure comes from the module's own records and
  * the books: the opening balance is the bank and cash ledgers, money in is the open client bills at each client's days
  * and the measured work not yet billed, money out is the open bills, purchase and work orders, salaries, machine loan
  * EMIs, statutory dues and approved fund requests. The arithmetic is `cash-forecast-rules.ts`.
@@ -422,7 +422,7 @@ export class CashForecastService {
     return forecastError(dateOnly(snap.asOf), snap.weeks as unknown as CashWeekDto[], lastSunday, actual.bank + actual.cash);
   }
 
-  // ----- Billing readiness -----
+  // Billing readiness
 
   /** Per project: approved measurements in no RA bill, approved bills not sent, sent bills not paid (late past the client's days). */
   async readiness(user: RequestUser, projectId?: string): Promise<BillingReadinessDto> {
@@ -487,7 +487,7 @@ export class CashForecastService {
   }
 
   /**
-   * Each project's next bill (intelligence quick win Q7, `nextBill`): approved measurements in no bill, approved work no
+   * Each project's next bill (`nextBill`): approved measurements in no bill, approved work no
    * sheet holds yet (`MeasurementsService.toMeasure`), lump-sum stages done beyond what was billed (`StageBillingService.breakup`),
    * and the pace of approved work over the last `PACE_DAYS` at BOQ rates, on activities in their BOQ item's own unit.
    */

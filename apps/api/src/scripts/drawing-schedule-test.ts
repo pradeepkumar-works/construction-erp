@@ -1,5 +1,5 @@
 /**
- * The drawing schedule (item 138 part 1): where a scheduled drawing stands and how late it is, the days its revisions
+ * The drawing schedule: where a scheduled drawing stands and how late it is, the days its revisions
  * give, the company's drawing numbers, what a line needs, the reminder letter and the counts, with no database. CI runs
  * it after the build:
  *

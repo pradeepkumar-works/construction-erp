@@ -42,7 +42,7 @@ export const BILLABLE_BOQ_ITEM: Prisma.BoqItemWhereInput = { OR: [{ revisedQty: 
 export const UNAPPROVED_EXTRA_ITEM: Prisma.BoqItemWhereInput = { OR: [{ revisedQty: 0 }, { revisedQty: null, originalQty: 0 }] };
 
 /**
- * Variation register (v4 item 37). A variation lists quantity changes on BOQ items and new (extra) items with their
+ * Variation register. A variation lists quantity changes on BOQ items and new (extra) items with their
  * rates. It goes to the client, and only the client's approval changes the BOQ (revised quantity, new items) and
  * the revised contract value. RA bills hold back extra items until then.
  */

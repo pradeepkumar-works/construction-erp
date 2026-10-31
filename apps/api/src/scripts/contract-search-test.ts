@@ -1,5 +1,5 @@
 /**
- * Ask the contract (AI item 75): reading PDFs by page, the search words, excerpts and the quote check as unit tests,
+ * Ask the contract: reading PDFs by page, the search words, excerpts and the quote check as unit tests,
  * then on the demo data the 30 contract questions (each must find its clause on the expected page among the first
  * three results), letters, and who sees what. No model is called. CI runs it after the seed:
  *

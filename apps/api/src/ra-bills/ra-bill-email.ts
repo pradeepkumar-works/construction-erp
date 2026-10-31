@@ -46,7 +46,7 @@ export interface BillEmailInput {
 }
 
 /**
- * The bill as the client's engineer reads it in their inbox (finding 18 of the October review): the same items,
+ * The bill as the client's engineer reads it in their inbox: the same items,
  * quantities, rates and deductions as the printed bill, so the email itself is the bill and prints to a PDF from any
  * mail app. The button takes them to the portal to check the measurements and certify it; without a login there they
  * reply to the QS who prepared it.

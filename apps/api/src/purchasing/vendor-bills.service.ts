@@ -40,7 +40,7 @@ const include = {
   purchaseOrder: {
     select: {
       poNo: true,
-      // Advance paid on the PO (v5 item 90), and what its other bills have taken off
+      // Advance paid on the PO, and what its other bills have taken off
       advances: { where: { vendorBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
       vendorBills: { where: { status: { not: 'REJECTED' as const } }, select: { id: true, advanceAdjusted: true } },
     },
@@ -84,7 +84,7 @@ const HIRE_EXTRA_FROM = 10;
 /** Logs and job cards free to bill: on no bill, on a rejected one, or on the bill being edited. */
 const freeFor = (billId?: string) => ({ OR: [{ vendorBillId: null }, { vendorBill: { status: 'REJECTED' as const } }, ...(billId ? [{ vendorBillId: billId }] : [])] });
 
-/** What a bill without a PO is made of, worked out from its machine and month, job cards or own lines (v5 item 91). */
+/** What a bill without a PO is made of, worked out from its machine and month, job cards or own lines. */
 interface Plan {
   projectId: string;
   vendorId: string;
@@ -352,7 +352,7 @@ export class VendorBillsService {
   }
 
   /**
-   * Advance taken off this bill (v5 item 90): at most what was paid against the PO in advances and not yet taken off
+   * Advance taken off this bill: at most what was paid against the PO in advances and not yet taken off
    * its other bills (not rejected), and never more than the bill.
    */
   private async checkAdvance(db: Tx | PrismaService, purchaseOrderId: string, amount: Decimal, total: Decimal, billId?: string) {
@@ -380,7 +380,7 @@ export class VendorBillsService {
     return e;
   }
 
-  /* ---------- bills without a PO (v5 item 91) ---------- */
+  // Bills without a PO
 
   private async vendorOf(db: Tx | PrismaService, user: RequestUser, id: string | undefined) {
     if (!id) throw new BadRequestException('Choose the vendor');
@@ -422,8 +422,8 @@ export class VendorBillsService {
     const workedDays = logs.filter((l) => l.hoursWorked.gt(0)).length;
     const hireQuantity = !logs.length ? ZERO : eq.rateUnit === 'HOUR' ? workedHours : eq.rateUnit === 'DAY' ? D(workedDays) : D(1);
     const minTopUp = logs.length && eq.rateUnit === 'HOUR' && eq.hireMinHours && workedHours.lt(eq.hireMinHours) ? eq.hireMinHours.sub(workedHours) : ZERO;
-    // Fuel we put into a machine the owner fuels comes back off the bill: what the store issued into it in the month
-    // (v5 item 93), or, before fuel was issued to machines, the litres typed on its logs.
+    // Fuel we put into a machine the owner fuels comes back off the bill: what the store issued into it in the month,
+    // or, before fuel was issued to machines, the litres typed on its logs.
     let fuelLitres = ZERO;
     if (eq.hireFuelBy === 'OWNER') {
       const issues = await db.stockEntry.findMany({ where: { type: 'ISSUE', ...inMonth }, select: { lines: { select: { quantity: true } } } });
@@ -649,7 +649,7 @@ export class VendorBillsService {
     return this.get(user, id);
   }
 
-  /** A hire, service or other bill (v5 item 91): no PO to match; its own checks are recorded as exceptions. */
+  /** A hire, service or other bill: no PO to match; its own checks are recorded as exceptions. */
   private async createWithoutPo(user: RequestUser, kind: Exclude<VendorBillKind, 'PO'>, dto: CreateVendorBillDto): Promise<VendorBillDto> {
     if (dto.purchaseOrderId) throw new BadRequestException('A bill against a PO is of kind PO');
     if (!dto.projectId) throw new BadRequestException('Choose the project');
@@ -803,7 +803,7 @@ export class VendorBillsService {
     }
     await this.lifecycle.submit(user, 'VENDOR_BILL', id);
     const out = await this.get(user, id);
-    // A bill that misses its order is purchase's to settle, not the approver's alone (finding 18 of the October review).
+    // A bill that misses its order is purchase's to settle, not the approver's alone.
     if (out.exceptions.length) await this.notifications.onVendorBillExceptions(user, id);
     return out;
   }

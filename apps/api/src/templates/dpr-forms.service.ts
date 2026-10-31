@@ -23,7 +23,7 @@ const include = { createdBy: { select: { fullName: true } } } satisfies Prisma.D
 type Row = Prisma.DprFormConfigGetPayload<{ include: typeof include }>;
 
 /**
- * The DPR form of each project type (item 134 part 2, ARCHITECTURE "DPR form per project type"). A save adds a version
+ * The DPR form of each project type (ARCHITECTURE "DPR form per project type"). A save adds a version
  * and never changes one, so a report keeps the form it was made on; a type with no saved version uses its standard form
  * from @erp/shared. A new report is made on its project type's latest version.
  */
@@ -115,7 +115,7 @@ export class DprFormsService {
 
   /**
    * What is wrong with a form for a type, before it is saved: the editor's checks, and a field kept to its kind and place
-   * over the standard form and every earlier version. Also the import's check (item 134 part 3), where the type may be new.
+   * over the standard form and every earlier version. Also the import's check, where the type may be new.
    */
   async check(organizationId: string, code: string, baseType: ProjectType, def: DprFormDef): Promise<{ problems: string[]; last: number }> {
     const [org, earlier] = await Promise.all([

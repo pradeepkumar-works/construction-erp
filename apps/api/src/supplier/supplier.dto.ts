@@ -74,8 +74,6 @@ export class SupplierChangeInput {
   @ApiPropertyOptional({ description: 'A word for whoever approves it' }) @IsOptional() @blankNull() @nullable() @IsString() @MaxLength(500) note?: string | null;
 }
 
-/* ---------- the company's side ---------- */
-
 export class InviteSupplierDto {
   @ApiProperty({ example: 'Bikash Sahu' }) @trim() @IsString() @IsNotEmpty({ message: 'Enter their name' }) @MaxLength(120) fullName: string;
   @ApiProperty({ example: 'accounts@maatarini.in' }) @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value)) @IsEmail({}, { message: 'Enter an email like name@example.com' }) email: string;

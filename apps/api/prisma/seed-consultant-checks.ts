@@ -1,5 +1,5 @@
 /**
- * Demo consultant checks (item 172): on the building, the consultant's engineer checks as resident engineer and has
+ * Demo consultant checks: on the building, the consultant's engineer checks as resident engineer and has
  * checked the largest approved measurement sheet; the site order book has an order copied in from the paper book,
  * complied with and closed, and one the consultant wrote in the portal last week, waiting for its compliance. Runs once
  * per company (when it has no site order yet), after the guests and measurements.

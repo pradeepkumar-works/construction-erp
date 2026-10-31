@@ -2,12 +2,10 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypt
 import type { AgentState, ConnectionHealth } from '@erp/shared';
 
 /**
- * The integration layer's rules (item 139, ARCHITECTURE "Integration layer"), with no database: secrets and their
+ * The integration layer's rules (ARCHITECTURE "Integration layer"), with no database: secrets and their
  * hashes, pairing codes, saved keys under INTEGRATION_KEY, a connection's health and a Connector's state, what a
  * batch of readings may hold, and what a generic message says. Tested in `src/scripts/integrations-test.ts`.
  */
-
-/* ---------- secrets, tokens and pairing codes ---------- */
 
 /** A web address secret or a Connector token: 32 random bytes, URL-safe. */
 export const newSecret = (prefix = '') => prefix + randomBytes(32).toString('base64url');
@@ -45,8 +43,6 @@ export function bearer(header: string | undefined): string | null {
   return m ? m[1] : null;
 }
 
-/* ---------- saved keys and passwords ---------- */
-
 /**
  * A key or password for an outside system, sealed with AES-256-GCM under INTEGRATION_KEY (any passphrase; its sha256
  * is the key). Stored as v1:iv:tag:data in base64url. With no INTEGRATION_KEY nothing can be saved.
@@ -73,8 +69,6 @@ export function openSecret(sealed: string, passphrase: string): string | null {
     return null;
   }
 }
-
-/* ---------- health ---------- */
 
 export interface HealthFacts {
   isActive: boolean;
@@ -110,8 +104,6 @@ export function agentState(a: AgentFacts, now: Date): AgentState {
   return 'OFFLINE';
 }
 
-/* ---------- readings from a Connector ---------- */
-
 export interface RawReading {
   id?: unknown;
   connectionId?: unknown;
@@ -146,8 +138,6 @@ export function readBatch(raw: RawReading[], now: Date): { readings: Reading[]; 
   });
   return { readings, problems };
 }
-
-/* ---------- what a generic message says ---------- */
 
 export interface GenericMessage {
   /** The sender's id for the message, so a repeat is counted once */

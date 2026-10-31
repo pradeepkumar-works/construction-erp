@@ -3,7 +3,7 @@ import { RisksModule } from '../risks/risks.module';
 import { EpcController } from './epc.controller';
 import { EpcService } from './epc.service';
 
-/** EPC packages and engineering deliverables (item 130). */
+/** EPC packages and engineering deliverables. */
 @Module({
   imports: [RisksModule],
   controllers: [EpcController],

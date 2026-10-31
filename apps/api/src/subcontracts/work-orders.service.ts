@@ -42,7 +42,7 @@ const include = {
   },
   bills: { where: { status: { not: 'REJECTED' as const } }, select: { grossAmount: true, advanceRecoveryAmount: true } },
   measurements: { where: { status: 'APPROVED' as const }, select: { boqItemId: true, totalQty: true } },
-  // Advances (v5 item 90): paid with no bill, and asked for on open requests.
+  // Advances: paid with no bill, and asked for on open requests.
   advances: { where: { subcontractBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
   paymentRequests: { where: { kind: 'WO_ADVANCE' as const, status: { in: ['SUBMITTED' as const, 'APPROVED' as const] } }, select: { amount: true } },
 } satisfies Prisma.WorkOrderInclude;
@@ -76,7 +76,7 @@ function parseAmount(raw: string | undefined, what: string): Prisma.Decimal {
 }
 
 /**
- * Work orders to subcontractors and labour contractors (v3 item 22): rates per BOQ item (their work is measured in the
+ * Work orders to subcontractors and labour contractors: rates per BOQ item (their work is measured in the
  * measurement book against the order) or for the order's own items, the terms their bills are made with (GST, retention,
  * advance and its recovery, TDS under section 194C, payment days), approved through the submission lifecycle and the
  * approval matrix. An approved order is closed when the work is done; until then it takes measurements, material issues

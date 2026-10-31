@@ -84,7 +84,7 @@ const checkNotFuture = (date: string, what: string) => {
 };
 
 /**
- * Running-account bills (v3 item 18). A bill takes the approved measurements up to a date that no earlier bill took, and
+ * Running-account bills. A bill takes the approved measurements up to a date that no earlier bill took, and
  * prices them at the BOQ rates: previous / this bill / up-to-date quantities per BOQ item, GST on the work value, and the
  * contract's deductions (retention, security deposit, advance recovery capped at the advance still outstanding, TDS, GST
  * TDS, labour cess, any other). It is approved like any submission, then recorded as sent and certified (the client may
@@ -334,7 +334,7 @@ export class RaBillsService {
    */
   private async recompute(tx: Prisma.TransactionClient, id: string, strict = true) {
     const bill = await tx.raBill.findUniqueOrThrow({ where: { id }, include: { project: { select: BILL_TERMS_SELECT } } });
-    // An O&M bill (item 131) bills its period's instalment, less staff short and the service level penalties.
+    // An O&M bill bills its period's instalment, less staff short and the service level penalties.
     if (bill.omYear !== null && bill.omInstalment !== null) {
       const { pricing, detail } = await omPricing(tx, { ...bill, omYear: bill.omYear, omInstalment: bill.omInstalment });
       const { amounts, data } = await billTotals(tx, bill, [], omPercentages(bill.project), bill.project, null, pricing);
@@ -343,7 +343,7 @@ export class RaBillsService {
       await tx.raBill.update({ where: { id }, data: { omDetail: detail as unknown as Prisma.InputJsonValue } });
       return;
     }
-    // A lump-sum project with a billing break-up (item 129) bills its stages, and measures only its unit-rate items.
+    // A lump-sum project with a billing break-up bills its stages, and measures only its unit-rate items.
     const plan = await this.stageBilling.planFor(tx, bill);
     const lines = await measuredLines(tx, bill, plan);
     const { amounts, data } = await billTotals(tx, bill, lines, bill.project, bill.project, plan);
@@ -474,7 +474,7 @@ export class RaBillsService {
   }
 
   /**
-   * The price variation on a bill not yet approved (v4 item 50): this bill's index for each component of the contract's
+   * The price variation on a bill not yet approved: this bill's index for each component of the contract's
    * formula. The components are copied from the contract so later changes to it leave this bill alone. No indices
    * clears it.
    */
@@ -520,7 +520,7 @@ export class RaBillsService {
   }
 
   /**
-   * Claim a stage by hand on a bill being prepared (item 129): less than its evidence gives, or more with a note; an
+   * Claim a stage by hand on a bill being prepared: less than its evidence gives, or more with a note; an
    * empty % goes back to the evidence. The bill is re-priced.
    */
   async claimStage(user: RequestUser, id: string, stageId: string, dto: ClaimStageDto) {
@@ -582,7 +582,7 @@ export class RaBillsService {
   }
 
   /**
-   * The bill itself to the client's engineer and consultant (finding 18 of the October review). The bell's notice
+   * The bill itself to the client's engineer and consultant. The bell's notice
    * carries a link; this carries the items, the quantities, the deductions and the net, so they can read it and print
    * it from their mail app without logging in, and the button takes them to the portal to certify it. Failures are
    * logged, never thrown: the bill has already been marked sent.
@@ -641,7 +641,7 @@ export class RaBillsService {
     return out;
   }
 
-  /* ---------- the client portal ---------- */
+  // The client portal
 
   private clientWhere(user: RequestUser): Prisma.RaBillWhereInput {
     return { organizationId: user.organizationId, status: 'APPROVED', stage: { not: 'NOT_SENT' }, project: this.access.projectWhere(user) };
@@ -669,7 +669,7 @@ export class RaBillsService {
     await this.access.assertCanActAsClient(user, row.projectId);
     const bill = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, include: { items: true, stageLines: true, project: { select: TERMS_SELECT } } });
     if (bill.stage !== 'SENT') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'This bill is already certified');
-    // A consultant certifies only once they have checked their share of the bill's measurements (item 172).
+    // A consultant certifies only once they have checked their share of the bill's measurements.
     await this.checks.assertMayCertify(user, id, bill.projectId);
     await this.applyCertificate(user, bill, dto);
     const dtoOut = await this.getForClient(user, id);

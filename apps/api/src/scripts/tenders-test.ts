@@ -1,5 +1,5 @@
 /**
- * Tender bidding's tests (v6 item 110): an item priced from its rate analysis, the rate quoted on a percentage or an
+ * Tender bidding's tests: an item priced from its rate analysis, the rate quoted on a percentage or an
  * item-rate tender, the bid's totals against the SOR, the bids ranked, the moves a tender may make, what stops a bid
  * going in and the checks on an SOR row, with no database. CI runs it after the build:
  *

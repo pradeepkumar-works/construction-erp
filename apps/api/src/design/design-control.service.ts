@@ -50,7 +50,7 @@ const plusDays = (day: string, n: number) => {
 };
 
 /**
- * Controlled copies, what a new revision changes and the design dashboard (item 138 part 3, ARCHITECTURE "Design and
+ * Controlled copies, what a new revision changes and the design dashboard (ARCHITECTURE "Design and
  * drawings"). The rules are pure in `@erp/shared/design-control.ts`; the dashboard reads the schedule and the submissions
  * through their own services, so its figures are the pages' figures.
  */

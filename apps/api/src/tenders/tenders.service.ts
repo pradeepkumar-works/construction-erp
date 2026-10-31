@@ -89,7 +89,7 @@ interface Priced {
 }
 
 /**
- * Tender bidding (v6 item 110). The register keeps each tender's notice, dates, EMD (a guarantees entry of kind EMD) and
+ * Tender bidding. The register keeps each tender's notice, dates, EMD (a guarantees entry of kind EMD) and
  * result; the bid BOQ is priced from each item's rate analysis (materials, labour and machine hours a unit takes, at the
  * item master's, labour and machine rates unless given) with the tender's overheads and profit, and quoted either as one
  * percentage on the SOR or a rate per item. The bids read out at opening rank the quote; a won tender becomes a project
@@ -214,7 +214,6 @@ export class TendersService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Register
 
   async list(user: RequestUser, q: TenderQuery): Promise<TenderListDto> {
@@ -311,7 +310,7 @@ export class TendersService {
   }
 
   /**
-   * Bid intelligence (intelligence quick win Q4): the company's past openings of the same client and kind of work, each
+   * Bid intelligence: the company's past openings of the same client and kind of work, each
    * priced through `price` like the register, with where L1 landed against the SOR (or the estimate) and our place; the
    * choice and the level are pure in `@erp/shared/bid-history.ts`.
    */
@@ -424,7 +423,7 @@ export class TendersService {
     }
   }
 
-  /** A tender's vertical (item 167) is a code of the company's vertical master, switched on. */
+  /** A tender's vertical is a code of the company's vertical master, switched on. */
   private async assertVertical(user: RequestUser, code: string | null | undefined) {
     if (!code) return;
     const problem = verticalProblem(code, await this.masters.entriesFor(user.organizationId, 'vertical'));
@@ -525,7 +524,6 @@ export class TendersService {
     return { ok: true };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Bid BOQ
 
   private async sorItem(user: RequestUser, sorBookId: string | null, id: string) {
@@ -744,7 +742,6 @@ export class TendersService {
     return { filled, left: t.items.filter((i) => !i.lines.length).length - filled };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Submission, opening and result
 
   async submit(user: RequestUser, id: string, dto: SubmitTenderDto): Promise<TenderDetailDto> {
@@ -836,7 +833,6 @@ export class TendersService {
     return this.get(user, id);
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Won: the project
 
   /**

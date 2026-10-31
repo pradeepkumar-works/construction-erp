@@ -13,7 +13,7 @@ import { earnedScheduleDate, forecastFinish, indices, monthEnds, plannedShare, t
 const pct1 = (share: number) => Math.round(share * 1000) / 10;
 
 /**
- * Earned value of one project (v6 item 115). Each BOQ item's value (quantity × rate) is spread over the days of its
+ * Earned value of one project. Each BOQ item's value (quantity × rate) is spread over the days of its
  * activities, weighted by their planned quantity: the baseline dates once a baseline is frozen, else the planned dates. An
  * item with no dated activity is spread over the project's dates. Earned is approved progress (or approved measurement)
  * at BOQ rates over the BOQ value. Both shares are then put on the budget at completion (`BudgetService`), so planned and

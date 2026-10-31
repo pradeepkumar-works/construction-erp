@@ -1,5 +1,5 @@
 /**
- * QA/QC's tests (item 137): the company's test types over the standard ones, a quality plan's lines, the tests a line
+ * QA/QC's tests: the company's test types over the standard ones, a quality plan's lines, the tests a line
  * owes from the work done and the material received, the IS 456 sampling and Table 11 acceptance figures, and a pour's
  * flags, with no database. CI runs it after the build:
  *

@@ -1,5 +1,5 @@
 /**
- * Ask Nirmaan settings from the environment (AI item 67). The assistant runs when OPENROUTER_API_KEY or
+ * Ask Nirmaan settings from the environment. The assistant runs when OPENROUTER_API_KEY or
  * ANTHROPIC_API_KEY is set (or AI_PROVIDER=fake, the scripted stand-in the browser tests use) and AI_DISABLED is not
  * true. With both keys set, OpenRouter wins unless AI_PROVIDER=anthropic.
  */

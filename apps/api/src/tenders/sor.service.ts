@@ -24,7 +24,7 @@ export const sorItemDto = (r: ItemRow): SorItemDto => ({
 });
 
 /**
- * Schedules of rates (v6 item 110): a state SOR, the CPWD DSR or the company's own rates, each a book of items with a
+ * Schedules of rates: a state SOR, the CPWD DSR or the company's own rates, each a book of items with a
  * code, unit and rate, imported from Excel (a row with a code already in the book updates it). A tender is priced
  * against one book. Kept by those who price tenders; seen by those who see the tender register.
  */

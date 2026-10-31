@@ -227,7 +227,7 @@ export class ProjectsService {
   }
 
   /**
-   * The project's type (item 134): a code of the company's types sets `type` to the type's built-in kind and records
+   * The project's type: a code of the company's types sets `type` to the type's built-in kind and records
    * the version. Without a code, `type` alone gives the standard type of that kind, as before.
    */
   private async withType(user: RequestUser, dto: CreateProjectDto | UpdateProjectDto, data: Prisma.ProjectUpdateInput) {
@@ -249,7 +249,7 @@ export class ProjectsService {
   }
 
   /**
-   * The project's vertical (item 167): a code of the company's vertical master, switched on. A new project with none
+   * The project's vertical: a code of the company's vertical master, switched on. A new project with none
    * named takes its kind's (`verticalOfType`); null clears it.
    */
   private async withVertical(user: RequestUser, dto: CreateProjectDto | UpdateProjectDto, data: Prisma.ProjectUpdateInput, creating: boolean) {
@@ -278,7 +278,7 @@ export class ProjectsService {
   }
 
   /**
-   * The code to offer a new project of this type (finding 17 of the October review). Every code in the company counts
+   * The code to offer a new project of this type. Every code in the company counts
    * towards the series, including projects this user does not work on, or the suggestion would clash with them.
    */
   async nextCode(user: RequestUser, type: ProjectType): Promise<NextProjectCodeDto> {
@@ -312,7 +312,7 @@ export class ProjectsService {
   }
 
   /**
-   * The contract terms a new project starts with (finding 6 of the October review): a chosen project's, else its
+   * The contract terms a new project starts with: a chosen project's, else its
    * client's usual terms, else the standard ones (`termsFor`), so no new project bills with every deduction at 0%.
    */
   private async startingTerms(user: RequestUser, dto: CreateProjectDto): Promise<Partial<Prisma.ProjectCreateInput>> {
@@ -375,7 +375,7 @@ export class ProjectsService {
     const before = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { startDate: true } });
     const row = await this.prisma.project.update({ where: { id }, data, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'UPDATED');
-    // The dates arriving for the first time spread the activities that have none (finding 11 of the October review).
+    // The dates arriving for the first time spread the activities that have none.
     if (!before.startDate && row.startDate) await this.templates.spreadUndated(user, id);
     return this.toDetail(row);
   }
@@ -390,7 +390,7 @@ export class ProjectsService {
 
   /**
    * One person onto several project teams, which is how a new user gets their projects as they are created
-   * (finding 17 of the October review: the New user form had no project).
+   * (the New user form had no project).
    */
   async addToProjects(user: RequestUser, userId: string, projectIds: string[]): Promise<number> {
     let joined = 0;
@@ -412,7 +412,7 @@ export class ProjectsService {
   }
 
   /**
-   * A client guest's check level on the project (item 172): how much of the measurements they check before certifying a
+   * A client guest's check level on the project: how much of the measurements they check before certifying a
    * bill, and whose sign-off of hidden work they may countersign. Null clears it.
    */
   async setMemberLevel(user: RequestUser, id: string, userId: string, checkLevel: CheckLevel | null): Promise<ProjectDetail> {

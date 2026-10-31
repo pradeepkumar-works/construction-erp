@@ -1,5 +1,5 @@
 /**
- * O&M tests (item 131). The contract's instalment periods and their labels, the terms a contract must hold to, a day's
+ * O&M tests. The contract's instalment periods and their labels, the terms a contract must hold to, a day's
  * service level failures, a month's figures (days due and missing, failures beyond the allowance, MONTH benchmarks only
  * once the month is over, staff short at the monthly pay), the bill of a period, what stops a period being billed, and a
  * chemical's use against its norm.

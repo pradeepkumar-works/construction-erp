@@ -1,5 +1,5 @@
 /**
- * Consultant checks' tests (item 172, ARCHITECTURE "Consultant checks"): a check against the recorded quantity, each
+ * Consultant checks' tests (ARCHITECTURE "Consultant checks"): a check against the recorded quantity, each
  * level's share of a set of sheets by value (and by count when nothing has a value), the sheets to check next, the
  * certificate held to the certifier's share, the hidden-work sign-off and countersign, and the site order book's dates
  * and states.

@@ -14,8 +14,6 @@ export class QaController {
     private pours: PoursService,
   ) {}
 
-  /* ---------- test types ---------- */
-
   @ApiOperation({ summary: "The company's test types: the standard ones with its changes, then its own, with the tests recorded as each" })
   @Get('test-types')
   testTypes(@CurrentUser() user: RequestUser) {
@@ -33,8 +31,6 @@ export class QaController {
   removeTestType(@CurrentUser() user: RequestUser, @Param('code') code: string) {
     return this.qa.removeTestType(user, code);
   }
-
-  /* ---------- the quality plan ---------- */
 
   @ApiOperation({ summary: "A project's quality plan (inspection and test plan): which tests, against what, how often and who witnesses" })
   @Get('plan')
@@ -78,8 +74,6 @@ export class QaController {
   cubes(@CurrentUser() user: RequestUser, @Query() q: CubesQuery) {
     return this.qa.cubes(user, q.projectId);
   }
-
-  /* ---------- pours ---------- */
 
   @Get('pours')
   listPours(@CurrentUser() user: RequestUser, @Query() q: ListPoursQuery) {

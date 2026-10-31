@@ -41,8 +41,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : value));
 const nullable = () => ValidateIf((_, v) => v !== null);
 
-/* ---------- quotations ---------- */
-
 export class QuotationLineInput {
   @ApiProperty({ description: 'Line of the material request quoted' }) @IsUUID() materialRequestItemId: string;
   @ApiProperty({ example: '385.00', description: 'Rate per unit before GST' }) @num() @IsNumberString() rate: string;
@@ -77,8 +75,6 @@ export class UpdateQuotationDto extends QuotationFields {
   @Type(() => QuotationLineInput)
   lines?: QuotationLineInput[];
 }
-
-/* ---------- purchase orders ---------- */
 
 export class PoLineInput {
   @ApiPropertyOptional({ description: 'The material request line ordered; name, unit and specification come from it' }) @IsOptional() @IsUUID() materialRequestItemId?: string;
@@ -131,7 +127,7 @@ export class ClosePurchaseOrderDto {
   @ApiProperty({ example: 'Balance 40 bags not required; vendor informed' }) @trim() @IsString() @IsNotEmpty() @MaxLength(500) note: string;
 }
 
-/** Last orders of items (v5 item 95). */
+/** Last orders of items. */
 export class LastRatesQuery {
   @ApiProperty({ description: 'Item name and unit as `name|unit`; repeat for several items', type: [String], example: ['Cement OPC 53|Bag'] })
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
@@ -140,7 +136,7 @@ export class LastRatesQuery {
   @ApiPropertyOptional({ description: 'Leave out this order (the one being edited)' }) @IsOptional() @IsUUID() excludePoId?: string;
 }
 
-/** What other sites paid for items (item 121). */
+/** What other sites paid for items. */
 export class RateCheckQuery extends LastRatesQuery {
   @ApiPropertyOptional({ description: 'The project ordering: its own orders are left out' }) @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional({ example: '2026-10-23', description: 'The order date; the window is the 30 days before it (default today)' }) @IsOptional() @IsDateString() poDate?: string;
@@ -189,8 +185,6 @@ export class ProcurementStatusQuery {
   @ApiPropertyOptional({ example: '2026-04-01', description: 'Orders dated from' }) @IsOptional() @IsDateString() from?: string;
   @ApiPropertyOptional({ example: '2027-03-31', description: 'Orders dated to' }) @IsOptional() @IsDateString() to?: string;
 }
-
-/* ---------- vendor bills ---------- */
 
 export class VendorBillLineInput {
   @ApiPropertyOptional({ description: 'PO bills: the PO line billed' }) @IsOptional() @IsUUID() purchaseOrderLineId?: string;

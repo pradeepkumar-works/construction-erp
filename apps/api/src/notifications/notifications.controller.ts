@@ -67,8 +67,6 @@ export class NotificationsController {
     return this.notifications.markRead(user, id);
   }
 
-  /* ---------- scheduled jobs (Vercel Cron / curl with CRON_SECRET) ---------- */
-
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')

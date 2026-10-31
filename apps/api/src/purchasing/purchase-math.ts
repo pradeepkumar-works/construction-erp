@@ -22,7 +22,7 @@ export function orderedOn(l: { quantity: Decimal; purchaseOrder: { closedAt: Dat
 
 /**
  * What a request line still needs arranged: requested less what orders hold, what was received without an order and
- * what stock met (an issue here or a transfer in, v5 item 95). Never below zero.
+ * what stock met (an issue here or a transfer in). Never below zero.
  */
 export function toOrderOf(i: {
   quantity: Decimal;

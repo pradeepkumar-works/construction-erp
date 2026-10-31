@@ -26,7 +26,7 @@ const cleanSpecs = (specs: Record<string, unknown> | null | undefined): Prisma.I
 };
 
 /**
- * A project's work breakdown (item 125, ARCHITECTURE "Work breakdown"): components and sub-components, the activities
+ * A project's work breakdown (ARCHITECTURE "Work breakdown"): components and sub-components, the activities
  * and BOQ items under them, and progress rolled up through them (`rollUp` in @erp/shared). Activities themselves stay
  * in PlanningService; adding a component here can lay its template's activities out in one go.
  */
@@ -34,7 +34,7 @@ const cleanSpecs = (specs: Record<string, unknown> | null | undefined): Prisma.I
 export class StructureService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private types: ProjectTypesService) {}
 
-  /** A component kind the company has (item 134): its kind of work is the kind's, whatever the form sent. */
+  /** A component kind the company has: its kind of work is the kind's, whatever the form sent. */
   private async kindFor(organizationId: string, kindCode: string) {
     const kind = (await this.types.kinds(organizationId)).find((k) => k.code === kindCode);
     if (!kind) throw new BadRequestException(`Component kind ${kindCode} is not in the company's library; choose another kind`);
@@ -170,7 +170,7 @@ export class StructureService {
   }
 
   /**
-   * The components a new project lays out from its type's starting breakdown (item 134, `layOutBreakdown`), each with its
+   * The components a new project lays out from its type's starting breakdown (`layOutBreakdown`), each with its
    * kind's activities. Runs inside the project's creation, so no access check: the creator may not be on the project.
    */
   async layOutUnchecked(user: RequestUser, projectId: string, components: LaidOutComponent[], db: Prisma.TransactionClient = this.prisma): Promise<number> {
@@ -192,7 +192,7 @@ export class StructureService {
   }
 
   /**
-   * What a project gains from its type or a kind (item 134 part 3, `projectUpdatePlan`): new components, each with its
+   * What a project gains from its type or a kind (`projectUpdatePlan`): new components, each with its
    * kind's activities, sub-components under the project's own components, and new steps under them. It only adds; an
    * update run's caller checks the admin's rights and writes the audit. Returns how many components and activities it made.
    */
@@ -281,7 +281,7 @@ export class StructureService {
           unit: line.unit.trim(),
           plannedQty: line.plannedQty ? D(line.plannedQty) : D(0),
           weightPct: weightOf(line.weightPct),
-          // A pipe zone's or main's stages (item 126): its lines name a segment of the zone's network.
+          // A pipe zone's or main's stages: its lines name a segment of the zone's network.
           pipeStage: isPipeElement(dto.elementType) ? guessPipeStage(line.name) : null,
           sortOrder: firstSort + lines.indexOf(line),
         },

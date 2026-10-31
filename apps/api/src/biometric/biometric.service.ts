@@ -30,7 +30,7 @@ type Device = Prisma.BiometricDeviceGetPayload<{ include: { project: { select: {
 const REMATCH_DAYS = 62;
 
 /**
- * Biometric attendance (v6 item 101). Devices send punches by ADMS (the iclock push protocol of ZKTeco, eSSL and others),
+ * Biometric attendance. Devices send punches by ADMS (the iclock push protocol of ZKTeco, eSSL and others),
  * by webhook with the device's key, or HR imports a punch file. Each punch is kept once; a user number matched to an
  * employee or a worker turns their punches of a day into that day's attendance (in at the first, out at the last).
  */
@@ -47,7 +47,7 @@ export class BiometricService {
     if (!canManageBiometric(user.roleKey)) throw new ForbiddenException('Only HR, management or an admin can manage biometric devices');
   }
 
-  /* ---------- devices ---------- */
+  // Devices
 
   private toDeviceDto(d: Device, today: number, cmd: { waiting: number; failed: number; clockSetAt: Date | null } = { waiting: 0, failed: 0, clockSetAt: null }): BiometricDeviceDto {
     return {
@@ -167,7 +167,7 @@ export class BiometricService {
     return { ok: true };
   }
 
-  /* ---------- device users ---------- */
+  // Device users
 
   async users(user: RequestUser): Promise<BiometricUserDto[]> {
     this.assertManage(user);
@@ -274,7 +274,7 @@ export class BiometricService {
     return { matched: made.length, marked };
   }
 
-  /* ---------- punches ---------- */
+  // Punches
 
   async punches(user: RequestUser, q: PunchQuery): Promise<BiometricPunchDto[]> {
     this.assertManage(user);
@@ -312,7 +312,7 @@ export class BiometricService {
     return { ...result, errors };
   }
 
-  /* ---------- what devices send (no login) ---------- */
+  // What devices send (no login)
 
   /** An ADMS device by its serial number, when registered and switched on; it is marked as seen. */
   async admsDevice(serialNo: string | undefined) {
@@ -346,7 +346,7 @@ export class BiometricService {
     return { ...(await this.ingest(d, punches)), errors };
   }
 
-  /* ---------- turning punches into attendance ---------- */
+  // Turning punches into attendance
 
   /** Keep each punch once, then mark the days they fall on. */
   private async ingest(d: Pick<Device, 'id' | 'organizationId' | 'utcOffsetMin'>, raw: RawPunch[]): Promise<BiometricIngestResultDto> {

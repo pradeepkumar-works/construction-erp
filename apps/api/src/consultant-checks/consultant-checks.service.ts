@@ -37,7 +37,7 @@ type SheetRow = Prisma.MeasurementSheetGetPayload<{ include: typeof sheetInclude
 const amountOf = (s: { totalQty: Prisma.Decimal; boqItem: { rate: Prisma.Decimal } }) => s.totalQty.mul(s.boqItem.rate).toNumber();
 
 /**
- * Consultant checks (item 172, ARCHITECTURE "Consultant checks"): the client's engineer and the consultant's engineers check
+ * Consultant checks (ARCHITECTURE "Consultant checks"): the client's engineer and the consultant's engineers check
  * the contractor's approved measurement sheets from the portal, each at their level on the project, and a bill is
  * certified only once the certifier has checked their share of its sheets. Coverage and the rules are pure in
  * `@erp/shared/consultant-checks.ts`; hidden work is signed off on its inspection (`InspectionsService.signHidden`).

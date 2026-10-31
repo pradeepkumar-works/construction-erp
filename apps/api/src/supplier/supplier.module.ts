@@ -4,6 +4,6 @@ import { EnquiriesModule } from '../enquiries/enquiries.module';
 import { SupplierController, SupplierPortalController } from './supplier.controller';
 import { SupplierService } from './supplier.service';
 
-/** The supplier portal (v6 item 105). */
+/** The supplier portal. */
 @Module({ imports: [AuthModule, EnquiriesModule], controllers: [SupplierController, SupplierPortalController], providers: [SupplierService] })
 export class SupplierModule {}

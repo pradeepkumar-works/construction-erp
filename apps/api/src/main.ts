@@ -13,10 +13,10 @@ import { PRODUCT_NAME } from '@erp/shared';
 async function bootstrap() {
   // rawBody: the Razorpay webhook signature is over the exact bytes sent
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
-  // Biometric devices with the ADMS push protocol (v6 item 101) call /iclock/… at the server's root, so it stays outside /api.
+  // Biometric devices with the ADMS push protocol call /iclock/… at the server's root, so it stays outside /api.
   app.setGlobalPrefix('api', { exclude: ['iclock/cdata', 'iclock/getrequest', 'iclock/devicecmd'] });
   // …and they post their punch tables as plain text, often with no content type.
-  // Schedule files imported as text in JSON (v6 item 114) run to a few MB; Vercel takes at most 4.5 MB a request.
+  // Schedule files imported as text in JSON run to a few MB; Vercel takes at most 4.5 MB a request.
   app.useBodyParser('json', { limit: '4mb' });
   app.useBodyParser('text', { type: (req: IncomingMessage) => !req.headers['content-type'] || /^text\//.test(req.headers['content-type']), limit: '5mb' });
   app.use(tenantMiddleware);
@@ -47,7 +47,6 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT || 4000);
   await app.listen(port, '0.0.0.0');
-  // eslint-disable-next-line no-console
   console.log(`API listening on http://localhost:${port}/api  (docs at /api/docs)`);
 }
 bootstrap();

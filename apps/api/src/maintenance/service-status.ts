@@ -34,7 +34,7 @@ export async function serviceStatuses(prisma: PrismaClient | Prisma.TransactionC
       where: { equipmentId: m.id, status: { not: 'REJECTED' }, date: m.lastServiceDate ? { gt: since } : { gte: since } },
       _sum: { hoursWorked: true },
     });
-    // The machine's own hour meter, through its tracker (item 146), where it read the days since; the larger counts.
+    // The machine's own hour meter, through its tracker, where it read the days since; the larger counts.
     const days = await prisma.machineDay.findMany({
       where: { equipmentId: m.id, date: m.lastServiceDate ? { gt: since } : { gte: since } },
       select: { meterStart: true, meterEnd: true, onSeconds: true },

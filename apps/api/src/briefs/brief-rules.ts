@@ -1,7 +1,7 @@
 import { BRIEF_LINES, SUBMISSION_TYPE_LABELS, type BriefLineDto, type ProgressReportDto, type SubmissionType } from '@erp/shared';
 
 /**
- * The morning brief and the weekly narrative (AI item 74) as the rules write them: the facts each is built from, the
+ * The morning brief and the weekly narrative as the rules write them: the facts each is built from, the
  * draft the model starts from (and the text shown when the model's is not used), and the checks on what the model
  * wrote. Pure functions, so they are tested without a model (src/scripts/briefs-test.ts).
  */
@@ -91,8 +91,6 @@ export function parsePicks(text: string, candidates: BriefLineDto[]): BriefLineD
   }
   return out;
 }
-
-/* ---------------- the weekly narrative ---------------- */
 
 const qty = (s: string | number) => Number(s).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });

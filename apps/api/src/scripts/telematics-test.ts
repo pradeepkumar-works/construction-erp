@@ -1,6 +1,6 @@
 /**
- * Machine telematics' tests (item 146): a GPS tracker's message (flat and Traccar), a maker's fleet snapshot
- * (ISO 15143-3), a feed's settings, and a machine's day rolled up from its readings; and (item 147) the tank's refills
+ * Machine telematics' tests: a GPS tracker's message (flat and Traccar), a maker's fleet snapshot
+ * (ISO 15143-3), a feed's settings, and a machine's day rolled up from its readings; and the tank's refills
  * and drains, fuel burnt, the slips and the norm, and a fuel dispenser's message. No database. CI runs it
  * after the build:
  *
@@ -40,7 +40,7 @@ const test = (name: string, fn: () => void) => cases.push([name, fn]);
 const NOW = new Date('2026-10-20T12:00:00Z');
 const ago = (min: number) => new Date(NOW.getTime() - min * 60_000);
 
-/* ---------- a tracker's message ---------- */
+// A tracker's message
 
 test('a flat tracker message: imei, epoch seconds, ignition as 1, the hour meter', () => {
   const r = readTracker({ imei: '867530912345678', ts: Math.floor(ago(10).getTime() / 1000), lat: '12.971599', lon: 77.594566, acc: 1, engineHours: 4182.6, vehicleNo: 'EXC-01' }, NOW);
@@ -94,7 +94,7 @@ test('0, 0 is no fix, not a place in the sea', () => {
   assert.equal(r.reading?.lng, null);
 });
 
-/* ---------- a maker's feed ---------- */
+// A maker's feed
 
 const machine = (serial: string, hour: number, at: string, extra: Record<string, unknown> = {}) => ({
   EquipmentHeader: { OEMName: 'CAT', Model: '320', SerialNumber: serial },
@@ -182,7 +182,7 @@ test('a feed is read once an hour, and its refusals say what to do', () => {
   assert.match(feedHttpProblem(503), /read again in an hour/);
 });
 
-/* ---------- a machine's day ---------- */
+// A machine's day
 
 const SITE = { lat: 12.9716, lng: 77.5946, radiusM: machineSiteRadius(300) };
 const at = (hhmm: string) => new Date(`2026-10-20T${hhmm}:00+05:30`);
@@ -260,7 +260,7 @@ test('days are taken in the company time zone', () => {
   assert.equal(dayBounds('2026-10-20', 'UTC')[0].toISOString(), '2026-10-20T00:00:00.000Z');
 });
 
-/* ---------- the tank (item 147) ---------- */
+// The tank
 
 const tankCtx = { ...ctx, tank: 300 };
 
@@ -375,7 +375,7 @@ test("Traccar's fuel attribute is the tank in litres", () => {
   assert.equal(r.reading?.fuelLitres, 182.5);
 });
 
-/* ---------- a fuel dispenser's fill (item 147) ---------- */
+// A fuel dispenser's fill
 
 test("a dispenser's fill: its id, the tag, the time, the litres and the meter", () => {
   const r = readDispense({ transactionId: 'TX-1001', rfid: 'E200 3412', time: ago(5).toISOString(), litres: '120.5', hourMeter: 4183.2, vehicleName: 'Excavator 1' }, NOW);

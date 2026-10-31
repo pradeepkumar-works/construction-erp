@@ -89,8 +89,6 @@ export class PortalController {
     return this.rfis.answerAsClient(user, id, dto.answer);
   }
 
-  /* ---------- Consultant checks (item 172) ---------- */
-
   @ApiOperation({ summary: "The contractor's approved measurement sheets, with the checks on them and each level's share checked" })
   @Get('projects/:id/measurements')
   projectMeasurements(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {

@@ -1,5 +1,5 @@
 /**
- * WhatsApp entries' tests (AI item 120). First the rules on their own: reading the Cloud API's and WATI's webhooks,
+ * WhatsApp entries' tests. First the rules on their own: reading the Cloud API's and WATI's webhooks,
  * telling a Save or Discard reply from a new message, the reply text and the create body. Then, when DATABASE_URL is
  * set, the demo company with the test model: a text becomes a material request that "1" saves in the sender's name, a
  * webhook sent twice is read once, a voice note is heard and drafted as a DPR that "2" discards, a photo's expense is

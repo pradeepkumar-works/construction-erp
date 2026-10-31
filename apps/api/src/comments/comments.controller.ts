@@ -4,7 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { CommentsService } from './comments.service';
 import { CommentTargetQuery, CreateCommentDto, UpdateCommentDto } from './comments.dto';
 
-/** Comments and mentions on a record (v6 item 116). Every route answers with the record's threads as they now stand. */
+/** Comments and mentions on a record. Every route answers with the record's threads as they now stand. */
 @ApiTags('comments')
 @ApiBearerAuth()
 @Controller('comments')

@@ -382,7 +382,7 @@ export class RisksService {
     return this.audit.forEntity(user.organizationId, 'RISK', id);
   }
 
-  /* ---------- notifications ---------- */
+  // Notifications
 
   /** A delay, or a risk scored HIGH_RISK_SCORE or more, goes to the project's approvers and the owner. */
   private async notifyRaised(user: RequestUser, r: RiskDto) {

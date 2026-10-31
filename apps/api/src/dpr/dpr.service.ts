@@ -56,7 +56,7 @@ const include = {
 } satisfies Prisma.DailyReportInclude;
 type Row = Prisma.DailyReportGetPayload<{ include: typeof include }>;
 
-/** Where an activity sits in the work breakdown (item 125): its component and sub-component. */
+/** Where an activity sits in the work breakdown: its component and sub-component. */
 const PLACE = { select: { code: true, name: true, level: true, elementType: true, parent: { select: { code: true, name: true } } } } as const;
 type Place = { code: string; name: string; level: string; parent: { code: string; name: string } | null } | null;
 const placeOf = (e: Place) => {
@@ -77,7 +77,7 @@ const lineInclude = {
 
 type Tx = Prisma.TransactionClient;
 
-/** Own-field values as stored: an object of the form's keys (item 134 part 2). */
+/** Own-field values as stored: an object of the form's keys. */
 const extraOf = (v: Prisma.JsonValue | null | undefined): DprExtra => (v && typeof v === 'object' && !Array.isArray(v) ? (v as DprExtra) : {});
 const manpowerTotal = (lines: { count?: number | null }[] | null | undefined) => (lines ?? []).reduce((s, m) => s + (Number(m.count) || 0), 0);
 
@@ -103,7 +103,7 @@ export class DprService {
     private forms: DprFormsService,
     private types: ProjectTypesService,
   ) {
-    // A DPR's work lines (item 127) are submitted, approved and sent back with it.
+    // A DPR's work lines are submitted, approved and sent back with it.
     lifecycle.onStatus('DPR', (_user, id, status) => this.syncLines(id, status));
   }
 
@@ -227,7 +227,7 @@ export class DprService {
   }
 
   /**
-   * What a project's DPR form offers (item 127): the activities that take progress, look-ahead ones first, each with
+   * What a project's DPR form offers: the activities that take progress, look-ahead ones first, each with
    * where it sits, its scope, what is done and its material norms; the store items; the open work orders.
    */
   async workOptions(user: RequestUser, q: DprWorkOptionsQuery): Promise<DprWorkOptionsDto> {
@@ -288,7 +288,7 @@ export class DprService {
         doneQty: dec(new Prisma.Decimal(doneQty)),
         lookAhead: started && notOver && (planned <= 0 || doneQty < planned),
         holdPoint: a.holdPoint,
-        // The activity's own norms (item 128) come before its BOQ item's
+        // The activity's own norms come before its BOQ item's
         norms: (a.materialNorms.length ? a.materialNorms : (a.boqItem?.materialNorms ?? [])).map((n) => ({ itemId: n.itemId, itemName: n.item.name, unit: n.item.unit, qtyPerUnit: n.qtyPerUnit.toString() })),
         pipeStage,
         zoneId: pipeStage ? a.workElementId : null,
@@ -297,7 +297,7 @@ export class DprService {
     });
     // Look-ahead first, then by the breakdown's outline numbers, then the plan's order (kept by the stable sort).
     options.sort((x, y) => Number(y.lookAhead) - Number(x.lookAhead) || compareCodes(x.order, y.order));
-    // What each segment's stages already hold, so the form can say what is left (item 126).
+    // What each segment's stages already hold, so the form can say what is left.
     const stageOf = new Map(options.flatMap((o) => (o.pipeStage ? [[o.id, o.pipeStage] as const] : [])));
     const held = await heldOnSegments(this.prisma, segments.map((sg) => sg.id));
     const heldOf = new Map<string, Partial<Record<PipeStage, number>>>();
@@ -329,7 +329,7 @@ export class DprService {
   }
 
   /**
-   * Saves the report's work lines (item 127) as its progress entries: the complete list, so lines left out are removed.
+   * Saves the report's work lines as its progress entries: the complete list, so lines left out are removed.
    * Each line takes the report's day, status and submitter, its crew total as the entry's manpower and its material.
    * `extras` are the lines' own-field values, already read against the report's form. Returns each entry with the
    * photos sent for it, which are linked once the transaction is in.
@@ -431,7 +431,7 @@ export class DprService {
   }
 
   /**
-   * The report's own-field values read against its form (item 134 part 2): wrong values are refused always, empty
+   * The report's own-field values read against its form: wrong values are refused always, empty
    * required ones only when `required` (the report is going for approval).
    */
   private readExtra(def: DprFormDef, day: unknown, lines: { extra?: unknown }[], required: boolean) {
@@ -468,7 +468,7 @@ export class DprService {
   }
 
   /**
-   * Lines on a pipe zone's stages (item 126): once the zone has its network, each names the segment worked on (a valve
+   * Lines on a pipe zone's stages: once the zone has its network, each names the segment worked on (a valve
    * or fitting for VALVES) of that zone, and the metres a stage holds on a segment never pass its length.
    */
   private async checkPipeLines(
@@ -546,7 +546,7 @@ export class DprService {
     );
   }
 
-  /** The form a new report on the project is made on (item 134 part 2): its type's latest. */
+  /** The form a new report on the project is made on: its type's latest. */
   async formFor(user: RequestUser, projectId: string) {
     await this.access.assertCanAccessProject(user, projectId);
     const project = await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { type: true, typeCode: true } });
@@ -579,7 +579,7 @@ export class DprService {
     const manpower = dto.manpower?.length ? dto.manpower : ((await this.attendance.manpowerFor(dto.projectId, parseDate(dto.date))) ?? []);
     const text = dto.workExecuted?.trim() ?? '';
     if (!text && !dto.lines?.length) throw new BadRequestException('Say what work was done today, or add a work line');
-    // The form of the project's type (item 134 part 2), checked before anything is written: a retry of the same
+    // The form of the project's type, checked before anything is written: a retry of the same
     // client id returns the draft without sending it again.
     const project = await this.prisma.project.findUniqueOrThrow({ where: { id: dto.projectId }, select: { type: true, typeCode: true } });
     const form = await this.forms.chosen(user.organizationId, project, dto.formId);

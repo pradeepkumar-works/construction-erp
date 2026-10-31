@@ -33,7 +33,7 @@ export function progressRollup(activities: ProgressActivity[], elements: Progres
 }
 
 /**
- * Physical progress of a project (item 125): its components by weight, each the weighted progress of what is under it,
+ * Physical progress of a project: its components by weight, each the weighted progress of what is under it,
  * down to approved quantity ÷ planned on each activity. A project with no breakdown is its activities weighted by BOQ
  * amount (rate × planned quantity) where they are linked to a BOQ item, else by planned quantity; each counts up to 100%.
  */

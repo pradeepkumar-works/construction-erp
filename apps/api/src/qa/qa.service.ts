@@ -40,7 +40,7 @@ type TestTypeRow = Prisma.TestTypeGetPayload<object>;
 const num = (v: Prisma.Decimal | null) => (v === null ? null : Number(v));
 
 /**
- * QA/QC plans (item 137, ARCHITECTURE "QA/QC"): the company's test types over the standard ones, each project's quality
+ * QA/QC plans (ARCHITECTURE "QA/QC"): the company's test types over the standard ones, each project's quality
  * plan, the tests due under it and the IS 456 acceptance of cubes by grade. The arithmetic is pure in `@erp/shared/qa-plan.ts`;
  * this service loads the approved work, the receipts and the tests for it.
  */
@@ -51,8 +51,6 @@ export class QaService {
     private access: ProjectAccessService,
     private audit: AuditService,
   ) {}
-
-  /* ---------- test types ---------- */
 
   private toDef(r: TestTypeRow): TestTypeDef {
     return {
@@ -145,8 +143,6 @@ export class QaService {
     await this.audit.log(user, 'TEST_TYPE', code, standard ? 'RESET' : 'DELETED');
     return { ok: true };
   }
-
-  /* ---------- the quality plan ---------- */
 
   private lineDef(r: PlanLineRow): QaPlanLineDef {
     return {
@@ -259,8 +255,6 @@ export class QaService {
     return planLineFor(testTypeCode, title, lines)?.id ?? null;
   }
 
-  /* ---------- tests due ---------- */
-
   /** Approved work on the projects, with what it is called (activity and BOQ item) for the plan lines' words. */
   private async workDone(projectIds: string[]): Promise<Map<string, WorkDone[]>> {
     const rows = await this.prisma.progressEntry.findMany({
@@ -329,8 +323,6 @@ export class QaService {
   async shortCount(user: RequestUser): Promise<number> {
     return (await this.testsDue(user, {})).short;
   }
-
-  /* ---------- cube acceptance ---------- */
 
   /**
    * The IS 456 acceptance of each grade's cubes on each project: the 28-day results of cube tests (the last reading of

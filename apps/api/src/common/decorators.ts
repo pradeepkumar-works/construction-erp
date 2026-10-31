@@ -19,6 +19,6 @@ export const SupplierAllowed = () => SetMetadata(SUPPLIER_ALLOWED_KEY, true);
 /** Only supplier-portal logins: the supplier portal, which acts for the login's vendor. */
 export const SUPPLIER_ONLY_KEY = 'supplierOnly';
 export const SupplierOnly = () => SetMetadata(SUPPLIER_ONLY_KEY, true);
-/** The routes of a module a company may turn off (v6 item 117): refused while it is off (ModuleSwitchGuard). */
+/** The routes of a module a company may turn off: refused while it is off (ModuleSwitchGuard). */
 export const MODULE_SWITCH_KEY = 'moduleSwitch';
 export const ModuleSwitch = (key: SwitchableModule) => SetMetadata(MODULE_SWITCH_KEY, key);

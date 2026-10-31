@@ -31,8 +31,6 @@ import {
 export class PurchasingController {
   constructor(private quotations: QuotationsService, private orders: PurchaseOrdersService, private bills: VendorBillsService, private toOrder: RequestsToOrderService) {}
 
-  /* ---------- quotations ---------- */
-
   @ApiOperation({ summary: 'Quotations entered against a material request' })
   @Get('material-requests/:id/quotations')
   listQuotations(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
@@ -113,8 +111,6 @@ export class PurchasingController {
   removeQuotation(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.quotations.remove(user, id);
   }
-
-  /* ---------- purchase orders ---------- */
 
   @Get('purchase-orders')
   listOrders(@CurrentUser() user: RequestUser, @Query() q: ListPurchaseOrdersQuery) {
@@ -199,8 +195,6 @@ export class PurchasingController {
   removeOrder(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.orders.remove(user, id);
   }
-
-  /* ---------- vendor bills ---------- */
 
   @Get('vendor-bills')
   listBills(@CurrentUser() user: RequestUser, @Query() q: ListVendorBillsQuery) {

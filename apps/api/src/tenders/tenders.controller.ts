@@ -25,7 +25,7 @@ import {
 } from './tenders.dto';
 import { ModuleSwitch } from '../common/decorators';
 
-/** Schedules of rates (v6 item 110): the books a bid is priced against, imported from Excel. */
+/** Schedules of rates: the books a bid is priced against, imported from Excel. */
 @ApiTags('tenders')
 @ApiBearerAuth()
 @ModuleSwitch('tenders')
@@ -82,7 +82,7 @@ export class SorController {
   }
 }
 
-/** Tender bidding (v6 item 110): the register, the priced bid BOQ, the bids at opening, the result and the project. */
+/** Tender bidding: the register, the priced bid BOQ, the bids at opening, the result and the project. */
 @ApiTags('tenders')
 @ApiBearerAuth()
 @ModuleSwitch('tenders')

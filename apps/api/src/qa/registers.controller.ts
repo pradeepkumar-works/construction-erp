@@ -4,14 +4,12 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { QaRegistersService } from './registers.service';
 import { CertificateCategoriesDto, InstrumentsQuery, LabSamplesQuery, RecordCalibrationDto, SaveInstrumentDto, SaveLabDto } from './registers.dto';
 
-/** QA/QC registers (item 137 part 2): labs and samples sent out, the calibration register and test certificates. */
+/** QA/QC registers: labs and samples sent out, the calibration register and test certificates. */
 @ApiTags('qa')
 @ApiBearerAuth()
 @Controller('qa')
 export class QaRegistersController {
   constructor(private registers: QaRegistersService) {}
-
-  /* ---------- labs and samples ---------- */
 
   @ApiOperation({ summary: 'The labs tests go to: site labs, NABL labs with their accreditation, group company labs, others; with samples at each' })
   @Get('labs')
@@ -42,8 +40,6 @@ export class QaRegistersController {
   samples(@CurrentUser() user: RequestUser, @Query() q: LabSamplesQuery) {
     return this.registers.samples(user, q);
   }
-
-  /* ---------- calibration ---------- */
 
   @ApiOperation({ summary: 'The calibration register: instruments by where they stand (overdue, out of use, never calibrated, due soon, calibrated)' })
   @Get('instruments')
@@ -80,8 +76,6 @@ export class QaRegistersController {
   calibrate(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: RecordCalibrationDto) {
     return this.registers.recordCalibration(user, id, dto);
   }
-
-  /* ---------- test certificates ---------- */
 
   @ApiOperation({ summary: "The item categories whose receipts need the maker's test certificate" })
   @Get('certificate-categories')

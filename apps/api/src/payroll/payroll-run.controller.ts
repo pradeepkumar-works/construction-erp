@@ -7,7 +7,7 @@ import { SettlementService } from './settlement.service';
 import { CreateRunDto, CreateSalaryStructureDto, CreateStaffLoanDto, LoanQuery, PayRunDto, PayrollSettingsDto, PayslipAdjustmentsDto, PrepareSettlementDto, RunNoteDto, RunQuery, SendBackDto, StructureQuery } from './payroll.dto';
 import { ModuleSwitch } from '../common/decorators';
 
-/** Payroll (v6 item 100): settings, salary structures, loans, salary runs with payslips and files, settlements. */
+/** Payroll: settings, salary structures, loans, salary runs with payslips and files, settlements. */
 @ApiTags('payroll')
 @ApiBearerAuth()
 @ModuleSwitch('payroll')

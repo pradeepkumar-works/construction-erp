@@ -98,7 +98,7 @@ interface ActivityRow {
 }
 
 /**
- * Official progress reports (item 174, ARCHITECTURE "Official progress reports"): the daily, weekly and monthly reports a
+ * Official progress reports (ARCHITECTURE "Official progress reports"): the daily, weekly and monthly reports a
  * contractor submits, as one `OfficialReportDto` the web draws and writes to PDF, Word and Excel. It reads the weekly /
  * monthly progress report (`ReportsService.progress`) for progress, crew, machines, material, hold-ups and photos, the
  * contract through `ContractsService`, the milestone grid through `StageBillingService` and letters through
@@ -117,7 +117,7 @@ export class OfficialReportsService {
     private correspondence: CorrespondenceService,
   ) {}
 
-  /* ---------- register ---------- */
+  // Register
 
   private issueDto(r: { id: string; projectId: string; kind: OfficialReportKind; periodFrom: Date; periodTo: Date; reportNo: number | null; docNo: string; revision: number; issuedAt: Date; note: string | null; issuedBy: { fullName: string } }): OfficialIssueDto {
     return {
@@ -182,7 +182,7 @@ export class OfficialReportsService {
     return { ...report, issue: this.issueDto(row) };
   }
 
-  /* ---------- the report ---------- */
+  // The report
 
   /** The report for the period holding `date`, from live data (with the period's latest issue, if any, for reference). */
   async build(user: RequestUser, q: OfficialReportQuery): Promise<OfficialReportDto> {
@@ -304,7 +304,7 @@ export class OfficialReportsService {
     return Math.round((Number(s._sum.grossAmount ?? 0) / revised) * 1000) / 10;
   }
 
-  /* ---------- shared chapters ---------- */
+  // Shared chapters
 
   private headline(c: Ctx): OfficialBlockDto {
     return {
@@ -539,7 +539,7 @@ export class OfficialReportsService {
     return { key: 'photos', title: 'Site photographs', blocks: [{ type: 'photos', photos, empty }] };
   }
 
-  /* ---------- daily ---------- */
+  // Daily
 
   private async daily(c: Ctx, header: OfficialFactDto[]): Promise<OfficialChapterDto[]> {
     const day = parseDate(c.from);
@@ -616,7 +616,7 @@ export class OfficialReportsService {
     return chapters;
   }
 
-  /* ---------- weekly ---------- */
+  // Weekly
 
   private async weekly(c: Ctx): Promise<OfficialChapterDto[]> {
     const [log, obs] = await Promise.all([this.siteLog(c, ['APPROVED']), this.observations(c)]);
@@ -634,7 +634,7 @@ export class OfficialReportsService {
     ];
   }
 
-  /* ---------- monthly ---------- */
+  // Monthly
 
   private async monthly(c: Ctx): Promise<OfficialChapterDto[]> {
     const pid = c.q.projectId;

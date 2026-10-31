@@ -72,7 +72,7 @@ export class ManagementService {
     return all.filter((p) => p.type !== 'STORE' && p.type !== 'PLANT' && (!projectId || p.id === projectId) && inVertical(p.verticalCode, vertical));
   }
 
-  /** The portfolio's money by vertical (item 167), in the master's order. */
+  /** The portfolio's money by vertical, in the master's order. */
   private async byVertical(organizationId: string, rows: PortfolioProjectDto[]): Promise<PortfolioVerticalDto[]> {
     const verticals = await this.masters.entriesFor(organizationId, 'vertical');
     return byVertical(rows, (r) => r.verticalCode, verticals).map((g) => {

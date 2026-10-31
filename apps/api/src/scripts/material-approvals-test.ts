@@ -1,5 +1,5 @@
 /**
- * Material approvals' tests (v6 item 113): matching an order line's material and make to the approved makes, what an
+ * Material approvals' tests: matching an order line's material and make to the approved makes, what an
  * outcome and a (re)submission need, and the days a request waits, with no database. CI runs it after the build:
  *
  *   node dist/scripts/material-approvals-test.js

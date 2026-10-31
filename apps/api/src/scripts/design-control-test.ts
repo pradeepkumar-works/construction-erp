@@ -1,5 +1,5 @@
 /**
- * Design and drawings part 3 (item 138): controlled copies (their state, numbers and recall), what a new revision changes,
+ * Design and drawings part 3: controlled copies (their state, numbers and recall), what a new revision changes,
  * and the design dashboard's totals and notes, with no database. CI runs it after the build:
  *
  *   node dist/scripts/design-control-test.js

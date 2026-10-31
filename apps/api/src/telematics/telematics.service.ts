@@ -78,7 +78,7 @@ type ReadingRow = Prisma.MachineReadingGetPayload<{ select: typeof readingFigure
 const figuresOf = (x: ReadingRow) => ({ at: x.at, hourMeter: n(x.hourMeter), idleMeter: n(x.idleMeter), fuelUsed: n(x.fuelUsed), fuelPct: n(x.fuelPct), fuelLitres: n(x.fuelLitres), lat: n(x.lat), lng: n(x.lng), engineOn: x.engineOn });
 
 /**
- * A day's tank (item 147) beside the fuel slips made out to the machine that day, and its litres an hour against its
+ * A day's tank beside the fuel slips made out to the machine that day, and its litres an hour against its
  * norm; null for a machine whose tracker reads no fuel level.
  */
 export function fuelOf(r: DayRow, slipLitres: number, norm: { fuelNorm: Prisma.Decimal | null; fuelNormUnit: string | null; fuelTolerancePct: Prisma.Decimal | null } | null): MachineFuelDto | null {
@@ -130,7 +130,7 @@ export function engineOf(r: DayRow): MachineEngineDto {
 }
 
 /**
- * Machine telematics (item 146, ARCHITECTURE "Machine telematics"): each reading a tracker or a maker's feed sends is
+ * Machine telematics (ARCHITECTURE "Machine telematics"): each reading a tracker or a maker's feed sends is
  * kept for READING_KEEP_DAYS and moves its machine's day on, through the pure `telematics-rules.ts`. The day's log, the
  * hire bill's checks and the service schedule read the days from here.
  */
@@ -249,8 +249,6 @@ export class TelematicsService {
     return r.count;
   }
 
-  /* ---------- what the screens read ---------- */
-
   private where(user: RequestUser): Prisma.MachineDayWhereInput {
     return this.access.submissionWhere(user);
   }
@@ -290,7 +288,7 @@ export class TelematicsService {
     return out;
   }
 
-  /** A fuel dispenser's fills not on a slip yet, whenever they were, at the sites the user sees (item 147). */
+  /** A fuel dispenser's fills not on a slip yet, whenever they were, at the sites the user sees. */
   async pendingDispenses(user: RequestUser, q: { projectId?: string }): Promise<FuelDispenseDto[]> {
     const rows = await this.prisma.fuelDispense.findMany({
       where: {
@@ -347,7 +345,7 @@ export class TelematicsService {
 
   /**
    * The days of the sites' machines whose tracker reads the tank, with each day's tank against its slips, for the
-   * watch list (item 147).
+   * watch list.
    */
   async fuelDays(projectIds: string[], from: string, to: string) {
     if (!projectIds.length) return [];

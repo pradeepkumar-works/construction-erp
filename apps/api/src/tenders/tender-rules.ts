@@ -1,5 +1,5 @@
 /**
- * Tender bidding's figures (v6 item 110), with no database: an item priced from its rate analysis, the rate the bid
+ * Tender bidding's figures, with no database: an item priced from its rate analysis, the rate the bid
  * quotes (the SOR rate with the tender's percentage, or the item's own or built-up rate), the bid's totals against the
  * SOR, the bids ranked L1, L2…, which status a tender may move to, and the checks on a schedule-of-rates row. Tested in
  * src/scripts/tenders-test.ts.
