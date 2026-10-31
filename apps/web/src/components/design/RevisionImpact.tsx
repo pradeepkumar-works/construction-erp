@@ -78,7 +78,7 @@ export function RevisionImpactPanel({ documentId, projectId, manage, buildable }
         </>
       ) : null}
       <Divider titlePlacement="start" plain>
-        {`Controlled copies (${out.length})`}
+        Controlled copies{out.length ? <Typography.Text type="secondary" translate="no">{` ${out.length}`}</Typography.Text> : null}
       </Divider>
       {manage && buildable ? (
         <Button size="small" icon={<PlusOutlined />} onClick={() => setIssuing(true)} style={{ marginBottom: token.marginXS }}>

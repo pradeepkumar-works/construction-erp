@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, App, Button, Checkbox, Flex, Popover, Result, Segmented, Select, Space, Spin, Switch, Tooltip, Typography, theme } from 'antd';
+import { ResultMark } from '@/components/common/ResultMark';
 import {
   ArrowRightOutlined,
   BorderOuterOutlined,
@@ -890,7 +891,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               }}
             >
               {sheetError ? (
-                <Result status="warning" title="This file cannot be shown" subTitle={sheetError} />
+                <Result icon={<ResultMark kind="error" />} title="This file cannot be shown" subTitle={sheetError} />
               ) : !sheet || !aspect || !baseW ? (
                 <Flex align="center" justify="center" style={{ height: '100%' }}>
                   <Spin description="Opening the drawing…" />

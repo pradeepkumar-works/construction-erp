@@ -3,7 +3,7 @@
 import { MoreActions } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Form, Input, Select, Skeleton, Table, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Form, Input, Select, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   POUR_FLAG_LABELS,
@@ -27,7 +27,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { useUrlTab } from '@/lib/url-state';
 import { formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -150,7 +150,7 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
       }
     >
       {isLoading ? (
-        <Skeleton active />
+        <PageSkeleton shape="record" header={false} />
       ) : error || !pour ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : (
@@ -357,7 +357,7 @@ function CubeAcceptancePanel() {
         must reach fck − 3 N/mm². Until a grade has 30 results, the deviation is Table 8&apos;s.
       </Typography.Paragraph>
       {isLoading ? (
-        <Skeleton active />
+        <PageSkeleton shape="list" header={false} />
       ) : error || !data ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : !data.length ? (

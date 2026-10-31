@@ -204,7 +204,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
             </Typography.Paragraph>
           ) : null}
           <Divider titlePlacement="start" plain>
-            NCRs ({ncrs?.total ?? 0})
+            NCRs{ncrs?.total ? <Typography.Text type="secondary" translate="no">{` ${ncrs.total}`}</Typography.Text> : null}
           </Divider>
           {ncrs?.items.length ? (
             ncrs.items.map((n) => (

@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, QualityTestDto, TestKind, TestResult, TestTypeDto } from '@erp/shared';
 import { CALIBRATION_STATE_LABELS, TEST_RESULT_LABELS, TEST_KINDS, TEST_KIND_DEFAULTS, TEST_KIND_LABELS, comparePipeCodes, segmentLabel } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { FAIL_NOTICE } from '@/lib/notify';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivities, useInstruments, usePipeNetwork, useProjects, useQaLabs, useTestTypes } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -63,7 +63,7 @@ function typeFields(t: TestTypeDto) {
 /** Record a test (a sample taken), or (with `test`) change one. Readings are entered on the test itself. */
 export function TestFormModal({ open, onClose, projectId, test, prefill }: { open: boolean; onClose: () => void; projectId?: string; test?: QualityTestDto | null; prefill?: TestPrefill | null }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
+  const notify = useNotify();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
   const editing = !!test;
@@ -169,7 +169,7 @@ export function TestFormModal({ open, onClose, projectId, test, prefill }: { ope
       return test ? (await api.patch<QualityTestDto>(`/quality/tests/${test.id}`, body)).data : (await api.post<QualityTestDto>('/quality/tests', { projectId: v.projectId, ...body })).data;
     },
     onSuccess: (x) => {
-      message.success(editing ? `${x.testNo} updated` : `${x.testNo} recorded`);
+      notify.saved(editing ? `${x.testNo} updated` : `${x.testNo} recorded`);
       qc.invalidateQueries({ queryKey: ['quality'] });
     },
     meta: FAIL_NOTICE,
@@ -220,7 +220,7 @@ export function TestFormModal({ open, onClose, projectId, test, prefill }: { ope
             <Input maxLength={200} placeholder={kind === 'CONCRETE_CUBE' ? 'M25 cubes, first floor slab bays 1 to 4' : kind === 'FIELD_DENSITY' ? 'Embankment layer 4, sand replacement' : 'Fly ash bricks, lot 4'} />
           </Form.Item>
           <FormGrid cols={2}>
-            <Form.Item name="activityId" label="Activity (optional)">
+            <Form.Item name="activityId" label="Activity">
               <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
             </Form.Item>
             <Form.Item name="location" label="Location">
@@ -299,7 +299,7 @@ export function TestFormModal({ open, onClose, projectId, test, prefill }: { ope
           <Form.Item name="remarks" label="Remarks">
             <Input.TextArea rows={2} maxLength={1000} placeholder="Lab, supplier, batch or truck number" />
           </Form.Item>
-          <Form.Item name="photos" label="Photos / lab reports">
+          <Form.Item name="photos" label="Photos and lab reports">
             <PhotoUpload />
           </Form.Item>
         </FormSection>

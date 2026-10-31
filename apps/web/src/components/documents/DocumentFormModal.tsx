@@ -2,13 +2,13 @@
 
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useState } from 'react';
-import { App, Flex, Form, Input, Select, Space } from 'antd';
+import { Flex, Form, Input, Select, Space } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentDiscipline, DocumentKind, RevisionStatus } from '@erp/shared';
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, disciplineOf, readText } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { FAIL_NOTICE } from '@/lib/notify';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { ReadDocumentButton, ReadPreview, readDateReason, readFieldProps, useKeepReadFile, type ReadState } from '@/components/ai/ReadDocument';
 import { RevisionFields } from './RevisionFields';
@@ -27,7 +27,7 @@ interface FormValues {
 /** Add a drawing or document with its first revision, or (with `doc`) change its number, title and type. */
 export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { open: boolean; onClose: () => void; projectId?: string; doc?: DocumentDetailDto | null; onSaved?: (d: DocumentDetailDto) => void }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
+  const notify = useNotify();
   const qc = useQueryClient();
   const editing = !!doc;
   // A drawing's title block read to fill the form (AI item 70).
@@ -87,7 +87,7 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
       ).data;
     },
     onSuccess: (d) => {
-      message.success(editing ? `${d.docNo} updated` : `${d.docNo} added to the register`);
+      notify.saved(editing ? `${d.docNo} updated` : `${d.docNo} added to the register`);
       qc.invalidateQueries({ queryKey: ['documents'] });
       onSaved?.(d);
     },
