@@ -75,7 +75,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('safety', 'Safety', 'quality.incidents', 'quality.permits', 'quality.talks', 'quality.ppe'),
       sub('billing', 'Client billing', 'billing.bills', 'billing.variations', 'billing.readiness', 'billing.clients'),
       sub('reports', 'Reports', 'reports.progress', 'reports.cashflow'),
-      sub('masters', 'Masters', 'billing.clients', 'projects.templates', 'projects.verticals'),
+      sub('masters', 'Masters', 'billing.clients', 'projects.templates', 'projects.verticals', 'projects.workTrades'),
     ],
   },
   {

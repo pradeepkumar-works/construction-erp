@@ -42,6 +42,8 @@ export const NAV: Record<string, string> = {
   'Look-ahead': 'आगे की योजना',
   'The next three weeks: what is ready to start and what still waits.': 'अगले तीन हफ़्ते: क्या शुरू होने को तैयार है और क्या अभी रुका है।',
   BOQ: 'BOQ',
+  'Work trades': 'काम के ट्रेड',
+  'The trade a snag or defect belongs to, such as plaster, plumbing or electrical.': 'स्नैग या खराबी किस ट्रेड की है, जैसे प्लास्टर, प्लंबिंग या बिजली।',
   'Bill of quantities: items, quantities and rates.': 'मात्रा का बिल (BOQ): आइटम, मात्रा और रेट।',
   'The activities under the BOQ, with their planned dates and quantities.': 'BOQ के तहत गतिविधियाँ, उनकी योजना वाली तारीख़ों और मात्रा के साथ।',
   'Budget and cash flow': 'बजट और कैश फ़्लो',
