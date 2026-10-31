@@ -86,8 +86,7 @@ export default function ApprovalsScreen() {
           data && data.length ? (
             <Text maxFontSizeMultiplier={maxFontScale} style={styles.summary}>
               {data.length === 1 ? t('1 item waiting for your review') : t('{n} items waiting for your review', { n: data.length })}
-              {' · '}
-              {t('Swipe left to approve')}
+              {data.some((i) => canQuickReview(i.type)) ? ` · ${t('Swipe left to approve')}` : ''}
             </Text>
           ) : null
         }

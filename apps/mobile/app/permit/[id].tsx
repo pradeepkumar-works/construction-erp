@@ -25,6 +25,7 @@ export default function PermitScreen() {
   const [mode, setMode] = useState<Mode>(null);
   const [ticked, setTicked] = useState<string[]>([]);
   const [note, setNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -39,6 +40,7 @@ export default function PermitScreen() {
   const open = (m: Mode) => {
     setTicked(data.precautions.filter((p) => standard.includes(p)));
     setNote('');
+    setNoteError(null);
     setMode(m);
   };
   const act = async (path: string, body: Record<string, unknown>) => {
@@ -98,8 +100,19 @@ export default function PermitScreen() {
         </Card>
       ) : mode === 'reject' ? (
         <Card title={t('Reject {no}', { no: data.permitNo })}>
-          <Input label={t('Why')} required value={note} onChangeText={setNote} multiline maxLength={1000} />
-          <Button title={t('Reject')} icon="close-circle" variant="danger" onPress={() => act('reject', { note: note.trim() })} loading={busy} disabled={!note.trim()} />
+          <Input
+            label={t('Why')}
+            required
+            value={note}
+            onChangeText={(v) => {
+              setNote(v);
+              setNoteError(null);
+            }}
+            error={noteError}
+            multiline
+            maxLength={1000}
+          />
+          <Button title={t('Reject')} icon="close-circle" variant="danger" onPress={() => (note.trim() ? act('reject', { note: note.trim() }) : setNoteError(t('Say why you are rejecting it')))} loading={busy} />
           <Button title={t('Cancel')} variant="ghost" onPress={() => setMode(null)} />
         </Card>
       ) : mode === 'close' ? (

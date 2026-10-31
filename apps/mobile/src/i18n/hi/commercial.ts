@@ -123,9 +123,6 @@ export const COMMERCIAL: Record<string, string> = {
 
   // Machinery log
   'Machinery log · {date}': 'मशीनरी लॉग · {date}',
-  'worked (h)': 'काम (घंटे)',
-  'idle (h)': 'खाली (घंटे)',
-  'breakdown (h)': 'ब्रेकडाउन (घंटे)',
   Breakdown: 'ब्रेकडाउन',
   'Owned / hired': 'अपनी / किराये की',
   'Hour meter': 'आवर मीटर',
@@ -328,4 +325,5 @@ export const COMMERCIAL: Record<string, string> = {
   'Work planned on those dates needs you': 'उन दिनों के काम में आपकी ज़रूरत है',
   'Not agreed in advance': 'पहले से तय नहीं हुआ था',
   'Say why': 'वजह लिखें',
+  'Diesel filled': 'डीज़ल भरा',
 };

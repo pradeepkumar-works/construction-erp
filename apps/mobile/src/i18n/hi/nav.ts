@@ -350,7 +350,7 @@ export const NAV: Record<string, string> = {
   'Ask your admin if you need it.': 'ज़रूरत हो तो अपने एडमिन से पूछें।',
   'Use New entry on Home to submit your first entry.': 'अपनी पहली एंट्री भेजने के लिए होम पर नई एंट्री इस्तेमाल करें।',
   '{name}, {n} waiting': '{name}, {n} रुके हैं',
-  'Long press for Pin to Home': 'होम पर पिन करने के लिए देर तक दबाएँ',
+  'Long press to pin to Home': 'होम पर पिन करने के लिए देर तक दबाएँ',
   'Tile options': 'टाइल के विकल्प',
   'Long press to move or unpin': 'खिसकाने या पिन हटाने के लिए देर तक दबाएँ',
   'Opens on the web': 'वेब पर खुलता है',

@@ -147,7 +147,7 @@ export default function NewProgressScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!activityId) e.activityId = t('Choose an activity');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     const q = Number(quantity);
     if (!quantity.trim() || Number.isNaN(q) || q <= 0) e.quantity = t('Enter a quantity greater than 0');
     sector.validate(e);
@@ -290,10 +290,10 @@ export default function NewProgressScreen() {
       </Card>
       <Card title={t('Details (optional)')}>
         <Input {...field()} label={t('Location')} value={location} onChangeText={setLocation} placeholder={t('e.g. LHS, grid C4-D7')} />
-        <Input {...field()} label={t('Manpower count')} value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder={t('e.g. 18')} error={errors.manpower} />
+        <Input {...field()} label={t('Manpower')} value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder={t('e.g. 18')} error={errors.manpower} />
         <Input {...field()} label={t('Machinery used')} value={machinery} onChangeText={setMachinery} placeholder={t('e.g. Grader, Roller')} />
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('Anything the PM should know')} />
-        <PhotoPicker photos={photos} onChange={setPhotos} />
+        <PhotoPicker photos={photos} onChange={setPhotos} label={t('Site photos')} />
         {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />

@@ -53,7 +53,7 @@ export default function RisksScreen() {
         {mayRaise ? (
           <View style={styles.actions}>
             <Button title={t('Record delay')} icon="time-outline" onPress={() => router.push(newHref('DELAY'))} style={styles.flex} />
-            <Button title={t('Raise risk')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(newHref('RISK'))} style={styles.flex} />
+            <Button title={t('New risk')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(newHref('RISK'))} style={styles.flex} />
           </View>
         ) : null}
       </Card>

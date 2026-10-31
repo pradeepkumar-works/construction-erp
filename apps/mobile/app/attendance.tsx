@@ -203,7 +203,7 @@ export default function AttendanceScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     else if (date > today()) e.date = t('Attendance cannot be recorded for a future date');
     for (const g of groups) {
       const used = g.rows.some((r) => r.category || r.count.trim());

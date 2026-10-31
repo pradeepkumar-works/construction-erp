@@ -11,7 +11,7 @@ import { Button, Card, KeyValue, Screen, Touchable } from '../../src/components'
 import { CompanyChoices } from '../../src/components/CompanySwitch';
 import { API_URL } from '../../src/config';
 import { LANGUAGES, useLanguage, useT } from '../../src/i18n/LanguageContext';
-import { formatNumber } from '../../src/utils/format';
+import { formatMoney } from '../../src/utils/format';
 import { APPEARANCE_CHOICES, appearance, colors, maxFontScale, saveAppearance, spacing, touch, typography, type AppearanceChoice } from '../../src/theme';
 
 export default function ProfileScreen() {
@@ -46,12 +46,12 @@ export default function ProfileScreen() {
         <KeyValue label={t('Email')} value={user.email} />
         <KeyValue label={t('Phone')} value={user.phone} />
         <KeyValue label={t('Role')} value={t(ROLE_LABELS[user.roleKey] ?? user.roleName)} />
-        <KeyValue label={t('Organisation')} value={user.organizationName} />
+        <KeyValue label={t('Company')} value={user.organizationName} />
         <KeyValue label={t('Can approve')} value={approvalRightsLine(user, t)} />
       </Card>
       <CompanyCard />
       <Card title={t('Notifications')}>
-        <KeyValue label={t('Push to this device')} value={t(push ? (push.status === 'ready' ? 'On' : push.status === 'off' ? 'Off' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…')} />
+        <KeyValue label={t('Notifications on this phone')} value={t(push ? (push.status === 'ready' ? 'On' : push.status === 'off' ? 'Off' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…')} />
         {push && push.status !== 'ready' && push.reason ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t(push.reason)}</Text> : null}
         {push?.status === 'off' ? <Button title={t('Turn on notifications')} icon="notifications-outline" variant="secondary" onPress={askForPush} style={styles.pushBtn} /> : null}
         {push?.status === 'denied' && Platform.OS !== 'web' ? (
@@ -181,5 +181,5 @@ function approvalRightsLine(user: Parameters<typeof approvalRightsOf>[0], t: (en
   const rights = approvalRightsOf(user);
   if (!rights.length) return t('No');
   if (rights.length === Object.keys(SUBMISSION_TYPE_LABELS).length && rights.every((r) => r.maxAmount === null)) return t('Everything');
-  return rights.map((r) => (r.maxAmount === null ? t(SUBMISSION_TYPE_LABELS[r.type]) : t('{type} up to ₹{amount}', { type: t(SUBMISSION_TYPE_LABELS[r.type]), amount: formatNumber(r.maxAmount, 0) }))).join(', ');
+  return rights.map((r) => (r.maxAmount === null ? t(SUBMISSION_TYPE_LABELS[r.type]) : t('{type} up to {amount}', { type: t(SUBMISSION_TYPE_LABELS[r.type]), amount: formatMoney(r.maxAmount, { paise: false }) }))).join(', ');
 }

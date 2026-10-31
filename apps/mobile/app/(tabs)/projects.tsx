@@ -8,6 +8,7 @@ import { fetchProjects } from '../../src/api/lists';
 import { Card, EmptyState, ErrorState, Loading, Pill, ProgressBar, Screen } from '../../src/components';
 import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { useT } from '../../src/i18n/LanguageContext';
+import { projectStatusPill } from '../../src/utils/project-status';
 
 export default function ProjectsScreen() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function ProjectsScreen() {
           <Card onPress={() => router.push(`/project/${item.id}`)}>
             <View style={styles.top}>
               <Text maxFontSizeMultiplier={maxFontScale} style={styles.code}>{item.code}</Text>
-              <Pill text={t(PROJECT_STATUS_LABELS[item.status])} fg={item.status === 'ACTIVE' ? colors.success : colors.neutral} bg={item.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} icon={item.status === 'ACTIVE' ? 'play-circle-outline' : 'pause-circle-outline'} />
+              <Pill text={t(PROJECT_STATUS_LABELS[item.status])} {...projectStatusPill(item.status)} />
             </View>
             <Text maxFontSizeMultiplier={maxFontScale} style={styles.name}>{item.name}</Text>
             <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t(PROJECT_TYPE_LABELS[item.type])}</Text>

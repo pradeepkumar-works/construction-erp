@@ -86,7 +86,7 @@ export default function DocumentsScreen() {
         }}
         searchable
       />
-      <Input returnKeyType="search" placeholder={t('Search number or title')} accessibilityLabel={t('Search documents by number or title')} value={search} onChangeText={setSearch} autoCorrect={false} />
+      <Input returnKeyType="search" placeholder={t('Search number or title')} accessibilityLabel={t('Search drawings by number or title')} value={search} onChangeText={setSearch} autoCorrect={false} />
       {canSaveOffline && files.length ? (
         <View style={styles.offline}>
           <Ionicons name={missing ? 'cloud-download-outline' : 'checkmark-circle'} size={20} color={missing ? colors.textMuted : colors.success} />

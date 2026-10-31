@@ -24,7 +24,7 @@ export function NavRow({ node, badge, web, onOpen, onMenu }: { node: NavNode; ba
     <Touchable
       accessibilityRole={web ? 'link' : 'button'}
       accessibilityLabel={label(node, badge)}
-      accessibilityHint={web ? t('Opens on the web') : t('Long press for Pin to Home')}
+      accessibilityHint={web ? t('Opens on the web') : t('Long press to pin to Home')}
       accessibilityActions={[{ name: 'longpress', label: t('Tile options') }]}
       onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && onMenu()}
       onPress={onOpen}

@@ -54,12 +54,12 @@ export default function SafetyScreen() {
         {mayReport ? (
           <>
             <View style={styles.actions}>
-              <Button title={t('Near miss')} icon="eye-outline" variant="secondary" onPress={() => router.push(href('/incident/new', 'nearMiss=1'))} style={styles.flex} />
-              <Button title={t('Incident')} icon="medkit-outline" onPress={() => router.push(href('/incident/new'))} style={styles.flex} />
+              <Button title={t('Report near miss')} icon="eye-outline" variant="secondary" onPress={() => router.push(href('/incident/new', 'nearMiss=1'))} style={styles.flex} />
+              <Button title={t('Report incident')} icon="medkit-outline" onPress={() => router.push(href('/incident/new'))} style={styles.flex} />
             </View>
             <View style={styles.actions}>
-              <Button title={t('Toolbox talk')} icon="megaphone-outline" variant="secondary" onPress={() => router.push(href('/talk/new'))} style={styles.flex} />
-              <Button title={t('Ask for permit')} icon="key-outline" variant="secondary" onPress={() => router.push(href('/permit/new'))} style={styles.flex} />
+              <Button title={t('Record toolbox talk')} icon="megaphone-outline" variant="secondary" onPress={() => router.push(href('/talk/new'))} style={styles.flex} />
+              <Button title={t('Request permit')} icon="key-outline" variant="secondary" onPress={() => router.push(href('/permit/new'))} style={styles.flex} />
             </View>
           </>
         ) : null}

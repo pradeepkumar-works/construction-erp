@@ -22,6 +22,7 @@ export default function RiskScreen() {
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<RiskDto>((a) => a.get(`/risks/${id}`), [id], { enabled: !!id });
   const [closing, setClosing] = useState(false);
   const [note, setNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -31,6 +32,7 @@ export default function RiskScreen() {
 
   const level = riskLevel(data.score);
   const mayEdit = !!user && canEditRisk(user, data);
+  const closeLabel = t(data.kind === 'DELAY' ? 'Close delay' : 'Close risk');
   const change = async (body: Record<string, unknown>) => {
     setBusy(true);
     setActionError(null);
@@ -85,10 +87,25 @@ export default function RiskScreen() {
       <AttachmentGallery attachments={data.attachments} />
       {mayEdit ? (
         closing ? (
-          <Card title={t('Close this entry')}>
+          <Card title={closeLabel}>
             {data.kind === 'DELAY' && !data.delayEnd ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t('The delay will be recorded as ending today.')}</Text> : null}
-            <Input label={t('How was it resolved')} required value={note} onChangeText={setNote} multiline />
-            <Button title={t('Close entry')} icon="checkmark-circle" onPress={() => change({ status: 'CLOSED', closureNote: note.trim() })} loading={busy} disabled={!note.trim()} />
+            <Input
+              label={t('How was it resolved')}
+              required
+              value={note}
+              onChangeText={(v) => {
+                setNote(v);
+                setNoteError(null);
+              }}
+              error={noteError}
+              multiline
+            />
+            <Button
+              title={closeLabel}
+              icon="checkmark-circle"
+              onPress={() => (note.trim() ? change({ status: 'CLOSED', closureNote: note.trim() }) : setNoteError(t('Say how it was resolved')))}
+              loading={busy}
+            />
             <Button title={t('Cancel')} variant="ghost" onPress={() => setClosing(false)} />
           </Card>
         ) : (
@@ -96,7 +113,7 @@ export default function RiskScreen() {
             {data.status === 'CLOSED' ? (
               <Button title={t('Reopen')} icon="refresh" variant="secondary" onPress={() => change({ status: 'OPEN' })} loading={busy} style={styles.flex} />
             ) : (
-              <Button title={t('Close')} icon="checkmark-circle" onPress={() => setClosing(true)} style={styles.flex} />
+              <Button title={closeLabel} icon="checkmark-circle" onPress={() => setClosing(true)} style={styles.flex} />
             )}
             <Button title={t('Update')} icon="create" variant="secondary" onPress={() => router.push(`/risk/new?editId=${data.id}`)} style={styles.flex} />
           </View>

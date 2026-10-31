@@ -57,7 +57,7 @@ export function Select<V extends string>({ label, value, options, onChange, plac
       >
         <View style={styles.flex}>
           <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>
-            {selected ? selected.label : (placeholder ?? t('Select…'))}
+            {selected ? selected.label : (placeholder ?? t('Choose…'))}
           </Text>
           {selected?.hint ? (
             <Text style={styles.hint} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>

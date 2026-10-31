@@ -8,6 +8,7 @@ import { useFetch } from '../../src/api/hooks';
 import { Button, Card, EmptyState, ErrorState, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle, Stat } from '../../src/components';
 import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
+import { projectStatusPill } from '../../src/utils/project-status';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ScheduleStatus } from '../../src/components/ScheduleStatus';
 
@@ -39,7 +40,7 @@ export default function ProjectScreen() {
       <Card>
         <View style={styles.top}>
           <Text maxFontSizeMultiplier={maxFontScale} style={styles.code}>{project.code}</Text>
-          <Pill text={t(PROJECT_STATUS_LABELS[project.status])} fg={project.status === 'ACTIVE' ? colors.success : colors.neutral} bg={project.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} icon={project.status === 'ACTIVE' ? 'play-circle-outline' : 'pause-circle-outline'} />
+          <Pill text={t(PROJECT_STATUS_LABELS[project.status])} {...projectStatusPill(project.status)} />
         </View>
         <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{project.name}</Text>
         <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{project.typeName && project.typeName !== PROJECT_TYPE_LABELS[project.type] ? project.typeName : t(PROJECT_TYPE_LABELS[project.type])}</Text>
@@ -51,7 +52,7 @@ export default function ProjectScreen() {
         <KeyValue label={t('Location')} value={project.location} />
         <KeyValue label={t('Project manager')} value={project.projectManagerName} />
         <KeyValue label={t('Start')} value={formatDate(project.startDate)} />
-        <KeyValue label={t('End')} value={formatDate(project.endDate)} />
+        <KeyValue label={t('Completion')} value={formatDate(project.endDate)} />
         {project.workOrderNo ? <KeyValue label={t('Work order')} value={project.workOrderNo} /> : null}
       </Card>
 
@@ -62,7 +63,7 @@ export default function ProjectScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Button title={t('Add progress')} icon="trending-up" onPress={() => router.push(`/progress/new?projectId=${project.id}`)} style={styles.flex} />
+        <Button title={t('New progress entry')} icon="trending-up" onPress={() => router.push(`/progress/new?projectId=${project.id}`)} style={styles.flex} />
         <Button title={t('New DPR')} icon="document-text" variant="secondary" onPress={() => router.push(`/dpr/new?projectId=${project.id}`)} style={styles.flex} />
       </View>
       {user && canRecordAttendance(user.roleKey) ? (
@@ -81,7 +82,7 @@ export default function ProjectScreen() {
         <Button title={t('Safety')} icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
 
-      <SectionTitle title={t('Activities')} right={<Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('planned / executed')}</Text>} />
+      <SectionTitle title={t('Activities')} right={<Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('done of planned')}</Text>} />
       {activities.length === 0 ? (
         <EmptyState title={t('No activities')} subtitle={t('Activities are set up by the planning team on the web.')} icon="list-outline" />
       ) : (
@@ -94,7 +95,7 @@ export default function ProjectScreen() {
                   {a.name}
                 </Text>
                 <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
-                  {a.isSummary ? t('Made of {n} parts', { n: activities.filter((p) => p.parentActivityId === a.id).length }) : `${fmtQty(a.plannedQty)} / ${fmtQty(a.executedQty)} ${a.unit}`}
+                  {a.isSummary ? t('Made of {n} parts', { n: activities.filter((p) => p.parentActivityId === a.id).length }) : t('{executed} of {planned} {unit} done', { executed: fmtQty(a.executedQty), planned: fmtQty(a.plannedQty), unit: a.unit })}
                   {a.plannedEnd ? ` · ${t('due {date}', { date: formatDate(a.plannedEnd) })}` : ''}
                 </Text>
               </View>
@@ -110,7 +111,7 @@ export default function ProjectScreen() {
             </View>
             {/* An activity made of parts takes its progress through them (item 125). */}
             {!a.isSummary ? (
-              <Button title={t('Add progress for this activity')} size="sm" variant="secondary" icon="add" onPress={() => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)} />
+              <Button title={t('New progress entry')} size="sm" variant="secondary" icon="add" onPress={() => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)} />
             ) : null}
           </Card>
         ))

@@ -36,7 +36,7 @@ export function MenuGrid({ items, onOpen, onMenu, onEdit, compact }: { items: Me
             <Touchable
               accessibilityRole="menuitem"
               accessibilityLabel={item.badge ? t('{name}, {n} waiting', { name: label, n: item.badge }) : label}
-              accessibilityHint={menuNode ? t('Long press for Pin to Home') : undefined}
+              accessibilityHint={menuNode ? t('Long press to pin to Home') : undefined}
               accessibilityActions={menuNode ? [{ name: 'longpress', label: t('Tile options') }] : undefined}
               onAccessibilityAction={(e) => menuNode && e.nativeEvent.actionName === 'longpress' && onMenu(menuNode)}
               onPress={() => onOpen(item)}

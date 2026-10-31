@@ -20,10 +20,10 @@ const RESULT_TONE: Record<InspectionResult, { fg: string; bg: string }> = {
 };
 
 /** English labels; shown through t(). */
-const DECISIONS: { decision: ReviewDecision; label: string; confirm: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'refresh' | 'close'; hint: string }[] = [
-  { decision: 'APPROVE', label: 'Pass', confirm: 'Confirm pass', variant: 'success', icon: 'checkmark', hint: 'The work may proceed.' },
-  { decision: 'REQUEST_CHANGES', label: 'Re-inspect', confirm: 'Confirm re-inspect', variant: 'accent', icon: 'refresh', hint: 'Site rectifies the points not OK and requests the inspection again.' },
-  { decision: 'REJECT', label: 'Fail', confirm: 'Confirm fail', variant: 'danger', icon: 'close', hint: 'The inspection is closed as failed.' },
+const DECISIONS: { decision: ReviewDecision; label: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'refresh' | 'close'; hint: string }[] = [
+  { decision: 'APPROVE', label: 'Pass', variant: 'success', icon: 'checkmark', hint: 'The work may proceed.' },
+  { decision: 'REQUEST_CHANGES', label: 'Re-inspect', variant: 'accent', icon: 'refresh', hint: 'Site rectifies the points not OK and requests the inspection again.' },
+  { decision: 'REJECT', label: 'Fail', variant: 'danger', icon: 'close', hint: 'The inspection is closed as failed.' },
 ];
 
 type Point = { result: InspectionResult | null; remark: string };
@@ -119,7 +119,7 @@ function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: Inspection
             <ErrorBanner message={error} />
             <View style={styles.sheetBtns}>
               <Button title={t('Cancel')} variant="ghost" onPress={() => setPending(null)} disabled={busy} style={styles.flex} />
-              <Button title={meta ? t(meta.confirm) : ''} variant={meta?.variant ?? 'primary'} onPress={confirm} loading={busy} style={styles.flex2} />
+              <Button title={meta ? t(meta.label) : ''} variant={meta?.variant ?? 'primary'} onPress={confirm} loading={busy} style={styles.flex2} />
             </View>
           </View>
         </View>

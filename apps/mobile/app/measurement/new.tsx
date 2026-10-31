@@ -186,7 +186,7 @@ export default function NewMeasurementScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!boqItemId) e.boqItemId = t('Choose the BOQ item');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     sector.validate(e);
     const tagged = sector.body(false);
     if (!location.trim() && tagged.chainageFrom === undefined && !tagged.floor && !tagged.village) e.location = t('Say where, e.g. Ch 2+100 to 2+350 or Grid A1-C4');
@@ -367,7 +367,7 @@ export default function NewMeasurementScreen() {
       })}
       <Button title={t('Add line')} variant="ghost" icon="add" onPress={() => setLines((ls) => [...ls, blankLine()])} />
       <View style={styles.totalBox}>
-        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Total (blank sizes count as 1)')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Total')} · {t('A blank size counts as 1')}</Text>
         <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>
           {fmtQty(total)} {unit}
         </Text>

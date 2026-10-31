@@ -89,7 +89,7 @@ export default function FuelIssueScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     else if (date > today()) e.date = t('Enter a date up to today');
     if (!equipmentId) e.equipmentId = t('Choose the machine the fuel went into');
     if (!itemId) e.itemId = t('Choose the fuel');

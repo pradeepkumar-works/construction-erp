@@ -325,7 +325,7 @@ export default function NewDprScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     if (!workExecuted.trim() && !hasLines) e.workExecuted = t('Describe the work executed today, or add a work line');
     const lineProblem = linesProblem(lines, t, workOptions.data ?? null, def, language);
     if (lineProblem) e.lines = lineProblem;

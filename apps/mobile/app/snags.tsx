@@ -41,7 +41,7 @@ export default function SnagsScreen() {
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
         <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
-        {mayReport ? <Button title={t('Report snag or defect')} icon="add-circle" onPress={() => router.push(`/snag/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
+        {mayReport ? <Button title={t('Report snag')} icon="add-circle" onPress={() => router.push(`/snag/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
       </Card>
       <Chips
         value={show}

@@ -70,7 +70,7 @@ function Payslip({ slip: p, expanded, onToggle }: { slip: PayslipDto; expanded: 
           {lines('EMPLOYER').length ? (
             <>
               <Divider />
-              <SectionTitle title={t('The company pays besides')} />
+              <SectionTitle title={t('Company share')} />
               {lines('EMPLOYER').map((l) => (
                 <KeyValue key={l.id} label={name(l)} value={formatMoney(l.amount)} />
               ))}

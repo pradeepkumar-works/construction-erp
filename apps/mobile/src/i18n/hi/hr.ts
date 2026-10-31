@@ -15,7 +15,7 @@ export const HR: Record<string, string> = {
   Deductions: 'कटौती',
   None: 'कोई नहीं',
   'Total deductions': 'कुल कटौती',
-  'The company pays besides': 'इसके अलावा कंपनी देती है',
+  'Company share': 'कंपनी का हिस्सा',
   // Payslip lines (PAYSLIP_CODES in @erp/shared)
   Basic: 'मूल वेतन',
   'Dearness allowance': 'महँगाई भत्ता',
