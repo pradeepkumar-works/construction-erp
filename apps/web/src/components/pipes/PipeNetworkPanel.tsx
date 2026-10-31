@@ -267,7 +267,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
                         key: 'actions',
                         title: '',
                         width: 56,
-                        render: (_: unknown, s: PipeSegmentDto) => <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Correct ${s.code}`} onClick={() => setEditing(s)} />,
+                        render: (_: unknown, s: PipeSegmentDto) => <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${s.code}`} onClick={() => setEditing(s)} />,
                       },
                     ]
                   : []),
@@ -309,7 +309,7 @@ function SegmentFormModal({ projectId, segment, onClose }: { projectId: string; 
       layout="modal"
       width={640}
       projectDefault={false}
-      title={segment ? `Correct ${segment.code}, ${segment.fromCode} to ${segment.toCode}` : 'Correct pipe'}
+      title={segment ? `Edit ${segment.code}, ${segment.fromCode} to ${segment.toCode}` : 'Edit pipe'}
       okText="Save pipe"
       onSubmit={(v) => save.mutateAsync(v)}
     >

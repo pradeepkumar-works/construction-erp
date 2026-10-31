@@ -166,7 +166,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
       open={open}
       onClose={onClose}
       form={form}
-      title={risk ? `Update ${risk.riskNo}` : isDelay ? 'Record delay' : 'New risk'}
+      title={risk ? `Edit ${risk.riskNo}` : isDelay ? 'Record delay' : 'New risk'}
       okText={editing ? 'Save' : isDelay ? 'Record delay' : 'Save risk'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       layout="drawer"

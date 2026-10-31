@@ -274,7 +274,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                         </Typography.Text>
                       ) : (
                         <Space size={0}>
-                          <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Change ${formatDate(d.date)}`} onClick={() => onEdit(d)} />
+                          <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${formatDate(d.date)}`} onClick={() => onEdit(d)} />
                           <ConfirmDelete what={`the reading of ${formatDate(d.date)}`} verb="Remove" notice={false} onConfirm={() => remove.mutateAsync(d.id)}>
                             <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Remove ${formatDate(d.date)}`} />
                           </ConfirmDelete>
@@ -351,7 +351,7 @@ function DayForm({ data, target, onClose }: { data: OmDto; target: ServiceLevelD
       layout="modal"
       width={680}
       projectDefault={false}
-      title={d ? `Change the reading of ${formatDate(d.date)}` : 'Record a day’s service levels'}
+      title={d ? `Edit the reading of ${formatDate(d.date)}` : 'Record a day’s service levels'}
       okText="Save reading"
       onSubmit={async (v) => {
         await save.mutateAsync(v);
@@ -747,7 +747,7 @@ function TermsForm({ project, data, open, onClose }: { project: ProjectDetail; d
       form={form}
       layout="drawer"
       projectDefault={false}
-      title={c ? 'Change O&M terms' : `O&M terms for ${project.code}`}
+      title={c ? 'Edit O&M terms' : `O&M terms for ${project.code}`}
       okText="Save terms"
       onSubmit={async (v) => {
         await save.mutateAsync(v);

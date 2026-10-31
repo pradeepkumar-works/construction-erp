@@ -98,7 +98,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
       onClose={onClose}
       form={form}
       layout="drawer"
-      title={editing ? `Change ${incident?.incidentNo}` : nearMiss ? 'Report near miss' : 'Report incident'}
+      title={editing ? `Edit ${incident?.incidentNo}` : nearMiss ? 'Report near miss' : 'Report incident'}
       okText={editing ? 'Save' : 'Report'}
       draftKey={editing ? undefined : `${nearMiss ? 'near-miss' : 'incident'}:${projectId ?? 'any'}`}
       onSubmit={(v) => save.mutateAsync(v)}

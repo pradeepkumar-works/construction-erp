@@ -122,7 +122,7 @@ export function RfiFormModal({
   };
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={760} title={rfi ? `Change ${rfi.rfiNo}` : 'New RFI'} okText={editing ? 'Save' : 'Raise RFI'} onSubmit={submit} draftKey={editing || defaults ? undefined : `rfi:${projectId ?? 'any'}`}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={760} title={rfi ? `Edit ${rfi.rfiNo}` : 'New RFI'} okText={editing ? 'Save' : 'Raise RFI'} onSubmit={submit} draftKey={editing || defaults ? undefined : `rfi:${projectId ?? 'any'}`}>
       <Form form={form} layout="vertical">
         <FormSection title="Question">
           {!fixedProject ? (

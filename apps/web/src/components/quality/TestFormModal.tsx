@@ -178,7 +178,7 @@ export function TestFormModal({ open, onClose, projectId, test, prefill }: { ope
   const plan = editing ? [] : type ? type.readings : kind ? TEST_KIND_DEFAULTS[kind].readings : [];
   const typeOptions = (types ?? []).map((t) => ({ value: t.code, label: t.method ? `${t.name} (${t.method})` : t.name }));
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={test ? `Update ${test.testNo}` : 'Record test'} okText={editing ? 'Save' : 'Record test'} onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={test ? `Edit ${test.testNo}` : 'Record test'} okText={editing ? 'Save' : 'Record test'} onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         {prefill?.note && !editing ? <Typography.Paragraph type="secondary">{prefill.note}</Typography.Paragraph> : null}
         <FormSection title="Sample">

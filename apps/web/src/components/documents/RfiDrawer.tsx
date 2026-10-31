@@ -160,7 +160,7 @@ export function RfiDrawer({ id, open, onClose }: { id: string | null; open: bool
                 Close RFI
               </Button>
             ) : null}
-            {open_ && owner ? <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Change RFI" /> : null}
+            {open_ && owner ? <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit RFI" /> : null}
             {open_ && owner ? (
               <ConfirmDelete what={`RFI ${data.rfiNo}`} description="Only for an RFI raised by mistake. To stop waiting for an answer, withdraw it instead." onConfirm={() => remove.mutateAsync(data.id)} onDone={onClose}>
                 <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete RFI" />

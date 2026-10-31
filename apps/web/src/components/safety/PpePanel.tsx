@@ -334,7 +334,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
             )}
             {reg.canSetRequired ? (
               <Button size="small" type="link" icon={<EditOutlined />} onClick={() => setRequiredOpen(true)}>
-                Change
+                Edit
               </Button>
             ) : null}
           </div>

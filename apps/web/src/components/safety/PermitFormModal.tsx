@@ -96,7 +96,7 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={permit ? `Change ${permit.permitNo}` : 'Request permit to work'} okText={permit ? 'Save' : 'Request permit'} onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={permit ? `Edit ${permit.permitNo}` : 'Request permit to work'} okText={permit ? 'Save' : 'Request permit'} onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="Permit">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!permit}>

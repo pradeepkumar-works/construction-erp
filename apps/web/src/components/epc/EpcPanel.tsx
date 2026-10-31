@@ -226,7 +226,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
                     width: 120,
                     render: (_: unknown, d: DeliverableDto) => (
                       <Space size={0}>
-                        <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Change ${d.code}`} onClick={() => onEdit(d)} />
+                        <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${d.code}`} onClick={() => onEdit(d)} />
                         <ConfirmDelete what={`deliverable ${d.code}`} verb="Remove" notice={false} onConfirm={() => remove.mutateAsync(d.id)}>
                           <Button size="small" type="link" danger>
                             Remove
@@ -311,7 +311,7 @@ function DeliverableForm({ projectId, target, onClose }: { projectId: string; ta
       layout="modal"
       width={680}
       projectDefault={false}
-      title={d ? `Change ${d.code}` : 'New deliverable'}
+      title={d ? `Edit ${d.code}` : 'New deliverable'}
       okText="Save deliverable"
       onSubmit={async (v) => {
         await save.mutateAsync(v);
@@ -522,7 +522,7 @@ function Packages({ data, onEdit }: { data: EpcDto; onEdit: (p: PackageDto | 'ne
                     width: 120,
                     render: (_: unknown, p: PackageDto) => (
                       <Space size={0}>
-                        <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Change ${p.code}`} onClick={() => onEdit(p)} />
+                        <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${p.code}`} onClick={() => onEdit(p)} />
                         <ConfirmDelete what={`package ${p.code}`} verb="Remove" notice={false} onConfirm={() => remove.mutateAsync(p.id)}>
                           <Button size="small" type="link" danger>
                             Remove
@@ -629,7 +629,7 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
       form={form}
       layout="drawer"
       projectDefault={false}
-      title={p ? `Change ${p.code}` : 'New equipment package'}
+      title={p ? `Edit ${p.code}` : 'New equipment package'}
       okText="Save package"
       onSubmit={async (v) => {
         await save.mutateAsync(v);
@@ -799,7 +799,7 @@ function ClientInputs({ data, onEdit }: { data: EpcDto; onEdit: (m: ClientInputD
                   width: 120,
                   render: (_: unknown, m: ClientInputDto) => (
                     <Space size={0}>
-                      <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Change ${m.name}`} onClick={() => onEdit(m)} />
+                      <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${m.name}`} onClick={() => onEdit(m)} />
                       <ConfirmDelete what={m.name} verb="Remove" notice={false} onConfirm={() => remove.mutateAsync(m.id)}>
                         <Button size="small" type="link" danger>
                           Remove
@@ -851,7 +851,7 @@ function ClientInputForm({ projectId, target, onClose }: { projectId: string; ta
       form={form}
       layout="modal"
       projectDefault={false}
-      title={m ? `Change ${m.name}` : 'New client input'}
+      title={m ? `Edit ${m.name}` : 'New client input'}
       okText="Save"
       onSubmit={async (v) => {
         await save.mutateAsync(v);

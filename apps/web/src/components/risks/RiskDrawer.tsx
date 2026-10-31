@@ -68,7 +68,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
         data && mayEdit ? (
           <Space wrap>
             <Button size="small" onClick={() => onEdit(data)}>
-              Update
+              Edit
             </Button>
             {data.status === 'CLOSED' ? (
               <Button size="small" loading={patch.isPending} onClick={() => patch.mutate({ status: 'OPEN' })}>
