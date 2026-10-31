@@ -58,7 +58,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
           sections: [
             {
               key: 'lines',
-              title: 'Measurements',
+              title: 'Measurement lines',
               count: data.lines.length,
               children: (
                 <Table

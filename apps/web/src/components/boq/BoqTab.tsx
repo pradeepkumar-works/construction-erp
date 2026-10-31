@@ -91,7 +91,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         'Done qty': toNumber(i.executedQty),
         'Balance qty': toNumber(i.balanceQty),
         'Measured qty': toNumber(i.measuredQty),
-        'Measured awaiting approval': toNumber(i.pendingMeasuredQty),
+        'Measured, waiting for approval': toNumber(i.pendingMeasuredQty),
         'Measured value': toNumber(i.measuredAmount),
         Amount: toNumber(i.amount),
         Section: i.section ?? '',
@@ -142,7 +142,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
       },
     },
     {
-      title: <Tooltip title="Approved measurement book quantity; awaiting approval below it">Measured</Tooltip>,
+      title: <Tooltip title="Approved measurement book quantity; waiting for approval below it">Measured</Tooltip>,
       dataIndex: 'measuredQty',
       width: 110,
       align: 'right',
@@ -152,7 +152,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
           <div>{toNumber(v) ? formatQty(v) : <span className="text-muted">-</span>}</div>
           {toNumber(r.pendingMeasuredQty) ? (
             <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-              +{formatQty(r.pendingMeasuredQty)} pending
+              +{formatQty(r.pendingMeasuredQty)} waiting
             </div>
           ) : null}
         </div>

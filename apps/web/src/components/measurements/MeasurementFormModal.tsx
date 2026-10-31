@@ -190,7 +190,7 @@ export function MeasurementFormModal({
             <Input maxLength={200} placeholder="Grid, side or zone, e.g. LHS, grid C4-D7" />
           </Form.Item>
         </FormSection>
-        <FormSection title="Measurements">
+        <FormSection title="Measurement lines">
           <div style={{ ...LINE_GRID, fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorTextDescription'), marginBottom: 4 }}>
             <span>Description</span>
             <span>Nos</span>
