@@ -48,7 +48,7 @@ test('each module has a screen with its tiles, figures and what waits', async ({
   await expect(pages.getByRole('link').nth(1)).toBeFocused();
   await expect(pages.locator('a[tabindex="0"]')).toHaveCount(1);
   if (site.waiting.length) {
-    await page.getByRole('link', { name: new RegExp(`${site.waiting[0].count} .* to approve`) }).first().click();
+    await page.getByRole('link', { name: new RegExp(`: ${site.waiting[0].count} to approve`) }).first().click();
     await expect(page).toHaveURL(new RegExp(`/approvals\\?type=${site.waiting[0].type}`));
   }
 
@@ -56,7 +56,7 @@ test('each module has a screen with its tiles, figures and what waits', async ({
   await page.goto('/modules/projects');
   const projects = page.getByRole('group', { name: 'Pages in projects' });
   await projects.getByRole('button', { name: /^BOQ and activities/ }).click();
-  const dialog = page.getByRole('dialog', { name: /for a project/ });
+  const dialog = page.getByRole('dialog', { name: /^Choose the project for/ });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('combobox', { name: 'Project' }).click();
   await page.locator('.ant-select-item-option').first().click();
