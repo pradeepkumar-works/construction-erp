@@ -13,10 +13,13 @@ const ART = {
 
 export type EmptyArtKind = keyof typeof ART;
 
-/** A whole list page's first run: the illustration over one line. */
+/** Inside a project's tabs a list is a section of the page, so its empty state is a line, not the first-run picture. */
+export const EmptyInline = React.createContext(false);
+
 export function EmptyArt({ art, title, children }: { art: EmptyArtKind; title: React.ReactNode; children?: React.ReactNode }) {
   const { token } = theme.useToken();
   const { dark } = useAppearance();
+  if (React.useContext(EmptyInline)) return <EmptyLine title={title}>{children}</EmptyLine>;
   return (
     <div style={{ padding: '16px 0 24px', textAlign: 'center' }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- an SVG illustration, which next/image would serve unoptimised as it is */}
