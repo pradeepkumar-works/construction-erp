@@ -106,18 +106,18 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
             <Form.Item name="type" label="Work" rules={[{ required: true, message: 'Pick the kind of work' }]}>
               <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Hot work, height…" options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} onChange={() => form.setFieldsValue({ precautions: [] })} />
             </Form.Item>
-            <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Where is the work?' }]}>
+            <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Enter where the work is' }]}>
               <Input maxLength={200} />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="description" label="The work" rules={[{ required: true, whitespace: true, message: 'What will be done?' }]}>
+          <Form.Item name="description" label="The work" rules={[{ required: true, whitespace: true, message: 'Describe the work' }]}>
             <Input.TextArea rows={2} maxLength={2000} />
           </Form.Item>
           <Form.Item
             name="validity"
             label={`Valid (at most ${PERMIT_MAX_DAYS} days)`}
             rules={[
-              { required: true, message: 'From when to when?' },
+              { required: true, message: 'Choose the start and end of the permit' },
               {
                 validator: (_, v?: [dayjs.Dayjs, dayjs.Dayjs]) =>
                   !v || v[1].diff(v[0], 'minute') <= PERMIT_MAX_DAYS * 24 * 60 ? Promise.resolve() : Promise.reject(new Error(`At most ${PERMIT_MAX_DAYS} days; take a new permit for longer work`)),

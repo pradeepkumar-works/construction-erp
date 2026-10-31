@@ -34,7 +34,7 @@ export const sectorBody = (v: SectorFormValues, editing: boolean) => {
   };
 };
 
-const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Like 14+200'))) };
+const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Give the chainage like 14+200'))) };
 const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', columnGap: 16 } as const;
 
 /** Chainage, floor or village for the project's type, inside an antd Form. Renders nothing until the project is known. */

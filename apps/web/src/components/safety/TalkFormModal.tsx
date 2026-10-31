@@ -104,17 +104,17 @@ export function TalkFormModal({
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!talk || !!prefill}>
           <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'What was it about?' }]}>
+        <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'Enter the topic' }]}>
           <AutoComplete options={TOOLBOX_TOPICS.map((t) => ({ value: t }))} showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} placeholder="Pick or type a topic" />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
-          <Form.Item name="conductedBy" label="Given by" rules={[{ required: true, whitespace: true, message: 'Who gave it?' }]}>
+          <Form.Item name="conductedBy" label="Given by" rules={[{ required: true, whitespace: true, message: 'Enter who gave the talk' }]}>
             <Input maxLength={120} />
           </Form.Item>
-          <Form.Item name="attendeeCount" label="Attended" rules={[{ required: true, message: 'How many?' }]}>
+          <Form.Item name="attendeeCount" label="Attended" rules={[{ required: true, message: 'Enter how many attended' }]}>
             <InputNumber min={1} max={2000} precision={0} inputMode="numeric" style={{ width: '100%' }} suffix="workers" />
           </Form.Item>
           <Form.Item name="durationMinutes" label="Minutes">

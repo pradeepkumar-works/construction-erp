@@ -15,7 +15,7 @@ interface FormValues {
   villages?: string[];
 }
 
-const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Like 12+000'))) };
+const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Give the chainage like 12+000'))) };
 
 /** The project's length (road, pipeline), floors (building) or villages (water supply) that site entries are tagged with. */
 export function SectorSettingsModal({ open, onClose, project }: { open: boolean; onClose: () => void; project: ProjectDetail }) {
@@ -73,7 +73,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
                     validator: (_, v?: string) => {
                       const a = parseChainage(getFieldValue('chainageStart'));
                       const b = parseChainage(v);
-                      return a === null || b === null || b > a ? Promise.resolve() : Promise.reject(new Error('Must be after the start'));
+                      return a === null || b === null || b > a ? Promise.resolve() : Promise.reject(new Error('Chainage to must be after chainage from'));
                     },
                   }),
                 ]}

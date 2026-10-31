@@ -142,10 +142,10 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
       )}
       <FormShell open={closing} onClose={() => setClosing(false)} form={form} layout="modal" width={520} title={data ? `Close ${data.incidentNo}` : 'Close'} okText="Close incident" onSubmit={(v) => close.mutateAsync(v)}>
         <Form form={form} layout="vertical" initialValues={{ rootCause: data?.rootCause ?? '', correctiveAction: data?.correctiveAction ?? '' }}>
-          <Form.Item name="rootCause" label="Root cause" rules={[{ required: true, whitespace: true, message: 'Why did it happen?' }]}>
+          <Form.Item name="rootCause" label="Root cause" rules={[{ required: true, whitespace: true, message: 'Enter the root cause' }]}>
             <Input.TextArea rows={2} maxLength={2000} />
           </Form.Item>
-          <Form.Item name="correctiveAction" label="Corrective action" rules={[{ required: true, whitespace: true, message: 'What stops it happening again?' }]}>
+          <Form.Item name="correctiveAction" label="Corrective action" rules={[{ required: true, whitespace: true, message: 'Enter the corrective action' }]}>
             <Input.TextArea rows={2} maxLength={2000} />
           </Form.Item>
           <Form.Item name="closureNote" label="Note">

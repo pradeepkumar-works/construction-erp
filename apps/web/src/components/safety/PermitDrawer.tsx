@@ -175,7 +175,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
           <Form.Item
             name="note"
             label={action === 'issue' ? 'Conditions' : action === 'reject' ? 'Why not' : 'Note'}
-            rules={action === 'reject' ? [{ required: true, whitespace: true, message: 'Say why' }] : []}
+            rules={action === 'reject' ? [{ required: true, whitespace: true, message: 'Enter why the permit is rejected' }] : []}
           >
             <Input.TextArea rows={2} maxLength={1000} placeholder={action === 'close' ? 'Work done, area made safe' : undefined} />
           </Form.Item>

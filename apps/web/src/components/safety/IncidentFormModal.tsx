@@ -119,7 +119,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
               <TimePicker style={{ width: '100%' }} format="HH:mm" minuteStep={5} />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Where did it happen?' }]}>
+          <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Enter where it happened' }]}>
             <Input maxLength={200} placeholder="Chainage, block and floor, yard" />
           </Form.Item>
           <Form.Item name="description" label="What happened" rules={[{ required: true, whitespace: true, message: 'Describe what happened' }]}>
