@@ -37,7 +37,7 @@ export class RmcController {
     private plantBatches: PlantBatchesService,
   ) {}
 
-  @ApiOperation({ summary: "The batching plant controllers' batches waiting for a challan, and this week's (item 149)" })
+  @ApiOperation({ summary: "The batching plant controllers' batches waiting for a challan, and this week's" })
   @Get('batcher')
   batcher(@CurrentUser() user: RequestUser, @Query() q: PlantBatchQuery) {
     return this.plantBatches.board(user, q.plantId);

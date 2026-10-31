@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
-import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm } from '@erp/shared';
+import { canManageProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { readPref, writePref } from '@/lib/prefs';
@@ -87,7 +87,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
   const [editOpen, setEditOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const health = useProjectHealth(project);
-  const editor = !!user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
+  const editor = !!user && canManageProjects(user.roleKey);
   const can = (allowed: boolean) => !!user && allowed;
 
   const all: (WorkspaceTab | false)[] = [

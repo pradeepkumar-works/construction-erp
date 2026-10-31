@@ -148,6 +148,7 @@ import type {
   VendorKind,
   ProjectContractDto,
   BillingBreakupDto,
+  ContractObligationsDto,
   EpcDto,
   OmDto,
   GettingStartedDto,
@@ -2727,7 +2728,6 @@ export function useCoverRequest(materialRequestId: string) {
   });
 }
 
-/** The last approved orders of items (`name|unit` each), keyed by `lastRateKey`. */
 /** What other sites paid for the items in the 30 days before the order (item 121), for the PO form's rate check. */
 export const useRateCheck = (items: { itemName: string; unit: string }[], projectId: string | undefined, poDate: string | undefined, enabled = true, excludePoId?: string) => {
   const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
@@ -2881,6 +2881,14 @@ export const useContract = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['contract', projectId],
     queryFn: async () => (await api.get<ProjectContractDto>(`/projects/${projectId}/contract`)).data,
+    enabled: !!projectId && enabled,
+  });
+
+/** A contract's obligations (item 171): deadlines, where each stands, what missing it costs and what bills took. */
+export const useContractObligations = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['contract', projectId, 'obligations'],
+    queryFn: async () => (await api.get<ContractObligationsDto>(`/projects/${projectId}/contract/obligations`)).data,
     enabled: !!projectId && enabled,
   });
 

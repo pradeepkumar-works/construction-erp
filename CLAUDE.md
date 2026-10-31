@@ -63,6 +63,14 @@ and the pre-delivery checklist.
   (`node .claude/skills/design-taste-frontend/scripts/inspect.mjs http://localhost:3000/welcome`, 0 FAIL). The rules in this
   file win where they differ (the navy sidebar, the canvas table header, the Nirmaan blue primary, the launcher's tiles).
   On the website: no eyebrows, index numbers, rules, boxes, shadows or gradients; screens shown as they are, no browser frame.
+- pstack (Lauren Tan's engineering skills from `cursor/plugins/pstack`, installed from its harness-neutral mirror
+  `backnotprop/pstack`, tracked in `skills-lock.json`; everything but `make-bot-ui`): `.claude/skills/poteto-mode` is the
+  entry point (it picks a playbook and calls `how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `tdd`, `unslop`,
+  `technical-writing`, the `principle-*` skills and the rest). They run only when asked for by name: the skills are marked
+  for the user to start, so when someone asks for pstack, poteto mode or one of its skills in words rather than a slash
+  command, read that skill's `SKILL.md` and follow it. It spends tokens on subagents and review panels, so keep it to the
+  work it was asked for. The rules in this file win where they differ (commands, checks, PR template, words); its
+  Cursor-only steps (Bugbot, Automations, `cursor-team-kit`) are skipped.
 - antd reference: the `antd` MCP server in `.mcp.json` (`@ant-design/cli mcp`: component docs, props, tokens for the
   installed version), and https://ant.design/llms.txt (index) or https://ant.design/llms-full.txt (every component with
   examples). Use antd components and theme tokens before custom CSS, and the antd 6 props (Select
@@ -393,6 +401,11 @@ and the pre-delivery checklist.
   `PlantBatchesService.take` (`readPlantRow`); a row is read only by `readBatchRow` through the plant's column map, which is
   checked only by `columnMapProblem` (`@erp/shared/batching.ts`), and becomes a challan only through `RmcService.dispatch`
   with `plantRowId` (one batch, one challan). Keep `src/scripts/batching-test.ts` and the Connector's `npm test` passing.
+- Contract obligations (item 171, `apps/api/src/contracts`, ARCHITECTURE "Contract obligations and recoveries"): a deadline is
+  only `obligationDue` over the project's anchors (`anchorsOf`, completion after the extensions granted) and what one costs
+  only `penaltyAsOf` (`@erp/shared/contract-obligations.ts`); a bill deducts them only through `billTotals`'
+  `obligationRecovery` (`billRecoveryLines` against what earlier bills took), and the security deposit stops at its cap only
+  by `cappedSecurityDeposit`. Keep `src/scripts/contract-obligations-test.ts` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

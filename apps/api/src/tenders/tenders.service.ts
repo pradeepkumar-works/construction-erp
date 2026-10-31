@@ -310,7 +310,6 @@ export class TendersService {
     };
   }
 
-  /** The company's labour rates by trade and machine rates by category (the average hourly rate of its machines). */
   /**
    * Bid intelligence (intelligence quick win Q4): the company's past openings of the same client and kind of work, each
    * priced through `price` like the register, with where L1 landed against the SOR (or the estimate) and our place; the

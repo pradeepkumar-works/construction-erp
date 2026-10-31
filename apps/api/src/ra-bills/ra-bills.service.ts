@@ -14,6 +14,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
 import { StageBillingService } from '../stage-billing/stage-billing.service';
+import { storedLines } from '../contracts/obligation-recovery';
 import { BILL_TERMS_SELECT, PCT_DEDUCTIONS, TERMS_SELECT, billTotals, measuredLines, writeBill, type Line } from './ra-bill-pricing';
 import { ClaimStageDto } from '../stage-billing/stage-billing.dto';
 import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
@@ -122,6 +123,10 @@ export class RaBillsService {
       const key: BillDeductionKey = 'omPenalty';
       deductions.push({ key, label: BILL_DEDUCTION_LABELS.omPenalty, pct: null, amount: money(r.omPenalty)! });
     }
+    if (!r.obligationRecovery.isZero()) {
+      const key: BillDeductionKey = 'obligations';
+      deductions.push({ key, label: r.obligationRecovery.gt(0) ? BILL_DEDUCTION_LABELS.obligations : 'Contract recoveries given back', pct: null, amount: money(r.obligationRecovery)! });
+    }
     if (!r.otherDeduction.isZero()) {
       const key: BillDeductionKey = 'other';
       deductions.push({ key, label: r.otherDeductionNote || BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction)! });
@@ -176,6 +181,8 @@ export class RaBillsService {
       }),
       slippageWithheld: money(r.slippageWithheld)!,
       slippageLines: (r.slippageLines as SlippageLineDto[] | null) ?? [],
+      obligationRecovery: money(r.obligationRecovery)!,
+      obligationLines: storedLines(r.obligationLines),
       om: omBillDto(r),
       tenderFactor: r.stageLines.length && r.project.tenderFactor ? r.project.tenderFactor.toFixed(6).replace(/\.?0+$/, '') : null,
       pvLines: r.pvLines.map((l) => ({ id: l.id, name: l.name, sharePct: pctStr(l.sharePct), baseIndex: idx(l.baseIndex), currentIndex: idx(l.currentIndex), amount: money(l.amount)! })),

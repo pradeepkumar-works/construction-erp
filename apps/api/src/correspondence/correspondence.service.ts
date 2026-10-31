@@ -14,6 +14,7 @@ import {
   canViewLetters,
   contactLine,
   formatLetterNo,
+  isDirector,
   isGuest,
   letterFy,
   letterNeedsApproval,
@@ -157,7 +158,7 @@ export class CorrespondenceService {
   private can(user: RequestUser, l: { direction: LetterDirection; status: LetterStatus; createdById: string; markedToId: string | null; signatoryId: string | null; signedAt: Date | null; projectId: string | null; letterNo: string | null }): LetterDto['can'] {
     const keeper = canViewLetters(user.roleKey);
     const head = canHeadLetters(user.roleKey);
-    const director = user.roleKey === 'ADMIN' || user.roleKey === 'MANAGEMENT';
+    const director = isDirector(user.roleKey);
     const isIn = l.direction === 'IN';
     return {
       edit: keeper && (isIn ? l.status === 'OPEN' : l.status === 'DRAFT'),
@@ -391,28 +392,29 @@ export class CorrespondenceService {
     this.assertRegister(user);
     const users = await this.prisma.user.findMany({
       where: { organizationId: user.organizationId, isActive: true },
-      select: { id: true, fullName: true, role: { select: { key: true } }, managedProjects: projectId ? { where: { id: projectId }, select: { id: true } } : false, memberships: projectId ? { where: { projectId }, select: { id: true } } : false },
+      select: { id: true, fullName: true, role: { select: { key: true } } },
       orderBy: { fullName: 'asc' },
     });
+    const team = new Set(projectId ? await this.access.projectPeople(projectId) : []);
     return users
       .filter((u) => !isGuest(u.role.key as RoleKey))
       .map((u) => {
         const role = u.role.key as RoleKey;
-        const onProject = !!projectId && ((u.managedProjects?.length ?? 0) > 0 || (u.memberships?.length ?? 0) > 0);
-        return { id: u.id, fullName: u.fullName, roleName: ROLE_LABELS[role], onProject, canSign: this.maySign(role, projectId ? onProject : false) };
+        const onProject = team.has(u.id);
+        return { id: u.id, fullName: u.fullName, roleName: ROLE_LABELS[role], onProject, canSign: this.maySign(role, onProject) };
       });
   }
 
   /** A signatory for a project letter: its project manager (on it) or a director; for head office, a director. */
   private maySign(role: RoleKey, onProject: boolean) {
     if (!canSignLetters(role)) return false;
-    return role === 'ADMIN' || role === 'MANAGEMENT' || onProject;
+    return isDirector(role) || onProject;
   }
 
   private async assertSignatory(organizationId: string, signatoryId: string, projectId: string | null) {
     const s = await this.prisma.user.findFirst({ where: { id: signatoryId, organizationId, isActive: true }, select: { id: true, fullName: true, role: { select: { key: true } } } });
     if (!s) throw new NotFoundException('The signatory is not an active user of the company');
-    const onProject = projectId ? (await this.prisma.project.count({ where: { id: projectId, OR: [{ projectManagerId: s.id }, { members: { some: { userId: s.id } } }] } })) > 0 : false;
+    const onProject = projectId ? (await this.access.projectPeople(projectId)).includes(s.id) : false;
     if (!this.maySign(s.role.key as RoleKey, onProject)) throw new BadRequestException(`${s.fullName} cannot sign this letter. Choose its project manager or a director.`);
     return s;
   }
