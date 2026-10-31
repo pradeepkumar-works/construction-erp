@@ -4,7 +4,7 @@ name: End-to-end tests
 # erp_runtime role (row-level security enforced, as in production), then the Playwright browser tests.
 # Three jobs side by side, each with its own database and servers: the flows (and the API checks, the antd lint and ESLint),
 # and the route walk (item 89: every sidebar page in both widths and themes) in two shards. The flows job is the slowest
-# (about 13 minutes of setup and checks, then 17 of tests), so the limit leaves it room as tests are added.
+# (about 13 minutes of setup and checks, then over 30 of tests), so the limit leaves it room as tests are added.
 on:
   pull_request:
   workflow_dispatch:
@@ -13,7 +13,7 @@ jobs:
   suite:
     name: e2e (${{ matrix.suite }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -318,6 +318,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/project-progress-test.js
+      - name: Contract obligations fall due from their anchors, cost bills what the contract says, give back what is met, and the security deposit stops at its cap
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/contract-obligations-test.js
       - name: Masters lay the company's entries over the standard ones, keep a name in use, and sit in every department's menu
         if: matrix.suite == 'flows'
         working-directory: apps/api

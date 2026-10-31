@@ -2842,6 +2842,39 @@ value in cost reports); work-value measures (financial progress, billed against 
 on the work value alone. Web: a Price variation card on the Contract tab, a section in the bill drawer, the print and the
 export; the client portal and the phone app show the amount.
 
+### Contract obligations and recoveries (item 171)
+
+A works contract binds both sides to more than its completion date: the programme within 15 days of the agreement, a
+field laboratory within two months, the technical staff the bid named from the start, the final account within 21 days of
+completion and the Engineer's certificate on it 45 days later. Each is a `ContractObligation` on the project (tenant table
+with its `tenant_isolation` policy, migration `20270510090000_contract_obligations`): a title and clause, who owes it
+(`CONTRACTOR`, or `CLIENT` for ours to chase, which carries no penalty), what its deadline is counted from (`AGREEMENT`,
+`START`, `COMPLETION` after the extensions granted in the delay register, `HANDOVER`'s completion date, or a `DATE` of its
+own) and how many months and days after, what missing it costs (`WITHHOLD_PCT` of the contract value while unmet, given
+back once met; `ONCE_PCT` or `ONCE_AMOUNT` recovered once and kept; `PER_MONTH` for each month or part of a month late;
+`NONE`), the day it was met and whether the client waived it. "Add the standard obligations" puts `STANDARD_OBLIGATIONS` on
+the contract by code, each changeable afterwards.
+
+The rules are pure in `@erp/shared/contract-obligations.ts`: `obligationDue` over the project's anchors, `obligationState`
+(met, met late, waived, upcoming, due within `OBLIGATION_SOON_DAYS`, overdue, no date yet), `penaltyAsOf` (what it costs on a
+given day) and `obligationProblem` (what a saved obligation needs). A works RA bill deducts them in `billTotals` through
+`obligationRecovery` (`src/contracts/obligation-recovery.ts`): `billRecoveryLines` takes each obligation's cost as of the
+bill's date less what earlier bills deducted for it (summed from their `RaBill.obligationLines`), so a withholding comes
+back on the first bill after it is met, as milestone slippage does. The lines are kept on the bill with their total in
+`RaBill.obligationRecovery`, shown as the "Contract recoveries" deduction (negative "given back"), a section of the bill
+and the print. An O&M bill takes none. An obligation a bill has deducted for cannot be deleted, only waived.
+
+The security deposit may stop at a cap (`Project.securityDepositCapPct`): each bill takes its % of the work value, but no
+more than the cap (a % of the larger of the contract value and the work billed to date) less what earlier bills took
+(`cappedSecurityDeposit`, read by `billTotals` and the bill's own checks).
+
+`ContractObligationsService` (`GET|POST /projects/:id/contract/obligations`, `PATCH|DELETE …/:oid`, `POST …/standard`) is
+for contract viewers to read and contract editors to change, and audits each change. The daily `OBLIGATIONS_DUE` job
+(`/notifications/jobs/obligations-due`, and with the digest) tells the project manager and the company-wide contract
+editors when an open obligation is a week from its deadline and again when it passes, once per state and deadline, with
+an email; the notice opens the Contract tab. Web: Obligations and recoveries on the Contract tab. Keep
+`src/scripts/contract-obligations-test.ts` passing.
+
 ## Sector progress
 
 - **Fields.** `Project.chainageStart` / `chainageEnd` (metres from 0+000; roads, and water mains when set),

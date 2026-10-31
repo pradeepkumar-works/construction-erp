@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { COMPANY_KIND_INFO, COMPANY_KIND_LABELS, GUEST_ROLES, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type GroupDto, type GroupPersonDto, type GroupStateDto, type RoleKey } from '@erp/shared';
+import { COMPANY_KIND_INFO, COMPANY_KIND_LABELS, GUEST_ROLES, ROLE_KEYS, ROLE_LABELS, canMakeGroup, orgCodeFrom, type GroupDto, type GroupPersonDto, type GroupStateDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { AuditService } from '../common/audit.service';
@@ -34,7 +34,7 @@ export class GroupService {
   /** The company's group for its admins; without a group, whether the caller (a company admin) may make one. */
   async state(req: RequestUser): Promise<GroupStateDto> {
     const me = await this.whoAmI(req);
-    if (!me.groupId) return { group: null, canMakeGroup: req.roleKey === 'ADMIN' };
+    if (!me.groupId) return { group: null, canMakeGroup: canMakeGroup(req.roleKey) };
     if (!me.admin) throw new ForbiddenException("Only the group's admins see its companies");
     return { group: await this.load(me.groupId, req.organizationId, me.loginId), canMakeGroup: false };
   }
@@ -80,7 +80,7 @@ export class GroupService {
 
   /** Make a group with the caller's company as its first: a company admin, who becomes the group's admin. */
   async make(req: RequestUser, name: string): Promise<GroupStateDto> {
-    if (req.roleKey !== 'ADMIN') throw new ForbiddenException('Only an admin can make a group');
+    if (!canMakeGroup(req.roleKey)) throw new ForbiddenException('Only an admin can make a group');
     const me = await this.whoAmI(req);
     if (me.groupId) throw new BadRequestException('This company is already in a group');
     await this.prisma.$transaction(async (tx) => {

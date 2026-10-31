@@ -6,6 +6,7 @@ import type { DprLineDto } from './dpr-lines';
 import type { DprExtra, DprFormDto } from './dpr-form';
 import type { AuthGroupDto, CompanyChoiceDto } from './group';
 import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
+import type { ObligationBillLineDto } from './contract-obligations';
 import type { OmBillDto } from './om';
 import type { EmployeePrivateDto, EmploymentType } from './hr';
 import type { NotificationTab } from './notifications';
@@ -618,7 +619,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -642,7 +643,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'RECEIPTS_WEEKLY' | 'WARNING_ALERTS' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'RECEIPTS_WEEKLY' | 'WARNING_ALERTS' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION' | 'OBLIGATIONS_DUE';
   date: string;
   created: number;
   pushed: number;
@@ -1530,6 +1531,8 @@ export interface ProjectContractDto {
   extensions: ContractExtensionDto[];
   retentionPct: string;
   securityDepositPct: string;
+  /** Security deposit stops at this % of the contract value (or the work billed, if larger); null = no cap */
+  securityDepositCapPct: string | null;
   mobilisationAdvance: string;
   advanceRecoveryPct: string;
   defectLiabilityMonths: number | null;
@@ -1625,7 +1628,7 @@ export interface RaBillItemDto {
   extraItem: boolean;
 }
 
-export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'omPenalty' | 'other';
+export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'omPenalty' | 'obligations' | 'other';
 
 export interface RaBillDeductionDto {
   key: BillDeductionKey;
@@ -1699,6 +1702,9 @@ export interface RaBillDto extends SubmissionBase {
   stageLines: RaBillStageLineDto[];
   slippageWithheld: string;
   slippageLines: SlippageLineDto[];
+  /** Contract recoveries (item 171): what the contract's obligations missed cost on this bill, negative when given back */
+  obligationRecovery: string;
+  obligationLines: ObligationBillLineDto[];
   /** An O&M bill (item 131): the period, the instalment and what was taken off it; null on a works bill */
   om: OmBillDto | null;
   tenderFactor: string | null;

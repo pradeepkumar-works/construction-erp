@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { PROJECT_ADMIN_ROLES } from '@erp/shared';
 import { ProjectsService } from './projects.service';
 import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, NextProjectCodeQuery, ProjectSetupHiddenDto, UpdateProjectDto } from './projects.dto';
 import { ProjectSetupService } from './project-setup.service';
@@ -24,7 +25,7 @@ export class ProjectsController {
 
   /** The next code in the company's series, offered on the New project form (finding 17 of the October review). */
   @Get('next-code')
-  @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
+  @Roles(...PROJECT_ADMIN_ROLES)
   nextCode(@CurrentUser() user: RequestUser, @Query() q: NextProjectCodeQuery) {
     return this.projects.nextCode(user, q.type);
   }
@@ -51,31 +52,31 @@ export class ProjectsController {
   }
 
   @Post()
-  @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
+  @Roles(...PROJECT_ADMIN_ROLES)
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateProjectDto) {
     return this.projects.create(user, dto);
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
+  @Roles(...PROJECT_ADMIN_ROLES)
   update(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: UpdateProjectDto) {
     return this.projects.update(user, id, dto);
   }
 
   @Post(':id/members')
-  @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
+  @Roles(...PROJECT_ADMIN_ROLES)
   addMember(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: AddMemberDto) {
     return this.projects.addMember(user, id, dto);
   }
 
   @Post(':id/members/copy')
-  @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
+  @Roles(...PROJECT_ADMIN_ROLES)
   copyTeam(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: CopyTeamDto) {
     return this.projects.copyTeam(user, id, dto);
   }
 
   @Delete(':id/members/:userId')
-  @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
+  @Roles(...PROJECT_ADMIN_ROLES)
   removeMember(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('userId') userId: string) {
     return this.projects.removeMember(user, id, userId);
   }

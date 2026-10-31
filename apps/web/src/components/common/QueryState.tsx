@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Empty, Flex, Result, Skeleton, theme } from 'antd';
+import { Alert, Button, Flex, Result, Skeleton, theme } from 'antd';
 import { DisconnectOutlined, ReloadOutlined } from '@/components/common/icons';
 import { ResultMark } from '@/components/common/ResultMark';
 import { PRODUCT_NAME } from '@erp/shared';
@@ -108,12 +108,3 @@ export function PageSkeleton({ shape = 'list', header = true }: { shape?: 'list'
     </div>
   );
 }
-
-export function EmptyState({ description = 'Nothing here yet', children }: { description?: React.ReactNode; children?: React.ReactNode }) {
-  return (
-    <Empty description={description} style={{ padding: '32px 0' }}>
-      {children}
-    </Empty>
-  );
-}
-
