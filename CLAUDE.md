@@ -22,6 +22,7 @@ pnpm dev:api | pnpm dev:web | pnpm dev:mobile
 pnpm typecheck                        # all packages, must pass before committing
 cd apps/web && npx next build         # web must build clean
 cd apps/web && npx tsx --tsconfig tsconfig.json scripts/nav-check.ts   # navigation tree: routes, icons, access, Concord
+cd apps/web && npx tsx --tsconfig tsconfig.json scripts/copy-check.ts  # shared labels and menu names against docs/WRITING.md
 pnpm --filter @erp/web lint           # ESLint (typescript-eslint, hooks, Next, jsx-a11y) on the web; 0 errors, CI runs it
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
 cd e2e && npx playwright test         # browser tests; needs API + web running (docs/TESTING.md), CI runs them on PRs
@@ -184,7 +185,7 @@ and the pre-delivery checklist.
   `NavVisit`), never localStorage; a tile's menu comes from `usePins(user).tileMenu`, and a tile badge is a key of
   `LauncherBadgesDto.nodes` built from `HomeService.myWork`. A record page records its visit through `RecordFrame`.
   Discover (ARCHITECTURE "Discover and access requests") is `discoverFor` in `@erp/shared/launcher.ts` (keep
-  `src/scripts/launcher-test.ts` passing); a node is New by default with `newUntil`, and admins override it in Admin › Home tiles.
+  `src/scripts/launcher-test.ts` passing); a node is New by default with `newUntil`, and admins override it in Admin › Discover and access requests.
 - My work (`app/(app)/my-work/page.tsx`): what each role leads with is `homeLayout(role)` in `components/home/layout.ts` (order only;
   the API's `GET /dashboard/my-work` and `/dashboard/trends` in `HomeService` leave out what a role may not see). A new My work
   card is a key on `MyWorkDto`, a block in `HomeService.myWork`, a line in `MyWorkPanel`'s `CARDS` and `CLEAR`, its place in
