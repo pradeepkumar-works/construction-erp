@@ -18,7 +18,7 @@ export function ChangeList({ changes, extra, vendorColumn }: { changes: Supplier
       scroll={{ x: 760 }}
       columns={[
         ...(vendorColumn ? [{ title: 'Supplier', dataIndex: 'vendorName', width: 180, render: (v: string) => <span translate="no">{v}</span> }] : []),
-        { title: 'Asked', dataIndex: 'createdAt', width: 150, render: (v: string, c) => <span>{formatDateTime(v)}<br /><Typography.Text type="secondary">{c.requestedBy}</Typography.Text></span> },
+        { title: 'Requested', dataIndex: 'createdAt', width: 150, render: (v: string, c) => <span>{formatDateTime(v)}<br /><Typography.Text type="secondary">{c.requestedBy}</Typography.Text></span> },
         {
           title: 'Change',
           key: 'changes',

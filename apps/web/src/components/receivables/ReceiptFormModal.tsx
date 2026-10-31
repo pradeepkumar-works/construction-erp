@@ -9,7 +9,8 @@ import type { ContractCurrency, OpenBillDto, PaymentMode, RaBillDto, ReceiptDto,
 import { BILL_DEDUCTION_LABELS, RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS, isForeign } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useBill, useProjects, useReceivables } from '@/lib/queries';
+import { useBill, useReceivables } from '@/lib/queries';
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { formatDate, formatINR, formatMoney, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -49,7 +50,6 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: projects } = useProjects();
   const { data: receivables } = useReceivables(undefined, open && !bill && !receipt);
   const watchedKind = Form.useWatch('kind', form) as ReceiptKind | undefined;
   // The kind switch is only shown for a new receipt without a bill; the submitted values leave out fields that are not shown.
@@ -159,7 +159,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             </Form.Item>
           ) : (
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={editing}>
-              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
+              <ProjectSelect allowClear={false} placeholder="Choose the project" />
             </Form.Item>
           )}
           {kind === 'BILL' && target && !editing && (

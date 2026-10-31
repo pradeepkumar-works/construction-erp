@@ -146,7 +146,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                 <Input />
               </Form.Item>
               <Form.Item name="agreementNo" label="Agreement no.">
-                <Input placeholder="04/EE/R&B/2025-26" />
+                <Input placeholder="e.g. 04/EE/RD/2025-26" />
               </Form.Item>
               <Form.Item name="agreementDate" label="Agreement date">
                 <DatePicker style={{ width: '100%' }} />

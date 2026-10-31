@@ -64,7 +64,7 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
     },
     { card: 'meta', cardText: (r) => r.vendorName, title: 'Vendor', ...sort('vendor'), render: (_, r) => <TwoLine top={r.vendorName} sub={r.lines.map((l) => l.itemName).join(', ')} /> },
     ...(showProject ? [{ card: 'meta' as const, cardText: (r: PurchaseOrderDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: PurchaseOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
-    { defaultFrom: 1400, key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests?id=${r.materialRequestId}`} className="mono">{v}</Link> : '-') },
+    { defaultFrom: 1400, key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests/${r.materialRequestId}`} className="mono" translate="no">{v}</Link> : '-') },
     { card: 'amount', title: 'Total', dataIndex: 'total', width: 150, align: 'right', ...sort('total'), render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.total)) },
     { card: 'date', cardText: (r) => formatDate(r.poDate), title: 'Raised on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     {

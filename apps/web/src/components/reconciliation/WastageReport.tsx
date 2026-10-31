@@ -61,7 +61,7 @@ export function WastageReport({ projectId }: { projectId: string }) {
             align: 'right' as const,
             render: (v: string | null) =>
               v === null ? (
-                <span className="text-muted">no rate</span>
+                <span className="text-muted">No rate</span>
               ) : toNumber(v) > 0 ? (
                 <span className="mono" translate="no" style={{ color: RED }}>
                   {formatINR(v)}

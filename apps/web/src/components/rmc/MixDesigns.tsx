@@ -61,7 +61,7 @@ export function MixDesigns() {
                 dataSource={d.lines}
                 columns={[
                   { title: 'Material', dataIndex: 'itemName' },
-                  { title: 'In a cubic metre', key: 'q', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.quantity)} ${l.unit}`}</span> },
+                  { title: 'Per m³', key: 'q', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.quantity)} ${l.unit}`}</span> },
                 ]}
               />
             ),
@@ -71,7 +71,7 @@ export function MixDesigns() {
             { title: 'Grade', dataIndex: 'grade', width: 80, render: (g: string) => <span translate="no">{g}</span> },
             { title: 'Description', dataIndex: 'description', ellipsis: true },
             { title: 'Slump', dataIndex: 'slumpMm', width: 90, render: (s: number | null) => (s === null ? '-' : <span translate="no">{`${s} mm`}</span>) },
-            { title: 'Material a m³', dataIndex: 'costPerM3', align: 'right', width: 140, render: (c: string | null) => (c ? <Rupees value={c} /> : <Typography.Text type="secondary">No rates</Typography.Text>) },
+            { title: 'Material cost per m³', dataIndex: 'costPerM3', align: 'right', width: 140, render: (c: string | null) => (c ? <Rupees value={c} /> : <Typography.Text type="secondary">No rates</Typography.Text>) },
             { title: 'Status', key: 's', width: 210, render: (_, d) => <Space size={4} wrap><DesignStatusTag status={d.status} />{d.approvedAt && <Typography.Text type="secondary">{`${d.approvedByName ?? ''}, ${formatDate(d.approvedAt)}`}</Typography.Text>}</Space> },
             {
               title: '',

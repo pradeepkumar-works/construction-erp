@@ -52,8 +52,8 @@ export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | nul
       layout="modal"
       width={640}
       projectDefault={false}
-      title={order ? (row?.batchNo ? `Send batch ${row.batchNo} on ${order.orderNo}` : `Send a truck on ${order.orderNo}`) : 'Send a truck'}
-      okText="Dispatch"
+      title={order ? (row?.batchNo ? `New challan for batch ${row.batchNo} · ${order.orderNo}` : `New challan · ${order.orderNo}`) : 'New challan'}
+      okText="Save challan"
       onSubmit={async (v) => {
         const lines = Object.entries(v.weighed ?? {})
           .filter(([, q]) => q !== null && q !== undefined)

@@ -98,7 +98,7 @@ export function DayView() {
                         setSending(o);
                       }}
                     >
-                      Send a truck
+                      New challan
                     </Button>
                   ) : null,
               },

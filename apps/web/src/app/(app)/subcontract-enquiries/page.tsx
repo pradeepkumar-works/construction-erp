@@ -85,7 +85,7 @@ function ScEnquiriesPage() {
         r.closesOn ? (
           <div>
             <span translate="no">{formatDate(r.closesOn)}</span>
-            {r.status === 'OPEN' && r.closesOn < today() ? <div><AppTag tone="pending">Closed</AppTag></div> : null}
+            {r.status === 'OPEN' && r.closesOn < today() ? <div><AppTag tone="pending">Past last day</AppTag></div> : null}
           </div>
         ) : (
           '-'

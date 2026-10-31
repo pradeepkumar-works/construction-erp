@@ -177,7 +177,7 @@ export function Bills() {
               { title: 'Date', dataIndex: 'date', width: 110, render: (d: string) => formatDate(d) },
               { title: 'Customer', dataIndex: 'customer', ellipsis: true, render: (c: string) => <span translate="no">{c}</span> },
               { title: 'Against', dataIndex: 'invoiceNo', width: 150, render: (n: string | null) => <span translate="no">{n ?? 'On account'}</span> },
-              { title: 'How', dataIndex: 'mode', width: 110, render: (m: string) => PAYMENT_MODE_LABELS[m as PaymentMode] ?? m },
+              { title: 'Payment mode', dataIndex: 'mode', width: 110, render: (m: string) => PAYMENT_MODE_LABELS[m as PaymentMode] ?? m },
               { title: 'Reference', dataIndex: 'reference', width: 200, ellipsis: true, render: (r: string | null) => <span translate="no">{r ?? '-'}</span> },
               { title: 'Amount', dataIndex: 'amount', align: 'right', width: 140, render: (v: string) => <Rupees value={v} /> },
             ]}

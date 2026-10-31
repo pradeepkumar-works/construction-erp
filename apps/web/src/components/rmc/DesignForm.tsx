@@ -114,14 +114,14 @@ export function DesignForm({ open, onClose, design }: { open: boolean; onClose: 
             },
             {
               key: 'quantity',
-              title: 'In a cubic metre',
+              title: 'Per m³',
               width: 200,
               align: 'right',
               render: (field) => (
                 <Form.Item noStyle shouldUpdate>
                   {() => (
                     <Form.Item name={[field.name, 'quantity']} rules={[{ required: true, message: 'Enter how much goes into a cubic metre' }]} noStyle>
-                      <QuantityInput aria-label="In a cubic metre" unit={form.getFieldValue(['lines', field.name, 'unit'])} />
+                      <QuantityInput aria-label="Quantity per m³" unit={form.getFieldValue(['lines', field.name, 'unit'])} />
                     </Form.Item>
                   )}
                 </Form.Item>

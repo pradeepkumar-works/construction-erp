@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, Checkbox, Form, Input, Select, Typography } from 'antd';
+import { Alert, Checkbox, Form, Input, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, RaBillDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useProjects } from '@/lib/queries';
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -34,7 +34,6 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!bill;
   const fixedProject = bill?.projectId ?? projectId;
   const billDate = Form.useWatch('billDate', form);
@@ -100,7 +99,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
           project&apos;s contract terms (GST, retention, advance recovery, TDS and cess). Measurements approved later are picked up when the bill is submitted.
         </Typography.Paragraph>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
+          <ProjectSelect allowClear={false} placeholder="Choose the project" />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>

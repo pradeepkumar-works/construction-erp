@@ -253,7 +253,7 @@ function MaterialApprovalsPage() {
       {view === 'requests' && s ? (
         <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
           {stat('With the reviewer', s.underReview, s.overdue ? `${s.overdue} past the reply date` : 'None past its reply date', s.overdue ? 'danger' : undefined)}
-          {stat('Back with us', s.withUs, 'To revise and resubmit, or rejected')}
+          {stat('Returned to us', s.withUs, 'To revise and resubmit, or rejected')}
           {stat('Approved this month', s.approvedThisMonth, 'Including approved as noted')}
           {stat('Days to a decision', s.avgDaysToDecide ?? '-', 'Average over the last 90 days')}
         </Row>

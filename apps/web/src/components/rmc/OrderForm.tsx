@@ -75,7 +75,7 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
       title={editing ? `Edit ${order.orderNo}` : 'New quote'}
       okText={editing ? 'Save' : 'Save quote'}
       draftKey={editing ? undefined : 'rmc-order'}
-      footerExtra={value ? <Typography.Text type="secondary" translate="no">{`Worth ${formatINR(value, true)} before GST`}</Typography.Text> : null}
+      footerExtra={value ? <Typography.Text type="secondary" translate="no">{`Value before GST ${formatINR(value, true)}`}</Typography.Text> : null}
       onSubmit={async (v) => {
         const body = {
           ...(editing ? {} : { plantId: v.plantId, clientId: v.for === 'client' ? v.clientId : null, projectId: v.for === 'site' ? v.projectId : null }),
@@ -140,7 +140,7 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="rate" label="Rate a cubic metre" rules={[{ required: true, message: 'Enter the rate a cubic metre' }]} extra="Before GST at 18%">
+          <Form.Item name="rate" label="Rate per m³" rules={[{ required: true, message: 'Enter the rate per m³' }]} extra="Before GST at 18%">
             <MoneyInput />
           </Form.Item>
           <Form.Item name="pumpRate" label="Pumping a cubic metre" extra="Leave empty when the customer pours by themselves">

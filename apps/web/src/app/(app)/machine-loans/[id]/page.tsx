@@ -178,7 +178,7 @@ export default function MachineLoanPage() {
                 { key: 'emi', label: 'EMI', children: <span translate="no">{formatINR(loan.emi, true)}</span> },
                 { key: 'sanction', label: 'Sanctioned on', children: formatDate(loan.sanctionDate) },
                 { key: 'first', label: 'First EMI', children: formatDate(loan.firstEmiDate) },
-                { key: 'disbursal', label: 'The lender', children: LOAN_DISBURSAL_LABELS[loan.disbursal] },
+                { key: 'disbursal', label: 'Paid out to', children: LOAN_DISBURSAL_LABELS[loan.disbursal] },
                 { key: 'by', label: 'Recorded by', children: loan.createdByName },
                 ...(loan.note ? [{ key: 'note', label: 'Note', span: 2, children: loan.note }] : []),
               ]}

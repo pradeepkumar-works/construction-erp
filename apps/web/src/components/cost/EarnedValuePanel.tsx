@@ -91,13 +91,13 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
           ) : null}
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="Schedule (SPI)" value={data.spi ?? '-'} precision={data.spi === null ? undefined : 2} styles={big(indexColor(data.spi))} />
+              <Statistic title="Schedule index (SPI)" value={data.spi ?? '-'} precision={data.spi === null ? undefined : 2} styles={big(indexColor(data.spi))} />
               <div className="text-muted" style={small}>
                 {data.spi === null ? 'Nothing planned yet' : toNumber(data.sv) < 0 ? `${formatINR(-toNumber(data.sv))} of work behind plan` : `${formatINR(data.sv)} of work ahead of plan`}
               </div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Cost (CPI)" value={data.cpi ?? '-'} precision={data.cpi === null ? undefined : 2} styles={big(indexColor(data.cpi))} />
+              <Statistic title="Cost index (CPI)" value={data.cpi ?? '-'} precision={data.cpi === null ? undefined : 2} styles={big(indexColor(data.cpi))} />
               <div className="text-muted" style={small}>
                 {data.cpi === null ? 'Nothing spent or earned yet' : `₹${data.cpi.toFixed(2)} of work for each ₹1 spent`}
               </div>
@@ -142,12 +142,12 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
                 { key: 'cv', label: 'Cost variance', children: signed(data.cv) },
                 {
                   key: 'es',
-                  label: 'Earned schedule',
-                  children: data.earnedOn ? <span>{`The work done was planned by ${formatDate(data.earnedOn)}`}{data.spiT !== null ? <span className="text-muted" style={{ ...small, display: 'block' }}>{`SPI(t) ${data.spiT.toFixed(2)}`}</span> : null}</span> : '-',
+                  label: 'Work done was planned by',
+                  children: data.earnedOn ? formatDate(data.earnedOn) : '-',
                 },
-                { key: 'eac2', label: 'Estimate if the delay also costs', children: inr(data.eacWithSchedule) },
+                { key: 'eac2', label: 'Estimate at completion, if the delay also costs', children: inr(data.eacWithSchedule) },
                 { key: 'etc', label: 'Estimate to complete', children: inr(data.etc) },
-                { key: 'tcpi', label: 'CPI needed to finish on budget', children: data.tcpi === null ? '-' : <span style={{ color: data.tcpi > 1.1 ? RED : undefined }}>{data.tcpi.toFixed(2)}</span> },
+                { key: 'tcpi', label: 'Cost index needed to finish on budget', children: data.tcpi === null ? '-' : <span style={{ color: data.tcpi > 1.1 ? RED : undefined }}>{data.tcpi.toFixed(2)}</span> },
               ]}
             />
           </Section>

@@ -181,7 +181,7 @@ function AttendanceCheck() {
             style={{ maxWidth: '100%', overflowX: 'auto' }}
             value={kind}
             onChange={(v) => setKind(v as AttendanceFlagKind | 'ALL')}
-            options={[{ value: 'ALL', label: `All (${data.flags.length})` }, ...kinds.map((k) => ({ value: k, label: `${ATTENDANCE_FLAG_LABELS[k]} (${data.flags.filter((f) => f.kind === k).length})` }))]}
+            options={[{ value: 'ALL', label: <span>All <span className="text-muted" translate="no">{data.flags.length}</span></span> }, ...kinds.map((k) => ({ value: k, label: <span>{ATTENDANCE_FLAG_LABELS[k]} <span className="text-muted" translate="no">{data.flags.filter((f) => f.kind === k).length}</span></span> }))]}
           />
         ) : null}
       </Flex>
@@ -259,7 +259,7 @@ function AttendanceCheck() {
                       {formatQty(r.excess)} · {formatINR(r.excessInr)}
                     </Typography.Text>
                   ) : (
-                    <Typography.Text type="secondary">Within</Typography.Text>
+                    <Typography.Text type="secondary">Within the records</Typography.Text>
                   ),
               },
             ]}

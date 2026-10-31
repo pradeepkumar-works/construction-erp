@@ -147,7 +147,7 @@ function ToExport() {
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {data.held.map((h) => (
                   <li key={`${h.kind}:${h.sourceId}`}>
-                    {TALLY_VOUCHER_KIND_LABELS[h.kind]} {h.number} of {formatDate(h.date)} ({h.party}): {h.reason}
+                    <span translate="no">{h.number}</span> of {formatDate(h.date)} ({h.party}): {h.reason}
                   </li>
                 ))}
               </ul>

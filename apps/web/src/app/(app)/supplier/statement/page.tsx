@@ -113,7 +113,7 @@ function Bills({ bills }: { bills: SupplierBillDto[] }) {
           width: 130,
           render: (v: string, b) => (b.status === 'APPROVED' && toNumber(b.due) > 0 && v < today ? <AppTag tone="danger">{formatDate(v)}</AppTag> : formatDate(v)),
         },
-        { title: 'Worth', dataIndex: 'payable', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
+        { title: 'Value', dataIndex: 'payable', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Paid', dataIndex: 'paid', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Still due', dataIndex: 'due', width: 130, align: 'right', render: (v: string, b) => (b.status === 'APPROVED' ? <Money value={v} /> : <Typography.Text type="secondary">Once approved</Typography.Text>) },
         { title: 'Status', dataIndex: 'status', width: 110, render: (s: SupplierBillDto['status']) => <AppTag color={STATUS_COLORS[s]}>{SUBMISSION_STATUS_LABELS[s]}</AppTag> },

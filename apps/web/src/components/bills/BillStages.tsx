@@ -201,7 +201,7 @@ export function SlippageNotes({ lines, withheld, c }: { lines: SlippageLineDto[]
             { title: 'Target', dataIndex: 'targetPct', align: 'right', render: (v: number) => pct(v) },
             { title: 'Billed', dataIndex: 'actualPct', align: 'right', render: (v: number) => pct(v) },
             { title: 'Behind by', dataIndex: 'behindPct', align: 'right', render: (v: number) => `${formatPct(v)} of the target` },
-            { title: 'Tier', dataIndex: 'tierPct', align: 'right', render: (v: number) => pct(v) },
+            { title: 'Slab', dataIndex: 'tierPct', align: 'right', render: (v: number) => pct(v) },
             { title: 'Withheld to date', dataIndex: 'withheld', align: 'right', render: (v: string) => <strong>{money(v, c)}</strong> },
           ]}
         />

@@ -156,7 +156,7 @@ function Leakage() {
             style={{ maxWidth: '100%', overflowX: 'auto' }}
             value={section}
             onChange={(v) => setSection(v as LeakageSection | 'ALL')}
-            options={[{ value: 'ALL', label: `All (${scoped.length})` }, ...data.sections.map((s) => ({ value: s, label: `${LEAKAGE_SECTION_LABELS[s]} (${scoped.filter((f) => f.section === s).length})` }))]}
+            options={[{ value: 'ALL', label: <span>All <span className="text-muted" translate="no">{scoped.length}</span></span> }, ...data.sections.map((s) => ({ value: s, label: <span>{LEAKAGE_SECTION_LABELS[s]} <span className="text-muted" translate="no">{scoped.filter((f) => f.section === s).length}</span></span> }))]}
           />
         ) : null}
       </Flex>

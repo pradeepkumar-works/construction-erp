@@ -155,7 +155,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               ),
             },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
-            { key: 'net', label: 'Net payable', children: <strong>{money(data.netPayable)}</strong> },
+            { key: 'net', label: 'Bill net', children: <strong>{money(data.netPayable)}</strong> },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
@@ -228,7 +228,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         ))}
                       <Divider style={{ margin: '6px 0' }} />
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
-                        <span>Net payable</span>
+                        <span>Bill net</span>
                         {money(data.netPayable)}
                       </div>
                       {debited > 0 ? (

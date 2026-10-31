@@ -11,7 +11,8 @@ import { CODE_INPUT, MoneyInput, upper } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivities, useProjects } from '@/lib/queries';
+import { useActivities } from '@/lib/queries';
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { formatINR } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -42,7 +43,6 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!expense;
   const fixedProject = expense?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
@@ -131,7 +131,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       <Form form={form} layout="vertical">
         {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+          <ProjectSelect allowClear={false} placeholder="Choose the project" onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Choose the category' }]} {...aiFlagItem(draft, 'category', category)}>
@@ -142,7 +142,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           </Form.Item>
         </FormGrid>
         <Form.Item name="description" label="What was it for" rules={[{ required: true, whitespace: true, message: 'Say what it was for' }]}>
-          <Input maxLength={300} placeholder="Hydraulic hose for grader GRD-01" />
+          <Input maxLength={300} placeholder="e.g. Hydraulic hose for grader GRD-01" />
         </Form.Item>
         <FormGrid cols={3}>
           <Form.Item name="vendor" label="Vendor">

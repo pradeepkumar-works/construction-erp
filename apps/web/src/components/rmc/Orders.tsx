@@ -83,7 +83,7 @@ export function Orders() {
             { title: 'Pour on', dataIndex: 'pourDate', width: 110, render: (d: string | null) => formatDate(d) },
             { title: 'Ordered', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
             { title: 'Delivered', dataIndex: 'delivered', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-            { title: 'Worth', dataIndex: 'value', align: 'right', width: 140, render: (v: string) => <Rupees value={v} /> },
+            { title: 'Value before GST', dataIndex: 'value', align: 'right', width: 140, render: (v: string) => <Rupees value={v} /> },
             { title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcOrderStatus) => <OrderStatusTag status={s} /> },
           ]}
         />

@@ -60,7 +60,7 @@ function CancelDebitNoteModal({ note, onClose }: { note: DebitNoteDto | null; on
       <Form form={form} layout="vertical">
         <Typography.Paragraph>The note stops reducing {note?.billLabel}, and what it took off becomes payable again.</Typography.Paragraph>
         <Form.Item name="note" label="Why it is cancelled" rules={[{ required: true, whitespace: true, message: 'Say why the note is cancelled' }]}>
-          <Input.TextArea rows={2} maxLength={500} placeholder="Supplier replaced the short bags" />
+          <Input.TextArea rows={2} maxLength={500} placeholder="e.g. Supplier replaced the short bags" />
         </Form.Item>
       </Form>
     </FormShell>

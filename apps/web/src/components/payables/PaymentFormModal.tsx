@@ -205,7 +205,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
             <MoneyInput />
           </Form.Item>
           <Form.Item name="otherDeductionNote" label="Deducted for">
-            <Input maxLength={200} placeholder="Short supply debit note" />
+            <Input maxLength={200} placeholder="e.g. Short supply debit note" />
           </Form.Item>
         </FormGrid>
         {billType === 'SUBCONTRACT_BILL' && <Typography.Paragraph type="secondary">Their TDS, retention and recoveries are already deducted in the bill&apos;s net payable.</Typography.Paragraph>}

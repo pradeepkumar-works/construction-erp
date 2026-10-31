@@ -29,7 +29,7 @@ const per = (l: EstimateLineDto, boqUnit: string) => (
 const money = (v: string | null) =>
   v === null ? (
     <Tooltip title="No rate is set for it">
-      <span className="text-muted">no rate</span>
+      <span className="text-muted">No rate</span>
     </Tooltip>
   ) : (
     <span className="mono" translate="no">

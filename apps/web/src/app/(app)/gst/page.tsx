@@ -3,11 +3,11 @@
 import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Alert, Button, Card, Col, Row, Statistic, Table, Typography } from 'antd';
+import { Alert, Card, Col, Row, Statistic, Table, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
-import { DownloadOutlined } from '@/components/common/icons';
+import { ExportButton } from '@/components/common/ExportButton';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { GstInwardRowDto, GstOutwardRowDto } from '@erp/shared';
 import { canViewGstRegisters } from '@erp/shared';
@@ -179,7 +179,7 @@ function GstRegistersPage() {
               <Card style={{ height: '100%' }}>
                 <Statistic title="Input tax" value={formatINRCompact(data.inwardTotals.tax)} />
                 <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                  On {formatINR(data.inwardTotals.taxable)} bought with a GSTIN
+                  On {formatINR(data.inwardTotals.taxable)} bought from registered suppliers
                 </Typography.Text>
               </Card>
             </Col>
@@ -205,7 +205,8 @@ function GstRegistersPage() {
               type="warning"
               showIcon
               style={{ marginBottom: 16 }}
-              title={
+              title="Check before filing"
+              description={
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {data.warnings.map((w) => (
                     <li key={w}>{w}</li>
@@ -222,9 +223,11 @@ function GstRegistersPage() {
           onChange={(k) => setTab(k as GstTab)}
           variant="page"
           extra={
-            <Button icon={<DownloadOutlined />} disabled={!data} onClick={() => data && downloadGstWorkbook(data)}>
-              Excel
-            </Button>
+            <ExportButton
+              onExport={async () => {
+                if (data) downloadGstWorkbook(data);
+              }}
+            />
           }
           items={[
             {
@@ -289,7 +292,7 @@ function GstRegistersPage() {
         />
       </Card>
       <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8 }}>
-        RA bills are taken by bill date once approved, invoice number as in the Tally export; works on a site are supplied where it is, so their GST is CGST and SGST.
+        RA bills are taken by bill date once approved, invoice number as in the Tally export; works contracts are supplied where the site is, so their GST is CGST and SGST.
         Purchases are approved bills and expenses by invoice date, one row per GST rate; IGST when the supplier is registered in another state. E-invoicing is not
         generated here.
       </Typography.Paragraph>

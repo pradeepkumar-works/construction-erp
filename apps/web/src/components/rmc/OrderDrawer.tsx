@@ -55,7 +55,7 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
             )}
             {o.canDispatch && (
               <Button size="small" type="primary" icon={<CarOutlined />} onClick={() => setDispatching(true)}>
-                Send a truck
+                New challan
               </Button>
             )}
             {user && canBillRmc(user.roleKey) && o.clientId && Number(o.unbilled) > 0 && (
@@ -92,9 +92,9 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
               { key: 'w', label: 'Pour at', children: o.site ?? '-' },
               { key: 'g', label: 'Grade', children: <span translate="no">{`${o.grade} (${o.mixDesignCode})`}</span> },
               { key: 'q', label: 'Quantity', children: <M3 value={o.quantity} /> },
-              { key: 'r', label: 'Rate a m³', children: <Rupees value={o.rate} /> },
+              { key: 'r', label: 'Rate per m³', children: <Rupees value={o.rate} /> },
               { key: 'pr', label: 'Pumping a m³', children: o.pumpRate ? <Rupees value={o.pumpRate} /> : 'Not pumped' },
-              { key: 'v', label: 'Worth before GST', children: <Rupees value={o.value} /> },
+              { key: 'v', label: 'Value before GST', children: <Rupees value={o.value} /> },
               { key: 'd', label: 'Date', children: formatDate(o.date) },
               { key: 'pd', label: 'Pour on', children: formatDate(o.pourDate) },
               ...(o.status === 'QUOTED' ? [{ key: 'vu', label: 'Quote valid until', children: formatDate(o.validUntil) }] : []),

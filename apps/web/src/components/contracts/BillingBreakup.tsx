@@ -301,14 +301,14 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
             extra={
               data.canEditTerms ? (
                 <Button icon={<EditOutlined />} onClick={() => setTiers(true)}>
-                  Edit tiers
+                  Edit slabs
                 </Button>
               ) : null
             }
           >
             <Typography.Paragraph type="secondary">
-              Each bill withholds, for every component behind its target, the tier&apos;s % of the work not done. It is released as the component catches up.
-              {data.defaultTiers ? ' These are the usual tiers; set the contract’s own if it has them.' : ''}
+              Each bill withholds, for every component behind its target, the slab&apos;s % of the work not done. It is released as the component catches up.
+              {data.defaultTiers ? ' These are the usual slabs; set the contract’s own if it has them.' : ''}
             </Typography.Paragraph>
             <Table
               rowKey="fromPct"
@@ -774,14 +774,14 @@ function TiersModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
       (await api.put<BillingBreakupDto>(`/projects/${data.projectId}/billing-breakup/tiers`, { tiers: (v.tiers ?? []).map((t) => ({ fromPct: String(t.fromPct), toPct: numOrNull(t.toPct), withheldPct: String(t.withheldPct) })) })).data,
     onSuccess: (d) => {
       onSaved(d);
-      message.success('Slippage tiers saved');
+      message.success('Slippage slabs saved');
     },
     meta: FAIL_NOTICE,
   });
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Withheld for slippage" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
-        <Typography.Paragraph type="secondary">Each tier starts where the one before ends; leave the last one open-ended. Remove them all to go back to the usual tiers.</Typography.Paragraph>
+        <Typography.Paragraph type="secondary">Each slab starts where the one before ends; leave the last one open-ended. Remove them all to go back to the usual slabs.</Typography.Paragraph>
         <Form.List name="tiers">
           {(fields, { add, remove }) => (
             <>
@@ -802,7 +802,7 @@ function TiersModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
                 </Space>
               ))}
               <Button icon={<PlusOutlined />} onClick={() => add()} disabled={fields.length >= 10}>
-                Add tier
+                Add slab
               </Button>
             </>
           )}

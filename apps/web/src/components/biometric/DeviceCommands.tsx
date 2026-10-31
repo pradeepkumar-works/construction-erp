@@ -85,7 +85,7 @@ export function DeviceCommands() {
   const { data, isLoading, error, refetch } = useBiometricCommands();
   const act = useBiometricAction();
   const columns: TableProps<BiometricCommandDto>['columns'] = [
-    { title: 'Asked', dataIndex: 'createdAt', width: 170, render: (v: string, c) => <span>{formatDateTime(v)}<div className="text-muted">{c.createdByName}</div></span> },
+    { title: 'Requested', dataIndex: 'createdAt', width: 170, render: (v: string, c) => <span>{formatDateTime(v)}<div className="text-muted">{c.createdByName}</div></span> },
     { title: 'Device', dataIndex: 'deviceName', width: 170 },
     {
       title: 'Command',

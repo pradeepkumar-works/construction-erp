@@ -103,7 +103,7 @@ export function ReceiptForm({ open, invoice, onClose }: { open: boolean; invoice
           <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Enter the amount received' }]}>
             <MoneyInput />
           </Form.Item>
-          <Form.Item name="mode" label="How" rules={[{ required: true, message: 'Choose how it was paid' }]}>
+          <Form.Item name="mode" label="Payment mode" rules={[{ required: true, message: 'Choose the payment mode' }]}>
             <Select options={PAYMENT_MODES.filter((m) => m !== 'CREDIT').map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
         </FormGrid>

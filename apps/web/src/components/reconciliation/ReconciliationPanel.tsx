@@ -117,7 +117,7 @@ export function ReconciliationPanel({ projectId, network = false }: { projectId:
               { key: 'kits', label: 'Kits', children: <KitsView projectId={projectId} /> },
             ]
           : []),
-        { key: 'exceptions', label: 'Exceptions', children: <ExceptionsView projectId={projectId} /> },
+        { key: 'exceptions', label: 'Needs a look', children: <ExceptionsView projectId={projectId} /> },
         { key: 'subcontractors', label: 'Subcontractors', children: <SubconReconciliation projectId={projectId} /> },
         { key: 'wastage', label: 'Wastage', children: <WastageReport projectId={projectId} /> },
         { key: 'estimate', label: cost ? 'Estimate' : 'Rate analysis', children: <EstimatePanel projectId={projectId} /> },

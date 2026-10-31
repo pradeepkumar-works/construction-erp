@@ -52,7 +52,7 @@ export function IndentChecks({ check, loading }: { check: IndentCheckDto | undef
         scroll={{ x: 760 }}
         columns={[
           { title: 'Item', dataIndex: 'itemName', render: (v: string, l) => <span translate="no">{`${v} (${l.unit})`}</span> },
-          { title: 'Asked', dataIndex: 'requested', align: 'right', width: 80, render: muted },
+          { title: 'Requested', dataIndex: 'requested', align: 'right', width: 80, render: muted },
           { title: 'In store', dataIndex: 'onHand', align: 'right', width: 80, render: muted },
           { title: 'BOQ allows', dataIndex: 'allowance', align: 'right', width: 100, render: muted },
           { title: 'Issued', dataIndex: 'issued', align: 'right', width: 80, render: muted },

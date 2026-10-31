@@ -329,7 +329,7 @@ export function WorkOrderFormModal({
               <Form.Item
                 name="paymentDays"
                 label="Payment days"
-                extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory?.toLowerCase()} enterprise: at most 45 days.` : 'From their bill; 30 when left empty.'}
+                extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory].toLowerCase() : ''} enterprise: at most 45 days.` : 'From their bill; 30 when left empty.'}
                 rules={[{ type: 'number', max: msme ? 45 : 365, message: msme ? 'At most 45 days for a micro or small enterprise' : 'At most 365 days' }]}
               >
                 <InputNumber min={0} precision={0} inputMode="numeric" style={{ width: '100%' }} />

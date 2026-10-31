@@ -201,7 +201,7 @@ export function PurchaseOrderFormModal({
 
   const summary = (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
-      <span>Items</span>
+      <span>Total before GST</span>
       <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
       <span>GST</span>
       <span className="mono" translate="no">{formatINR(totals.gst, true)}</span>
@@ -403,7 +403,7 @@ export function PurchaseOrderFormModal({
             footer={() => (
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={7} align="right">
-                  <Typography.Text type="secondary">Items before GST</Typography.Text>
+                  <Typography.Text type="secondary">Total before GST</Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
                   <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
@@ -424,7 +424,7 @@ export function PurchaseOrderFormModal({
                 <Form.Item
                   name="paymentDays"
                   label="Payment days"
-                  extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory?.toLowerCase()} enterprise: at most 45 days.` : 'From the invoice; 30 when left empty.'}
+                  extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory].toLowerCase() : ''} enterprise: at most 45 days.` : 'From the invoice; 30 when left empty.'}
                   rules={[{ type: 'number', max: msme ? 45 : 365, message: msme ? 'At most 45 days for a micro or small enterprise' : 'At most 365 days' }]}
                 >
                   <InputNumber min={0} precision={0} inputMode="numeric" style={{ width: '100%' }} />
