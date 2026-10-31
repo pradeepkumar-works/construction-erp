@@ -56,7 +56,7 @@ test('the other approval types have their own pages too', async ({ page }) => {
   const md = await apiToken('md@demo.com');
   const pages: { list: string; api: string; heading: RegExp }[] = [
     { list: '/expenses', api: '/expenses', heading: /^EXP-[\w-]+ · / },
-    { list: '/machinery', api: '/machinery-logs', heading: /^Machinery log · / },
+    { list: '/machinery', api: '/machinery-logs', heading: /^\d{2} [A-Z][a-z]{2} \d{4} · / },
     { list: '/measurements', api: '/measurements', heading: /^Measurement · / },
     { list: '/vendor-bills', api: '/vendor-bills', heading: /^VB-\d{4}-\d{4} · / },
     { list: '/work-orders', api: '/work-orders', heading: /^WO-/ },
