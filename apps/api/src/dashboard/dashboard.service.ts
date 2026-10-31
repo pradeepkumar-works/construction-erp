@@ -95,7 +95,7 @@ export class DashboardService {
 
   async company(user: RequestUser): Promise<CompanyDashboard> {
     const projects = await this.projects.listAll(user);
-    const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z');
+    const today = parseDate(todayIn());
     const projectIds = projects.map((p) => p.id);
     const month = today.toISOString().slice(0, 7);
     const monthStart = parseDate(`${month}-01`);

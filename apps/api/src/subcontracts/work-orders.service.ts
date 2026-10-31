@@ -24,6 +24,7 @@ import { nextDocNo } from '../common/doc-number';
 import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { D, MSME_MAX_PAYMENT_DAYS, ZERO, parseGstRate, parseQty, parseRate, sum } from '../purchasing/purchase-math';
 import { CloseWorkOrderDto, CreateWorkOrderDto, ListWorkOrdersQuery, MarginQuery, UpdateWorkOrderDto, WoLineInput } from './subcontracts.dto';
+import { todayIn } from '../notifications/time';
 
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 export const pctStr = (d: Prisma.Decimal) => d.toFixed(2).replace(/\.?0+$/, '') || '0';
@@ -323,7 +324,7 @@ export class WorkOrdersService {
             projectId: dto.projectId,
             vendorId: vendor.id,
             woNo,
-            woDate: parseDate(dto.woDate ?? new Date().toISOString().slice(0, 10)),
+            woDate: parseDate(dto.woDate ?? todayIn()),
             title: dto.title,
             gstRate: (terms.gstRate as Prisma.Decimal | undefined) ?? D(vendor.gstin ? 18 : 0),
             tdsPct: (terms.tdsPct as Prisma.Decimal | undefined) ?? D(contractorTdsPct(vendor.pan)),

@@ -28,6 +28,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateRiskDto, ListRisksQuery, RiskSuggestionsQuery, UpdateRiskDto } from './risks.dto';
+import { todayIn } from '../notifications/time';
 
 const include = {
   project: { select: { name: true } },
@@ -55,7 +56,6 @@ const DESC_DEFAULT = new Set<string>(['riskNo', 'score', 'createdAt', 'updatedAt
 /** Delays the contractor is not answerable for: these can support an extension-of-time claim. */
 const EXCUSABLE: DelayParty[] = ['CLIENT', 'THIRD_PARTY', 'FORCE_MAJEURE'];
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
 
 /**
  * Delay and risk register per project. Entries are numbered RISK-<year>-0001 per organisation. A delay records the
@@ -75,7 +75,7 @@ export class RisksService {
     private notifications: NotificationsService,
   ) {}
 
-  toDto(r: Row, today = todayStr()): RiskDto {
+  toDto(r: Row, today = todayIn()): RiskDto {
     const delayStart = dateOnly(r.delayStart);
     const delayEnd = dateOnly(r.delayEnd);
     const dueDate = dateOnly(r.dueDate);
@@ -128,7 +128,7 @@ export class RisksService {
     if (withStatus) {
       if (q.status) where.status = q.status;
       if (q.active) and.push({ status: { not: 'CLOSED' } });
-      if (q.overdue) and.push({ status: { not: 'CLOSED' } }, { dueDate: { lt: parseDate(todayStr()) } });
+      if (q.overdue) and.push({ status: { not: 'CLOSED' } }, { dueDate: { lt: parseDate(todayIn()) } });
     }
     for (const w of searchWords(q.q))
       and.push({ OR: [{ riskNo: ilike(w) }, { title: ilike(w) }, { description: ilike(w) }, { mitigation: ilike(w) }, { project: { name: ilike(w) } }] });
@@ -145,7 +145,7 @@ export class RisksService {
       this.prisma.risk.findMany({ where, include, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.risk.count({ where }),
     ]);
-    const today = todayStr();
+    const today = todayIn();
     return paginated(rows.map((r) => this.toDto(r, today)), total, args);
   }
 
@@ -155,7 +155,7 @@ export class RisksService {
       where: this.where(user, q, false),
       select: { kind: true, category: true, status: true, probability: true, impact: true, score: true, dueDate: true, delayStart: true, delayEnd: true, daysLost: true, responsibleParty: true, eotClaimed: true },
     });
-    const today = todayStr();
+    const today = todayIn();
     const heat = [0, 1, 2, 3, 4].map(() => [0, 0, 0, 0, 0]);
     const cats = new Map<string, { open: number; total: number; daysLost: number }>();
     const s: RiskSummaryDto = { open: 0, monitoring: 0, closed: 0, highRisks: 0, openDelays: 0, overdue: 0, daysLost: 0, excusableDaysLost: 0, eotClaimed: 0, heat, byCategory: [] };
@@ -191,7 +191,7 @@ export class RisksService {
 
   /** Delayed activities (past planned end, approved progress short of plan) on active projects with no open delay entry. */
   async suggestions(user: RequestUser, q: RiskSuggestionsQuery): Promise<DelaySuggestionDto[]> {
-    const today = parseDate(todayStr());
+    const today = parseDate(todayIn());
     const activities = await this.prisma.activity.findMany({
       where: {
         project: { ...this.access.projectWhere(user), status: 'ACTIVE', ...(q.projectId ? { id: q.projectId } : {}) },
@@ -241,7 +241,7 @@ export class RisksService {
   private delayFields(kind: string, v: { delayStart?: string | null; delayEnd?: string | null; daysLost?: number | null; responsibleParty?: DelayParty | null; eotClaimed?: boolean; eotGrantedDays?: number | null }) {
     if (kind !== 'DELAY') return { delayStart: null, delayEnd: null, daysLost: null, responsibleParty: null, eotClaimed: false, eotGrantedDays: null };
     if (!v.delayStart) throw new BadRequestException('A delay needs the date work was first held up');
-    const today = todayStr();
+    const today = todayIn();
     if (v.delayStart > today) throw new BadRequestException('A delay cannot start in the future; raise it as a risk');
     if (v.delayEnd && v.delayEnd < v.delayStart) throw new BadRequestException('The delay cannot end before it started');
     if (v.delayEnd && v.delayEnd > today) throw new BadRequestException('The delay end cannot be in the future; leave it empty while work is still held up');
@@ -340,7 +340,7 @@ export class RisksService {
     // Closing an open delay ends it today unless an end date is given.
     const closing = dto.status === 'CLOSED' && current.status !== 'CLOSED';
     let delayEnd = dto.delayEnd !== undefined ? dto.delayEnd : dateOnly(current.delayEnd);
-    if (closing && kind === 'DELAY' && !delayEnd) delayEnd = todayStr();
+    if (closing && kind === 'DELAY' && !delayEnd) delayEnd = todayIn();
     Object.assign(
       data,
       this.delayFields(kind, {

@@ -11,6 +11,7 @@ import { PayablesService } from '../payables/payables.service';
 import { BudgetService } from './budget.service';
 import { ZERO } from './cost.service';
 import { CashFlowQuery } from './cost.dto';
+import { todayIn } from '../notifications/time';
 
 type D = Prisma.Decimal;
 const Dec = Prisma.Decimal;
@@ -65,7 +66,7 @@ export class CashFlowService {
     if (!canViewCost(user.roleKey)) throw new ForbiddenException('The cash-flow forecast is for approvers and accounts');
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
     const granularity = q.granularity ?? 'MONTH';
-    const asOf = new Date().toISOString().slice(0, 10);
+    const asOf = todayIn();
     const today = parseDate(asOf);
     const periods = this.periods(today, granularity);
     const horizonEnd = periods[periods.length - 1].end;

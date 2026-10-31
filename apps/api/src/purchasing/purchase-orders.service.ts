@@ -603,7 +603,7 @@ export class PurchaseOrdersService {
             projectId: dto.projectId,
             vendorId: vendor.id,
             poNo,
-            poDate: dto.poDate ? parseDate(dto.poDate) : parseDate(new Date().toISOString().slice(0, 10)),
+            poDate: dto.poDate ? parseDate(dto.poDate) : parseDate(todayIn()),
             materialRequestId: mr?.id ?? null,
             quotationId: dto.quotationId ?? null,
             deliveryBy: dto.deliveryBy ? parseDate(dto.deliveryBy) : null,
