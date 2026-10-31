@@ -111,7 +111,7 @@ test('a draft waits a day; the first draft WhatsApp can save is the one used', (
 
 test('the reply names the draft, what to check and how to save it; a voice note is marked to check', () => {
   const text = draftReply(draft({ flags: [{ field: 'requiredDate', note: 'No date given; set to a week from today' }] }), 'https://app/whatsapp-capture?id=1', { buttons: false, voice: true });
-  assert.match(text, /^Material request, not saved yet:/);
+  assert.match(text, /^Indent, not saved yet:/);
   assert.match(text, /From your voice note: check the figures/);
   assert.match(text, /Check: No date given/);
   assert.match(text, /Reply 1 to save it in your name, 2 to discard/);
@@ -213,7 +213,7 @@ async function demo(): Promise<number> {
     const mrDraft = mr?.draft as unknown as AiDraftDto | null;
     check('a text is drafted', mr?.state === 'DRAFTED' && mrDraft?.kind === 'material-request', `${mr?.state} ${mr?.error ?? ''} ${mr?.reply ?? ''}`);
     check('the draft carries its message', mrDraft?.captureId === mr?.id);
-    check('the reply shows the draft and how to save it', /^Material request, not saved yet:/.test(mr?.reply ?? '') && /Reply 1 to save/.test(mr?.reply ?? ''), mr?.reply ?? '');
+    check('the reply shows the draft and how to save it', /^Indent, not saved yet:/.test(mr?.reply ?? '') && /Reply 1 to save/.test(mr?.reply ?? ''), mr?.reply ?? '');
     check('the message went into Ask Nirmaan as the sender', !!mr?.threadId && !!(await prisma.aiThread.findFirst({ where: { id: mr.threadId!, userId: engineer.id } })));
     const again = await wa.receive({ from, providerRef: ref(1), type: 'TEXT', text: mrText, media: null, buttonId: null });
     check('a webhook sent twice is read once', again.id === first.id && (await prisma.inboundMessage.count({ where: { providerRef: ref(1) } })) === 1);

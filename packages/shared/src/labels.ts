@@ -1,9 +1,9 @@
 import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, CompanyKind } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
-  ROAD: 'Road / Infrastructure',
+  ROAD: 'Road or infrastructure',
   BUILDING: 'Building',
-  WATER_SUPPLY: 'Water Supply',
+  WATER_SUPPLY: 'Water supply',
   SEWERAGE: 'Sewerage',
   OTHER: 'Other works',
   PLANT: 'RMC plant',
@@ -74,35 +74,52 @@ export const PIPE_STAGE_LABELS: Record<PipeStage, string> = {
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   PLANNED: 'Planned',
   ACTIVE: 'Active',
-  ON_HOLD: 'On Hold',
+  ON_HOLD: 'On hold',
   COMPLETED: 'Completed',
   CLOSED: 'Closed',
 };
 
 export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   DRAFT: 'Draft',
-  SUBMITTED: 'Pending Approval',
+  SUBMITTED: 'Waiting for approval',
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
-  CHANGES_REQUESTED: 'Changes Requested',
+  CHANGES_REQUESTED: 'Changes requested',
 };
 
 export const APPROVAL_STEP_ACTION_LABELS: Record<ApprovalStepAction, string> = { APPROVED: 'Approved', ESCALATED: 'Escalated', REMINDED: 'Reminded' };
 
 export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
-  PROGRESS: 'Daily Progress',
-  DPR: 'Daily Progress Report',
-  MATERIAL_REQUEST: 'Material Request',
-  MACHINERY: 'Machinery Log',
-  EXPENSE: 'Site Expense',
-  MEASUREMENT: 'Measurement (MB)',
-  BILL: 'RA Bill',
-  PURCHASE_ORDER: 'Purchase Order',
-  VENDOR_BILL: 'Vendor Bill',
-  WORK_ORDER: 'Work Order',
-  SUBCONTRACT_BILL: 'Subcontractor Bill',
+  PROGRESS: 'Progress entry',
+  DPR: 'Daily report',
+  MATERIAL_REQUEST: 'Indent',
+  MACHINERY: 'Machinery log',
+  EXPENSE: 'Site expense',
+  MEASUREMENT: 'Measurement',
+  BILL: 'RA bill',
+  PURCHASE_ORDER: 'Purchase order',
+  VENDOR_BILL: 'Vendor bill',
+  WORK_ORDER: 'Work order',
+  SUBCONTRACT_BILL: 'Subcontractor bill',
   INSPECTION: 'Inspection',
-  PAYMENT_REQUEST: 'Payment Request',
+  PAYMENT_REQUEST: 'Payment request',
+};
+
+/** A group of entries of one type (the approvals inbox, on the web and the phone): the list's own name in the menu. */
+export const SUBMISSION_TYPE_PLURAL_LABELS: Record<SubmissionType, string> = {
+  PROGRESS: 'Progress entries',
+  DPR: 'Daily reports',
+  MATERIAL_REQUEST: 'Indents',
+  MACHINERY: 'Machinery logs',
+  EXPENSE: 'Site expenses',
+  MEASUREMENT: 'Measurement book',
+  BILL: 'RA bills',
+  PURCHASE_ORDER: 'Purchase orders',
+  VENDOR_BILL: 'Vendor bills',
+  WORK_ORDER: 'Work orders',
+  SUBCONTRACT_BILL: 'Subcontractor bills',
+  INSPECTION: 'Inspections',
+  PAYMENT_REQUEST: 'Payment requests',
 };
 
 export const PAYMENT_REQUEST_KIND_LABELS: Record<PaymentRequestKind, string> = {
@@ -146,7 +163,7 @@ export const DEBIT_NOTE_REASON_LABELS: Record<DebitNoteReason, string> = {
   SHORTAGE: 'Short supply',
   EXCESS: 'Billed in excess',
   REJECTED: 'Rejected at QA/QC',
-  RETURNED: 'Returned to supplier',
+  RETURNED: 'Returned to vendor',
   RATE_DIFFERENCE: 'Rate difference',
   OTHER: 'Other',
 };
@@ -175,19 +192,19 @@ export const MATERIAL_PRIORITY_LABELS: Record<MaterialPriority, string> = {
 export const ROLE_LABELS: Record<RoleKey, string> = {
   ADMIN: 'Admin',
   MANAGEMENT: 'Management',
-  PROJECT_MANAGER: 'Project Manager',
-  TEAM_LEADER: 'Team Leader / Site Supervisor',
-  SITE_ENGINEER: 'Site Engineer',
-  STORE_MANAGER: 'Store Manager',
-  QUANTITY_SURVEYOR: 'Quantity Surveyor',
-  PROCUREMENT_MANAGER: 'Procurement Manager',
-  QA_QC_ENGINEER: 'QA/QC Engineer',
-  SAFETY_OFFICER: 'Safety Officer',
-  DOCUMENT_CONTROLLER: 'Document Controller',
-  ACCOUNTS_MANAGER: 'Accounts Manager',
-  HR_MANAGER: 'HR Manager',
-  CLIENT_ENGINEER: "Client's Engineer (guest)",
-  CONSULTANT: 'Consultant / PMC (guest)',
+  PROJECT_MANAGER: 'Project manager',
+  TEAM_LEADER: 'Team leader or site supervisor',
+  SITE_ENGINEER: 'Site engineer',
+  STORE_MANAGER: 'Store manager',
+  QUANTITY_SURVEYOR: 'Quantity surveyor',
+  PROCUREMENT_MANAGER: 'Procurement manager',
+  QA_QC_ENGINEER: 'QA/QC engineer',
+  SAFETY_OFFICER: 'Safety officer',
+  DOCUMENT_CONTROLLER: 'Document controller',
+  ACCOUNTS_MANAGER: 'Accounts manager',
+  HR_MANAGER: 'HR manager',
+  CLIENT_ENGINEER: "Client's engineer (guest)",
+  CONSULTANT: 'Consultant or PMC (guest)',
   SUPPLIER: 'Supplier (portal)',
 };
 
@@ -200,14 +217,14 @@ export const WEATHER_LABELS: Record<Weather, string> = {
 };
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
-  SUBMISSION_SUBMITTED: 'Awaiting approval',
+  SUBMISSION_SUBMITTED: 'Waiting for your approval',
   SUBMISSION_APPROVED: 'Approved',
   SUBMISSION_REJECTED: 'Rejected',
   SUBMISSION_CHANGES_REQUESTED: 'Changes requested',
   DPR_REMINDER: 'DPR reminder',
-  APPROVAL_DIGEST: 'Pending approvals',
+  APPROVAL_DIGEST: 'Approvals waiting',
   LOW_STOCK: 'Low stock',
-  RISK_RAISED: 'Delay / risk raised',
+  RISK_RAISED: 'Delay or risk recorded',
   TEST_DUE: 'Test due',
   TEST_FAILED: 'Test failed',
   NCR: 'Non-conformance',
@@ -219,8 +236,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   SAFETY: 'Safety',
   MACHINERY: 'Machinery',
   IMPREST: 'Site imprest',
-  COMPLIANCE: 'Guarantees & licences',
-  DEFECT: 'Snags & defects',
+  COMPLIANCE: 'Guarantees and licences',
+  DEFECT: 'Snags and defects',
   WATCH_LIST: 'Watch list',
   MORNING_BRIEF: 'Morning brief',
   SUPPLIER: 'Supplier portal',
@@ -236,7 +253,7 @@ export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
   ADJUSTMENT: 'Adjustment',
   TRANSFER_OUT: 'Transfer out',
   TRANSFER_IN: 'Transfer in',
-  RETURN_TO_VENDOR: 'Return to supplier',
+  RETURN_TO_VENDOR: 'Return to vendor',
   RETURN_FROM_SITE: 'Return from site',
 };
 
@@ -263,23 +280,23 @@ export const EQUIPMENT_RATE_UNIT_LABELS: Record<EquipmentRateUnit, string> = {
 export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   FUEL: 'Fuel',
   TRANSPORT: 'Transport / hiring',
-  REPAIRS: 'Repairs & maintenance',
+  REPAIRS: 'Repairs and maintenance',
   MATERIAL_LOCAL: 'Local material purchase',
   LABOUR: 'Labour payment',
-  FOOD_WELFARE: 'Food & welfare',
+  FOOD_WELFARE: 'Food and welfare',
   TRAVEL: 'Travel',
-  RENT_UTILITIES: 'Rent & utilities',
+  RENT_UTILITIES: 'Rent and utilities',
   OFFICE: 'Site office',
   SAFETY: 'Safety items',
   OTHER: 'Other',
 };
 
 export const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = {
-  CASH: 'Cash (petty cash)',
+  CASH: 'Cash',
   UPI: 'UPI',
-  BANK: 'Bank transfer',
+  BANK: 'Bank (RTGS, NEFT or cheque)',
   CARD: 'Card',
-  CREDIT: 'On credit (to be paid)',
+  CREDIT: 'On credit',
 };
 
 export const RISK_KIND_LABELS: Record<RiskKind, string> = {
@@ -289,14 +306,14 @@ export const RISK_KIND_LABELS: Record<RiskKind, string> = {
 
 export const RISK_CATEGORY_LABELS: Record<RiskCategory, string> = {
   LAND: 'Land / right of way',
-  DESIGN: 'Drawings & design',
+  DESIGN: 'Drawings and design',
   CLIENT: 'Client decisions',
   MATERIAL: 'Material supply',
   LABOUR: 'Labour',
   EQUIPMENT: 'Equipment',
   WEATHER: 'Weather',
-  FINANCE: 'Payments & finance',
-  STATUTORY: 'Permits & statutory',
+  FINANCE: 'Payments and finance',
+  STATUTORY: 'Permits and statutory',
   SAFETY: 'Safety',
   UTILITY: 'Utility shifting',
   OTHER: 'Other',
@@ -347,8 +364,8 @@ export const RECEIPT_KIND_LABELS: Record<ReceiptKind, string> = {
   DEPOSIT_RELEASE: 'Security deposit released',
 };
 
-/** Payment modes as they read on a receipt from a client. */
-export const RECEIPT_MODE_LABELS: Partial<Record<PaymentMode, string>> = { BANK: 'Bank (RTGS / NEFT / cheque)', UPI: 'UPI', CASH: 'Cash' };
+/** The modes money from a client (and a payment out) can take, in the same words as everywhere else. */
+export const RECEIPT_MODE_LABELS: Partial<Record<PaymentMode, string>> = { BANK: PAYMENT_MODE_LABELS.BANK, UPI: PAYMENT_MODE_LABELS.UPI, CASH: PAYMENT_MODE_LABELS.CASH };
 
 export const SAFETY_INCIDENT_TYPE_LABELS: Record<SafetyIncidentType, string> = {
   NEAR_MISS: 'Near miss',
@@ -417,7 +434,7 @@ export const WORKER_ID_TYPE_LABELS: Record<WorkerIdType, string> = {
 };
 
 export const IMPREST_ENTRY_KIND_LABELS: Record<ImprestEntryKind, string> = { ADVANCE: 'Cash advanced', RETURN: 'Cash returned' };
-export const IMPREST_ENTRY_STATUS_LABELS: Record<ImprestEntryStatus, string> = { REQUESTED: 'Top-up asked for', PAID: 'Paid', REJECTED: 'Turned down' };
+export const IMPREST_ENTRY_STATUS_LABELS: Record<ImprestEntryStatus, string> = { REQUESTED: 'Top-up asked for', PAID: 'Paid', REJECTED: 'Rejected' };
 
 export const COMPLIANCE_DOC_KIND_LABELS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'Bank guarantee', EMD: 'EMD', INSURANCE: 'Insurance', LICENCE: 'Licence' };
 export const COMPLIANCE_DOC_STATUS_LABELS: Record<ComplianceDocStatus, string> = { ACTIVE: 'Active', RENEWED: 'Renewed', RELEASED: 'Released', INVOKED: 'Invoked' };
@@ -511,6 +528,6 @@ export const COMPANY_KIND_LABELS: Record<CompanyKind, string> = {
   CONSTRUCTION: 'Construction',
   CONSULTANCY: 'Consultancy',
   QUALITY_LAB: 'Quality lab',
-  PLANT: 'Plant or RMC',
+  PLANT: 'RMC plant',
   HOLDING: 'Holding',
 };

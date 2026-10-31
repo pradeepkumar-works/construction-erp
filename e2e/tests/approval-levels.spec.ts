@@ -37,7 +37,7 @@ test('a site expense above the amount goes to management after the project manag
     // The submitter sees it waiting at level 1 of 2, with the project manager.
     const mine = (await api<Waiting[]>(engineer, '/approvals/waiting')).find((w) => w.id === x.id);
     expect(mine).toMatchObject({ type: 'EXPENSE', level: 1, levels: 2 });
-    expect(mine!.waitingWith).toContain('Project Manager');
+    expect(mine!.waitingWith).toContain('Project manager');
     expect((await api<Pending[]>(accounts, '/approvals/pending')).find((p) => p.id === x.id), 'accounts approves level 1 too').toMatchObject({ level: 1, levels: 2 });
 
     // The project manager approves level 1 on the record page; it stays waiting, now for management.

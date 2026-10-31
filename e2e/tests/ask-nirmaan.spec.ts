@@ -180,7 +180,7 @@ test('an admin opens Ask Nirmaan to some roles only, and the others lose it (AI 
   const roles = page.getByRole('group', { name: 'Who can use it' });
   await roles.getByRole('radio', { name: 'Only the roles I choose' }).check();
   await expect(roles.getByRole('button', { name: 'Save roles' })).toBeDisabled();
-  await roles.getByRole('checkbox', { name: 'Project Manager' }).check();
+  await roles.getByRole('checkbox', { name: 'Project manager' }).check();
   await roles.getByRole('button', { name: 'Save roles' }).click();
   await expect(page.getByText('Roles saved')).toBeVisible();
   try {

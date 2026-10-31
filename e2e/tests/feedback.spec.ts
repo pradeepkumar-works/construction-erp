@@ -114,7 +114,7 @@ test('approving shows the new status at once, before the server answers', async 
   const entry = await submitProgress();
   await signIn(page, 'pm@demo.com');
   const row = await progressRow(page, entry.remarks);
-  await expect(row).toContainText('Pending Approval');
+  await expect(row).toContainText('Waiting for approval');
 
   let release: () => void = () => undefined;
   const held = new Promise<void>((r) => (release = r));
@@ -141,7 +141,7 @@ test('an approval that cannot reach the server goes back, says so in plain words
   await approveFromRow(page, row);
   const failed = notice(page, 'Could not reach Nirmaan. Your changes are kept; check your connection and try again.');
   await expect(failed).toBeVisible();
-  await expect(row).toContainText('Pending Approval');
+  await expect(row).toContainText('Waiting for approval');
   const pm = await apiToken('pm@demo.com');
   expect((await api<{ status: string }>(pm, `/progress/${entry.id}`)).status).toBe('SUBMITTED');
 
