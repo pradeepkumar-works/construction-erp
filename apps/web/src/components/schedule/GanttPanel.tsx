@@ -184,7 +184,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
         <Space wrap>
-          <Segmented<GanttScale> value={scale} onChange={setScale} options={[{ value: 'week', label: 'Weeks' }, { value: 'month', label: 'Months' }]} />
+          <Segmented<GanttScale> aria-label="Gantt scale" value={scale} onChange={setScale} options={[{ value: 'week', label: 'Weeks' }, { value: 'month', label: 'Months' }]} />
           {data.baselineAt ? (
             <Checkbox checked={showBaseline} onChange={(e) => setShowBaseline(e.target.checked)}>
               Show baseline

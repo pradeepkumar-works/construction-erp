@@ -149,6 +149,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
         }
       >
         <Segmented
+          aria-label="Show delays or risks"
           value={kind}
           onChange={(v) => page.setFilter('kind', v === 'ALL' ? undefined : v)}
           options={[

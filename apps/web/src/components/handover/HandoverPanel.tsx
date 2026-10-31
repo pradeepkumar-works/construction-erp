@@ -227,6 +227,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
       <Section title="Snags and defects">
         <Flex gap={8} wrap align="center" style={{ paddingBottom: token.paddingSM }}>
           <Segmented<DefectPhase | 'ALL'>
+            aria-label="Show snags or defects"
             value={phase}
             onChange={(v) => {
               setPhase(v);

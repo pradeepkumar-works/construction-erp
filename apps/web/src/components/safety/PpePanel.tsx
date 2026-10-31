@@ -341,6 +341,7 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
 
           <Section style={{ marginTop: 16 }} title="Workers">
             <Segmented<Show>
+              aria-label="Workers to show"
               value={show}
               onChange={setShow}
               style={{ marginBottom: 12 }}

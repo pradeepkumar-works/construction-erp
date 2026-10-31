@@ -5,7 +5,7 @@ import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Typography } from 'a
 import { AppTag } from '@/components/common/AppTag';
 import { CopyOutlined, EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@/components/common/icons';
 import type { ProjectDetail, UserSummary } from '@erp/shared';
-import { canEditProjects } from '@erp/shared';
+import { ROLE_LABELS, canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -77,7 +77,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
 
   const members = [
     ...(project.projectManagerName
-      ? [{ id: 'pm', userId: project.projectManagerId ?? '', fullName: project.projectManagerName, roleKey: 'PROJECT_MANAGER' as const, roleName: 'Project Manager', isPm: true }]
+      ? [{ id: 'pm', userId: project.projectManagerId ?? '', fullName: project.projectManagerName, roleKey: 'PROJECT_MANAGER' as const, roleName: ROLE_LABELS.PROJECT_MANAGER, isPm: true }]
       : []),
     ...project.members.map((m) => ({ ...m, isPm: false })),
   ];
@@ -85,13 +85,16 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
   return (
     <Section
       id="team"
-      title={`Team (${project.members.length})`}
+      title="Team"
       extra={
-        editor && !adding ? (
-          <Button size="small" icon={<UserAddOutlined />} onClick={() => setAdding(true)}>
-            Add
-          </Button>
-        ) : null
+        <Flex gap="small" align="center">
+          <Typography.Text type="secondary">{`${members.length} ${members.length === 1 ? 'person' : 'people'}`}</Typography.Text>
+          {editor && !adding ? (
+            <Button size="small" icon={<UserAddOutlined />} onClick={() => setAdding(true)}>
+              Add
+            </Button>
+          ) : null}
+        </Flex>
       }
     >
       {adding && (
@@ -139,7 +142,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
                 }
                 title={
                   <span style={{ fontSize: themeFontSize('fontSize') }}>
-                    {m.fullName} {m.isPm && <AppTag tone="pending" style={{ marginLeft: 4 }}>PM</AppTag>}
+                    {m.fullName} {m.isPm && <AppTag tone="info" style={{ marginLeft: 4 }}>PM</AppTag>}
                   </span>
                 }
                 description={<Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.roleName}</Typography.Text>}

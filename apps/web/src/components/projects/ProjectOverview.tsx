@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useProjectScope } from '@/lib/project-scope';
 import dayjs from 'dayjs';
 import { Col, Descriptions, Flex, Progress, Row, Statistic, Table, Typography, theme } from 'antd';
 import { CheckCircleOutlined, ExclamationCircleOutlined } from '@/components/common/icons';
@@ -83,6 +84,7 @@ const ago = (date: string) => {
  */
 export function ProjectOverview({ project }: { project: ProjectDetail }) {
   const { token } = theme.useToken();
+  const [, setScope] = useProjectScope();
   const { user } = useAuth();
   const seesCost = !!user && canViewCost(user.roleKey);
   const { data: dash, isLoading, error, refetch } = useProjectDashboard(project.id);
@@ -172,13 +174,13 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
             Waiting on this project:{' '}
             {[
               dash.pendingApprovals > 0 ? (
-                <Link key="a" href="/approvals" className="text-link">
+                <Link key="a" href="/approvals" className="text-link" onClick={() => setScope(project.id)}>
                   {plural(dash.pendingApprovals, 'entry', 'entries')} for approval
                 </Link>
               ) : null,
               dash.openMaterialRequests > 0 ? (
                 <Link key="m" href={`/projects/${project.id}?tab=material`} className="text-link">
-                  {plural(dash.openMaterialRequests, 'material request')} open
+                  {plural(dash.openMaterialRequests, 'indent')} open
                 </Link>
               ) : null,
             ]

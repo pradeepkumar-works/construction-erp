@@ -125,7 +125,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
           </>
         }
       >
-        <Segmented<View> value={view} onChange={(v) => page.setFilter('view', v === 'ACTIVE' ? undefined : v)} options={VIEWS.map((v) => ({ value: v, label: VIEW_LABELS[v] }))} />
+        <Segmented<View> aria-label="Permits to show" value={view} onChange={(v) => page.setFilter('view', v === 'ACTIVE' ? undefined : v)} options={VIEWS.map((v) => ({ value: v, label: VIEW_LABELS[v] }))} />
         <Select<WorkPermitType> allowClear placeholder="All kinds of work" aria-label="Work" style={{ width: 200 }} value={type} onChange={(v) => page.setFilter('type', v)} options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} />
       </ListToolbar>
       <DataTable<WorkPermitDto>
