@@ -1,7 +1,23 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, filledExtra, groupLines, lineLocation, ownFieldLabel, ownFieldsOf, type DailyReportDto } from '@erp/shared';
+import {
+  DPR_BUILT_INS,
+  DPR_SECTION_LABELS,
+  STANDARD_DPR_FORM,
+  WEATHER_LABELS,
+  crewCheck,
+  dprActivityLabel,
+  dprSetting,
+  dprShows,
+  filledExtra,
+  groupLines,
+  lineLocation,
+  ownFieldLabel,
+  ownFieldsOf,
+  type DailyReportDto,
+  type DprBuiltInKey,
+} from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, PhotoChecks, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, maxFontScale, spacing, typography } from '../../src/theme';
@@ -20,25 +36,32 @@ export default function DprDetailScreen() {
   if (!data) return null;
   // The company's own fields of the form it was made on (item 134 part 2), in the phone's language.
   const def = data.form?.def ?? STANDARD_DPR_FORM;
+  // Named and shown as on the form it was made on: the company's own name as typed, else the web's in the phone's language.
+  const L = (key: DprBuiltInKey) => dprSetting(def, key).label ?? t(DPR_BUILT_INS[key].label);
+  const shows = (key: DprBuiltInKey, value: unknown) => dprShows(def, key) || (Array.isArray(value) ? value.length > 0 : !!value);
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
-      <SubmissionHeader item={data} title={`DPR · ${formatDate(data.date)}`} subtitle={t('Daily progress report')} />
+      <SubmissionHeader item={data} title={`DPR · ${formatDate(data.date)}`} subtitle={data.projectName} />
       <Card title={t('Site')}>
-        <KeyValue label={t('Weather')} value={data.weather ? t(WEATHER_LABELS[data.weather]) : null} />
-        <KeyValue label={t('Site condition')} value={data.siteCondition} />
+        {shows('weather', data.weather) ? <KeyValue label={L('weather')} value={data.weather ? t(WEATHER_LABELS[data.weather]) : null} /> : null}
+        {shows('siteCondition', data.siteCondition) ? <KeyValue label={L('siteCondition')} value={data.siteCondition} /> : null}
         {filledExtra(ownFieldsOf(def, 'DAY'), data.extra).map((x) => (
           <KeyValue key={x.field.key} label={ownFieldLabel(x.field, language)} value={x.text === 'Yes' || x.text === 'No' ? t(x.text) : x.text} />
         ))}
       </Card>
-      <Card title={t('Manpower')} right={<Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{t('Total {n}', { n: data.totalManpower })}</Text>}>
-        {data.manpower.length === 0 ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No manpower recorded')}</Text> : data.manpower.map((m, i) => <KeyValue key={`${m.category}-${i}`} label={t(m.category)} value={String(m.count)} />)}
-      </Card>
-      <Card title={t('Machinery')}>
-        {data.machinery.length === 0 ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No machinery recorded')}</Text> : data.machinery.map((m, i) => <KeyValue key={`${m.name}-${i}`} label={m.name} value={t('{h} h', { h: m.hours })} />)}
-      </Card>
+      {shows('manpower', data.manpower) ? (
+        <Card title={L('manpower')} right={<Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{t('Total {n}', { n: data.totalManpower })}</Text>}>
+          {data.manpower.length === 0 ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No manpower recorded')}</Text> : data.manpower.map((m, i) => <KeyValue key={`${m.category}-${i}`} label={t(m.category)} value={String(m.count)} />)}
+        </Card>
+      ) : null}
+      {shows('machinery', data.machinery) ? (
+        <Card title={L('machinery')}>
+          {data.machinery.length === 0 ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No machinery recorded')}</Text> : data.machinery.map((m, i) => <KeyValue key={`${m.name}-${i}`} label={m.name} value={t('{h} h', { h: m.hours })} />)}
+        </Card>
+      ) : null}
       {data.lines?.length ? (
-        <Card title={t('Work done')}>
+        <Card title={L('lines')}>
           {groupLines(data.lines).map((g) => (
             <View key={g.key} style={styles.group}>
               <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{g.label === 'Outside the breakdown' ? t('Outside the breakdown') : g.label}</Text>
@@ -73,13 +96,13 @@ export default function DprDetailScreen() {
           })()}
         </Card>
       ) : null}
-      <Card title={t('Work')}>
+      <Card title={t(DPR_SECTION_LABELS.NOTES)}>
         <Block label={data.lines?.length ? t('Other work and notes') : t('Work executed')} value={data.workExecuted} />
-        <Block label={t('Material received')} value={data.materialReceived} />
-        <Block label={t('Tests conducted')} value={data.testsConducted} />
-        <Block label={t('Safety observations')} value={data.safetyObservations} />
-        <Block label={t('Issues / hindrances')} value={data.issues} />
-        <Block label={t('Next-day plan')} value={data.nextDayPlan} />
+        {shows('materialReceived', data.materialReceived) ? <Block label={L('materialReceived')} value={data.materialReceived} /> : null}
+        {shows('testsConducted', data.testsConducted) ? <Block label={L('testsConducted')} value={data.testsConducted} /> : null}
+        {shows('safetyObservations', data.safetyObservations) ? <Block label={L('safetyObservations')} value={data.safetyObservations} /> : null}
+        {shows('issues', data.issues) ? <Block label={L('issues')} value={data.issues} /> : null}
+        {shows('nextDayPlan', data.nextDayPlan) ? <Block label={L('nextDayPlan')} value={data.nextDayPlan} /> : null}
       </Card>
       <AttachmentGallery attachments={data.attachments} />
       <PhotoChecks kind="dpr" id={data.id} attachments={data.attachments} />

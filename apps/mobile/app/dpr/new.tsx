@@ -50,20 +50,7 @@ interface MachineryRow {
 }
 
 const newKey = () => Math.random().toString(36).slice(2, 9);
-/** The phone's names of the built-in fields, which a company's form may rename (item 134 part 2). */
-const PHONE_LABEL: Record<DprBuiltInKey, string> = {
-  weather: 'Weather',
-  siteCondition: 'Site condition',
-  lines: 'Work done',
-  manpower: 'Manpower',
-  machinery: 'Machinery',
-  materialReceived: 'Material received',
-  testsConducted: 'Tests conducted',
-  safetyObservations: 'Safety observations',
-  issues: 'Issues / hindrances',
-  nextDayPlan: 'Next-day plan',
-  photos: 'Site photos',
-};
+
 /** Keep a free-text value (e.g. a trade typed on the web) selectable even when it is not in the standard list. */
 const withValue = (options: { value: string; label: string }[], value: string | null) => (value && !options.some((o) => o.value === value) ? [...options, { value, label: value }] : options);
 
@@ -243,7 +230,8 @@ export default function NewDprScreen() {
   // A new report takes the type's latest form; an edit keeps the one it was made on.
   const def = (editId ? existing.data?.form : workOptions.data?.form)?.def ?? STANDARD_DPR_FORM;
   const shows = (key: DprBuiltInKey) => dprShows(def, key, { progressFromDpr: workOptions.data?.progressFromDpr });
-  const L = (key: DprBuiltInKey) => dprSetting(def, key).label ?? t(PHONE_LABEL[key]);
+  // A company's own name for a field stays as it typed it; the standard names are the web's, in the phone's language.
+  const L = (key: DprBuiltInKey) => dprSetting(def, key).label ?? t(DPR_BUILT_INS[key].label);
   const ownDay = ownFieldsOf(def, 'DAY');
   const allPhotos = useMemo(() => [...photos, ...lines.flatMap((l) => l.photos)], [photos, lines]);
 

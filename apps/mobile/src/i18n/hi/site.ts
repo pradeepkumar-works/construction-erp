@@ -90,7 +90,6 @@ export const SITE: Record<string, string> = {
   'Toolbox talk, PPE, incidents': 'टूलबॉक्स टॉक, PPE, हादसे',
   'Issues / hindrances': 'समस्याएँ / रुकावटें',
   'Anything blocking work': 'काम में जो भी रुकावट हो',
-  'Next-day plan': 'अगले दिन की योजना',
   'Planned activities for tomorrow': 'कल के लिए तय काम',
   'Resubmit DPR for approval': 'DPR मंज़ूरी के लिए दोबारा जमा करें',
   'Submit DPR for approval': 'DPR मंज़ूरी के लिए जमा करें',

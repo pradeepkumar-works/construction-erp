@@ -10,7 +10,6 @@ export const CORE: Record<string, string> = {
   Email: 'ईमेल',
   Phone: 'फ़ोन',
   Role: 'पद',
-  Organisation: 'कंपनी',
   'Can approve': 'मंज़ूर कर सकते हैं',
   Notifications: 'सूचनाएँ',
   Notification: 'सूचना',
@@ -190,7 +189,6 @@ export const CORE: Record<string, string> = {
   '{n} pending approvals': '{n} मंज़ूरियाँ बाकी',
   'Project manager': 'प्रोजेक्ट मैनेजर',
   Start: 'शुरुआत',
-  End: 'समाप्ति',
   'Work order': 'वर्क ऑर्डर',
   Activities: 'गतिविधियाँ',
   Delayed: 'देरी में',
@@ -376,7 +374,6 @@ export const CORE: Record<string, string> = {
   'Your alerts will also come on WhatsApp.': 'आपके अलर्ट WhatsApp पर भी आएँगे।',
   'Your alerts will also come on SMS.': 'आपके अलर्ट SMS पर भी आएँगे।',
   'WhatsApp and SMS alerts are off.': 'WhatsApp और SMS अलर्ट बंद हैं।',
-  'Test sent': 'टेस्ट भेजा गया',
   'Test sent on {channel} to {phone}.': 'टेस्ट {channel} पर {phone} को भेजा गया।',
   'The message did not go.': 'मैसेज नहीं गया।',
 
