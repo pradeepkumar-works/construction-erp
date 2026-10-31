@@ -83,6 +83,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/web
         run: npx tsx --tsconfig tsconfig.json scripts/nav-check.ts
+      - name: Shared labels and the menu keep the writing rules and the words we use (docs/WRITING.md)
+        if: matrix.suite == 'flows'
+        working-directory: apps/web
+        run: npx tsx --tsconfig tsconfig.json scripts/copy-check.ts
       - name: Start the API as erp_runtime
         working-directory: apps/api
         run: |
