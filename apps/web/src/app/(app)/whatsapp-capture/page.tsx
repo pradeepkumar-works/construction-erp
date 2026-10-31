@@ -8,12 +8,13 @@ import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@/components/common/icons';
 import {
   AI_DRAFT_LABELS,
-  CAPTURE_GO_LIVE_SHARE,
   CAPTURE_OUTCOME_LABELS,
   INBOUND_STATE_LABELS,
   INBOUND_STATES,
   INBOUND_TYPE_LABELS,
   WHATSAPP_PROVIDER_LABELS,
+  PRODUCT_NAME,
+  canManageIntegrations,
   canUseWhatsappCapture,
   formatPhone,
   type AiStatusDto,
@@ -37,10 +38,10 @@ const STATE_COLOR: Record<InboundState, string> = { RECEIVED: 'default', ANSWERE
 const PAGE_SIZE = 10;
 
 const AI_OFF: Record<NonNullable<AiStatusDto['reason']>, string> = {
-  COMPANY_OFF: 'Ask Nirmaan is switched off for your company, so messages are not read. An admin can switch it on in Admin, Ask Nirmaan.',
-  NOT_CONFIGURED: 'Ask Nirmaan is not set up on this server yet, so messages are not read.',
-  CAP_REACHED: "Your company has used this month's Ask Nirmaan allowance, so messages wait until an admin raises it.",
-  ROLE_OFF: "Your company's admin has not opened Ask Nirmaan to your role, so your messages are not read.",
+  COMPANY_OFF: `Ask ${PRODUCT_NAME} is switched off for your company, so messages are not read. An admin can switch it on in Admin › Ask ${PRODUCT_NAME} settings.`,
+  NOT_CONFIGURED: `Ask ${PRODUCT_NAME} is not set up for your company yet, so messages are not read. Ask ${PRODUCT_NAME} support to turn it on.`,
+  CAP_REACHED: `Your company has used this month's Ask ${PRODUCT_NAME} allowance, so messages wait until an admin raises it.`,
+  ROLE_OFF: `Your company's admin has not opened Ask ${PRODUCT_NAME} to your role, so your messages are not read.`,
   READ_ONLY: 'Your trial or subscription has ended, so messages are not read until it is renewed.',
 };
 
@@ -91,7 +92,7 @@ function Capture() {
 
   return (
     <>
-      <PageHeader title="WhatsApp entries" subtitle="Send what happened on site as a text, a photo or a voice note. Nirmaan drafts the entry and you save it with one tap." />
+      <PageHeader title="WhatsApp entries" subtitle={`Send what happened on site as a text, a photo or a voice note. ${PRODUCT_NAME} drafts the entry and you save it with one tap.`} />
       <Flex vertical gap={token.marginMD}>
         <SetupCard setup={setup.data} />
         <Card size="small" title="Try it">
@@ -158,6 +159,8 @@ function SetupCard({ setup }: { setup: CaptureSetupDto }) {
   const { message } = App.useApp();
   const update = useUpdateCaptureSetup();
   const { token } = theme.useToken();
+  const { user } = useAuth();
+  const admin = !!user && canManageIntegrations(user.roleKey);
   const toggle = async (on: boolean) => {
     try {
       await update.mutateAsync(on);
@@ -168,17 +171,21 @@ function SetupCard({ setup }: { setup: CaptureSetupDto }) {
   };
   const items = [
     { key: 'number', label: 'Send to', children: setup.number ? <span translate="no">{setup.number}</span> : 'Ask your admin for the company WhatsApp number' },
-    { key: 'voice', label: 'Voice notes', children: setup.voice ? 'Written down, then drafted' : 'Not heard on this server yet: type instead' },
-    {
-      key: 'server',
-      label: 'This server',
-      children: setup.receiving ? `Receiving through ${setup.provider ? WHATSAPP_PROVIDER_LABELS[setup.provider] : 'WhatsApp'}` : 'Not receiving WhatsApp messages yet (see the deployment notes)',
-    },
-    ...(setup.webhookPath
+    { key: 'voice', label: 'Voice notes', children: setup.voice ? 'Written down, then drafted' : 'Not available yet: type instead' },
+    ...(admin
+      ? [
+          {
+            key: 'server',
+            label: 'Receiving',
+            children: setup.receiving ? `Through ${setup.provider ? WHATSAPP_PROVIDER_LABELS[setup.provider] : 'WhatsApp'}` : `Not receiving WhatsApp messages yet. Ask ${PRODUCT_NAME} support to connect the number.`,
+          },
+        ]
+      : []),
+    ...(admin && setup.webhookPath
       ? [
           {
             key: 'webhook',
-            label: 'Webhook',
+            label: 'Address for the WhatsApp provider',
             children: (
               <Typography.Text copyable translate="no">
                 {`${API_URL}${setup.webhookPath}`}
@@ -222,7 +229,7 @@ function StatsLine({ stats }: { stats: CaptureStatsDto }) {
   return (
     <Typography.Text type="secondary">
       Last {stats.days} days: <span translate="no">{stats.saved}</span> of <span translate="no">{decided}</span> drafts saved as drafted (
-      <span translate="no">{Math.round(share * 100)}%</span>, aim {Math.round(CAPTURE_GO_LIVE_SHARE * 100)}%)
+      <span translate="no">{Math.round(share * 100)}%</span>)
     </Typography.Text>
   );
 }

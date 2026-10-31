@@ -154,8 +154,8 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
     <EmptyArt art="entries" size="small" title="No engine hours yet">
       <p style={{ margin: '4px 0 8px' }}>
         {data?.unmatchedDevices
-          ? `${data.unmatchedDevices} tracker${data.unmatchedDevices === 1 ? ' is' : 's are'} not matched to a machine yet. Match them in Admin, Connections, Devices.`
-          : "Connect the fleet's GPS trackers or a machine maker's feed in Admin, Connections, and each machine's engine hours show here by the day."}
+          ? `${data.unmatchedDevices} tracker${data.unmatchedDevices === 1 ? ' is' : 's are'} not matched to a machine yet. Match them in Admin › Connections › Devices.`
+          : "Connect the fleet's GPS trackers or a machine maker's feed in Admin › Connections, and each machine's engine hours show here by the day."}
       </p>
       {admin ? <LinkButton href="/connections?tab=devices">Open connections</LinkButton> : null}
     </EmptyArt>

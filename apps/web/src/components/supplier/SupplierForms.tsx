@@ -145,7 +145,7 @@ export function AcceptForm({ order, onClose }: { order: SupplierOrderDto | null;
     >
       <Form form={form} layout="vertical">
         <Typography.Paragraph>By accepting you agree to the order's items, rates and terms. Whoever raised it is told.</Typography.Paragraph>
-        <Form.Item name="note" label="Remark (optional)">
+        <Form.Item name="note" label="Remark">
           <Input.TextArea rows={3} maxLength={500} placeholder="Will deliver in two lots, the first on the 25th" />
         </Form.Item>
       </Form>

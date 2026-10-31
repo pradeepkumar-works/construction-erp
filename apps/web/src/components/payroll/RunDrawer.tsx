@@ -48,7 +48,7 @@ function StepModal({ run, step, onClose }: { run: PayrollRunDetailDto; step: 'se
             <Form.Item name="paidOn" label="Paid on" rules={[{ required: true, message: 'Choose the day the bank paid it' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="paymentRef" label="Bank reference (optional)">
+            <Form.Item name="paymentRef" label="Bank reference">
               <Input maxLength={80} placeholder="NEFT batch or UTR" />
             </Form.Item>
           </>

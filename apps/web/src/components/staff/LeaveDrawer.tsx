@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Popconfirm, Space, Table, Timeline, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Popconfirm, Space, Table, Timeline, Typography } from 'antd';
 import type { LeaveRequestDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -124,7 +124,11 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
         </>
       )}
       <Modal open={rejecting} title="Reject leave" okText="Reject" okButtonProps={{ danger: true, disabled: !note.trim() }} confirmLoading={act.isPending} onOk={() => act.mutate('reject')} onCancel={() => setRejecting(false)} destroyOnHidden>
-        <Input.TextArea rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why, so they can plan again" aria-label="Reason for rejecting" />
+        <Form layout="vertical" component={false}>
+          <Form.Item label="Reason for rejecting" htmlFor="leave-reject-reason" style={{ marginBottom: 0 }}>
+            <Input.TextArea id="leave-reject-reason" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why, so they can plan again" />
+          </Form.Item>
+        </Form>
       </Modal>
     </Drawer>
   );

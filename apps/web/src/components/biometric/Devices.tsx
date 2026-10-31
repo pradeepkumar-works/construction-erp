@@ -61,7 +61,7 @@ function DeviceForm({ open, onClose, device, onSaved }: { open: boolean; onClose
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Name the device, for example Gate terminal' }]}>
             <Input maxLength={80} placeholder="Gate terminal" />
           </Form.Item>
-          <Form.Item name="model" label="Make and model (optional)">
+          <Form.Item name="model" label="Make and model">
             <Input maxLength={80} placeholder="ZKTeco K40, eSSL X990" />
           </Form.Item>
         </FormGrid>
@@ -79,8 +79,8 @@ function DeviceForm({ open, onClose, device, onSaved }: { open: boolean; onClose
           </Form.Item>
         )}
         <FormGrid cols={2}>
-          <Form.Item name="projectId" label="Site" extra="Workers who punch on it are marked at this site. Leave blank for an office.">
-            <ProjectSelect placeholder="Head office" style={{ width: '100%' }} aria-label="Site" />
+          <Form.Item name="projectId" label="Project" extra="Workers who punch on it are marked at this project. Leave blank for an office.">
+            <ProjectSelect placeholder="Head office" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="utcOffsetMin" label="Device clock, minutes ahead of UTC" extra="India is 330">
             <InputNumber min={-720} max={840} step={30} style={{ width: '100%' }} />

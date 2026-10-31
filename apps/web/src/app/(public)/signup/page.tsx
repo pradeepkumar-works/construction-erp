@@ -9,6 +9,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAuthOptions } from '@/lib/queries';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule } from '@/components/form/inputs';
 import { BRAND } from '@/lib/brand';
 
 interface Values {
@@ -46,22 +47,22 @@ export default function SignupPage() {
     <AuthCard title="Create your company" subtitle="You become its admin and can invite your team next." width={440}>
       {isLoading ? <Skeleton active /> : null}
       {options && !options.signup ? (
-        <Alert type="info" showIcon title="Sign-up is closed on this server." description={`Ask whoever runs your ${BRAND.name} to create your company, or sign in if you already have an account.`} style={{ marginBottom: 16 }} />
+        <Alert type="info" showIcon title="Sign-up is closed." description={`Ask whoever runs your ${BRAND.name} to create your company, or sign in if you already have an account.`} style={{ marginBottom: 16 }} />
       ) : null}
       {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
       {options?.signup ? (
         <Form<Values> layout="vertical" onFinish={onFinish} requiredMark={false}>
           <Form.Item name="organizationName" label="Company name" rules={[{ required: true, whitespace: true, min: 3, message: 'Enter your company name' }]}>
-            <Input placeholder="Sai Ram Constructions Pvt Ltd" size="large" maxLength={120} />
+            <Input placeholder="e.g. ABC Infra Pvt Ltd" size="large" maxLength={120} />
           </Form.Item>
           <Form.Item name="fullName" label="Your name" rules={[{ required: true, whitespace: true, min: 2, message: 'Enter your name' }]}>
             <Input autoComplete="name" size="large" maxLength={80} />
           </Form.Item>
-          <Form.Item name="email" label="Work email" rules={[{ required: true, message: 'Enter your email' }, { type: 'email', message: 'Enter an email address, e.g. name@company.com' }]}>
-            <Input autoComplete="username" size="large" />
+          <Form.Item name="email" label="Work email" rules={[{ required: true, message: 'Enter your email' }, emailRule]}>
+            <Input {...EMAIL_INPUT} autoComplete="username" size="large" />
           </Form.Item>
-          <Form.Item name="phone" label="Mobile (optional)">
-            <Input autoComplete="tel" size="large" maxLength={20} />
+          <Form.Item name="phone" label="Mobile" rules={[phoneRule]}>
+            <Input {...PHONE_INPUT} size="large" />
           </Form.Item>
           <Form.Item name="password" label="Password" rules={[{ required: true, min: MIN_PASSWORD_LENGTH, message: `At least ${MIN_PASSWORD_LENGTH} characters` }]}>
             <Input.Password autoComplete="new-password" size="large" />

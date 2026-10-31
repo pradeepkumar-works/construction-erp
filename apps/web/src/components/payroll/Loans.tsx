@@ -68,7 +68,7 @@ function LoanForm({ open, onClose }: { open: boolean; onClose: () => void }) {
             <DatePicker picker="month" format="MMM YYYY" style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="note" label="Note (optional)">
+        <Form.Item name="note" label="Note">
           <Input maxLength={300} />
         </Form.Item>
       </Form>
@@ -107,7 +107,7 @@ export function Loans() {
             onConfirm={() =>
               act
                 .mutateAsync({ method: 'delete', path: `/payroll/loans/${l.id}` })
-                .then(() => message.success('Deleted'))
+                .then(() => message.success(`${STAFF_LOAN_KIND_LABELS[l.kind]} deleted`))
                 .catch((err) => message.error(errorMessage(err, 'Could not delete it. Try again.')))
             }
           >

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -56,7 +55,7 @@ function PortalProject() {
 
   return (
     <div className="page-container">
-      <PageHeader title={data ? data.name : 'Project'} subtitle={data ? [data.code, data.clientName, data.location].filter(Boolean).join(' · ') : undefined} extra={<Link href="/portal" className="text-link">All my projects</Link>} />
+      <PageHeader title={data ? data.name : 'Project'} subtitle={data ? [data.code, data.clientName, data.location].filter(Boolean).join(' · ') : undefined} crumbs={[{ title: 'My projects', href: '/portal' }]} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <PageSkeleton shape="workspace" header={false} /> : null}
       {data ? (

@@ -72,7 +72,7 @@ export function DecideChangeForm({ decision, onClose }: { decision: { change: Su
         {c?.bank && decision?.approve ? (
           <Typography.Paragraph type="secondary">Payments go to the new account from now on. Call the supplier on a number you already had to confirm it first.</Typography.Paragraph>
         ) : null}
-        <Form.Item name="note" label={decision?.approve ? 'Note (optional)' : 'Why (the supplier sees this)'} rules={decision?.approve ? [] : [{ required: true, whitespace: true, message: 'Say why, so the supplier knows what to send' }]}>
+        <Form.Item name="note" label={decision?.approve ? 'Note' : 'Why (the supplier sees this)'} rules={decision?.approve ? [] : [{ required: true, whitespace: true, message: 'Say why, so the supplier knows what to send' }]}>
           <Input.TextArea rows={3} maxLength={500} />
         </Form.Item>
       </Form>
@@ -110,7 +110,7 @@ export function InviteLoginForm({ vendor, onClose, onInvited }: { vendor: { id: 
         <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Enter their email' }, emailRule]}>
           <Input {...EMAIL_INPUT} autoComplete="off" />
         </Form.Item>
-        <Form.Item name="phone" label="Phone (optional)" rules={[phoneRule]}>
+        <Form.Item name="phone" label="Phone" rules={[phoneRule]}>
           <Input {...PHONE_INPUT} autoComplete="off" />
         </Form.Item>
       </Form>

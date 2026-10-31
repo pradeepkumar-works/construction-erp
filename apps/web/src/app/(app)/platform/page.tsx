@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, Descriptions, Divider, Drawer, Flex, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { Alert, App, Button, Descriptions, Divider, Drawer, Flex, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -280,7 +280,11 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
         destroyOnHidden
       >
         <Typography.Paragraph>Nobody in the company can sign in until the suspension is lifted. Their data is kept. The reason goes in the company's log, which their admins can read.</Typography.Paragraph>
-        <Input.TextArea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason, e.g. payment overdue" aria-label="Reason" maxLength={300} />
+        <Form layout="vertical" component={false}>
+          <Form.Item label="Reason" htmlFor="suspend-reason" style={{ marginBottom: 0 }}>
+            <Input.TextArea id="suspend-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. payment overdue" maxLength={300} />
+          </Form.Item>
+        </Form>
       </Modal>
     </Drawer>
   );

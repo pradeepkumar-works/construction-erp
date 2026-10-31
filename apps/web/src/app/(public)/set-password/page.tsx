@@ -9,6 +9,8 @@ import { MIN_PASSWORD_LENGTH, type LoginResponse, type PasswordTokenInfoDto } fr
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { ResultMark } from '@/components/common/ResultMark';
+import { DisconnectOutlined } from '@/components/common/icons';
 import { formatDateTime } from '@/lib/format';
 
 /** Landing page of an invite or reset link: choose a password, then go straight in. */
@@ -44,7 +46,7 @@ export default function SetPasswordPage() {
     <AuthCard title={invite ? 'Set up your account' : 'Choose a new password'} subtitle={invite ? 'Welcome! Choose a password to finish setting up your account.' : 'Choose a new password, then you are signed in.'}>
       {!token || info.error ? (
         <Result
-          status="warning"
+          icon={<ResultMark icon={<DisconnectOutlined />} />}
           title="This link cannot be used"
           subTitle={token ? errorMessage(info.error) : 'The link is incomplete. Open it again from your email.'}
           extra={

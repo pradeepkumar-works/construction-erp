@@ -37,8 +37,8 @@ function AgentForm({ open, onClose, onCreated }: { open: boolean; onClose: () =>
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Name the Connector, for example Site office PC' }]}>
             <Input maxLength={80} placeholder="Site office PC" />
           </Form.Item>
-          <Form.Item name="projectId" label="Site (optional)">
-            <ProjectSelect allowClear placeholder="Head office" style={{ width: '100%' }} aria-label="Site" />
+          <Form.Item name="projectId" label="Project">
+            <ProjectSelect allowClear placeholder="Head office" style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
       </Form>

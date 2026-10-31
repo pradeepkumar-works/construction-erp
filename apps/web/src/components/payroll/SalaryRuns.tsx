@@ -42,8 +42,8 @@ function NewRunModal({ open, onClose, onCreated }: { open: boolean; onClose: () 
         <Form.Item name="month" label="Month" rules={[{ required: true, message: 'Choose the month' }]}>
           <DatePicker picker="month" format="MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
         </Form.Item>
-        <Form.Item name="projectId" label="Site (optional)" extra="Leave blank for the whole company. Choose a site to pay its staff on their own run.">
-          <ProjectSelect placeholder="Whole company" style={{ width: '100%' }} aria-label="Site" />
+        <Form.Item name="projectId" label="Project" extra="Leave blank for the whole company. Choose a project to pay its staff on their own run.">
+          <ProjectSelect placeholder="Whole company" style={{ width: '100%' }} />
         </Form.Item>
       </Form>
     </FormShell>

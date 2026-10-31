@@ -27,9 +27,9 @@ interface FormValues {
 const DATE = { style: { width: '100%' }, format: 'DD MMM YYYY' } as const;
 const NOTE_LABEL: Partial<Record<EmployeeEventType, string>> = {
   WARNING: 'What the warning is about',
-  RESIGNED: 'Reason for leaving (optional)',
+  RESIGNED: 'Reason for leaving',
   TERMINATED: 'Reason',
-  RETIRED: 'Note (optional)',
+  RETIRED: 'Note',
 };
 
 /**
@@ -90,13 +90,13 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
           <FormGrid cols={2}>
             <Form.Item
               name="toDesignation"
-              label={type === 'PROMOTED' ? 'New designation' : 'New designation (optional)'}
+              label="New designation"
               extra={`Now ${employee.designation}`}
               rules={type === 'PROMOTED' ? [{ required: true, whitespace: true, message: 'Enter the new designation' }] : []}
             >
               <Input maxLength={80} />
             </Form.Item>
-            <Form.Item name="toDepartment" label="New department (optional)" extra={employee.department ? `Now ${employee.department}` : undefined}>
+            <Form.Item name="toDepartment" label="New department" extra={employee.department ? `Now ${employee.department}` : undefined}>
               <Input maxLength={80} />
             </Form.Item>
           </FormGrid>
@@ -104,7 +104,7 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
         {money && (type === 'INCREMENT' || type === 'PROMOTED') && (
           <Form.Item
             name="toCtc"
-            label={type === 'INCREMENT' ? 'New cost to company a year' : 'New cost to company a year (optional)'}
+            label="New cost to company a year"
             extra={ctcNow ? `Now ${formatINR(ctcNow)} a year` : 'No CTC recorded yet'}
             rules={type === 'INCREMENT' ? [{ required: true, message: 'Enter the new cost to company a year' }] : []}
           >
@@ -119,7 +119,7 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
         {type && (
           <Form.Item
             name="note"
-            label={NOTE_LABEL[type] ?? 'Note for the letter (optional)'}
+            label={NOTE_LABEL[type] ?? 'Note for the letter'}
             rules={type === 'WARNING' || type === 'TERMINATED' ? [{ required: true, whitespace: true, message: type === 'WARNING' ? 'Write what the warning is about' : 'Give the reason' }] : []}
           >
             <Input.TextArea rows={3} maxLength={1000} />

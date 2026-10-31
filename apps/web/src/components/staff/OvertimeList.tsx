@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Input, Modal, Space, Table, Typography } from 'antd';
+import { App, Button, Form, Input, Modal, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import type { StaffAttendanceDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -92,7 +92,11 @@ export function OvertimeList() {
         onCancel={() => setRejecting(null)}
         destroyOnHidden
       >
-        <Input.TextArea rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why, so they know what counts" aria-label="Reason for rejecting" />
+        <Form layout="vertical" component={false}>
+          <Form.Item label="Reason for rejecting" htmlFor="overtime-reject-reason" style={{ marginBottom: 0 }}>
+            <Input.TextArea id="overtime-reject-reason" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why, so they know what counts" />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

@@ -285,7 +285,7 @@ export function OfficialReportView({ projectId, kind, picker }: { projectId: str
             {data.issue ? ` ${issueLine(data)}; this makes the next revision.` : ''}
           </Typography.Paragraph>
           <Form form={form} layout="vertical">
-            <Form.Item name="note" label="Note for the register (optional)">
+            <Form.Item name="note" label="Note for the register">
               <Input.TextArea rows={2} maxLength={500} placeholder={data.issue ? 'What changed since the last revision' : 'Sent to the PIU by email'} />
             </Form.Item>
           </Form>

@@ -45,8 +45,8 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
           type="info"
           showIcon
           style={{ marginBottom: token.margin }}
-          title="Not set up on this server yet"
-          description="The server needs an AI key before anyone can ask. Whoever runs your server adds OPENROUTER_API_KEY (or ANTHROPIC_API_KEY) to its settings; your choices here are kept until then."
+          title={`Ask ${PRODUCT_NAME} is not set up for your company yet`}
+          description={`Ask ${PRODUCT_NAME} support to turn it on. Your choices here are kept until then.`}
         />
       )}
       <Flex vertical gap={token.marginLG}>
@@ -89,17 +89,9 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
               options={AI_ROLE_CHOICES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
             />
           )}
-          <Flex gap={token.marginSM} align="center" wrap style={{ marginTop: token.marginSM }}>
-            <Button
-              type="primary"
-              disabled={!rolesChanged || (limited && !roles.length)}
-              loading={update.isPending && update.variables?.roles !== undefined}
-              onClick={() => save({ roles: limited ? roles : [] }, limited ? 'Roles saved' : 'Open to all staff')}
-            >
-              Save roles
-            </Button>
-            <Typography.Text type="secondary">{limited && !roles.length ? 'Choose at least one role, or pick All staff.' : 'Admins can always use it.'}</Typography.Text>
-          </Flex>
+          <Typography.Paragraph type="secondary" style={{ margin: `${token.marginSM}px 0 0` }}>
+            {limited && !roles.length ? 'Choose at least one role, or pick All staff.' : 'Admins can always use it.'}
+          </Typography.Paragraph>
         </div>
         <div>
           <label htmlFor="ai-cap" style={{ fontWeight: 600, display: 'block', marginBottom: token.marginXXS }}>
@@ -118,9 +110,6 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
               onChange={(v) => setCap(v === null ? null : Number(v))}
               style={{ width: 180 }}
             />
-            <Button type="primary" disabled={cap === data.monthlyCapInr} loading={update.isPending && update.variables?.monthlyCapInr !== undefined} onClick={() => save({ monthlyCapInr: cap }, 'Allowance saved')}>
-              Save
-            </Button>
             {data.monthlyCapInr !== null && <Button onClick={() => save({ monthlyCapInr: null }, plan ? "Allowance back to the plan's" : 'Allowance back to the default')}>{plan ? "Use the plan's" : 'Use the default'}</Button>}
           </Space>
           <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXXS}px 0 0` }}>
@@ -140,10 +129,20 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
               showIcon
               style={{ marginTop: token.marginSM }}
               title={`Paused: ${BILLING_STATUS_LABELS.READ_ONLY}`}
-              description={`The trial or subscription has ended, so Ask ${PRODUCT_NAME} is paused with the rest of the company's changes. Renew it under Subscription to use it again.`}
+              description={`The trial or subscription has ended, so Ask ${PRODUCT_NAME} is paused with the rest of the company's changes. Renew it in Admin › Subscription to use it again.`}
             />
           )}
         </div>
+        <Flex justify="flex-end">
+          <Button
+            type="primary"
+            disabled={(!rolesChanged && cap === data.monthlyCapInr) || (limited && !roles.length)}
+            loading={update.isPending && update.variables?.enabled === undefined}
+            onClick={() => save({ ...(rolesChanged ? { roles: limited ? roles : [] } : {}), ...(cap !== data.monthlyCapInr ? { monthlyCapInr: cap } : {}) }, 'Settings saved')}
+          >
+            Save settings
+          </Button>
+        </Flex>
       </Flex>
     </Card>
   );
@@ -158,7 +157,7 @@ function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: strin
   const pct = data.effectiveCapInr > 0 ? Math.min(100, Math.round((data.spentThisMonthInr / data.effectiveCapInr) * 100)) : 100;
   return (
     <Card
-      title="Use"
+      title="Usage"
       style={{ marginBottom: token.margin }}
       extra={<Select aria-label="Month" value={month} onChange={onMonth} style={{ width: 140 }} options={recentMonths().map((m) => ({ value: m, label: formatMonth(m) }))} />}
     >
@@ -167,7 +166,6 @@ function UsageCard({ data, month, onMonth }: { data: AiSettingsDto; month: strin
         items={[
           { key: 'spent', label: 'Used', children: current ? `${formatINR(data.spentThisMonthInr)} of ${formatINR(data.effectiveCapInr)}` : formatINR(data.spentThisMonthInr) },
           { key: 'questions', label: 'Questions', children: data.questionsThisMonth.toLocaleString('en-IN') },
-          { key: 'model', label: 'Model', children: data.model },
         ]}
       />
       {current && <Progress percent={pct} status={pct >= 100 ? 'exception' : 'normal'} aria-label={`${pct}% of the monthly allowance used`} style={{ maxWidth: 480 }} />}
@@ -399,13 +397,13 @@ export default function AiSettingsPage() {
   if (!allowed)
     return (
       <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-        <PageHeader title={`Ask ${PRODUCT_NAME}`} />
+        <PageHeader title={`Ask ${PRODUCT_NAME} settings`} />
         <Alert type="info" title={`Only an admin can change Ask ${PRODUCT_NAME} settings.`} />
       </div>
     );
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title={`Ask ${PRODUCT_NAME}`} subtitle="An assistant that answers questions about your company's records, with links to each record it used." />
+      <PageHeader title={`Ask ${PRODUCT_NAME} settings`} subtitle="An assistant that answers questions about your company's records, with links to each record it used." />
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : isLoading || !data ? (

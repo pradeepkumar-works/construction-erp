@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Input, Table, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Form, Input, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { EyeOutlined } from '@/components/common/icons';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -124,7 +124,11 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
                 Attend
               </Divider>
               <Typography.Paragraph type="secondary">Record that you were present for this inspection. Your remarks go to the site team and the quality engineer.</Typography.Paragraph>
-              <Input.TextArea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Remarks (optional)" aria-label="Your remarks" maxLength={1000} />
+              <Form layout="vertical" component={false}>
+          <Form.Item label="Your remarks" htmlFor="witness-remarks" style={{ marginBottom: 0 }}>
+            <Input.TextArea id="witness-remarks" rows={3} value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} />
+          </Form.Item>
+        </Form>
               <Button type="primary" icon={<EyeOutlined />} style={{ marginTop: 8 }} loading={witness.isPending} onClick={save}>
                 {data.witnessedAt ? 'Update my remarks' : 'I attended this inspection'}
               </Button>

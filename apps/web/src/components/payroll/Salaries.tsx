@@ -127,7 +127,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
             <Form.Item name="taxRegime" label="Income tax regime">
               <Select options={TAX_REGIMES.map((t) => ({ value: t, label: TAX_REGIME_LABELS[t] }))} />
             </Form.Item>
-            <Form.Item name="otherIncome" label="Other income this year (optional)" extra="Salary from an earlier employer, for TDS">
+            <Form.Item name="otherIncome" label="Other income this year" extra="Salary from an earlier employer, for TDS">
               <MoneyInput />
             </Form.Item>
             {values?.taxRegime === 'OLD' && (
@@ -136,7 +136,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
               </Form.Item>
             )}
           </FormGrid>
-          <Form.Item name="note" label="Note (optional)">
+          <Form.Item name="note" label="Note">
             <Input maxLength={300} placeholder="For example, after the April increment" />
           </Form.Item>
         </FormSection>

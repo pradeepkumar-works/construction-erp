@@ -142,20 +142,20 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             <Input maxLength={80} placeholder="Fleet trackers" />
           </Form.Item>
           {dispenser ? (
-            <Form.Item name="projectId" label="Site" extra="Its fills are issued from this site's store" rules={[{ required: true, message: 'Choose the site whose store the dispenser pours from' }]}>
-              <ProjectSelect placeholder="Choose the site" style={{ width: '100%' }} aria-label="Site" />
+            <Form.Item name="projectId" label="Project" extra="Its fills are issued from this project's store" rules={[{ required: true, message: 'Choose the project whose store the dispenser pours from' }]}>
+              <ProjectSelect placeholder="Choose the project" style={{ width: '100%' }} />
             </Form.Item>
           ) : bridge ? (
-            <Form.Item name="projectId" label="Site" extra="Its weights go to this site's store" rules={[{ required: true, message: 'Choose the site the weighbridge is at' }]}>
-              <ProjectSelect placeholder="Choose the site" style={{ width: '100%' }} aria-label="Site" />
+            <Form.Item name="projectId" label="Project" extra="Its weights go to this project's store" rules={[{ required: true, message: 'Choose the project the weighbridge is at' }]}>
+              <ProjectSelect placeholder="Choose the project" style={{ width: '100%' }} />
             </Form.Item>
           ) : batcher ? (
             <Form.Item name="projectId" label="Plant" extra="Its batches wait for challans on this plant's RMC page" rules={[{ required: true, message: 'Choose the RMC plant the controller batches for' }]}>
               <Select loading={plants.isLoading} placeholder="Choose the plant" options={(plants.data ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
           ) : (
-            <Form.Item name="projectId" label="Site (optional)" extra="Where its readings belong when they do not say">
-              <ProjectSelect allowClear placeholder="Any site" style={{ width: '100%' }} aria-label="Site" />
+            <Form.Item name="projectId" label="Project" extra="Where its readings belong when they do not say">
+              <ProjectSelect allowClear placeholder="Any project" style={{ width: '100%' }} />
             </Form.Item>
           )}
         </FormGrid>
@@ -266,7 +266,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
               ? `${CREDENTIAL_LABEL[auth]}${connection?.secretLast4 ? ` (saved, ends ${connection.secretLast4})` : ''}`
               : connection?.secretLast4
                 ? `Key or password (saved, ends ${connection.secretLast4})`
-                : 'Key or password (optional)'
+                : 'Key or password'
           }
           extra={polled ? 'Saved encrypted; only the last four characters are shown.' : 'For a service that asks for one. It is saved encrypted; only the last four characters are shown.'}
           rules={polled && !connection?.secretLast4 ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }] : undefined}

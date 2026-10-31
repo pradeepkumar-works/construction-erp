@@ -62,7 +62,7 @@ function PrepareModal({ who, onClose }: { who: { employeeId: string; name: strin
             <MoneyInput />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="note" label="Note (optional)">
+        <Form.Item name="note" label="Note">
           <Input.TextArea rows={2} maxLength={500} />
         </Form.Item>
       </Form>
@@ -93,7 +93,7 @@ function PayModal({ s, onClose }: { s: FinalSettlementDto | null; onClose: () =>
         <Form.Item name="paidOn" label={s && Number(s.net) < 0 ? 'Received on' : 'Paid on'} rules={[{ required: true, message: 'Choose the day it was settled' }]}>
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="paymentRef" label="Bank reference (optional)">
+        <Form.Item name="paymentRef" label="Bank reference">
           <Input maxLength={80} placeholder="UTR or cheque number" />
         </Form.Item>
       </Form>
