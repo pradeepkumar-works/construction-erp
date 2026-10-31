@@ -175,8 +175,8 @@ test('registers have views, and lists in a tab keep chips and columns', async ({
   await expect(page.locator('.ant-tag').filter({ hasText: 'Delays' })).toBeVisible();
 
   await page.goto('/stock');
-  await page.getByRole('tab', { name: 'Register' }).click();
-  const register = page.getByRole('tabpanel', { name: 'Register' });
+  await page.getByRole('tab', { name: 'Receipts and issues' }).click();
+  const register = page.getByRole('tabpanel', { name: 'Receipts and issues' });
   await expect(register.getByRole('button', { name: 'Columns' })).toBeVisible();
   const chip = register.locator('.ant-tag').filter({ hasText: 'Type: Issue' });
   // Under trace recording a click in this tab's drop-downs is sometimes lost (not seen by hand), so pick again if needed.

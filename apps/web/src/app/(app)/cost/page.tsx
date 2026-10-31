@@ -27,7 +27,7 @@ export default function Page() {
           activeKey={tab}
           onChange={(k) => setTab(k as (typeof TABS)[number])}
           items={[
-            { key: 'cost', label: 'Cost', children: <CostOverview /> },
+            { key: 'cost', label: 'Project cost', children: <CostOverview /> },
             { key: 'cash-flow', label: 'Cash flow', children: <CashFlowPanel /> },
           ]}
         />

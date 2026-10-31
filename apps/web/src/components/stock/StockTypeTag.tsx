@@ -29,7 +29,7 @@ export function entrySummary(e: {
 }): string {
   if (e.type === 'TRANSFER_OUT') return [`to ${e.toProjectName ?? e.issuedTo ?? NO_VALUE}`, e.transferInNo ? `received as ${e.transferInNo}` : 'in transit'].join(', ');
   if (e.type === 'TRANSFER_IN') return [`from ${e.fromProjectName ?? e.supplier ?? NO_VALUE}`, e.transferOutNo && `sent as ${e.transferOutNo}`].filter(Boolean).join(', ');
-  if (e.type === 'RETURN_TO_VENDOR') return [e.supplier && `back to ${e.supplier}`, e.remarks].filter(Boolean).join(': ') || '-';
+  if (e.type === 'RETURN_TO_VENDOR') return [e.supplier && `back to ${e.supplier}`, e.remarks].filter(Boolean).join(': ') || NO_VALUE;
   if (e.type === 'RETURN_FROM_SITE') return [e.issuedTo && `from ${e.issuedTo}`, e.activityName && `(${e.activityName})`].filter(Boolean).join(' ') || '-';
   if (e.type === 'RECEIPT') return [e.supplier, (e.poNo ?? e.requestNo) && `against ${e.poNo ?? e.requestNo}`, e.challanNo && `challan ${e.challanNo}`].filter(Boolean).join(', ') || '-';
   if (e.type === 'ISSUE') return [e.issuedTo && `to ${e.issuedTo}`, e.activityName && `for ${e.activityName}`].filter(Boolean).join(' ') || '-';

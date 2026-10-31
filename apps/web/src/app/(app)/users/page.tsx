@@ -102,7 +102,7 @@ export default function UsersPage() {
           ),
         },
         { key: 'phone', title: 'Phone', dataIndex: 'phone', width: 140, render: (v) => v ?? NO_VALUE },
-        { title: 'Role', dataIndex: 'roleName', width: 220, render: (v) => <AppTag style={{ margin: 0 }}>{v}</AppTag>, ...sort('role') },
+        { title: 'Role', dataIndex: 'roleKey', width: 220, render: (k: RoleKey) => <AppTag style={{ margin: 0 }}>{ROLE_LABELS[k]}</AppTag>, ...sort('role') },
         { title: 'Created', dataIndex: 'createdAt', width: 130, render: (v) => formatDate(v), ...sort('createdAt') },
         {
           title: 'Active',

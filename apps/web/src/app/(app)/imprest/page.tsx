@@ -37,7 +37,7 @@ function ImprestPage() {
             activeKey={tab}
             onChange={setTab}
             items={[
-              { key: 'imprests', label: 'Imprest holders', children: panel },
+              { key: 'imprests', label: 'Site imprest', children: panel },
               { key: 'funds', label: 'Fund requests', children: <PaymentRequestList fund /> },
             ]}
           />

@@ -53,7 +53,7 @@ export function DeliveriesExpected({ projectId }: { projectId?: string }) {
       ),
     },
     ...(projectId ? [] : [{ key: 'project', card: 'meta' as const, cardText: (r: Row) => r.projectName, title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: true }]),
-    { key: 'vendor', card: 'meta', cardText: (r) => r.vendorName, title: 'Supplier', dataIndex: 'vendorName', width: 200, render: (v: string) => <span translate="no">{v}</span> },
+    { key: 'vendor', card: 'meta', cardText: (r) => r.vendorName, title: 'Vendor', dataIndex: 'vendorName', width: 200, render: (v: string) => <span translate="no">{v}</span> },
     {
       key: 'due',
       card: 'date',

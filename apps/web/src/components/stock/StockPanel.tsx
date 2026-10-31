@@ -188,7 +188,7 @@ export function StockPanel({
             : []),
           {
             key: "register",
-            label: "Stock register",
+            label: "Receipts and issues",
             children: <StockEntries projectId={projectId} />,
           },
           ...(valuer

@@ -94,7 +94,7 @@ export function WaitingReceipts({ waiting, projectId: fixedProject }: { waiting:
         key: 'from',
         card: 'meta',
         cardText: (r) => r.supplier ?? NO_VALUE,
-        title: 'Supplier',
+        title: 'Vendor',
         width: 220,
         render: (_, r) => (
           <div>

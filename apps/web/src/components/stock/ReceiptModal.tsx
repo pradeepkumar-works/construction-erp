@@ -348,11 +348,11 @@ export function ReceiptModal({
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {request?.kind === 'PO' ? (
-            <Form.Item label="Supplier">
-              <Input value={request.vendorName ?? ''} disabled aria-label="Supplier" />
+            <Form.Item label="Vendor">
+              <Input value={request.vendorName ?? ''} disabled aria-label="Vendor" />
             </Form.Item>
           ) : (
-            <Form.Item name="supplier" label="Supplier">
+            <Form.Item name="supplier" label="Vendor">
               <VendorPicker kind="SUPPLIER" />
             </Form.Item>
           )}

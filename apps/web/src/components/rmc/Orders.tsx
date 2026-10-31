@@ -50,7 +50,7 @@ export function Orders() {
         </Space>
         {sell && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
-            New quote
+            New RMC quote
           </Button>
         )}
       </div>

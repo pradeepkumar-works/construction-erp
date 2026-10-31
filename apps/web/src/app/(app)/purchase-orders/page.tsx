@@ -22,7 +22,7 @@ function PurchaseOrdersPage() {
           variant="page"
           destroyOnHidden
           items={[
-            { key: 'orders', label: 'Orders', children: <PurchaseOrderList openId={search.get('id')} /> },
+            { key: 'orders', label: 'Purchase orders', children: <PurchaseOrderList openId={search.get('id')} /> },
             { key: 'status', label: 'Delivery status', children: <ProcurementStatusPanel /> },
           ]}
         />
