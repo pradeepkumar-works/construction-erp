@@ -61,7 +61,6 @@ export const BRAND = {
     accentSoft: '#EEF4FD',
     /** A chosen table row or option: a step deeper than `accentSoft`, so it still shows under the pointer's hover. */
     accentChosen: '#E2ECFB',
-    /** Cost heads in every chart and bar: material in the primary blue, two hues, then two slates that read on white and on night. */
     costSubcontract: '#0F766E',
     costLabour: '#D97706',
     costMachinery: '#64748B',
