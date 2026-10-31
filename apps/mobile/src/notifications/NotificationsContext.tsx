@@ -64,7 +64,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       await request<PushTokenDto>('/notifications/push-tokens', { method: 'POST', token, body: { token: reg.token, platform: reg.platform, deviceName: reg.deviceName ?? undefined } });
       registered.current = reg.token;
     } catch {
-      setPush({ ...reg, status: 'unavailable', reason: 'Could not register this phone with the server. Try again later.' });
+      setPush({ ...reg, status: 'unavailable', reason: 'Could not turn on notifications for this phone. Try again later.' });
     }
   }, [token]);
 

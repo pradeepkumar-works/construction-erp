@@ -25,7 +25,7 @@ export default function OutboxScreen() {
   };
 
   const confirmDiscard = (item: OutboxItem) =>
-    Alert.alert(t('Discard entry'), t('This entry has not reached the server and will be deleted from this phone.'), [
+    Alert.alert(t('Discard entry'), t('This entry has not reached the office yet and will be deleted from this phone.'), [
       { text: t('Cancel'), style: 'cancel' },
       { text: t('Discard'), style: 'destructive', onPress: () => void discard(item.id) },
     ]);
@@ -47,7 +47,7 @@ export default function OutboxScreen() {
                 {[pendingCount ? t('{n} waiting to send', { n: pendingCount }) : null, failedCount ? t('{n} need attention', { n: failedCount }) : null].filter(Boolean).join(' · ')}
               </Text>
             ) : null}
-            <Text style={[typography.caption, styles.synced]}>{lastSyncedAt ? t('Last sent to the server {when}', { when: formatDateTime(lastSyncedAt) }) : t('Nothing sent from this phone yet')}</Text>
+            <Text style={[typography.caption, styles.synced]}>{lastSyncedAt ? t('Last sent {when}', { when: formatDateTime(lastSyncedAt) }) : t('Nothing sent from this phone yet')}</Text>
             {items.length ? <Button title={t('Send now')} icon="cloud-upload-outline" variant="secondary" onPress={() => void sync()} disabled={!online || syncing} /> : null}
           </Card>
         }

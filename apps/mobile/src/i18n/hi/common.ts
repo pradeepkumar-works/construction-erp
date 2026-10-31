@@ -240,7 +240,7 @@ export const COMMON: Record<string, string> = {
   No: 'नहीं',
   'Loading…': 'लोड हो रहा है…',
   'Saving…': 'सेव हो रहा है…',
-  'Something went wrong': 'कुछ गड़बड़ हो गई',
+  'Could not reach the office. Check the signal and try again.': 'ऑफ़िस से संपर्क नहीं हो सका। सिग्नल देखकर फिर कोशिश करें।',
   'Nothing here yet': 'अभी यहाँ कुछ नहीं',
   Project: 'प्रोजेक्ट',
   Date: 'तारीख',
@@ -274,7 +274,7 @@ export const COMMON: Record<string, string> = {
   'Approvals waiting for you, entries sent back to you, and the daily DPR reminder. Your phone asks next; you can change it later under Profile.':
     'आपकी मंज़ूरी का इंतज़ार करती एंट्री, आपको लौटाई गई एंट्री, और रोज़ का DPR रिमाइंडर। अब फ़ोन पूछेगा; बाद में प्रोफ़ाइल में बदल सकते हैं।',
   'Notifications are off on this phone.': 'इस फ़ोन पर सूचनाएँ बंद हैं।',
-  'Could not register this phone with the server. Try again later.': 'इस फ़ोन को सर्वर पर दर्ज नहीं कर सके। बाद में फिर कोशिश करें।',
+  'Could not turn on notifications for this phone. Try again later.': 'इस फ़ोन पर सूचनाएँ चालू नहीं हो सकीं। बाद में फिर कोशिश करें।',
   'Overtime hours for {name}': '{name} के ओवरटाइम घंटे',
   'Opens the outbox': 'आउटबॉक्स खोलता है',
   uploading: 'अपलोड हो रही है',
@@ -304,4 +304,7 @@ export const COMMON: Record<string, string> = {
   'Work not done on site': 'साइट पर काम नहीं हुआ',
   'Save 1 change': '1 बदलाव सेव करें',
   'Save {n} changes': '{n} बदलाव सेव करें',
+  'You were signed out. Sign in again.': 'आप साइन आउट हो गए। फिर से साइन इन करें।',
+  'Could not upload: Nirmaan cannot be reached. Check your signal and try again.': 'अपलोड नहीं हुआ: Nirmaan से संपर्क नहीं हो रहा। सिग्नल देखकर फिर कोशिश करें।',
+  'Cannot reach Nirmaan. Check your signal and try again.': 'Nirmaan से संपर्क नहीं हो रहा। सिग्नल देखकर फिर कोशिश करें।',
 };

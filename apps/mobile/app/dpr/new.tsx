@@ -23,7 +23,7 @@ import {
 } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, IconButton } from '../../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, IconButton, useSnackbar } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, outboxToPhotos, OutboxRefusal, ReviewerNote, useOutboxEntry } from '../../src/forms/edit';
 import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
@@ -285,20 +285,30 @@ export default function NewDprScreen() {
   const headCount = useMemo(() => manpower.filter((r) => r.category && /^\d+$/.test(r.count.trim())).map((r) => ({ category: r.category as string, count: Number(r.count) })), [manpower]);
   const hasLines = lines.some((l) => l.activityId);
   const [copying, setCopying] = useState(false);
-  const copyYesterday = async () => {
-    if (!projectId) return;
+  const snackbar = useSnackbar();
+  // The DPR before the report date, which may be days back after a holiday: the button names its date and lines.
+  const dayBefore = useMemo(() => {
+    if (!isIsoDate(date)) return null;
+    const prev = new Date(`${date}T00:00:00Z`);
+    prev.setUTCDate(prev.getUTCDate() - 1);
+    return prev.toISOString().slice(0, 10);
+  }, [date]);
+  const lastDpr = useFetch<Paginated<DailyReportDto>>((a) => a.get('/dpr', { projectId: projectId!, to: dayBefore!, pageSize: 1 }), [projectId, dayBefore], {
+    enabled: !editId && online && !!projectId && !!dayBefore,
+    refetchOnFocus: false,
+  });
+  const last = lastDpr.data?.items[0];
+  const copyLast = async () => {
+    if (!last) return;
     setCopying(true);
     try {
-      const prev = new Date(`${date}T00:00:00Z`);
-      prev.setUTCDate(prev.getUTCDate() - 1);
-      const list = await api.get<Paginated<DailyReportDto>>('/dpr', { projectId, to: prev.toISOString().slice(0, 10), pageSize: 1 });
-      const last = list.items[0];
-      const full = last?.lineCount ? await api.get<DailyReportDto>(`/dpr/${last.id}`) : null;
+      const full = last.lineCount ? await api.get<DailyReportDto>(`/dpr/${last.id}`) : null;
       if (!full?.lines?.length) {
-        setSubmitError(t('No work lines on the last DPR to copy'));
+        setSubmitError(t('The DPR of {date} has no work lines to copy', { date: formatDate(last.date) }));
         return;
       }
       setLines((rows) => [...rows.filter((r) => r.activityId), ...full.lines!.map((l) => copiedRow(l, newId()))]);
+      snackbar.show(t("Copied from the DPR of {date}: check today's quantities", { date: formatDate(last.date) }), { tone: 'info' });
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -394,7 +404,7 @@ export default function NewDprScreen() {
             payload: { projectId, ...body },
             photos: [...toOutboxPhotos(photos), ...lines.filter((r) => r.activityId).flatMap((r) => toOutboxPhotos(r.photos, r.id))],
             title: `DPR · ${formatDate(date)}`,
-            subtitle: `${projectName} · ${t('{n} manpower', { n: totalManpower })}`,
+            subtitle: `${projectName} · ${t('{n} on site', { n: totalManpower })}`,
           }),
         );
       };
@@ -422,7 +432,7 @@ export default function NewDprScreen() {
     return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} />;
   }
   if (created) {
-    return <SubmitSuccess title={editId ? t('DPR resubmitted') : t('DPR submitted')} subtitle={`${created.projectName} · ${formatDate(created.date)} · ${t('{n} manpower. Sent for approval.', { n: created.totalManpower })}`} detailHref={`/dpr/${created.id}`} />;
+    return <SubmitSuccess title={editId ? t('DPR resubmitted') : t('DPR submitted')} subtitle={`${created.projectName} · ${formatDate(created.date)} · ${t('{n} on site. Sent for approval.', { n: created.totalManpower })}`} detailHref={`/dpr/${created.id}`} />;
   }
   if (projects.loading && !projects.data) return <Loading />;
   if (editId && existing.loading && !existing.data) return <Loading />;
@@ -438,7 +448,7 @@ export default function NewDprScreen() {
       <OutboxRefusal item={refused} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
-        <DatePicker label={t('Report date')} required value={date} onChange={setDate} error={errors.date} />
+        <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         {shows('weather') ? <Chips label={L('weather')} required={dprRequires(def, 'weather')} value={weather} options={weatherChips} onChange={setWeather} /> : null}
         {errors.weather ? <Text style={styles.err}>{errors.weather}</Text> : null}
         {shows('siteCondition') ? (
@@ -522,7 +532,11 @@ export default function NewDprScreen() {
       {shows('lines') ? (
         <Card
           title={L('lines')}
-          right={!editId && online && projectId ? <Button title={t('Copy yesterday')} variant="ghost" size="sm" icon="copy-outline" onPress={copyYesterday} loading={copying} /> : null}
+          right={
+            !editId && online && last?.lineCount ? (
+              <Button title={t(last.lineCount === 1 ? 'Copy 1 line from {date}' : 'Copy {n} lines from {date}', { n: last.lineCount, date: formatDate(last.date) })} variant="ghost" size="sm" icon="copy-outline" onPress={() => void copyLast()} loading={copying} />
+            ) : null
+          }
         >
           <DprLinesEditor rows={lines} onChange={setLines} options={workOptions.data} def={def} headCount={headCount} newId={newId} error={errors.lines} />
         </Card>

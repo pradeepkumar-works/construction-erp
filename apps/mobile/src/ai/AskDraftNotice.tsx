@@ -8,7 +8,7 @@ import { colors, radius, spacing, typography } from '../theme';
 /** English names of a draft's fields, shown through t(), for its "to check" list. */
 const FIELD_LABELS: Record<string, string> = {
   projectId: 'Project',
-  date: 'Report date',
+  date: 'Date',
   weather: 'Weather',
   siteCondition: 'Site condition',
   manpower: 'Manpower',
@@ -18,7 +18,7 @@ const FIELD_LABELS: Record<string, string> = {
   testsConducted: 'Tests conducted',
   safetyObservations: 'Safety observations',
   issues: 'Issues / hindrances',
-  nextDayPlan: 'Next-day plan',
+  nextDayPlan: 'Next day plan',
 };
 
 /**

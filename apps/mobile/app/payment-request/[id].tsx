@@ -42,7 +42,7 @@ export default function PaymentRequestScreen() {
           <Text style={styles.total} maxFontSizeMultiplier={maxFontScale}>
             {formatMoney(data.amount)}
           </Text>
-          <Text style={typography.caption}>{data.neededBy ? t('to pay by {date}', { date: formatDate(data.neededBy) }) : t('to pay')}</Text>
+          <Text style={typography.caption}>{data.neededBy ? t('Needed by {date}', { date: formatDate(data.neededBy) }) : t('To pay')}</Text>
         </View>
         {fund ? (
           <>
@@ -57,14 +57,14 @@ export default function PaymentRequestScreen() {
         )}
         {data.dueDate ? <KeyValue label={t('Bill due')} value={formatDate(data.dueDate)} /> : null}
         {data.targetOpen !== null && data.status !== 'APPROVED' ? <KeyValue label={t('Most it may ask')} value={formatMoney(data.targetOpen)} /> : null}
-        <KeyValue label={t('Pay by')} value={t(PAYMENT_MODE_LABELS[data.mode])} />
+        <KeyValue label={t('Payment mode')} value={t(PAYMENT_MODE_LABELS[data.mode])} />
         {data.status === 'APPROVED' ? <KeyValue label={fund && data.imprestId ? t('Released') : t('Paid')} value={data.paidDate ? t('{amount} on {date}', { amount: formatMoney(data.paidAmount), date: formatDate(data.paidDate) }) : formatMoney(data.paidAmount)} /> : null}
         <KeyValue label={t('Reason')} value={data.reason} multiline />
       </Card>
       <AttachmentGallery attachments={data.attachments} />
       <ReviewActions type="PAYMENT_REQUEST" item={data} onReviewed={setData} />
       {fund ? (
-        data.imprestId ? <Button title={t('Open imprest')} variant="ghost" icon="wallet-outline" onPress={() => router.push('/imprest')} /> : null
+        data.imprestId ? <Button title={t('Open imprest')} variant="ghost" icon="wallet-outline" onPress={() => router.push({ pathname: '/imprest', params: { id: data.imprestId } })} /> : null
       ) : (
         <Button title={bill ? t('Open bill') : t('Open order')} variant="ghost" icon="document-text-outline" onPress={() => router.push(targetPath(data))} />
       )}

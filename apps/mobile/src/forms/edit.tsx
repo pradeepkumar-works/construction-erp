@@ -36,7 +36,7 @@ export function OutboxRefusal({ item }: { item: OutboxItem | null }) {
     <View style={[styles.note, styles.refused]}>
       <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
       <View style={styles.body}>
-        <Text style={[styles.label, styles.refusedLabel]}>{t('Not accepted by the server')}</Text>
+        <Text style={[styles.label, styles.refusedLabel]}>{t('Refused')}</Text>
         <Text style={typography.body}>{item.error}</Text>
       </View>
     </View>

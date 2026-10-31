@@ -52,7 +52,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
     <View style={styles.center}>
       <Ionicons name="cloud-offline-outline" size={44} color={colors.danger} />
       <Text style={styles.title}>{t('Could not load')}</Text>
-      <Text style={styles.text}>{message}</Text>
+      <Text style={styles.text}>{t(message)}</Text>
       {onRetry ? (
         <View style={styles.action}>
           <Button title={t('Try again')} onPress={onRetry} variant="secondary" icon="refresh" />
@@ -62,13 +62,17 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   );
 }
 
-/** Inline (non-fullscreen) error banner for forms; screen readers read it out when it appears. */
+/**
+ * Inline (non-fullscreen) error banner for forms; screen readers read it out when it appears. The message goes through
+ * t(), so the app's own and the API's known English messages show in Hindi too.
+ */
 export function ErrorBanner({ message }: { message: string | null }) {
+  const t = useT();
   if (!message) return null;
   return (
     <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
       <Ionicons name="alert-circle" size={20} color={colors.danger} />
-      <Text style={styles.bannerText}>{message}</Text>
+      <Text style={styles.bannerText}>{t(message)}</Text>
     </View>
   );
 }

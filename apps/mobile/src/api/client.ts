@@ -48,7 +48,7 @@ async function parseError(res: Response): Promise<ApiError> {
 async function handle<T>(res: Response): Promise<T> {
   if (res.status === 401) {
     unauthorizedHandler?.();
-    throw new ApiError(401, 'Session expired. Please sign in again.');
+    throw new ApiError(401, 'You were signed out. Sign in again.');
   }
   if (!res.ok) throw await parseError(res);
   if (res.status === 204) return undefined as T;
@@ -108,7 +108,7 @@ export async function uploadFile<T>(file: UploadFile, token: string | null): Pro
   try {
     res = await fetchWithTimeout(`${API_URL}/uploads`, { method: 'POST', headers, body: form }, UPLOAD_TIMEOUT_MS);
   } catch {
-    throw new ApiError(0, 'Upload failed: cannot reach the server.');
+    throw new ApiError(0, 'Could not upload: Nirmaan cannot be reached. Check your signal and try again.');
   }
   return handle<T>(res);
 }
@@ -116,5 +116,5 @@ export async function uploadFile<T>(file: UploadFile, token: string | null): Pro
 export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.message;
   if (e instanceof Error) return e.message;
-  return 'Something went wrong';
+  return 'Could not reach the office. Check the signal and try again.';
 }
