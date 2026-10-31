@@ -140,6 +140,7 @@ import type {
   PayablesDto,
   VendorPaymentDto,
   PaymentRequestDto,
+  SupplierChoiceDto,
   PaymentRequestKind,
   ClientDto,
   MsmeCategory,
@@ -148,6 +149,7 @@ import type {
   VendorKind,
   ProjectContractDto,
   BillingBreakupDto,
+  ContractObligationsDto,
   EpcDto,
   OmDto,
   GettingStartedDto,
@@ -416,7 +418,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -428,7 +430,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection' | 'payment_request';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection' | 'payment_request' | 'supplier_choice';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -444,6 +446,7 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   SUBCONTRACT_BILL: 'subcontract_bill',
   INSPECTION: 'inspection',
   PAYMENT_REQUEST: 'payment_request',
+  SUPPLIER_CHOICE: 'supplier_choice',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -566,6 +569,7 @@ const RECORD_QUERIES = {
   '/subcontract-bills': { key: (id: string) => ['subcontract-bills', 'detail', id], path: '/subcontract-bills' },
   '/inspections': { key: (id: string) => ['inspections', 'detail', id], path: '/inspections' },
   '/payment-requests': { key: (id: string) => ['payment-requests', 'detail', id], path: '/payment-requests' },
+  '/supplier-choices': { key: (id: string) => ['supplier-choices', 'detail', id], path: '/supplier-choices' },
   '/debit-notes': { key: (id: string) => ['debit-notes', 'detail', id], path: '/debit-notes' },
   '/projects': { key: (id: string) => ['projects', id], path: '/projects' },
 } satisfies Record<string, { key: (id: string) => QueryKey; path: string }>;
@@ -1751,7 +1755,7 @@ export function useCopyAction<T = unknown>() {
     meta: FAIL_NOTICE,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['documents'] });
-      void qc.invalidateQueries({ queryKey: ['watch-list'] });
+      void qc.invalidateQueries({ queryKey: WATCH_LIST_KEY });
     },
   });
 }
@@ -2061,6 +2065,90 @@ export function useAnswerRfiAsClient() {
   return useMutation({
     mutationFn: async ({ id, answer }: { id: string; answer: string }) => (await api.post<PortalRfiDto>(`/portal/rfis/${id}/answer`, { answer })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+/* ---------- consultant checks (item 172) ---------- */
+
+export const usePortalMeasurements = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'measurements', projectId], queryFn: async () => (await api.get<PortalMeasurementsDto>(`/portal/projects/${projectId}/measurements`)).data, enabled: !!projectId });
+
+export function useCheckMeasurement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; checkedQty: string; checkedOn?: string; note?: string | null }) => (await api.post<PortalMeasurementDto>(`/portal/measurements/${id}/check`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export const usePortalBillChecks = (billId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'bill-checks', billId], queryFn: async () => (await api.get<BillMeasureChecksDto>(`/portal/bills/${billId}/checks`)).data, enabled: !!billId });
+
+export function useSignHidden() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; qty?: string | null; note?: string | null }) => (await api.post<PortalInspectionDto>(`/portal/inspections/${id}/hidden-sign`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export function useCountersignHidden() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: string; note: string | null }) => (await api.post<PortalInspectionDto>(`/portal/inspections/${id}/hidden-countersign`, { note })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export const usePortalSiteOrders = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'site-orders', projectId], queryFn: async () => (await api.get<SiteOrderDto[]>(`/portal/projects/${projectId}/site-orders`)).data, enabled: !!projectId });
+
+export function useWriteSiteOrder(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { date?: string; instruction: string; location?: string | null; complyBy?: string | null }) => (await api.post<SiteOrderDto>(`/portal/projects/${projectId}/site-orders`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export function useDecideSiteOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, accept, note }: { id: string; accept: boolean; note: string | null }) =>
+      (await api.post<SiteOrderDto>(`/portal/site-orders/${id}/${accept ? 'close' : 'reopen'}`, { note })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export const useSiteOrders = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['site-orders', projectId], queryFn: async () => (await api.get<SiteOrderDto[]>('/site-orders', { params: { projectId } })).data, enabled: !!projectId });
+
+export function useRecordSiteOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { projectId: string; date?: string; instruction: string; location?: string | null; complyBy?: string | null; issuedByName: string; issuedByLevel?: CheckLevel | null }) =>
+      (await api.post<SiteOrderDto>('/site-orders', body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site-orders'] }),
+  });
+}
+
+export function useSiteOrderAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, action, text }: { id: string; action: 'reply' | 'close' | 'delete'; text?: string | null }) =>
+      action === 'delete' ? (await api.delete(`/site-orders/${id}`)).data : (await api.post<SiteOrderDto>(`/site-orders/${id}/${action}`, action === 'reply' ? { reply: text } : { note: text ?? null })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site-orders'] }),
+  });
+}
+
+export const useMeasurementChecks = (sheetId: string | undefined) =>
+  useQuery({ queryKey: ['measurement-checks', sheetId], queryFn: async () => (await api.get<MeasurementCheckDto[]>(`/measurements/${sheetId}/checks`)).data, enabled: !!sheetId });
+
+export function useSetMemberLevel(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, checkLevel }: { userId: string; checkLevel: CheckLevel | null }) => (await api.patch(`/projects/${projectId}/members/${userId}`, { checkLevel })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectId] }),
   });
 }
 
@@ -2539,6 +2627,8 @@ export const usePaymentRequests = (filters: PaymentRequestFilters, enabled = tru
   });
 
 export const usePaymentRequest = (id: string | undefined) => useQuery({ ...recordQuery<PaymentRequestDto>('/payment-requests', id), enabled: !!id });
+/** A supplier choice sent for approval (Finalise L1 under the company's rule that orders wait for it). */
+export const useSupplierChoice = (id: string | undefined) => useQuery({ ...recordQuery<SupplierChoiceDto>('/supplier-choices', id), enabled: !!id });
 
 export const usePayables = (filters: { projectId?: string; vendorId?: string } = {}, enabled = true) =>
   useQuery({
@@ -2673,7 +2763,12 @@ export const useRequestToOrder = (id: string | undefined) =>
 /** Finalise the supplier on a request (one quotation, or the lowest per item split), or reopen it. */
 export function useFinaliseL1(id: string) {
   const qc = useQueryClient();
-  const done = () => qc.invalidateQueries({ queryKey: ['quotations'] });
+  const done = () => {
+    qc.invalidateQueries({ queryKey: ['quotations'] });
+    // Finalising may send the choice for approval, or drop one still waiting.
+    qc.invalidateQueries({ queryKey: ['approvals'] });
+    qc.invalidateQueries({ queryKey: ['supplier-choices'] });
+  };
   return {
     finalise: useMutation({
       mutationFn: async (body: { quotationId?: string; split?: boolean; reason?: string | null }) => (await api.post<RequestToOrderDto>(`/material-requests/${id}/finalise`, body)).data,
@@ -2727,7 +2822,6 @@ export function useCoverRequest(materialRequestId: string) {
   });
 }
 
-/** The last approved orders of items (`name|unit` each), keyed by `lastRateKey`. */
 /** What other sites paid for the items in the 30 days before the order (item 121), for the PO form's rate check. */
 export const useRateCheck = (items: { itemName: string; unit: string }[], projectId: string | undefined, poDate: string | undefined, enabled = true, excludePoId?: string) => {
   const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
@@ -2881,6 +2975,14 @@ export const useContract = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['contract', projectId],
     queryFn: async () => (await api.get<ProjectContractDto>(`/projects/${projectId}/contract`)).data,
+    enabled: !!projectId && enabled,
+  });
+
+/** A contract's obligations (item 171): deadlines, where each stands, what missing it costs and what bills took. */
+export const useContractObligations = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['contract', projectId, 'obligations'],
+    queryFn: async () => (await api.get<ContractObligationsDto>(`/projects/${projectId}/contract/obligations`)).data,
     enabled: !!projectId && enabled,
   });
 
@@ -4084,7 +4186,7 @@ export function useDecideHindrance() {
       v.dismiss ? (await api.post<{ ok: true }>(`/hindrances/${v.id}/dismiss`)).data : (await api.post<RiskDto>(`/hindrances/${v.id}/record`, clean({ riskId: v.riskId, category: v.category, party: v.party }))).data,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['risks'] });
-      void qc.invalidateQueries({ queryKey: ['watch-list'] });
+      void qc.invalidateQueries({ queryKey: WATCH_LIST_KEY });
     },
     meta: FAIL_NOTICE,
   });
@@ -4104,8 +4206,10 @@ export const useNoticePeriod = (projectId: string | undefined, enabled = true) =
 /** The delay register for an extension-of-time claim, fetched when printed. */
 export const useDelayRegister = () => useMutation({ mutationFn: async (projectId: string) => (await api.get<DelayRegisterDto>(`/hindrances/register/${projectId}`)).data });
 
+export const WATCH_LIST_KEY = ['watch-list'] as const;
+
 export const useWatchList = (enabled = true) =>
-  useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
+  useQuery({ queryKey: WATCH_LIST_KEY, queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
 
 /** The headline of each check with a page of its own, for the watch list's Other checks (intelligence quick win Q0). */
 export const useInsights = (enabled = true) =>
@@ -4118,7 +4222,7 @@ export function useDismissWarning() {
     mutationFn: async (v: { key: string; outcome?: WarningOutcome; reason?: string; restore?: boolean }) =>
       (await api.post<WatchListDto>(`/warnings/${v.restore ? 'restore' : 'dismiss'}`, v.restore ? { key: v.key } : { key: v.key, outcome: v.outcome, reason: v.reason || undefined })).data,
     onSuccess: (d) => {
-      qc.setQueryData(['watch-list'], d);
+      qc.setQueryData(WATCH_LIST_KEY, d);
       void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
     },
   });
@@ -4130,7 +4234,7 @@ export function useResumeWarningKind() {
   return useMutation({
     mutationFn: async (kind: WarningKind) => (await api.post<WatchListDto>('/warnings/resume', { kind })).data,
     onSuccess: (d) => {
-      qc.setQueryData(['watch-list'], d);
+      qc.setQueryData(WATCH_LIST_KEY, d);
       void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
     },
   });

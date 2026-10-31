@@ -50,6 +50,7 @@ export class CreateActivityDto {
   @ApiPropertyOptional() @IsOptional() @IsUUID() responsibleId?: string | null;
   @ApiPropertyOptional({ description: 'Checklist a new inspection of this activity starts from' }) @IsOptional() @IsUUID() checklistTemplateId?: string | null;
   @ApiPropertyOptional({ description: 'Hold point: progress is approved only after a passed inspection' }) @IsOptional() @IsBoolean() holdPoint?: boolean;
+  @ApiPropertyOptional({ description: 'Hidden work (item 172): progress waits for its inspection signed off before cover-up and countersigned in the client portal' }) @IsOptional() @IsBoolean() hiddenWork?: boolean;
   @ApiPropertyOptional() @IsOptional() @IsInt() sortOrder?: number;
   @ApiPropertyOptional({ description: 'Component or sub-component (work breakdown); a sub-activity takes its activity\'s', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() workElementId?: string | null;
   @ApiPropertyOptional({ description: 'The activity this is a sub-activity of', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() parentActivityId?: string | null;

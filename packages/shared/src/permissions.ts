@@ -27,8 +27,9 @@ export const isSupplier = (role: RoleKey) => role === 'SUPPLIER';
 /** Roles allowed to approve / reject site submissions (within their accessible projects). */
 export const APPROVER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
-/** Roles allowed to create and edit projects, BOQ and activities. */
 export const PROJECT_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
+// The QS keeps the BOQ and plan, not the project or its team.
+export const PROJECT_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 /** Freeze a project's schedule baseline: the project's managers, not the planners who keep the plan current. */
 export const BASELINE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
@@ -77,7 +78,13 @@ export const QUALITY_TEST_ROLES: RoleKey[] = INSPECTION_REQUEST_ROLES;
 /** Roles that raise and close non-conformance reports: QA/QC and approvers. */
 export const NCR_ROLES: RoleKey[] = CHECKLIST_ADMIN_ROLES;
 
-/** Roles that see contract terms and bills: approvers, the QS who prepares bills, and accounts. */
+/**
+ * Record a site order from the paper book and answer site orders with the compliance: the site staff, QA/QC,
+ * the QS and approvers. Anyone with project access reads the book; the client's engineer and the consultant write in it
+ * from the portal.
+ */
+export const SITE_ORDER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QA_QC_ENGINEER', 'QUANTITY_SURVEYOR', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
 /** Keep the document register: add drawings and revisions, send transmittals. Everyone on a project reads it. */
 export const DOCUMENT_CONTROL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER', 'DOCUMENT_CONTROLLER'];
 
@@ -113,10 +120,12 @@ export const GETTING_STARTED_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
 export const COMPANY_TODAY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER', 'PROJECT_MANAGER'];
 
 export const isCompanyWide = (role: RoleKey) => COMPANY_WIDE_ROLES.includes(role);
+export const isDirector = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
 /** Issue an official progress report to the client: it takes a revision and is kept as issued. */
 export const canIssueOfficialReport = (role: RoleKey) => APPROVER_ROLES.includes(role);
 export const canRequestInspection = (role: RoleKey) => INSPECTION_REQUEST_ROLES.includes(role);
+export const canKeepSiteOrders = (role: RoleKey) => SITE_ORDER_ROLES.includes(role);
 export const canManageChecklists = (role: RoleKey) => CHECKLIST_ADMIN_ROLES.includes(role);
 export const canRecordTest = (role: RoleKey) => QUALITY_TEST_ROLES.includes(role);
 export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);
@@ -141,7 +150,6 @@ export const canViewPayroll = (role: RoleKey) => PAYROLL_ROLES.includes(role);
 /** HR records: an employee's personal, statutory and bank details and service history. Staff admins and payroll see
  *  everyone's; each person sees their own (checked by the API). Site managers who mark the register see the job details only. */
 export const canViewEmployeePrivate = (role: RoleKey) => PAYROLL_ROLES.includes(role);
-/** Payroll: HR sets salaries and prepares the run, management approves it, accounts pays it. */
 /** Biometric devices: register them, match their user numbers and import punch files: staff admins. */
 export const canManageBiometric = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role);
 export const canRunPayroll = (role: RoleKey) => role === 'ADMIN' || role === 'HR_MANAGER';
@@ -152,6 +160,7 @@ export const canViewLabourSummary = (role: RoleKey) => PAYROLL_ROLES.includes(ro
 /** See the staff posted at their projects and mark their attendance: staff admins and attendance recorders. */
 export const canMarkStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role) || ATTENDANCE_RECORDER_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);
+export const canManageProjects = (role: RoleKey) => PROJECT_ADMIN_ROLES.includes(role);
 export const canFreezeBaseline = (role: RoleKey) => BASELINE_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 /** Export all the company's data, or ask for the company to be deleted: admins only. */
@@ -160,6 +169,9 @@ export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
 export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
 /** Changing or deleting a view someone else shared with the company (owners always can). */
 export const canManageSharedViews = (role: RoleKey) => role === 'ADMIN';
+// Authors can always remove their own.
+export const canRemoveAnyComment = (role: RoleKey) => role === 'ADMIN';
+export const canMakeGroup = (role: RoleKey) => role === 'ADMIN';
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
 export const seesCompanyToday = (role: RoleKey) => COMPANY_TODAY_ROLES.includes(role);
 export const submitsDpr = (role: RoleKey) => DPR_SUBMITTER_ROLES.includes(role);
@@ -235,21 +247,17 @@ export const canRecoverExcessMaterial = (role: RoleKey) => canPrepareSubcontract
 export const canReportSafety = (role: RoleKey) => SAFETY_REPORTER_ROLES.includes(role);
 /** Issue / reject permits, close incidents. */
 export const canManageSafety = (role: RoleKey) => SAFETY_MANAGER_ROLES.includes(role);
-/** Change a safety record: whoever entered it, the safety officer and approvers. */
 /** Hand PPE to workers and take it back: the safety officer, stores, site staff and approvers. Anyone who reports safety reads the register. */
 export const PPE_ISSUER_ROLES: RoleKey[] = ['SAFETY_OFFICER', 'STORE_MANAGER', 'SITE_ENGINEER', 'TEAM_LEADER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 export const canIssuePpe = (role: RoleKey) => PPE_ISSUER_ROLES.includes(role);
 /** Raise RFIs and record answers received by letter or mail: site and office engineers and approvers. Anyone on the project reads them. */
 export const RFI_RAISER_ROLES: RoleKey[] = ['SITE_ENGINEER', 'TEAM_LEADER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 export const canRaiseRfi = (role: RoleKey) => RFI_RAISER_ROLES.includes(role);
+/** Change a safety record: whoever entered it, the safety officer and approvers. */
 export const canEditSafetyRecord = (user: SubmissionActor, byId: string): boolean => byId === user.id || canManageSafety(user.roleKey);
 
 /** Raise a delay or risk. */
 export const canRaiseRisk = (role: RoleKey) => RISK_RAISER_ROLES.includes(role);
-/**
- * Edit or close a register entry: approvers, the person who raised it and its owner.
- * Deleting one (a wrong entry, not a closed one) is for approvers only.
- */
 /** Record the cause and corrective action of an NCR: the person it is assigned to, site staff and approvers. */
 export const canActOnNcr = (user: SubmissionActor, n: { actionById: string | null }): boolean => n.actionById === user.id || INSPECTION_REQUEST_ROLES.includes(user.roleKey);
 /** Change or delete a test: whoever recorded it, QA/QC and approvers. */

@@ -23,7 +23,7 @@ import { ApprovalRightsService, type LevelEntry } from './approval-rights.servic
 import { mayDecide, queueRoles } from './approval-levels';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE } from './submission-titles';
 
 const REVIEW_ACTIONS = ['APPROVED', 'REJECTED', 'CHANGES_REQUESTED', 'LEVEL_APPROVED'] as const;
 
@@ -42,7 +42,7 @@ interface SubmissionRow {
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
  * review history stays on one record. A DPR's work lines (item 127) are progress entries that follow their DPR (`onStatus`,
- * `partOf`). Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests) goes through here.
+ * `partOf`). Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests, supplier choices) goes through here.
  */
 /** The queue's line reads only the project's and the submitter's names. */
 const NAME = { select: { name: true } } as const;
@@ -271,7 +271,7 @@ export class SubmissionLifecycleService {
     const none = Promise.resolve([] as never[]);
     const allowed = (t: SubmissionType) => whereFor(t) !== null;
     const where = (t: SubmissionType) => whereFor(t) as any;
-    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections, payRequests] = await Promise.all([
+    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections, payRequests, choices] = await Promise.all([
       // A DPR's work lines (item 127) wait and are decided with their DPR, not on their own.
       allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where: { ...where('PROGRESS'), dailyReportId: null }, include: { project: NAME, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where: where('DPR'), include: { project: NAME, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
@@ -293,6 +293,9 @@ export class SubmissionLifecycleService {
             include: { project: NAME, submittedBy: BY, ...PAY_REQUEST_TITLE },
             orderBy: { submittedAt: 'asc' },
           })
+        : none,
+      allowed('SUPPLIER_CHOICE')
+        ? this.prisma.supplierChoice.findMany({ where: where('SUPPLIER_CHOICE'), include: { project: NAME, submittedBy: BY, ...SUPPLIER_CHOICE_TITLE }, orderBy: { submittedAt: 'asc' } })
         : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
@@ -430,6 +433,16 @@ export class SubmissionLifecycleService {
         submittedByName: r.submittedBy.fullName,
         submittedAt: (r.submittedAt ?? r.createdAt).toISOString(),
         amount: amt(r.amount),
+      })),
+      ...choices.map((c) => ({
+        type: 'SUPPLIER_CHOICE' as const,
+        id: c.id,
+        projectId: c.projectId,
+        projectName: c.project.name,
+        title: supplierChoiceTitle(c.materialRequest.requestNo, c.quotation?.vendor.name ?? null, c.split, c.rank, c.amount.toFixed(2)),
+        submittedByName: c.submittedBy.fullName,
+        submittedAt: (c.submittedAt ?? c.createdAt).toISOString(),
+        amount: amt(c.amount),
       })),
     ];
     return out;

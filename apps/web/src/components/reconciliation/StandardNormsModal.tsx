@@ -63,7 +63,7 @@ export function StandardNormsModal({ open, onClose, projectId }: { open: boolean
       message.success(`${r.norms} norm${r.norms === 1 ? '' : 's'} set on ${r.boqItems} BOQ item${r.boqItems === 1 ? '' : 's'}${r.newItems ? `, ${r.newItems} item${r.newItems === 1 ? '' : 's'} added to the master` : ''}`);
       qc.invalidateQueries({ queryKey: ['reconciliation'] });
       qc.invalidateQueries({ queryKey: ['standard-norms', projectId] });
-      qc.invalidateQueries({ queryKey: ['items'] });
+      qc.invalidateQueries({ queryKey: ['stock', 'items'] });
       onClose();
     },
     meta: FAIL_NOTICE,

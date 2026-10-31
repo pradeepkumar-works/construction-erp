@@ -71,6 +71,11 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
               Hold point
             </AppTag>
           )}
+          {r.hiddenWork && (
+            <AppTag tone="pending" style={{ marginLeft: 4 }}>
+              Hidden work
+            </AppTag>
+          )}
           {(r.boqItemNo || r.checklistName || (r.workElementName && !r.parentActivityId) || r.isSummary || r.weightPct) && (
             <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               {[

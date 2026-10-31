@@ -280,7 +280,7 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
     key: 'vertical',
     label: 'Verticals',
     singular: 'vertical',
-    description: "The company's business lines (item 167). Each project and tender belongs to one; the header, lists, department screens and reports can show one vertical at a time.",
+    description: "The company's business lines. Each project and tender belongs to one; the header, lists, department screens and reports can show one vertical at a time.",
     slug: 'vertical',
     node: 'projects.verticals',
     usedOn: 'projects and tenders',

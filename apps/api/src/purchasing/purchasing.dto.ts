@@ -161,7 +161,7 @@ export class ListPurchaseOrdersQuery extends PageQuery {
 /** Purchases › Requests to order: approved requests with something still to order. */
 export class RequestsToOrderQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
-  @ApiPropertyOptional({ enum: ORDER_STAGES, description: 'NEEDS_QUOTES, AWAITING_QUOTES (an enquiry being answered) or READY (L1 ready for its order)' })
+  @ApiPropertyOptional({ enum: ORDER_STAGES, description: 'TO_ENQUIRE, AWAITING_QUOTES (an enquiry being answered), TO_FINALISE, AWAITING_APPROVAL (the finalised supplier waiting for approval) or READY (ready for its order)' })
   @IsOptional()
   @IsIn(ORDER_STAGES as unknown as string[])
   stage?: OrderStage;

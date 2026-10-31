@@ -76,7 +76,6 @@ export function HandoverFormModal({ open, summary, onClose }: { open: boolean; s
       message.success(`Completion recorded; the defect liability period runs to ${formatDate(s.handover?.dlpEndsOn)}`);
       qc.setQueryData(['handover', summary.projectId], s);
       qc.invalidateQueries({ queryKey: ['projects'] });
-      qc.invalidateQueries({ queryKey: ['project', summary.projectId] });
     },
     meta: FAIL_NOTICE,
   });

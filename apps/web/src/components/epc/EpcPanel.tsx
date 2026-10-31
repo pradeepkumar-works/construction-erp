@@ -34,7 +34,7 @@ import {
 } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useEpc, usePurchaseOrders, useStructure } from '@/lib/queries';
+import { useEpc, usePurchaseOrders, useStructure, WATCH_LIST_KEY } from '@/lib/queries';
 import { useUrlTab } from '@/lib/url-state';
 import { formatDate, formatMoney, formatPct, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
@@ -114,7 +114,7 @@ function useEpcSave<V>(projectId: string, call: (v: V) => Promise<EpcDto>) {
     onSuccess: (d) => {
       qc.setQueryData(['epc', projectId], d);
       qc.invalidateQueries({ queryKey: ['contract', projectId, 'billing-breakup'] });
-      qc.invalidateQueries({ queryKey: ['warnings'] });
+      qc.invalidateQueries({ queryKey: WATCH_LIST_KEY });
     },
     meta: FAIL_NOTICE,
   });

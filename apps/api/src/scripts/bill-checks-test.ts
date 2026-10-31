@@ -131,7 +131,7 @@ test('hire bill: diesel issued to an owner-fuelled machine not recovered', () =>
   f.hire!.fuelRecovered = 22200;
   assert.equal(flagged(otherVendorBillChecks(f), 'fuel:').length, 0);
 });
-test("hire bill: logged hours above the engine's, from the tracker (item 146)", () => {
+test("hire bill: logged hours above the engine's, from the tracker", () => {
   const f = clone(hire);
   f.hire!.engine = { days: 20, loggedHours: 180, engineHours: 171, deadDays: [] };
   assert.equal(flagged(otherVendorBillChecks(f), 'hire-engine:')[0].title, "180 hours logged on 20 tracked days; the engine ran 171");
@@ -225,7 +225,7 @@ test('subcontract bill: advance recovery above its %', () => {
   f.netPayable = 29100;
   assert.match(flagged(subcontractBillChecks(f), 'totals')[0].detail!, /Advance recovery is ₹3,500, should be ₹3,000/);
 });
-test('subcontract bill: man-days above the attendance, counts only (item 124)', () => {
+test('subcontract bill: man-days above the attendance, counts only', () => {
   const f = clone(sb);
   const line = { lineId: 'l1', no: 1, description: 'Helper (man-day)', billed: 96, supported: 87, excess: 9, excessInr: 4950, flagged: true, sources: 'head count 87, roll call 86, punched 83', span: '18 Oct to 23 Oct', link: { label: 'Attendance cross-check', href: '/attendance-check' } };
   f.manDays = [line];

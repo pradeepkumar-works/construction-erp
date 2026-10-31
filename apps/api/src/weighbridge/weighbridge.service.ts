@@ -82,7 +82,7 @@ export class WeighbridgeService {
       unit,
       challanNo: t.challanNo,
       challanQty: dec(t.challanQty),
-      first: { kg: dec(t.firstKg)!, at: t.firstAt.toISOString(), typed: !t.firstWeighingId && !t.cancelledAt },
+      first: { kg: dec(t.firstKg), at: t.firstAt.toISOString(), typed: !t.firstWeighingId && !t.cancelledAt },
       second: second === null || !t.secondAt ? null : { kg: dec(t.secondKg)!, at: t.secondAt.toISOString(), typed: !t.secondWeighingId && !t.cancelledAt },
       grossKg: net ? String(net.grossKg) : null,
       tareKg: net ? String(net.tareKg) : null,
@@ -133,7 +133,7 @@ export class WeighbridgeService {
     return {
       bridges,
       weighings: weighings.map(
-        (w): WeighingDto => ({ id: w.id, projectId: w.projectId, connectionId: w.connectionId, connectionName: w.connection.name, at: w.at.toISOString(), weightKg: dec(w.weightKg)!, stableSeconds: w.stableSeconds }),
+        (w): WeighingDto => ({ id: w.id, projectId: w.projectId, connectionId: w.connectionId, connectionName: w.connection.name, at: w.at.toISOString(), weightKg: dec(w.weightKg), stableSeconds: w.stableSeconds }),
       ),
       open: dtos.filter((t) => t.state === 'FIRST'),
       weighed: dtos.filter((t) => t.state === 'WEIGHED'),

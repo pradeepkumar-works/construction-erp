@@ -48,7 +48,7 @@ const addDays = (ymd: string, days: number) => new Date(Date.parse(`${ymd}T00:00
 
 function toState(r: DayRow): DayState {
   return {
-    date: dateOnly(r.date)!,
+    date: dateOnly(r.date),
     firstAt: r.firstAt,
     lastAt: r.lastAt,
     readings: r.readings,
@@ -264,7 +264,7 @@ export class TelematicsService {
       equipmentName: r.equipment.name,
       projectId: r.projectId,
       projectName: r.project?.name ?? null,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       ...engine,
       siteRadiusM: r.project?.siteLat ? machineSiteRadius(r.project.siteRadiusM) : null,
       lastLat: dec(r.lastLat),
@@ -357,7 +357,7 @@ export class TelematicsService {
       orderBy: { date: 'asc' },
     });
     const slips = await this.slipsFor(rows);
-    return rows.map((r) => ({ equipmentId: r.equipmentId, code: r.equipment.code, name: r.equipment.name, projectId: r.projectId, date: dateOnly(r.date)!, fuel: fuelOf(r, slips.get(`${r.equipmentId}|${dateOnly(r.date)}`) ?? 0, r.equipment)! }));
+    return rows.map((r) => ({ equipmentId: r.equipmentId, code: r.equipment.code, name: r.equipment.name, projectId: r.projectId, date: dateOnly(r.date), fuel: fuelOf(r, slips.get(`${r.equipmentId}|${dateOnly(r.date)}`) ?? 0, r.equipment)! }));
   }
 
   /** Fuel burnt by the tank (or the maker's counter) on each day of the machines, `equipmentId|YYYY-MM-DD`, for the fuel norm. */
@@ -390,6 +390,6 @@ export class TelematicsService {
   async engineHoursOn(equipmentId: string, dates: Date[]): Promise<Map<string, number>> {
     if (!dates.length) return new Map();
     const rows = await this.prisma.machineDay.findMany({ where: { equipmentId, date: { in: dates } } });
-    return new Map(rows.map((r) => [dateOnly(r.date)!, engineHoursOf(toState(r))]));
+    return new Map(rows.map((r) => [dateOnly(r.date), engineHoursOf(toState(r))]));
   }
 }

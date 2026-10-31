@@ -56,7 +56,7 @@ export class EarnedValueService {
     const datesOf = (a: (typeof activities)[number]) => {
       const s = usesBaseline && a.baselineStart && a.baselineEnd ? a.baselineStart : a.plannedStart;
       const e = usesBaseline && a.baselineStart && a.baselineEnd ? a.baselineEnd : a.plannedEnd;
-      return s && e ? { start: dateOnly(s)!, end: dateOnly(e)! } : null;
+      return s && e ? { start: dateOnly(s), end: dateOnly(e) } : null;
     };
     const rateOf = new Map(items.map((b) => [b.id, b.rate.toNumber()]));
     const boqValue = items.reduce((s, b) => s + (b.revisedQty ?? b.originalQty).toNumber() * b.rate.toNumber(), 0);
@@ -91,8 +91,8 @@ export class EarnedValueService {
     const activityRate = new Map(activities.map((a) => [a.id, rateOf.get(a.boqItemId!) ?? 0]));
     const earnedLog: { date: string; value: number }[] =
       basis === 'MEASURED'
-        ? measured.map((m) => ({ date: dateOnly(m.date)!, value: m.totalQty.toNumber() * m.boqItem.rate.toNumber() }))
-        : progress.map((p) => ({ date: dateOnly(p.date)!, value: p.quantity.toNumber() * (activityRate.get(p.activityId) ?? 0) }));
+        ? measured.map((m) => ({ date: dateOnly(m.date), value: m.totalQty.toNumber() * m.boqItem.rate.toNumber() }))
+        : progress.map((p) => ({ date: dateOnly(p.date), value: p.quantity.toNumber() * (activityRate.get(p.activityId) ?? 0) }));
     const earnedTo = (date: string) => (boqValue > 0 ? Math.min(1, earnedLog.filter((e) => e.date <= date).reduce((s, e) => s + e.value, 0) / boqValue) : 0);
     const costMonths = [...acc.months.entries()].map(([month, m]) => ({ month, amount: total(m.heads).toNumber() }));
     const costTo = (month: string) => costMonths.filter((m) => m.month <= month).reduce((s, m) => s + m.amount, 0);
@@ -112,7 +112,7 @@ export class EarnedValueService {
         ? monthEnds(start, plannedFinish > today ? plannedFinish : today).map(({ month, end }) => {
             const cut = month === thisMonth ? today : end;
             const past = month <= thisMonth;
-            return { month, pv: money(plannedShare(slices, cut) * bac)!, ev: past ? money(earnedTo(cut) * bac) : null, ac: past ? money(costTo(month)) : null };
+            return { month, pv: money(plannedShare(slices, cut) * bac), ev: past ? money(earnedTo(cut) * bac) : null, ac: past ? money(costTo(month)) : null };
           })
         : [];
 
@@ -126,7 +126,7 @@ export class EarnedValueService {
       if (!d || value <= 0) return [];
       const planned = plannedShare([{ value: 1, start: d.start, end: d.end }], today);
       const earned = Math.min(1, (doneQty.get(a.id) ?? 0) / qty);
-      return [{ id: a.id, name: a.name, value: money(value)!, plannedPct: pct1(planned), earnedPct: pct1(earned), sv: money((earned - planned) * value)! }];
+      return [{ id: a.id, name: a.name, value: money(value), plannedPct: pct1(planned), earnedPct: pct1(earned), sv: money((earned - planned) * value) }];
     });
     rows.sort((x, y) => Number(x.sv) - Number(y.sv) || x.name.localeCompare(y.name));
 
@@ -141,16 +141,16 @@ export class EarnedValueService {
       pvSource: usesBaseline ? 'BASELINE' : 'PLAN',
       start,
       plannedFinish,
-      bac: money(bac)!,
-      boqValue: money(boqValue)!,
-      unscheduledValue: money(unscheduled)!,
+      bac: money(bac),
+      boqValue: money(boqValue),
+      unscheduledValue: money(unscheduled),
       plannedPct: pct1(plannedNow),
       earnedPct: pct1(earnedNow),
-      pv: money(pv)!,
-      ev: money(ev)!,
-      ac: money(ac)!,
-      sv: money(ix.sv)!,
-      cv: money(ix.cv)!,
+      pv: money(pv),
+      ev: money(ev),
+      ac: money(ac),
+      sv: money(ix.sv),
+      cv: money(ix.cv),
       spi: ix.spi,
       cpi: ix.cpi,
       eac: m(ix.eac),

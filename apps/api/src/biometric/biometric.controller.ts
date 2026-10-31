@@ -64,7 +64,7 @@ export class BiometricController {
     return this.bio.matchByCode(user);
   }
 
-  @ApiOperation({ summary: 'Put a user number and its name on the ADMS devices (item 150), for the person to enrol a finger or face under' })
+  @ApiOperation({ summary: 'Put a user number and its name on the ADMS devices, for the person to enrol a finger or face under' })
   @Post('users/:pin/add-to-devices')
   addToDevices(@CurrentUser() user: RequestUser, @Param('pin') pin: string, @Body() dto: AddToDevicesDto) {
     return this.commands.addUser(user, pin, dto);
@@ -163,7 +163,7 @@ export class IclockController {
     return `OK: ${r.received}`;
   }
 
-  @ApiOperation({ summary: 'ADMS: the device asks for commands (item 150): users to add or remove and its clock, a line each, or OK' })
+  @ApiOperation({ summary: 'ADMS: the device asks for commands: users to add or remove and its clock, a line each, or OK' })
   @Get('getrequest')
   @Header('Content-Type', 'text/plain')
   async getRequest(@Query('SN') sn: string) {

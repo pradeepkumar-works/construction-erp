@@ -88,7 +88,7 @@ export class DprFormsService {
     ]);
     return {
       form: rows[0] ? this.dto(rows[0]) : this.standard(code, type.baseType),
-      versions: rows.map((r) => ({ id: r.id, version: r.version, createdAt: iso(r.createdAt)!, createdByName: r.createdBy?.fullName ?? null, reports: r._count.reports })),
+      versions: rows.map((r) => ({ id: r.id, version: r.version, createdAt: iso(r.createdAt), createdByName: r.createdBy?.fullName ?? null, reports: r._count.reports })),
       progressFromDpr: org.progressFromDpr,
     };
   }

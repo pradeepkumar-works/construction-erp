@@ -6,7 +6,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, InspectionDto, InspectionResult, ReviewDecision } from '@erp/shared';
-import { INSPECTION_RESULT_LABELS, INSPECTION_STATUS_LABELS, canRaiseNcr, checklistCounts, mayApproveType } from '@erp/shared';
+import { CHECK_LEVEL_LABELS, INSPECTION_RESULT_LABELS, INSPECTION_STATUS_LABELS, canRaiseNcr, checklistCounts, mayApproveType } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -204,6 +204,18 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
             { key: 'loc', label: 'Location', children: data.location },
             { key: 'date', label: 'Ready on', children: formatDate(data.date) },
             { key: 'checklist', label: 'Checklist', children: data.checklistName ?? (data.checklist.length ? 'Own points' : 'None') },
+            // Hidden work (item 172): signed off before cover-up and countersigned by the client's side in their portal.
+            ...(data.hidden
+              ? [
+                  {
+                    key: 'hidden',
+                    label: 'Hidden work',
+                    children: data.hidden.signedAt
+                      ? `Signed off by ${data.hidden.signedByName ?? ''}${data.hidden.signedLevel ? ` (${CHECK_LEVEL_LABELS[data.hidden.signedLevel].toLowerCase()})` : ''}${data.hidden.qty ? `, measured ${data.hidden.qty}` : ''}; ${data.hidden.countersignedAt ? `countersigned by ${data.hidden.countersignedByName ?? ''}` : 'waiting for the countersign'}`
+                      : 'Waiting for the sign-off before cover-up, in the client portal',
+                  },
+                ]
+              : []),
             ...submissionMetaItems(data)
               .filter((i) => i.key !== 'status')
               .map((i) => ({ ...i, label: ({ 'Submitted by': 'Requested by', 'Reviewed by': 'Inspected by', 'Review note': "Inspector's note" } as Record<string, string>)[i.label as string] ?? i.label })),

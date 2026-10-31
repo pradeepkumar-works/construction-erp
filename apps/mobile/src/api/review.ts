@@ -16,6 +16,7 @@ export const REVIEW_PATH: Record<SubmissionType, string> = {
   WORK_ORDER: 'work_order',
   SUBCONTRACT_BILL: 'subcontract_bill',
   PAYMENT_REQUEST: 'payment_request',
+  SUPPLIER_CHOICE: 'supplier_choice',
   INSPECTION: 'inspection',
 };
 

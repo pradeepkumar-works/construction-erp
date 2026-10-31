@@ -9,6 +9,8 @@ export function notificationHref(n: NotificationDto): string {
   if (n.type === 'MACHINERY')
     return n.entityType === 'EQUIPMENT_DOCUMENT' || n.entityType === 'DRIVER' ? '/machinery?tab=papers' : `/machinery?tab=maintenance${n.entityType === 'MAINTENANCE_JOB' && n.entityId ? `&id=${n.entityId}` : ''}`;
   if (n.type === 'IMPREST') return `/imprest${n.entityId ? `?id=${n.entityId}` : ''}`;
+  // A contract obligation coming due (item 171): the project's Contract tab.
+  if (n.entityType === 'CONTRACT_OBLIGATION' && n.projectId) return `/projects/${n.projectId}?tab=contract`;
   if (n.type === 'COMPLIANCE') return `/compliance${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.type === 'DEFECT' && n.projectId) return `/projects/${n.projectId}?tab=handover${n.entityType === 'DEFECT' && n.entityId ? `&defect=${n.entityId}` : ''}`;
   if (n.type === 'WATCH_LIST') return '/watch-list';
@@ -17,6 +19,8 @@ export function notificationHref(n: NotificationDto): string {
   if (n.entityType === 'ACCESS_DECISION') return '/';
   // An RFI: the client's engineer or consultant answers it in their portal; staff open it in Documents.
   if (n.entityType === 'RFI' && n.entityId) return n.type === 'PORTAL' && n.projectId ? `/portal/${n.projectId}?tab=rfis&open=${n.entityId}` : `/documents?tab=rfis&rfi=${n.entityId}`;
+  // A site order (item 172): the engineer accepts it in the portal; staff reply on the project's Site orders tab.
+  if (n.entityType === 'SITE_ORDER' && n.entityId && n.projectId) return n.type === 'PORTAL' ? `/portal/${n.projectId}?tab=site-orders&open=${n.entityId}` : `/projects/${n.projectId}?tab=site-orders&order=${n.entityId}`;
   if (n.type === 'MORNING_BRIEF') return '/';
   // The supplier portal (v6 item 105): the supplier's own notices open their pages; the company's open the inbox or the vendor.
   if (n.entityType === 'PORTAL_PO' || n.entityType === 'PORTAL_WO') return `/supplier/orders?open=${n.entityType === 'PORTAL_PO' ? 'po' : 'wo'}:${n.entityId}`;

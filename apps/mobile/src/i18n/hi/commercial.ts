@@ -26,6 +26,26 @@ export const COMMERCIAL: Record<string, string> = {
   '{qty} received': '{qty} प्राप्त',
   '{from} to {to}': '{from} से {to} तक',
 
+  // Supplier choice: the finalised supplier sent for approval before the order
+  'Supplier choice': 'सप्लायर का चयन',
+  'Supplier Choice': 'सप्लायर का चयन',
+  'Lowest per item, split between vendors': 'हर आइटम पर सबसे कम दर, वेंडरों में बँटा',
+  'A quotation since deleted': 'एक कोटेशन जो अब हटा दिया गया है',
+  'No quotation priced every item': 'किसी कोटेशन में हर आइटम की दर नहीं है',
+  '{amount} more than L1': 'L1 से {amount} ज़्यादा',
+  '{amount} less than L1': 'L1 से {amount} कम',
+  'Is L1': 'L1 ही है',
+  'Purchase has since finalised this request again or reopened it, so this choice no longer stands.': 'खरीद विभाग ने यह मांग फिर से तय कर दी है या दोबारा खोल दी है, इसलिए यह चयन अब मान्य नहीं है।',
+  'with GST and freight': 'GST और भाड़े के साथ',
+  Supplier: 'सप्लायर',
+  'Against L1': 'L1 की तुलना में',
+  'Still to order': 'अभी ऑर्डर करना बाकी',
+  'Why this supplier': 'यही सप्लायर क्यों',
+  'Orders in the split': 'बँटवारे के ऑर्डर',
+  'Quotations as they rank now': 'कोटेशन, अभी की रैंक के अनुसार',
+  'Part quote': 'अधूरा कोटेशन',
+  chosen: 'चुना गया',
+
   // Payment requests
   'Payment request': 'भुगतान अनुरोध',
   'Bill payment': 'बिल का भुगतान',

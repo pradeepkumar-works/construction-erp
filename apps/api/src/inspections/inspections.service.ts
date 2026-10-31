@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { CHECKLIST_ADMIN_ROLES, STANDARD_CHECKLISTS, sameLocation, type ChecklistTemplateDto, type InspectionCheck, type InspectionDto, type InspectionSortField, type Paginated, type PortalInspectionDto, type SortOrder } from '@erp/shared';
+import { CHECKLIST_ADMIN_ROLES, CHECK_LEVEL_LABELS, STANDARD_CHECKLISTS, countersignProblem, hiddenSignProblem, hiddenWorkCleared, isClientGuest, sameLocation, type HiddenWorkDto, type ChecklistTemplateDto, type InspectionCheck, type InspectionDto, type InspectionSortField, type Paginated, type PortalInspectionDto, type SortOrder } from '@erp/shared';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -9,7 +9,8 @@ import { AuditService } from '../common/audit.service';
 import { UndoService } from '../common/undo.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
-import { dateOnly, iso, parseDate } from '../common/serialize';
+import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { checkLevelOf } from '../consultant-checks/check-level';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -17,9 +18,11 @@ import { ChecklistTemplateInputDto, CreateInspectionDto, InspectDto, ListInspect
 
 const include = {
   project: { select: { name: true } },
-  activity: { select: { name: true, holdPoint: true } },
+  activity: { select: { name: true, holdPoint: true, hiddenWork: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
+  hiddenSignedBy: { select: { fullName: true } },
+  hiddenCountersignedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.InspectionInclude;
 type Row = Prisma.InspectionGetPayload<{ include: typeof include }>;
@@ -79,7 +82,9 @@ export class InspectionsService {
       activityId: r.activityId,
       activityName: r.activity.name,
       holdPoint: r.activity.holdPoint,
-      date: dateOnly(r.date)!,
+      hiddenWork: r.activity.hiddenWork,
+      hidden: this.hiddenDto(r),
+      date: dateOnly(r.date),
       location: r.location,
       remarks: r.remarks,
       checklistName: r.checklistName,
@@ -93,8 +98,25 @@ export class InspectionsService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
+    };
+  }
+
+  /** The hidden-work sign-off and its countersign (item 172); null for an activity that is not hidden work and was never signed. */
+  private hiddenDto(r: Row): HiddenWorkDto | null {
+    if (!r.activity.hiddenWork && !r.hiddenSignedById) return null;
+    return {
+      signedById: r.hiddenSignedById,
+      signedByName: r.hiddenSignedBy?.fullName ?? null,
+      signedLevel: r.hiddenSignedLevel,
+      signedAt: iso(r.hiddenSignedAt),
+      qty: dec(r.hiddenQty),
+      note: r.hiddenNote,
+      countersignedByName: r.hiddenCountersignedBy?.fullName ?? null,
+      countersignedAt: iso(r.hiddenCountersignedAt),
+      countersignNote: r.hiddenCountersignNote,
+      cleared: hiddenWorkCleared({ status: r.status, signedById: r.hiddenSignedById, countersignedById: r.hiddenCountersignedById }),
     };
   }
 
@@ -138,6 +160,8 @@ export class InspectionsService {
       inspectionNo: d.inspectionNo,
       activityName: d.activityName,
       holdPoint: d.holdPoint,
+      hiddenWork: d.hiddenWork,
+      hidden: d.hidden,
       date: d.date,
       location: d.location,
       remarks: d.remarks,
@@ -331,16 +355,95 @@ export class InspectionsService {
     return { ok: true };
   }
 
-  /** Hold point: progress of the activity is approved only after a passed inspection there. */
+  /**
+   * Hold point: progress of the activity is approved only after a passed inspection there. Hidden work (item 172) holds
+   * the same way, and the passed inspection's sign-off before cover-up must also be countersigned.
+   */
   async assertHoldPointCleared(progressId: string) {
-    const p = await this.prisma.progressEntry.findUnique({ where: { id: progressId }, select: { location: true, activityId: true, activity: { select: { name: true, holdPoint: true } } } });
-    if (!p?.activity.holdPoint) return;
-    const passed = await this.prisma.inspection.findMany({ where: { activityId: p.activityId, status: 'APPROVED' }, select: { location: true } });
+    const p = await this.prisma.progressEntry.findUnique({ where: { id: progressId }, select: { location: true, activityId: true, activity: { select: { name: true, holdPoint: true, hiddenWork: true } } } });
+    if (!p || (!p.activity.holdPoint && !p.activity.hiddenWork)) return;
+    const passed = await this.prisma.inspection.findMany({ where: { activityId: p.activityId, status: 'APPROVED' }, select: { location: true, status: true, hiddenSignedById: true, hiddenCountersignedById: true } });
     const at = p.location?.trim();
-    if (at ? passed.some((i) => sameLocation(i.location, at)) : passed.length > 0) return;
+    const here = at ? passed.filter((i) => sameLocation(i.location, at)) : passed;
+    if (!p.activity.hiddenWork) {
+      if (here.length) return;
+      throw new BadRequestException(
+        `${p.activity.name} is a hold point: its progress is approved after a passed inspection${at ? ` at ${at}` : ''}. Request an inspection there first.`,
+      );
+    }
+    if (here.some((i) => hiddenWorkCleared({ status: i.status, signedById: i.hiddenSignedById, countersignedById: i.hiddenCountersignedById }))) return;
     throw new BadRequestException(
-      `${p.activity.name} is a hold point: its progress is approved after a passed inspection${at ? ` at ${at}` : ''}. Request an inspection there first.`,
+      here.length
+        ? `${p.activity.name} is hidden work: its progress is approved once the inspection${at ? ` at ${at}` : ''} is signed off before cover-up and countersigned in the client portal.`
+        : `${p.activity.name} is hidden work: its progress is approved after a passed inspection${at ? ` at ${at}` : ''}, signed off before cover-up and countersigned. Request an inspection there first.`,
     );
+  }
+
+  /**
+   * The client's engineer or a consultant measures hidden work before it is covered and signs it off against its
+   * inspection (item 172), at their level on the project; signing again before the countersign replaces it. The site
+   * and QA/QC are told.
+   */
+  async signHidden(user: RequestUser, id: string, dto: { qty?: string | null; note?: string | null }): Promise<PortalInspectionDto> {
+    const row = await this.prisma.inspection.findFirst({ where: { id, organizationId: user.organizationId, status: { not: 'DRAFT' } }, include });
+    if (!row) throw new NotFoundException('Inspection not found');
+    await this.access.assertCanActAsClient(user, row.projectId);
+    const problem = hiddenSignProblem(this.hiddenState(row));
+    if (problem) throw new BadRequestException(problem);
+    const level = await checkLevelOf(this.prisma, row.projectId, user.id);
+    const note = dto.note?.trim() || null;
+    await this.prisma.inspection.update({
+      where: { id },
+      data: { hiddenSignedById: user.id, hiddenSignedLevel: level, hiddenSignedAt: new Date(), hiddenQty: dto.qty ? new Prisma.Decimal(dto.qty) : null, hiddenNote: note },
+    });
+    const as = level ? ` as ${CHECK_LEVEL_LABELS[level].toLowerCase()}` : '';
+    await this.audit.log(user, 'INSPECTION', id, 'HIDDEN_SIGNED', `Hidden work signed off before cover-up${as}${dto.qty ? `, measured ${dto.qty}` : ''}${note ? `. ${note}` : ''}`);
+    await this.tellSite(user, row, `${row.inspectionNo}: hidden work signed off by ${user.fullName}`, `${row.activity.name} at ${row.location}, ${row.project.name}, signed off before cover-up${as}. It needs a countersign before its progress is approved.${note ? ` Note: ${note}` : ''}`);
+    return this.portalOne(user, id);
+  }
+
+  /** A second guest, above whoever signed (or the client's engineer), countersigns the hidden-work sign-off (item 172). */
+  async countersignHidden(user: RequestUser, id: string, note: string | null): Promise<PortalInspectionDto> {
+    const row = await this.prisma.inspection.findFirst({ where: { id, organizationId: user.organizationId, status: { not: 'DRAFT' } }, include });
+    if (!row) throw new NotFoundException('Inspection not found');
+    await this.access.assertCanActAsClient(user, row.projectId);
+    const level = await checkLevelOf(this.prisma, row.projectId, user.id);
+    const problem = countersignProblem(this.hiddenState(row), { id: user.id, roleKey: user.roleKey, level });
+    if (problem) throw new BadRequestException(problem);
+    const text = note?.trim() || null;
+    await this.prisma.inspection.update({ where: { id }, data: { hiddenCountersignedById: user.id, hiddenCountersignedAt: new Date(), hiddenCountersignNote: text } });
+    await this.audit.log(user, 'INSPECTION', id, 'HIDDEN_COUNTERSIGNED', `Hidden work sign-off countersigned${text ? `: ${text}` : ''}`);
+    await this.tellSite(user, row, `${row.inspectionNo}: hidden work countersigned`, `${user.fullName} countersigned the sign-off of ${row.activity.name} at ${row.location}, ${row.project.name}.${row.status === 'APPROVED' ? ' It may be covered and its progress approved.' : ' It may be covered once the inspection passes.'}`);
+    return this.portalOne(user, id);
+  }
+
+  private hiddenState(r: Row) {
+    return { status: r.status, hiddenWork: r.activity.hiddenWork, signedById: r.hiddenSignedById, signedLevel: r.hiddenSignedLevel, countersignedById: r.hiddenCountersignedById };
+  }
+
+  private async portalOne(user: RequestUser, id: string) {
+    const r = await this.prisma.inspection.findFirstOrThrow({ where: { id, organizationId: user.organizationId }, include: { ...include, witnessedBy: { select: { fullName: true } } } });
+    return this.portalDto(r);
+  }
+
+  private async tellSite(user: RequestUser, row: Row, title: string, body: string) {
+    const watchers = await this.access.qualityWatchers(user.organizationId, row.projectId, { onProjectOnly: true });
+    await this.notifications.notify({
+      organizationId: user.organizationId,
+      userIds: [...new Set([row.submittedById, ...watchers.map((w) => w.id)])].filter((u) => u !== user.id),
+      type: 'PORTAL',
+      title,
+      body,
+      projectId: row.projectId,
+      entityType: 'INSPECTION',
+      entityId: row.id,
+    });
+    // The other guests on the project see a sign-off waiting for their countersign.
+    if (isClientGuest(user.roleKey)) {
+      const guests = await this.access.projectGuests(user.organizationId, row.projectId);
+      // No entity type: a guest's notice opens the portal (`?open=`), never the staff drawer.
+      await this.notifications.notify({ organizationId: user.organizationId, userIds: guests.map((g) => g.id).filter((g) => g !== user.id), type: 'PORTAL', title, body, projectId: row.projectId, entityId: row.id });
+    }
   }
 
   /* ---------- checklists ---------- */

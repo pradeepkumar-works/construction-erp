@@ -62,8 +62,8 @@ export class VendorsService {
       expenseCount: r._count.expenses,
       equipmentCount: r._count.equipment,
       grnCount: r._count.stockEntries,
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

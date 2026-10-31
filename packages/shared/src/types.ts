@@ -6,7 +6,9 @@ import type { DprLineDto } from './dpr-lines';
 import type { DprExtra, DprFormDto } from './dpr-form';
 import type { AuthGroupDto, CompanyChoiceDto } from './group';
 import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
+import type { ObligationBillLineDto } from './contract-obligations';
 import type { OmBillDto } from './om';
+import type { HiddenWorkDto } from './consultant-checks';
 import type { EmployeePrivateDto, EmploymentType } from './hr';
 import type { NotificationTab } from './notifications';
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
@@ -45,6 +47,7 @@ import type {
   ContractModel,
   PushPlatform,
   RoleKey,
+  CheckLevel,
   StockEntryType,
   SubmissionStatus,
   SubmissionType,
@@ -171,6 +174,8 @@ export interface ProjectMemberDto {
   fullName: string;
   roleKey: RoleKey;
   roleName: string;
+  /** A client guest's level on this project: how much of the measurements they check */
+  checkLevel: CheckLevel | null;
 }
 
 export interface ProjectSummary {
@@ -279,6 +284,8 @@ export interface ActivityDto {
   checklistName: string | null;
   /** Progress is approved only after a passed inspection */
   holdPoint: boolean;
+  /** Hidden work: covered up once done, so its inspection is signed off and countersigned before progress is approved */
+  hiddenWork: boolean;
   /** Planned dates when the baseline was frozen; null if added after it */
   baselineStart: string | null;
   baselineEnd: string | null;
@@ -618,7 +625,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | 'SITE_ORDER' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -642,7 +649,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'RECEIPTS_WEEKLY' | 'WARNING_ALERTS' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'RECEIPTS_WEEKLY' | 'WARNING_ALERTS' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION' | 'OBLIGATIONS_DUE';
   date: string;
   created: number;
   pushed: number;
@@ -1406,6 +1413,8 @@ export interface ApprovalMatrixDto {
   paymentsNeedRequest: boolean;
   /** Progress is recorded only as DPR work lines */
   progressFromDpr: boolean;
+  /** A purchase order on a material request waits for its supplier choice (Finalise L1) to be approved */
+  ordersNeedApprovedChoice: boolean;
   /** Reminders and escalation per submission type; types left out have neither */
   escalations: ApprovalEscalationDto[];
 }
@@ -1528,6 +1537,8 @@ export interface ProjectContractDto {
   extensions: ContractExtensionDto[];
   retentionPct: string;
   securityDepositPct: string;
+  /** Security deposit stops at this % of the contract value (or the work billed, if larger); null = no cap */
+  securityDepositCapPct: string | null;
   mobilisationAdvance: string;
   advanceRecoveryPct: string;
   defectLiabilityMonths: number | null;
@@ -1623,7 +1634,7 @@ export interface RaBillItemDto {
   extraItem: boolean;
 }
 
-export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'omPenalty' | 'other';
+export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'slippage' | 'omPenalty' | 'obligations' | 'other';
 
 export interface RaBillDeductionDto {
   key: BillDeductionKey;
@@ -1697,6 +1708,9 @@ export interface RaBillDto extends SubmissionBase {
   stageLines: RaBillStageLineDto[];
   slippageWithheld: string;
   slippageLines: SlippageLineDto[];
+  /** Contract recoveries: what the contract's obligations missed cost on this bill, negative when given back */
+  obligationRecovery: string;
+  obligationLines: ObligationBillLineDto[];
   /** An O&M bill: the period, the instalment and what was taken off it; null on a works bill */
   om: OmBillDto | null;
   tenderFactor: string | null;
@@ -2715,6 +2729,9 @@ export interface InspectionDto extends SubmissionBase {
   activityName: string;
   /** The activity is a hold point: its progress waits for a passed inspection */
   holdPoint: boolean;
+  /** The activity is hidden work: the inspection carries a sign-off before cover-up, countersigned */
+  hiddenWork: boolean;
+  hidden: HiddenWorkDto | null;
   /** The date the work is ready for inspection */
   date: string;
   location: string;

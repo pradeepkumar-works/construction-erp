@@ -33,7 +33,7 @@ export const MODULE_SUBMISSION_TYPES: Record<ModuleKey, SubmissionType[]> = {
   correspondence: [],
   materials: ['MATERIAL_REQUEST'],
   plant: ['MACHINERY'],
-  purchases: ['PURCHASE_ORDER', 'VENDOR_BILL'],
+  purchases: ['SUPPLIER_CHOICE', 'PURCHASE_ORDER', 'VENDOR_BILL'],
   subcontracts: ['WORK_ORDER', 'SUBCONTRACT_BILL'],
   billing: ['BILL'],
   tenders: [],

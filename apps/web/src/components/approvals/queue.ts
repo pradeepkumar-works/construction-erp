@@ -9,6 +9,7 @@ export const QUEUE_TYPES: [SubmissionType, string][] = [
   ['EXPENSE', 'Expenses'],
   ['MEASUREMENT', 'Measurements'],
   ['BILL', 'RA bills'],
+  ['SUPPLIER_CHOICE', 'Supplier choices'],
   ['PURCHASE_ORDER', 'Purchase orders'],
   ['VENDOR_BILL', 'Vendor bills'],
   ['WORK_ORDER', 'Work orders'],
@@ -33,6 +34,7 @@ export const TYPE_COLORS: Record<SubmissionType, string> = {
   SUBCONTRACT_BILL: 'green',
   PAYMENT_REQUEST: 'red',
   INSPECTION: 'orange',
+  SUPPLIER_CHOICE: 'gold',
 };
 
 /** Types whose record has its own page (item 57), and so shows whole in the inbox's right-hand pane. */
@@ -50,6 +52,7 @@ export const RECORD_PAGES: Partial<Record<SubmissionType, string>> = {
   SUBCONTRACT_BILL: '/subcontract-bills',
   INSPECTION: '/inspections',
   PAYMENT_REQUEST: '/payment-requests',
+  SUPPLIER_CHOICE: '/supplier-choices',
 };
 
 export const recordPage = (type: SubmissionType, id: string) => (RECORD_PAGES[type] ? `${RECORD_PAGES[type]}/${id}` : null);

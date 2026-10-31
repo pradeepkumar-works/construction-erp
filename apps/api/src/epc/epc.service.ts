@@ -77,10 +77,10 @@ export class EpcService {
     const clientInputs: ClientInputDto[] = inputs.map((m) => ({
       id: m.id,
       name: m.name,
-      dueDate: dateOnly(m.dueDate)!,
+      dueDate: dateOnly(m.dueDate),
       achievedOn: dateOnly(m.achievedOn),
       note: m.note,
-      overdueDays: clientInputOverdue({ dueDate: dateOnly(m.dueDate)!, achievedOn: dateOnly(m.achievedOn) }, today),
+      overdueDays: clientInputOverdue({ dueDate: dateOnly(m.dueDate), achievedOn: dateOnly(m.achievedOn) }, today),
       delayId: m.delayId,
       delayNo: m.delay?.riskNo ?? null,
     }));
@@ -367,8 +367,8 @@ export class EpcService {
     if (!row) throw new NotFoundException('Client input not found');
     if (row.delayId) throw new ConflictException('A delay is already recorded for it');
     const today = todayIn();
-    const due = dateOnly(row.dueDate)!;
-    if (!clientInputOverdue({ dueDate: due, achievedOn: dateOnly(row.achievedOn) }, today) && !(row.achievedOn && dateOnly(row.achievedOn)! > due)) {
+    const due = dateOnly(row.dueDate);
+    if (!clientInputOverdue({ dueDate: due, achievedOn: dateOnly(row.achievedOn) }, today) && !(row.achievedOn && dateOnly(row.achievedOn) > due)) {
       throw new BadRequestException('It was not late, so there is no delay to record');
     }
     const start = new Date(row.dueDate.getTime() + 86_400_000).toISOString().slice(0, 10);

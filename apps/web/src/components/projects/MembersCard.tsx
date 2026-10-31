@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Typography } from 'antd';
+import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Select, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { CopyOutlined, EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@/components/common/icons';
 import type { ProjectDetail, UserSummary } from '@erp/shared';
-import { canEditProjects } from '@erp/shared';
+import { CHECK_LEVELS, CHECK_LEVEL_LABELS, CHECK_LEVEL_SHARE, canManageProjects, isClientGuest, type CheckLevel } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
+import { useSetMemberLevel } from '@/lib/queries';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { UserMultiSelect } from '@/components/common/SearchSelect';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -26,7 +27,8 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
   const [adding, setAdding] = useState(false);
   const [userIds, setUserIds] = useState<string[]>([]);
   const [fromProject, setFromProject] = useState<string | undefined>();
-  const editor = !!user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
+  const editor = !!user && canManageProjects(user.roleKey);
+  const setLevel = useSetMemberLevel(project.id);
 
   const done = (text: string) => {
     message.success(text);
@@ -77,7 +79,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
 
   const members = [
     ...(project.projectManagerName
-      ? [{ id: 'pm', userId: project.projectManagerId ?? '', fullName: project.projectManagerName, roleKey: 'PROJECT_MANAGER' as const, roleName: 'Project Manager', isPm: true }]
+      ? [{ id: 'pm', userId: project.projectManagerId ?? '', fullName: project.projectManagerName, roleKey: 'PROJECT_MANAGER' as const, roleName: 'Project Manager', checkLevel: null, isPm: true }]
       : []),
     ...project.members.map((m) => ({ ...m, isPm: false })),
   ];
@@ -144,6 +146,29 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
                 }
                 description={<Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.roleName}</Typography.Text>}
               />
+              {!m.isPm && isClientGuest(m.roleKey) ? (
+                // A client guest's check level (item 172): how much of the measurements they check before certifying.
+                editor ? (
+                  <Select<CheckLevel | null>
+                    size="small"
+                    aria-label={`Check level of ${m.fullName}`}
+                    placeholder="Check level"
+                    allowClear
+                    value={m.checkLevel}
+                    style={{ width: 200 }}
+                    loading={setLevel.isPending}
+                    onChange={(v) =>
+                      setLevel.mutate(
+                        { userId: m.userId, checkLevel: v ?? null },
+                        { onSuccess: () => message.success(v ? `${m.fullName} checks as ${CHECK_LEVEL_LABELS[v].toLowerCase()}` : `${m.fullName} has no check level`), onError: () => message.error('The level was not saved. Try again.') },
+                      )
+                    }
+                    options={CHECK_LEVELS.map((l) => ({ value: l, label: `${CHECK_LEVEL_LABELS[l]} (${CHECK_LEVEL_SHARE[l]}%)` }))}
+                  />
+                ) : m.checkLevel ? (
+                  <Typography.Text type="secondary">{CHECK_LEVEL_LABELS[m.checkLevel]}</Typography.Text>
+                ) : null
+              ) : null}
               {editor && !m.isPm ? (
                 <Dropdown
                   trigger={['click']}

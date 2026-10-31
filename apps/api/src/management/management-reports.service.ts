@@ -319,7 +319,7 @@ export class ManagementReportsService {
 
     const months = monthsBetween(period.from!, period.to);
     const monthRows = months.map((month) => {
-      const billed = bills.filter((b) => dateOnly(b.billDate)!.startsWith(month)).reduce((s, b) => s + N(b.grossAmount) + N(b.pvAmount), 0);
+      const billed = bills.filter((b) => dateOnly(b.billDate).startsWith(month)).reduce((s, b) => s + N(b.grossAmount) + N(b.pvAmount), 0);
       const heads = Object.fromEntries(COST_HEADS.map((h) => [h, r2([...acc.values()].reduce((s, a) => s + N(a.months.get(month)?.heads[h]), 0))]));
       const cost = COST_HEADS.reduce((s, h) => s + N(heads[h]), 0);
       return { month: monthName(month), billed: r2(billed), ...heads, cost: r2(cost), margin: r2(billed - cost), marginPct: billedMarginPct(billed, cost) } as ReportRowDto;
@@ -504,9 +504,9 @@ export class ManagementReportsService {
     const value = (o: (typeof pos)[number]) => N(o.subtotal) + N(o.freight);
     const toOrder = (o: (typeof pos)[number]) => {
       const at = o.materialRequest?.reviewedAt ?? o.materialRequest?.submittedAt;
-      return at ? Math.max(0, daysBetween(at.toISOString().slice(0, 10), dateOnly(o.poDate)!)) : null;
+      return at ? Math.max(0, daysBetween(at.toISOString().slice(0, 10), dateOnly(o.poDate))) : null;
     };
-    const toReceive = (o: (typeof pos)[number]) => (o.stockEntries[0] ? Math.max(0, daysBetween(dateOnly(o.poDate)!, dateOnly(o.stockEntries[0].date)!)) : null);
+    const toReceive = (o: (typeof pos)[number]) => (o.stockEntries[0] ? Math.max(0, daysBetween(dateOnly(o.poDate), dateOnly(o.stockEntries[0].date))) : null);
     const onTime = (os: typeof pos) => {
       const judged = os.filter((o) => o.deliveryBy && o.stockEntries[0]);
       return judged.length ? r1((judged.filter((o) => o.stockEntries[0].date <= o.deliveryBy!).length / judged.length) * 100) : null;
