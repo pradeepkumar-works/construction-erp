@@ -18,7 +18,7 @@ export class ApprovalRulesService {
 
   async get(user: RequestUser): Promise<ApprovalMatrixDto> {
     const [org, roles, rules, escalations] = await Promise.all([
-      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { paymentsNeedRequest: true, progressFromDpr: true } }),
+      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { paymentsNeedRequest: true, progressFromDpr: true, ordersNeedApprovedChoice: true } }),
       this.prisma.role.findMany({ where: { organizationId: user.organizationId }, include: { _count: { select: { users: { where: { isActive: true } } } } } }),
       this.prisma.approvalRule.findMany({ where: { organizationId: user.organizationId }, include: { role: { select: { key: true } } } }),
       this.prisma.approvalEscalation.findMany({ where: { organizationId: user.organizationId } }),
@@ -37,6 +37,7 @@ export class ApprovalRulesService {
       rules: list.sort((a, b) => order(a) - order(b)),
       paymentsNeedRequest: org.paymentsNeedRequest,
       progressFromDpr: org.progressFromDpr,
+      ordersNeedApprovedChoice: org.ordersNeedApprovedChoice,
       escalations: escalations
         .filter((e) => (SUBMISSION_TYPES as readonly string[]).includes(e.submissionType) && (e.remindAfterHours || e.escalateAfterHours))
         .map((e): ApprovalEscalationDto => ({ type: e.submissionType as SubmissionType, remindAfterHours: e.remindAfterHours, escalateAfterHours: e.escalateAfterHours }))
@@ -44,10 +45,11 @@ export class ApprovalRulesService {
     };
   }
 
-  /** Replace the whole matrix. An empty list resets to the fixed rule. `paymentsNeedRequest`, `progressFromDpr` and `escalations`, when sent, are saved too. */
+  /** Replace the whole matrix. An empty list resets to the fixed rule. `paymentsNeedRequest`, `progressFromDpr`, `ordersNeedApprovedChoice` and `escalations`, when sent, are saved too. */
   async save(user: RequestUser, dto: SaveApprovalRulesDto): Promise<ApprovalMatrixDto> {
     if (dto.paymentsNeedRequest !== undefined) await this.prisma.organization.update({ where: { id: user.organizationId }, data: { paymentsNeedRequest: dto.paymentsNeedRequest } });
     if (dto.progressFromDpr !== undefined) await this.prisma.organization.update({ where: { id: user.organizationId }, data: { progressFromDpr: dto.progressFromDpr } });
+    if (dto.ordersNeedApprovedChoice !== undefined) await this.prisma.organization.update({ where: { id: user.organizationId }, data: { ordersNeedApprovedChoice: dto.ordersNeedApprovedChoice } });
     if (dto.escalations !== undefined) await this.saveEscalations(user, dto.escalations);
     if (dto.rules === undefined) return this.get(user);
     const roles = await this.prisma.role.findMany({ where: { organizationId: user.organizationId }, select: { id: true, key: true } });

@@ -24,6 +24,7 @@ export const STAGE_TONE: Record<OrderStage, 'neutral' | 'info' | 'pending' | 'su
   TO_ENQUIRE: 'neutral',
   AWAITING_QUOTES: 'info',
   TO_FINALISE: 'pending',
+  AWAITING_APPROVAL: 'info',
   READY: 'success',
 };
 
@@ -46,6 +47,8 @@ const lateBy = (requiredDate: string) => dayjs().startOf('day').diff(dayjs(requi
 /** What the stage waits on, in a line: who answered the enquiry, what is not quoted, who was finalised. */
 export function stageNote(r: RequestToOrderDto): string | null {
   if (r.stage === 'AWAITING_QUOTES' && r.enquiry) return `${r.enquiry.replied} of ${r.enquiry.invited} replied, closes ${formatDate(r.enquiry.closesOn)}`;
+  if (r.stage === 'AWAITING_APPROVAL' && r.final) return `${r.final.split ? 'Split per item' : (r.final.vendorName ?? 'Quotation')}, waiting for approval`;
+  if (r.stage === 'TO_FINALISE' && r.final?.approval) return `${r.final.approval.status === 'REJECTED' ? 'Rejected' : 'Sent back'}${r.final.approval.reviewedByName ? ` by ${r.final.approval.reviewedByName}` : ''}: finalise again`;
   if (r.stage === 'READY' && r.final) return r.final.split ? 'Lowest per item, split between vendors' : `${r.final.vendorName ?? 'Quotation'}${r.final.rank ? ` (${rankLabel(r.final.rank)})` : ''}`;
   if (r.itemsUnquoted > 0 && r.quotations > 0) return `${r.itemsUnquoted} item${r.itemsUnquoted === 1 ? '' : 's'} nobody quoted`;
   if (r.stage === 'TO_ENQUIRE') return 'Send an enquiry or record a quotation';

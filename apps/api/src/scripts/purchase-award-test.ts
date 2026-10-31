@@ -5,7 +5,7 @@
  *   node dist/scripts/purchase-award-test.js
  */
 import assert from 'node:assert/strict';
-import { awardLowestPerItem, finaliseProblem, isSplitWorthwhile, orderStage, rankQuotations, whatsAppShareUrl, type ComparativeStatementDto, type QuoteToRank, type QuotationDto } from '@erp/shared';
+import { awardLowestPerItem, choiceProblem, finaliseProblem, isSplitWorthwhile, orderStage, rankQuotations, whatsAppShareUrl, type ComparativeStatementDto, type QuoteToRank, type QuotationDto } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -219,6 +219,32 @@ test('finalising L1 needs no reason; anything else does', () => {
   assert.match(finaliseProblem(ranked, { quotationId: 'qc' }, null)!, /does not quote one item/);
   assert.match(finaliseProblem(ranked, { quotationId: 'nope' }, 'whatever reason')!, /Choose one of the quotations/);
   assert.equal(finaliseProblem(ranked, { split: true }, null), null);
+});
+
+test('a choice sent for approval holds the order until it is approved; sent back, it is to finalise again', () => {
+  const toOrder = { i1: '10', i2: '20' };
+  const today = '2026-10-27';
+  const final = (approval: 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED' | null) => ({ quotationId: 'qa', split: false, approval });
+  assert.equal(orderStage({ toOrder, quotations: [a, b], enquiries: [], final: final('SUBMITTED') }, today), 'AWAITING_APPROVAL');
+  assert.equal(orderStage({ toOrder, quotations: [a, b], enquiries: [], final: final('APPROVED') }, today), 'READY');
+  assert.equal(orderStage({ toOrder, quotations: [a, b], enquiries: [], final: final('CHANGES_REQUESTED') }, today), 'TO_FINALISE');
+  assert.equal(orderStage({ toOrder, quotations: [a, b], enquiries: [], final: final('REJECTED') }, today), 'TO_FINALISE');
+  // No approval asked (the company does not have orders wait for one): finalised is ready, as before.
+  assert.equal(orderStage({ toOrder, quotations: [a, b], enquiries: [], final: final(null) }, today), 'READY');
+  // Waiting, but its quotation since deleted: nothing left to approve, back to finalising.
+  assert.equal(orderStage({ toOrder, quotations: [b], enquiries: [], final: final('SUBMITTED') }, today), 'TO_FINALISE');
+});
+
+test('an order on a request waits for its approved choice, and goes only to the vendor approved', () => {
+  const order = { vendorId: 'va', vendorName: 'A' };
+  assert.match(choiceProblem('MR-1', null, order)!, /wait for an approved supplier choice/);
+  assert.match(choiceProblem('MR-1', { status: 'SUBMITTED', split: false, vendorId: 'va', vendorName: 'A' }, order)!, /waiting for approval/);
+  assert.match(choiceProblem('MR-1', { status: 'CHANGES_REQUESTED', split: false, vendorId: 'va', vendorName: 'A' }, order)!, /sent back/);
+  assert.match(choiceProblem('MR-1', { status: 'REJECTED', split: false, vendorId: 'va', vendorName: 'A' }, order)!, /rejected/);
+  assert.equal(choiceProblem('MR-1', { status: 'APPROVED', split: false, vendorId: 'va', vendorName: 'A' }, order), null);
+  assert.match(choiceProblem('MR-1', { status: 'APPROVED', split: false, vendorId: 'vb', vendorName: 'B' }, order)!, /approved supplier on MR-1 is B/);
+  assert.equal(choiceProblem('MR-1', { status: 'APPROVED', split: true, vendorId: null, vendorName: null }, order, ['va', 'vb']), null);
+  assert.match(choiceProblem('MR-1', { status: 'APPROVED', split: true, vendorId: null, vendorName: null }, order, ['vb'])!, /not one of the vendors/);
 });
 
 let failed = 0;

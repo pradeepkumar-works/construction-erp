@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-09-supplier-choice',
+    date: '2027-10-11',
+    title: 'Approve the supplier before the order',
+    points: [
+      'Admin, Approval rules has a switch: Orders wait for an approved supplier choice. With it on, finalising L1 under Purchases, Requests to order sends the choice to the approver, with the ranking, what it costs against L1 and why when it is not L1.',
+      'The approver decides it from Approvals like any entry (not the person who finalised it). Once approved, purchase raises the order on that supplier; a rejected or sent back choice goes back to Finalise L1.',
+    ],
+  },
+  {
     id: '2027-09-contract-obligations',
     date: '2027-10-11',
     title: 'Contract obligations and recoveries',

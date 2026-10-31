@@ -89,7 +89,7 @@ export class AuthService {
       const trialEndsAt = billing ? new Date(Date.parse(`${todayIn()}T00:00:00Z`) + billing.trialDays * 86_400_000) : null;
       // New companies pay bills only against approved payment requests (v5 item 90) and record progress only in the DPR
       // (item 127); older ones switch these on themselves.
-      const org = await tx.organization.create({ data: { name: dto.organizationName.trim(), code, trialEndsAt, paymentsNeedRequest: true, progressFromDpr: true } });
+      const org = await tx.organization.create({ data: { name: dto.organizationName.trim(), code, trialEndsAt, paymentsNeedRequest: true, progressFromDpr: true, ordersNeedApprovedChoice: true } });
       await tx.role.createMany({ data: ROLE_KEYS.map((key) => ({ organizationId: org.id, key, name: ROLE_LABELS[key] })) });
       const admin = await tx.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: org.id, key: 'ADMIN' } } });
       const login = await tx.login.create({ data: { email, passwordHash, lastOrganizationId: org.id } });

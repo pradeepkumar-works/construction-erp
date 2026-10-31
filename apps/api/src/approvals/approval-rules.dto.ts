@@ -61,6 +61,8 @@ export class SaveApprovalRulesDto {
 
   @ApiPropertyOptional({ description: 'Progress is recorded only as DPR work lines' }) @IsOptional() @IsBoolean() progressFromDpr?: boolean;
 
+  @ApiPropertyOptional({ description: 'A purchase order on a material request waits for its supplier choice (Finalise L1) to be approved' }) @IsOptional() @IsBoolean() ordersNeedApprovedChoice?: boolean;
+
   @ApiPropertyOptional({ type: [ApprovalEscalationItemDto], description: 'Reminders and escalation per type, the whole list; types left out have neither. Left out: they stay as they are.' })
   @IsOptional()
   @IsArray()

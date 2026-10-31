@@ -140,6 +140,7 @@ import type {
   PayablesDto,
   VendorPaymentDto,
   PaymentRequestDto,
+  SupplierChoiceDto,
   PaymentRequestKind,
   ClientDto,
   MsmeCategory,
@@ -429,7 +430,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection' | 'payment_request';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection' | 'payment_request' | 'supplier_choice';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -445,6 +446,7 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   SUBCONTRACT_BILL: 'subcontract_bill',
   INSPECTION: 'inspection',
   PAYMENT_REQUEST: 'payment_request',
+  SUPPLIER_CHOICE: 'supplier_choice',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -567,6 +569,7 @@ const RECORD_QUERIES = {
   '/subcontract-bills': { key: (id: string) => ['subcontract-bills', 'detail', id], path: '/subcontract-bills' },
   '/inspections': { key: (id: string) => ['inspections', 'detail', id], path: '/inspections' },
   '/payment-requests': { key: (id: string) => ['payment-requests', 'detail', id], path: '/payment-requests' },
+  '/supplier-choices': { key: (id: string) => ['supplier-choices', 'detail', id], path: '/supplier-choices' },
   '/debit-notes': { key: (id: string) => ['debit-notes', 'detail', id], path: '/debit-notes' },
   '/projects': { key: (id: string) => ['projects', id], path: '/projects' },
 } satisfies Record<string, { key: (id: string) => QueryKey; path: string }>;
@@ -2540,6 +2543,8 @@ export const usePaymentRequests = (filters: PaymentRequestFilters, enabled = tru
   });
 
 export const usePaymentRequest = (id: string | undefined) => useQuery({ ...recordQuery<PaymentRequestDto>('/payment-requests', id), enabled: !!id });
+/** A supplier choice sent for approval (Finalise L1 under the company's rule that orders wait for it). */
+export const useSupplierChoice = (id: string | undefined) => useQuery({ ...recordQuery<SupplierChoiceDto>('/supplier-choices', id), enabled: !!id });
 
 export const usePayables = (filters: { projectId?: string; vendorId?: string } = {}, enabled = true) =>
   useQuery({
@@ -2674,7 +2679,12 @@ export const useRequestToOrder = (id: string | undefined) =>
 /** Finalise the supplier on a request (one quotation, or the lowest per item split), or reopen it. */
 export function useFinaliseL1(id: string) {
   const qc = useQueryClient();
-  const done = () => qc.invalidateQueries({ queryKey: ['quotations'] });
+  const done = () => {
+    qc.invalidateQueries({ queryKey: ['quotations'] });
+    // Finalising may send the choice for approval, or drop one still waiting.
+    qc.invalidateQueries({ queryKey: ['approvals'] });
+    qc.invalidateQueries({ queryKey: ['supplier-choices'] });
+  };
   return {
     finalise: useMutation({
       mutationFn: async (body: { quotationId?: string; split?: boolean; reason?: string | null }) => (await api.post<RequestToOrderDto>(`/material-requests/${id}/finalise`, body)).data,

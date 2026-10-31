@@ -22,6 +22,7 @@ import { WorkOrderRecord } from '@/components/subcontracts/WorkOrderDrawer';
 import { SubBillRecord } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionRecord } from '@/components/inspections/InspectionDrawer';
 import { PaymentRequestRecord } from '@/components/payables/PaymentRequestRecord';
+import { SupplierChoiceRecord } from '@/components/purchasing/SupplierChoiceRecord';
 import { decidedInPlace, QUEUE_TYPE_LABELS } from './queue';
 import { TypeTag } from './ApprovalQueue';
 
@@ -105,6 +106,8 @@ function PaneRecord({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenD
       return <InspectionRecord mode="pane" id={item.id} />;
     case 'PAYMENT_REQUEST':
       return <PaymentRequestRecord mode="pane" id={item.id} />;
+    case 'SUPPLIER_CHOICE':
+      return <SupplierChoiceRecord mode="pane" id={item.id} />;
     default:
       return <PendingSummary item={item} onOpenDetails={onOpenDetails} />;
   }
