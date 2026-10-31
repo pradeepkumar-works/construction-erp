@@ -78,7 +78,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <div style={{ padding: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Typography.Text type="secondary">Days present, leave and overtime for the payroll provider. Statutory deductions are worked out there.</Typography.Text>
+        <Typography.Text type="secondary">Days present, leave and overtime for each person this month. Salary runs use these figures; export them if an outside firm runs your payroll.</Typography.Text>
         <div style={{ flex: 1 }} />
         <Button icon={<DownloadOutlined />} disabled={!rows.length} onClick={() => downloadXlsx(`payroll-inputs-${month}`, `Staff ${month}`, exportColumns, rows)}>
           Export Excel

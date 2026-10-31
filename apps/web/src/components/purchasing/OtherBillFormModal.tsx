@@ -55,6 +55,15 @@ const lineAmount = (l: LineValue | undefined) => Math.round(toNumber(l?.quantity
 const lineGst = (l: LineValue | undefined) => Math.round(lineAmount(l) * toNumber(l?.gstRate)) / 100;
 const RATE_WORD = { HOUR: 'hour', DAY: 'day', MONTH: 'month' } as const;
 
+/** One line for a supplier's invoice: its amount before GST, at the GST rate nearest the GST it shows. */
+function invoiceLine(i: { invoiceNo?: string; amount?: string; gstAmount?: string | null; notes?: string | null }): LineValue {
+  const gst = toNumber(i.gstAmount);
+  const base = Math.round((toNumber(i.amount) - gst) * 100) / 100;
+  const pct = base > 0 ? (gst / base) * 100 : 0;
+  const gstRate = GST_RATES.reduce<number>((best, r) => (Math.abs(r - pct) < Math.abs(best - pct) ? r : best), GST_RATES[0]);
+  return { description: i.notes?.trim() || `Invoice ${i.invoiceNo ?? ''}`.trim(), unit: 'LS', quantity: 1, rate: base, gstRate };
+}
+
 const TITLES: Record<OtherBillKind, string> = { HIRE: 'Record hire bill', SERVICE: 'Record workshop bill', OTHER: 'Record service bill' };
 
 /**
@@ -73,7 +82,8 @@ export function OtherBillFormModal({
   open: boolean;
   kind: OtherBillKind;
   bill?: VendorBillDto | null;
-  start?: { projectId?: string; equipmentId?: string };
+  /** Where a new bill starts: a machine's hire, or a supplier's invoice from the portal (its vendor, number, date and amount). */
+  start?: { projectId?: string; equipmentId?: string; vendorId?: string; invoiceNo?: string; invoiceDate?: string; amount?: string; gstAmount?: string | null; notes?: string | null };
   onClose: () => void;
   onSaved?: (b: VendorBillDto) => void;
 }) {
@@ -103,6 +113,7 @@ export function OtherBillFormModal({
 
   const startProject = start?.projectId;
   const startEquipment = start?.equipmentId;
+  const startInvoice = start?.invoiceNo ? start : undefined;
   useEffect(() => {
     if (!open || (given && !bill)) return;
     form.resetFields();
@@ -134,11 +145,13 @@ export function OtherBillFormModal({
         // A hire bill usually comes in the month after the work.
         hireMonth: dayjs().subtract(dayjs().date() <= 10 ? 1 : 0, 'month').startOf('month'),
         hireGstRate: 18,
-        invoiceDate: dayjs(),
+        vendorId: startInvoice?.vendorId,
+        invoiceNo: startInvoice?.invoiceNo,
+        invoiceDate: startInvoice?.invoiceDate ? dayjs(startInvoice.invoiceDate) : dayjs(),
         freight: 0,
-        lines: kind === 'HIRE' ? [] : [{ gstRate: 18 }],
+        lines: kind === 'HIRE' ? [] : [startInvoice ? invoiceLine(startInvoice) : { gstRate: 18 }],
       });
-  }, [open, given, bill, kind, startProject, startEquipment, form]);
+  }, [open, given, bill, kind, startProject, startEquipment, startInvoice, form]);
 
   // A new hire bill takes the logs' quantity and the machine's rate until either is typed over.
   useEffect(() => {

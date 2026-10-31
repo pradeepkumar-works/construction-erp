@@ -51,12 +51,12 @@ export function DecideChangeForm({ decision, onClose }: { decision: { change: Su
       layout="modal"
       width={560}
       projectDefault={false}
-      title={c ? `${decision?.approve ? 'Approve' : 'Turn down'} ${c.vendorName}'s change` : 'Decide the change'}
-      okText={decision?.approve ? 'Approve' : 'Turn down'}
+      title={c ? `${decision?.approve ? 'Approve' : 'Reject'} ${c.vendorName}'s change` : 'Decide the change'}
+      okText={decision?.approve ? 'Approve' : 'Reject'}
       onSubmit={async (v) => {
         if (!decision || !c) return;
         await send.mutateAsync({ path: `/supplier-portal/changes/${c.id}/decide`, body: { approve: decision.approve, note: v.note?.trim() || null } });
-        message.success(decision.approve ? `${c.vendorName}'s details updated` : `${c.vendorName}'s change turned down`);
+        message.success(decision.approve ? `${c.vendorName}'s details updated` : `${c.vendorName}'s change rejected`);
       }}
     >
       <Form form={form} layout="vertical">

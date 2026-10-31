@@ -58,7 +58,7 @@ export default function SupplierInvoicesPage() {
             { title: 'Against', key: 'against', width: 140, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? '-'}</span> },
             { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
             {
-              title: 'Where it is',
+              title: 'Status',
               key: 'stage',
               render: (_, i) => (
                 <Flex vertical gap={2}>

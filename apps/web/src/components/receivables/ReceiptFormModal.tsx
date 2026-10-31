@@ -135,8 +135,8 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
       open={open}
       onClose={onClose}
       form={form}
-      title={editing ? 'Correct receipt' : bill ? `Payment received · ${bill.billLabel}` : 'Record money received'}
-      okText={editing ? 'Save' : 'Record'}
+      title={editing ? (bill ? `Edit money received · ${bill.billLabel}` : 'Edit money received') : bill ? `Record money received · ${bill.billLabel}` : 'Record money received'}
+      okText="Save"
       onSubmit={(v) => mutation.mutateAsync(v)}
       width={680}
     >
@@ -146,7 +146,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             <Segmented options={(['BILL', 'RETENTION_RELEASE', 'DEPOSIT_RELEASE'] as ReceiptKind[]).map((k) => ({ value: k, label: RECEIPT_KIND_LABELS[k] }))} />
           </Form.Item>
         )}
-        <FormSection title="Payment">
+        <FormSection title="Money received">
           {kind === 'BILL' ? (
             <Form.Item name="billId" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]} hidden={!!bill || editing}>
               <Select

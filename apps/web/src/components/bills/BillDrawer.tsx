@@ -309,7 +309,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               ? [
                   {
                     key: 'payments',
-                    title: 'Payments received',
+                    title: 'Money received',
                     count: data.receipts.length,
                     children: (
                       <Table<ReceiptDto>
@@ -317,7 +317,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         size="small"
                         pagination={false}
                         dataSource={data.receipts}
-                        locale={{ emptyText: 'No payment recorded yet' }}
+                        locale={{ emptyText: 'No money received yet' }}
                         columns={[
                           { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
                           { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
@@ -384,7 +384,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               ) : null}
               {approved && accounts && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
                 <Button size={size} onClick={() => setPaying(true)}>
-                  Record payment
+                  Record money received
                 </Button>
               ) : null}
             </>

@@ -99,7 +99,7 @@ export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; 
                   Approve
                 </Button>
                 <Button size="small" onClick={() => setDeciding({ change: c, approve: false })}>
-                  Turn down
+                  Reject
                 </Button>
               </Flex>
             ) : c.status === 'PENDING' && c.bank ? (
