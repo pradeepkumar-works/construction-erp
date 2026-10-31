@@ -16,7 +16,7 @@ test.describe.serial('a failed cube test through its NCR', () => {
   test('the site engineer records cubes and enters both results', async ({ page }) => {
     await signIn(page, 'engineer@demo.com');
     await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Quality', exact: true }).click();
-    await page.getByRole('tab', { name: /Tests/ }).click();
+    await page.getByRole('tab', { name: /Material tests/ }).click();
     await page.getByRole('button', { name: 'Record test' }).click();
     const form = page.locator('.ant-drawer-open').filter({ hasText: 'Record test' });
     await chooseOption(form.getByLabel('Project'), 'RD-2026-01');

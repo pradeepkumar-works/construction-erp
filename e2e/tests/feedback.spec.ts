@@ -99,7 +99,7 @@ test('a new entry says what was made, and View opens it', async ({ page }) => {
   const modal = page.locator('.ant-modal').filter({ hasText: 'New progress entry' });
   await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
   await chooseOption(modal.getByLabel('Activity'));
-  await modal.getByLabel(/Quantity executed/).fill(uniqueQty());
+  await modal.getByLabel(/Quantity done/).fill(uniqueQty());
   await modal.getByLabel('Remarks').fill(remarks);
   await modal.getByRole('button', { name: 'Submit' }).click();
 

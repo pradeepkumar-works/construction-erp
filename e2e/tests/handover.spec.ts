@@ -33,7 +33,7 @@ test('a snag is fixed and accepted, completion starts the DLP and the checklist'
 
   // A snag from the walk-through, put right and accepted.
   await page.getByRole('button', { name: 'Report snag' }).click();
-  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Report a snag or defect' });
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Report snag' });
   await form.getByLabel('What is wrong').fill('Door closer missing');
   await form.getByLabel('Where').fill('OT corridor');
   await form.getByRole('button', { name: 'Report', exact: true }).click();
@@ -43,10 +43,10 @@ test('a snag is fixed and accepted, completion starts the DLP and the checklist'
   await drawer.getByRole('button', { name: 'Mark fixed' }).click();
   const fix = page.locator('.ant-modal').filter({ hasText: 'What was done' });
   await fix.getByLabel('What was done').fill('Closer fitted and adjusted');
-  await fix.getByRole('button', { name: 'Fixed', exact: true }).click();
+  await fix.getByRole('button', { name: 'Mark fixed', exact: true }).click();
   await expect(page.locator('.ant-message').getByText(/marked fixed$/)).toBeVisible();
   await drawer.getByRole('button', { name: 'Accept and close' }).click();
-  await page.locator('.ant-modal').getByRole('button', { name: 'Close it' }).click();
+  await page.locator('.ant-modal-footer').getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page.locator('.ant-message').getByText(/closed$/)).toBeVisible();
   await expect(drawer).toContainText('Closed');
   await drawer.getByRole('button', { name: 'Close', exact: true }).click();

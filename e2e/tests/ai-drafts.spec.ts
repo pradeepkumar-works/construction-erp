@@ -71,7 +71,7 @@ test("rough notes become a DPR on the list already open, keeping the manpower th
   await card.getByRole('button', { name: 'Open form' }).click();
   const form = page.locator('.ant-drawer').filter({ hasText: 'New daily report' });
   await expect(form.getByText('Filled in by Ask Nirmaan from what you wrote')).toBeVisible();
-  await expect(form.getByLabel('Work executed')).toHaveValue(/gsb laying 40 cum at km 14/);
+  await expect(form.getByLabel('Work done today')).toHaveValue(/gsb laying 40 cum at km 14/);
   await expect(form.getByText('Rainy')).toBeVisible();
   // The manpower said, not the attendance sheet's.
   await expect(form.getByRole('row', { name: /Mason .*6/ })).toBeVisible();
