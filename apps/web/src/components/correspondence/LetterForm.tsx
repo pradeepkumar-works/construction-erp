@@ -4,8 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import { AutoComplete, Checkbox, Form, Input, Segmented, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation } from '@tanstack/react-query';
-import type { AiDraftDto, AttachmentDto, LetterAction, LetterDirection, LetterDto, LetterMode, LetterPriority   RISK_KIND_LABELS,
-} from '@erp/shared';
+import type { AiDraftDto, AttachmentDto, LetterAction, LetterDirection, LetterDto, LetterMode, LetterPriority } from '@erp/shared';
 import {
   DEFAULT_REPLY_DAYS,
   LETTER_ACTIONS,
