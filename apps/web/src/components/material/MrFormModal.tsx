@@ -71,7 +71,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
       return entry ? (await api.patch(`/material-requests/${entry.id}`, body)).data : (await api.post('/material-requests', { projectId: v.projectId, ...body })).data;
     },
     onSuccess: (x: { id: string }) => {
-      notify.saved(editing ? 'Material request resubmitted for approval' : 'Material request submitted for approval', recordPage('MATERIAL_REQUEST', x.id));
+      notify.saved(editing ? 'Indent resubmitted for approval' : 'Indent submitted for approval', recordPage('MATERIAL_REQUEST', x.id));
       qc.invalidateQueries();
     },
     meta: FAIL_NOTICE,

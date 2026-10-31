@@ -60,7 +60,7 @@ test('a WhatsApp message becomes a draft the sender saves from the page, or chan
     await expect(form.getByLabel('Quantity of line 1')).toHaveValue('15');
     await form.getByLabel('Quantity of line 1').fill('18');
     await form.getByRole('button', { name: 'Submit request' }).click();
-    await expect(page.getByText('Material request submitted for approval')).toBeVisible();
+    await expect(page.getByText('Indent submitted for approval')).toBeVisible();
     await expect.poll(async () => (await api<List>(engineer, '/whatsapp/messages')).items.find((m) => m.text === second)?.outcome).toBe('CHANGED');
   } finally {
     await api(engineer, '/whatsapp/setup', { method: 'PUT', body: { enabled: false } });
