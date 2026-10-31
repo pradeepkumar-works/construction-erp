@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
@@ -14,6 +14,8 @@ import { DISPLAY_FONT } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { RowMenu } from '@/components/list/RowMenu';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const STATE_TONE: Record<AgentState, TagTone> = { ONLINE: 'success', OFFLINE: 'pending', WAITING_TO_PAIR: 'info', CODE_EXPIRED: 'pending', REVOKED: 'neutral' };
 
@@ -80,7 +82,8 @@ function PairCode({ shown, onClose }: { shown: ConnectorPairCodeDto | null; onCl
 
 /** Connectors: the computers on site that read local devices, and whether each is calling in. */
 export function Connectors() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
+  const [confirmDelete, deleteDialog] = useConfirmDelete();
   const { data, isLoading, error, refetch } = useConnectorAgents();
   const act = useIntegrationAction<ConnectorPairCodeDto>();
   const [adding, setAdding] = useState(false);
@@ -98,37 +101,39 @@ export function Connectors() {
     {
       title: '',
       key: 'x',
-      width: 220,
+      width: 64,
       render: (_, a) =>
         a.state === 'REVOKED' ? null : (
-          <Space size={4} wrap>
-            <Popconfirm
-              title="Make a new pairing code?"
-              description={a.pairedAt ? 'The computer stops sending until it is paired again with the new code.' : undefined}
-              okText="New code"
-              onConfirm={() => act.mutateAsync({ path: `/integrations/agents/${a.id}/pair-code` }).then(setCode).catch(fail)}
-            >
-              <Button size="small" aria-label={`New pairing code for ${a.name}`}>
-                New code
-              </Button>
-            </Popconfirm>
-            <Popconfirm
-              title={`Remove ${a.name}?`}
-              description="It stops sending for good, and what it read waits for another Connector."
-              okText="Remove"
-              okButtonProps={{ danger: true }}
-              onConfirm={() =>
-                act
-                  .mutateAsync({ method: 'delete', path: `/integrations/agents/${a.id}` })
-                  .then(() => message.success(`${a.name} removed`))
-                  .catch(fail)
-              }
-            >
-              <Button size="small" danger aria-label={`Remove ${a.name}`}>
-                Remove
-              </Button>
-            </Popconfirm>
-          </Space>
+          <RowMenu
+            label={`More for ${a.name}`}
+            items={[
+              {
+                key: 'code',
+                label: 'New pairing code',
+                onSelect: () =>
+                  a.pairedAt
+                    ? modal.confirm({
+                        title: 'Make a new pairing code?',
+                        content: 'The computer stops sending until it is paired again with the new code.',
+                        okText: 'New code',
+                        onOk: () => act.mutateAsync({ path: `/integrations/agents/${a.id}/pair-code` }).then(setCode).catch(fail),
+                      })
+                    : act.mutateAsync({ path: `/integrations/agents/${a.id}/pair-code` }).then(setCode).catch(fail),
+              },
+              {
+                key: 'remove',
+                label: 'Remove',
+                danger: true,
+                onSelect: () =>
+                  confirmDelete({
+                    what: a.name,
+                    verb: 'Remove',
+                    description: 'It stops sending for good, and what it read waits for another Connector.',
+                    onConfirm: () => act.mutateAsync({ method: 'delete', path: `/integrations/agents/${a.id}` }),
+                  }),
+              },
+            ]}
+          />
         ),
     },
   ];
@@ -150,6 +155,7 @@ export function Connectors() {
       )}
       <AgentForm open={adding} onClose={() => setAdding(false)} onCreated={setCode} />
       <PairCode shown={code} onClose={() => setCode(null)} />
+      {deleteDialog}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { DeviceCommands } from './DeviceCommands';
+import { RowMenu } from '@/components/list/RowMenu';
 
 interface Values {
   name: string;
@@ -173,23 +174,26 @@ export function Devices() {
     {
       title: '',
       key: 'x',
-      width: 340,
+      width: 140,
       render: (_, d) => (
-        <Space size={4} wrap>
-          <Button size="small" onClick={() => setSetup(d.id)} aria-label={`How to set up ${d.name}`}>
+        <Space size={4}>
+          <Button size="small" onClick={() => setSetup(d.id)} aria-label={`Set up ${d.name}`}>
             Set up
           </Button>
-          <Button size="small" onClick={() => setEditing({ device: d })} aria-label={`Edit ${d.name}`}>
-            Edit
-          </Button>
-          <Button size="small" onClick={() => run(act.mutateAsync({ method: 'patch', path: `/biometric/devices/${d.id}`, body: { isActive: !d.isActive } }), d.isActive ? `${d.name} switched off` : `${d.name} switched on`)} aria-label={`${d.isActive ? 'Switch off' : 'Switch on'} ${d.name}`}>
-            {d.isActive ? 'Switch off' : 'Switch on'}
-          </Button>
-          {d.protocol === 'ADMS' && d.isActive ? (
-            <Button size="small" onClick={() => run(act.mutateAsync({ path: `/biometric/devices/${d.id}/set-clock` }), `${d.name}'s clock is set when it next calls`)} aria-label={`Set the clock of ${d.name}`}>
-              Set the clock
-            </Button>
-          ) : null}
+          <RowMenu
+            label={`More for ${d.name}`}
+            items={[
+              { key: 'edit', label: 'Edit', onSelect: () => setEditing({ device: d }) },
+              ...(d.protocol === 'ADMS' && d.isActive
+                ? [{ key: 'clock', label: 'Set the clock', onSelect: () => run(act.mutateAsync({ path: `/biometric/devices/${d.id}/set-clock` }), `${d.name}'s clock is set when it next calls`) }]
+                : []),
+              {
+                key: 'active',
+                label: d.isActive ? 'Switch off' : 'Switch on',
+                onSelect: () => run(act.mutateAsync({ method: 'patch', path: `/biometric/devices/${d.id}`, body: { isActive: !d.isActive } }), d.isActive ? `${d.name} switched off` : `${d.name} switched on`),
+              },
+            ]}
+          />
         </Space>
       ),
     },

@@ -13,6 +13,7 @@ import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { RowMenu } from '@/components/list/RowMenu';
 
 export const HEALTH_TONE: Record<ConnectionHealth, TagTone> = { LIVE: 'success', FAILING: 'danger', QUIET: 'pending', NOT_SET_UP: 'info', OFF: 'neutral' };
 
@@ -443,27 +444,27 @@ export function Connections() {
     {
       title: '',
       key: 'x',
-      width: 250,
+      width: 140,
       render: (_, c) => (
-        <Space size={4} wrap>
+        <Space size={4}>
           <Button size="small" onClick={() => setSetupId(c.id)} aria-label={`Set up ${c.name}`}>
             Set up
           </Button>
-          <Button size="small" onClick={() => setEditing({ c })} aria-label={`Edit ${c.name}`}>
-            Edit
-          </Button>
-          <Button
-            size="small"
-            aria-label={`${c.isActive ? 'Switch off' : 'Switch on'} ${c.name}`}
-            onClick={() =>
-              act
-                .mutateAsync({ method: 'patch', path: `/integrations/connections/${c.id}`, body: { isActive: !c.isActive } })
-                .then(() => message.success(c.isActive ? `${c.name} switched off` : `${c.name} switched on`))
-                .catch((err) => message.error(errorMessage(err, 'That did not go through. Try again.')))
-            }
-          >
-            {c.isActive ? 'Switch off' : 'Switch on'}
-          </Button>
+          <RowMenu
+            label={`More for ${c.name}`}
+            items={[
+              { key: 'edit', label: 'Edit', onSelect: () => setEditing({ c }) },
+              {
+                key: 'active',
+                label: c.isActive ? 'Switch off' : 'Switch on',
+                onSelect: () =>
+                  act
+                    .mutateAsync({ method: 'patch', path: `/integrations/connections/${c.id}`, body: { isActive: !c.isActive } })
+                    .then(() => message.success(c.isActive ? `${c.name} switched off` : `${c.name} switched on`))
+                    .catch((err) => message.error(errorMessage(err, 'That did not go through. Try again.'))),
+              },
+            ]}
+          />
         </Space>
       ),
     },
