@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import { Button, Card, Col, Flex, Row, Statistic, Table, Typography, theme } from 'antd';
-import { NCR_AGE_BAND_LABELS, type QaReportDto, type QaReportRowDto } from '@erp/shared';
+import { CALIBRATION_SOON_DAYS, NCR_AGE_BAND_LABELS, type QaReportDto, type QaReportRowDto } from '@erp/shared';
 import { useQaReport } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatINR } from '@/lib/format';
@@ -153,7 +153,7 @@ function ReportBody({ data }: { data: QaReportDto }) {
           showHeader={false}
           pagination={false}
           dataSource={[
-            { key: 'calibration', text: `${data.instrumentsOverdue} instrument${data.instrumentsOverdue === 1 ? '' : 's'} out of calibration, ${data.instrumentsDueSoon} due within 30 days`, href: '/calibration', link: 'Calibration' },
+            { key: 'calibration', text: `${data.instrumentsOverdue} instrument${data.instrumentsOverdue === 1 ? '' : 's'} out of calibration, ${data.instrumentsDueSoon} due in the next ${CALIBRATION_SOON_DAYS} days`, href: '/calibration', link: 'Calibration' },
             { key: 'samples', text: `${data.samplesLate} lab report${data.samplesLate === 1 ? '' : 's'} late`, href: '/lab-samples', link: 'Samples sent out' },
             { key: 'certificates', text: `${data.certificatesMissing} receipt${data.certificatesMissing === 1 ? '' : 's'} without the maker's test certificate`, href: '/test-certificates', link: 'Test certificates' },
             { key: 'labs', text: data.labsExpiring.length ? `NABL accreditation running out: ${data.labsExpiring.join(', ')}` : 'No lab accreditation running out', href: '/qa-labs', link: 'Labs' },

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { Button, Card, Checkbox, Drawer, Flex, Form, Input, InputNumber, Select, Statistic, Switch, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CALIBRATION_RESULTS, CALIBRATION_RESULT_LABELS, calibrationDaysFor, canManageQaPlan, type AttachmentDto, type CalibrationResult, type QaInstrumentDto } from '@erp/shared';
+import { CALIBRATION_RESULTS, CALIBRATION_RESULT_LABELS, CALIBRATION_SOON_DAYS, calibrationDaysFor, canManageQaPlan, type AttachmentDto, type CalibrationResult, type QaInstrumentDto } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useInstrument, useInstruments, useMasterList, useQaLabs } from '@/lib/queries';
@@ -295,7 +295,7 @@ export function CalibrationPage() {
           <>
             <Flex gap={token.marginXL} wrap style={{ marginBottom: token.margin }}>
               <Statistic title="Overdue" value={data.overdue} styles={{ content: data.overdue ? { color: token.colorErrorText } : undefined }} />
-              <Statistic title={`Due in ${15} days`} value={data.dueSoon} />
+              <Statistic title={`Due in the next ${CALIBRATION_SOON_DAYS} days`} value={data.dueSoon} />
               <Statistic title="Out of use" value={data.outOfUse} />
             </Flex>
             <Table<QaInstrumentDto>
