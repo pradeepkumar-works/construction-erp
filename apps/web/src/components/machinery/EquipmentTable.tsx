@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { App, Button, Checkbox, Form, Input, InputNumber, Select, theme } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, theme } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -219,18 +219,20 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           label: 'Actions',
           locked: true,
           fixed: 'right' as const,
-          width: 64,
+          width: mayManage ? 96 : 56,
           render: (_: unknown, r: EquipmentDto) => (
-            <RowMenu
-              label={`Actions for ${r.code}`}
-              items={[
-                ...(mayManage ? [{ key: 'edit', label: 'Edit', onSelect: () => open(r) }] : []),
-                { key: 'parts', label: 'Tyres and batteries', onSelect: () => setPartsOf(r) },
-                ...(mayManage
-                  ? [{ key: 'delete', label: r.lastLogDate ? 'Delete (it has logs; mark it inactive instead)' : 'Delete', danger: true, disabled: !!r.lastLogDate, onSelect: () => askDelete({ what: `machine ${r.code}`, onConfirm: () => remove.mutateAsync(r) }) }]
-                  : []),
-              ]}
-            />
+            <Space size="small">
+              <Button type="text" size="small" icon={<ToolOutlined />} onClick={() => setPartsOf(r)} aria-label={`Tyres and batteries of ${r.code}`} title="Tyres and batteries" />
+              {mayManage ? (
+                <RowMenu
+                  label={`Actions for ${r.code}`}
+                  items={[
+                    { key: 'edit', label: 'Edit', onSelect: () => open(r) },
+                    { key: 'delete', label: r.lastLogDate ? 'Delete (it has logs; mark it inactive instead)' : 'Delete', danger: true, disabled: !!r.lastLogDate, onSelect: () => askDelete({ what: `machine ${r.code}`, onConfirm: () => remove.mutateAsync(r) }) },
+                  ]}
+                />
+              ) : null}
+            </Space>
           ),
         } satisfies ListColumn<EquipmentDto>,
       ];

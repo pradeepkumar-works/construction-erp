@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Flex, Select, Table, Typography, theme } from 'antd';
+import { Button, Card, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
-import { PlusOutlined } from '@/components/common/icons';
+import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, UnlistedVendorDto, VendorDto, VendorKind, VendorSortField } from '@erp/shared';
 import { GST_STATES, LIST_SORT_FIELDS, MSME_CATEGORIES, MSME_CATEGORY_LABELS, VENDOR_KINDS, VENDOR_KIND_LABELS, canEditVendors, canManageSupplierLogins, canSeeVendorBank } from '@erp/shared';
@@ -25,8 +25,7 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { formatDate } from '@/lib/format';
-import { useConfirmDelete } from '@/components/common/ConfirmDelete';
-import { RowMenu } from '@/components/list/RowMenu';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const usedOn = (r: { expenseCount: number; equipmentCount: number; grnCount: number }) =>
   [
@@ -49,7 +48,6 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
   const qc = useQueryClient();
   const bank = !!user && canSeeVendorBank(user.roleKey);
 
-  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/vendors/${id}`)).data,
     onSuccess: () => {
@@ -163,18 +161,21 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
               label: 'Actions',
               locked: true,
               fixed: 'right' as const,
-              width: 64,
+              width: onPortal ? 128 : 96,
               render: (_: unknown, v: VendorDto) => (
-                <RowMenu
-                  label={`Actions for ${v.name}`}
-                  items={[
-                    ...(editable ? [{ key: 'edit', label: 'Edit', onSelect: () => onEdit(v) }] : []),
-                    ...(onPortal ? [{ key: 'portal', label: 'Supplier portal logins', onSelect: () => onPortal(v) }] : []),
-                    ...(editable && v.expenseCount + v.equipmentCount + v.grnCount === 0
-                      ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `vendor ${v.name}`, onConfirm: () => remove.mutateAsync(v.id) }) }]
-                      : []),
-                  ]}
-                />
+                <Space size={4}>
+                  {onPortal ? (
+                    <Tooltip title="Supplier portal logins">
+                      <Button size="small" type="text" icon={<ContactsOutlined />} aria-label={`Supplier portal logins for ${v.name}`} onClick={() => onPortal(v)} />
+                    </Tooltip>
+                  ) : null}
+                  {editable ? <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${v.name}`} onClick={() => onEdit(v)} /> : null}
+                  {editable && v.expenseCount + v.equipmentCount + v.grnCount === 0 ? (
+                    <ConfirmDelete what={`vendor ${v.name}`} onConfirm={() => remove.mutateAsync(v.id)}>
+                      <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${v.name}`} />
+                    </ConfirmDelete>
+                  ) : null}
+                </Space>
               ),
             } satisfies ListColumn<VendorDto>,
           ]
@@ -198,7 +199,6 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
 
   return (
     <>
-      {deleteDialog}
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar filters={frame.filterState} projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" searchLabel="Search vendors" extra={<ExportButton onExport={exportRows} />}>
