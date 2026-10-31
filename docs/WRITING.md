@@ -49,6 +49,11 @@ last column's words stay out of every label; an old name may stay as a Search ke
 | The launcher | Home | All modules |
 | No value in a cell | – (`NO_VALUE` in `format.ts`) | – |
 | A menu path in help text | › ("Accounts › Tally export") | – |
+| Labour on the DPR | Labour (the count), Trade (the kind) | Manpower |
+| Goods coming | In transit | On the way |
+| The vendor who hires out machines | Hire agency | Machinery hire |
+| A bill's payment | "Against an RA bill" (money received) or "Pay a vendor bill" (payment request) | Bill payment |
+| A controlled copy back from its holder | Withdrawn | Taken back |
 - **Status words come from `@erp/shared`** (`SUBMISSION_STATUS_LABELS` and the other `…_LABELS`), so the web and the phone
   say the same thing. Never type a status word into a page; if a label reads wrong, change it in `packages/shared` for both
   apps (and its Hindi in `apps/mobile/src/i18n/hi/`).

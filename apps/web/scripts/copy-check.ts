@@ -38,17 +38,12 @@ interface Retired {
   /** Retired only in these label maps */
   maps?: string[];
 }
-/** Names the screens' reviews retired, which a writer might reach for again. */
+/** Names retired only in some label maps; the names retired everywhere are in the table. */
 const RETIRED_FOR: Retired[] = [
   { r: 'Live', thing: 'A permit in force', name: 'Issued', maps: ['WORK_PERMIT_STATUS_LABELS'] },
   { r: 'Received', thing: 'An inward letter', name: 'Inward', maps: ['LETTER_DIRECTION_LABELS'] },
   { r: 'Sent', thing: 'An outward letter', name: 'Outward', maps: ['LETTER_DIRECTION_LABELS'] },
   { r: 'Waiting for approval', thing: 'A letter waiting for its signatory', name: 'Waiting for signature', maps: ['LETTER_STATUS_LABELS'] },
-  { r: 'On the way', thing: 'Goods coming', name: 'In transit' },
-  { r: 'Machinery hire', thing: 'The vendor who hires out machines', name: 'Hire agency' },
-  { r: 'Bill payment', thing: "A bill's payment", name: 'Against an RA bill, or Pay a vendor bill' },
-  { r: 'Taken back', thing: 'A controlled copy back from its holder', name: 'Withdrawn' },
-  { r: 'Manpower', thing: 'Labour on the DPR', name: 'Labour' },
 ];
 RETIRED.push(...RETIRED_FOR);
 
