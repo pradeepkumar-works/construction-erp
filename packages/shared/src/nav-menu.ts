@@ -70,7 +70,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     description: 'Projects, schedule, site work, safety and client billing.',
     subs: [
       sub('projects', 'Projects', 'projects.all', 'projects.handover', 'projects.templates'),
-      sub('schedule', 'Schedule', 'projects.schedule', 'projects.lookahead', 'projects.earned'),
+      sub('schedule', 'Schedule', 'projects.activities', 'projects.schedule', 'projects.lookahead', 'projects.earned'),
       sub('site', 'Site execution', 'site.dpr', 'site.progress', 'site.mb', 'site.risks', 'site.meetings', 'site.whatsapp'),
       sub('safety', 'Safety', 'quality.incidents', 'quality.permits', 'quality.talks', 'quality.ppe'),
       sub('billing', 'Client billing', 'billing.bills', 'billing.variations', 'billing.readiness', 'billing.clients'),
@@ -87,10 +87,10 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     subs: [
       sub('inspections', 'Inspections', 'quality.inspections'),
       sub('plan', 'Plan', 'quality.plan', 'quality.due'),
-      sub('tests', 'Tests', 'quality.tests', 'quality.pours', 'quality.samples', 'quality.calibration'),
+      sub('tests', 'Tests', 'quality.tests', 'quality.pours', 'quality.samples', 'quality.certificates', 'quality.calibration'),
       sub('material', 'Material', 'quality.grns', 'materials.approvals'),
       sub('ncrs', 'NCRs and audits', 'quality.ncrs', 'quality.audits', 'quality.report'),
-      sub('masters', 'Masters', 'quality.checklists', 'quality.testTypes', 'quality.labs', 'quality.certificates', 'quality.ncrCategories', 'quality.rootCauses', 'quality.instrumentKinds'),
+      sub('masters', 'Masters', 'quality.checklists', 'quality.testTypes', 'quality.labs', 'quality.ncrCategories', 'quality.rootCauses', 'quality.instrumentKinds'),
     ],
   },
   {
@@ -160,7 +160,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     description: 'Stock at each site and store, receipts and issues, and material control.',
     subs: [
       sub('stock', 'Stock', 'materials.stock'),
-      sub('movements', 'Receipts and issues', 'materials.register'),
+      sub('movements', 'Stock register', 'materials.register'),
       sub('stores', 'Central stores', 'materials.store'),
       sub('control', 'Material control', 'materials.reconciliation', 'materials.value', 'materials.leakage'),
       sub('reports', 'Stock position', 'reports.stockPosition'),
@@ -190,7 +190,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     description: 'Own and hired machines, machinery logs, fuel, maintenance and papers.',
     subs: [
       sub('equipment', 'Equipment', 'plant.equipment', 'accounts.machineLoans'),
-      sub('logs', 'Machinery logs', 'plant.logs'),
+      sub('logs', 'Machinery logs', 'plant.logs', 'plant.engine'),
       sub('fuel', 'Fuel', 'plant.fuel'),
       sub('maintenance', 'Maintenance', 'plant.maintenance'),
       sub('papers', 'Papers and drivers', 'plant.papers'),
@@ -206,7 +206,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     description: 'Ready-mix concrete: orders, the plant’s day, mix designs and sales.',
     subs: [
       sub('orders', 'Quotes and orders', 'rmc.orders'),
-      sub('production', 'Production', 'rmc.schedule', 'rmc.batches'),
+      sub('production', 'Production', 'rmc.schedule', 'rmc.batcher', 'rmc.batches'),
       sub('mixes', 'Mix designs', 'rmc.mixes'),
       sub('sales', 'Bills and money received', 'rmc.sales'),
       sub('masters', 'Masters', 'rmc.mixes'),
