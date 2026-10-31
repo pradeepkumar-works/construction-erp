@@ -172,7 +172,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                     </div>
                   </span>
                 ) : (
-                  '-'
+                  NO_VALUE
                 ),
             },
             { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : NO_VALUE },

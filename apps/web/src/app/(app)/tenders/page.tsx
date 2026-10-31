@@ -181,7 +181,7 @@ function TendersPage() {
             ) : null}
           </div>
         ) : (
-          "-"
+          NO_VALUE
         ),
     },
     {
@@ -204,7 +204,7 @@ function TendersPage() {
             ) : null}
           </div>
         ) : (
-          "-"
+          NO_VALUE
         ),
     },
     {

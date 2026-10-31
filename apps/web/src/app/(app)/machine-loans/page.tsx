@@ -94,7 +94,7 @@ function MachineLoansPage() {
             ) : null}
           </div>
         ) : (
-          '-'
+          NO_VALUE
         ),
     },
   ];

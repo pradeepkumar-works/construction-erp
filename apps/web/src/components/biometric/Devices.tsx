@@ -161,7 +161,7 @@ export function Devices() {
       width: 200,
       render: (_, d) =>
         d.protocol !== 'ADMS' ? (
-          '-'
+          NO_VALUE
         ) : (
           <div>
             {d.commandsFailed ? <AppTag tone="danger">{`${d.commandsFailed} failed`}</AppTag> : null}

@@ -206,7 +206,7 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
                   {i.woNo}
                 </Link>
               ) : (
-                '-'
+                NO_VALUE
               )}
             </Descriptions.Item>
             <Descriptions.Item label="Site">

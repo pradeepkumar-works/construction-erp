@@ -11,7 +11,7 @@ import { useScEnquiries } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
 import { useNewIntent } from '@/lib/new-intent';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -88,7 +88,7 @@ function ScEnquiriesPage() {
             {r.status === 'OPEN' && r.closesOn < today() ? <div><AppTag tone="pending">Past last day</AppTag></div> : null}
           </div>
         ) : (
-          '-'
+          NO_VALUE
         ),
     },
     { key: 'status', title: 'Status', width: 100, render: (_, r) => <ScEnquiryStatusTag status={r.status} /> },
@@ -120,7 +120,7 @@ function ScEnquiriesPage() {
             {sub(r.lowestVendorName)}
           </div>
         ) : (
-          '-'
+          NO_VALUE
         ),
     },
     {
@@ -134,7 +134,7 @@ function ScEnquiriesPage() {
             <span translate="no">{r.woNo}</span>
           </RecordLink>
         ) : (
-          '-'
+          NO_VALUE
         ),
     },
   ];

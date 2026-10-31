@@ -362,7 +362,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
           : stat(
               "Margin",
               tot.margin === null ? (
-                "-"
+                NO_VALUE
               ) : (
                 <Typography.Text
                   type={toNumber(tot.margin) < 0 ? "danger" : undefined}
@@ -589,7 +589,7 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
         {row(
           "Margin",
           tot.margin === null ? (
-            "-"
+            NO_VALUE
           ) : (
             <Typography.Text
               type={toNumber(tot.margin) < 0 ? "danger" : undefined}
@@ -897,7 +897,7 @@ function BidsTab({
               const l1 = toNumber(tender.bids[0]?.amount);
               const gap = toNumber(b.amount) - l1;
               return b.rank === 1 || !l1 ? (
-                "-"
+                NO_VALUE
               ) : (
                 <span translate="no">{`+${formatINR(gap)} (${((gap / l1) * 100).toFixed(2)}%)`}</span>
               );
@@ -1024,7 +1024,7 @@ function DetailsTab({ tender: t }: { tender: TenderDetailDto }) {
                     {t.sorBookName}
                   </Link>
                 ) : (
-                  "-"
+                  NO_VALUE
                 ),
               },
               {

@@ -245,7 +245,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
                 align: 'right',
                 render: (_, c) =>
                   c.sharePct === null ? (
-                    '-'
+                    NO_VALUE
                   ) : (
                     <Tooltip title={c.parentId ? `${formatPct(c.sharePct, { digits: 2 })} of its component, ${formatPct(c.effectiveSharePct, { digits: 2 })} of the lump sum` : undefined}>
                       <span className="mono" translate="no">
