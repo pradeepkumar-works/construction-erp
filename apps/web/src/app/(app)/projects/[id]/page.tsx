@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
-import { canManageProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm } from '@erp/shared';
+import { canManageProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm, canViewProgramme } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { readPref, writePref } from '@/lib/prefs';
@@ -25,6 +25,7 @@ import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { GanttPanel } from '@/components/schedule/GanttPanel';
 import { LookaheadPanel } from '@/components/schedule/LookaheadPanel';
+import { ProgrammeTab } from '@/components/programme/ProgrammeTab';
 import { ProgressList } from '@/components/progress/ProgressList';
 import { DprList } from '@/components/dpr/DprList';
 import { MachineryPanel } from '@/components/machinery/MachineryPanel';
@@ -100,6 +101,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'activities', group: 'plan', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
     { key: 'schedule', group: 'plan', label: 'Gantt', children: <GanttPanel projectId={project.id} /> },
     { key: 'lookahead', group: 'plan', label: 'Look-ahead', children: <LookaheadPanel projectId={project.id} /> },
+    can(!!user && canViewProgramme(user.roleKey)) && { key: 'programme', group: 'plan', label: 'Programme and EOT', children: <ProgrammeTab projectId={project.id} initialOpenId={search.get('eot') ?? search.get('revision') ?? undefined} /> },
     project.locations.length > 0 && { key: 'sector', group: 'plan', label: sectorTabLabel(project), children: <SectorPanel project={project} editable={editor} /> },
     { key: 'progress', group: 'site', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
     { key: 'dpr', group: 'site', label: 'Daily reports', children: <DprList projectId={project.id} newLabel="New daily report" /> },

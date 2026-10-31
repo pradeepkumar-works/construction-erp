@@ -326,6 +326,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/consultant-checks-test.js
+      - name: A programme revision waits for the Engineer, its update falls due on time, and an extension of time is decided in 30 days with its days spread over the delays
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/programme-eot-test.js
       - name: Masters lay the company's entries over the standard ones, keep a name in use, and sit in every department's menu
         if: matrix.suite == 'flows'
         working-directory: apps/api

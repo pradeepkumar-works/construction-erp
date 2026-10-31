@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
-import { usePortalBills, usePortalInspections, usePortalMeasurements, usePortalProject, usePortalRfis, usePortalSiteOrders } from '@/lib/queries';
+import { usePortalBills, usePortalInspections, usePortalMeasurements, usePortalProgramme, usePortalProject, usePortalRfis, usePortalSiteOrders } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PortalOverview } from '@/components/portal/PortalOverview';
@@ -15,9 +15,10 @@ import { PortalInspections } from '@/components/portal/PortalInspections';
 import { PortalRfis } from '@/components/portal/PortalRfis';
 import { PortalMeasurements } from '@/components/portal/PortalMeasurements';
 import { SiteOrderBook } from '@/components/site-orders/SiteOrderBook';
+import { ProgrammeAndEot } from '@/components/programme/ProgrammeAndEot';
 import { ProgressReportView } from '@/components/reports/ProgressReportView';
 
-const TABS = ['overview', 'dprs', 'report', 'measurements', 'bills', 'inspections', 'site-orders', 'rfis'] as const;
+const TABS = ['overview', 'dprs', 'report', 'measurements', 'bills', 'inspections', 'site-orders', 'programme', 'rfis'] as const;
 type Tab = (typeof TABS)[number];
 
 function PortalProject() {
@@ -31,16 +32,18 @@ function PortalProject() {
   const rfis = usePortalRfis(id);
   const measurements = usePortalMeasurements(id);
   const orders = usePortalSiteOrders(id);
+  const programme = usePortalProgramme(id);
   const [billId, setBillId] = useState<string | null>(null);
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [inspectionId, setInspectionId] = useState<string | null>(null);
   const [rfiId, setRfiId] = useState<string | null>(null);
+  const [programmeOpenId, setProgrammeOpenId] = useState<string | null>(null);
   const raw = search.get('tab') as Tab | null;
   const tab: Tab = raw && TABS.includes(raw) ? raw : 'overview';
   const go = (t: Tab) => router.replace(`${pathname}?tab=${t}`, { scroll: false });
 
-  // A notification links here with ?open=<bill, inspection, RFI, sheet or site order id>.
+  // A notification links here with ?open=<bill, inspection, RFI, sheet, site order, programme revision or EOT id>.
   const open = search.get('open');
   useEffect(() => {
     if (!open) return;
@@ -59,14 +62,18 @@ function PortalProject() {
     } else if (orders.data?.some((o) => o.id === open)) {
       setOrderId(open);
       router.replace(`${pathname}?tab=site-orders`, { scroll: false });
+    } else if (programme.data?.programme.submissions.some((s) => s.id === open) || programme.data?.eot.applications.some((a) => a.id === open)) {
+      setProgrammeOpenId(open);
+      router.replace(`${pathname}?tab=programme`, { scroll: false });
     }
-  }, [open, bills.data, inspections.data, rfis.data, measurements.data, orders.data, pathname, router]);
+  }, [open, bills.data, inspections.data, rfis.data, measurements.data, orders.data, programme.data, pathname, router]);
 
   const toCertify = bills.data?.filter((b) => b.stage === 'SENT').length ?? 0;
   const requested = inspections.data?.filter((i) => i.status === 'SUBMITTED').length ?? 0;
   const toAnswer = rfis.data?.filter((r) => r.status === 'OPEN').length ?? 0;
   const toCheck = measurements.data?.toCheck.length ?? 0;
   const toAccept = orders.data?.filter((o) => o.status === 'REPLIED').length ?? 0;
+  const programmeWaiting = (programme.data?.programme.submissions.filter((s) => s.status === 'SUBMITTED').length ?? 0) + (programme.data?.eot.applications.filter((a) => a.status === 'SENT').length ?? 0);
 
   return (
     <div className="page-container">
@@ -113,6 +120,26 @@ function PortalProject() {
                 countLabel: 'complied, to accept',
                 attention: true,
                 children: <SiteOrderBook projectId={data.id} orders={orders} portal openId={orderId} onOpen={setOrderId} />,
+              },
+              {
+                key: 'programme',
+                label: 'Programme and EOT',
+                count: programmeWaiting,
+                countLabel: 'waiting for your answer',
+                attention: true,
+                children: (
+                  <ProgrammeAndEot
+                    projectId={data.id}
+                    portal
+                    programme={programme.data?.programme}
+                    eot={programme.data?.eot}
+                    loading={programme.isLoading}
+                    error={programme.error}
+                    onRetry={() => void programme.refetch()}
+                    openId={programmeOpenId}
+                    onOpen={setProgrammeOpenId}
+                  />
+                ),
               },
               {
                 key: 'rfis',

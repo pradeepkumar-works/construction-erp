@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  PROGRAMME_OBLIGATION_CODE,
   STANDARD_OBLIGATIONS,
   canEditContract,
   canViewContract,
@@ -18,7 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { money, parseDate } from '../common/serialize';
+import { dateOnly, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { ANCHOR_SELECT, anchorsOf, deductedByObligation, termsOf } from './obligation-recovery';
 import { CreateContractObligationDto, UpdateContractObligationDto } from './contract-obligations.dto';
@@ -149,6 +150,9 @@ export class ContractObligationsService {
   async update(user: RequestUser, projectId: string, id: string, dto: UpdateContractObligationDto): Promise<ContractObligationsDto> {
     await this.assertEdit(user, projectId);
     const cur = await this.find(user, projectId, id);
+    // The programme obligation is met by the programme register once it holds a revision.
+    if (cur.code === PROGRAMME_OBLIGATION_CODE && dto.metOn !== undefined && dto.metOn !== dateOnly(cur.metOn) && (await this.prisma.programmeSubmission.count({ where: { projectId } })))
+      throw new BadRequestException('The programme register sets when this was met: send or answer a revision on the Programme and EOT tab');
     const data = this.checked({ ...termsOf(cur), title: cur.title }, dto);
     await this.prisma.contractObligation.update({
       where: { id },

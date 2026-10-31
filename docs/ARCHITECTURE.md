@@ -3078,6 +3078,44 @@ measurement countersigned, and the engineer's written instructions go in a site 
   on the activity form, the client's checks on a measurement, hidden work on an inspection, and the project's Site orders
   tab (`?tab=site-orders&order=`). Keep `src/scripts/consultant-checks-test.ts` passing.
 
+### Programme and EOT (item 173)
+
+A works contract asks for the construction programme within days of the agreement (0.20% of the contract value held back
+until it comes), then an updated programme at a set interval, each approved by the Engineer. An extension of time is
+applied for in writing, forwarded by the Engineer with a recommendation to the competent authority and decided within 30
+days; it is claimed for delays in the register, or for the added work of a variation, where time extends in proportion.
+
+- **Programme.** `ProgrammeSubmission` (tenant table, RLS): `revision` per project from 0 (advisory lock), the day it went,
+  the letter, what changed, and a snapshot of the plan as it stood (activity count, latest planned end; at least one
+  activity). Status SUBMITTED → APPROVED or RETURNED (with comments). One revision is with the Engineer at a time
+  (`programmeSubmitProblem`); the latest approved is in force (`programmeInForce`). The Engineer answers in the portal
+  (`POST /portal/programme/:id/decide`), or staff record their letter with the name on it (`/programme/:id/decide`);
+  `programmeDecisionProblem` holds both. The latest revision still waiting can be deleted by its sender or an approver.
+- **Watch.** `programmeWatch` over the revisions: the first is due on the contract's `PROGRAMME` obligation
+  (`obligationDue`), else 15 days from the agreement or start; then `Project.programmeUpdateDays` (else
+  `PROGRAMME_UPDATE_DAYS`, 30) after the latest revision sent, answered or not. Due soon seven days before, nothing due
+  once the project is complete or handed over. The watch list's PROGRAMME_DUE (`canKeepProgramme`) reads `watchFor`.
+- **The obligation.** The `PROGRAMME` obligation's `metOn` is `programmeMetOn` (the first revision not returned), set by
+  `ProgrammeService` after every send, answer and delete unless waived; the Contract tab cannot change it by hand while
+  revisions exist. Its withholding on RA bills is item 171's.
+- **EOT applications.** `EotApplication` (tenant table, RLS): `appNo` per project, basis DELAY (delays in the register,
+  `Risk.eotApplicationId`, each claimed by one live application) or VARIATION (a submitted or approved variation, days
+  suggested by `variationEotDays`: the contract period in proportion to the value added, rounded up), days claimed,
+  grounds, letter. SENT → FORWARDED (the Engineer, in the portal or recorded by staff, with days recommended) → DECIDED
+  (staff record the authority's letter: days granted, 0 for refused), or WITHDRAWN. `eotState` adds OVERDUE after
+  `eotDecisionDue` (applied + `EOT_DECISION_DAYS`) and splits DECIDED into granted, part granted and refused.
+- **The delay register.** A decision writes the days granted to `Risk.eotGrantedDays`, the one figure the revised
+  completion, liquidated damages and slippage read (never moved or renamed): for DELAY, `allocateGranted` over the
+  application's delays, oldest first up to each one's days lost, the rest on the last; for VARIATION, a closed DELAY entry
+  for the client (through `RisksService.create`) holding the days. Putting a decision back undoes it; withdrawing frees the
+  delays. `RisksService.update` refuses a change to a linked delay's EOT figures.
+- **Notices.** Guests are told of a revision or an application (`PORTAL`, entity `PROGRAMME` / `EOT`); a guest's answer or
+  forwarding hands off to the PM (and team leaders for the programme), with an email when a revision is returned or an
+  application forwarded. The watch list's EOT_OVERDUE (`canApplyEot`) lists applications past their 30 days.
+- **Clients.** The project's Programme and EOT tab (Plan group, `canViewProgramme`; `?revision=` / `?eot=` open one) and
+  the portal's tab of the same name (`?open=`). Rules are pure in `@erp/shared/programme-eot.ts`; keep
+  `src/scripts/programme-eot-test.ts` passing.
+
 ## Supplier portal (v6 item 105)
 
 - **Who.** A `SUPPLIER` login is a `User` with `vendorId` (relation `VendorPortalLogins`). It belongs to one vendor in one

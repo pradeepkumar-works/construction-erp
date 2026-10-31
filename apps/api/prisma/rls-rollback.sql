@@ -671,5 +671,11 @@ DROP POLICY IF EXISTS tenant_isolation ON "MeasurementCheck";
 ALTER TABLE "SiteOrder" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "SiteOrder" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "SiteOrder";
+ALTER TABLE "ProgrammeSubmission" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ProgrammeSubmission" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ProgrammeSubmission";
+ALTER TABLE "EotApplication" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "EotApplication" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "EotApplication";
 
 DROP FUNCTION IF EXISTS app_current_org();

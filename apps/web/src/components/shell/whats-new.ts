@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-10-programme-eot',
+    date: '2027-10-25',
+    title: 'Programme revisions and extensions of time',
+    points: [
+      'A project’s Programme and EOT tab keeps each revision of the programme as it went to the Engineer, with the plan it showed. The Engineer approves it or returns it with comments in the portal, or you record their letter. The next update is watched at the contract’s interval, and the first revision kept meets the programme obligation on the Contract tab.',
+      'Request an extension of time for delays in the register, or for the added work of a variation (time in proportion to the value added). The Engineer forwards it with the days they recommend, and the watch list tells you when the 30 days for a decision pass.',
+      'Record the decision from the authority’s letter: the days granted go to the delay register and move the revised completion date.',
+    ],
+  },
+  {
     id: '2027-10-consultant-checks',
     date: '2027-10-18',
     title: 'Consultant checks in the client portal',
