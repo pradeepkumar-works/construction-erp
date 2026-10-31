@@ -146,7 +146,7 @@ ${PRINT_FONT_LINKS}
   ${photos ? `<h2>Site photos</h2><div class="photos">${photos}</div>` : ''}
 
   <div class="sign"><div>Prepared by: ${esc(d.submittedByName)}</div><div>Reviewed by: ${esc(d.reviewedByName ?? '')}</div></div>
-  ${brandFooter(`Generated from ${esc(BRAND.name)} on ${esc(formatDateTime(new Date().toISOString()))} · Report ID ${esc(d.id)}`)}
+  ${brandFooter(`Generated from ${esc(BRAND.name)} on ${esc(formatDateTime(new Date().toISOString()))} · DPR ${esc(formatDate(d.date))}, ${esc(d.projectName)}`)}
   ${AUTO_PRINT_SCRIPT}
 </body></html>`;
 }
