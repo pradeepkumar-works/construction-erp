@@ -82,7 +82,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
               title={data.bacSource === 'BOQ_VALUE' ? 'No budget is set, so values are at contract rates and the cost index includes the margin' : 'How these figures are made'}
               description={[
                 data.bacSource === 'BOQ_VALUE' ? 'Set a budget on the Budget and cash flow tab to measure cost against it.' : null,
-                data.pvSource === 'PLAN' ? 'No baseline is frozen, so planned value follows today’s plan and moves with it. Freeze a baseline on the Gantt tab.' : null,
+                data.pvSource === 'PLAN' ? 'No baseline is frozen, so planned value follows today’s plan and moves with it. Freeze a baseline on the Schedule tab.' : null,
                 toNumber(data.unscheduledValue) > 0 ? `${formatINR(data.unscheduledValue)} of the BOQ has no activity with dates and is spread evenly over the project’s dates.` : null,
               ]
                 .filter(Boolean)
