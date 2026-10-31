@@ -165,7 +165,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
                 ? [
                     {
                       key: 'instrument',
-                      label: 'Tested on',
+                      label: 'Instrument',
                       span: 2,
                       children: (
                         <Space size={4} wrap>

@@ -41,6 +41,7 @@ import { FormShell } from '@/components/form/FormShell';
 import { TestFormModal, type TestPrefill } from '@/components/quality/TestFormModal';
 import { TestResultTag } from '@/components/quality/qualityUi';
 import { PourFormModal, PouredModal } from './PourForms';
+import { IS456_SAMPLING } from './qaUi';
 
 const TABS = ['pours', 'cubes'] as const;
 type Tab = (typeof TABS)[number];
@@ -212,7 +213,7 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
                 </Button>
               ) : null}
             </Flex>
-            <Typography.Paragraph type="secondary">IS 456 asks for one sample to 5 m³, then 2, 3 and 4 to 50 m³, and one more for each 50 m³ of a grade poured in a day.</Typography.Paragraph>
+            <Typography.Paragraph type="secondary">{`For each grade poured in a day: ${IS456_SAMPLING}.`}</Typography.Paragraph>
             <Table
               rowKey="id"
               size="small"
@@ -264,7 +265,7 @@ function PourList() {
     columns: (sortOrderFor): ListColumn<PourDto>[] => {
       const sort = (key: PourSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
       return [
-        { title: 'Day', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
+        { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
         { title: 'No.', dataIndex: 'pourNo', width: 140, className: 'mono', ...sort('pourNo') },
         { key: 'project', title: 'Project', dataIndex: 'projectName', width: 180, ellipsis: true, render: (v: string, r: PourDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
         {
@@ -410,7 +411,7 @@ export function PoursPage() {
   const [tab, setTab] = useUrlTab<Tab>(TABS, 'pours', { param: 'tab' });
   return (
     <div className="page-container">
-      <PageHeader title="Pour register" subtitle="Each pour cleared by its card, the cube sets IS 456 asks for its volume, and each grade's acceptance under Table 11." />
+      <PageHeader title="Pour register" subtitle="Each pour with its pour card, the cube sets IS 456 needs for its volume, and each grade's acceptance under Table 11." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

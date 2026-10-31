@@ -786,7 +786,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
             </Space>
           ) : null
         }
-        crumbs={[{ title: 'Documents', href: '/documents' }, { title: doc.docNo, href: `/documents?id=${doc.id}` }, { title: 'Drawing' }]}
+        crumbs={[{ title: 'Drawings and documents', href: '/documents' }, { title: doc.docNo, href: `/documents?id=${doc.id}` }, { title: 'Drawing' }]}
         extra={
           <Flex gap={token.marginXS} wrap>
             {revisions.length > 1 ? (

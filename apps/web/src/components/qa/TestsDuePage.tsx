@@ -44,7 +44,7 @@ export function TestsDuePage() {
         <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 240, maxWidth: '100%' }} />
           <Checkbox checked={short} onChange={(e) => setShort(e.target.checked)}>
-            Only tests short
+            Only tests still owed
           </Checkbox>
         </Flex>
         {isLoading ? (
@@ -54,8 +54,8 @@ export function TestsDuePage() {
         ) : (
           <>
             <Flex gap={token.marginXL} wrap style={{ marginBottom: token.margin }}>
-              <Statistic title="Tests owed" value={data.required} />
-              <Statistic title="Taken" value={data.taken} />
+              <Statistic title="Owed" value={data.required} />
+              <Statistic title="Sampled" value={data.taken} />
               <Statistic title="Short" value={data.short} styles={{ content: data.short ? { color: token.colorErrorText } : undefined }} />
             </Flex>
             <Table<TestsDueRowDto>
@@ -87,7 +87,7 @@ export function TestsDuePage() {
                   render: (_, r) => (r.quantity ? <span translate="no">{`${Number(r.quantity).toLocaleString('en-IN')} ${unitOf(r)}`}</span> : <Typography.Text type="secondary">Nothing yet</Typography.Text>),
                 },
                 { title: 'Owed', dataIndex: 'required', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
-                { title: 'Taken', dataIndex: 'taken', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
+                { title: 'Sampled', dataIndex: 'taken', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
                 {
                   title: 'Short',
                   dataIndex: 'short',

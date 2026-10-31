@@ -197,7 +197,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
             className: 'no-print',
             render: (_: unknown, c: DesignCommentDto) =>
               c.state === 'CLOSED' ? (
-                <Button size="small" onClick={() => void run(`/design/submissions/${s.id}/comments/${c.id}/reopen`, `Comment ${c.commentNo} opened again`)}>
+                <Button size="small" onClick={() => void run(`/design/submissions/${s.id}/comments/${c.id}/reopen`, `Comment ${c.commentNo} reopened`)}>
                   Reopen
                 </Button>
               ) : (

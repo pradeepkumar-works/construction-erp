@@ -51,7 +51,7 @@ function ReportBody({ data }: { data: QaReportDto }) {
     <Flex vertical gap={token.margin}>
       <Row gutter={[token.margin, token.margin]}>
         <Col xs={12} md={6}>
-          <Figure title="Tests sampled" value={t.tests} />
+          <Figure title="Material tests sampled" value={t.tests} />
         </Col>
         <Col xs={12} md={6}>
           <Figure title="Pass rate" value={pct(t.passRate)} tone={t.passRate !== null && t.passRate < 95 ? 'danger' : undefined} />

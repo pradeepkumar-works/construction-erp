@@ -123,11 +123,11 @@ function InstrumentDialog({ editing, onClose }: { editing: QaInstrumentDto | 'ne
             <ProjectSelect placeholder="Head office or a lab" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="labId" label="In the lab">
-            <Select allowClear placeholder="None" showSearch={{ optionFilterProp: 'label' }} options={(labs ?? []).filter((l) => l.active || l.id === inst?.labId).map((l) => ({ value: l.id, label: l.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={(labs ?? []).filter((l) => l.active || l.id === inst?.labId).map((l) => ({ value: l.id, label: l.name }))} />
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="notes" label="Notes">
+          <Form.Item name="notes" label="Remarks">
             <Input maxLength={1000} />
           </Form.Item>
           <Form.Item name="active" label="In use" valuePropName="checked">
@@ -242,11 +242,11 @@ function InstrumentDrawer({ id, onClose }: { id: string | null; onClose: () => v
             locale={{ emptyText: 'Not calibrated yet' }}
             scroll={{ x: 560 }}
             columns={[
-              { title: 'On', dataIndex: 'calibratedOn', render: (v: string) => formatDate(v) },
+              { title: 'Calibrated on', dataIndex: 'calibratedOn', render: (v: string) => formatDate(v) },
               { title: 'Certificate', key: 'cert', render: (_, c) => <span translate="no">{[c.certificateNo, c.agency].filter(Boolean).join(', ') || '-'}</span> },
               { title: 'Result', dataIndex: 'result', render: (v: CalibrationResult) => <AppTag tone={v === 'FAILED' ? 'danger' : 'success'}>{CALIBRATION_RESULT_LABELS[v]}</AppTag> },
               { title: 'Next due', dataIndex: 'nextDueOn', render: (v: string | null) => (v ? formatDate(v) : '-') },
-              { title: 'File', key: 'files', render: (_, c) => (c.attachments.length ? <AttachmentGallery attachments={c.attachments} size={48} /> : '-') },
+              { title: 'Certificate', key: 'files', render: (_, c) => (c.attachments.length ? <AttachmentGallery attachments={c.attachments} size={48} /> : '-') },
             ]}
           />
         </Flex>

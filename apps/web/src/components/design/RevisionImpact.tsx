@@ -10,6 +10,7 @@ import { AppTag, type TagTone } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import { CopyStateTag, IssueCopiesDialog, ReissueDialog, TakeBackDialog } from './ControlledCopies';
 
+const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 const TONE: Record<ImpactTone, TagTone> = { danger: 'danger', warning: 'pending', info: 'info' };
 const KEY_LABEL: Record<RevisionImpactItem['key'], string> = {
   copies: 'Copies',
@@ -100,18 +101,18 @@ export function RevisionImpactPanel({ documentId, projectId, manage, buildable }
             ...(manage
               ? [
                   {
-                    title: '',
+                    title: <span style={srOnly}>Actions</span>,
                     key: 'act',
                     width: 120,
                     render: (_: unknown, c: ControlledCopyDto) =>
                       c.state === 'TO_RECALL' ? (
                         <Flex vertical gap={4} align="start">
                           <Button size="small" onClick={() => setTakeBack(c)}>
-                            Take back
+                            Withdraw copy
                           </Button>
                           {buildable && !holding.has(c.holder.toLowerCase()) ? (
                             <Button size="small" type="link" onClick={() => setReissue(c)} style={{ paddingInline: 0 }}>
-                              {`Give ${c.currentRevision}`}
+                              {`Issue ${c.currentRevision}`}
                             </Button>
                           ) : null}
                         </Flex>

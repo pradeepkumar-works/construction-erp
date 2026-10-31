@@ -19,15 +19,16 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { DISPLAY_FONT } from '@/lib/theme';
 import { CopyStateTag, IssueCopiesDialog, ReissueDialog, TakeBackDialog } from './ControlledCopies';
 
+const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 const KEYS = ['state'] as const;
 const SORT_FIELDS = ['issuedOn'] as const;
 type SortField = (typeof SORT_FIELDS)[number];
 type StateFilter = CopyState | 'LATE';
 const STATE_FILTERS: { value: StateFilter; label: string }[] = [
   { value: 'TO_RECALL', label: 'Superseded, to recall' },
-  { value: 'LATE', label: 'Out past a week' },
+  { value: 'LATE', label: 'Out more than a week' },
   { value: 'IN_FORCE', label: 'In force' },
-  { value: 'CLOSED', label: 'Taken back' },
+  { value: 'CLOSED', label: 'Withdrawn' },
 ];
 
 /**
@@ -121,7 +122,7 @@ export function ControlledCopiesPage() {
         ? [
             {
               key: 'act',
-              title: '',
+              title: <span style={srOnly}>Actions</span>,
               width: 120,
               card: false as const,
               render: (_: unknown, r: ControlledCopyDto) =>
@@ -131,13 +132,13 @@ export function ControlledCopiesPage() {
                       e.stopPropagation();
                       setTakeBack(r);
                     }}>
-                      Take back
+                      Withdraw copy
                     </Button>
                     <Button size="small" type="link" style={{ paddingInline: 0 }} onClick={(e) => {
                       e.stopPropagation();
                       setReissue(r);
                     }}>
-                      {`Give ${r.currentRevision}`}
+                      {`Issue ${r.currentRevision}`}
                     </Button>
                   </Flex>
                 ) : r.state === 'IN_FORCE' ? (
@@ -145,7 +146,7 @@ export function ControlledCopiesPage() {
                       e.stopPropagation();
                       setTakeBack(r);
                     }}>
-                    Take back
+                    Withdraw copy
                   </Button>
                 ) : null,
             } satisfies ListColumn<ControlledCopyDto>,
@@ -183,7 +184,7 @@ export function ControlledCopiesPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {c && !documentId ? (
         <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
-          {stat('To recall', c.toRecall, c.recallsLate ? `${c.recallsLate} out longer than a week` : 'Superseded, still on site', c.recallsLate ? 'danger' : undefined)}
+          {stat('To withdraw', c.toRecall, c.recallsLate ? `${c.recallsLate} out more than a week` : 'Superseded, still on site', c.recallsLate ? 'danger' : undefined)}
           {stat('In force', c.inForce, 'Copies of the current revision')}
           {stat('Holders', c.holders, 'Offices, gangs and people with a copy')}
         </Row>

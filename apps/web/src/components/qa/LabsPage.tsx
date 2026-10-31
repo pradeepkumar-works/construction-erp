@@ -92,10 +92,10 @@ function LabDialog({ editing, onClose }: { editing: QaLabDto | 'new' | null; onC
     <FormShell open={!!editing} onClose={onClose} form={form} layout="modal" width={640} projectDefault={false} title={lab ? `Edit ${lab.name}` : 'New lab'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Name the lab' }]}>
-          <Input maxLength={120} placeholder="Kalinga Testing Labs, Bhubaneswar" />
+          <Input maxLength={120} placeholder="Name on the lab's reports" />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="kind" label="Kind" rules={[{ required: true, message: 'Choose the kind of lab' }]}>
+          <Form.Item name="kind" label="Type of lab" rules={[{ required: true, message: 'Choose the type of lab' }]}>
             <Select options={LAB_KINDS.map((k) => ({ value: k, label: LAB_KIND_LABELS[k] }))} />
           </Form.Item>
           {kind === 'SITE' ? (
@@ -235,7 +235,7 @@ export function LabsPage() {
                           notice={l.atLab + l.reported ? `${l.name} is no longer in use` : undefined}
                           onConfirm={() => remove.mutateAsync(l.id)}
                         >
-                          <Button type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${l.name}`} />
+                          <Button type="text" danger icon={<DeleteOutlined />} aria-label={`${l.atLab + l.reported ? 'Remove' : 'Delete'} ${l.name}`} />
                         </ConfirmDelete>
                       </Flex>
                     ),

@@ -107,7 +107,7 @@ export function DesignSubmissionsPage() {
       { key: 'project', title: 'Project', width: 170, ellipsis: true, card: 'meta', cardText: (r) => r.projectName, render: (_, r) => <span translate="no">{r.projectName}</span> },
       {
         key: 'to',
-        title: 'With',
+        title: 'With reviewer',
         width: 220,
         ellipsis: true,
         card: false,

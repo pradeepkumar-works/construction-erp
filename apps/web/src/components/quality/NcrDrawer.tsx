@@ -200,8 +200,8 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
               { key: 'location', label: 'Location', children: data.location ?? '-' },
               ...(data.testNo || data.inspectionNo ? [{ key: 'source', label: 'Found by', children: [data.testNo, data.inspectionNo].filter(Boolean).join(', '), span: 2 }] : []),
-              { key: 'who', label: 'To be rectified by', children: data.actionByName ?? '-' },
-              { key: 'due', label: 'Rectify by', children: data.dueDate ? <span className={data.overdue ? 'text-danger' : undefined}>{formatDate(data.dueDate)}{data.overdue ? ' (overdue)' : ''}</span> : '-' },
+              { key: 'who', label: 'Action by', children: data.actionByName ?? '-' },
+              { key: 'due', label: 'Due', children: data.dueDate ? <span className={data.overdue ? 'text-danger' : undefined}>{formatDate(data.dueDate)}{data.overdue ? ' (overdue)' : ''}</span> : '-' },
             ]}
           />
           <Divider titlePlacement="start" plain>

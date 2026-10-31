@@ -28,7 +28,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/
 import { LinkButton } from '@/components/common/LinkButton';
 import { MasterInput } from '@/components/masters/MasterInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
-import { WitnessTag, lineCovers, lineFrequency } from './qaUi';
+import { IS456_SAMPLING, WitnessTag, lineCovers, lineFrequency } from './qaUi';
 
 const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
@@ -143,7 +143,7 @@ function LineDialog({ projectId, editing, onClose }: { projectId: string; editin
           </FormGrid>
           {frequency === 'IS456' ? (
             <Typography.Paragraph type="secondary">
-              Per grade and day: one sample to 5 m³, two to 15, three to 30, four to 50, then one more for each 50 m³ (IS 456 clause 15.2.2).
+              {`Per grade and day: ${IS456_SAMPLING}.`}
             </Typography.Paragraph>
           ) : null}
           <FormGrid cols={2}>

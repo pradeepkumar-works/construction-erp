@@ -51,7 +51,7 @@ export function SamplesPage() {
       <Flex gap={token.marginLG} wrap style={{ marginBottom: token.margin }}>
         <Statistic title="At the labs" value={data?.atLab ?? 0} loading={isLoading} />
         <Statistic title="Report late" value={data?.late ?? 0} loading={isLoading} styles={{ content: data?.late ? { color: token.colorErrorText } : undefined }} />
-        <Statistic title="Charges on these" value={formatINR(data?.charges ?? 0)} loading={isLoading} />
+        <Statistic title="Lab charges" value={formatINR(data?.charges ?? 0)} loading={isLoading} />
       </Flex>
       <Card>
         <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
