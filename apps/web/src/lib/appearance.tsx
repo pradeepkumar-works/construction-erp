@@ -40,7 +40,7 @@ const Ctx = createContext<{ prefs: AppearancePrefs; dark: boolean; setPrefs: (p:
 /** The signed-in user's look on this browser (Light, Dark or the system's; Comfortable or Compact), with a setter. */
 export const useAppearance = () => useContext(Ctx);
 
-/** The system asks for less motion (UX item 81): antd's motion is off and charts draw without animating. */
+/** The system asks for less motion: antd's motion is off and charts draw without animating. */
 export function useReducedMotion() {
   const [reduced, setReduced] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   useEffect(() => {

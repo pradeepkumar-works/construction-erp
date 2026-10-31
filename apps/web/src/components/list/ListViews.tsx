@@ -40,7 +40,7 @@ export function ListViews({
 }) {
   const { token } = theme.useToken();
   const { user } = useAuth();
-  // A phone has no room for a row of tabs: the views are a drop-down (UX item 84).
+  // A phone has no room for a row of tabs: the views are a drop-down.
   const phone = useIsPhone();
   const { message } = App.useApp();
   const [askDelete, deleteDialog] = useConfirmDelete();

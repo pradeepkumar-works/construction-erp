@@ -37,7 +37,7 @@ function Reports() {
   const params = useSearchParams();
   const router = useRouter();
   const { data: projects } = useProjects();
-  // The header's project (a link's ?projectId= switches it), else the first: the same project as every list (UX item 84).
+  // The header's project (a link's ?projectId= switches it), else the first: the same project as every list.
   const [scope, setProjectId] = useProjectScope(params.get('projectId') ?? undefined);
   const projectId = scope ?? projects?.find((p) => p.type !== 'STORE' && p.type !== 'PLANT')?.id ?? projects?.[0]?.id;
   // The report is in the address (?report=weekly), so a link opens the same one.

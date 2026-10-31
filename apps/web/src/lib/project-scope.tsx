@@ -8,7 +8,7 @@ import { readPref, writePref } from './prefs';
 interface Scope {
   projectId?: string;
   setProjectId: (id?: string) => void;
-  /** The vertical the header shows (item 167): a code of the vertical master, `none`, or every vertical */
+  /** The vertical the header shows: a code of the vertical master, `none`, or every vertical */
   vertical?: string;
   setVertical: (code?: string) => void;
 }
@@ -18,7 +18,7 @@ const Ctx = createContext<Scope | null>(null);
 /**
  * The project the signed-in user is working on, chosen in the header and remembered on this browser: every list's
  * project filter reads and writes it, so picking a project once narrows Daily reports, Stock, Bills and the rest. The
- * header can also show one vertical (item 167): it narrows the projects offered there, the Projects list, the
+ * header can also show one vertical: it narrows the projects offered there, the Projects list, the
  * management dashboard and its reports.
  */
 export function ProjectScopeProvider({ userId, enabled, children }: { userId: string; enabled: boolean; children: React.ReactNode }) {
@@ -71,7 +71,7 @@ export function useProjectScope(initial?: string): [string | undefined, (id?: st
 
 const noVertical = () => {};
 
-/** The header's vertical (item 167), for the pages it narrows; every vertical outside the app shell. */
+/** The header's vertical, for the pages it narrows; every vertical outside the app shell. */
 export function useVerticalScope(): [string | undefined, (code?: string) => void] {
   const ctx = useContext(Ctx);
   return ctx ? [ctx.vertical, ctx.setVertical] : [undefined, noVertical];

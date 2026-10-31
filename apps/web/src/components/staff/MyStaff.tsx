@@ -27,7 +27,7 @@ export function MyStaff() {
   const act = useMutation({
     mutationFn: async (what: 'check-in' | 'check-out' | { cancel: string }) => {
       if (typeof what !== 'string') return (await api.post(`/staff/leave/${what.cancel}/cancel`)).data;
-      // Check-in sends where the browser is (v5 item 97) when the site has a location to measure from.
+      // Check-in sends where the browser is when the site has a location to measure from.
       const at = what === 'check-in' && data?.site ? await currentPosition() : null;
       return (await api.post(`/staff/me/${what}`, at ?? {})).data;
     },

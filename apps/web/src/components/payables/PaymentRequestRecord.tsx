@@ -48,7 +48,7 @@ export const requestTargetHref = (r: Pick<PaymentRequestDto, 'vendorBillId' | 's
             ? `/imprest?id=${r.imprestId}`
             : null;
 
-/** Who a request pays: the party, or for a fund request into an imprest (v6 item 107) its holder. */
+/** Who a request pays: the party, or for a fund request into an imprest its holder. */
 export const requestPayee = (r: Pick<PaymentRequestDto, 'vendorName' | 'imprestHolderName'>) => r.vendorName ?? (r.imprestHolderName ? `${r.imprestHolderName}'s imprest` : '-');
 
 /** Paying an approved request: a fund request into an imprest is released, anything else paid. */
@@ -81,7 +81,7 @@ interface RecordProps {
 }
 
 /**
- * A payment request (v5 item 90): a bill to pay or an advance to release, or a site's fund request (v6 item 107), in a
+ * A payment request: a bill to pay or an advance to release, or a site's fund request, in a
  * drawer or at `/payment-requests/<id>`.
  */
 export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
@@ -323,7 +323,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                 <ReviewActions type="payment_request" id={data.id} status={data.status} amount={data.amount} size={size} />
               </>
             ),
-            // Delete is a tap from Approve no longer (finding 15 of the October review).
+            // Delete is a tap from Approve no longer.
             more: removable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `payment request ${data.requestNo}`, onConfirm: () => remove.mutateAsync() }) }] : [],
           }
         }

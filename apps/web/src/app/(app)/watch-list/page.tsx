@@ -40,7 +40,7 @@ const CONFIDENCE_COLOR: Record<WarningConfidence, string> = { CHECKED: 'green', 
 type DismissForm = { outcome: WarningOutcome; reason?: string };
 
 /**
- * The watch list (AI items 73 and 119): early warnings from plain rules over the records. Each card leads with what to
+ * The watch list: early warnings from plain rules over the records. Each card leads with what to
  * do and what it costs, says how sure it is, and keeps its working one tap down under Why. Dismissing says what became
  * of the warning (Fixed, Known and accepted, Wrong); that is each kind's track record, and a kind marked Wrong too often
  * pauses until management resumes it. The header's project narrows the list to that project and the company-wide ones.

@@ -34,7 +34,7 @@ const STAGE_FILTERS: StageFilter[] = ['SUBMITTED', 'BILLED', 'PAID', 'RETURNED',
 const billHref = (b: NonNullable<SupplierInvoiceDto['bill']>) => (b.kind === 'VENDOR_BILL' ? `/vendor-bills/${b.id}` : `/subcontract-bills/${b.id}`);
 
 /**
- * What suppliers sent in through their portal (v6 item 105): invoices for accounts to record as bills or return, and
+ * What suppliers sent in through their portal: invoices for accounts to record as bills or return, and
  * changes to their details to approve. Bank changes go only to those who pay.
  */
 export default function SupplierInboxPage() {

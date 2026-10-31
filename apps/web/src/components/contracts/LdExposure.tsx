@@ -13,7 +13,7 @@ import { themeFontSize } from '@/lib/theme';
 
 const rateLine = (ld: LdExposureDto) => (Number(ld.ldRatePct) > 0 ? `${ld.ldRatePct}% ${LD_PERIOD_LABELS[ld.ldPeriod]}, capped at ${ld.ldCapPct}%` : 'No LD rate in the contract');
 
-/** One project's liquidated damages exposure (v4 item 50), on its Contract tab. */
+/** One project's liquidated damages exposure, on its Contract tab. */
 export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
   const { token } = theme.useToken();
   const noRate = Number(ld.ldRatePct) === 0;
@@ -54,7 +54,7 @@ export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
   );
 }
 
-/** Liquidated damages exposure across projects (v4 item 50), on the Delays and risks page. */
+/** Liquidated damages exposure across projects, on the Delays and risks page. */
 export function LdExposureTable() {
   const { data, isLoading, error, refetch } = useLdExposure();
   const rows = data ?? [];

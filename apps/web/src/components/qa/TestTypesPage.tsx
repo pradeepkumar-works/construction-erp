@@ -156,7 +156,7 @@ function TypeDialog({ editing, onClose, codes }: { editing: TestTypeDto | 'new' 
   );
 }
 
-/** Test types (item 137): the standard tests with the company's changes, then its own; the test form and plans pick from them. */
+/** Test types: the standard tests with the company's changes, then its own; the test form and plans pick from them. */
 export function TestTypesPage() {
   const { token } = theme.useToken();
   const { user } = useAuth();

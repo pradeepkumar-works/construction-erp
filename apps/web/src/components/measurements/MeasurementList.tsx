@@ -70,7 +70,7 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
       New measurement
     </Button>
   ) : null;
-  // Start a sheet from the days the site already got approved (finding 14 of the October review).
+  // Start a sheet from the days the site already got approved.
   const startFromProgress = (item: ToMeasureItemDto) => setStarted({ boqItemId: item.boqItemId, prefill: progressPrefill(item) });
 
   return (

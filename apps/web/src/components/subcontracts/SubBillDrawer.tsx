@@ -367,7 +367,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               <ReviewActions type="subcontract_bill" id={data.id} status={data.status} amount={data.grossAmount} size={size} />
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
+          // Delete is a tap from Approve no longer.
           more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: data.label, onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }

@@ -44,7 +44,7 @@ async function downloadTemplate() {
   XLSX.writeFile(wb, 'Structure-import-template.xlsx');
 }
 
-/** Components from Excel (item 125): number, name, kind and weight; "2.1" goes under "2". */
+/** Components from Excel: number, name, kind and weight; "2.1" goes under "2". */
 export function StructureImportModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId: string }) {
   const { message } = App.useApp();
   const qc = useQueryClient();

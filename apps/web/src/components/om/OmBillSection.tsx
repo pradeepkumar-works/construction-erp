@@ -10,7 +10,7 @@ type StaffLine = OmBillDto['staff'][number];
 type PenaltyLine = OmBillDto['penalties'][number];
 
 /**
- * What an O&M bill (item 131) bills: its period's instalment, the staff short of the minimum taken off it, and the
+ * What an O&M bill bills: its period's instalment, the staff short of the minimum taken off it, and the
  * service level penalties deducted, month by month, as the bill was priced.
  */
 export function OmBillSection({ om }: { om: OmBillDto }) {

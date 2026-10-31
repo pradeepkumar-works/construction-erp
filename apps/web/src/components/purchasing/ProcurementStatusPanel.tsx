@@ -43,7 +43,7 @@ const EXPORT: ExportColumn<ExportRow>[] = [
 ];
 
 /**
- * Procurement status (v4 item 48): approved purchase orders with what has arrived and what is still to come, late
+ * Procurement status: approved purchase orders with what has arrived and what is still to come, late
  * deliveries first, and the vendors with orders pending.
  */
 export function ProcurementStatusPanel() {

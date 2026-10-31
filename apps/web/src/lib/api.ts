@@ -101,7 +101,7 @@ export function errorStatus(err: unknown): number | undefined {
   return err.response ? err.response.status : 0;
 }
 
-/** What a failed request means for the person, in plain words (UX item 86). */
+/** What a failed request means for the person, in plain words. */
 export type ErrorKind = 'offline' | 'unreachable' | 'server' | 'forbidden' | 'missing' | 'refused' | 'other';
 
 export const OFFLINE_TEXT = 'You are offline. Your changes are kept; try again when you are back.';

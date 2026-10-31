@@ -126,10 +126,10 @@ function thin(points: MarkupPoint[]) {
 }
 
 /**
- * The drawing viewer (item 109): a revision's PDF, image or DXF on a sheet that pans and zooms (drag, wheel, pinch,
+ * The drawing viewer: a revision's PDF, image or DXF on a sheet that pans and zooms (drag, wheel, pinch,
  * keys), with marks drawn over it in the sheet's own 0 to 1 coordinates. Open marks from earlier revisions show dashed
  * until resolved. Two revisions can be overlaid to show what changed, and the marked-up sheet saved as an image.
- * Lengths, areas and counts are measured on a sheet once its scale is set (v6 item 118), and go into the measurement
+ * Lengths, areas and counts are measured on a sheet once its scale is set, and go into the measurement
  * book or a BOQ item's quantity.
  */
 export function DrawingViewer({ documentId }: { documentId: string }) {
@@ -152,7 +152,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const toMeasurement = useTakeoffsToMeasurement(documentId);
   const toBoq = useTakeoffsToBoq(documentId, doc?.projectId);
 
-  /* ---------- which revision, file and page (in the URL) ---------- */
+  // Which revision, file and page (in the URL)
 
   const revisions = useMemo(() => doc?.revisions ?? [], [doc]);
   const revision: DocumentRevisionDto | undefined = revisions.find((r) => r.id === search.get('rev')) ?? revisions.find((r) => r.current) ?? revisions[0];
@@ -176,7 +176,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     [router, search],
   );
 
-  /* ---------- the sheet ---------- */
+  // The sheet
 
   // Each opened file is kept with its id, so a stale one never shows while the next opens.
   const [opened, setOpened] = useState<{ id: string; sheet: Sheet | null; error: string | null } | null>(null);
@@ -212,7 +212,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const hiddenLayers = useMemo(() => (layersOff.sheet === sheet ? layersOff.hidden : new Set<string>()), [layersOff, sheet]);
   const setHiddenLayers = (hidden: Set<string>) => setLayersOff({ sheet, hidden });
 
-  /* ---------- compare with another revision ---------- */
+  // Compare with another revision
 
   const [compareId, setCompareId] = useState<string | null>(null);
   const compareRev = revisions.find((r) => r.id === compareId && r.id !== revision?.id);
@@ -238,7 +238,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   /** The compared revision is the older one when it comes later in the newest-first list. */
   const compareIsOlder = !!compareRev && revisions.indexOf(compareRev) > revisions.findIndex((r) => r.id === revision?.id);
 
-  /* ---------- pan and zoom ---------- */
+  // Pan and zoom
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   // The viewport mounts after the document loads, so its size and wheel listener follow the element itself.
@@ -297,7 +297,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     return () => el.removeEventListener('wheel', onWheel);
   }, [zoomAt, viewportEl]);
 
-  /* ---------- drawing the page ---------- */
+  // Drawing the page
 
   const [drawing, setDrawing] = useState(false);
   useEffect(() => {
@@ -333,7 +333,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     };
   }, [sheet, compareSheet, compareIsOlder, page, renderZoom, baseW, baseH, hiddenLayers, message]);
 
-  /* ---------- marks ---------- */
+  // Marks
 
   const [carry, setCarry] = useState(true);
   const [scope, setScope] = useState<ListScope>('sheet');
@@ -365,7 +365,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const [resolving, setResolving] = useState<DrawingMarkupDto | null>(null);
   const [rfiFrom, setRfiFrom] = useState<DrawingMarkupDto | null>(null);
 
-  /* ---------- measures (v6 item 118) ---------- */
+  // Measures
 
   const [measuring, setMeasuring] = useState<Measuring | null>(null);
   const [hover, setHover] = useState<MarkupPoint | null>(null);
@@ -508,7 +508,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     });
   };
 
-  /* ---------- pointer: pan, pinch and draw ---------- */
+  // Pointer: pan, pinch and draw
 
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<
@@ -640,7 +640,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     go({ mark: saved.id });
   };
 
-  /* ---------- save the marked-up sheet as an image ---------- */
+  // Save the marked-up sheet as an image
 
   const saveImage = async () => {
     const canvas = canvasRef.current;
@@ -674,7 +674,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     }
   };
 
-  /* ---------- page ---------- */
+  // Page
 
   if (isLoading) return <PageSkeleton shape="record" />;
   if (error || !doc) return <QueryError error={error ?? { response: { status: 404 } }} onRetry={() => refetch()} />;

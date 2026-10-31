@@ -25,7 +25,7 @@ interface FormValues {
 }
 
 /**
- * The supplier's quote page (v5 item 95), opened from an enquiry email or WhatsApp link: no sign-in, the link is the
+ * The supplier's quote page, opened from an enquiry email or WhatsApp link: no sign-in, the link is the
  * key. It shows the company's items and takes a rate and GST per item plus freight, delivery and terms, once.
  */
 export default function QuotePage() {

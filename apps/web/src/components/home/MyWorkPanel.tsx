@@ -85,7 +85,7 @@ const CLEAR: Record<MyWorkKey, string> = {
 };
 
 /**
- * How pressing a card is, in days overdue, late or waiting (UX item 85): the API's `urgencyDays`, and for approvals how
+ * How pressing a card is, in days overdue, late or waiting: the API's `urgencyDays`, and for approvals how
  * long the oldest has waited. A card with no figure (an older API) ranks as due today.
  */
 export function urgencyOf(data: MyWorkDto, k: MyWorkKey): number {
@@ -94,7 +94,7 @@ export function urgencyOf(data: MyWorkDto, k: MyWorkKey): number {
 }
 
 /**
- * The cards that have something waiting, most urgent first (UX item 85): longest overdue or waiting first; cards
+ * The cards that have something waiting, most urgent first: longest overdue or waiting first; cards
  * equally urgent keep the order of the role's layout (`homeLayout`). Cards with nothing waiting are left out.
  */
 export function myWorkOrder(data: MyWorkDto, order: MyWorkKey[], count: (k: MyWorkKey) => number): MyWorkKey[] {
@@ -106,7 +106,7 @@ export function myWorkOrder(data: MyWorkDto, order: MyWorkKey[], count: (k: MyWo
 }
 
 /**
- * What needs this user now (UI roadmap item 59), most urgent first (UX item 85). Cards with nothing waiting fold into
+ * What needs this user now, most urgent first. Cards with nothing waiting fold into
  * one "Nothing else waiting" line; when everything is clear one line says so.
  */
 export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefined; loading: boolean; order: MyWorkKey[] }) {
@@ -155,13 +155,12 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
 
 function Frame({ title, icon, href, count, tone, children, amount, overdue }: { title: string; icon: React.ReactNode; href: string | null; count: number; tone: 'warning' | 'error' | 'info'; amount?: string | null; overdue?: boolean; children: React.ReactNode }) {
   const { token } = theme.useToken();
-  // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade (UX item
-  // 82), and only while something in it is actually overdue (UX item 85): payments due later this week stay neutral.
+  // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade, and only while something in it is actually overdue: payments due later this week stay neutral.
   const figure = tone === 'error' && overdue !== false ? token.colorErrorText : token.colorText;
   return (
     <section
       aria-label={title}
-      // A part of the My work card, so a hairline above it rather than a box around it (UX item 82: no cards inside cards).
+      // A part of the My work card, so a hairline above it rather than a box around it (no cards inside cards).
       style={{ height: '100%', paddingTop: token.paddingSM, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}
     >
       <Flex align="center" gap={token.marginSM} style={{ marginBottom: token.marginXS }}>

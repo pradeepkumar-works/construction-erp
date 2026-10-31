@@ -22,7 +22,7 @@ interface FormValues {
 }
 
 /**
- * Price variation on an RA bill (v4 item 50): this bill's index for each component of the contract's formula and what
+ * Price variation on an RA bill: this bill's index for each component of the contract's formula and what
  * it adds to (or takes off) the work value. Filled in while the bill is not approved.
  */
 export function BillPriceVariation({ bill, editable }: { bill: RaBillDto; editable: boolean }) {

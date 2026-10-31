@@ -124,7 +124,7 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
 
 function NavLink({ item, active, rail, count, onNavigate }: { item: NavItem; active: boolean; rail: boolean; count: number; onNavigate?: () => void }) {
   const Icon = item.icon;
-  // Resting on a link fetches its list's first page ahead (item 83); Next fetches the page's code itself.
+  // Resting on a link fetches its list's first page ahead; Next fetches the page's code itself.
   const prefetch = usePrefetch();
   const ahead = useHoverIntent(() => prefetch.list(item.href));
   const link = (

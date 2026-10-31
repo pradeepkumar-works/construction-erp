@@ -39,7 +39,7 @@ import { SorImport } from "@/components/tenders/TenderDialogs";
 const PAGE_SIZE = 50;
 
 /**
- * Schedules of rates (v6 item 110): the state SORs, the CPWD DSR and the company's own rates that tenders are priced
+ * Schedules of rates: the state SORs, the CPWD DSR and the company's own rates that tenders are priced
  * against, each imported from Excel and searched by code, chapter or words. Kept by admin, management and the QS.
  */
 function ScheduleOfRatesPage() {

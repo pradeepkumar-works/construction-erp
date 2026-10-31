@@ -33,7 +33,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
   const [templateOpen, setTemplateOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const editor = !!user && canEditProjects(user.roleKey);
-  // Activities with no BOQ item: what the link offer is for (finding 11 of the October review).
+  // Activities with no BOQ item: what the link offer is for.
   const unlinked = (data ?? []).filter((a) => !a.boqItemId && !a.isSummary).length;
 
   const del = useMutation({

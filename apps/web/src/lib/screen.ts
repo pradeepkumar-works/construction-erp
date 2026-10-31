@@ -4,7 +4,7 @@ import { useMemo, useSyncExternalStore } from 'react';
 import { Grid } from 'antd';
 
 /**
- * Below antd's `md` breakpoint (768 px): a phone (UX item 84). Lists show cards instead of a table, their filters sit
+ * Below antd's `md` breakpoint (768 px): a phone. Lists show cards instead of a table, their filters sit
  * behind a Filters button, and a record's actions stick to the bottom of the screen. Until the first measure it is false,
  * so the desktop layout is what renders first.
  */

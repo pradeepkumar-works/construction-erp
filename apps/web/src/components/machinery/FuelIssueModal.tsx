@@ -22,7 +22,7 @@ interface FormValues {
 }
 
 /**
- * Fuel issue (v5 item 93): diesel from the site store into one machine, with its hour meter or odometer. It is an issue
+ * Fuel issue: diesel from the site store into one machine, with its hour meter or odometer. It is an issue
  * slip like any other, so the stock goes down, and the machine's fuel norm, hire bill and the day's fuel position read it.
  */
 export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open: boolean; onClose: () => void; projectId?: string; equipmentId?: string }) {

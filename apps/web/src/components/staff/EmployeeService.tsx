@@ -37,7 +37,7 @@ export function usePrintLetter() {
 }
 
 /**
- * A person's service from joining to exit (v6 item 99), each step with its letter. HR records the next step here, and can
+ * A person's service from joining to exit, each step with its letter. HR records the next step here, and can
  * take back the latest one if it was recorded by mistake.
  */
 export function EmployeeService({ employee }: { employee: EmployeeDto }) {

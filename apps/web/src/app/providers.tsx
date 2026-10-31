@@ -19,7 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () => {
       const client: QueryClient = new QueryClient({
-        // A failed save that asked for it (`meta: FAIL_NOTICE`) says why in plain words, with Retry (UX item 86).
+        // A failed save that asked for it (`meta: FAIL_NOTICE`) says why in plain words, with Retry.
         mutationCache: new MutationCache({ onError: (err, variables, _ctx, mutation) => mutationFailed(client, err, variables, mutation) }),
         defaultOptions: {
           // One retry for a dropped connection or a server error; a 4xx (not allowed, not found) will not change, so it shows at once.

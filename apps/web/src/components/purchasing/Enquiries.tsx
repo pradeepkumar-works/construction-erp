@@ -21,7 +21,7 @@ interface FormValues {
 }
 
 /**
- * Send an enquiry (v5 item 95): the request's items to chosen suppliers, each with a one-time link to type their rates.
+ * Send an enquiry: the request's items to chosen suppliers, each with a one-time link to type their rates.
  * Vendors with an email get it by email; for the others (or when email is not set up) the links show afterwards to
  * pass on by WhatsApp.
  */

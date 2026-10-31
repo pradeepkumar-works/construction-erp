@@ -13,7 +13,7 @@ const V = 'v:';
 
 /**
  * The header's project context: All projects or one, applied to every list's project filter and remembered. Where the
- * company files its projects by vertical (item 167), the projects are grouped by vertical and a whole vertical can be
+ * company files its projects by vertical, the projects are grouped by vertical and a whole vertical can be
  * chosen, which narrows the projects offered here, the Projects list and the management dashboard and reports.
  */
 export function ProjectSwitcher({ width }: { width: number }) {

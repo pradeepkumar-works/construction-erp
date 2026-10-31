@@ -5,7 +5,7 @@ import { Flex, Progress, Typography } from 'antd';
 import { CHECK_LEVEL_LABELS, type CheckLevel, type LevelCoverage } from '@erp/shared';
 import { themeFontSize } from '@/lib/theme';
 
-/** How far each level has checked a set of sheets against its share (item 172): one bar a level, the caller's marked. */
+/** How far each level has checked a set of sheets against its share: one bar a level, the caller's marked. */
 export function CheckCoverage({ coverage, level }: { coverage: LevelCoverage[]; level: CheckLevel | null }) {
   const by = coverage[0]?.byValue === false ? 'of the sheets' : 'by value';
   return (

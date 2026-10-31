@@ -53,7 +53,7 @@ export function VendorBillFormModal({
   open: boolean;
   bill?: VendorBillDto | null;
   purchaseOrderId?: string;
-  /** A supplier's invoice from the portal (v6 item 105): its number and date start the bill */
+  /** A supplier's invoice from the portal: its number and date start the bill */
   fromInvoice?: { invoiceNo: string; invoiceDate: string } | null;
   onClose: () => void;
   onSaved?: (b: VendorBillDto) => void;
@@ -68,13 +68,13 @@ export function VendorBillFormModal({
   const poId = bill?.purchaseOrderId ?? purchaseOrderId ?? watchedPo ?? undefined;
   const orders = usePurchaseOrders({ status: 'APPROVED', pageSize: 100, sortBy: 'poDate', sortOrder: 'desc' }, open && !bill && !purchaseOrderId);
   const { data: po, isLoading: poLoading } = usePurchaseOrder(open ? poId : undefined);
-  // Advance paid on the PO and not yet taken off its other bills (v5 item 90): this bill may adjust up to that.
+  // Advance paid on the PO and not yet taken off its other bills: this bill may adjust up to that.
   const advanceAvailable = bill ? toNumber(bill.poAdvanceAvailable) : po ? Math.max(toNumber(po.advancePaid) - toNumber(po.advanceAdjusted), 0) : 0;
   const [lines, setLines] = useState<Record<string, LineValue>>({});
-  // A scanned invoice read to fill the form (AI item 70): what came back, the line values waiting for its PO to load,
+  // A scanned invoice read to fill the form: what came back, the line values waiting for its PO to load,
   // and the field whose place on the page is shown.
   const [readState, setReadState] = useState<ReadState | null>(null);
-  // The invoice scan is kept on the bill, so nobody picks the same file twice (finding 13 of the October review).
+  // The invoice scan is kept on the bill, so nobody picks the same file twice.
   const keepScan = useKeepReadFile(form, 'docs');
   const [activeRead, setActiveRead] = useState<string | null>(null);
   const pendingLines = useRef<{ poId: string; lines: Record<string, LineValue> } | null>(null);
@@ -190,7 +190,7 @@ export function VendorBillFormModal({
     return i >= 0 && readState!.result.lines[i][key]?.confidence === 'low';
   };
   const unmatched = readState ? readState.result.lines.filter((_, i) => !readState.result.match?.lines[i]) : [];
-  // A date the invoice cannot carry is left for accounts to type, in amber (finding 13 of the October review).
+  // A date the invoice cannot carry is left for accounts to type, in amber.
   const dateProblem = readDateReason(readText(readState?.result.fields.invoiceDate));
   const printedTotal = readState ? readNumber(readState.result.fields.total) : null;
 
@@ -458,7 +458,7 @@ export function VendorBillFormModal({
 }
 
 /**
- * Record or edit a vendor bill of any kind (v5 item 91): against a PO here, or a hire, workshop or other bill in
+ * Record or edit a vendor bill of any kind: against a PO here, or a hire, workshop or other bill in
  * `OtherBillFormModal`. An edited bill opens the form of its own kind.
  */
 export function VendorBillForm({

@@ -33,7 +33,7 @@ const NOTE_LABEL: Partial<Record<EmployeeEventType, string>> = {
 };
 
 /**
- * Record a step in someone's service (v6 item 99): confirmation, transfer, promotion, increment, warning or exit. The
+ * Record a step in someone's service: confirmation, transfer, promotion, increment, warning or exit. The
  * staff record changes to match, and the event gets its letter number.
  */
 export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open: boolean; onClose: () => void; employee: EmployeeDto; onSaved?: (ev: EmployeeEventDto) => void }) {

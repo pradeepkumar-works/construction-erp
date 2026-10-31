@@ -1,4 +1,4 @@
-/* Home (launcher phase 2): the greeting, the search box, then Pinned, Recent and All modules. */
+/* Home: the greeting, the search box, then Pinned, Recent and All modules. */
 .head {
   margin-bottom: var(--ant-margin);
 }

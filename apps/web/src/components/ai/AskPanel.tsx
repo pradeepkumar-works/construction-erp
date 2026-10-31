@@ -58,9 +58,9 @@ const localId = (kind: string) => `local-${kind}-${++seq}`;
 const blankMessage = (role: 'user' | 'assistant', text: string): ChatItem => ({ id: localId(role), role, text, citations: [], unverified: [], feedback: null, createdAt: new Date().toISOString() });
 
 /**
- * Ask Nirmaan (AI item 67): a side panel on every page for questions about the company's own records. Answers stream
+ * Ask Nirmaan: a side panel on every page for questions about the company's own records. Answers stream
  * in with links to the records they used; figures the server could not find in those records are flagged. The panel
- * only reads: it never creates, approves or pays anything. It can fill in a form (item 71) that the user opens, checks
+ * only reads: it never creates, approves or pays anything. It can fill in a form that the user opens, checks
  * and saves.
  */
 export default function AskPanel({

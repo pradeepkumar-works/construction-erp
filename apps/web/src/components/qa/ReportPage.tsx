@@ -168,7 +168,7 @@ function ReportBody({ data }: { data: QaReportDto }) {
   );
 }
 
-/** The month's quality report (item 137 part 3): tests and pass rate, NCRs by age, category and root cause, rework, audits and the registers, by project. */
+/** The month's quality report: tests and pass rate, NCRs by age, category and root cause, rework, audits and the registers, by project. */
 export function ReportPage() {
   const { token } = theme.useToken();
   const [month, setMonth] = useState(() => dayjs().format('YYYY-MM'));

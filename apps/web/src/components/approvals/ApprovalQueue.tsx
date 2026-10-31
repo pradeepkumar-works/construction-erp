@@ -21,7 +21,7 @@ interface Props {
 }
 
 /**
- * The inbox's left side (UI roadmap item 58): what waits, in groups by type. A click opens an entry beside it; the
+ * The inbox's left side: what waits, in groups by type. A click opens an entry beside it; the
  * boxes pick entries of one type to approve together.
  */
 export function ApprovalQueue({ groups, current, onOpen, selected, selectedType, onSelect, collapsed, onToggleGroup }: Props) {

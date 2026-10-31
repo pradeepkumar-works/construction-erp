@@ -10,9 +10,9 @@ import { COST_HEADS, monthLabel } from './chartData';
 import { HEAD_COLORS } from '@/components/cost/CostBar';
 
 /**
- * The home page's charts (UI roadmap item 59), drawn with @ant-design/plots and coloured from the antd tokens, so light
+ * The home page's charts, drawn with @ant-design/plots and coloured from the antd tokens, so light
  * and dark follow the user's appearance. This module is only loaded by the pages that draw a chart. They draw without
- * animating when the system asks for less motion; the summary and the table view are `ChartCard`'s (UX item 81).
+ * animating when the system asks for less motion; the summary and the table view are `ChartCard`'s.
  */
 
 export function useChartTheme() {
@@ -57,7 +57,7 @@ export function SCurveChart({ data }: { data: HomeTrendsDto['sCurve'] }) {
   );
 }
 
-/** A project's planned value, earned value and actual cost, cumulative by month (v6 item 115). */
+/** A project's planned value, earned value and actual cost, cumulative by month. */
 export function EarnedValueChart({ data }: { data: EarnedValuePointDto[] }) {
   const { token, base } = useChartTheme();
   const series = ['Planned value', 'Earned value', 'Actual cost'] as const;
@@ -82,7 +82,7 @@ export function EarnedValueChart({ data }: { data: EarnedValuePointDto[] }) {
   );
 }
 
-/** The 13-week cash forecast (item 122): the balance at each week's end, likely with its low and high case. */
+/** The 13-week cash forecast: the balance at each week's end, likely with its low and high case. */
 export function CashForecastChart({ weeks }: { weeks: CashWeekDto[] }) {
   const { token, base } = useChartTheme();
   const series = ['Low', 'Likely', 'High'] as const;

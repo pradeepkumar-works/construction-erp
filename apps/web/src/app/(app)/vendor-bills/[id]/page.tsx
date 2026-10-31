@@ -6,7 +6,7 @@ import type { VendorBillDto } from '@erp/shared';
 import { VendorBillRecord } from '@/components/purchasing/VendorBillDrawer';
 import { VendorBillForm } from '@/components/purchasing/VendorBillFormModal';
 
-/** One vendor bill, as its own page (UI roadmap item 61). */
+/** One vendor bill, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

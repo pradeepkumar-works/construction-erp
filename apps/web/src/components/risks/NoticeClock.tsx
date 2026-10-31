@@ -16,7 +16,7 @@ import { DRAFT_PAGES } from '@/components/ai/drafts';
 const left = (n: number) => (n > 1 ? `${n} days left` : n === 1 ? '1 day left' : n === 0 ? 'due today' : n === -1 ? '1 day late' : `${-n} days late`);
 
 /**
- * A delay's notice clock (AI item 123): when the hindrance notice is due under the contract, or the letter that gave it.
+ * A delay's notice clock: when the hindrance notice is due under the contract, or the letter that gave it.
  * Draft notice opens the letter form filled in from the delay, its DPR entries and the contract's clause.
  */
 export function NoticeClock({ risk }: { risk: RiskDto }) {

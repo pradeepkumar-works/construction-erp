@@ -75,7 +75,7 @@ function Modules({ data }: { data: ModuleSwitchesDto }) {
 }
 
 /**
- * Modules (v6 item 117): an admin turns off the parts of the product the company does not use. A module that is off leaves
+ * Modules: an admin turns off the parts of the product the company does not use. A module that is off leaves
  * the sidebar, Search, the New menu and Ask, and its pages and API say it is off; nothing is deleted.
  */
 export default function CompanyModulesPage() {

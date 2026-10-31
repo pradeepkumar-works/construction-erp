@@ -271,7 +271,7 @@ function Thread({ t, kind, entityId, canComment, askRemove }: { t: CommentThread
 }
 
 /**
- * A record's comments (v6 item 116): threads with replies, @mentions of the people who see the project (they get a notice,
+ * A record's comments: threads with replies, @mentions of the people who see the project (they get a notice,
  * and so does everyone in a thread when it gets a reply), resolve and reopen. Open threads first; resolved ones on request.
  */
 export function CommentsSection({ kind, entityId }: { kind: CommentKind; entityId: string }) {

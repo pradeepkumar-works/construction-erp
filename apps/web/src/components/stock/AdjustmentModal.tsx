@@ -37,7 +37,7 @@ interface FormValues {
 
 /**
  * Opening stock, wastage, damage or a count correction (approvers). Quantities are signed; a line can add a new item.
- * The reason feeds the wastage report (v5 item 92).
+ * The reason feeds the wastage report.
  */
 export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
   const [form] = Form.useForm<FormValues>();

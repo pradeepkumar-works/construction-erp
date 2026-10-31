@@ -30,7 +30,7 @@ const STYLE = `
 `;
 
 /**
- * The delay register as a printable page for an extension-of-time claim (AI item 123): every delay with its dates,
+ * The delay register as a printable page for an extension-of-time claim: every delay with its dates,
  * days lost, cause and party, the notice given (or how late it is), the letters on it and the DPR entries recorded into it.
  */
 export function buildDelayRegisterHtml(r: DelayRegisterDto, orgName: string): string {

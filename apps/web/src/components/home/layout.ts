@@ -11,9 +11,9 @@ export interface HomeLayout {
 }
 
 /**
- * What the home page leads with for each kind of user (UI roadmap item 59). Order only: a card, tile or chart the
+ * What the home page leads with for each kind of user. Order only: a card, tile or chart the
  * caller's role cannot see is left out by the API, so a layout never shows more than the role's permissions allow.
- * My work puts its most urgent card first (UX item 85); `myWork` orders the cards that are equally urgent.
+ * My work puts its most urgent card first; `myWork` orders the cards that are equally urgent.
  */
 const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores' | 'hr' | 'qs' | 'site' | 'documents', HomeLayout> = {
   director: {
@@ -23,7 +23,7 @@ const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores
   },
   manager: {
     myWork: ['approvals', 'watchList', 'meetingActions', 'letters', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'findingsToClose', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
-    // The approvals count is My work's and the sidebar's (UX item 85); this row leads with progress against plan instead.
+    // The approvals count is My work's and the sidebar's; this row leads with progress against plan instead.
     kpis: ['progress', 'workDone', 'delayed', 'dprsToday', 'cost', 'billed'],
     charts: ['sCurve', 'costByHead', 'billingVsContract', 'cashFlow'],
   },

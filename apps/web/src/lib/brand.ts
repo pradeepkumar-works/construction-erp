@@ -79,12 +79,12 @@ export const BRAND = {
     progressFinancial: '#0D9488',
     progressPhysicalNight: '#5B93F0',
     progressFinancialNight: '#14A093',
-    /** Drawing markup ink (item 109), on the white of a drawing sheet in either theme. */
+    /** Drawing markup ink, on the white of a drawing sheet in either theme. */
     markupRed: '#D92D20',
     markupBlue: '#1E63D6',
     markupGreen: '#167A3E',
     markupOrange: '#C2410C',
-    /** Measures and the scale on a drawing (item 118): a violet no mark uses, and the scale's dark slate. */
+    /** Measures and the scale on a drawing: a violet no mark uses, and the scale's dark slate. */
     takeoff: '#7A3DD8',
     takeoffScale: '#334155',
     /** Comparing revisions: lines only on the older one, only on the newer one, and on both. */
