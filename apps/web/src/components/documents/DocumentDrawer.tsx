@@ -1,5 +1,6 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Alert, Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Timeline, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, SendOutlined } from '@/components/common/icons';
@@ -67,9 +68,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
             ) : null}
             <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit document" />
             {!sent ? (
-              <ConfirmDelete what={`document ${data.docNo}`} description="All its revisions and files go with it." onConfirm={() => removeDoc.mutateAsync()}>
-                <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete document" />
-              </ConfirmDelete>
+              <DeleteInMenu what={`document ${data.docNo}`} description="All its revisions and files go with it." onConfirm={() => removeDoc.mutateAsync()} />
             ) : null}
           </Space>
         ) : null

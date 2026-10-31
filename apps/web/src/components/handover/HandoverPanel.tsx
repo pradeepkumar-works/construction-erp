@@ -1,5 +1,6 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Progress, Segmented, Select, Space, Statistic, Table, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
@@ -320,9 +321,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
                 </Button>
               ) : null}
               {closer ? (
-                <ConfirmDelete what={`${d.defectNo} “${d.title}”`} onConfirm={() => removeDefect.mutateAsync(d.id)}>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label="Delete" />
-                </ConfirmDelete>
+                <DeleteInMenu what={`${d.defectNo} “${d.title}”`} onConfirm={() => removeDefect.mutateAsync(d.id)} />
               ) : null}
             </Space>
           ) : null

@@ -1,5 +1,6 @@
 'use client';
 
+import { MoreActions } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Form, Input, Select, Skeleton, Table, Typography, theme } from 'antd';
@@ -233,9 +234,7 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
               <Button onClick={() => setEditing(true)}>Edit</Button>
               <Button onClick={() => setCancelling(pour)}>Cancel pour</Button>
               {!pour.tests.length ? (
-                <Button danger onClick={() => confirmDelete({ what: pour.pourNo, onConfirm: () => remove.mutateAsync(), onDone: onClose })}>
-                  Delete
-                </Button>
+                <MoreActions size="middle" items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => confirmDelete({ what: pour.pourNo, onConfirm: () => remove.mutateAsync(), onDone: onClose }) }]} />
               ) : null}
             </Flex>
           ) : null}

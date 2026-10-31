@@ -1,5 +1,6 @@
 'use client';
 
+import { MoreActions } from '@/components/record/MoreActions';
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -435,9 +436,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
           ) : null}
           {mayRecord && !audit.findings.some((f) => f.ncrId) ? (
             <Flex>
-              <Button danger onClick={() => confirmDelete({ what: audit.auditNo, onConfirm: () => remove.mutateAsync(), onDone: onClose })}>
-                Delete
-              </Button>
+              <MoreActions size="middle" items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => confirmDelete({ what: audit.auditNo, onConfirm: () => remove.mutateAsync(), onDone: onClose }) }]} />
             </Flex>
           ) : null}
         </Flex>

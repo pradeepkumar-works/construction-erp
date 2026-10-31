@@ -1,19 +1,20 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Alert, Button, Descriptions, Divider, Drawer, Dropdown, Form, Input, Skeleton, Space, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
-import { CheckOutlined, DeleteOutlined, EditOutlined, MessageOutlined, MoreOutlined } from '@/components/common/icons';
+import { CheckOutlined, EditOutlined, MessageOutlined, MoreOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { RfiDto } from '@erp/shared';
 import { canApprove, canManageVariations, canRaiseRfi, canRaiseRisk } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCloseRfi, useDeleteRfi, useLinkRfi, useRecordRfiAnswer, useRfi, useWithdrawRfi } from '@/lib/queries';
+import { useNotify } from '@/lib/notify';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { VariationFormModal } from '@/components/variations/VariationFormModal';
 import { RiskFormModal } from '@/components/risks/RiskFormModal';
@@ -106,6 +107,7 @@ function CloseModal({ rfi, mode, onClose }: { rfi: RfiDto; mode: 'close' | 'with
 export function RfiDrawer({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const notify = useNotify();
   const { data, isLoading, error, refetch } = useRfi(id ?? undefined);
   const remove = useDeleteRfi();
   const link = useLinkRfi();
@@ -162,9 +164,7 @@ export function RfiDrawer({ id, open, onClose }: { id: string | null; open: bool
             ) : null}
             {open_ && owner ? <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit RFI" /> : null}
             {open_ && owner ? (
-              <ConfirmDelete what={`RFI ${data.rfiNo}`} description="Only for an RFI raised by mistake. To stop waiting for an answer, withdraw it instead." onConfirm={() => remove.mutateAsync(data.id)} onDone={onClose}>
-                <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete RFI" />
-              </ConfirmDelete>
+              <DeleteInMenu what={`RFI ${data.rfiNo}`} description="Only for an RFI raised by mistake. To stop waiting for an answer, withdraw it instead." onConfirm={() => remove.mutateAsync(data.id)} onDone={onClose} />
             ) : null}
             {more.length ? (
               <Dropdown
@@ -254,7 +254,7 @@ export function RfiDrawer({ id, open, onClose }: { id: string | null; open: bool
                   <Space>
                     <Link href={`/variations?id=${data.variationId}`}>Variation {data.variationLabel}</Link>
                     {mayAnswer ? (
-                      <Button size="small" type="link" onClick={() => link.mutateAsync({ id: data.id, variationId: null }).then(() => message.success('Variation unlinked'))}>
+                      <Button size="small" type="link" onClick={() => { const was = data.variationId; void link.mutateAsync({ id: data.id, variationId: null }).then(() => notify.done('Variation unlinked', () => link.mutateAsync({ id: data.id, variationId: was }))); }}>
                         Unlink
                       </Button>
                     ) : null}
@@ -264,7 +264,7 @@ export function RfiDrawer({ id, open, onClose }: { id: string | null; open: bool
                   <Space>
                     <Link href={`/risks?id=${data.riskId}`}>{data.riskNo}</Link>
                     {mayAnswer ? (
-                      <Button size="small" type="link" onClick={() => link.mutateAsync({ id: data.id, riskId: null }).then(() => message.success('Delay unlinked'))}>
+                      <Button size="small" type="link" onClick={() => { const was = data.riskId; void link.mutateAsync({ id: data.id, riskId: null }).then(() => notify.done('Delay unlinked', () => link.mutateAsync({ id: data.id, riskId: was }))); }}>
                         Unlink
                       </Button>
                     ) : null}

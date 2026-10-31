@@ -1,11 +1,12 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
-import { CheckCircleOutlined, DeleteOutlined, EditOutlined, SendOutlined } from '@/components/common/icons';
+import { CheckCircleOutlined, EditOutlined, SendOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { VariationDto, VariationLineDto, VariationStatus } from '@erp/shared';
@@ -21,7 +22,6 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { VariationFormModal } from './VariationFormModal';
 import { themeFontSize } from '@/lib/theme';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
 
@@ -117,9 +117,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
               </Button>
             )}
             <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit variation" />
-            <ConfirmDelete what={data.label} onConfirm={() => remove.mutateAsync()}>
-              <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete variation" />
-            </ConfirmDelete>
+            <DeleteInMenu what={data.label} onConfirm={() => remove.mutateAsync()} />
           </Space>
         ) : null
       }

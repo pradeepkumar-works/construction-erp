@@ -1,5 +1,6 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Skeleton, Space, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +15,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { PhotosWithChecks } from '@/components/photo-checks/PhotoChecksSection';
 import { FormShell } from '@/components/form/FormShell';
 import { IncidentStatusTag, IncidentTypeTag, SafetyHistory } from './safetyUi';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** One incident or near miss: what happened, the investigation, and closing it with the root cause and the action. */
 export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit: (i: SafetyIncidentDto) => void }) {
@@ -90,11 +90,7 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
               </Button>
             ) : null}
             {manager ? (
-              <ConfirmDelete what={`incident ${data.incidentNo}`} description="Only for an entry made by mistake." onConfirm={() => remove.mutateAsync()}>
-                <Button size="small" danger loading={remove.isPending}>
-                  Delete
-                </Button>
-              </ConfirmDelete>
+              <DeleteInMenu what={`incident ${data.incidentNo}`} description="Only for an entry made by mistake." onConfirm={() => remove.mutateAsync()} />
             ) : null}
           </Space>
         ) : null

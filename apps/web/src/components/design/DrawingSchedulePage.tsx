@@ -1,5 +1,6 @@
 'use client';
 
+import { MoreActions } from '@/components/record/MoreActions';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -424,9 +425,7 @@ function NeedDrawer({ need, onClose, onEdit }: { need: DrawingNeedDto | null; on
           ) : null}
           {may && !n.riskId && !n.lastLetterId ? (
             <Flex>
-              <Button danger onClick={() => confirmDelete({ what: n.docNo ?? n.title, onConfirm: () => remove.mutateAsync(), onDone: onClose })}>
-                Delete
-              </Button>
+              <MoreActions size="middle" items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => confirmDelete({ what: n.docNo ?? n.title, onConfirm: () => remove.mutateAsync(), onDone: onClose }) }]} />
             </Flex>
           ) : null}
         </Flex>

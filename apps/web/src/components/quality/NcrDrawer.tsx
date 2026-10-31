@@ -1,8 +1,9 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Select, Skeleton, Space, Timeline, Typography } from 'antd';
-import { CheckOutlined, DeleteOutlined, EditOutlined, RedoOutlined } from '@/components/common/icons';
+import { CheckOutlined, EditOutlined, RedoOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, NcrDto } from '@erp/shared';
 import { canActOnNcr, canApprove, canRaiseNcr } from '@erp/shared';
@@ -20,7 +21,6 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { NcrStatusTag, SeverityTag } from './qualityUi';
 import { NcrFormModal, useMasterOptions } from './NcrFormModal';
 import { themeFontSize } from '@/lib/theme';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'red', ACTION_TAKEN: 'blue', CLOSED: 'green', REOPENED: 'orange', UPDATED: 'gray' };
 
@@ -164,9 +164,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               </Button>
             ) : null}
             {mayDelete ? (
-              <ConfirmDelete what={data.ncrNo} description="Only for an NCR raised by mistake." onConfirm={() => remove.mutateAsync()}>
-                <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete NCR" />
-              </ConfirmDelete>
+              <DeleteInMenu what={data.ncrNo} description="Only for an NCR raised by mistake." onConfirm={() => remove.mutateAsync()} />
             ) : null}
           </Space>
         ) : null
