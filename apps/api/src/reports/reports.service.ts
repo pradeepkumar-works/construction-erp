@@ -8,6 +8,7 @@ import { AttachmentsService } from '../common/attachments.service';
 import { physicalProgress } from '../common/progress';
 import { dateOnly, dec, money, parseDate, pct } from '../common/serialize';
 import { ProgressReportQuery } from './reports.dto';
+import { todayIn } from '../notifications/time';
 
 const Dec = Prisma.Decimal;
 type D = Prisma.Decimal;
@@ -75,7 +76,7 @@ export class ReportsService {
       this.prisma.workElement.findMany({ where: { projectId }, select: { id: true, parentId: true, weightPct: true } }),
     ]);
 
-    const todayUtc = parseDate(new Date().toISOString().slice(0, 10));
+    const todayUtc = parseDate(todayIn());
     // Activities: this period, cumulative, % and delay at the end of the period.
     const activityRows = activities.map((a) => {
       const cumulative = sum(a.progressEntries, (e) => e.quantity);

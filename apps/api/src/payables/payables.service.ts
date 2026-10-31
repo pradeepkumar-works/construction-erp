@@ -29,6 +29,7 @@ import { assertNotExported } from '../tally/exported';
 import { advanceAdjusted, advancePaid, advanceRecovered } from './advances';
 import { SUB_BILL_PAYABLE, VENDOR_BILL_PAYABLE, subBillPayable, vendorBillPayable } from './payable';
 import { syncRequestPaid, targetLabel } from './payment-requests.service';
+import { todayIn } from '../notifications/time';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -493,7 +494,7 @@ export class PayablesService {
   /** Payables as of today, for the projects the user can see. */
   async summary(user: RequestUser, q: PayablesQuery = {}): Promise<PayablesDto> {
     this.assertCanSee(user);
-    const asOf = new Date().toISOString().slice(0, 10);
+    const asOf = todayIn();
     const today = parseDate(asOf).getTime();
     const projectWhere = { ...this.access.projectWhere(user), ...(q.projectId ? { id: q.projectId } : {}) };
     const vendorSel = { select: { id: true, name: true, msmeCategory: true } } as const;

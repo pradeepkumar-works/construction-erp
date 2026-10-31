@@ -10,6 +10,7 @@ import { RequestUser } from '../common/current-user';
 import { EmailService, escapeHtml } from '../notifications/email.service';
 import { emailButton, emailLayout } from '../notifications/email-layout';
 import { MessagingService } from '../messaging/messaging.service';
+import { todayIn } from '../notifications/time';
 
 type Model = Prisma.DMMF.Model;
 type Field = Prisma.DMMF.Field;
@@ -264,7 +265,7 @@ export class CompanyDataService {
    * links between its own rows are cleared first, then tables are emptied until none is left (a table still referenced
    * waits for the next pass). Stored files are removed after the rows are gone.
    */
-  async purgeDue(today = new Date().toISOString().slice(0, 10)): Promise<{ purged: string[] }> {
+  async purgeDue(today = todayIn()): Promise<{ purged: string[] }> {
     return withoutTenant(async () => {
       const due = await this.prisma.organization.findMany({ where: { deletionScheduledFor: { lte: new Date(`${today}T00:00:00Z`) } }, select: { id: true, code: true, name: true } });
       const purged: string[] = [];

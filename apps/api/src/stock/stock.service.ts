@@ -1006,7 +1006,7 @@ export class StockService {
   async valuation(user: RequestUser, q: StockValuationQuery): Promise<StockValuationDto> {
     if (!canManageStore(user.roleKey) && !canViewCost(user.roleKey)) throw new ForbiddenException('Stock value is for store managers, approvers and accounts');
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
-    const asOf = new Date().toISOString().slice(0, 10);
+    const asOf = todayIn();
     const today = parseDate(asOf).getTime();
     const balances = (await this.buildBalances(user.organizationId, this.access.projectWhere(user), q.projectId)).filter((b) => Number(b.balance) > 0);
     const projectIds = [...new Set(balances.map((b) => b.projectId))];

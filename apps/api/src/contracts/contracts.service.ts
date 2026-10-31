@@ -42,7 +42,7 @@ export class ContractsService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private templates: TemplatesService) {}
 
   toDto(p: Row, ld?: LdInputs): ProjectContractDto {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIn();
     const extensions = p.risks.map((r) => ({
       riskId: r.id,
       riskNo: r.riskNo,
