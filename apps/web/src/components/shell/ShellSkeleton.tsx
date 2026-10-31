@@ -10,7 +10,7 @@ import { PREF_RAIL } from './Sidebar';
 import s from './Sidebar.module.css';
 
 /**
- * What shows while the sign-in is checked (item 83), in place of a spinner on a blank screen: the sidebar at its width
+ * What shows while the sign-in is checked, in place of a spinner on a blank screen: the sidebar at its width
  * (or its rail), the header bar and a page of placeholders, where the shell will draw them, so the app appears in place.
  * The server's HTML has only the sidebar, the same navy in both themes; the rest follows in the user's theme as soon as
  * the browser has read it.

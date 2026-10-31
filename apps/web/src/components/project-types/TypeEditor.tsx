@@ -57,7 +57,7 @@ const nextKey = (rows: Values['breakdown'] | undefined, parent?: string | null) 
 };
 
 /**
- * Change a project type's details and starting breakdown (item 134): what it is built on, the places its work is
+ * Change a project type's details and starting breakdown: what it is built on, the places its work is
  * located by, the components a new project of it usually has and how many. Its loose activities are saved on their tab.
  */
 export function TypeEditor({ type, kinds, open, onClose }: { type: ProjectTypeDto; kinds: ComponentKindDto[]; open: boolean; onClose: () => void }) {

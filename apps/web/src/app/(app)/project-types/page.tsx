@@ -221,7 +221,7 @@ function ProjectTypes() {
 }
 
 /**
- * Project types (item 134, ARCHITECTURE "Project types"): the company's types (the standard ones, its copies and its own)
+ * Project types (ARCHITECTURE "Project types"): the company's types (the standard ones, its copies and its own)
  * and the library of component kinds they are built from.
  */
 export default function Page() {

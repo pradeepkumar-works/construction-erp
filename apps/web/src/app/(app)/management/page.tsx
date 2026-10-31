@@ -44,7 +44,7 @@ const day = (d: string) =>
 export default function Page() {
   const { user } = useAuth();
   const allowed = !!user && canSeeManagement(user.roleKey);
-  // The header's vertical (item 167) narrows the portfolio.
+  // The header's vertical narrows the portfolio.
   const [vertical] = useVerticalScope();
   const { data, isLoading, error, refetch } = useManagementPortfolio(allowed, vertical);
 

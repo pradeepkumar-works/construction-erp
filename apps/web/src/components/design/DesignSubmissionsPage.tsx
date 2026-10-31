@@ -43,7 +43,7 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 ];
 
 /**
- * Design submissions (item 138 part 2): drawings and designs sent for approval or vetting, the code each round came back
+ * Design submissions: drawings and designs sent for approval or vetting, the code each round came back
  * with, and the comments still to answer. Late reviews come first.
  */
 export function DesignSubmissionsPage() {

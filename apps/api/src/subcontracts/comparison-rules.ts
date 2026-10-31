@@ -1,5 +1,5 @@
 /**
- * Subcontract enquiries' figures (v6 item 111), with no database: a quote's totals over the items it prices, the
+ * Subcontract enquiries' figures, with no database: a quote's totals over the items it prices, the
  * comparative statement (the lowest rate of each item and whose it is, the spread between the rates, the complete
  * quotes ranked L1, L2… with ties sharing a rank, each against the client's rates), and what stops an award or a
  * change. Tested in src/scripts/comparison-test.ts.

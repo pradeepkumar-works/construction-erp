@@ -136,7 +136,7 @@ export class UsersService {
     const data: any = {};
     if (dto.fullName !== undefined) data.fullName = dto.fullName;
     if (dto.phone !== undefined) data.phone = dto.phone;
-    // WhatsApp entries (AI item 120) are read from the number they were switched on with: a new number switches them off.
+    // WhatsApp entries are read from the number they were switched on with: a new number switches them off.
     if (dto.phone !== undefined && dto.phone !== existing.phone) data.captureFrom = null;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     // The email and password belong to the person's sign-in, which may reach sister companies too (group companies).

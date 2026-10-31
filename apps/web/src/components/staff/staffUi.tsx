@@ -30,7 +30,7 @@ export const clock = (iso: string | null) => formatTime(iso);
 /** Metres as "120 m" or "1.4 km". */
 export const metres = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`);
 
-/** Where a check-in was (v5 item 97): at the site, outside it, or a position with no site location to measure from. */
+/** Where a check-in was: at the site, outside it, or a position with no site location to measure from. */
 export function CheckInPlaceTag({ place }: { place: StaffAttendanceDto['checkInPlace'] }) {
   if (!place) return null;
   if (place.inside === null) return <AppTag>Location recorded</AppTag>;

@@ -42,7 +42,7 @@ const toLines = (v: LineValue[] | undefined) =>
 /**
  * Record a day's attendance (head count by contractor and trade), or open an existing sheet to correct it.
  * Read-only for roles that cannot record attendance and once payroll for the day's month is approved (attendance first:
- * an approved DPR no longer shuts it, finding 7 of the October review).
+ * an approved DPR no longer shuts it).
  */
 export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }: { open: boolean; onClose: () => void; projectId?: string; sheet?: AttendanceSheetDto | null }) {
   const [form] = Form.useForm<FormValues>();

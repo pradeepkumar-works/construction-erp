@@ -42,7 +42,7 @@ function GstRegistersPage() {
   const search = useSearchParams();
   const router = useRouter();
   const [range, setRangeRaw] = useState<[Dayjs, Dayjs]>(() => [monthParam(search.get('from')) ?? dayjs().startOf('month'), monthParam(search.get('to')) ?? dayjs()]);
-  // The months and the tab go in the address bar (UX item 84), so a reload or a link sent on opens the same register.
+  // The months and the tab go in the address bar, so a reload or a link sent on opens the same register.
   const setRange = (next: [Dayjs, Dayjs]) => {
     setRangeRaw(next);
     writeUrlParam('from', next[0].format('YYYY-MM'));

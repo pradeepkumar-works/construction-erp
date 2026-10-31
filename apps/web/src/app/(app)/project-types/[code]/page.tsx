@@ -69,7 +69,7 @@ function Breakdown({ type, kinds }: { type: ProjectTypeDto; kinds: ComponentKind
   );
 }
 
-/** One project type (item 134): its settings and starting breakdown, its loose activities and its DPR form. */
+/** One project type: its settings and starting breakdown, its loose activities and its DPR form. */
 export default function Page() {
   const { code } = useParams<{ code: string }>();
   const router = useRouter();

@@ -1,5 +1,5 @@
 /**
- * Demo work breakdown (item 125, ARCHITECTURE "Work breakdown"). All names and figures are invented.
+ * Demo work breakdown (ARCHITECTURE "Work breakdown"). All names and figures are invented.
  *
  * - WS-2026-04, a lump-sum town water supply scheme in month 9 of 18: twelve components by their billing share
  *   (intake, pumping, mains, the treatment plant and its units, three overhead tanks, three distribution zones,
@@ -7,9 +7,9 @@
  *   reinforcement, shuttering and concrete, planned dates and approved progress.
  * - BL-2026-02, the item-rate hospital block: its BOQ grouped in sections and its activities in three components
  *   weighed by BOQ value (no weights given).
- * - Three days of the town scheme's DPRs with work lines (item 127): tank, pipe laying, backfill, house connections and
+ * - Three days of the town scheme's DPRs with work lines: tank, pipe laying, backfill, house connections and
  *   road restoration, each with its crew, machines and material; two approved, the latest waiting for the PM. Their pipe
- *   lines move onto zone 2's network in `seed-pipes.ts` (item 126).
+ *   lines move onto zone 2's network in `seed-pipes.ts`.
  */
 import { Prisma, PrismaClient, type WorkElementType } from '@prisma/client';
 import { elementPlan, workSummary, type ElementActivityLine } from '@erp/shared';
@@ -313,7 +313,7 @@ const TOWN_DPRS: DprSeed[] = [
       },
       { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 84, at: 'Market road', crew: [['Plumber', 2], ['Helper', 6]], material: [['HDPE PE100 110mm PN6', 84], ['HDPE electrofusion coupler 110mm', 14]] },
       { element: '9.2', activity: 'Backfilling and compaction', qty: 96, at: 'Market road', crew: [['Helper', 4], ['Operator', 1]], machines: [['JCB 3DX', 7]] },
-      // No crew named on this line: the approver's DPR checks (intelligence quick win Q3) point it out.
+      // No crew named on this line: the approver's DPR checks point it out.
       { element: '11', activity: 'Tapping and saddle', qty: 18, at: 'Ward 3', material: [['Ball valve 50mm', 18]] },
       { element: '10', activity: 'Bituminous road', qty: 120, at: 'Station Road', crew: [['Helper', 8], ['Operator', 1]], machines: [['Road roller', 5]], material: [['Bitumen VG-30', 0.65], ['Emulsion SS-1', 60]] },
     ],
@@ -321,14 +321,14 @@ const TOWN_DPRS: DprSeed[] = [
   },
 ];
 
-/** Three days of DPRs with work lines on the town scheme (item 127); skipped once it has any DPR. */
+/** Three days of DPRs with work lines on the town scheme; skipped once it has any DPR. */
 export async function seedTownDprs(prisma: PrismaClient, organizationId: string) {
   const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true } });
   if (!project || (await prisma.dailyReport.count({ where: { projectId: project.id } }))) return;
   for (const d of TOWN_DPRS) await addTownDpr(prisma, organizationId, d);
 }
 
-/** One DPR with its work lines on the town scheme, unless the day already has one. Used by the stock seed too (item 128). */
+/** One DPR with its work lines on the town scheme, unless the day already has one. Used by the stock seed too. */
 export async function addTownDpr(prisma: PrismaClient, organizationId: string, d: DprSeed) {
   const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true } });
   if (!project) return;

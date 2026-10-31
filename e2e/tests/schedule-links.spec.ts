@@ -16,7 +16,7 @@ const call = (token: string, method: string, path: string, body?: unknown) =>
   fetch(`${API_URL}${path}`, { method, headers: { authorization: `Bearer ${token}`, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
 
 /**
- * Schedule links (v6 item 114), in a company of its own so the demo plan is left alone: the planner ties pile caps to
+ * Schedule links, in a company of its own so the demo plan is left alone: the planner ties pile caps to
  * piling on the Gantt, a loop is refused, Move them puts the activities on their link dates, the look-ahead shows pile
  * caps waiting on piling, and the plan goes out as XER and comes back with a new activity.
  */

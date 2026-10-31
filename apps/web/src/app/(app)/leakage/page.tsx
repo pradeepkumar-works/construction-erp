@@ -26,7 +26,7 @@ const SECTION_HELP: Record<LeakageSection, string> = {
 };
 
 /**
- * Leakage checks (AI item 121): the month's flags where material, money and fuel go missing, with the rupees at risk.
+ * Leakage checks: the month's flags where material, money and fuel go missing, with the rupees at risk.
  * Each flag carries its working and links to the records it rests on; the sections are the caller's (`leakageSections`)
  * and the header's project narrows them. The month is in the URL (`?month=YYYY-MM`).
  */

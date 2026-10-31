@@ -8,7 +8,7 @@ import { useDebounced } from '@/lib/debounce';
 import { themeFontSize } from '@/lib/theme';
 
 /**
- * Vendor name with suggestions from the vendor master (vendors of `kind` first), searched as you type (item 83) rather
+ * Vendor name with suggestions from the vendor master (vendors of `kind` first), searched as you type rather
  * than loading the whole master. A name that is not in the master can still be typed; the server links a typed name that
  * matches a vendor. `onPick` gets the vendor chosen from the list.
  */

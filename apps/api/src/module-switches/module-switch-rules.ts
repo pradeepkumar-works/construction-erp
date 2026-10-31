@@ -9,7 +9,7 @@ import {
 } from '@erp/shared';
 
 /**
- * Module switches (v6 item 117) as pure functions, tested in `src/scripts/module-switches-test.ts`. Which modules are off
+ * Module switches as pure functions, tested in `src/scripts/module-switches-test.ts`. Which modules are off
  * (`modulesOffFor`) and which page belongs to which (`moduleOfPath`) are in `@erp/shared`, where the web reads them too.
  */
 export interface SwitchOrg {

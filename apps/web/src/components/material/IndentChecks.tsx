@@ -34,7 +34,7 @@ function Verdict({ line }: { line: IndentCheckLineDto }) {
 const muted = (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : toNumber(v) === 0 ? <span className="text-muted">0</span> : <span translate="no">{formatQty(v)}</span>);
 
 /**
- * Indent checks (item 170): each line against the site's own store and what the BOQ allows for the item from the
+ * Indent checks: each line against the site's own store and what the BOQ allows for the item from the
  * project's norms, for the approver to read before deciding. Advice only.
  */
 export function IndentChecks({ check, loading }: { check: IndentCheckDto | undefined; loading: boolean }) {

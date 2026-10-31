@@ -7,7 +7,7 @@ type Event = { id: string; type: string; letterNo: string; fromDesignation: stri
 type Dashboard = { active: number; bySite: { label: string; count: number }[]; missingDetails: { employeeCode: string; missing: string[] }[] };
 
 /**
- * HR records (v6 item 99): HR sees the full record with personal and statutory details, the project manager does not; a
+ * HR records: HR sees the full record with personal and statutory details, the project manager does not; a
  * promotion changes the record and gets its letter number, and taking it back puts the record back; the People home shows
  * the HR dashboard and the Staff page lists every service event.
  */

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { API_URL, PASSWORD, api, apiToken, signIn } from './helpers';
 
 /**
- * The three typing fixes of finding 17 of the October review: the project code suggested from the company's series,
+ * Three typing fixes: the project code suggested from the company's series,
  * the PAN read out of a GSTIN, and a new user put on their projects as they are created.
  */
 test('a new project, vendor and user are offered what the company already knows', async ({ page }) => {

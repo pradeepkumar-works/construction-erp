@@ -73,7 +73,7 @@ interface RecordProps {
   onClose?: () => void;
 }
 
-/** A debit note (v5 item 91): what a vendor owes back on a bill, in a drawer or at `/debit-notes/<id>`. */
+/** A debit note: what a vendor owes back on a bill, in a drawer or at `/debit-notes/<id>`. */
 export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mode: RecordMode }) {
   const { user } = useAuth();
   const [cancelling, setCancelling] = useState(false);

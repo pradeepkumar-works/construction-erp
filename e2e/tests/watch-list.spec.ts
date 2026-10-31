@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, formPanel, signIn } from './helpers';
 
 /**
- * Early warnings (AI items 73 and 119). The demo seed's dates are relative to today, so its schedule and stock always
+ * Early warnings. The demo seed's dates are relative to today, so its schedule and stock always
  * give the MD some warnings. Each card leads with its action and keeps its working under Why; a dismissal says what
  * became of the warning (Known needs a note), holds for the company, counts in the track record, and Restore brings
  * the warning back.

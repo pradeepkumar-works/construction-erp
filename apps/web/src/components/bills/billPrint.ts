@@ -74,7 +74,7 @@ export function buildBillPrintHtml(b: RaBillDto, orgName: string): string {
     </tr>`,
     )
     .join('');
-  // A lump-sum bill (item 129) pays its stages, then its measured unit-rate items, and shows the two totals apart.
+  // A lump-sum bill pays its stages, then its measured unit-rate items, and shows the two totals apart.
   const staged = b.stageLines.length > 0;
   const sum = (xs: string[]) => String(xs.reduce((t, x) => t + toNumber(x), 0));
   const stageRows = b.stageLines
@@ -108,7 +108,7 @@ export function buildBillPrintHtml(b: RaBillDto, orgName: string): string {
       <tbody>${lines}<tr><th colspan="5">Total</th><th class="num">${qty(m.totalQty)}</th></tr></tbody></table></div>`;
     })
     .join('');
-  // An O&M bill (item 131) bills its period's instalment, less staff short; its penalties are among the deductions.
+  // An O&M bill bills its period's instalment, less staff short; its penalties are among the deductions.
   const om = b.om;
   const omBlock = om
     ? `

@@ -1,7 +1,7 @@
 import type { NcrSeverity, NcrStatus, TestResult } from '@erp/shared';
 import { colors, toneIcon, type Tone } from '../theme';
 
-/** Each result, status and severity with a shape as well as a colour (UX item 88). */
+/** Each result, status and severity with a shape as well as a colour. */
 export const TEST_RESULT_TONE: Record<TestResult, Tone> = {
   PENDING: { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.waiting },
   PASS: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },

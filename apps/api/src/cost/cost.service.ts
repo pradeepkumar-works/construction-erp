@@ -211,7 +211,7 @@ export class CostService {
       this.prisma.vendorPayment.groupBy({ by: ['projectId'], where: { ...inProjects, ...(date ? { paymentDate: date } : {}) }, _sum: { amount: true } }),
       // Gangs of a subcontractor with an approved work order on the project are paid through its bills, not as labour.
       this.prisma.workOrder.findMany({ where: { ...inProjects, status: 'APPROVED' }, select: { projectId: true, vendorId: true }, distinct: ['projectId', 'vendorId'] }),
-      // Approved bills without a PO (v5 item 91): a hire bill is the machine's cost for its month in place of rate × hours,
+      // Approved bills without a PO: a hire bill is the machine's cost for its month in place of rate × hours,
       // a workshop's service bill is machinery cost, any other bill is cost under its expense head. Before GST.
       this.prisma.vendorBill.findMany({
         where: { ...inProjects, status: 'APPROVED', kind: { not: 'PO' }, ...(date ? { OR: [{ kind: 'HIRE', hireMonth: date }, { kind: { not: 'HIRE' }, invoiceDate: date }] } : {}) },
@@ -338,8 +338,6 @@ export class CostService {
     }
     return out;
   }
-
-  /* ---------- labour rates ---------- */
 
   async labourRates(user: RequestUser): Promise<LabourRatesDto> {
     this.assertCanView(user);

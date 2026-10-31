@@ -69,7 +69,7 @@ function CategoryChooser() {
   );
 }
 
-/** Test certificates (item 137 part 2): receipts of steel, cement, pipes… that came without the maker's test certificate. */
+/** Test certificates: receipts of steel, cement, pipes… that came without the maker's test certificate. */
 export function CertificatesPage() {
   const { token } = theme.useToken();
   const [projectId, setProjectId] = useProjectScope();

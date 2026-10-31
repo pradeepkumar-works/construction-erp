@@ -8,7 +8,7 @@ import { adminChangeProblem, placeProblem } from './group-rules';
 import { GivePlaceDto, GroupCompanyDto, UpdateGroupCompanyDto } from './group.dto';
 
 /**
- * Group companies (phase 1, ARCHITECTURE "Group companies"): a parent company's group, its companies and who works in
+ * Group companies (ARCHITECTURE "Group companies"): a parent company's group, its companies and who works in
  * which. Each company stays a tenant of its own; this service reads and writes across them only for the group's admins,
  * outside the request's tenant (`withoutTenant`), and never touches a company's business records.
  */

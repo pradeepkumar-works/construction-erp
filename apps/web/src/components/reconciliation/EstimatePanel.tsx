@@ -29,7 +29,7 @@ const money = (v: string | null) =>
 type Show = 'analysed' | 'all';
 
 /**
- * The project's estimate from its rate analysis (v5 item 92): each BOQ item's built-up rate (materials with wastage,
+ * The project's estimate from its rate analysis: each BOQ item's built-up rate (materials with wastage,
  * labour and machines at today's rates, plus overheads and profit) against the BOQ rate. Without cost it is the list
  * of rate analyses, quantities only. An item opens its rate analysis.
  */

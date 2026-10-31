@@ -39,7 +39,7 @@ interface LoanValues {
 }
 
 /**
- * Record a loan on a financed machine (v6 item 108), or change one: the EMI and its schedule are worked out from the
+ * Record a loan on a financed machine, or change one: the EMI and its schedule are worked out from the
  * terms as they are typed (the lender's EMI, when given, is used instead). The terms are fixed once an EMI is paid.
  */
 export function LoanFormModal({ open, onClose, loan, equipmentId, onSaved }: { open: boolean; onClose: () => void; loan?: EquipmentLoanDetailDto | null; equipmentId?: string; onSaved?: (id: string) => void }) {

@@ -37,7 +37,7 @@ function Share({ pct, label }: { pct: number | null; label: string }) {
 }
 
 /**
- * Utilisation (v5 item 93): each machine's approved logs over a period against the shift on the days it was on site,
+ * Utilisation: each machine's approved logs over a period against the shift on the days it was on site,
  * by machine and by category. Worked ÷ available is utilisation; available less breakdown is availability.
  */
 export function UtilisationPanel({ projectId: fixedProject }: { projectId?: string }) {

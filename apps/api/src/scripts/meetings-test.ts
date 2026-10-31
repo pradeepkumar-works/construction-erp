@@ -1,5 +1,5 @@
 /**
- * Meetings' tests (v6 item 112): how late an action is, what stops the minutes being issued, what an action may move
+ * Meetings' tests: how late an action is, what stops the minutes being issued, what an action may move
  * to, and the register's counts, with no database. CI runs it after the build:
  *
  *   node dist/scripts/meetings-test.js

@@ -68,7 +68,7 @@ export function MarginText({ item }: { item: EstimateItemDto }) {
 }
 
 /**
- * One BOQ item's rate analysis (v5 item 92): the materials it uses (the norms the reconciliation reads), the labour and
+ * One BOQ item's rate analysis: the materials it uses (the norms the reconciliation reads), the labour and
  * machine hours it takes, and, for those who see cost, the built-up rate they price to. Filled by hand, from the
  * starter library or from another BOQ item.
  */

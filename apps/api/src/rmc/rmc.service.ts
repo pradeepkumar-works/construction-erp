@@ -94,7 +94,7 @@ type InvoiceRow = Prisma.RmcInvoiceGetPayload<{ include: typeof invoiceInclude }
 const customerOf = (o: { client: { name: string } | null; project: { name: string } | null }) => o.client?.name ?? (o.project ? `Own site: ${o.project.name}` : '');
 
 /**
- * Ready-mix concrete (v6 item 104). A plant is a project of type PLANT, so its materials are bought, received and
+ * Ready-mix concrete. A plant is a project of type PLANT, so its materials are bought, received and
  * counted as at any site, and only those who see the plant see its RMC. Sales quote and confirm orders; quality
  * approves mix designs; the plant dispatches trucks (each a batch and its challan, issuing the materials from the plant's
  * stock through the stock service) and takes cubes (a quality test); accounts bill delivered challans with GST and
@@ -135,7 +135,7 @@ export class RmcService {
     return this.prisma.project.findMany({ where: this.plantWhere(user), select: { id: true, code: true, name: true }, orderBy: { name: 'asc' } });
   }
 
-  // ----- Mix designs -----
+  // Mix designs
 
   private designDto(user: RequestUser, d: DesignRow): MixDesignDto {
     const priced = d.lines.every((l) => l.item.rate !== null);
@@ -247,7 +247,7 @@ export class RmcService {
     return this.designDto(user, await this.design(user, id));
   }
 
-  // ----- Orders -----
+  // Orders
 
   private orderDto(user: RequestUser, o: OrderRow): RmcOrderDto {
     const p = orderProgress(o.batches);
@@ -428,7 +428,7 @@ export class RmcService {
     return this.order(user, id);
   }
 
-  // ----- Batches and challans -----
+  // Batches and challans
 
   private batchDto(user: RequestUser, b: BatchRow): RmcBatchDto {
     return {
@@ -513,7 +513,7 @@ export class RmcService {
     if (D(dto.quantity).gt(left)) throw new BadRequestException(left.lte(0) ? `${o.orderNo} has had all its concrete. Raise the order's quantity to send more.` : `${o.orderNo} can take ${dec(left)} m³ more. Raise the order's quantity to send more.`);
     const design = await this.prisma.mixDesignLine.findMany({ where: { mixDesignId: o.mixDesignId }, orderBy: { sortOrder: 'asc' } });
     const planned = batchQuantities(design, dto.quantity);
-    // From the controller's batch (item 149): its weights are the lines unless the form sent its own.
+    // From the controller's batch: its weights are the lines unless the form sent its own.
     const fromPlant = dto.plantRowId ? await this.plantBatches.forDispatch(user.organizationId, dto.plantRowId, o.plantId) : null;
     if (fromPlant?.read.problems.length) throw new BadRequestException(`The controller's batch cannot be read: ${fromPlant.read.problems[0]}`);
     const weighed = dto.lines?.length ? dto.lines : fromPlant?.read.materials;
@@ -612,7 +612,7 @@ export class RmcService {
     return this.batch(user, id);
   }
 
-  // ----- The plant's day -----
+  // The plant's day
 
   async day(user: RequestUser, q: RmcDayQuery): Promise<RmcDayDto> {
     this.assertView(user);
@@ -666,7 +666,7 @@ export class RmcService {
     };
   }
 
-  // ----- Bills and money received -----
+  // Bills and money received
 
   private invoiceDto(user: RequestUser, r: InvoiceRow): RmcInvoiceDto {
     const received = r.receipts.reduce((s, x) => s.add(x.amount), ZERO);

@@ -1,5 +1,5 @@
 /**
- * Correspondence's tests (item 136): letter numbers from a series' pattern and the financial year, the short prefix of a
+ * Correspondence's tests: letter numbers from a series' pattern and the financial year, the short prefix of a
  * project, which outward letters wait for their signatory, replies due, proof of delivery, templates, who keeps letters,
  * and the module's pages in the tree and the menu, with no database. CI runs it after the build:
  *

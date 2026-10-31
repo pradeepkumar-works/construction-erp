@@ -24,7 +24,7 @@ const norm = (s: unknown) =>
 type Row = Record<string, string> & { _key: string; _error: string };
 
 /**
- * Rows from the first sheet of an Excel or CSV file (v6 item 110): the columns are matched to the fields by their
+ * Rows from the first sheet of an Excel or CSV file: the columns are matched to the fields by their
  * headers and can be changed, each row is checked, and the good ones go to `onImport`. Used for a schedule of rates and
  * a bid BOQ; the BOQ's own import (`BoqImportModal`) came first and works the same way.
  */

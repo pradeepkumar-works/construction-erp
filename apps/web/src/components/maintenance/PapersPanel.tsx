@@ -66,7 +66,7 @@ export function PapersPanel() {
   const qc = useQueryClient();
   const manager = !!user && canManageMaintenance(user.roleKey);
 
-  /* ---------- papers ---------- */
+  // Papers
   const docFrame = useListFrame<'validTo', EquipmentDocumentDto>({
     list: 'machine-papers',
     url: false,
@@ -197,7 +197,7 @@ export function PapersPanel() {
     meta: FAIL_NOTICE,
   });
 
-  /* ---------- drivers ---------- */
+  // Drivers
   const drvFrame = useListFrame<'name', DriverDto>({
     list: 'drivers',
     url: false,

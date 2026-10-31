@@ -1,5 +1,5 @@
 /**
- * Demo group companies (item 133, ARCHITECTURE "Group companies"). All names and figures are invented and checked
+ * Demo group companies (ARCHITECTURE "Group companies"). All names and figures are invented and checked
  * against the client-name blocklist.
  *
  * Demo Infra Group is five companies on one set of sign-ins:
@@ -146,7 +146,7 @@ const SISTER_VENDORS: Record<string, [string, VendorKind[], string, string, stri
 };
 
 /**
- * The group above the demo company (made once) with its admin, and the lab's people, so the phase 1 sign-ins work as soon
+ * The group above the demo company (made once) with its admin, and the lab's people, so the group's sign-ins work as soon
  * as the demo company does. The rest of the group comes with `seedGroupCompanies`, after the demo company's projects.
  */
 export async function seedDemoGroup(prisma: PrismaClient, demoOrgId: string, passwordHash: string) {
@@ -193,7 +193,7 @@ async function ensureCompany(prisma: PrismaClient, groupId: string, c: CompanySe
     (await prisma.organization.create({
       data: {
         code: c.code, name: c.name, groupId, kind: c.kind, legalName: c.legalName, pan: c.pan, cin: c.cin, gstin: gstin(c.pan),
-        modulesOff: [...COMPANY_KIND_INFO[c.kind].modulesOff], paymentsNeedRequest: true, progressFromDpr: true,
+        modulesOff: [...COMPANY_KIND_INFO[c.kind].modulesOff], paymentsNeedRequest: true, progressFromDpr: true, ordersNeedApprovedChoice: true,
       },
     }));
   if (existing) await prisma.organization.update({ where: { id: org.id }, data: { groupId } });
@@ -222,9 +222,7 @@ async function ensureCompany(prisma: PrismaClient, groupId: string, c: CompanySe
   return { id: org.id, users, no };
 }
 
-// ---------------------------------------------------------------------------------------------------------------
 // Building blocks shared by the companies
-// ---------------------------------------------------------------------------------------------------------------
 
 interface BoqLine {
   no: string;
@@ -328,7 +326,7 @@ async function addProject(prisma: PrismaClient, co: Co, p: ProjectSeed) {
   return project;
 }
 
-/** BOQ, activities, history and DPRs of a project (also used for the lab's phase 1 project, which had none). */
+/** BOQ, activities, history and DPRs of a project (also used for the lab's first project, which had none). */
 async function addWorks(prisma: PrismaClient, co: Co, projectId: string, p: ProjectSeed) {
   const u = (email: string) => co.users.get(email)!;
   const pm = u(p.pm);
@@ -676,7 +674,7 @@ async function addApprovalRules(prisma: PrismaClient, co: Co) {
   if (await prisma.approvalRule.count({ where: { organizationId: co.id } })) return;
   const roles = new Map((await prisma.role.findMany({ where: { organizationId: co.id }, select: { id: true, key: true } })).map((r) => [r.key, r.id]));
   const site = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
-  const money = ['PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST'];
+  const money = ['SUPPLIER_CHOICE', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST'];
   const rows: [string, string, number | null][] = [
     ...site.map((t) => ['MANAGEMENT', t, null] as [string, string, null]),
     ...site.map((t) => ['PROJECT_MANAGER', t, t === 'EXPENSE' ? 25000 : null] as [string, string, number | null]),
@@ -708,9 +706,7 @@ async function addExpenses(prisma: PrismaClient, co: Co, projectCode: string, by
   }
 }
 
-// ---------------------------------------------------------------------------------------------------------------
 // Demo Infra Holdings
-// ---------------------------------------------------------------------------------------------------------------
 
 /**
  * The parent: its directors and officers, the equity it holds in the children and the working-capital loan it gave
@@ -779,9 +775,7 @@ async function seedHolding(prisma: PrismaClient, co: Co) {
   }
 }
 
-// ---------------------------------------------------------------------------------------------------------------
 // Demo Quality Labs
-// ---------------------------------------------------------------------------------------------------------------
 
 const LAB_TERMS = { gst: 18, retention: 0, sd: 0, tds: 2, gstTds: 0, cess: 0, days: 30 };
 const LAB_DPR = (place: string): DprSeed => ({
@@ -874,7 +868,7 @@ const LAB_TESTS: LabTest[] = [
  * bills: the road's first bill paid by Demo Infra Projects, the others sent.
  */
 async function seedLab(prisma: PrismaClient, co: Co) {
-  // Phase 1's project took a name of the client's papers; it is the sister's highway now.
+  // The lab's first project took a name of the client's papers; it is the sister's highway now.
   await prisma.project.updateMany({
     where: { organizationId: co.id, code: 'LAB-01' },
     data: { name: LAB_PROJECTS[0].name, location: LAB_PROJECTS[0].location, description: LAB_PROJECTS[0].description, siteAddress: LAB_PROJECTS[0].site },
@@ -891,7 +885,7 @@ async function seedLab(prisma: PrismaClient, co: Co) {
       await addProject(prisma, co, p);
       continue;
     }
-    // Phase 1 made it without works; give it its BOQ, contract, team and DPRs.
+    // An earlier seed made it without works; give it its BOQ, contract, team and DPRs.
     const client = await prisma.client.upsert({
       where: { organizationId_name: { organizationId: co.id, name: p.client } },
       update: {},
@@ -963,9 +957,7 @@ async function seedLab(prisma: PrismaClient, co: Co) {
   await addBill(prisma, co, 'LAB-04', { billNo: 1, upTo: 110, billAgo: 105, sentAgo: 104, remarks: 'Geotechnical investigation, report submitted', certified: { ago: 90, no: 'DDC/LAB/C/02' }, paid: { ago: 70, ref: 'ICIC N2026-077120', note: 'NEFT from Demo Design Consultants' } }, people);
 }
 
-// ---------------------------------------------------------------------------------------------------------------
 // Demo Infra Projects' side: the work order to Demo Buildcon and the sisters as vendors
-// ---------------------------------------------------------------------------------------------------------------
 
 const HOSPITAL_FINISHES: BoqLine[] = [
   { no: '1.01', text: 'Electrical wiring in FR PVC conduit, light and power points', unit: 'Point', rate: 1350, qty: 2400, activity: 'Electrical conduiting and wiring', start: -35, end: 150, done: [220, 260], daily: 38, at: 'First floor, wards 3 and 4' },
@@ -1073,9 +1065,7 @@ async function demoSisterBills(prisma: PrismaClient, demoOrgId: string) {
   await mirrorBill(prisma, demoOrgId, 'WS-2026-03', 'DEMODC', 'DC-2026-01', 2, false, null);
 }
 
-// ---------------------------------------------------------------------------------------------------------------
 // Demo Buildcon
-// ---------------------------------------------------------------------------------------------------------------
 
 const BC_TERMS = { gst: 18, retention: 5, sd: 0, tds: 1, gstTds: 2, cess: 1, days: 45 };
 
@@ -1235,9 +1225,7 @@ async function addBuildconDelays(prisma: PrismaClient, co: Co) {
   }
 }
 
-// ---------------------------------------------------------------------------------------------------------------
 // Demo Design Consultants
-// ---------------------------------------------------------------------------------------------------------------
 
 const DC_TERMS = { gst: 18, retention: 0, sd: 0, tds: 10, gstTds: 0, cess: 0, days: 30 };
 

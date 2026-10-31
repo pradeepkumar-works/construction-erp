@@ -29,9 +29,9 @@ const q = (v: string, unit: string, muted = true) =>
   );
 
 /**
- * Fuel (v5 item 93): each site's fuel on a day (opening, received, into machines, other issues, closing against its
+ * Fuel: each site's fuel on a day (opening, received, into machines, other issues, closing against its
  * minimum level) and the day's fuel issues into machines, with Fuel issue for the store; where trackers read the tanks,
- * each machine's tank against its slips and the dispenser's fills waiting (item 147).
+ * each machine's tank against its slips and the dispenser's fills waiting.
  */
 export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
   const [scope, setScope] = useProjectScope();

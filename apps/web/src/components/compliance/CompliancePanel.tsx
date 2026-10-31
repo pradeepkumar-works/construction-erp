@@ -58,7 +58,7 @@ function StandTag({ d }: { d: ComplianceDocDto }) {
 }
 
 /**
- * Guarantees, insurance and licences register (v4 item 46): bank guarantees and EMDs out with the money they tie up,
+ * Guarantees, insurance and licences register: bank guarantees and EMDs out with the money they tie up,
  * insurance policies and licences, soonest expiry first, with renewals and releases.
  */
 

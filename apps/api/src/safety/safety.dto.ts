@@ -18,8 +18,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 const int = () => Transform(({ value }) => (typeof value === 'string' && value.trim() !== '' ? Number(value) : value));
 const nullable = () => ValidateIf((_, v) => v !== null);
 
-/* ---------- incidents ---------- */
-
 export class CreateIncidentDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
@@ -56,8 +54,6 @@ export class ListIncidentsQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsDateString() to?: string;
 }
 
-/* ---------- toolbox talks ---------- */
-
 export class CreateTalkDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
@@ -84,8 +80,6 @@ export class ListTalksQuery extends PageQuery {
 export class TalkTodayQuery {
   @ApiProperty() @IsUUID() projectId: string;
 }
-
-/* ---------- permits to work ---------- */
 
 export class CreatePermitDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;

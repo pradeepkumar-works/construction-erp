@@ -49,7 +49,7 @@ export function QualityTabs({ projectId, tab, onTab, openId, withChecklists }: {
   );
 }
 
-/** A project's Quality tab: its inspections, tests and NCRs; the one open is `?sub=` in the URL (UX item 84). */
+/** A project's Quality tab: its inspections, tests and NCRs; the one open is `?sub=` in the URL. */
 export function ProjectQualityTab({ projectId }: { projectId: string }) {
   const [tab, setTab] = useUrlTab<QualityTab>(QUALITY_TABS, 'inspections');
   return <QualityTabs projectId={projectId} tab={tab} onTab={setTab} />;

@@ -33,6 +33,7 @@ import { RiskList } from '@/components/risks/RiskList';
 import { SafetyPanel } from '@/components/safety/SafetyPanel';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { ProjectQualityTab } from '@/components/quality/QualityTabs';
+import { SiteOrdersTab } from '@/components/site-orders/SiteOrdersTab';
 import { ProjectDocumentsTab } from '@/components/documents/DocumentTabs';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { ProjectBudgetPanel } from '@/components/cost/ProjectBudgetPanel';
@@ -58,7 +59,7 @@ export default function ProjectDetailPage() {
   const id = params?.id;
   const { data: project, isLoading, error, refetch } = useProject(id);
   const router = useRouter();
-  // A central store has no works; its page is the store's (v6 item 106).
+  // A central store has no works; its page is the store's.
   const store = project?.type === 'STORE';
   useEffect(() => {
     if (store && id) router.replace(`/stores/${id}`);
@@ -105,6 +106,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
     { key: 'mb', group: 'site', label: 'Measurement book', children: <MeasurementList projectId={project.id} /> },
     { key: 'inspections', group: 'site', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },
+    { key: 'site-orders', group: 'site', label: 'Site orders', children: <SiteOrdersTab projectId={project.id} initialOrderId={search.get('order') ?? undefined} /> },
     can(!user?.modulesOff?.includes('safety')) && { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
     { key: 'risks', group: 'site', label: 'Delays and risks', children: <RiskList projectId={project.id} /> },
     { key: 'documents', group: 'site', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
@@ -137,7 +139,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     setRemembered(null);
     const sp = new URLSearchParams(search.toString());
     sp.delete('defect');
-    // A tab's own tabs (`?sub=`, UX item 84) start again on the first in the next tab.
+    // A tab's own tabs (`?sub=`) start again on the first in the next tab.
     sp.delete('sub');
     if (key === 'overview') sp.delete('tab');
     else sp.set('tab', key);

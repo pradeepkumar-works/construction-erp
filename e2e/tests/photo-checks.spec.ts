@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { API_URL, api, apiToken, localToday, signIn, uniqueQty } from './helpers';
 
 /**
- * Site photo checks (AI item 76). The test model reads a photo from words in its file name, so "nohelmet" in the name
+ * Site photo checks. The test model reads a photo from words in its file name, so "nohelmet" in the name
  * stands for workers without helmets, and "leak" for a leaking bathroom slab.
  */
 

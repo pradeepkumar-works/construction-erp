@@ -1,5 +1,5 @@
 /**
- * Hindi for text used across the app (v4 item 49): the labels from @erp/shared that the phone shows (statuses, types,
+ * Hindi for text used across the app: the labels from @erp/shared that the phone shows (statuses, types,
  * roles, categories) and everyday words on buttons and states. Site Hindi: common English trade words stay, written
  * in Devanagari, where that is what people on site say (बिल, स्टॉक, ड्रॉइंग).
  */
@@ -276,7 +276,7 @@ export const COMMON: Record<string, string> = {
   'Pick a project': 'प्रोजेक्ट चुनें',
   'Required': 'ज़रूरी',
 
-  // UX item 88: badges, notifications, photos, review reasons
+  // Badges, notifications, photos, review reasons
   'Home, {n} waiting to send': 'होम, {n} भेजनी बाकी',
   'Approvals, {n} waiting': 'मंज़ूरी, {n} इंतज़ार में',
   'Turn on notifications': 'सूचनाएँ चालू करें',

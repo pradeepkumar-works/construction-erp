@@ -14,7 +14,7 @@ import { DebitNoteFormModal, type DebitNoteBill } from './DebitNoteFormModal';
 /** Whether a bill's record shows its debit notes: approved, and the user may see them. */
 export const showsDebitNotes = (role: Parameters<typeof canViewDebitNotes>[0] | undefined, status: string) => !!role && status === 'APPROVED' && canViewDebitNotes(role);
 
-/** The debit notes on one approved vendor or subcontract bill (v5 item 91), with "Raise debit note" while some is unpaid. */
+/** The debit notes on one approved vendor or subcontract bill, with "Raise debit note" while some is unpaid. */
 export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
   const { user } = useAuth();
   const [raising, setRaising] = useState(false);

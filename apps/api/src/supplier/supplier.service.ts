@@ -76,7 +76,7 @@ type ChangeRow = Prisma.SupplierChangeRequestGetPayload<{ include: typeof change
 const loginSelect = { id: true, fullName: true, email: true, phone: true, isActive: true, invitedAt: true, createdAt: true } satisfies Prisma.UserSelect;
 
 /**
- * The supplier portal (v6 item 105). The supplier's side acts only for the vendor its login belongs to
+ * The supplier portal. The supplier's side acts only for the vendor its login belongs to
  * (`ProjectAccessService.supplierVendor`); the company's side (logins, the invoice inbox, profile changes) is for the
  * roles in `canManageSupplierLogins`, `canCheckSupplierInvoices` and `canApproveSupplierChange`.
  */
@@ -92,7 +92,7 @@ export class SupplierService {
     private enquiries: EnquiriesService,
   ) {}
 
-  /* ---------- home ---------- */
+  // Home
 
   async home(user: RequestUser): Promise<SupplierHomeDto> {
     const vendorId = this.access.supplierVendor(user);
@@ -122,7 +122,7 @@ export class SupplierService {
     };
   }
 
-  /* ---------- enquiries ---------- */
+  // Enquiries
 
   enquiryList(user: RequestUser): Promise<SupplierEnquiryDto[]> {
     return this.enquiries.forVendor(user.organizationId, this.access.supplierVendor(user));
@@ -135,7 +135,7 @@ export class SupplierService {
     return result;
   }
 
-  /* ---------- orders ---------- */
+  // Orders
 
   /** The vendor's approved purchase and work orders, newest first. */
   async orders(user: RequestUser, only?: { kind: 'PO' | 'WO'; id: string }): Promise<SupplierOrderDto[]> {
@@ -254,7 +254,7 @@ export class SupplierService {
     return this.order(user, kind, id);
   }
 
-  /* ---------- dispatch notes ---------- */
+  // Dispatch notes
 
   private dispatchDto(d: DispatchRow): SupplierDispatchDto {
     return {
@@ -351,7 +351,7 @@ export class SupplierService {
     return this.dispatchDto(await this.prisma.supplierDispatch.findUniqueOrThrow({ where: { id }, include: dispatchInclude }));
   }
 
-  /* ---------- invoices ---------- */
+  // Invoices
 
   /** The bills recorded from these invoices: same vendor and invoice number, not rejected. */
   private async billsFor(rows: InvoiceRow[]) {
@@ -483,7 +483,7 @@ export class SupplierService {
     return this.invoice(user.organizationId, id);
   }
 
-  /* ---------- the statement ---------- */
+  // The statement
 
   /** The vendor's bills, payments and debit notes, as one statement with what is owed after each line. */
   async statement(user: RequestUser, q: StatementQuery): Promise<SupplierStatementDto> {
@@ -638,7 +638,7 @@ export class SupplierService {
     };
   }
 
-  /* ---------- profile ---------- */
+  // Profile
 
   private changeDto(r: ChangeRow, mask: boolean): SupplierChangeDto {
     const to = r.changes as Record<string, string | null>;
@@ -712,7 +712,7 @@ export class SupplierService {
     return this.profile(user);
   }
 
-  /* ---------- the company's side ---------- */
+  // The company's side
 
   private loginDto(u: Prisma.UserGetPayload<{ select: typeof loginSelect }>): SupplierLoginDto {
     return { id: u.id, fullName: u.fullName, email: u.email, phone: u.phone, isActive: u.isActive, invitePending: u.invitedAt !== null, createdAt: u.createdAt.toISOString() };

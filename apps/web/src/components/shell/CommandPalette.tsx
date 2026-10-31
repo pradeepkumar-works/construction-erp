@@ -71,9 +71,9 @@ function rank(targets: Target[], query: string): Target[] {
 }
 
 /**
- * Search everything (UI roadmap item 62), from the keyboard (Ctrl K / ⌘K) or the header's search box: pages, projects,
+ * Search everything, from the keyboard (Ctrl K / ⌘K) or the header's search box: pages, projects,
  * records by number or name (through `GET /search`, which applies each list's own access rules), and actions such as
- * "New daily report for Jajpur". With nothing typed it leads with the records and pages opened lately (UX item 87).
+ * "New daily report for Jajpur". With nothing typed it leads with the records and pages opened lately.
  */
 export function CommandPalette({
   open,

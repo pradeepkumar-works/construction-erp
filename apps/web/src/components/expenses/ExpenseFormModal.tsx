@@ -39,7 +39,7 @@ interface FormValues {
 }
 
 /** File a site expense, or (with `expense`) fix a returned one and resubmit it. */
-export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, expense, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; expense?: ExpenseDto | null; /** Filled in by Ask Nirmaan (AI item 71) */ prefill?: AiDraftDto | null }) {
+export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, expense, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; expense?: ExpenseDto | null; /** Filled in by Ask Nirmaan */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();

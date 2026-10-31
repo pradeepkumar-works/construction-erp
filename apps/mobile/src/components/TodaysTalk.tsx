@@ -17,7 +17,7 @@ const LANGS: { value: Lang; label: string }[] = [
 ];
 
 /**
- * Today's toolbox talk (intelligence quick win Q8): the five-minute talk for the project from `GET /safety/talks/today`,
+ * Today's toolbox talk: the five-minute talk for the project from `GET /safety/talks/today`,
  * in Hindi first, to read out before work. Use this talk fills the form's topic and points; nothing is saved until the
  * talk is recorded. Kept on the phone, so the last one shows offline.
  */

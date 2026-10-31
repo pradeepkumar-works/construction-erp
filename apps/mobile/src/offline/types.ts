@@ -12,7 +12,7 @@ export interface OutboxPhoto {
   type: string;
   /** Set once the photo has been uploaded; a retry never uploads it again. */
   attachmentId?: string;
-  /** A DPR work line's photo (item 134 part 2): the line's id, so the send puts it on that line */
+  /** A DPR work line's photo: the line's id, so the send puts it on that line */
   line?: string;
 }
 
@@ -46,6 +46,7 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   WORK_ORDER: '/work-orders',
   SUBCONTRACT_BILL: '/subcontract-bills',
   PAYMENT_REQUEST: '/payment-requests',
+  SUPPLIER_CHOICE: '/supplier-choices',
   INSPECTION: '/inspections',
   ATTENDANCE: '/attendance',
   RISK: '/risks',
@@ -71,10 +72,11 @@ export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
   SUBCONTRACT_BILL: '/subcontract-bill/',
   INSPECTION: '/inspection/',
   PAYMENT_REQUEST: '/payment-request/',
+  SUPPLIER_CHOICE: '/supplier-choice/',
 };
 
 /**
- * Phone forms that can open an entry the server refused, so it is corrected and sent again (UX item 80). The form reads
+ * Phone forms that can open an entry the server refused, so it is corrected and sent again. The form reads
  * the entry by its `outboxId` param, keeps its id (so a retry never makes a second entry) and replaces it when sent.
  */
 export const OUTBOX_FIX_PATH: Partial<Record<OutboxType, string>> = {

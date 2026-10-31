@@ -23,7 +23,7 @@ import { ApprovalRightsService, type LevelEntry } from './approval-rights.servic
 import { mayDecide, queueRoles } from './approval-levels';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE } from './submission-titles';
 
 const REVIEW_ACTIONS = ['APPROVED', 'REJECTED', 'CHANGES_REQUESTED', 'LEVEL_APPROVED'] as const;
 
@@ -41,8 +41,8 @@ interface SubmissionRow {
  * One state machine for every site submission:
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
- * review history stays on one record. A DPR's work lines (item 127) are progress entries that follow their DPR (`onStatus`,
- * `partOf`). Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests) goes through here.
+ * review history stays on one record. A DPR's work lines are progress entries that follow their DPR (`onStatus`,
+ * `partOf`). Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests, supplier choices) goes through here.
  */
 /** The queue's line reads only the project's and the submitter's names. */
 const NAME = { select: { name: true } } as const;
@@ -73,15 +73,14 @@ export class SubmissionLifecycleService {
 
   /**
    * Run `hook` after an entry of `type` moves to SUBMITTED or a final decision (approved, rejected, sent back); a DPR's
-   * work lines follow the DPR this way (item 127). One per type.
+   * work lines follow the DPR this way. One per type.
    */
   onStatus(type: SubmissionType, hook: (user: RequestUser, id: string, status: SubmissionStatus) => Promise<void>) {
     this.statusHooks.set(type, hook);
   }
 
   /**
-   * `check` says, for an entry of `type`, the record it is part of and is submitted and decided with (a DPR's work line,
-   * item 127), as the message refusing it on its own; null when the entry stands on its own. One per type.
+   * `check` says, for an entry of `type`, the record it is part of and is submitted and decided with (a DPR's work line), as the message refusing it on its own; null when the entry stands on its own. One per type.
    */
   partOf(type: SubmissionType, check: (id: string) => Promise<string | null>) {
     this.partOfHooks.set(type, check);
@@ -113,7 +112,7 @@ export class SubmissionLifecycleService {
   }
 
   /**
-   * Approver decides on a SUBMITTED entry. With approval levels (v5 item 94) an approval below the entry's last level
+   * Approver decides on a SUBMITTED entry. With approval levels an approval below the entry's last level
    * records an `ApprovalStep` and the entry stays SUBMITTED for the next level; the last level approves it as before.
    * Rejecting or sending back at any level ends the round.
    */
@@ -196,7 +195,7 @@ export class SubmissionLifecycleService {
   /**
    * Everything awaiting the current user's decision, across all submission types: the types the approval matrix gives
    * the user's role at the level each entry waits at, within its amount limit (anything above goes to a higher
-   * approver), and entries escalated to the role (v5 item 94). An entry whose earlier level this user approved waits
+   * approver), and entries escalated to the role. An entry whose earlier level this user approved waits
    * for someone else.
    */
   async pending(user: RequestUser): Promise<PendingApprovalDto[]> {
@@ -224,7 +223,7 @@ export class SubmissionLifecycleService {
       .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
   }
 
-  /** Everything waiting for approval in the projects the caller sees, whoever decides it (the phone's company view, v5 item 96). */
+  /** Everything waiting for approval in the projects the caller sees, whoever decides it (the phone's company view). */
   async submitted(user: RequestUser): Promise<PendingApprovalDto[]> {
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
     return (await this.describe(() => where)).sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
@@ -271,8 +270,8 @@ export class SubmissionLifecycleService {
     const none = Promise.resolve([] as never[]);
     const allowed = (t: SubmissionType) => whereFor(t) !== null;
     const where = (t: SubmissionType) => whereFor(t) as any;
-    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections, payRequests] = await Promise.all([
-      // A DPR's work lines (item 127) wait and are decided with their DPR, not on their own.
+    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections, payRequests, choices] = await Promise.all([
+      // A DPR's work lines wait and are decided with their DPR, not on their own.
       allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where: { ...where('PROGRESS'), dailyReportId: null }, include: { project: NAME, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where: where('DPR'), include: { project: NAME, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where: where('MATERIAL_REQUEST'), include: { project: NAME, submittedBy: BY, items: { select: { id: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
@@ -293,6 +292,9 @@ export class SubmissionLifecycleService {
             include: { project: NAME, submittedBy: BY, ...PAY_REQUEST_TITLE },
             orderBy: { submittedAt: 'asc' },
           })
+        : none,
+      allowed('SUPPLIER_CHOICE')
+        ? this.prisma.supplierChoice.findMany({ where: where('SUPPLIER_CHOICE'), include: { project: NAME, submittedBy: BY, ...SUPPLIER_CHOICE_TITLE }, orderBy: { submittedAt: 'asc' } })
         : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
@@ -430,6 +432,16 @@ export class SubmissionLifecycleService {
         submittedByName: r.submittedBy.fullName,
         submittedAt: (r.submittedAt ?? r.createdAt).toISOString(),
         amount: amt(r.amount),
+      })),
+      ...choices.map((c) => ({
+        type: 'SUPPLIER_CHOICE' as const,
+        id: c.id,
+        projectId: c.projectId,
+        projectName: c.project.name,
+        title: supplierChoiceTitle(c.materialRequest.requestNo, c.quotation?.vendor.name ?? null, c.split, c.rank, c.amount.toFixed(2)),
+        submittedByName: c.submittedBy.fullName,
+        submittedAt: (c.submittedAt ?? c.createdAt).toISOString(),
+        amount: amt(c.amount),
       })),
     ];
     return out;

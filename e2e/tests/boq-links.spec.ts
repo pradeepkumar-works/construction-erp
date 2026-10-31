@@ -5,7 +5,7 @@ type Project = { id: string };
 type Activity = { id: string; name: string; unit: string; plannedQty: string; boqItemId: string | null; plannedStart: string | null; plannedEnd: string | null };
 
 /**
- * Linking activities to BOQ items and spreading them (finding 11 of the October review): a project made before its
+ * Linking activities to BOQ items and spreading them: a project made before its
  * dates were known gets its activities spread the moment the contract dates arrive, and the BOQ's sections offer the
  * links the planner used to make one by one.
  */

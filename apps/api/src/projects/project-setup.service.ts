@@ -10,7 +10,7 @@ import { ProjectTypesService } from '../templates/project-types.service';
 import { ProjectsService } from './projects.service';
 
 /**
- * A new project's setup checklist on its Overview (finding 6 of the October review): each step ticked from the project's
+ * A new project's setup checklist on its Overview: each step ticked from the project's
  * own records by `setupSteps` in @erp/shared, and the BOQ against the contract value (`boqContractGap`), which the watch
  * list's BOQ_OFF_CONTRACT reads too.
  */

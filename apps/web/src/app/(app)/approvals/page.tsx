@@ -37,11 +37,12 @@ import { WorkOrderDrawer } from '@/components/subcontracts/WorkOrderDrawer';
 import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionDrawer } from '@/components/inspections/InspectionDrawer';
 import { PaymentRequestDrawer } from '@/components/payables/PaymentRequestRecord';
+import { SupplierChoiceDrawer } from '@/components/purchasing/SupplierChoiceRecord';
 
 type Opened = { type: SubmissionType; id: string };
 
 /**
- * The Approvals inbox (UI roadmap item 58): the queue on the left in groups by type, the picked entry on the right with
+ * The Approvals inbox: the queue on the left in groups by type, the picked entry on the right with
  * Approve, Request changes and Reject under it, a selection of one type approved together, and J, K, A, C, R, X and O
  * on the keyboard. Phones get the queue alone, each entry opening in its drawer.
  */
@@ -58,7 +59,7 @@ export default function ApprovalsPage() {
   const { data, isLoading, error, refetch } = usePendingApprovals(approver);
   const approveMany = useApproveMany();
 
-  // The search, type and order are in the URL (UX item 84): a reload or a link sent on opens the same queue.
+  // The search, type and order are in the URL: a reload or a link sent on opens the same queue.
   const [typeParam, setTypeParam] = useUrlParam('type');
   const type = QUEUE_TYPES.some(([t]) => t === typeParam) ? (typeParam as SubmissionType) : undefined;
   const setType = (t?: SubmissionType) => setTypeParam(t);
@@ -152,7 +153,7 @@ export default function ApprovalsPage() {
       title: `Approve ${ids.length} ${ids.length === 1 ? 'entry' : 'entries'} in ${inSentence(QUEUE_TYPE_LABELS[t])}?`,
       content: 'Each is approved on its own, as if one by one: its submitter is told and its activity shows your approval.',
       okText: `Approve ${ids.length}`,
-      // They leave the queue at once (UX item 86) while they are sent one by one; a refusal brings back the rest.
+      // They leave the queue at once while they are sent one by one; a refusal brings back the rest.
       onOk: () => {
         setBulkRunning(true);
         void approveMany(approvalTypeParam[t], ids).finally(() => {
@@ -333,6 +334,7 @@ export default function ApprovalsPage() {
       <SubBillDrawer id={drawer?.type === 'SUBCONTRACT_BILL' ? drawer.id : null} open={drawer?.type === 'SUBCONTRACT_BILL'} onClose={() => setDrawer(null)} />
       <InspectionDrawer id={drawer?.type === 'INSPECTION' ? drawer.id : null} open={drawer?.type === 'INSPECTION'} onClose={() => setDrawer(null)} />
       <PaymentRequestDrawer id={drawer?.type === 'PAYMENT_REQUEST' ? drawer.id : null} open={drawer?.type === 'PAYMENT_REQUEST'} onClose={() => setDrawer(null)} />
+      <SupplierChoiceDrawer id={drawer?.type === 'SUPPLIER_CHOICE' ? drawer.id : null} open={drawer?.type === 'SUPPLIER_CHOICE'} onClose={() => setDrawer(null)} />
     </div>
   );
 }

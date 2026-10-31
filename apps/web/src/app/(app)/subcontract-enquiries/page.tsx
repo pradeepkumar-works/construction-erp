@@ -30,7 +30,7 @@ const STATUS_OPTIONS = [
 const today = () => new Date().toLocaleDateString('en-CA');
 
 /**
- * Subcontract enquiries (v6 item 111): work sent to several subcontractors to quote, the quotes compared and the chosen
+ * Subcontract enquiries: work sent to several subcontractors to quote, the quotes compared and the chosen
  * one made a work order. Open ones first, soonest closing; run by those who issue work orders.
  */
 function ScEnquiriesPage() {

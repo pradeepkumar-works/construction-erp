@@ -43,8 +43,8 @@ const money = (v: string, strong?: boolean) =>
 const forLabel = (r: PaymentRequestDto) => (r.kind === 'FUND_REQUEST' && r.purpose ? FUND_PURPOSE_LABELS[r.purpose] : r.targetLabel);
 
 /**
- * Payment requests (v5 item 90) in the Payables page's tab: bills to pay and advances to release, waiting for approval
- * or for accounts to pay them. With `fund`, a site's fund requests (v6 item 107) on the Site imprest page: asked for by
+ * Payment requests in the Payables page's tab: bills to pay and advances to release, waiting for approval
+ * or for accounts to pay them. With `fund`, a site's fund requests on the Site imprest page: asked for by
  * the site, released into its imprest or paid to a party.
  */
 export function PaymentRequestList({ projectId: given, vendorId, fund }: { projectId?: string; vendorId?: string; fund?: boolean }) {

@@ -1,4 +1,4 @@
-/** Gantt, milestones and the frozen baseline (v4 item 43). */
+/** Gantt, milestones and the frozen baseline. */
 import { daysBetween } from './maintenance';
 
 /** An activity is "behind" when its progress trails the straight-line plan by more than this many percentage points. */
@@ -71,7 +71,7 @@ export interface MilestoneDto {
   slipDays: number | null;
 }
 
-/** How one activity hangs on another (v6 item 114): finish to start, start to start, finish to finish, start to finish. */
+/** How one activity hangs on another: finish to start, start to start, finish to finish, start to finish. */
 export const ACTIVITY_LINK_TYPES = ['FS', 'SS', 'FF', 'SF'] as const;
 export type ActivityLinkType = (typeof ACTIVITY_LINK_TYPES)[number];
 export const ACTIVITY_LINK_TYPE_LABELS: Record<ActivityLinkType, string> = {
@@ -115,7 +115,7 @@ export interface GanttActivityDto {
   state: ScheduleState;
   /** Planned end (or actual end, once done) against the baseline end, in days; positive = later */
   finishSlipDays: number | null;
-  /** From the links (v6 item 114): the earliest the links let it start and finish, and the latest without moving the finish */
+  /** From the links: the earliest the links let it start and finish, and the latest without moving the finish */
   earlyStart: string | null;
   earlyFinish: string | null;
   lateStart: string | null;
@@ -189,7 +189,7 @@ export interface LookaheadActivityDto {
   waitingOn: string[];
 }
 
-/** The three weeks from this Monday: what is planned in each, what is ready and what still waits (v6 item 114). */
+/** The three weeks from this Monday: what is planned in each, what is ready and what still waits. */
 export interface LookaheadDto {
   projectId: string;
   today: string;
@@ -253,7 +253,7 @@ export interface ProjectScheduleStatus {
 
 /**
  * Where a project stands against its schedule, the one rule behind the header's chip, the overview's lead line, the
- * watch list and the morning brief (e2e review, fix 1). A plan that ends after the contract's completion date (with its
+ * watch list and the morning brief. A plan that ends after the contract's completion date (with its
  * extensions) is late however well today's progress keeps to it; a project with no dated activities has no plan to be
  * on track with.
  */

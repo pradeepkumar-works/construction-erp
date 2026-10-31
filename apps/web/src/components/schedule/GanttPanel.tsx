@@ -28,8 +28,8 @@ const moved = (days: number | null) =>
   days === null ? <span className="text-muted">-</span> : days === 0 ? <span className="text-muted">none</span> : <span className={days > 0 ? 'text-danger' : undefined}>{days > 0 ? `${days} days later` : `${-days} days earlier`}</span>;
 
 /**
- * Schedule tab of a project (v4 item 43): the Gantt of milestones and activities against the frozen baseline, the
- * milestone list, and freezing the baseline. Links between activities give the critical path and float (v6 item 114):
+ * Schedule tab of a project: the Gantt of milestones and activities against the frozen baseline, the
+ * milestone list, and freezing the baseline. Links between activities give the critical path and float:
  * an activity's row opens its links, activities planned before their links allow can be moved in one go, and the plan
  * goes out to and comes in from MS Project and Primavera.
  */

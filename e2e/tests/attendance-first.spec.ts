@@ -4,7 +4,7 @@ import { api, apiToken } from './helpers';
 type Day = { date: string; dprStatus: string | null; locked: boolean; lockedByRun: string | null; sheet: { id: string } | null };
 
 /**
- * Attendance first (finding 7 of the October review): the site often sends the DPR before the head count, so a day's
+ * Attendance first: the site often sends the DPR before the head count, so a day's
  * attendance stays open after its DPR is approved and locks only when payroll for the month is approved.
  */
 test('attendance stays open after the DPR is approved and locks with the month’s payroll', async () => {

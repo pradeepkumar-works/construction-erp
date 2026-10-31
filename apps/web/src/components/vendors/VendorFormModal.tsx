@@ -52,7 +52,7 @@ export function VendorFormModal({
   initial?: Partial<FormValues> | null;
   onClose: () => void;
   onSaved?: (v: VendorDto) => void;
-  /** Opens the vendor's supplier-portal logins (v6 item 105); the way there on a phone, where the list has no actions */
+  /** Opens the vendor's supplier-portal logins; the way there on a phone, where the list has no actions */
   onPortal?: () => void;
 }) {
   const [form] = Form.useForm<FormValues>();
@@ -63,7 +63,7 @@ export function VendorFormModal({
   const gstin = Form.useWatch('gstin', form);
   const msme = Form.useWatch('msmeCategory', form);
   const fromGstin = gstStateCode(gstin && GSTIN_PATTERN.test(gstin.trim().toUpperCase()) ? gstin : null);
-  // The PAN is inside the GSTIN (finding 17 of the October review); it fills an empty box, never one already typed.
+  // The PAN is inside the GSTIN; it fills an empty box, never one already typed.
   const panOfGstin = panFromGstin(gstin);
 
   useEffect(() => {

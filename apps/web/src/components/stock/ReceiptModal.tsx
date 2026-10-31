@@ -26,7 +26,7 @@ interface FormValues {
   vehicleNo?: string;
   remarks?: string;
   photos?: AttachmentDto[];
-  /** The supplier's dispatch note this delivery came with (supplier portal, v6 item 105) */
+  /** The supplier's dispatch note this delivery came with (supplier portal) */
   dispatchId?: string;
 }
 
@@ -75,7 +75,7 @@ export function ReceiptModal({
   projectId?: string;
   materialRequestId?: string;
   purchaseOrderId?: string;
-  /** A weighed truck (item 148): the GRN is drafted at its net weight, with its challan and truck */
+  /** A weighed truck: the GRN is drafted at its net weight, with its challan and truck */
   weighTicket?: WeighTicketDto;
 }) {
   const [form] = Form.useForm<FormValues>();
@@ -94,13 +94,13 @@ export function ReceiptModal({
   const request = sources.find((s) => s.key === watchedSource);
   const loading = receivable.isLoading || orders.isLoading;
   const [qty, setQty] = useState<Record<string, string | null>>({});
-  // A delivery challan read to fill the GRN (AI item 70), and the quantities waiting for its order to be picked.
+  // A delivery challan read to fill the GRN, and the quantities waiting for its order to be picked.
   const [readState, setReadState] = useState<ReadState | null>(null);
   const [activeRead, setActiveRead] = useState<string | null>(null);
   const [readLines, setReadLines] = useState<Record<string, number> | null>(null);
   const pendingQty = useRef<{ key: string; qty: Record<string, string | null> } | null>(null);
   // The challan itself is kept on the GRN, and a date it cannot have been dispatched on is left for the store keeper
-  // to type (finding 13 of the October review).
+  // to type.
   const keepChallan = useKeepReadFile(form, 'photos');
   const dateProblem = readDateReason(readText(readState?.result.fields.date));
 

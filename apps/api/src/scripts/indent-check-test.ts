@@ -1,5 +1,5 @@
 /**
- * Indent checks' tests (item 170): what the BOQ allows of a material from the project's norms, an activity's own norm
+ * Indent checks' tests: what the BOQ allows of a material from the project's norms, an activity's own norm
  * taking its share out of its BOQ item's, and each request line against the site's store and what is left of the
  * allowance, with no database. CI runs it after the build:
  *

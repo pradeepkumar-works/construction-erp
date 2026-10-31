@@ -1,7 +1,7 @@
 import { itemSimilarity, normUnit } from './doc-read';
 
 /**
- * The item master against free text (finding 3 of the October review): a request or order line names its material in
+ * The item master against free text: a request or order line names its material in
  * words, and the same cement written three ways is three items to stock, rates and leakage. These rules decide when
  * two names are one item, which master item a typed line is, and which items look like duplicates to merge.
  */

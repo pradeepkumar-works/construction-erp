@@ -19,7 +19,7 @@ import { EmiStageTag } from '@/components/loans/EmiStageTag';
 import { LoanFormModal, PayEmiModal } from '@/components/loans/LoanForms';
 
 /**
- * One machine loan (v6 item 108): what it has repaid and still owes, the next EMI, the machine's cost of finance (the
+ * One machine loan: what it has repaid and still owes, the next EMI, the machine's cost of finance (the
  * interest over the hours it has worked), and the EMI schedule with each EMI paid or due. Accounts record EMIs paid in
  * order, close the loan early, or undo the last EMI recorded.
  */

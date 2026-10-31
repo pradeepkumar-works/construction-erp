@@ -12,7 +12,7 @@ const post = (token: string, path: string, body: unknown) =>
   fetch(`${API_URL}${path}`, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 /**
- * Site fund requests (v6 item 107): the highway's engineer asks head office for wages money into their imprest from
+ * Site fund requests: the highway's engineer asks head office for wages money into their imprest from
  * Site imprest, management approves it, and accounts release it from the request; the holder's cash in hand goes up.
  */
 test('a site asks for funds into its imprest, and accounts release them once approved', async ({ page }) => {

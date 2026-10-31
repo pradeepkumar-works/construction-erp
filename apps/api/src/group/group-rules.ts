@@ -1,7 +1,7 @@
 import { isGroupPlaceRole, type RoleKey } from '@erp/shared';
 
 /**
- * Group companies (phase 1, ARCHITECTURE "Group companies"): the rules for one sign-in across a group's companies,
+ * Group companies (ARCHITECTURE "Group companies"): the rules for one sign-in across a group's companies,
  * pure so `src/scripts/group-companies-test.ts` can check them.
  */
 

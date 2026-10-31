@@ -14,7 +14,7 @@ type Summary = { toolboxTalksThisMonth: number; attendeesThisMonth: number; perm
 const building = async (token: string) => (await api<Page<Project>>(token, '/projects?pageSize=100')).items.find((p) => p.code === 'BL-2026-02')!;
 
 /**
- * Safety (v4 item 40): the site engineer reports an incident from the project's Safety tab; the safety officer hears of
+ * Safety: the site engineer reports an incident from the project's Safety tab; the safety officer hears of
  * it and closes it with the root cause and the corrective action. Older phone builds do not get the new notification type.
  */
 test('an incident is reported at site and closed by the safety officer', async ({ page }) => {

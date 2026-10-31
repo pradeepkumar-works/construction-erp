@@ -19,7 +19,7 @@ interface PlanLine extends ElementActivityLine {
 interface FormValues {
   parentId?: string | null;
   name: string;
-  /** The company's component kind (item 134) */
+  /** The company's component kind */
   kindCode: string;
   code?: string;
   weightPct?: number | null;
@@ -40,11 +40,11 @@ const kindOptions = (kinds: ComponentKindDto[], first: string[], current: string
   ];
 };
 
-/** A component made before item 134 has no kind code: its built-in kind's code is its element type. */
+/** A component made before project types has no kind code: its built-in kind's code is its element type. */
 const kindCodeOf = (e: Pick<WorkElementDto, 'kindCode' | 'elementType'>) => e.kindCode ?? (e.elementType as WorkElementType);
 
 /**
- * Adds or changes a component or sub-component (item 125). A new one can lay out its kind's activities and
+ * Adds or changes a component or sub-component. A new one can lay out its kind's activities and
  * sub-activities with their weights; the planner fills or corrects the planned quantities before saving.
  */
 export function ElementFormDrawer({
@@ -59,7 +59,7 @@ export function ElementFormDrawer({
   open: boolean;
   onClose: () => void;
   projectId: string;
-  /** The project's type (item 134), whose component kinds are offered first */
+  /** The project's type, whose component kinds are offered first */
   typeCode: string | null;
   structure: StructureDto | undefined;
   element?: WorkElementDto | null;

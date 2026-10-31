@@ -23,15 +23,15 @@ interface Values {
   projectId?: string | null;
   agentId?: string | null;
   credential?: string;
-  /** A maker's feed (item 146) */
+  /** A maker's feed */
   url?: string;
   auth?: FeedAuth;
   tokenUrl?: string;
   clientId?: string;
   scope?: string;
-  /** A fuel dispenser (item 147): the fuel it pours */
+  /** A fuel dispenser: the fuel it pours */
   itemId?: string;
-  /** A weighbridge (item 148): where the Connector reads its indicator, and when a weight counts */
+  /** A weighbridge: where the Connector reads its indicator, and when a weight counts */
   source?: WeighbridgeSource;
   port?: string;
   baud?: number;
@@ -39,7 +39,7 @@ interface Values {
   tcpPort?: number | null;
   minKg?: number | null;
   stableSeconds?: number | null;
-  /** A batching plant (item 149): the folder its controller writes batch reports to, and how far back the first read goes */
+  /** A batching plant: the folder its controller writes batch reports to, and how far back the first read goes */
   folder?: string;
   sinceDays?: number | null;
 }

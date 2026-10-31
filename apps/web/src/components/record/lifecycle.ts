@@ -20,7 +20,7 @@ export interface Lifecycle {
 const who = (name: string | null, at: string | null) => [name, at ? formatDateTime(at) : null].filter(Boolean).join(', ');
 
 /**
- * Where a submission stands, for the stage bar on its page (UI roadmap item 57): drafted, submitted, the review, then
+ * Where a submission stands, for the stage bar on its page: drafted, submitted, the review, then
  * whatever comes after approval for its type. A rejected or sent-back entry stops, in red, at the review.
  */
 export function submissionLifecycle(s: SubmissionBase, later: LaterStage[] = []): Lifecycle {

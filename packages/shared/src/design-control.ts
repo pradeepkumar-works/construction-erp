@@ -1,5 +1,5 @@
 /**
- * Design and drawings part 3 (item 138, ARCHITECTURE "Design and drawings"): controlled copies of drawings, what a new
+ * Design and drawings part 3 (ARCHITECTURE "Design and drawings"): controlled copies of drawings, what a new
  * revision changes, and the design dashboard by project. Site builds from the paper in its hands, so every print issued as
  * a controlled copy is numbered to its holder, and when a later revision supersedes it the old print is recalled. A new
  * revision also reopens what was done on the old one: quantities taken off, approvals, open marks and questions.

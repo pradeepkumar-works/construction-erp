@@ -32,7 +32,7 @@ import { CodeTag, DesignStatusTag, DesignSubmissionForm, RecordCodeDialog, Reply
 type Dialog = 'edit' | 'submit' | 'code' | 'withdraw' | null;
 const COMMENT_TONE: Record<DesignCommentState, 'pending' | 'info' | 'success'> = { OPEN: 'pending', ANSWERED: 'info', CLOSED: 'success' };
 
-/** One design submission (item 138 part 2): what it sends, each round and its code, and the comment resolution sheet. */
+/** One design submission: what it sends, each round and its code, and the comment resolution sheet. */
 export function DesignSubmissionRecord({ id }: { id: string }) {
   const { data, isLoading, error, refetch } = useDesignSubmission(id);
   if (isLoading)

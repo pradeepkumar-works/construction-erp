@@ -8,7 +8,7 @@ import { FormShell } from '@/components/form/FormShell';
 import { EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule } from '@/components/form/inputs';
 import { NO_VALUE } from '@/lib/format';
 
-/** Accounts send a supplier's invoice back with what to fix (v6 item 105); the supplier resends it with the same number. */
+/** Accounts send a supplier's invoice back with what to fix; the supplier resends it with the same number. */
 export function ReturnInvoiceForm({ invoice, onClose }: { invoice: SupplierInvoiceDto | null; onClose: () => void }) {
   const [form] = Form.useForm<{ note: string }>();
   const { message } = App.useApp();

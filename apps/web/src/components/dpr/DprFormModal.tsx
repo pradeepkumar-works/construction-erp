@@ -36,14 +36,14 @@ interface FormValues {
   issues?: string;
   nextDayPlan?: string;
   photos?: AttachmentDto[];
-  /** The work done, line by line (item 127) */
+  /** The work done, line by line */
   lines?: DprLineValues[];
-  /** The day's fields of the company's own (item 134 part 2), by key */
+  /** The day's fields of the company's own, by key */
   extra?: Record<string, unknown>;
 }
 
 /** Create a DPR, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
-export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: DailyReportDto | null; /** Filled in by Ask Nirmaan from rough notes (AI item 71) */ prefill?: AiDraftDto | null }) {
+export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: DailyReportDto | null; /** Filled in by Ask Nirmaan from rough notes */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
@@ -63,7 +63,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
   const full = useDpr(open && entry && !entry.lines ? entry.id : undefined).data;
   const withLines = entry?.lines ? entry : full;
   const linesReady = !editing || !!withLines;
-  // The project type's form (item 134 part 2): a new report takes the type's latest, an edit keeps its own.
+  // The project type's form: a new report takes the type's latest, an edit keeps its own.
   const formDto = editing ? (withLines?.form ?? entry?.form) : options?.form;
   const def: DprFormDef = formDto?.def ?? STANDARD_DPR_FORM;
   const shows = (key: DprBuiltInKey) => dprShows(def, key, { progressFromDpr: options?.progressFromDpr });
@@ -96,7 +96,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
     setFilledFrom(attendanceSheet.id);
   }, [open, editing, attendanceSheet, manpowerEdited, filledFrom, form]);
 
-  // New DPR: what the gang and machines were on the project's previous report, said so, with Clear (UX item 79). The
+  // New DPR: what the gang and machines were on the project's previous report, said so, with Clear. The
   // day's attendance still wins for manpower.
   const prevDay = dayStr ? dayjs(dayStr).subtract(1, 'day').format('YYYY-MM-DD') : undefined;
   const previous = useDprList({ projectId: watchedProject, to: prevDay, pageSize: 1 }, open && !editing && !!watchedProject && !!prevDay).data?.items[0];

@@ -9,7 +9,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { CreateUnitDto, UpdateUnitDto } from './units.dto';
 
 /**
- * Unit master (v4 item 48). Units stay free text on items, BOQ and order lines; this list is what the forms suggest,
+ * Unit master. Units stay free text on items, BOQ and order lines; this list is what the forms suggest,
  * so the store writes "Cum" the same way every time. A company starts with DEFAULT_UNITS.
  */
 @Injectable()

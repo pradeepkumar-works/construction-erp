@@ -22,6 +22,7 @@ interface FormValues {
   responsibleId?: string | null;
   checklistTemplateId?: string | null;
   holdPoint?: boolean;
+  hiddenWork?: boolean;
   workElementId?: string | null;
   parentActivityId?: string | null;
   weightPct?: number | null;
@@ -61,6 +62,7 @@ export function ActivityFormModal({
         responsibleId: activity.responsibleId,
         checklistTemplateId: activity.checklistTemplateId,
         holdPoint: activity.holdPoint,
+        hiddenWork: activity.hiddenWork,
         workElementId: activity.workElementId,
         parentActivityId: activity.parentActivityId,
         weightPct: activity.weightPct !== null ? Number(activity.weightPct) : null,
@@ -82,6 +84,7 @@ export function ActivityFormModal({
         responsibleId: v.responsibleId || null,
         checklistTemplateId: v.checklistTemplateId || null,
         holdPoint: !!v.holdPoint,
+        hiddenWork: !!v.hiddenWork,
         workElementId: v.workElementId || null,
         parentActivityId: v.parentActivityId || null,
         weightPct: v.weightPct !== null && v.weightPct !== undefined ? String(v.weightPct) : null,
@@ -164,6 +167,14 @@ export function ActivityFormModal({
           </Form.Item>
           <Form.Item name="holdPoint" valuePropName="checked" style={{ alignSelf: 'end' }} tooltip="Progress of this activity is approved only after a passed inspection at the same location">
             <Checkbox>Hold point</Checkbox>
+          </Form.Item>
+          <Form.Item
+            name="hiddenWork"
+            valuePropName="checked"
+            style={{ alignSelf: 'end' }}
+            tooltip="Covered once done (foundations, reinforcement): progress is approved only after its inspection is signed off before cover-up and countersigned in the client portal"
+          >
+            <Checkbox>Hidden work</Checkbox>
           </Form.Item>
         </FormGrid>
       </Form>

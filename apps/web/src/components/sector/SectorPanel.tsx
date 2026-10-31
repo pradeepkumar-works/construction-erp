@@ -13,7 +13,7 @@ import { PipelineCard } from './PipelineCard';
 import { SectorSettingsModal, sectorSetWhat } from './SectorSettingsModal';
 import { Section } from '@/components/common/Section';
 
-/** Tab label for a project's sector view: what its type locates work by (item 134). */
+/** Tab label for a project's sector view: what its type locates work by. */
 export const sectorTabLabel = (project: Pick<ProjectDetail, 'type' | 'locations'>) => {
   const k = sectorKinds(project);
   return k.village ? 'Villages' : k.floor ? 'Floors' : 'Chainage';

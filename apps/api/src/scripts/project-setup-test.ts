@@ -1,5 +1,5 @@
 /**
- * Project setup tests (finding 6 of the October review): the checklist ticks itself from the records, each role sees
+ * Project setup tests: the checklist ticks itself from the records, each role sees
  * the steps it can do, a new project starts with its client's terms or the standard ones, and a BOQ far from the
  * contract value is flagged.
  *

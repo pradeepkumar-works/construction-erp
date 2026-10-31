@@ -10,7 +10,7 @@ type RequestStock = { lines: { itemName: string; others: Other[] }[] };
 const storeOf = async (token: string) => (await api<Store[]>(token, '/stock/stores')).find((s) => s.code === 'CS-01')!;
 
 /**
- * Central store (v6 item 106): the store manager opens the Khordha store from Central stores and sends steel to the
+ * Central store: the store manager opens the Khordha store from Central stores and sends steel to the
  * highway by transfer; it is on the road until the site receives it.
  */
 test('the central store sends steel to a site, which receives it', async ({ page }) => {

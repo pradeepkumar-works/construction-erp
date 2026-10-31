@@ -204,7 +204,7 @@ function PlanTable({ plan, onEdit }: { plan: QaPlanDto; onEdit: (l: QaPlanLineDt
   );
 }
 
-/** The quality plan (item 137): a project's tests, what each is counted against, how often and who witnesses. */
+/** The quality plan: a project's tests, what each is counted against, how often and who witnesses. */
 export function QualityPlanPage() {
   const { token } = theme.useToken();
   const [projectId, setProjectId] = useProjectScope();

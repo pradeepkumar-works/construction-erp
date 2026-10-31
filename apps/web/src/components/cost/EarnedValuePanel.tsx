@@ -53,7 +53,7 @@ function CurveTable({ data }: { data: EarnedValuePointDto[] }) {
 }
 
 /**
- * Earned value tab of a project (v6 item 115): how far the work is behind or ahead of the baseline and over or under its
+ * Earned value tab of a project: how far the work is behind or ahead of the baseline and over or under its
  * budget, in money and in time, the forecasts from it, the S-curve of planned value, earned value and actual cost, and
  * the activities furthest behind. Earned from approved progress or, switched, from measured work.
  */

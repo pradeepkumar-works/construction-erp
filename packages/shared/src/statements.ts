@@ -1,7 +1,7 @@
 import type { AccountGroup, AccountNature, LedgerAccountDto } from './books';
 
 /**
- * Financial statements (v6 item 103): the trial balance, profit and loss and balance sheet in Schedule III order, the
+ * Financial statements: the trial balance, profit and loss and balance sheet in Schedule III order, the
  * bank reconciliation, opening balances, the lock date and the year's close. The figures are the books' approved
  * vouchers; this holds the statement lines, where each group lands, and the shapes the screens use.
  */
@@ -154,8 +154,6 @@ export function statementLineOf(a: { key: string; group: AccountGroup; statement
   return line;
 }
 
-// ----- Screens -----
-
 export interface TrialBalanceRowDto {
   accountId: string;
   name: string;
@@ -236,8 +234,6 @@ export interface BalanceSheetDto {
   difference: string;
 }
 
-// ----- Bank reconciliation -----
-
 /** One row of a bank statement, read from the bank's CSV or Excel file. */
 export interface StatementRowInput {
   date: string;
@@ -305,8 +301,6 @@ export interface BankImportResultDto {
   skipped: number;
   matched: number;
 }
-
-// ----- Opening balances, the lock and the year's close -----
 
 export interface FinancialYearDto {
   /** 2025-26 */

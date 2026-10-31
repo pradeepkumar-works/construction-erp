@@ -22,7 +22,8 @@ import { WorkOrderRecord } from '@/components/subcontracts/WorkOrderDrawer';
 import { SubBillRecord } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionRecord } from '@/components/inspections/InspectionDrawer';
 import { PaymentRequestRecord } from '@/components/payables/PaymentRequestRecord';
-import { decidedInPlace } from './queue';
+import { SupplierChoiceRecord } from '@/components/purchasing/SupplierChoiceRecord';
+import { decidedInPlace, QUEUE_TYPE_LABELS } from './queue';
 import { TypeTag } from './ApprovalQueue';
 
 /** The record of the entry picked in the queue, then the decision bar. */
@@ -105,12 +106,14 @@ function PaneRecord({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenD
       return <InspectionRecord mode="pane" id={item.id} />;
     case 'PAYMENT_REQUEST':
       return <PaymentRequestRecord mode="pane" id={item.id} />;
+    case 'SUPPLIER_CHOICE':
+      return <SupplierChoiceRecord mode="pane" id={item.id} />;
     default:
       return <PendingSummary item={item} onOpenDetails={onOpenDetails} />;
   }
 }
 
-/** A type without a record page: what the queue knows, the activity, and the details a click away. Every type has one since item 61. */
+/** A type without a record page: what the queue knows, the activity, and the details a click away. Every type has one today. */
 function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenDetails: () => void }) {
   const { token } = theme.useToken();
   return (

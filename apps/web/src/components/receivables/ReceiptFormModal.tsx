@@ -57,7 +57,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
   const billId = Form.useWatch('billId', form) as string | undefined;
   const { data: chosen } = useBill(open && !bill && billId ? billId : undefined);
   const target = bill ?? chosen;
-  // On a project in another currency the amounts are typed in it and kept in rupees at the contract rate (item 130).
+  // On a project in another currency the amounts are typed in it and kept in rupees at the contract rate.
   const cur: ContractCurrency | null = receipt ? { currency: receipt.currency, exchangeRate: receipt.contractRate } : (target ?? null);
   const foreign = isForeign(cur);
   const fm = (v: string | number) => formatMoney(v, cur, true);
@@ -92,7 +92,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
     if (!open || editing || !target || kind !== 'BILL') return;
     const first = toNumber(target.settledAmount) === 0;
     const of = (key: string) => toNumber(target.deductions.find((d) => d.key === key)?.amount ?? 0);
-    // An O&M bill's service level penalties (item 131) are taken by the client as an other deduction.
+    // An O&M bill's service level penalties are taken by the client as an other deduction.
     const penalty = of('omPenalty');
     const fill: Partial<FormValues> = Object.fromEntries(DEDUCTIONS.map(([k, , key]) => [k, first ? inC(of(key) + (key === 'other' ? penalty : 0)) || null : null]));
     if (first) fill.otherDeductionNote = target.otherDeductionNote ?? (penalty ? 'Service level penalties' : undefined);

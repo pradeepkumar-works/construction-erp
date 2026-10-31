@@ -37,7 +37,7 @@ const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { mi
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 
 /**
- * Drafts from a sentence (AI item 71). Each method checks what the model took out of the user's words (a material
+ * Drafts from a sentence. Each method checks what the model took out of the user's words (a material
  * request, an expense, a progress entry, a DPR, a letter), matches names to the company's own masters (projects, items,
  * units, activities) through the services the forms use, and returns the form's values with what to check. Nothing is
  * written: the user opens the draft in its form and saves it there.
@@ -198,7 +198,7 @@ export class AiDraftsService {
       .filter((m): m is { name: string; hours: number } => !!m.name && m.hours >= 0 && m.hours <= 24)
       .slice(0, 20);
     const weather = pick(i.weather, WEATHER_OPTIONS);
-    // Figures the notes give for the form's own fields (item 134 part 2), by the names the form gives them.
+    // Figures the notes give for the form's own fields, by the names the form gives them.
     const form = await this.dpr.formFor(user, project.id);
     const named = i.ownFields && typeof i.ownFields === 'object' && !Array.isArray(i.ownFields) ? (i.ownFields as Record<string, unknown>) : {};
     const dayFields = ownFieldsOf(form.def, 'DAY');
@@ -235,7 +235,7 @@ export class AiDraftsService {
     if (!subject) throw new BadRequestException('subject is required');
     const body = text(i.body, 3000);
     const cover = bill ? coverNote(bill, project.name) : null;
-    // The letter's text (Correspondence, item 136): printed on the letterhead once its signatory approves it.
+    // The letter's text (Correspondence): printed on the letterhead once its signatory approves it.
     const letterBody = [cover, body].filter(Boolean).join('\n\n').slice(0, 20000) || undefined;
     if (!letterBody) flags.push({ field: 'body', note: 'Nothing was given for the body' });
     const letterDate = todayIn();

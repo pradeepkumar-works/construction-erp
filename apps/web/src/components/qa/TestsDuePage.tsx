@@ -21,7 +21,7 @@ const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1,
 const unitOf = (r: TestsDueRowDto) => (r.line.source === 'RECEIPT' ? `in ${r.occasions} lot${r.occasions === 1 ? '' : 's'}` : r.unit ?? '');
 
 /**
- * Tests due (item 137): what each line of the quality plans owes from the approved work and the material received,
+ * Tests due: what each line of the quality plans owes from the approved work and the material received,
  * against the tests taken under it; a short line records its test from here.
  */
 export function TestsDuePage() {

@@ -15,7 +15,7 @@ export type AttendanceTab = (typeof ATTENDANCE_TABS)[number];
 
 /**
  * Attendance page and project tab: the daily head count, and for those who keep it the named worker register with its
- * roll call, muster and output per man-day (v4 item 44). The open tab is `?sub=` in the URL (UX item 84).
+ * roll call, muster and output per man-day. The open tab is `?sub=` in the URL.
  */
 export function AttendancePanel({ projectId }: { projectId?: string }) {
   const { user } = useAuth();

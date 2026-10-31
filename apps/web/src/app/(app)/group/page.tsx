@@ -237,7 +237,7 @@ function MakeGroup({ companyName }: { companyName: string }) {
 }
 
 /**
- * Group companies (phase 1, ARCHITECTURE "Group companies"): the group's admins see its companies with their kind and legal
+ * Group companies (ARCHITECTURE "Group companies"): the group's admins see its companies with their kind and legal
  * details, add a company, and give people of the group a place in another company on the sign-in they already have.
  */
 export default function GroupPage() {

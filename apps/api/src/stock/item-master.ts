@@ -14,7 +14,7 @@ export interface MasterItemRow {
 const searchWord = (key: string) => key.split(' ').filter((w) => /^[a-z]{3,}$/.test(w)).sort((a, b) => b.length - a.length)[0] ?? key.split(' ')[0];
 
 /**
- * The master items a set of typed names may be (finding 3 of the October review): any whose old names hold one of
+ * The master items a set of typed names may be: any whose old names hold one of
  * the names, or whose name holds its main word. `masterItemFor` then decides; this only keeps the read small.
  */
 export async function masterCandidates(db: Db, organizationId: string, names: string[]): Promise<MasterItemRow[]> {

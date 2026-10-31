@@ -67,7 +67,7 @@ function invoiceLine(i: { invoiceNo?: string; amount?: string; gstAmount?: strin
 const TITLES: Record<OtherBillKind, string> = { HIRE: `Record vendor bill · ${VENDOR_BILL_KIND_LABELS.HIRE}`, SERVICE: `Record vendor bill · ${VENDOR_BILL_KIND_LABELS.SERVICE}`, OTHER: `Record vendor bill · ${VENDOR_BILL_KIND_LABELS.OTHER}` };
 
 /**
- * A vendor bill without a purchase order (v5 item 91): a hired machine's month from its approved logs, a workshop's
+ * A vendor bill without a purchase order: a hired machine's month from its approved logs, a workshop's
  * bill for closed job cards, or another service (transport, testing, consultancy) booked to an expense head. The API
  * works the hire lines out from the logs; what does not match them is recorded as an exception for the approver.
  */

@@ -1,5 +1,5 @@
 /**
- * Contract obligations' tests (item 171, ARCHITECTURE "Contract obligations and recoveries"): the deadline from its anchor,
+ * Contract obligations' tests (ARCHITECTURE "Contract obligations and recoveries"): the deadline from its anchor,
  * where an obligation stands, what missing it costs as of a bill's date for each kind of penalty, a bill's recovery lines
  * with withholdings given back, the checks on a saved obligation and the security deposit held to its cap.
  *

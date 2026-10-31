@@ -16,7 +16,7 @@ import { ACTIVE_FILE, SANDBOXED_FILE_CSP } from '../common/security-headers';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf', ...Object.values(CAD_MIME_TYPES)];
 const ALLOWED_WORDS = 'jpeg, png, webp, heic, pdf, dxf, dwg';
-/** The type a file is kept as: CAD drawings (item 109) by their extension, since browsers send them as octet-stream or nothing. */
+/** The type a file is kept as: CAD drawings by their extension, since browsers send them as octet-stream or nothing. */
 const typeOf = (fileName: string, sent: string) => CAD_MIME_TYPES[extname(fileName).toLowerCase()] ?? sent;
 /** A file sent straight to Blob storage may be this large (a drawing set, a long invoice PDF). */
 const DIRECT_MAX_BYTES = 100 * 1024 * 1024;

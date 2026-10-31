@@ -141,7 +141,7 @@ function LabDialog({ editing, onClose }: { editing: QaLabDto | 'new' | null; onC
   );
 }
 
-/** Labs (item 137 part 2): where samples are tested, an NABL lab with its accreditation, and the samples each holds. */
+/** Labs: where samples are tested, an NABL lab with its accreditation, and the samples each holds. */
 export function LabsPage() {
   const { token } = theme.useToken();
   const { user } = useAuth();

@@ -23,7 +23,7 @@ interface DispatchValues {
 
 /**
  * A truck leaving the plant on an order: its challan, and the materials out of the plant's store at the design or as
- * weighed. From a batch the controller reported (item 149), the batch's cubic metres, truck and weights come filled in.
+ * weighed. From a batch the controller reported, the batch's cubic metres, truck and weights come filled in.
  */
 export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | null; row?: PlantBatchRowDto; onClose: () => void }) {
   const [form] = Form.useForm<DispatchValues>();

@@ -98,7 +98,7 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
 export const tallyClientKey = (id: string) => `CLIENT:${id}`;
 export const tallyVendorKey = (id: string) => `VENDOR:${id}`;
 export const tallyExpenseKey = (c: ExpenseCategory) => `EXPENSE:${c}`;
-/** A machine loan's own ledger (v6 item 108), under Secured Loans: `LOAN:<id>`. */
+/** A machine loan's own ledger, under Secured Loans: `LOAN:<id>`. */
 export const tallyLoanKey = (id: string) => `LOAN:${id}`;
 export const TALLY_LOAN_GROUP = 'Secured Loans';
 export const loanLedgerName = (l: { lenderName: string; loanNo: string }) => `${l.lenderName} Loan ${l.loanNo}`;

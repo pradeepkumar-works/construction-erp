@@ -17,7 +17,7 @@ type Balance = { itemId: string; itemName: string; balance: string };
 const building = async (token: string) => (await api<Page<Project>>(token, '/projects?pageSize=100')).items.find((p) => p.code === 'BL-2026-02')!;
 
 /**
- * Rate analysis (v5 item 92): the QS fills a BOQ item's rate analysis from the starter library in its drawer, and the
+ * Rate analysis: the QS fills a BOQ item's rate analysis from the starter library in its drawer, and the
  * project manager sees the item's built-up rate in the Estimate view.
  */
 test('fill a BOQ item from the rate library and see its built-up rate', async ({ page }) => {
@@ -61,7 +61,7 @@ test('fill a BOQ item from the rate library and see its built-up rate', async ({
 });
 
 /**
- * A subcontractor's material (v5 item 92): bricks issued to the brickwork order beyond what its measured work allows
+ * A subcontractor's material: bricks issued to the brickwork order beyond what its measured work allows
  * are raised for recovery, and the next bill takes them off as their own deduction.
  */
 test('recover bricks a subcontractor used over the norm on their next bill', async ({ page }) => {
@@ -93,7 +93,7 @@ test('recover bricks a subcontractor used over the norm on their next bill', asy
   await api(pm, `/reconciliation/projects/${project.id}/recoveries/${raised.id}`, { method: 'DELETE' });
 });
 
-/** Wastage (v5 item 92): a stock adjustment asks for its reason, and the Wastage view totals it by reason and item. */
+/** Wastage: a stock adjustment asks for its reason, and the Wastage view totals it by reason and item. */
 test('a stock adjustment for damage shows in the wastage report', async ({ page }) => {
   const pm = await apiToken('pm2@demo.com');
   const project = await building(pm);

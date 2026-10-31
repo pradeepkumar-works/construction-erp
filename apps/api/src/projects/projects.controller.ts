@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuard
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PROJECT_ADMIN_ROLES } from '@erp/shared';
 import { ProjectsService } from './projects.service';
-import { AddMemberDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, NextProjectCodeQuery, ProjectSetupHiddenDto, UpdateProjectDto } from './projects.dto';
+import { AddMemberDto, MemberLevelDto, CopyTeamDto, CreateProjectDto, ListProjectsQuery, NextProjectCodeQuery, ProjectSetupHiddenDto, UpdateProjectDto } from './projects.dto';
 import { ProjectSetupService } from './project-setup.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Roles } from '../common/decorators';
@@ -23,7 +23,7 @@ export class ProjectsController {
     return this.projects.list(user, q);
   }
 
-  /** The next code in the company's series, offered on the New project form (finding 17 of the October review). */
+  /** The next code in the company's series, offered on the New project form. */
   @Get('next-code')
   @Roles(...PROJECT_ADMIN_ROLES)
   nextCode(@CurrentUser() user: RequestUser, @Query() q: NextProjectCodeQuery) {
@@ -35,7 +35,7 @@ export class ProjectsController {
     return this.projects.get(user, id);
   }
 
-  /** The new project's setup checklist and the BOQ against the contract value (finding 6 of the October review). */
+  /** The new project's setup checklist and the BOQ against the contract value. */
   @Get(':id/setup')
   setupOf(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.setup.get(user, id);
@@ -73,6 +73,12 @@ export class ProjectsController {
   @Roles(...PROJECT_ADMIN_ROLES)
   copyTeam(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: CopyTeamDto) {
     return this.projects.copyTeam(user, id, dto);
+  }
+
+  @Patch(':id/members/:userId')
+  @Roles(...PROJECT_ADMIN_ROLES)
+  setMemberLevel(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('userId') userId: string, @Body() dto: MemberLevelDto) {
+    return this.projects.setMemberLevel(user, id, userId, dto.checkLevel ?? null);
   }
 
   @Delete(':id/members/:userId')

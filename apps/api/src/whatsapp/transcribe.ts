@@ -1,7 +1,7 @@
 import { aiConfig } from '../ai/ai.config';
 
 /**
- * Hearing a voice note (AI item 120). TRANSCRIBE_PROVIDER picks who listens:
+ * Hearing a voice note. TRANSCRIBE_PROVIDER picks who listens:
  *   fake        the test stand-in: a "voice note" whose bytes are `FAKE:<words>` is heard as those words
  *   openrouter  an audio model on OpenRouter (TRANSCRIBE_MODEL, default google/gemini-2.5-flash) with OPENROUTER_API_KEY
  *   sarvam      Sarvam AI's speech-to-text (Indian languages, Hinglish), SARVAM_API_KEY, model SARVAM_STT_MODEL

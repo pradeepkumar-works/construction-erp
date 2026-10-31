@@ -57,7 +57,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
-  // Any open site or central store, not only the sender's own (v6 item 106); its keepers receive it.
+  // Any open site or central store, not only the sender's own; its keepers receive it.
   const { data: destinations } = useStockDestinations(open && move === 'transfer');
   const watchedProject = Form.useWatch('projectId', form);
   const watchedLines = Form.useWatch('lines', form);

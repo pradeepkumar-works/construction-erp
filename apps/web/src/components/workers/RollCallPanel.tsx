@@ -41,14 +41,14 @@ const same = (a: Mark, b: Mark) =>
   a.status === b.status && a.inTime === b.inTime && a.outTime === b.outTime && a.otHours === b.otHours && a.activityId === b.activityId && a.note === b.note;
 
 /**
- * The day's roll call of a project (v4 item 44): mark each named worker present, on a half day or absent, with in and
+ * The day's roll call of a project: mark each named worker present, on a half day or absent, with in and
  * out times, overtime and the activity they worked on. Saving brings the day's head count in step.
  */
 export function RollCallPanel({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  // The header's project (UX item 84): picking one here picks it for every list.
+  // The header's project: picking one here picks it for every list.
   const [projectPick, setProjectPick] = useProjectScope();
   const projectId = fixedProject ?? projectPick;
   const [date, setDate] = useState<Dayjs>(dayjs());

@@ -8,7 +8,7 @@ type Request = { id: string; requestNo: string; kind: string; status: string; pu
 type Order = { id: string; poNo: string; advancePaid: string; advanceRequested: string };
 
 /**
- * Payment requests (v5 item 90): the building project's PM asks for an advance on an approved PO from the order itself,
+ * Payment requests: the building project's PM asks for an advance on an approved PO from the order itself,
  * management approves it, and accounts pays it from the Payment requests tab in Payables; the PO then shows it paid.
  */
 test('ask for an advance on a PO, approve it and pay it', async ({ page }) => {

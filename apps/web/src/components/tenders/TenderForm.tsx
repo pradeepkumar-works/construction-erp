@@ -23,7 +23,7 @@ interface Values {
   clientId?: string | null;
   clientName?: string;
   location?: string;
-  /** Its vertical (item 167) */
+  /** Its vertical */
   verticalCode?: string | null;
   bidType: TenderBidType;
   sorBookId?: string | null;
@@ -43,7 +43,7 @@ interface Values {
 }
 
 /**
- * Record a tender (v6 item 110) or change its register entry: the notice, client, dates, how it is priced (one
+ * Record a tender or change its register entry: the notice, client, dates, how it is priced (one
  * percentage on the SOR or a rate per item, against which schedule, with what overheads and profit) and the EMD, which
  * is kept with the guarantees. The bid BOQ is priced on the tender's page.
  */

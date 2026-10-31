@@ -75,7 +75,7 @@ function People({ title, rows, empty, note }: { title: string; rows: HrPersonRow
 }
 
 /**
- * The HR dashboard on the People home (v6 item 99): head count by site, department and kind of employment; who joined and
+ * The HR dashboard on the People home: head count by site, department and kind of employment; who joined and
  * left this month; probation ending; birthdays and work anniversaries; and whose details payroll still needs.
  */
 export function HrDashboard() {

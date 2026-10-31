@@ -15,7 +15,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { eventChange, usePrintLetter } from './EmployeeService';
 
 /**
- * Every service event across the company (v6 item 99): who joined, was confirmed, moved, promoted, got an increment or a
+ * Every service event across the company: who joined, was confirmed, moved, promoted, got an increment or a
  * warning, or left, with each letter to print again. Rows open the person's record.
  */
 export function ServiceRecords({ onOpen }: { onOpen: (employeeId: string) => void }) {

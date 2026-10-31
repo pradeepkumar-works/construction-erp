@@ -43,7 +43,7 @@ export function FileLinks({ files, compact }: { files: AttachmentDto[]; compact?
   );
 }
 
-/** Where a revision opens in the drawing viewer (item 109). */
+/** Where a revision opens in the drawing viewer. */
 export const drawingHref = (documentId: string, revisionId?: string) => `/documents/drawing?id=${documentId}${revisionId ? `&rev=${revisionId}` : ''}`;
 
 /** "View and mark up" for a revision with a PDF, image or DXF, with the drawing's open marks when it has any. */

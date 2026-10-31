@@ -26,8 +26,6 @@ export class MachineryController {
     private fleet: FleetService,
   ) {}
 
-  /* ---------- equipment master ---------- */
-
   @ApiOperation({ summary: 'Equipment master', description: 'Active machines by default. `rate` is returned only to approvers.' })
   @Get('equipment')
   listEquipment(@CurrentUser() user: RequestUser, @Query() q: ListEquipmentQuery) {
@@ -57,8 +55,6 @@ export class MachineryController {
     return this.machinery.removeEquipment(user, id);
   }
 
-  /* ---------- tyres and batteries (v5 item 93) ---------- */
-
   @ApiOperation({ summary: "A machine's tyres and batteries", description: 'With each one\'s life in hours or km (to removal, or to the latest meter reading while still on). `cost` only for cost viewers.' })
   @Get('equipment/:id/parts')
   parts(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
@@ -82,8 +78,6 @@ export class MachineryController {
     return this.fleet.removePart(user, id, partId);
   }
 
-  /* ---------- fleet use (v5 item 93) ---------- */
-
   @ApiOperation({ summary: "Each site's fuel position on a day", description: 'Per fuel item and site: opening, received, issued into machines, other issues and closing; and the day\'s fuel issues into machines.' })
   @Get('fleet/fuel-position')
   fuelPosition(@CurrentUser() user: RequestUser, @Query() q: FuelPositionQuery) {
@@ -104,8 +98,6 @@ export class MachineryController {
   utilisation(@CurrentUser() user: RequestUser, @Query() q: FleetPeriodQuery) {
     return this.fleet.utilisation(user, q);
   }
-
-  /* ---------- daily logs ---------- */
 
   @Get('machinery-logs')
   list(@CurrentUser() user: RequestUser, @Query() q: ListMachineryLogsQuery) {

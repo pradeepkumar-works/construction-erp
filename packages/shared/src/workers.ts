@@ -1,5 +1,5 @@
 /**
- * Named worker register (v4 item 44): contractor labour by name, with a daily roll call, a monthly muster and output
+ * Named worker register: contractor labour by name, with a daily roll call, a monthly muster and output
  * per man-day. A site register, not HR: no PF, ESI or payslips. The roll call keeps the day's head-count sheet in step.
  */
 import type { StaffAttendanceStatus } from './staff';

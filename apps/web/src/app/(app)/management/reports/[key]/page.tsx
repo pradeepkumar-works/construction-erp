@@ -63,7 +63,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
   const month = search.get('month') ?? undefined;
   const from = search.get('from') ?? undefined;
   const to = search.get('to') ?? undefined;
-  // The header's vertical (item 167) narrows a report over every project.
+  // The header's vertical narrows a report over every project.
   const [vertical] = useVerticalScope();
   const scope = projectId ? { projectId } : { vertical };
   const params = info.period === 'month' ? { month, ...scope } : info.period === 'range' ? { from, to, ...scope } : scope;

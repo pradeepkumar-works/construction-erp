@@ -4,7 +4,7 @@ import { ValidateBy, type ValidationOptions } from 'class-validator';
 const PLAIN = /^(\d+\.?\d*|\.\d+)$/;
 
 /**
- * A quantity field (finding 4 of the October review): a plain decimal above zero, or zero or more with `zero`. A minus
+ * A quantity field: a plain decimal above zero, or zero or more with `zero`. A minus
  * sign is refused here, before any service sees it; a signed figure (a stock adjustment, a variation) keeps
  * `IsNumberString`.
  */

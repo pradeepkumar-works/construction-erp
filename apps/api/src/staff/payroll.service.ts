@@ -69,7 +69,7 @@ export class PayrollService {
       for (const d of days(first, last)) {
         r.calendarDays += 1;
         const a = att.get(d);
-        // Only approved overtime is paid (v5 item 97); what waits is shown apart, rejected is dropped.
+        // Only approved overtime is paid; what waits is shown apart, rejected is dropped.
         if (a?.overtimeHours && a.overtimeStatus === 'PENDING') r.overtimePendingHours += Number(a.overtimeHours);
         else if (a?.overtimeHours && a.overtimeStatus !== 'REJECTED') r.overtimeHours += Number(a.overtimeHours);
         if (isWeeklyOff(d) || isHoliday(d, a?.projectId ?? e.projectId)) {

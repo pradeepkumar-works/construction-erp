@@ -11,7 +11,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 
 /**
- * A filed PDF opened at one page (Ask the contract, AI item 75): where an answer's citation such as "RD-AGR-01, page 4"
+ * A filed PDF opened at one page (Ask the contract): where an answer's citation such as "RD-AGR-01, page 4"
  * leads. The browser's own PDF viewer shows the file at the page; the page's text is under it, for small screens and
  * for copying a clause.
  */

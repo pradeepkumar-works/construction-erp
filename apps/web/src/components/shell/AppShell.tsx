@@ -163,7 +163,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   // Close the drawer when the page changes (links, quick-jump or the browser's back button).
   useEffect(() => setMobileOpen(false), [pathname]);
 
-  // After moving to another page within the app, focus goes to its heading (UX item 81), so a keyboard or screen reader
+  // After moving to another page within the app, focus goes to its heading, so a keyboard or screen reader
   // user starts on the new page rather than on the link they left, and hears where they are. A full load keeps the browser's.
   const firstPath = useRef(true);
   useEffect(() => {
@@ -210,7 +210,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     { type: 'divider' },
     // A phone's header has no room for the company switcher: the companies are listed here (a submenu would open off screen).
     ...(isMobile && companyMenu ? [{ key: 'company', type: 'group' as const, label: 'Company', children: companyMenu.items }, { type: 'divider' as const }] : []),
-    // A phone's header has room for search, New, the bell and the account only (UX item 84): Ask and Help live here.
+    // A phone's header has room for search, New, the bell and the account only: Ask and Help live here.
     ...(isMobile
       ? [
           ...(askVisible ? [{ key: 'ask', icon: <SparkleIcon style={{ color: token.colorPrimary }} />, label: `Ask ${PRODUCT_NAME}`, onClick: () => openAsk() }] : []),

@@ -78,7 +78,7 @@ function cell(f: Field, v: unknown): string | number | boolean | null {
 }
 
 /**
- * Data export and company deletion (v3 item 33). An admin downloads everything the company has (the browser builds the
+ * Data export and company deletion. An admin downloads everything the company has (the browser builds the
  * zip from these pages, so no single response gets large), or asks for the company to be erased after a grace period.
  */
 @Injectable()
@@ -176,8 +176,6 @@ export class CompanyDataService {
     return rows.map((r) => ({ id: r.id, action: r.action, actorName: name.get(r.actorId) ?? '-', note: r.note, createdAt: r.createdAt.toISOString() }));
   }
 
-  /* ---------- support access (consent for the platform admin) ---------- */
-
   async supportAccess(user: RequestUser): Promise<SupportAccessDto> {
     this.assertAdmin(user);
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { supportAccessUntil: true, supportAccessGrantedByName: true } });
@@ -200,8 +198,6 @@ export class CompanyDataService {
     await this.audit.log(user, 'COMPANY', user.organizationId, 'SUPPORT_ACCESS_REVOKED', `${PRODUCT_NAME} support access withdrawn`);
     return this.supportAccess(user);
   }
-
-  /* ---------- deletion ---------- */
 
   private protectedCodes() {
     return (process.env.PROTECTED_ORG_CODES ?? 'DEMO')

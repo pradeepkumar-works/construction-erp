@@ -67,7 +67,7 @@ function EntryDialog({ list, slug, editing, onClose }: { list: MasterListDto; sl
   );
 }
 
-/** A simple master list (item 135): the standard entries with the company's changes, then its own; add, rename, switch off. */
+/** A simple master list: the standard entries with the company's changes, then its own; add, rename, switch off. */
 export function MasterListPage({ slug }: { slug: string }) {
   const { token } = theme.useToken();
   const { data, isLoading, error, refetch } = useMasterList(slug, true);

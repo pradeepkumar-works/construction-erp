@@ -15,7 +15,7 @@ import { standardViews } from './views';
 type ListFrameTarget = { list: SavedViewList; url?: true } | { list: string; url: false };
 
 /**
- * Everything a list page shares (UI roadmap item 55): its filters in the URL, the header's project, the views across the
+ * Everything a list page shares: its filters in the URL, the header's project, the views across the
  * top, the columns chosen and the filter chips. A submission list (`type`) gets the standard views (Waiting for me, Mine,
  * Sent back, This week); any other list has All and its own `moreViews`. With `fixedProject` (a project page tab) or
  * `url: false` (a list in a page's tab) there are no views and nothing goes in the URL; the table features stay.

@@ -1,5 +1,5 @@
 /**
- * Cash forecast tests (AI item 122). First the rules on their own: a client's days to pay and their spread, each item's
+ * Cash forecast tests. First the rules on their own: a client's days to pay and their spread, each item's
  * early, likely and late date, the weeks with their low, likely and high balance, why a short week is short, what to
  * chase and hold, how far an old forecast was out, and the payment clause read from a contract page. Then, when
  * DATABASE_URL is set, the demo company: the forecast opens on the books' bank and cash and its weeks add up, the week's
@@ -49,7 +49,6 @@ const item = (over: Partial<CashFlowItemDto> & Pick<CashFlowItemDto, 'key' | 'ki
   ...over,
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // When clients pay
 
 test('payment days: the mean of paid bills, spread by their deviation, a week at least', () => {
@@ -87,7 +86,6 @@ test('the next RA bill: the same day of the month as the last, or the month’s 
   assert.equal(nextBillDate(null, '2026-10-23'), '2026-10-31');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // When we pay
 
 test('a purchase order: paid its days after delivery, two weeks after the order without a date', () => {
@@ -115,7 +113,6 @@ test('around: a date gone is today, late by the spread', () => {
   assert.deepEqual(around('2026-10-10', 0, 7, '2026-10-23'), { early: '2026-10-23', likely: '2026-10-23', late: '2026-10-30', overdue: true });
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The weeks
 
 const TODAY = '2026-10-23'; // a Friday

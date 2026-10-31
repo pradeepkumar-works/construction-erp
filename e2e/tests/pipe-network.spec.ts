@@ -3,7 +3,7 @@ import type { DailyReportDto, DprWorkOptionsDto, PipeNetworkDto, PipeNetworkImpo
 import { API_URL, api, apiToken, signIn } from './helpers';
 
 /**
- * The pipe network (item 126): zone 2 of the town scheme carries its network, junction to junction. A DPR line of pipe
+ * The pipe network: zone 2 of the town scheme carries its network, junction to junction. A DPR line of pipe
  * work names its pipe, can't take a stage past the pipe's length and shows in the tab once sent; an import is checked
  * and previewed before anything is saved; the tab draws the zone with its pipe sheet and list. Nothing is saved for
  * good: the import is a preview and the DPR is rejected at the end.

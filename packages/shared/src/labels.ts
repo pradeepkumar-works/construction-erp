@@ -1,4 +1,4 @@
-import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, CompanyKind } from './enums';
+import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, WorkLocation, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus, NavLayout, NavLook, NavModuleSet, CompanyKind, CheckLevel, SiteOrderStatus } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road or infrastructure',
@@ -103,6 +103,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   SUBCONTRACT_BILL: 'Subcontractor bill',
   INSPECTION: 'Inspection',
   PAYMENT_REQUEST: 'Payment request',
+  SUPPLIER_CHOICE: 'Supplier choice',
 };
 
 /** A group of entries of one type (the approvals inbox, on the web and the phone): the list's own name in the menu. */
@@ -120,6 +121,7 @@ export const SUBMISSION_TYPE_PLURAL_LABELS: Record<SubmissionType, string> = {
   SUBCONTRACT_BILL: 'Subcontractor bills',
   INSPECTION: 'Inspections',
   PAYMENT_REQUEST: 'Payment requests',
+  SUPPLIER_CHOICE: 'Supplier choices',
 };
 
 export const PAYMENT_REQUEST_KIND_LABELS: Record<PaymentRequestKind, string> = {
@@ -515,6 +517,19 @@ export const RFI_STATUS_LABELS: Record<RfiStatus, string> = {
 export const RFI_PRIORITY_LABELS: Record<RfiPriority, string> = {
   NORMAL: 'Normal',
   URGENT: 'Urgent',
+};
+
+export const CHECK_LEVEL_LABELS: Record<CheckLevel, string> = {
+  ASSISTANT_ENGINEER: 'Assistant engineer',
+  RESIDENT_ENGINEER: 'Resident engineer',
+  DEPUTY_TEAM_LEADER: 'Deputy team leader',
+  TEAM_LEADER: 'Team leader',
+};
+
+export const SITE_ORDER_STATUS_LABELS: Record<SiteOrderStatus, string> = {
+  OPEN: 'Waiting for compliance',
+  REPLIED: 'Complied, to accept',
+  CLOSED: 'Closed',
 };
 
 export const MARKUP_KIND_LABELS: Record<MarkupKind, string> = {

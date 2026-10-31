@@ -1,5 +1,5 @@
 /**
- * DPR work line tests (item 127). Up to previous, cumulative, % and balance (two lines on one activity add up in
+ * DPR work line tests. Up to previous, cumulative, % and balance (two lines on one activity add up in
  * order), material from the norms, the crew on the lines against the head count, machine hours and material added up,
  * the work summary, grouping by component › sub-component, and the line checks.
  *

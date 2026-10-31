@@ -25,7 +25,7 @@ function useAdmsDevices(open: boolean) {
 }
 
 /**
- * Put a user number on the ADMS devices with the name they show (item 150), so the person can enrol a finger or face
+ * Put a user number on the ADMS devices with the name they show, so the person can enrol a finger or face
  * under it there; or take it off, so someone who has left can no longer punch. The devices take it when they next call.
  */
 export function DeviceUserForm({ user, removing, onClose }: { user: BiometricUserDto | null; removing: boolean; onClose: () => void }) {

@@ -120,7 +120,7 @@ function RecentLink({ visit, user, menu }: { visit: NavVisitDto; user: AuthUser;
 }
 
 /**
- * Home (launcher phase 2): search over modules and pages, what waits for you (My work's top cards), Pinned (yours, on
+ * Home: search over modules and pages, what waits for you (My work's top cards), Pinned (yours, on
  * every device), Recent, and every module you can open as a tile with what waits on you there. The module grid comes
  * from the navigation tree and the signed-in user, so it draws at once; pins, Recent and the counts fill in after.
  */

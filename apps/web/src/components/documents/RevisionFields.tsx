@@ -11,7 +11,7 @@ import { FormGrid } from '@/components/form/FormShell';
 
 /**
  * Revision, date, status, from whom and the files: in the new-document form (under `revision`) and the revision form.
- * `read` adds where a value was read from a drawing's title block (AI item 70).
+ * `read` adds where a value was read from a drawing's title block.
  */
 export function RevisionFields({ prefix = [], read }: { prefix?: string[]; read?: (key: 'revision' | 'date' | 'issuedBy') => Partial<FormItemProps> }) {
   const n = (k: string) => [...prefix, k];

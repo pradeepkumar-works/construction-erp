@@ -142,7 +142,7 @@ export function StockPanel({
   // What is on order for the store, so the store keeper receives it from here (not from Purchase orders). The tab carries
   // no count: one arriving after the first paint would move the tab bar and its buttons under a click (My work counts them).
   const receiver = seesDeliveries(user?.roleKey);
-  // The open tab is `?sub=` in the URL (UX item 84), so a reload or a link keeps it.
+  // The open tab is `?sub=` in the URL, so a reload or a link keeps it.
   const tabs = [
     "balances",
     ...(receiver ? ["deliveries", "weighbridge"] : []),

@@ -14,7 +14,7 @@ import type { BulkAction } from './DataTable';
 
 /**
  * Approves entries one after another, as if one by one (each writes its own audit line and tells its submitter). They
- * all show as approved at once (UX item 86); if one is refused it stops there, puts the list back as the server has it,
+ * all show as approved at once; if one is refused it stops there, puts the list back as the server has it,
  * and says how far it got, with Retry for the rest. Resolves to the number approved.
  */
 export function useApproveMany() {
@@ -47,7 +47,7 @@ export function useApproveMany() {
 
 /**
  * "Approve n" for a selection that is all waiting for this user: in their Approvals queue, which knows each entry's
- * level (v5 item 94); until it has loaded, within their level-1 limit.
+ * level; until it has loaded, within their level-1 limit.
  */
 export function useBulkApprove<T extends { id: string; status: SubmissionStatus }>(type: ApprovalTypeParam, amountOf?: (row: T) => string | null | undefined): BulkAction<T> | null {
   const { user } = useAuth();

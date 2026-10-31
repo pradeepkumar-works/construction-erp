@@ -13,7 +13,7 @@ type Summary = {
 
 const shift = (date: string, days: number) => new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
-/** Handover and defects (v4 item 47): snag, fix, accept; record completion; a defect in the DLP; the close-out checklist. */
+/** Handover and defects: snag, fix, accept; record completion; a defect in the DLP; the close-out checklist. */
 test('a snag is fixed and accepted, completion starts the DLP and the checklist', async ({ page }) => {
   const stamp = Date.now();
   const email = `handover-${stamp}@e2e.test`;

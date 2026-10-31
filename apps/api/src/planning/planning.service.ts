@@ -28,8 +28,6 @@ const EXTRA_QTY = 'An extra item gets its quantity from a variation the client a
 export class PlanningService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
 
-  // ---------- BOQ ----------
-
   async listBoq(user: RequestUser, projectId: string): Promise<BoqItemDto[]> {
     await this.access.assertCanAccessProject(user, projectId);
     const items = await this.prisma.boqItem.findMany({
@@ -168,8 +166,6 @@ export class PlanningService {
     return { ok: true };
   }
 
-  // ---------- Activities ----------
-
   private toActivityDto(a: ActivityRow, rolled: { pct: Map<string, number>; summaries: Set<string> }): ActivityDto {
     const isSummary = rolled.summaries.has(a.id);
     const executed = isSummary ? D(0) : a.progressEntries.reduce((s, e) => s.add(e.quantity), D(0));
@@ -195,6 +191,7 @@ export class PlanningService {
       checklistTemplateId: a.checklistTemplateId,
       checklistName: a.checklistTemplate?.name ?? null,
       holdPoint: a.holdPoint,
+      hiddenWork: a.hiddenWork,
       baselineStart: dateOnly(a.baselineStart),
       baselineEnd: dateOnly(a.baselineEnd),
       workElementId: a.workElementId,
@@ -227,7 +224,7 @@ export class PlanningService {
   }
 
   /**
-   * BOQ items to link the project's unlinked activities to (finding 11 of the October review), offered by the name of
+   * BOQ items to link the project's unlinked activities to, offered by the name of
    * the BOQ's sections and item descriptions. Nothing is changed until the planner confirms with `linkBoq`.
    */
   async boqLinkSuggestions(user: RequestUser, projectId: string): Promise<BoqLinkSuggestion[]> {
@@ -327,6 +324,7 @@ export class PlanningService {
         responsibleId: dto.responsibleId ?? null,
         checklistTemplateId: dto.checklistTemplateId ?? null,
         holdPoint: dto.holdPoint ?? false,
+        hiddenWork: dto.hiddenWork ?? false,
         sortOrder: dto.sortOrder ?? 0,
         ...links,
       },
@@ -351,6 +349,7 @@ export class PlanningService {
     if (dto.responsibleId !== undefined) data.responsibleId = dto.responsibleId;
     if (dto.checklistTemplateId !== undefined) data.checklistTemplateId = dto.checklistTemplateId;
     if (dto.holdPoint !== undefined) data.holdPoint = dto.holdPoint;
+    if (dto.hiddenWork !== undefined) data.hiddenWork = dto.hiddenWork;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     await this.prisma.$transaction(async (tx) => {
       await tx.activity.update({ where: { id }, data });

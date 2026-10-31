@@ -36,7 +36,7 @@ function CashBar({ i }: { i: ImprestDto }) {
 }
 
 /**
- * Site imprests (v4 item 45): petty cash floats held at the sites, with the cash in hand after the holders' cash
+ * Site imprests: petty cash floats held at the sites, with the cash in hand after the holders' cash
  * expenses, top-ups waiting to be paid, and each imprest's cash ledger.
  */
 export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId?: string; initialId?: string }) {
@@ -191,7 +191,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
         const text = [e.reason, e.paymentMode ? `${PAYMENT_MODE_LABELS[e.paymentMode]}${e.reference ? ` ${e.reference}` : ''}` : null, e.decisionNote, e.requestedByName ? `asked by ${e.requestedByName}` : null, e.decidedByName ? `by ${e.decidedByName}` : null]
           .filter(Boolean)
           .join(' · ');
-        // Released from a site's fund request (v6 item 107).
+        // Released from a site's fund request.
         return e.paymentRequestId ? (
           <span>
             <Link href={`/payment-requests/${e.paymentRequestId}`} className="mono" translate="no">

@@ -20,7 +20,7 @@ import { GrnQcModal, GrnQcTag } from './GrnQc';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { DebitNoteFormModal, type DebitNoteGrn } from '@/components/payables/DebitNoteFormModal';
 
-/** What a debit note starts from: a GRN's rejected quantities, or what went back to the supplier (v5 item 91). */
+/** What a debit note starts from: a GRN's rejected quantities, or what went back to the supplier. */
 export function debitNoteFrom(e: StockEntryDto): DebitNoteGrn | null {
   const returned = e.type === 'RETURN_TO_VENDOR';
   const lines = e.lines

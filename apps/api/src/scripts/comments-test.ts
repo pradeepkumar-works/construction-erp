@@ -1,5 +1,5 @@
 /**
- * Comments and mentions' tests (v6 item 116): what a comment needs, who hears of it, who may change it, the order of
+ * Comments and mentions' tests: what a comment needs, who hears of it, who may change it, the order of
  * threads and how a comment's mentions are drawn, with no database. CI runs it after the build:
  *
  *   node dist/scripts/comments-test.js

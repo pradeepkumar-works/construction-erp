@@ -1,5 +1,5 @@
 /**
- * Early warnings' tests (AI item 73). First each forecast on its own, firing and not, with no database. Then, when
+ * Early warnings' tests. First each forecast on its own, firing and not, with no database. Then, when
  * DATABASE_URL is set, the demo company: who sees which kinds and only on their own projects, dismissing with a reason
  * (and the warning coming back on the list once restored), and a backtest that replays the last 60 days and prints
  * the day each warning would first have fired. CI runs it after the seed:
@@ -18,7 +18,6 @@ const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
 const T = '2026-10-17';
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Schedule
 
 test('schedule: on pace finishes on time and does not warn', () => {
@@ -64,7 +63,6 @@ test('schedule: not started, done, or later entries do not count', () => {
   assert.equal(f.donePct, 0, 'an entry after the day asked about is not yet done');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Cash
 
 test('cash: days to pay are the client’s own median once two bills are paid', () => {
@@ -92,7 +90,6 @@ test('cash: receipts ahead of bills is no gap', () => {
   assert.equal(cashGap(cashWeeks([{ date: T, amount: 100 }], [{ date: addDays(T, 10), amount: 100 }], T)), null);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Vendors
 
 const dl = (daysAgo: number, late: boolean, qty = 10, rejectedQty = 0) => ({ date: addDays(T, -daysAgo), late, qty, rejectedQty });
@@ -111,7 +108,6 @@ test('vendor: rejections rising to a tenth warn', () => {
   assert.ok(t.rejectWorse && !t.lateWorse);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Stock
 
 const issues = (perDay: number, days: number) => Array.from({ length: days }, (_, i) => ({ date: addDays(T, -i), qty: perDay }));
@@ -135,7 +131,6 @@ test('stock: issues over only three days are spread over a week', () => {
   assert.equal(f.perDay, 3);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Machines
 
 const md = (daysAgo: number, worked: number, idle: number, breakdown: number) => ({ date: addDays(T, -daysAgo), worked, idle, breakdown });
@@ -150,7 +145,6 @@ test('machine: idle a third of its hours and up from before warns; steady idle d
   assert.equal(machineTrend([md(40, 4, 4, 0)], T), null, 'no logs this month');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // DPRs
 
 test('dpr: three days running without a DPR warns, counted back from yesterday', () => {
@@ -160,7 +154,6 @@ test('dpr: three days running without a DPR warns, counted back from yesterday',
   assert.equal(dprGap(new Set(), T, addDays(T, -2)), null, 'a project two days old');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Material used over the norm
 
 test('material: within the allowance, or over it by less than 3%, does not warn', () => {
@@ -177,7 +170,6 @@ test('material: 3% or more over the allowance warns, and the key moves on in ste
   assert.equal(overuseStep(16.2), 15);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Fuel use off the norm
 
 const fuelDays = (n: number, hours: number, litres: number, km: number | null = null) =>
@@ -218,8 +210,7 @@ test('fuel: a vehicle short of its km a litre is thirsty; far over it warns the 
   assert.equal(fuelNormCheck(fuelDays(6, 6, 20, null), 3, 'KM_PER_LITRE', 15, '2026-10-20'), null, 'no odometer readings');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Machine loan EMIs (v6 item 108)
+// Machine loan EMIs
 
 test('package: at sea past the day site needs it warns; a few days, or delivered, does not', () => {
   const stages = [
@@ -261,8 +252,7 @@ test('emi: an EMI more than two days late warns, with the oldest, the count and 
   assert.equal(emiOverdue(emis.map((e) => ({ ...e, paidOn: e.dueDate })), '2026-11-20'), null);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
-// QA/QC (item 137 part 3)
+// QA/QC
 
 test('tests short: a project warns at two or more tests short, its most short lines first', () => {
   const l = (short: number, required = 4) => ({ short, required, taken: required - short });
@@ -312,7 +302,6 @@ test('superseded copies: only those out past the recall period warn, one per doc
   assert.deepEqual(g.map((x) => [x.documentId, x.revision, x.copies.length, x.longest]), [['d3', 'R1', 1, 20], ['d1', 'R1', 2, 12]]);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
@@ -326,8 +315,7 @@ test('roles: each kind goes to the role that can act on it', () => {
   assert.deepEqual(watchListKinds('DOCUMENT_CONTROLLER'), ['DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE']);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Track record, pauses and the daily alerts (item 119)
+// Track record, pauses and the daily alerts
 
 const RULES = { windowDays: PAUSE_WINDOW_DAYS, minOutcomes: PAUSE_MIN_OUTCOMES, wrongShare: PAUSE_WRONG_SHARE };
 const o = (outcome: 'FIXED' | 'KNOWN' | 'WRONG', date: string) => ({ outcome, date });
@@ -352,8 +340,6 @@ test('alerts: only warnings not told before, most rupees first, then days, at mo
   assert.deepEqual(alertsToSend(open, new Set(['d']), 3).map((x) => x.key), ['b', 'e', 'f']);
   assert.deepEqual(alertsToSend(open, new Set(), 10).map((x) => x.key), ['d', 'b', 'e', 'f', 'c', 'a']);
 });
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 let failed = 0;
 for (const [name, fn] of cases) {
@@ -412,7 +398,7 @@ async function demo(): Promise<number> {
         await warnings.list(as('engineer@demo.com')).catch(() => (engineerRefused = true));
         check('a site engineer has no watch list', engineerRefused);
 
-        // Item 119: every warning leads with an action, carries its working and how sure it is.
+        // Every warning leads with an action, carries its working and how sure it is.
         for (const w of md.open) {
           check(`${w.key} has an action`, w.action.length > 10, w.action);
           check(`${w.key} has its working`, w.working.length > 0 && w.working.every((l) => l.length > 5));

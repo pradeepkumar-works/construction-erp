@@ -4,7 +4,7 @@ import { BottomSheet, SheetActions, type SheetAction } from '../components/Botto
 import { useT } from '../i18n/LanguageContext';
 import type { Launcher } from './useLauncher';
 
-/** A tile's long-press menu (launcher phase 4): Pin to Home, or Move earlier, Move later and Unpin on a pinned one. */
+/** A tile's long-press menu: Pin to Home, or Move earlier, Move later and Unpin on a pinned one. */
 export function useTileMenu(launcher: Launcher) {
   const t = useT();
   const [node, setNode] = useState<NavNode | null>(null);

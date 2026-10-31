@@ -10,7 +10,7 @@ type Ledger = { opening: string; closing: string; entries: { voucherNo: string; 
 const sum = (xs: (string | null)[]) => Math.round(xs.reduce((s, x) => s + Number(x ?? 0), 0) * 100) / 100;
 
 /**
- * The books (v6 item 102): the modules' records are posted and the books balance; a vendor bill is a purchase voucher;
+ * The books: the modules' records are posted and the books balance; a vendor bill is a purchase voucher;
  * accounts make a payment voucher on the page and management approves it, after which it is in the office rent ledger;
  * a journal that moves money is refused; and a site role cannot see the books.
  */

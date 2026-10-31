@@ -106,7 +106,7 @@ export class QualityService {
     private masters: MastersService,
   ) {}
 
-  /* ---------- tests ---------- */
+  // Tests
 
   toTestDto(r: TestRow, today = todayIn()): QualityTestDto {
     const readings = r.readings.map((x) => {
@@ -206,7 +206,7 @@ export class QualityService {
   }
 
   /**
-   * Where a test counts (item 137): the pour its cubes came from (on the same project, not cancelled) and the plan line,
+   * Where a test counts: the pour its cubes came from (on the same project, not cancelled) and the plan line,
    * given or else the only line of its type (or of its grade) on the project. `title` names the grade for the line.
    */
   private async placeInPlan(projectId: string, dto: { testTypeCode?: string | null; planLineId?: string | null; pourId?: string | null }, title: string) {
@@ -228,7 +228,7 @@ export class QualityService {
   }
 
   /**
-   * Where a sample went and the instrument it was tested on (item 137 part 2): a lab and an instrument of the company, sent
+   * Where a sample went and the instrument it was tested on: a lab and an instrument of the company, sent
    * on or after the sample and not after today, reported on or after it was sent.
    */
   private async labFields(
@@ -496,7 +496,7 @@ export class QualityService {
     }
   }
 
-  /* ---------- NCRs ---------- */
+  // NCRs
 
   toNcrDto(r: NcrRow, today = todayIn()): NcrDto {
     const dueDate = dateOnly(r.dueDate);
@@ -802,7 +802,7 @@ export class QualityService {
     }
   }
 
-  /* ---------- summary ---------- */
+  // Summary
 
   async summary(user: RequestUser, projectId?: string): Promise<QualitySummaryDto> {
     const base = { ...this.access.submissionWhere(user), ...(projectId ? { projectId } : {}) };

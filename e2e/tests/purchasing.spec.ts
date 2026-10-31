@@ -9,7 +9,7 @@ type Po = { id: string; poNo: string; status: string; lines: { id: string; quant
 type Bill = { id: string; billNo: string; matched: boolean; exceptions: string[]; dueDate: string; invoiceDate: string };
 
 /**
- * Purchase orders (v3 item 21): procurement enters two quotations on an approved request, raises the PO on the cheaper
+ * Purchase orders: procurement enters two quotations on an approved request, raises the PO on the cheaper
  * one from the comparative statement, management approves it, the store receives part of it against the PO, and
  * accounts records the vendor's invoice, which matches the PO and the GRN. Billing more than was received is flagged.
  */

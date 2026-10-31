@@ -52,7 +52,7 @@ const EXAMPLES = [
 ];
 
 /**
- * WhatsApp entries (AI item 120): a site person sends a text, a photo with a caption or a voice note to the company's
+ * WhatsApp entries: a site person sends a text, a photo with a caption or a voice note to the company's
  * WhatsApp number; Ask Nirmaan drafts the entry it describes and replies with Save and Discard. This page is the switch
  * (messages are read from the mobile number on the profile), how to use it, and every message with what became of it:
  * a draft still waiting can be saved here as it is, opened in its form to change, or discarded.

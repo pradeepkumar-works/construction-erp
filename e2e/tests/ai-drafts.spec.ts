@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { api, apiToken, formPanel, signIn } from './helpers';
 
 /**
- * Drafts from a sentence (AI item 71). The API runs with AI_PROVIDER=fake, which picks the draft tool and its inputs
+ * Drafts from a sentence. The API runs with AI_PROVIDER=fake, which picks the draft tool and its inputs
  * from the sentence by pattern; the real tools then match the demo company's items, activities and projects. The
  * draft opens in the list's own form, filled in, with what to check marked, and nothing is saved until Submit.
  */

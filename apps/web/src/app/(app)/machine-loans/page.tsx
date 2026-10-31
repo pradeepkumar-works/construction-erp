@@ -28,7 +28,7 @@ const STATUS_OPTIONS: { value: EquipmentLoanStatus | 'ALL'; label: string }[] = 
 ];
 
 /**
- * Machine loans (v6 item 108): loans on financed machines, what each has repaid and still owes, the next EMI and any
+ * Machine loans: loans on financed machines, what each has repaid and still owes, the next EMI and any
  * overdue, and the running loans by lender. Kept by admin, management and accounts.
  */
 function MachineLoansPage() {

@@ -6,7 +6,7 @@ import { fileUrl } from '@/lib/api';
 import type { DxfLayer } from './dxf';
 
 /**
- * A drawing file opened for the viewer (item 109): a PDF (pdf.js), a photo or scan, or a DXF. Each has pages of a known
+ * A drawing file opened for the viewer: a PDF (pdf.js), a photo or scan, or a DXF. Each has pages of a known
  * shape and draws a page onto a canvas at the size asked for, on white, as on paper, in either theme.
  */
 export interface Sheet {
@@ -17,7 +17,7 @@ export interface Sheet {
   /** Draws the page filling the canvas; a newer call on the same canvas cancels an unfinished one. */
   draw(canvas: HTMLCanvasElement, page: number, opts?: { hiddenLayers?: Set<string> }): Promise<void>;
   layers: DxfLayer[];
-  /** A DXF's width in its own drawing units, for a scale from those units (item 118) */
+  /** A DXF's width in its own drawing units, for a scale from those units */
   drawingWidth?: number;
   /** Pixels can be read back (comparing revisions, saving a marked-up copy) */
   readable: boolean;

@@ -95,7 +95,7 @@ const VIEWS = ['materials', 'structure', 'pipe', 'kits', 'exceptions', 'subcontr
 type View = (typeof VIEWS)[number];
 
 /**
- * A project's material reconciliation (v4, extended in v5 item 92 and item 128): materials against the work and the DPR,
+ * A project's material reconciliation: materials against the work and the DPR,
  * per component, per pipe size and per house-connection kit, the day's exceptions, each subcontractor's issues against
  * their measured work, stock written off by reason, and the estimate built from the rate analysis. Pipe and kits are
  * on projects whose type has a pipe network. The open view is `?sub=` in the URL.
@@ -365,7 +365,7 @@ function MaterialsView({ projectId }: { projectId: string }) {
           </Button>
           {data?.canEditNorms ? (
             <>
-              {/* The standard norms library (finding 16 of the October review): a project need not start from nothing. */}
+              {/* The standard norms library: a project need not start from nothing. */}
               <Button onClick={() => setLibraryOpen(true)}>Add standard norms</Button>
               <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm(null)}>
                 New norm

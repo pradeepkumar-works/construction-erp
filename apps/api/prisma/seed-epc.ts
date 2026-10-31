@@ -1,5 +1,5 @@
 /**
- * An EPC project in another currency (item 130, ARCHITECTURE "EPC"). Invented names and figures throughout.
+ * An EPC project in another currency (ARCHITECTURE "EPC"). Invented names and figures throughout.
  *
  * - WW-2026-07, an island sewerage scheme let as one EPC contract of US$ 6.2 million, kept in rupees at the contract
  *   rate of ₹ 83.25: a 6 MLD sequencing batch reactor plant with its units, the plant's mechanical and electrical

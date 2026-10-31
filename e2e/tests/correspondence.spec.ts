@@ -15,7 +15,7 @@ type Letter = {
 type Person = { id: string; fullName: string; canSign: boolean; onProject: boolean };
 
 /**
- * Correspondence (item 136): the document controller records a letter about a delay, numbered from the road project's
+ * Correspondence: the document controller records a letter about a delay, numbered from the road project's
  * series; the reply is a notice, so it waits for the project manager's signature and gets its number only when he or she
  * approves it; site engineers do not keep letters.
  */

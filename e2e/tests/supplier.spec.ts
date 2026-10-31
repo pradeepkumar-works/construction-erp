@@ -28,7 +28,7 @@ async function signInSupplier(page: Page) {
 }
 
 /**
- * Supplier portal (v6 item 105): the supplier sends a dispatch note with a truck, the store receives the GRN from that
+ * Supplier portal: the supplier sends a dispatch note with a truck, the store receives the GRN from that
  * note, and the supplier sees it received. An invoice they send reaches accounts in the Supplier inbox, who return it with
  * what to fix; the supplier is told.
  */

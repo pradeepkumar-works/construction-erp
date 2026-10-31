@@ -15,7 +15,7 @@ type Sector = {
 
 const project = async (token: string, code: string) => (await api<Page<Project>>(token, '/projects?pageSize=100')).items.find((p) => p.code === code)!;
 
-/** Sector progress views (v4 item 41): the road strip chart, the building floor matrix and the water pipeline. */
+/** Sector progress views: the road strip chart, the building floor matrix and the water pipeline. */
 test('road progress placed by chainage shows on the strip, and chainage off the road is refused', async ({ page }) => {
   const engineer = await apiToken('engineer@demo.com');
   const road = await project(engineer, 'RD-2026-01');

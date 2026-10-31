@@ -54,7 +54,7 @@ const ymd = (d: dayjs.Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') :
 const DATE = { style: { width: '100%' }, format: 'DD MMM YYYY' } as const;
 
 /**
- * Add a staff member or change one (v6 item 99: the full HR record). Job and terms for everyone who keeps staff; the
+ * Add a staff member or change one (the full HR record). Job and terms for everyone who keeps staff; the
  * personal, statutory and bank sections for staff admins and payroll. The last working day marks them as left; an exit
  * with its letter is recorded from the record's Service tab instead.
  */

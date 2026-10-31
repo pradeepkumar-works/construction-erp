@@ -8,7 +8,7 @@ import { AcceptOrderDto, ChangeQuery, CreateDispatchDto, CreateSupplierInvoiceDt
 
 const kindOf = (k: string) => (k === 'wo' ? 'WO' : 'PO') as 'PO' | 'WO';
 
-/** The supplier portal (v6 item 105): a supplier's own login, acting for its vendor. Staff are refused. */
+/** The supplier portal: a supplier's own login, acting for its vendor. Staff are refused. */
 @ApiTags('supplier portal')
 @ApiBearerAuth()
 @SupplierAllowed()

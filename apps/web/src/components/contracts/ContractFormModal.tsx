@@ -57,7 +57,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
   const found = useNoticePeriod(contract.projectId, open).data?.found ?? null;
   const currency = Form.useWatch('currency', form) ?? 'INR';
   const rate = Form.useWatch('exchangeRate', form);
-  // Amounts are typed in the contract currency and kept in rupees at the contract rate (item 130).
+  // Amounts are typed in the contract currency and kept in rupees at the contract rate.
   const typed = { currency, exchangeRate: rate ? String(rate) : null };
 
   useEffect(() => {

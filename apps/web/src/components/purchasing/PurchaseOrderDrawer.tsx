@@ -59,7 +59,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
     (data?.lines ?? []).map((l) => ({ itemName: l.itemName, make: l.make })),
   );
   const makeWarnings = makeCheck.data ?? [];
-  // Leakage checks (item 121): lines above what another site paid for the item in the 30 days before the order
+  // Leakage checks: lines above what another site paid for the item in the 30 days before the order
   const rateChecks = (data?.lines ?? []).flatMap((line) => (line.rateCheck ? [{ line, check: line.rateCheck }] : []));
   const [receiving, setReceiving] = useState(false);
   const [billing, setBilling] = useState(false);
@@ -372,7 +372,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
             ...(approved && !data.closedAt && user && canViewPaymentRequests(user.roleKey)
               ? [{ key: 'advances', title: 'Advance requests', children: <TargetRequests approved target={{ kind: 'PO_ADVANCE', purchaseOrderId: data.id, label: data.poNo, vendorName: data.vendorName }} base={String(toNumber(data.total) - toNumber(data.advanceRequested))} /> }]
               : []),
-            // What the approver needs to decide it (finding 15 of the October review): who else quoted, and the budget.
+            // What the approver needs to decide it: who else quoted, and the budget.
             ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the indent', children: <OrderQuotes order={data} /> }] : []),
             ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', title: 'Against the budget', children: <OrderBudget order={data} /> }] : []),
             { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
@@ -410,7 +410,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
+          // Delete is a tap from Approve no longer.
           more: [
             ...(data.open && buyer
               ? [

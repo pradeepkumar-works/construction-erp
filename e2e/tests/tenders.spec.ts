@@ -26,7 +26,7 @@ const post = (token: string, path: string, body: unknown = {}) =>
   fetch(`${API_URL}${path}`, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 /**
- * Tender bidding (v6 item 110): the QS records a tender from Tenders, adds a bid item from the schedule of rates,
+ * Tender bidding: the QS records a tender from Tenders, adds a bid item from the schedule of rates,
  * quotes 2% below the SOR and records the bid submitted; the quote is the SOR value less 2%.
  */
 test('the QS records a tender, prices an item from the SOR, quotes below it and submits', async ({ page }) => {

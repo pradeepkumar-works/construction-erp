@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
-import { CONTRACT_MODELS, MAX_BREAKDOWN, MAX_COMPONENT_COUNT, type ContractModel, MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
+import { CHECK_LEVELS, type CheckLevel, CONTRACT_MODELS, MAX_BREAKDOWN, MAX_COMPONENT_COUNT, type ContractModel, MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 
 /** `q` matches code, name, client, location and work order no. */
@@ -17,7 +17,7 @@ export class NextProjectCodeQuery {
   @ApiProperty({ enum: PROJECT_TYPES }) @IsIn(PROJECT_TYPES as unknown as string[]) type: ProjectType;
 }
 
-/** A component of the starting breakdown, and how many of it (item 134). */
+/** A component of the starting breakdown, and how many of it. */
 export class BreakdownPickDto {
   @ApiProperty({ example: '7' }) @IsString() @MaxLength(20) key: string;
   @ApiProperty({ example: 2 }) @IsInt() @Min(1) @Max(MAX_COMPONENT_COUNT) count: number;
@@ -99,6 +99,13 @@ export class UpdateProjectDto extends PartialType(OmitType(CreateProjectDto, ['a
 export class AddMemberDto {
   @ApiPropertyOptional() @ValidateIf((o: AddMemberDto) => !o.userIds) @IsUUID() userId?: string;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayMaxSize(100) @IsUUID('all', { each: true }) userIds?: string[];
+}
+
+export class MemberLevelDto {
+  @ApiPropertyOptional({ enum: CHECK_LEVELS, nullable: true, description: "A client guest's level on the project (item 172); null clears it" })
+  @IsOptional()
+  @IsIn(CHECK_LEVELS as unknown as string[])
+  checkLevel: CheckLevel | null;
 }
 
 export class CopyTeamDto {

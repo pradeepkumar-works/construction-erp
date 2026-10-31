@@ -1,6 +1,6 @@
 import { translate } from '../i18n/translate';
 
-/** The app's language for text built outside components; LanguageProvider keeps it in step (v4 item 49). */
+/** The app's language for text built outside components; LanguageProvider keeps it in step. */
 let language = 'en';
 export function setFormatLanguage(code: string) {
   language = code;
@@ -32,7 +32,7 @@ export function addDays(iso: string, days: number): string {
 }
 
 /**
- * Month names for each app language (UX item 88). Written out here rather than asked of `Intl`, which Hermes builds
+ * Month names for each app language. Written out here rather than asked of `Intl`, which Hermes builds
  * differ on, so a date reads the same on every phone. Digits stay Latin in Hindi too: that is Hindi's default in CLDR
  * (`hi-IN` uses `latn`) and what site staff see on bills, challans and their phones.
  */

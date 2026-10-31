@@ -1,4 +1,4 @@
-/** Hindi for the quality screens (v4 item 49): inspections, tests, NCRs, drawings, delays and risks, safety, snags. */
+/** Hindi for the quality screens: inspections, tests, NCRs, drawings, delays and risks, safety, snags. */
 export const QUALITY: Record<string, string> = {
   // Words shared by these screens
   Overdue: 'समय निकल गया',

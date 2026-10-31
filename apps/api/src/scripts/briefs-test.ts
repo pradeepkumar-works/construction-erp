@@ -1,5 +1,5 @@
 /**
- * The morning brief and the weekly narrative's tests (AI item 74). First the rules on their own: which lines a brief
+ * The morning brief and the weekly narrative's tests. First the rules on their own: which lines a brief
  * leads with, what is taken from the model and what is not (a figure the facts do not hold sends the rules' draft
  * instead). Then, when DATABASE_URL is set, the demo company with the test model: only people who asked get a brief,
  * a role's brief carries only what the role sees, a company with Ask Nirmaan off gets none, a brief turned off is not

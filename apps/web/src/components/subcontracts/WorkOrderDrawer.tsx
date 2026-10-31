@@ -87,7 +87,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const approved = data?.status === 'APPROVED';
   const openBill = data?.bills?.find((b) => b.status !== 'APPROVED' && b.status !== 'REJECTED');
   const finalBilled = data?.bills?.some((b) => b.isFinal && b.status !== 'REJECTED');
-  // Once an advance is paid through a payment request (v5 item 90), bills recover what was paid, not what the order says.
+  // Once an advance is paid through a payment request, bills recover what was paid, not what the order says.
   const advancePaid = data ? toNumber(data.advancePaid) : 0;
   const advanceLeft = data ? (advancePaid > 0 ? advancePaid : toNumber(data.advanceAmount)) - toNumber(data.advanceRecovered) : 0;
   const requests = approved && !data?.closedAt && !!user && canViewPaymentRequests(user.roleKey);
@@ -311,7 +311,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
               ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
+          // Delete is a tap from Approve no longer.
           more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `work order ${data.woNo}`, onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }

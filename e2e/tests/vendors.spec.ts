@@ -9,7 +9,7 @@ type Vendor = { id: string; name: string; gstin: string | null };
 const NAME = 'E2E Hardware Mart';
 
 /**
- * Vendor master (v3 item 20): procurement adds a vendor with its GSTIN, bank and MSME details; an expense that types the
+ * Vendor master: procurement adds a vendor with its GSTIN, bank and MSME details; an expense that types the
  * vendor's name links to it and takes its GSTIN, and a site engineer cannot see the bank details.
  */
 test('add a vendor and an expense typed with its name links to it', async ({ page }) => {

@@ -14,7 +14,7 @@ function DocumentsPage() {
   const tab: DocumentTab = DOCUMENT_TABS.includes(raw as DocumentTab) ? (raw as DocumentTab) : 'register';
   // "Drawing issued" notifications link here with ?id=<document>
   const id = search.get('id') ?? undefined;
-  // Letters moved to Correspondence (item 136): an old link (?tab=letters&letter=<id>) opens it there.
+  // Letters moved to Correspondence: an old link (?tab=letters&letter=<id>) opens it there.
   const letter = search.get('letter');
   const toLetters = raw === 'letters';
   useEffect(() => {

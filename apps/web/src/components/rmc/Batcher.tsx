@@ -26,7 +26,7 @@ const left = (o: RmcOrderDto) => Math.max(0, Number(o.quantity) - Number(o.deliv
 const materialsText = (r: PlantBatchRowDto) => r.materials.map((m) => `${formatQty(m.actualQty)} ${unitLabel(m.unit)} ${m.itemName}`).join(', ');
 
 /**
- * The batching plant controller's batches (item 149): each batch the controller wrote to its report, read by the
+ * The batching plant controller's batches: each batch the controller wrote to its report, read by the
  * Connector, waits here for its challan. The plant picks the order (offered by the batch's order column or its mix),
  * and Dispatch makes the challan with the batch's own weights; a trial or wasted batch is set aside with why.
  */

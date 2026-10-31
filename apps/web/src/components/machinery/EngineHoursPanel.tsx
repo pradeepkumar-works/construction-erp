@@ -33,7 +33,7 @@ const hrs = (v: string | null) =>
   );
 
 /**
- * Engine hours (item 146): each machine's day from its tracker or its maker's feed, beside the day's log. A log with
+ * Engine hours: each machine's day from its tracker or its maker's feed, beside the day's log. A log with
  * more hours than the engine ran, a working day with no log and a machine beyond its site's radius stand out.
  */
 export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: string }) {

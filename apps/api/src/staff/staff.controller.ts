@@ -90,7 +90,7 @@ export class StaffController {
     return this.staff.updateEmployee(user, id, dto);
   }
 
-  /* HR records (v6 item 99) */
+  /* HR records */
 
   @ApiOperation({ summary: 'HR dashboard: head count, joiners and leavers this month, probation due, birthdays, details missing' })
   @Get('hr-dashboard')
@@ -196,7 +196,7 @@ export class StaffController {
     return this.staff.rejectLeave(user, id, dto);
   }
 
-  /* overtime (v5 item 97) */
+  /* overtime */
 
   @ApiOperation({ summary: 'Overtime waiting for a decision that the caller may decide, oldest first' })
   @Get('overtime')

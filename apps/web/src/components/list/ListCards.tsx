@@ -22,7 +22,7 @@ export interface CardFields<T> {
 const fieldName = <T,>(c: ListColumn<T>) => `${c.key} ${Array.isArray(c.dataIndex) ? c.dataIndex.join('.') : String(c.dataIndex ?? '')}`;
 
 /**
- * Which columns fill a card (UX item 84). A column says so with `card`; where none does, the first column is the title,
+ * Which columns fill a card. A column says so with `card`; where none does, the first column is the title,
  * a column keyed or named `status` the tag, a right-aligned money column (amount, total, value, payable, outstanding)
  * the amount, a column with "date" in its key the date, and the project the line under the title. `card: false` keeps a
  * column off the card, as do the row actions.
@@ -88,7 +88,7 @@ function recordHref(node: React.ReactNode): string | undefined {
 type Pager = Exclude<TableProps<unknown>['pagination'], false | undefined>;
 
 /**
- * A list on a phone (below 768 px, UX item 84): each row is a card with its name, status, amount and date and one
+ * A list on a phone (below 768 px): each row is a card with its name, status, amount and date and one
  * line under them. The name is the card's one control, stretched over the whole card, so a tap anywhere opens the record
  * as a click on its row does; a tick box sits beside it when the list has bulk actions. Paging, the totals for the page,
  * the first-load placeholder and the empty state follow the table's.

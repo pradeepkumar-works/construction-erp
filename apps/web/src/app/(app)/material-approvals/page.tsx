@@ -44,7 +44,7 @@ const KINDS = [
 ];
 
 /**
- * Material approvals (v6 item 113): requests to the client's engineer or the consultant to approve a make or a sample,
+ * Material approvals: requests to the client's engineer or the consultant to approve a make or a sample,
  * each submission a revision with its outcome, and each project's list of approved makes (from the contract, or
  * approved on request), which purchase orders are checked against.
  */

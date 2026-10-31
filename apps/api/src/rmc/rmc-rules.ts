@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { RMC_GST_RATE } from '@erp/shared';
 
 /**
- * RMC's figures (v6 item 104), with no database: what a truck takes out of the plant's stock at its mix design, how
+ * RMC's figures, with no database: what a truck takes out of the plant's stock at its mix design, how
  * far the weighed quantities strayed, how much more an order may dispatch, a bill's GST, and what the day's orders
  * still need against the plant's stock. Tested in `src/scripts/rmc-test.ts`.
  */

@@ -1,5 +1,5 @@
 /**
- * Stock against the DPR on the town water supply scheme (item 128). Invented names and figures throughout.
+ * Stock against the DPR on the town water supply scheme. Invented names and figures throughout.
  *
  * - Norms on activities: the tanks' concrete (cement, aggregate, sand, admixture per m³) and steel, the zone's pipe
  *   jointing (a coupler a length), and the house connection kit on Tapping and saddle.

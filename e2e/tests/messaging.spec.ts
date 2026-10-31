@@ -6,7 +6,7 @@ type Pending = { type: string; id: string; submittedByName: string };
 type Message = { userName: string | null; template: string; channel: string; status: string; body: string };
 
 /**
- * WhatsApp and SMS (v3 item 31): a site engineer switches WhatsApp alerts on and sends herself a test; when her project
+ * WhatsApp and SMS: a site engineer switches WhatsApp alerts on and sends herself a test; when her project
  * manager sends one of her expenses back, the send-back goes to her phone too; management sees it in the message log.
  * CI has no WhatsApp account, so messages are logged as "Not set up" with the text that would have gone.
  */

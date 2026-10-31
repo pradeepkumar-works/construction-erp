@@ -3,7 +3,7 @@ import type { LetterDirection } from './documents';
 import { financialYearOf } from './procurement';
 
 /**
- * Correspondence (item 136, ARCHITECTURE "Correspondence"): the company's inward (dak) and outward registers, for every
+ * Correspondence (ARCHITECTURE "Correspondence"): the company's inward (dak) and outward registers, for every
  * project and head office. A letter received is numbered on entry and marked to someone with an action and a date; a letter
  * sent is drafted, approved by its signatory where the company asks for it, numbered only then, dispatched and proven
  * delivered. Numbers, which letters need approval, replies due and proof missing are pure here; the service applies them.
@@ -81,7 +81,7 @@ export function letterNeedsApproval(rule: LetterApprovalRule, category: string |
   return isContractualCategory(category);
 }
 
-/** Who seals a letter at head office (L2, item 169): the directors. A director who signs at L1 has sealed it already. */
+/** Who seals a letter at head office (L2): the directors. A director who signs at L1 has sealed it already. */
 export const LETTER_SEAL_ROLES = ['ADMIN', 'MANAGEMENT'] as const;
 export const maySealLetters = (role: string) => (LETTER_SEAL_ROLES as readonly string[]).includes(role);
 
@@ -104,8 +104,6 @@ export function letterRulesProblem(first: LetterApprovalRule, second: LetterAppr
 /** Where a letter waiting for approval stands: with its signatory (L1) or at head office (L2). */
 export const letterApprovalStage = (l: { status: LetterStatus; signedAt: string | null }): 'SIGN' | 'SEAL' | null =>
   l.status !== 'AWAITING_APPROVAL' ? null : l.signedAt ? 'SEAL' : 'SIGN';
-
-/* ---------- numbering ---------- */
 
 /** P07/OUT/26-27/042; head office HO/IN/26-27/015. */
 export const LETTER_NUMBER_PATTERN = '{PREFIX}/{DIR}/{FY}/{NNN}';
@@ -161,8 +159,6 @@ export function letterPrefixProblem(prefix: string): string | null {
   return null;
 }
 
-/* ---------- replies, actions and proof ---------- */
-
 export interface LetterFacts {
   direction: LetterDirection;
   status: LetterStatus;
@@ -198,8 +194,6 @@ export function actionOverdue(l: Pick<LetterFacts, 'status' | 'actionDue' | 'mar
 /** Days from the letter's receipt to its reply date, for the date the form suggests (7 by default, 3 for urgent). */
 export const DEFAULT_REPLY_DAYS: Record<LetterPriority, number> = { NORMAL: 7, URGENT: 3 };
 
-/* ---------- templates ---------- */
-
 /** Placeholders a template's subject and text may use, filled when a draft starts from it. */
 export const LETTER_TEMPLATE_FIELDS = ['{to}', '{office}', '{project}', '{contract}', '{theirRef}', '{theirDate}', '{subject}', '{company}', '{date}'] as const;
 export type LetterTemplateValues = Partial<Record<'to' | 'office' | 'project' | 'contract' | 'theirRef' | 'theirDate' | 'subject' | 'company' | 'date', string | null>>;
@@ -230,8 +224,6 @@ export const STANDARD_LETTER_TEMPLATES: { name: string; category: string; subjec
     body: 'We invite your kind attention to our letter {theirRef} dated {theirDate} regarding {subject}, to which we have not yet received a reply.\n\nWe request you to kindly reply at the earliest.',
   },
 ];
-
-/* ---------- DTOs ---------- */
 
 export interface LetterRefLite {
   id: string;
@@ -289,7 +281,7 @@ export interface LetterSeriesDto {
 
 export interface LetterSettingsDto {
   approval: LetterApprovalRule;
-  /** Item 169: which signed letters then wait for a director's seal at head office before they are numbered */
+  /** Which signed letters then wait for a director's seal at head office before they are numbered */
   seal: LetterApprovalRule;
   series: LetterSeriesDto[];
   /** Projects and head office without a series of their own yet (one is made with the defaults on their first letter) */

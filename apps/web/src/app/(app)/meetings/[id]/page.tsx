@@ -19,7 +19,7 @@ import { minutesText, openMinutesPrint } from '@/components/meetings/meetingPrin
 import { CommentsCard } from '@/components/comments/CommentsSection';
 
 /**
- * One meeting (v6 item 112): its minutes (who came, what was noted and decided), the actions it gave out with who does
+ * One meeting: its minutes (who came, what was noted and decided), the actions it gave out with who does
  * each by when, and what earlier meetings of the project left open. A draft is issued from here, which emails the
  * minutes and tells our action owners; issued minutes print or go to WhatsApp.
  */

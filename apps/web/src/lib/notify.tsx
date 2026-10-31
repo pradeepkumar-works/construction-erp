@@ -9,7 +9,7 @@ import { api, describeError } from './api';
 import { isMac } from './shortcuts';
 
 /**
- * Feedback after an action (UX item 86), in one place: "Saved" with View, "Deleted" with Undo for ten seconds, and a
+ * Feedback after an action, in one place: "Saved" with View, "Deleted" with Undo for ten seconds, and a
  * failure in plain words with Retry. Success notices are polite (`role="status"`); failures stay assertive.
  *
  * A mutation opts into the failure notice with `meta: FAIL_NOTICE`: its Retry runs the same mutation again with the

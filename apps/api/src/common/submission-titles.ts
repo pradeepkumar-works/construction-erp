@@ -24,7 +24,7 @@ export const expenseTitle = (expenseNo: string, total: string, description: stri
 export const measurementTitle = (mbNo: string, itemNo: string, qty: string, unit: string, location: string) =>
   `${mbNo}: item ${itemNo}, ${Number(qty)} ${unit} at ${location}`;
 
-/** "RA bill 3: ₹48,25,000.00 of work" (the final bill says so); "O&M bill 6: ₹17,39,000.00 of O&M" (item 131). */
+/** "RA bill 3: ₹48,25,000.00 of work" (the final bill says so); "O&M bill 6: ₹17,39,000.00 of O&M". */
 export const billTitle = (billNo: number, isFinal: boolean, gross: string, om = false) =>
   `${om ? 'O&M' : 'RA'} bill ${billNo}${isFinal ? ' (final)' : ''}: ₹${Number(gross).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} of ${om ? 'O&M' : 'work'}`;
 
@@ -32,6 +32,13 @@ export const inr = (v: string) => `₹${Number(v).toLocaleString('en-IN', { mini
 
 /** "PO-2026-0004: ₹2,45,000.00 to Utkal Cement Traders". */
 export const poTitle = (poNo: string, total: string, vendor: string) => `${poNo}: ${inr(total)} to ${vendor}`;
+
+/** "Supplier for MR-2026-0012: Steel Traders (L1), ₹4,52,000.00" or "… lowest per item, split, …". */
+export const supplierChoiceTitle = (requestNo: string, vendor: string | null, split: boolean, rank: number | null, amount: string) =>
+  `Supplier for ${requestNo}: ${split ? 'lowest per item, split' : `${vendor ?? 'a deleted quotation'}${rank ? ` (L${rank})` : ''}`}, ${inr(amount)}`;
+
+/** The rows `supplierChoiceTitle` reads. */
+export const SUPPLIER_CHOICE_TITLE = { materialRequest: { select: { requestNo: true } }, quotation: { select: { vendor: { select: { name: true } } } } } as const;
 
 /** "WO-2026-0003: Brickwork, Block A, ₹8,40,000.00 to Mahanadi Builders". */
 export const woTitle = (woNo: string, title: string, value: string, vendor: string) => `${woNo}: ${title}, ${inr(value)} to ${vendor}`;
@@ -50,7 +57,7 @@ export const inspectionTitle = (inspectionNo: string, activity: string, location
 export const paymentRequestTitle = (requestNo: string, amount: string, vendor: string, target: string, advance: boolean) =>
   `${requestNo}: ${inr(amount)} to ${vendor} ${advance ? `as an advance on ${target}` : `against ${target}`}`;
 
-/** A fund request (v6 item 107): "PR-2026-0009: ₹50,000.00 for wages, into Ramesh Das's imprest". */
+/** A fund request: "PR-2026-0009: ₹50,000.00 for wages, into Ramesh Das's imprest". */
 export const fundRequestTitle = (requestNo: string, amount: string, purpose: FundPurpose | null, vendor: string | null, holder: string | null) =>
   `${requestNo}: ${inr(amount)} for ${purpose ? FUND_PURPOSE_LABELS[purpose].toLowerCase() : 'the site'}, ${vendor ? `to ${vendor} on account` : `into ${holder ?? 'the site'}'s imprest`}`;
 

@@ -32,7 +32,7 @@ const STATE_FILTERS: { value: StateFilter; label: string }[] = [
 ];
 
 /**
- * Controlled copies (item 138 part 3): every numbered print of a drawing in someone's hands on site, the superseded ones
+ * Controlled copies: every numbered print of a drawing in someone's hands on site, the superseded ones
  * first, to be taken back; and copies issued from here or from the document.
  */
 export function ControlledCopiesPage() {

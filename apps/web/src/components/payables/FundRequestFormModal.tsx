@@ -39,7 +39,7 @@ interface FormValues {
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 
 /**
- * A site asks head office for money (v6 item 107): for wages, a local purchase or a petty contractor, released into the
+ * A site asks head office for money: for wages, a local purchase or a petty contractor, released into the
  * site's imprest or paid to a party on account, optionally on behalf of another site. It goes to approval through the
  * matrix like any payment request; with `request`, a returned one is fixed and resubmitted.
  */
@@ -199,7 +199,7 @@ interface ReleaseValues {
   reference?: string;
 }
 
-/** Release an approved fund request into its imprest (v6 item 107): a paid advance that raises the holder's cash in hand. */
+/** Release an approved fund request into its imprest: a paid advance that raises the holder's cash in hand. */
 export function ReleaseFundsModal({ request, onClose }: { request: PaymentRequestDto | null; onClose: () => void }) {
   const [form] = Form.useForm<ReleaseValues>();
   const qc = useQueryClient();

@@ -1,5 +1,5 @@
 /**
- * Hindi for the navigation tree (launcher phase 4): every live node's name, description and group, as the Home tab's
+ * Hindi for the navigation tree: every live node's name, description and group, as the Home tab's
  * tiles and the module screens show them. `npm run i18n:check` also checks that each live node of `NAV_TREE` is here.
  */
 export const NAV: Record<string, string> = {
@@ -363,7 +363,7 @@ export const NAV: Record<string, string> = {
   'Pinned {name} to Home': '{name} होम पर पिन हुआ',
   'Removed {name} from Pinned': '{name} पिन से हटाया',
   Undo: 'वापस लें',
-  // Item 135: QA/QC, Safety, Design and drawings and Correspondence as modules of their own, and the masters
+  // QA/QC, Safety, Design and drawings and Correspondence as modules of their own, and the masters
   'Inspections and hold points, material tests, NCRs, material to check and checklists.': 'निरीक्षण और होल्ड पॉइंट, सामग्री टेस्ट, NCR, जाँच के लिए सामग्री और चेकलिस्ट।',
   'Incidents and near misses, permits to work, toolbox talks and PPE.': 'घटनाएँ और बाल-बाल बचे हादसे, काम के परमिट, टूलबॉक्स टॉक और PPE।',
   'Design and drawings': 'डिज़ाइन और ड्रॉइंग',
@@ -385,7 +385,7 @@ export const NAV: Record<string, string> = {
   'The departments people work in.': 'वे विभाग जिनमें लोग काम करते हैं।',
   'Designations': 'पद',
   'Job titles on employee records.': 'कर्मचारी रिकॉर्ड पर पद के नाम।',
-  // Item 136: Correspondence
+  // Correspondence
   'Inward register': 'आवक रजिस्टर',
   'Letters received, numbered on entry, marked to someone with an action and a date.': 'आए हुए पत्र, आते ही नंबर, किसी को काम और तारीख के साथ सौंपे गए।',
   'Outward register': 'जावक रजिस्टर',

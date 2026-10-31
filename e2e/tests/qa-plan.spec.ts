@@ -6,7 +6,7 @@ type Due = { rows: { line: { id: string; testType: string; projectId: string }; 
 type Cubes = { projectName: string; grade: string; results: unknown[]; acceptance: { verdict: string; meanNeeded: number; individualMin: number } }[];
 
 /**
- * QA/QC part 1 (item 137): the building's project manager plans a pour, records it poured without a passed card, and
+ * QA/QC part 1: the building's project manager plans a pour, records it poured without a passed card, and
  * the register flags it and counts the cube sets IS 456 asks for; the building's M25 cubes are checked against Table 11;
  * tests due add up; a site engineer cannot change the quality plan.
  */

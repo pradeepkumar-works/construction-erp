@@ -22,11 +22,11 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
  */
 export const LEAVE_ENTITLEMENT: Record<LeaveType, number | null> = { CASUAL: 12, SICK: 12, EARNED: 15, COMP_OFF: null, UNPAID: null, ON_DUTY: null, TOUR: null };
 
-/** Attendance extras (v5 item 97): away on company work; approved like leave but counted present and paid. */
+/** Attendance extras: away on company work; approved like leave but counted present and paid. */
 export const PRESENT_LEAVE_TYPES: readonly LeaveType[] = ['ON_DUTY', 'TOUR'];
 export const countsAsPresent = (type: LeaveType) => PRESENT_LEAVE_TYPES.includes(type);
 
-/** Attendance extras (v5 item 97): overtime from a check-out waits for the posting's project manager or HR. */
+/** Attendance extras: overtime from a check-out waits for the posting's project manager or HR. */
 export const OVERTIME_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
 export type OvertimeStatus = (typeof OVERTIME_STATUSES)[number];
 export const OVERTIME_STATUS_LABELS: Record<OvertimeStatus, string> = { PENDING: 'Waiting', APPROVED: 'Approved', REJECTED: 'Rejected' };

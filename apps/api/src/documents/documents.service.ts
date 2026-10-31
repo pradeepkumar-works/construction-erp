@@ -81,7 +81,7 @@ const TRANSMITTAL_ORDER: Record<TransmittalSortField, (o: SortOrder) => Prisma.T
 const DESC_DEFAULT = new Set<string>(['issuedOn', 'updatedAt', 'sentOn', 'transmittalNo', 'letterDate', 'letterNo', 'createdAt']);
 const order = (sortBy: string, o: SortOrder | undefined): SortOrder => o ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
 
-/** Letters received that we owe a reply to (Correspondence, item 136, keeps the registers). */
+/** Letters received that we owe a reply to (Correspondence keeps the registers). */
 const LETTERS_AWAITING = { direction: 'IN', status: 'OPEN', replyBy: { not: null }, replies: { none: { direction: 'OUT', status: 'ISSUED' } } } satisfies Prisma.LetterWhereInput;
 
 /** Revisions in force order: the latest issued first (the one added last wins a tie). */
@@ -90,7 +90,7 @@ const REVISION_ORDER: Prisma.DocumentRevisionOrderByWithRelationInput[] = [{ iss
 /**
  * Document register: drawings and documents with their revisions (files on each revision), transmittals that send
  * revisions to someone. Anyone on a project reads the register; document control roles change it. Letters are
- * Correspondence's (item 136, `CorrespondenceService`).
+ * Correspondence's (`CorrespondenceService`).
  * The current revision is the latest issued and is kept on `Document.currentRevisionId`.
  */
 @Injectable()
@@ -111,7 +111,7 @@ export class DocumentsService {
     await this.text.readPending(user.organizationId, [projectId], 3, 15_000).catch((e: Error) => this.log.warn(`reading files: ${e.message}`));
   }
 
-  /* ---------- documents ---------- */
+  // Documents
 
   private toRevisionDto(r: RevisionRow, currentId: string | null, transmittals: DocumentRevisionDto['transmittals'] = []): DocumentRevisionDto {
     return {
@@ -406,7 +406,7 @@ export class DocumentsService {
     }
   }
 
-  /* ---------- transmittals ---------- */
+  // Transmittals
 
   private toTransmittalDto(t: TransmittalRow): TransmittalDto {
     return {
@@ -549,7 +549,7 @@ export class DocumentsService {
     return { ok: true };
   }
 
-  /* ---------- summary ---------- */
+  // Summary
 
   async summary(user: RequestUser, projectId?: string): Promise<DocumentSummaryDto> {
     const base = { ...this.access.submissionWhere(user), ...(projectId ? { projectId } : {}) };

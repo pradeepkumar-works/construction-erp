@@ -30,9 +30,9 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
   const notify = useNotify();
   const qc = useQueryClient();
   const editing = !!doc;
-  // A drawing's title block read to fill the form (AI item 70).
+  // A drawing's title block read to fill the form.
   const [readState, setReadState] = useState<ReadState | null>(null);
-  // The drawing itself is kept as the revision's file (finding 13 of the October review).
+  // The drawing itself is kept as the revision's file.
   const keepDrawing = useKeepReadFile(form, ['revision', 'files']);
   const [activeRead, setActiveRead] = useState<string | null>(null);
 

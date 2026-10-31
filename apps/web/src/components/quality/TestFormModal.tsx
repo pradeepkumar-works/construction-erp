@@ -42,7 +42,7 @@ interface FormValues {
 
 const num = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? null : String(v));
 
-/** Where a new test comes from (item 137): a line of the tests due register, or a pour's cube set. */
+/** Where a new test comes from: a line of the tests due register, or a pour's cube set. */
 export interface TestPrefill {
   testTypeCode?: string;
   planLineId?: string;
@@ -77,14 +77,14 @@ export function TestFormModal({ open, onClose, projectId, test, prefill }: { ope
   const sampledOn = Form.useWatch('sampledOn', form);
   const specMin = Form.useWatch('specMin', form);
   const specMax = Form.useWatch('specMax', form);
-  // A hydraulic test names the pipes it covers (item 126); a pass marks their testing done.
+  // A hydraulic test names the pipes it covers; a pass marks their testing done.
   const { data: network } = usePipeNetwork(open && kind === 'HYDRAULIC' ? selectedProject : undefined);
   const pipeOptions = (network?.segments ?? [])
     .filter((s) => s.scope === 'PROPOSED')
     .sort((a, b) => comparePipeCodes(a.code, b.code))
     .map((s) => ({ value: s.id, label: segmentLabel(s) }));
   const hasSpec = num(specMin) !== null || num(specMax) !== null;
-  // Where the sample was tested (item 137 part 2): a lab, the day sent and its report, and the machine used.
+  // Where the sample was tested: a lab, the day sent and its report, and the machine used.
   const { data: labs } = useQaLabs(open);
   const { data: register } = useInstruments(undefined, open);
   const labId = Form.useWatch('labId', form);

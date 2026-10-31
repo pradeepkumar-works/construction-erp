@@ -8,7 +8,6 @@ const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
 const Amount = (message: string, min = 0) => (target: object, key: string) => [IsNumber({ maxDecimalPlaces: 2 }, { message }), Min(min, { message }), Max(1e13, { message })].forEach((d) => d(target, key));
 const Pct = (message: string) => (target: object, key: string) => [IsNumber({ maxDecimalPlaces: 2 }, { message }), Min(0, { message }), Max(100, { message })].forEach((d) => d(target, key));
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Schedules of rates
 
 export class SorBookInput {
@@ -55,7 +54,6 @@ export class UpdateSorItemDto {
   @ApiPropertyOptional() @IsOptional() @Amount('Enter the rate, zero or more') rate?: number;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Tenders
 
 export class TenderQuery {

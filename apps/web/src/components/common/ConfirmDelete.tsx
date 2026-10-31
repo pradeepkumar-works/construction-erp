@@ -59,7 +59,7 @@ function ProblemLine({ text }: { text: string }) {
 }
 
 /**
- * The one delete confirmation (UX item 86): wraps the button that deletes, asks "Delete bill RA-04?" with a red
+ * The one delete confirmation: wraps the button that deletes, asks "Delete bill RA-04?" with a red
  * Delete (or Remove), stays open with the button loading until the delete is done, and shows a failure in place so
  * Delete can simply be pressed again. Once it is gone, a polite notice says so, with Undo where the API can restore it.
  */

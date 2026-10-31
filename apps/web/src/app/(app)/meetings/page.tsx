@@ -34,7 +34,7 @@ const ACTION_STATUS = [
 ];
 
 /**
- * Meetings (v6 item 112): the minutes of each project's meetings, newest first, and the register of the actions they
+ * Meetings: the minutes of each project's meetings, newest first, and the register of the actions they
  * gave out, open ones by due date, so nothing agreed at a meeting is lost before the next one.
  */
 function MeetingsPage() {

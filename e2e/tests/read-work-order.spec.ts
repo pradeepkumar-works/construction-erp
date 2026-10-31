@@ -9,7 +9,7 @@ type Contract = { agreementNo: string | null; agreementDate: string | null };
 type Boq = { itemNo: string; section: string | null; unit: string; rate: string; originalQty: string }[];
 
 /**
- * Reading the work order and the BOQ (finding 10 of the October review): a work order or LoA fills New project, a
+ * Reading the work order and the BOQ: a work order or LoA fills New project, a
  * value read with low confidence is marked to check, a client not in the master can be added from the read name; and
  * a BOQ PDF or scan comes into the BOQ import as rows to check and untick before importing. The model is the scripted
  * stand-in, which reads a road work order and four of its BOQ items off any page.

@@ -10,7 +10,7 @@ type Entry = { id: string; entryNo: string; type: string; qcStatus: string | nul
 type Unit = { id: string; code: string; name: string; isActive: boolean; itemCount: number };
 
 /**
- * Small items (v4 item 48): QA/QC accepts or rejects material on a GRN, the delivery status of approved purchase
+ * Small items: QA/QC accepts or rejects material on a GRN, the delivery status of approved purchase
  * orders, the unit master and financial-year ranges on the register's date filter.
  */
 test('QA/QC records a GRN as partly accepted with the rejected quantity', async ({ page }) => {

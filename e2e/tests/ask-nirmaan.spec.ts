@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { API_URL, WCAG_TAGS, api, apiToken, signIn } from './helpers';
 
 /**
- * Ask Nirmaan (AI item 67). CI runs the API with AI_PROVIDER=fake: a scripted stand-in for the model that calls one
+ * Ask Nirmaan. CI runs the API with AI_PROVIDER=fake: a scripted stand-in for the model that calls one
  * real tool picked from the question's words and lists what came back as links. So these tests cover the panel,
  * streaming, the tools' access rules, citations, history and the admin switch, but not the model's wording.
  */

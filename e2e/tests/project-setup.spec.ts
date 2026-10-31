@@ -6,7 +6,7 @@ type Setup = { show: boolean; done: number; total: number; steps: { key: string;
 type Project = { id: string; members: { userId: string }[] };
 
 /**
- * Setting up a project (finding 6 of the October review): deductions start from the client's terms or the standard
+ * Setting up a project: deductions start from the client's terms or the standard
  * ones, a project copies another's team and terms, the Overview's checklist ticks itself, and a BOQ far from the
  * contract value is flagged.
  */

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { api, apiToken, localToday, queueItem, signIn, uniqueQty } from './helpers';
 
-/** The Approvals inbox (UI roadmap item 58): the queue beside the entry, decisions from the keyboard, bulk approval. */
+/** The Approvals inbox: the queue beside the entry, decisions from the keyboard, bulk approval. */
 
 type Project = { id: string; code: string };
 type Activity = { id: string; name: string };

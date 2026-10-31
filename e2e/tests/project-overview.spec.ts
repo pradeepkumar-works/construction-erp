@@ -4,7 +4,7 @@ import { api, apiToken, signIn } from './helpers';
 type Project = { id: string; code: string; name: string; members: { userId: string; fullName: string }[] };
 
 /**
- * A project's overview in five seconds (UX item 85): on track or behind in words first, figures against their plan,
+ * A project's overview in five seconds: on track or behind in words first, figures against their plan,
  * no duplicated counts, and removing a team member behind a menu that asks first.
  */
 test('the overview leads with on track or behind, and figures against plan', async ({ page }) => {

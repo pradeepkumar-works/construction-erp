@@ -58,7 +58,7 @@ export async function downloadBoqTemplate() {
   XLSX.writeFile(wb, 'BOQ-import-template.xlsx');
 }
 
-/** `onImported` is called once the items are in, to offer the activity links (finding 11 of the October review). */
+/** `onImported` is called once the items are in, to offer the activity links. */
 export function BoqImportModal({ open, onClose, projectId, onImported }: { open: boolean; onClose: () => void; projectId: string; onImported?: () => void }) {
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -67,7 +67,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [mapping, setMapping] = useState<Partial<Record<Field, string>>>({});
   const [parseError, setParseError] = useState<string | null>(null);
-  // A BOQ read off a PDF or scan (finding 10 of the October review): its pages, the rows to check, and those left out.
+  // A BOQ read off a PDF or scan: its pages, the rows to check, and those left out.
   const [readState, setReadState] = useState<ReadState | null>(null);
   const [readRows, setReadRows] = useState<ReadBoqRow[]>([]);
   const [activeRead, setActiveRead] = useState<string | null>(null);

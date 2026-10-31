@@ -13,7 +13,6 @@ import { CUBE_7DAY_SHARE, cubeEarly, paidAfterBankChange, selfReceived, splitOrd
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
 
-// ── Q0: the watch list's Other checks ──────────────────────────────────────────────────────────────────────────────
 test('Q0: an admin gets every check, Ask Nirmaan included', () => {
   assert.deepEqual(insightKeysFor('ADMIN'), ['leakage', 'cashForecast', 'billingReadiness', 'attendanceCheck', 'ai']);
 });
@@ -29,7 +28,6 @@ test('Q0: a site engineer gets no check whose page refuses them', () => {
   assert.ok(!keys.includes('ai'));
 });
 
-// ── Q1: margin fade ────────────────────────────────────────────────────────────────────────────────────────────────
 // A job budgeted at 80 against a contract of 100: on budget the margin is 20%.
 const BAC = 80;
 const CV = 100;
@@ -75,7 +73,6 @@ test('Q1: the margin warning goes to those who see cost and approve', () => {
   assert.ok(!watchListKinds('SITE_ENGINEER').includes('MARGIN_FADE'));
 });
 
-// ── Q2: cubes weak at 7 days ───────────────────────────────────────────────────────────────────────────────────────
 const cube = (at7: number | null, at28: number | null = null) => [{ label: '7 days', value: at7 }, { label: '28 days', value: at28 }];
 
 test('Q2: a 7-day result pointing under the mark warns, with the projection and the shortfall', () => {
@@ -104,7 +101,6 @@ test('Q2: the cube warning goes to QA/QC and the approvers', () => {
   assert.ok(!watchListKinds('ACCOUNTS_MANAGER').includes('CUBE_7DAY_LOW'));
 });
 
-// ── Q3: DPR credibility ────────────────────────────────────────────────────────────────────────────────────────────
 const line = (id: string, activityId: string, quantity: number, crew = 0, used: string[] = []) => ({ id, activityId, activityName: `Activity ${activityId}`, unit: 'Cum', quantity, crew, machines: 0, usedItemIds: used });
 const report = (lines: ReturnType<typeof line>[], crew = 0, crewKey = '') => ({ id: 'r', date: '2026-10-28', crew, machines: 0, crewKey, lines });
 
@@ -151,7 +147,6 @@ test('Q3: the checks are for those who approve daily reports', () => {
   assert.ok(!canSeeDprChecks('SITE_ENGINEER'));
 });
 
-// ── Q5: vendor scorecard at L1 ─────────────────────────────────────────────────────────────────────────────────────
 const r = (rate: number, gstRate = 18) => ({ rate: String(rate), gstRate: String(gstRate) });
 
 test('Q5: the median of the quotations, odd and even', () => {
@@ -175,7 +170,6 @@ test('Q5: a habit needs three deliveries; late on a quarter, a twentieth rejecte
   assert.ok(vendorScore(undefined, null).thin, 'never delivered');
 });
 
-// ── Q6: purchase controls ──────────────────────────────────────────────────────────────────────────────────────────
 const po = (id: string, date: string, total: number, extra: Partial<{ vendorId: string; reviewedById: string | null; limit: number | null }> = {}) => ({ id, poNo: `PO-${id}`, vendorId: 'v1', projectId: 'p1', date, total, reviewedById: 'pm', limit: 500_000, ...extra });
 
 test('Q6: orders each within the limit and together above it, within a week, read as split', () => {
@@ -210,7 +204,6 @@ test('Q6: the controls are for management, accounts and the admin, never the buy
   assert.ok(!watchListKinds('PROCUREMENT_MANAGER').includes('PURCHASE_CONTROL'));
 });
 
-// ── Q7: the next bill ──────────────────────────────────────────────────────────────────────────────────────────────
 test('Q7: the next bill runs to this month end, or the next when fewer than five days are left', () => {
   assert.equal(billDateFor('2026-10-10'), '2026-10-31');
   assert.equal(billDateFor('2026-10-26'), '2026-10-31', 'five days left');
@@ -231,7 +224,6 @@ test('Q7: lump-sum stages count what is done beyond what was billed, never less 
   assert.equal(stagesUnbilled([{ value: 1_000_000, evidencePct: 60, billedPct: 40 }, { value: 500_000, evidencePct: 20, billedPct: 30 }, { value: 200_000, evidencePct: 100, billedPct: 100 }]), 200_000);
 });
 
-// ── Q4: bid intelligence ───────────────────────────────────────────────────────────────────────────────────────────
 test('Q4: the kind of work comes from the title, a bridge on a road reading as a bridge', () => {
   assert.equal(workKindOf('Improvement of Khurda-Begunia road, km 0.000 to 14.200'), 'ROAD');
   assert.equal(workKindOf('Construction of 30-bed CHC building at Pipili'), 'BUILDING');
@@ -273,7 +265,6 @@ test('Q4: the level is read from the strongest basis with two openings, and the 
   assert.equal(bidLevel([o[0], { match: 'KIND', l1Pct: null }], null), null);
 });
 
-// ── Q8: toolbox talk in Hindi ──────────────────────────────────────────────────────────────────────────────────────
 test('Q8: hazards come from whole words in a name, a bridge or a slab bringing up its own', () => {
   assert.deepEqual(hazardsIn('RCC M25 slab casting, first floor'), ['HEIGHT', 'CONCRETE']);
   assert.deepEqual(hazardsIn('Excavation for DI pipe trench'), ['EXCAVATION']);
@@ -302,7 +293,6 @@ test('Q8: with nothing that names a hazard, the talk is the general one on safet
   assert.equal(talkText(t, 'en').split('\n').length, 1 + 4 + 1);
 });
 
-// ── Q9: MIS commentary ─────────────────────────────────────────────────────────────────────────────────────────────
 test('Q9: rupees in crore and lakh for the board', () => {
   assert.equal(inrWords(24_500_000), '₹2.45 crore');
   assert.equal(inrWords(3_820_000), '₹38.2 lakh');

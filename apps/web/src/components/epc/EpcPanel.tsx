@@ -63,7 +63,7 @@ const ymd = (d: dayjs.Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') :
 const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
 
 /**
- * Engineering and packages tab of an EPC project (item 130, ARCHITECTURE "EPC"): the design deliverables by discipline
+ * Engineering and packages tab of an EPC project (ARCHITECTURE "EPC"): the design deliverables by discipline
  * with where each stands with the client, the equipment packages from order to commissioning against the day site needs
  * them, and the inputs the client owes, which become delays when late. Payment stages read deliverables and packages.
  * The open view is `?sub=` in the URL.
@@ -129,7 +129,6 @@ function useEpcSave<V>(projectId: string, call: (v: V) => Promise<EpcDto>) {
   });
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Engineering
 
 function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDto | 'new') => void }) {
@@ -379,7 +378,6 @@ function DeliverableForm({ projectId, target, onClose }: { projectId: string; ta
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Equipment packages
 
 function StageTimeline({ p }: { p: PackageDto }) {
@@ -730,7 +728,6 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Client inputs
 
 function ClientInputs({ data, onEdit }: { data: EpcDto; onEdit: (m: ClientInputDto | 'new') => void }) {

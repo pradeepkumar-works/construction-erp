@@ -15,6 +15,7 @@ import { seedTownNetwork } from './seed-pipes';
 import { seedTownStock } from './seed-stock';
 import { seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
+import { seedConsultantChecks } from './seed-consultant-checks';
 import { seedOm } from './seed-om';
 import { seedCorrespondence } from './seed-correspondence';
 import { seedQa } from './seed-qa';
@@ -65,7 +66,7 @@ const USERS: { email: string; name: string; role: string; phone: string }[] = [
   // Guests from outside the company: they use the client portal only, on the projects below (seedGuests).
   { email: 'client@demo.com', name: 'Er. Bijay Kumar Panda', role: 'CLIENT_ENGINEER', phone: '9800000014' },
   { email: 'pmc@demo.com', name: 'Lakshmi Menon', role: 'CONSULTANT', phone: '9800000015' },
-  // A supplier's own login (v6 item 105): Kalinga Bitumen & Aggregates on the supplier portal (seedSupplierPortal).
+  // A supplier's own login: Kalinga Bitumen & Aggregates on the supplier portal (seedSupplierPortal).
   { email: 'supplier@demo.com', name: 'R. K. Mohanty', role: 'SUPPLIER', phone: '9800000017' },
 ];
 
@@ -76,7 +77,7 @@ const GUEST_PROJECTS: [string, string][] = [
 ];
 
 
-/** DPR remarks that read as hindrances (AI item 123), by project type and days ago. */
+/** DPR remarks that read as hindrances, by project type and days ago. */
 const HINDRANCE_REMARKS: Record<string, Record<number, string>> = {
   ROAD: { 1: 'Villagers again stopped embankment work at Ch 12+650, encroachment not cleared', 2: 'HT line at Ch 14+100 still not shifted, embankment beyond Ch 14+000 held up since 2 days' },
   BUILDING: { 2: 'First-floor column drawings revised by the architect, waiting for the GFC' },
@@ -244,7 +245,7 @@ async function main() {
           workExecuted: inProgress.map((a) => `${a.name} continued`).join('; ') || 'General site works',
           testsConducted: i === 1 ? 'Cube test samples taken (3 nos), FDD test at Ch. 14+300' : null,
           safetyObservations: 'Toolbox talk conducted. PPE compliance 100%.',
-          // Two remarks read as hindrances for the delay register (AI item 123): one belongs to an open delay, one is new.
+          // Two remarks read as hindrances for the delay register: one belongs to an open delay, one is new.
           issues: i === 3 ? 'Diesel delivery delayed by 4 hours' : (HINDRANCE_REMARKS[p.type]?.[i] ?? null),
           nextDayPlan: 'Continue current activities; shuttering for next pour',
           status: i === 0 ? 'SUBMITTED' : 'APPROVED', submittedById: engineerId, submittedAt: date, reviewedById: i === 0 ? null : pmId, reviewedAt: i === 0 ? null : date,
@@ -314,7 +315,7 @@ async function main() {
 }
 
 /**
- * Site imprest demo (v4 item 45): the road project's site engineer holds a ₹10,000 float, paid when it was opened 20
+ * Site imprest demo: the road project's site engineer holds a ₹10,000 float, paid when it was opened 20
  * days ago. Their cash expenses since spend it (one turned down), and today they have asked for the top-up that brings
  * it back to the float. Only when the organisation has no imprest yet.
  */
@@ -356,7 +357,7 @@ async function seedCompliance(organizationId: string) {
   }
 }
 
-/** Snags on the hospital block before handover, and its close-out checklist started (v4 item 47). */
+/** Snags on the hospital block before handover, and its close-out checklist started. */
 async function seedHandover(organizationId: string) {
   if (await prisma.defect.count({ where: { organizationId } })) return;
   const building = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, orderBy: { code: 'asc' } });
@@ -442,7 +443,7 @@ async function seedImprests(organizationId: string) {
 }
 
 /**
- * Named worker register demo (v4 item 44): Sri Jagannath Constructions' 13 masons and 17 helpers on the road project,
+ * Named worker register demo: Sri Jagannath Constructions' 13 masons and 17 helpers on the road project,
  * with a roll call for the last six days that matches the head-count sheets (8 + i masons and 12 + i helpers on site
  * i days ago). Masons build the culvert headwalls; helpers lay WMM, then DBM from yesterday. Two helpers left at noon
  * three days ago, and a few masons stayed back two hours. Only when the organisation has no worker yet.
@@ -529,7 +530,7 @@ async function seedPpe(organizationId: string) {
 }
 
 /**
- * Machinery maintenance demo (v4 item 42): service schedules (the excavator due soon, the backhoe overdue, the mixer
+ * Machinery maintenance demo: service schedules (the excavator due soon, the backhoe overdue, the mixer
  * fine), a closed service with spares issued from the road store, the grader's breakdown fixed by the hire agency, an
  * open breakdown on the backhoe, vehicle papers (the tipper's insurance expiring and its PUC lapsed) and drivers (one
  * licence expiring, one expired). Only when the organisation has no job card yet.
@@ -677,12 +678,12 @@ async function seedMaintenance(organizationId: string) {
 }
 
 /**
- * Demo transfers and returns (v4 item 39) on the road project's store: unused material back from site, a transfer to
+ * Demo transfers and returns on the road project's store: unused material back from site, a transfer to
  * the water supply project already received there, a second one still in transit, and material returned to the
  * supplier of the GRN. Only when the organisation has no transfer yet.
  */
 /**
- * Sector progress demo (v4 item 41): the road's chainage range with the approved progress placed along it, the
+ * Sector progress demo: the road's chainage range with the approved progress placed along it, the
  * hospital's floors, and the water scheme's villages, its raw water main along a chainage and a pipe testing activity.
  * Only fills what is still empty, so re-running it changes nothing.
  */
@@ -761,7 +762,7 @@ async function seedSectors(organizationId: string) {
 }
 
 /**
- * Demo safety (v4 item 40): the safety officer joins the road and building projects; a few incidents and near misses
+ * Demo safety: the safety officer joins the road and building projects; a few incidents and near misses
  * (one closed with its root cause), toolbox talks, and permits to work (one waiting, one live, one closed). Only when
  * the organisation has no safety records yet.
  */
@@ -984,7 +985,7 @@ async function seedReconciliation(organizationId: string) {
 }
 
 /**
- * Demo rate analysis and subcontractor reconciliation (v5 item 92) on the first building project: labour and machine
+ * Demo rate analysis and subcontractor reconciliation on the first building project: labour and machine
  * hours on its concrete, masonry and PCC items (from the starter library's figures), a brickwork work order to Kalinga
  * Builders whose measured 60 cum took more bricks and cement than the norms allow, the receipt and issue of that
  * material to the order, and two adjustments with reasons (bricks broken in unloading, cement set hard). The opening
@@ -1183,7 +1184,7 @@ async function seedRfis(organizationId: string) {
 }
 
 /**
- * Demo budgets (v4 item 38): the first road and building projects get a budget rate on every BOQ item (78 to 88% of the
+ * Demo budgets: the first road and building projects get a budget rate on every BOQ item (78 to 88% of the
  * client's rate) and a cost-head budget split from that total; the road's client pays in 45 days. Other projects are left
  * without a budget. Only when the organisation has no budget yet.
  */
@@ -1211,7 +1212,7 @@ async function seedBudgets(organizationId: string) {
 }
 
 /**
- * Demo variation register (v4 item 37). Road: V-1 approved by the client (two more pipe culverts and a new box
+ * Demo variation register. Road: V-1 approved by the client (two more pipe culverts and a new box
  * culvert, approved at a lower rate), V-2 with the client (kerb stones, already in the BOQ as an extra item with no
  * quantity). Building: V-1 still a draft. Only when the organisation has no variations yet.
  */
@@ -1435,7 +1436,7 @@ async function seedStock(organizationId: string) {
   }
 }
 
-/** Fuel norms by machine code (v5 item 93): litres an hour, or km a litre for vehicles. */
+/** Fuel norms by machine code: litres an hour, or km a litre for vehicles. */
 const FUEL_NORMS: Record<string, [string, 'LITRES_PER_HOUR' | 'KM_PER_LITRE']> = {
   'EXC-01': ['11', 'LITRES_PER_HOUR'],
   'GRD-01': ['12', 'LITRES_PER_HOUR'],
@@ -1447,7 +1448,7 @@ const FUEL_NORMS: Record<string, [string, 'LITRES_PER_HOUR' | 'KM_PER_LITRE']> =
 };
 
 /**
- * Fuel and fleet use (v5 item 93): diesel marked as fuel, a norm on each machine (the excavator's is set below what it
+ * Fuel and fleet use: diesel marked as fuel, a norm on each machine (the excavator's is set below what it
  * burns, so the watch list flags it), fuel issued from the store into each machine for its recent logs, and the
  * tyres on the grader and the battery on the backhoe, one of each replaced. Skipped once any part exists.
  */
@@ -1798,7 +1799,7 @@ async function seedCostRates(organizationId: string) {
     await prisma.labourRate.createMany({ data: LABOUR_RATES.map(([category, dailyRate]) => ({ organizationId, category, dailyRate: D(dailyRate) })) });
 }
 
-// Verticals (item 167): each demo project takes its kind's, and a tender the one its title reads as (only where none is set).
+// Verticals: each demo project takes its kind's, and a tender the one its title reads as (only where none is set).
 async function seedVerticals(organizationId: string) {
   for (const [type, code] of Object.entries(VERTICAL_OF_TYPE))
     await prisma.project.updateMany({ where: { organizationId, type: type as ProjectType, verticalCode: null }, data: { verticalCode: code } });
@@ -1912,6 +1913,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedGroupCompanies(prisma, organizationId, passwordHash);
   await seedGroupModules(prisma, organizationId);
   await seedVerticals(organizationId);
+  await seedConsultantChecks(prisma, organizationId);
 }
 
 main()
@@ -2015,7 +2017,7 @@ async function seedRisks(organizationId: string) {
   }
 }
 
-// Client master and contract terms per project type (v3 item 17). Government clients: retention, GST TDS and labour cess.
+// Client master and contract terms per project type. Government clients: retention, GST TDS and labour cess.
 const CONTRACTS: Record<string, {
   client: { name: string; department: string; gstin: string; address: string; contact: string; email: string; phone: string };
   agreementNo: string; agreementAgo: number; retention: string; sd: string; advancePct: string | null; recovery: string; tds: string; gstTds: string; cess: string; gst: string; dlp: number; pv: boolean;
@@ -2063,12 +2065,12 @@ async function seedContracts(organizationId: string) {
   }
 }
 
-/** Liquidated damages terms (v4 item 50) on seeded contracts that have none: 0.5% of the contract value per week, capped at 10%. */
+/** Liquidated damages terms on seeded contracts that have none: 0.5% of the contract value per week, capped at 10%. */
 async function seedLdTerms(organizationId: string) {
   await prisma.project.updateMany({ where: { organizationId, code: { in: DEMO_PROJECT_CODES }, agreementNo: { not: null }, ldRatePct: 0 }, data: { ldRatePct: D('0.5'), ldPeriod: 'WEEK', ldCapPct: D(10) } });
 }
 
-/** Price variation formulas (v4 item 50) by project type: component, share of the work value (%), base index (WPI-like). */
+/** Price variation formulas by project type: component, share of the work value (%), base index (WPI-like). */
 const PV_FORMULAS: Partial<Record<string, [string, string, string][]>> = {
   ROAD: [['Bitumen', '15', '612.4'], ['Fuel (HSD)', '10', '158.3'], ['Cement', '10', '139.8'], ['Steel', '5', '141.2'], ['Labour', '25', '412']],
   WATER_SUPPLY: [['Pipes and steel', '25', '141.2'], ['Cement', '10', '139.8'], ['Fuel (HSD)', '5', '158.3'], ['Labour', '20', '412']],
@@ -2105,10 +2107,15 @@ const SUBCONTRACT_RULES: typeof BILL_RULES = ['WORK_ORDER', 'SUBCONTRACT_BILL'].
   { roleKey: 'MANAGEMENT', type, maxAmount: null },
   { roleKey: 'PROJECT_MANAGER', type, maxAmount: D(500000) },
 ]);
-/** Payment requests (v5 item 90): management approves any, project managers up to ₹5 lakh. */
+/** Payment requests: management approves any, project managers up to ₹5 lakh. */
 const PAYMENT_RULES: typeof BILL_RULES = [
   { roleKey: 'MANAGEMENT', type: 'PAYMENT_REQUEST', maxAmount: null },
   { roleKey: 'PROJECT_MANAGER', type: 'PAYMENT_REQUEST', maxAmount: D(500000) },
+];
+/** Supplier choices (Finalise L1 sent for approval): as purchase orders, management any, project managers up to ₹5 lakh. */
+const CHOICE_RULES: typeof BILL_RULES = [
+  { roleKey: 'MANAGEMENT', type: 'SUPPLIER_CHOICE', maxAmount: null },
+  { roleKey: 'PROJECT_MANAGER', type: 'SUPPLIER_CHOICE', maxAmount: D(500000) },
 ];
 /** QA/QC passes inspections; management and project managers can too. */
 const QUALITY_RULES: typeof BILL_RULES = ['MANAGEMENT', 'PROJECT_MANAGER', 'QA_QC_ENGINEER'].map((roleKey) => ({ roleKey, type: 'INSPECTION', maxAmount: null }));
@@ -2128,9 +2135,9 @@ async function seedApprovalRules(organizationId: string) {
       skipDuplicates: true,
     });
   if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) {
-    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST'])
+    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST', 'SUPPLIER_CHOICE'])
       if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: type } })) === 0)
-        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES, ...QUALITY_RULES, ...PAYMENT_RULES].filter((r) => r.type === type));
+        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES, ...QUALITY_RULES, ...PAYMENT_RULES, ...CHOICE_RULES].filter((r) => r.type === type));
     return;
   }
   const types = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
@@ -2143,6 +2150,7 @@ async function seedApprovalRules(organizationId: string) {
     ...SUBCONTRACT_RULES,
     ...QUALITY_RULES,
     ...PAYMENT_RULES,
+    ...CHOICE_RULES,
   ];
   await write(rows);
 }
@@ -2281,7 +2289,7 @@ const DEMO_POS: [string, string, number, number, [number, number][], [string, nu
 ];
 
 /**
- * A request still to be ordered, quoted by two suppliers who each win one item (finding 12 of the October review), so
+ * A request still to be ordered, quoted by two suppliers who each win one item, so
  * Award lowest per item has something to split: [project type, rate and GST % per line per vendor].
  */
 const DEMO_SPLIT: [string, [string, number, [number, number][]][]] = [
@@ -2386,7 +2394,7 @@ async function seedPurchasing(organizationId: string) {
 
 /**
  * Quotations from two suppliers on a request nothing has been ordered on, each cheaper on one item, so the comparative
- * statement offers Award lowest per item (finding 12 of the October review). Only when the request has no quotations.
+ * statement offers Award lowest per item. Only when the request has no quotations.
  */
 async function seedSplitQuotes(organizationId: string) {
   const [type, quotes] = DEMO_SPLIT;
@@ -2526,7 +2534,7 @@ async function seedPayables(organizationId: string) {
 }
 
 /**
- * Demo payment requests (v5 item 90): the road subcontractor's mobilisation advance on its work order, asked for by the
+ * Demo payment requests: the road subcontractor's mobilisation advance on its work order, asked for by the
  * project manager, approved by management and paid by accounts (their bills recover it); and an advance on the cement
  * PO, asked for and waiting in the approvals queue. Only when the organisation has no payment requests yet.
  */
@@ -2582,7 +2590,7 @@ async function seedPaymentRequests(organizationId: string) {
 }
 
 /**
- * Demo bills without a PO and a debit note (v5 item 91): the road project's hired grader (the owner fuels it and its
+ * Demo bills without a PO and a debit note: the road project's hired grader (the owner fuels it and its
  * operator comes with it) billed for its approved logs of the month with the diesel in them recovered, approved and
  * waiting to be paid; a crane agency's transport bill booked to its expense head; and a debit note for material short
  * on the road supplier's PO bill. Only when the organisation has no bill without a PO yet.
@@ -2682,7 +2690,7 @@ async function seedHireBills(organizationId: string) {
 /** The GSTIN typed on the demo expenses that have GST, with its proper check character. */
 const DEMO_EXPENSE_GSTIN = `21AAKFS1234M1Z${gstinCheckChar('21AAKFS1234M1Z')}`;
 
-/** Bill checks' demo anomalies (AI item 69): [project type, description, vendor, GSTIN, bill no, amount, GST %, payment mode]. */
+/** Bill checks' demo anomalies: [project type, description, vendor, GSTIN, bill no, amount, GST %, payment mode]. */
 type DemoAnomaly = ['ROAD' | 'BUILDING' | 'WATER_SUPPLY', string, string, string | null, string, string, number, 'CASH' | 'UPI'];
 const ANOMALY_EXPENSES: DemoAnomaly[] = [
   // Filed twice: the same bill as the approved hydraulic hose expense (bill no filled in from it).
@@ -2694,14 +2702,14 @@ const ANOMALY_EXPENSES: DemoAnomaly[] = [
 ];
 
 /**
- * Bills with something wrong in them, for the checks before approval (AI item 69) to catch, all waiting for approval:
+ * Bills with something wrong in them, for the checks before approval to catch, all waiting for approval:
  * an expense filed twice, one paid in cash above the limit, one with a mistyped GSTIN, and a second copy of the road
  * supplier's invoice billing what was already billed (on top of the building bill's steel above the PO rate). Each is
  * added once, found by its description or invoice, so this also runs on an existing demo company; the demo expenses'
  * GSTIN gets its proper check character so the clean ones pass.
  */
 async function seedCheckAnomalies(organizationId: string) {
-  // Vendors' GSTINs with a valid check character, so an invoice read off paper matches its vendor (AI item 70).
+  // Vendors' GSTINs with a valid check character, so an invoice read off paper matches its vendor.
   for (const v of await prisma.vendor.findMany({ where: { organizationId, gstin: { not: null } }, select: { id: true, gstin: true } })) {
     const check = v.gstin!.length === 15 ? gstinCheckChar(v.gstin!.slice(0, 14)) : null;
     if (check && v.gstin![14] !== check) await prisma.vendor.update({ where: { id: v.id }, data: { gstin: `${v.gstin!.slice(0, 14)}${check}` } });
@@ -2955,7 +2963,7 @@ function drawingPdf(docNo: string, title: string, revision: string, project: str
   return new Uint8Array(Buffer.from(pdf, 'latin1'));
 }
 
-/** The sample contracts (AI item 75): a CONTRACT document with its text PDF on each demo project that has none. */
+/** The sample contracts: a CONTRACT document with its text PDF on each demo project that has none. */
 async function seedContractDocuments(organizationId: string) {
   for (const c of DEMO_CONTRACTS) {
     // Once per company: a project added later (the O&M scheme sorts first) must not file the contract again.
@@ -2998,7 +3006,7 @@ const DEMO_DOCUMENTS: Record<string, DemoDocument[]> = {
   ],
 };
 
-/** A small plan as an ASCII DXF (item 109): walls, a door swing, a column grid and labels on their own layers. */
+/** A small plan as an ASCII DXF: walls, a door swing, a column grid and labels on their own layers. */
 function drawingDxf(docNo: string, revision: string): Uint8Array<ArrayBuffer> {
   const out: (string | number)[] = [];
   const g = (...pairs: (string | number)[]) => out.push(...pairs);
@@ -3043,7 +3051,7 @@ function drawingDxf(docNo: string, revision: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Marks on the demo drawings (item 109), once per organisation: comments and clouds on the building's ground floor plan
+ * Marks on the demo drawings, once per organisation: comments and clouds on the building's ground floor plan
  * (one carried open from Rev R0), and the toilet block as a DXF drawing to show the viewer's CAD side.
  */
 async function seedDrawingMarkups(organizationId: string) {
@@ -3107,7 +3115,7 @@ async function seedDrawingMarkups(organizationId: string) {
 }
 
 /**
- * Measures on the toilet block DXF (v6 item 118), once per organisation: its scale along the 12 m outer wall, a
+ * Measures on the toilet block DXF, once per organisation: its scale along the 12 m outer wall, a
  * partition's length, two floor areas and the doors counted. The sheet's coordinates follow the viewer's DXF extents
  * (the drawing's points plus a 3 % margin), so the measures sit on the walls they name.
  */
@@ -3253,7 +3261,7 @@ const DEMO_STAFF: [string, string, string, string, string | null, string | null]
  * check-in and the register can be demoed) and leave in every state. Priya worked a Sunday, so she has a comp-off.
  */
 /**
- * Attendance extras (v5 item 97): the demo sites get a location for GPS check-in; on a fresh seed the last week's
+ * Attendance extras: the demo sites get a location for GPS check-in; on a fresh seed the last week's
  * overtime waits for the site manager (older overtime approved), and the surveyor was on duty at the client's office.
  * Each part runs once.
  */
@@ -3301,7 +3309,7 @@ async function seedAttendanceExtras(organizationId: string) {
   }
 }
 
-/** Yearly CTC by designation for the demo staff (v6 item 99), rupees. */
+/** Yearly CTC by designation for the demo staff, rupees. */
 const DEMO_CTC: Record<string, number> = {
   'Managing Director': 3600000, 'IT and systems head': 1500000, 'Project manager': 1440000, 'Site supervisor': 420000, 'Site engineer': 540000,
   'Store keeper': 300000, 'Quantity surveyor': 720000, 'Procurement manager': 960000, 'QA/QC engineer': 600000, 'Accounts manager': 900000,
@@ -3309,7 +3317,7 @@ const DEMO_CTC: Record<string, number> = {
 };
 
 /**
- * HR records (v6 item 99) for the demo staff, once: personal, statutory and bank details, terms, who they report to, and
+ * HR records for the demo staff, once: personal, statutory and bank details, terms, who they report to, and
  * the service events behind today's record (joining for everyone, a confirmation, a transfer, a promotion and an
  * increment). Two people have a birthday in the coming weeks and the newest site engineer's probation ends soon.
  * Bikash Swain has no PAN or bank account yet, so the dashboard's "details missing" has an entry.
@@ -3406,7 +3414,7 @@ async function seedHrRecords(organizationId: string) {
 }
 
 /**
- * Payroll (v6 item 100) for the demo company, once: Odisha settings, a salary structure for everyone from their joining
+ * Payroll for the demo company, once: Odisha settings, a salary structure for everyone from their joining
  * (worked back from their CTC; the pump operator is under the ESI ceiling and the quantity surveyor is on the old tax
  * regime), a loan and a salary advance being recovered, and last month's salary run approved and paid.
  */
@@ -3592,12 +3600,12 @@ async function seedStaff(organizationId: string) {
 }
 
 /**
- * Biometric attendance (v6 item 101): a ZKTeco gate terminal (ADMS) at the site where the workers are, a face reader at
+ * Biometric attendance: a ZKTeco gate terminal (ADMS) at the site where the workers are, a face reader at
  * head office posting to the webhook, and an old eSSL at the yard whose punch files are imported. Staff are enrolled
  * under their code number and five workers under 1001 onwards; two numbers punched yesterday are not matched yet.
  */
 /**
- * Books (v6 item 102): the promoters' capital into the bank, office rent paid and cash drawn for the sites, approved, and
+ * Books: the promoters' capital into the bank, office rent paid and cash drawn for the sites, approved, and
  * the office electricity bill waiting for the MD. The modules' own vouchers are posted the first time someone opens the books.
  */
 async function seedBooks(organizationId: string) {
@@ -3649,7 +3657,7 @@ async function seedBooks(organizationId: string) {
   await voucher('PV', 'PAYMENT', day(-1), 'Head office electricity bill', 12_400, power.id, bank.id, false, 'TPCODL 7781', 2);
 }
 
-/** The books begin on 1 April before the demo's records, with the balances brought in from the old books (v6 item 103). */
+/** The books begin on 1 April before the demo's records, with the balances brought in from the old books. */
 async function seedOpening(organizationId: string) {
   if (await prisma.bookVoucher.count({ where: { organizationId, source: 'OPENING' } })) return;
   const accounts = await prisma.user.findFirst({ where: { organizationId, email: 'accounts@demo.com' }, select: { id: true } });
@@ -3720,7 +3728,7 @@ async function seedBiometric(organizationId: string) {
 }
 
 /**
- * RMC (v6 item 104): a batching plant at Patia run as a project of type PLANT, with its store's opening stock and a
+ * RMC: a batching plant at Patia run as a project of type PLANT, with its store's opening stock and a
  * cement delivery, three mix designs (M30 still waiting for quality), an order from a builder that has had trucks for
  * three days (the first day's challans billed and part paid, cubes taken from one), the plant supplying the hospital
  * site, and a quote not yet accepted.
@@ -3850,7 +3858,7 @@ async function seedRmc(organizationId: string) {
 }
 
 /**
- * The supplier portal (v6 item 105): supplier@demo.com is Kalinga Bitumen & Aggregates' login. Their road PO waits for
+ * The supplier portal: supplier@demo.com is Kalinga Bitumen & Aggregates' login. Their road PO waits for
  * them to accept it; a dispatch note for part of what is left is on the way, so the store can fill a GRN from it; an
  * invoice waits with accounts; and they asked for their bank account to change. Only once per organisation.
  */
@@ -3903,7 +3911,7 @@ async function seedSupplierPortal(organizationId: string) {
 }
 
 /**
- * Central store (v6 item 106): the company's store at Khordha, a project of type STORE kept by the store manager, with
+ * Central store: the company's store at Khordha, a project of type STORE kept by the store manager, with
  * its opening stock, a cement delivery, cement sent to the highway and received there, steel on the road to the hospital,
  * and shuttering plywood the hospital sent back that has not arrived yet.
  */
@@ -3959,7 +3967,7 @@ async function seedCentralStore(organizationId: string) {
 }
 
 /**
- * Site fund requests demo (v6 item 107): the highway's engineer asked head office for ₹40,000 of wages money into
+ * Site fund requests demo: the highway's engineer asked head office for ₹40,000 of wages money into
  * their imprest, approved by the MD and released; and now asks ₹25,000 to be paid on account to a petty contractor
  * for the culvert headwalls, on behalf of the highway from the water supply scheme, waiting for approval. Only when
  * the organisation has no fund request yet.
@@ -4014,7 +4022,7 @@ async function seedFundRequests(organizationId: string) {
 }
 
 /**
- * Machine finance (v6 item 108): an excavator on a 48-month HDFC Bank loan, paid up to two months ago with last month's
+ * Machine finance: an excavator on a 48-month HDFC Bank loan, paid up to two months ago with last month's
  * EMI unpaid (so the watch list and the reminders have one overdue), and the road project's tipper on a Tata Capital
  * loan into the bank, every EMI paid and the next falling due within the week.
  */
@@ -4070,7 +4078,7 @@ async function seedMachineLoans(organizationId: string) {
 }
 
 /**
- * Tender bidding (v6 item 110): a demo schedule of rates (made-up figures in the shape of a state SOR), a road tender
+ * Tender bidding: a demo schedule of rates (made-up figures in the shape of a state SOR), a road tender
  * being priced, a hospital building whose bids are opened with us lowest, a water supply tender lost at L2 with its EMD
  * still to come back, and one not bid.
  */
@@ -4186,7 +4194,7 @@ async function seedTenders(organizationId: string) {
 }
 
 /**
- * Past openings for bid intelligence (intelligence quick win Q4): three road tenders of the Works Department lost over
+ * Past openings for bid intelligence: three road tenders of the Works Department lost over
  * the last year and a half, where we quoted near 4 to 6% below and L1 landed near 10% below, so the Khurda road being
  * priced shows the level. Percentage tenders on the estimate (no BOQ kept), added once to a company that has tenders.
  */
@@ -4216,7 +4224,7 @@ async function seedPastOpenings(organizationId: string) {
 }
 
 /**
- * Subcontract enquiries demo (v6 item 111). The road project's GSB and WMM went out to two subcontractors a month ago and
+ * Subcontract enquiries demo. The road project's GSB and WMM went out to two subcontractors a month ago and
  * the lower quote became its work order; the hospital's brickwork and plaster has two quotes in (L1 and L2 a few lakh
  * apart) and one awaited; the water scheme's distribution lines have one partial quote. Only when the organisation has
  * no enquiry yet.
@@ -4303,7 +4311,7 @@ async function seedScEnquiries(organizationId: string) {
 }
 
 /**
- * Meetings and action items (v6 item 112): the road's last two progress reviews and its monthly review with the
+ * Meetings and action items: the road's last two progress reviews and its monthly review with the
  * client, a design meeting on the hospital, and this week's water scheme review still in draft. Some actions are done,
  * one is overdue with the project manager, and some are about an RFI.
  */
@@ -4440,9 +4448,9 @@ async function seedMeetings(organizationId: string) {
   }
 }
 
-/** Material approvals (v6 item 113): the contract's approved makes on the road and the hospital, and requests in every state. */
+/** Material approvals: the contract's approved makes on the road and the hospital, and requests in every state. */
 /**
- * Leakage checks (AI item 121) have machines to find: the hired grader is paid for 200 hours a month whatever it works
+ * Leakage checks have machines to find: the hired grader is paid for 200 hours a month whatever it works
  * (it works about six hours a day), and 60 litres of diesel went into the excavator eight days ago, a day it has no
  * log. Material over the norms comes from the reconciliation seed. Once per organisation.
  */
@@ -4472,7 +4480,7 @@ async function seedLeakage(organizationId: string) {
 }
 
 /**
- * Attendance cross-check demo (AI item 124) on the road project, over five days of its roll call before the latest:
+ * Attendance cross-check demo on the road project, over five days of its roll call before the latest:
  * every named worker of Sri Jagannath Constructions enrolled on the gate terminal and punching in and out, except three
  * helpers marked present on the middle day who did not punch. Two labour work orders billed in man-days, both bills
  * waiting for approval: Sri Jagannath's asks 9 more helper man-days than the head count (the bill check and the watch
@@ -4713,7 +4721,7 @@ async function seedMaterialApprovals(organizationId: string) {
   }
 }
 
-/** Links between the road's and the hospital's activities (v6 item 114), so the Gantt has a critical path and one clash. */
+/** Links between the road's and the hospital's activities, so the Gantt has a critical path and one clash. */
 async function seedActivityLinks(organizationId: string) {
   if (await prisma.activityLink.count({ where: { organizationId } })) return;
   const plan: [code: string, pred: string, succ: string, type: 'FS' | 'SS' | 'FF' | 'SF', lag: number][] = [
@@ -4747,7 +4755,7 @@ async function seedActivityLinks(organizationId: string) {
 }
 
 /**
- * Comments and mentions (v6 item 116): a question on today's road DPR waiting in the project manager's queue, answered by
+ * Comments and mentions: a question on today's road DPR waiting in the project manager's queue, answered by
  * the engineer; a resolved thread on the hospital's first order about the cement make; and the team leader telling the
  * project manager, on the last progress review, that night work has stopped. The mentions are in the bell.
  */

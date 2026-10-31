@@ -1,4 +1,4 @@
-/** Hindi for the core screens (v4 item 49). */
+/** Hindi for the core screens. */
 export const CORE: Record<string, string> = {
   Home: 'होम',
   Projects: 'प्रोजेक्ट',
@@ -136,7 +136,7 @@ export const CORE: Record<string, string> = {
   'Your actions from meetings': 'बैठकों से आपके काम',
   'Letters for you': 'आपके लिए पत्र',
   'Audit findings to close': 'बंद करने को ऑडिट टिप्पणियाँ',
-  // Correspondence (item 136): letters for you and one letter
+  // Correspondence: letters for you and one letter
   'Head office': 'मुख्य कार्यालय',
   Dated: 'दिनांक',
   With: 'किसके पास',
@@ -332,7 +332,7 @@ export const CORE: Record<string, string> = {
   'Note for the submitter (optional)': 'जमा करने वाले के लिए टिप्पणी (ज़रूरी नहीं)',
   'Close photo': 'फ़ोटो बंद करें',
   'Approved: {title}': 'मंज़ूर: {title}',
-  // Approval levels and Waiting with others (v5 item 94)
+  // Approval levels and Waiting with others
   'Approved level {level} of {levels}. It goes to the next level.': 'स्तर {level} / {levels} मंज़ूर। अब यह अगले स्तर पर जाएगी।',
   'Level {level} of {levels}': 'स्तर {level} / {levels}',
   'Level {level} of {levels}.': 'स्तर {level} / {levels}।',
@@ -420,7 +420,7 @@ export const CORE: Record<string, string> = {
   '{n} min ago': '{n} मिनट पहले',
   '{n} h ago': '{n} घंटे पहले',
   '{n} d ago': '{n} दिन पहले',
-  // Company today on Home (v5 item 96)
+  // Company today on Home
   'Company today': 'आज कंपनी में',
   'Paid today': 'आज भुगतान किया',
   'Received today': 'आज मिला',
@@ -481,7 +481,7 @@ export const CORE: Record<string, string> = {
   'Open approvals': 'मंज़ूरियाँ खोलें',
   'Your entries waiting for someone else to approve.': 'आपकी एंट्री जो किसी और की मंज़ूरी का इंतज़ार कर रही हैं।',
 
-  // Work breakdown (item 125)
+  // Work breakdown
   Structure: 'संरचना',
   'Made of {n} parts': '{n} हिस्सों से बना',
   'Physical progress': 'भौतिक प्रगति',
@@ -512,7 +512,7 @@ export const CORE: Record<string, string> = {
   'Building block': 'भवन ब्लॉक',
   'Road stretch': 'सड़क का हिस्सा',
   Crossing: 'क्रॉसिंग',
-  // Group companies (phase 1)
+  // Group companies
   Company: 'कंपनी',
   Construction: 'निर्माण',
   Consultancy: 'परामर्श',

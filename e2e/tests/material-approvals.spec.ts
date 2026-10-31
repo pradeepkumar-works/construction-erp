@@ -16,7 +16,7 @@ async function hospital(token: string) {
 }
 
 /**
- * Material approvals (v6 item 113): the QA/QC engineer asks the PMC to approve a make, records that it came back to
+ * Material approvals: the QA/QC engineer asks the PMC to approve a make, records that it came back to
  * revise, resubmits it as R1 in another make, and records the approval; the make is then on the project's approved makes.
  */
 test('a make is requested, sent back, resubmitted as R1 and approved onto the project’s list', async ({ page }) => {

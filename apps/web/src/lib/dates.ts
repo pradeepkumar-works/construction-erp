@@ -2,8 +2,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { recentFinancialYears } from '@erp/shared';
 
 /**
- * Quick ranges for date-range filters: this and last month, and the last three financial years (April to March, v4
- * item 48). Pass to a RangePicker's `presets`.
+ * Quick ranges for date-range filters: this and last month, and the last three financial years (April to March). Pass to a RangePicker's `presets`.
  */
 export function rangePresets(): { label: string; value: [Dayjs, Dayjs] }[] {
   const today = dayjs();

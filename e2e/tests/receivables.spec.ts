@@ -7,7 +7,7 @@ interface Page<T> {
 type OpenBill = { billId: string; projectCode: string; outstanding: string };
 
 /**
- * Receivables (v3 item 19): accounts records a part payment against the building project's first bill (sent by the
+ * Receivables: accounts records a part payment against the building project's first bill (sent by the
  * seed) with the client's deductions, then the balance, and the bill is paid and leaves the open bills.
  */
 test('record payments against a sent RA bill until it is paid', async ({ page }) => {

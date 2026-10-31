@@ -64,7 +64,7 @@ function StepModal({ run, step, onClose }: { run: PayrollRunDetailDto; step: 'se
 }
 
 /**
- * A salary run (v6 item 100): its totals and stage, the actions for the caller's role, the files for the bank, PF and
+ * A salary run: its totals and stage, the actions for the caller's role, the files for the bank, PF and
  * ESI, the salary register, and every payslip.
  */
 export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {

@@ -27,7 +27,7 @@ async function roadProject(token: string) {
   return (await api<Page<Project>>(token, '/projects?pageSize=100')).items.find((p) => p.code === 'RD-2026-01')!;
 }
 
-/** Price variation (v4 item 50): the formula on the contract tab, each component a share of the work value with a base index. */
+/** Price variation: the formula on the contract tab, each component a share of the work value with a base index. */
 test('a project manager sets the price variation formula', async ({ page }) => {
   const pm = await apiToken('pm@demo.com');
   const road = await roadProject(pm);

@@ -8,7 +8,8 @@ import dayjs from 'dayjs';
 import type { PortalBillDto, RaBillItemDto } from '@erp/shared';
 import { isGuest, unitLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useCertifyAsClient, usePortalBill } from '@/lib/queries';
+import { useCertifyAsClient, usePortalBill, usePortalBillChecks } from '@/lib/queries';
+import { CheckCoverage } from './CheckCoverage';
 import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BillStageTag } from '@/components/bills/billUi';
@@ -48,8 +49,12 @@ export function PortalBills({ bills, openId, onOpen }: { bills: UseQueryResult<P
 function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = usePortalBill(id);
+  const checks = usePortalBillChecks(id ?? undefined);
   const [certifying, setCertifying] = useState(false);
   const canCertify = !!user && isGuest(user.roleKey) && data?.stage === 'SENT';
+  // A consultant certifies once they have checked their share of the bill's measurements.
+  const held = canCertify ? (checks.data?.problem ?? null) : null;
+  const nextSheets = (checks.data?.toCheck ?? []).map((sid) => data?.measurements?.find((m) => m.id === sid)?.mbNo).filter(Boolean);
   return (
     <Drawer
       open={!!id}
@@ -58,7 +63,7 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
       title={data ? `${data.billLabel}: ${data.projectName}` : 'RA bill'}
       extra={
         canCertify ? (
-          <Button type="primary" onClick={() => setCertifying(true)}>
+          <Button type="primary" disabled={!!held} onClick={() => setCertifying(true)}>
             Certify
           </Button>
         ) : null
@@ -70,6 +75,15 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
       {data ? (
         <>
           {data.stage === 'SENT' && !canCertify ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Waiting for the client's certificate" /> : null}
+          {held ? (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              title={held}
+              description={nextSheets.length ? `Check next, in Check measurement: ${nextSheets.join(', ')}.` : undefined}
+            />
+          ) : null}
           <Descriptions
             size="small"
             bordered
@@ -91,6 +105,14 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
           />
           <Typography.Title level={5}>Abstract of cost</Typography.Title>
           <BillItemsTable items={data.items} />
+          {data.measurements?.length && checks.data ? (
+            <>
+              <Typography.Title level={5} style={{ marginTop: 16 }}>
+                Check measurement
+              </Typography.Title>
+              <CheckCoverage coverage={checks.data.coverage} level={checks.data.level} />
+            </>
+          ) : null}
           {data.measurements?.length ? (
             <>
               <Typography.Title level={5} style={{ marginTop: 16 }}>

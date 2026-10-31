@@ -14,6 +14,7 @@ import {
   type RateBenchmarksDto,
   type RateQuote,
   awardLowestPerItem,
+  choiceProblem,
   siteDeliveryAddress,
   type AwardPlan,
   type Paginated,
@@ -65,7 +66,7 @@ const include = {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
     include: { stockTxns: { select: { quantity: true } }, billLines: { where: { bill: { status: { not: 'REJECTED' as const } } }, select: { quantity: true } } },
   },
-  // Advances (v5 item 90): paid with no bill, asked for on open requests, taken off its bills.
+  // Advances: paid with no bill, asked for on open requests, taken off its bills.
   advances: { where: { vendorBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
   paymentRequests: { where: { kind: 'PO_ADVANCE' as const, status: { in: ['SUBMITTED' as const, 'APPROVED' as const] } }, select: { amount: true } },
   vendorBills: { where: { status: { not: 'REJECTED' as const } }, select: { advanceAdjusted: true, status: true } },
@@ -203,7 +204,7 @@ export class PurchaseOrdersService {
     await this.access.assertCanAccessProject(user, projectId);
   }
 
-  /** Where the order's goods go when it names no address: the project's site store (finding 12 of the October review). */
+  /** Where the order's goods go when it names no address: the project's site store. */
   private async siteAddress(organizationId: string, projectId: string) {
     const p = await this.prisma.project.findFirst({ where: { id: projectId, organizationId }, select: { siteAddress: true, location: true } });
     return siteDeliveryAddress(p);
@@ -241,7 +242,7 @@ export class PurchaseOrdersService {
   }
 
   /**
-   * The last approved orders of each item (v5 item 95), newest first: vendor, date, project and rate, for the
+   * The last approved orders of each item, newest first: vendor, date, project and rate, for the
    * quotation, comparative and PO forms. Items are matched by name and unit, ignoring case; only orders the user may see.
    */
   async lastRates(user: RequestUser, q: LastRatesQuery): Promise<LastRatesDto> {
@@ -283,7 +284,7 @@ export class PurchaseOrdersService {
 
   /**
    * Approved orders of the items (matched by name and unit, ignoring case) dated `from` to `to`, keyed by `lastRateKey`:
-   * what a rate is checked against (item 121). `scope` limits the orders to those the caller may see.
+   * what a rate is checked against. `scope` limits the orders to those the caller may see.
    */
   async quotesFor(scope: Prisma.PurchaseOrderWhereInput, items: { name: string; unit: string }[], from: string, to: string, excludePoId?: string): Promise<Map<string, RateQuote[]>> {
     const wanted = new Map<string, { name: string; unit: string }>();
@@ -319,7 +320,7 @@ export class PurchaseOrdersService {
     return out;
   }
 
-  /** Each line's check against other sites (item 121), for the order's record and the approval pane. */
+  /** Each line's check against other sites, for the order's record and the approval pane. */
   private async lineRateChecks(user: RequestUser, r: { id: string; projectId: string; poDate: Date; lines: { id: string; itemName: string; unit: string; rate: Prisma.Decimal; quantity: Prisma.Decimal }[] }): Promise<Map<string, PoLineRateCheckDto>> {
     const poDate = dateOnly(r.poDate);
     const quotes = await this.quotesFor(this.access.submissionWhere(user), r.lines.map((l) => ({ name: l.itemName, unit: l.unit })), windowStart(poDate), poDate, r.id);
@@ -406,7 +407,7 @@ export class PurchaseOrdersService {
   }
 
   /**
-   * Procurement status (v4 item 48): approved orders with what has been received and what is still to come, late ones
+   * Procurement status: approved orders with what has been received and what is still to come, late ones
    * (past the delivery date) first, with totals and a line per vendor. Received quantity is net of returns to vendor.
    */
   async status(user: RequestUser, q: ProcurementStatusQuery): Promise<ProcurementStatusDto> {
@@ -518,6 +519,34 @@ export class PurchaseOrdersService {
     return { vendor, mr };
   }
 
+  /**
+   * When the company has orders wait for an approved supplier choice (`ordersNeedApprovedChoice`), an order on a material
+   * request needs the request's choice approved and goes to its vendor, or to one the approved split orders from
+   * (`choiceProblem`). Checked when the order is made and again when it is sent for approval, as its vendor may change.
+   */
+  private async assertChoiceAllows(user: RequestUser, materialRequestId: string, vendor: { id: string; name: string }) {
+    const org = await this.prisma.organization.findUnique({ where: { id: user.organizationId }, select: { ordersNeedApprovedChoice: true } });
+    if (!org?.ordersNeedApprovedChoice) return;
+    const mr = await this.prisma.materialRequest.findFirstOrThrow({
+      where: { id: materialRequestId, organizationId: user.organizationId },
+      select: { requestNo: true, supplierChoice: { select: { status: true, split: true, quotation: { select: { vendorId: true, vendor: { select: { name: true } } } } } } },
+    });
+    const c = mr.supplierChoice;
+    let splitVendorIds: string[] = [];
+    if (c?.split && c.status === 'APPROVED') {
+      // The split's vendors over the whole request (each item to its lowest), so orders raised one by one all stay in it.
+      const cs = await this.quotations.comparative(user, materialRequestId);
+      splitVendorIds = awardLowestPerItem(cs, Object.fromEntries(cs.lines.map((l) => [l.materialRequestItemId, l.quantity]))).orders.map((o) => o.vendorId);
+    }
+    const problem = choiceProblem(
+      mr.requestNo,
+      c && { status: c.status, split: c.split, vendorId: c.quotation?.vendorId ?? null, vendorName: c.quotation?.vendor.name ?? null },
+      { vendorId: vendor.id, vendorName: vendor.name },
+      splitVendorIds,
+    );
+    if (problem) throw new ConflictException(problem);
+  }
+
   /** Payment days: at most 45 for micro and small enterprises (MSMED Act). */
   private paymentDays(days: number | null | undefined, vendor: { name: string; msmeCategory: string | null }) {
     if (days != null && days > MSME_MAX_PAYMENT_DAYS && (vendor.msmeCategory === 'MICRO' || vendor.msmeCategory === 'SMALL'))
@@ -528,10 +557,10 @@ export class PurchaseOrdersService {
   /**
    * Priced lines. A line raised from a request line takes its name, unit and specification and may order at most what
    * the request still needs: requested, less what other orders hold (see `orderedOn`), what was received without one
-   * and what stock met (v5 item 95).
+   * and what stock met.
    */
   private async lines(tx: Tx | PrismaService, organizationId: string, mr: Prisma.MaterialRequestGetPayload<{ include: { items: true } }> | null, input: PoLineInput[], excludePoId?: string): Promise<LineData[]> {
-    // A line of its own names its item as the master has it (finding 3 of the October review).
+    // A line of its own names its item as the master has it.
     const typed = await asMasterNames(tx, organizationId, input.map((l) => ({ itemName: l.itemName ?? '', unit: l.unit ?? '' })));
     input = input.map((l, i) => (l.materialRequestItemId || !l.itemName || !l.unit ? l : { ...l, itemName: typed[i].itemName, unit: typed[i].unit }));
     const linked = input.map((l) => l.materialRequestItemId).filter((x): x is string => !!x);
@@ -584,6 +613,7 @@ export class PurchaseOrdersService {
     if (existing) return existing;
     await this.assertCanPurchase(user, dto.projectId);
     const { vendor, mr } = await this.refs(user, dto.projectId, dto.vendorId, dto.materialRequestId ?? null, dto.quotationId ?? null);
+    if (mr) await this.assertChoiceAllows(user, mr.id, vendor);
     const paymentDays = this.paymentDays(dto.paymentDays, vendor);
     const freight = parseFreight(dto.freight);
     const deliveryAddress = dto.deliveryAddress?.trim() || (await this.siteAddress(user.organizationId, dto.projectId));
@@ -637,7 +667,7 @@ export class PurchaseOrdersService {
   }
 
   /**
-   * The split of a request between the vendors who quoted lowest for each item (finding 12 of the October review):
+   * The split of a request between the vendors who quoted lowest for each item:
    * what is still to order, at each winner's rate. The screen previews it with the same rules; `awardLowest` draws it
    * again here rather than trusting what was sent.
    */
@@ -727,8 +757,9 @@ export class PurchaseOrdersService {
 
   /** Every way an order goes for approval: one not from the lowest complete quotation on its request says why first. */
   private async submitOrder(user: RequestUser, id: string) {
-    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, vendor: { select: { name: true } } } });
+    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, vendor: { select: { id: true, name: true } } } });
     if (po.materialRequestId) {
+      await this.assertChoiceAllows(user, po.materialRequestId, po.vendor);
       const lowest = await this.quotations.lowestFor(user.organizationId, po.materialRequestId);
       const problem = selectionProblem(lowest && { id: lowest.id, vendorName: lowest.vendorName, total: lowest.total }, { quotationId: po.quotationId, vendorName: po.vendor.name }, po.selectionReason);
       if (problem) throw new BadRequestException(problem);

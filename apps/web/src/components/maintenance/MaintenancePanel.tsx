@@ -31,7 +31,7 @@ function Sub({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Machinery maintenance (v4 item 42): service schedule of the fleet, open breakdowns and job cards. Site staff report
+ * Machinery maintenance: service schedule of the fleet, open breakdowns and job cards. Site staff report
  * breakdowns; the store manager or an approver raises services, issues spares and closes job cards.
  */
 export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { projectId?: string; initialOpenId?: string }) {

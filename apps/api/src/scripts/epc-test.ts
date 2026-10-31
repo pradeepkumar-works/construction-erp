@@ -1,5 +1,5 @@
 /**
- * EPC tests (item 130). Where a deliverable stands from the code it came back with and how late it is, the disciplines'
+ * EPC tests. Where a deliverable stands from the code it came back with and how late it is, the disciplines'
  * summary, a package's stages, forecast on site (delivered, from the ship's ETA, or the plan moved by the slip so far)
  * and its problems, the day a package reached a stage, the evidence a payment stage reads from deliverables and
  * packages, a client input's overdue days, the bank credit at the day's rate, and the contract currency's conversions.

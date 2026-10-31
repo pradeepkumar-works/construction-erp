@@ -13,7 +13,7 @@ import { useMorningBrief, useSetMorningBrief } from '@/lib/queries';
 const offerHiddenKey = (userId: string) => `nirmaan.morningBrief.offerHidden.${userId}`;
 
 /**
- * The morning brief on the home page (AI item 74): three lines on what needs this person today, written overnight from
+ * The morning brief on the home page: three lines on what needs this person today, written overnight from
  * their own My work. Offered once Ask Nirmaan is on for the company; each person asks for it themselves.
  */
 export function MorningBriefCard() {

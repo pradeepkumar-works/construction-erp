@@ -20,7 +20,7 @@ export const DRAFT_PAGES: Record<AiDraftKind, string> = {
 };
 
 /**
- * A form Ask Nirmaan filled in (AI item 71), under its answer: what it is, what to check, and Open form, which opens
+ * A form Ask Nirmaan filled in, under its answer: what it is, what to check, and Open form, which opens
  * the list's own form with the values in. Nothing is saved until the user saves the form.
  */
 export function DraftCard({ draft, onNavigate }: { draft: AiDraftDto; onNavigate: () => void }) {

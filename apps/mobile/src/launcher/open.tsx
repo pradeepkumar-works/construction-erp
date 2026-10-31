@@ -15,7 +15,7 @@ import { colors, maxFontScale, spacing, touch, typography } from '../theme';
 import { phoneTarget, visitNode } from './routes';
 
 /**
- * Opens a node of the tree from the Home tab or a module screen (launcher phase 4): the phone's own screen, the module's
+ * Opens a node of the tree from the Home tab or a module screen: the phone's own screen, the module's
  * screen, or the page on the web (a project tab asks which project first). Opening a page counts as a visit, so Recent
  * on the web and the phone stay one list.
  */

@@ -1,5 +1,5 @@
 /**
- * Demo QA/QC registers (item 137 part 2): the building's site lab and an NABL lab whose accreditation runs out next
+ * Demo QA/QC registers: the building's site lab and an NABL lab whose accreditation runs out next
  * month, the site lab's instruments (the CTM calibrated, the cube moulds due soon, the scale overdue), the building's
  * tests sent to the labs (cubes crushed at site, bricks and steel at the NABL lab, one report late), categories on the
  * steel, cement and pipes, and categories and root causes on the demo NCRs. Runs once per company (when it has no lab

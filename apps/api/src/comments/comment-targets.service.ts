@@ -15,6 +15,7 @@ import { WorkOrdersService } from '../subcontracts/work-orders.service';
 import { SubcontractBillsService } from '../subcontracts/subcontract-bills.service';
 import { InspectionsService } from '../inspections/inspections.service';
 import { PaymentRequestsService } from '../payables/payment-requests.service';
+import { RequestsToOrderService } from '../purchasing/requests-to-order.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { MaterialApprovalsService } from '../material-approvals/material-approvals.service';
 import { moduleOffMessage, moduleOn } from '../common/module-switch.guard';
@@ -28,7 +29,7 @@ export interface CommentTarget {
 type Getter = (user: RequestUser, id: string) => Promise<unknown>;
 
 /**
- * The records comments can be on (v6 item 116). Each kind loads its record through its own service with the user, so the
+ * The records comments can be on. Each kind loads its record through its own service with the user, so the
  * service's access rules decide who reads and writes its comments, and whom a comment may mention.
  */
 @Injectable()
@@ -52,6 +53,7 @@ export class CommentTargetsService {
     subBills: SubcontractBillsService,
     inspections: InspectionsService,
     paymentRequests: PaymentRequestsService,
+    toOrder: RequestsToOrderService,
   ) {
     this.getters = {
       PROGRESS: (u, id) => progress.get(u, id),
@@ -67,12 +69,13 @@ export class CommentTargetsService {
       SUBCONTRACT_BILL: (u, id) => subBills.get(u, id),
       INSPECTION: (u, id) => inspections.get(u, id),
       PAYMENT_REQUEST: (u, id) => paymentRequests.get(u, id),
+      SUPPLIER_CHOICE: (u, id) => toOrder.choice(u, id),
     };
   }
 
   /** The record, as the user may see it; throws (403 or 404) when they may not. */
   async load(user: RequestUser, kind: CommentKind, id: string): Promise<CommentTarget> {
-    // A meeting or material approval while the company has that module off (v6 item 117) is out of reach.
+    // A meeting or material approval while the company has that module off is out of reach.
     const switchable = kind === 'MEETING' ? 'meetings' : kind === 'MATERIAL_APPROVAL' ? 'material_approvals' : null;
     if (switchable && !moduleOn(user, switchable)) throw new ForbiddenException(moduleOffMessage(switchable));
     if (kind === 'MEETING') {

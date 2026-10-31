@@ -3,7 +3,7 @@
 import type { IDxf, IEntity } from 'dxf-parser';
 
 /**
- * DXF drawings in the browser (item 109): parsed with dxf-parser, flattened once into lines and text in drawing units
+ * DXF drawings in the browser: parsed with dxf-parser, flattened once into lines and text in drawing units
  * (blocks placed, arcs and bulges cut into short segments), then drawn on a canvas at whatever size the viewer asks.
  * Model space only; hatches show their outline, and text uses the browser's sans-serif font in place of SHX fonts.
  */

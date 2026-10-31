@@ -27,7 +27,7 @@ const floatText = (a: GanttActivityDto) =>
   a.totalFloat === null ? '-' : a.totalFloat < 0 ? `${-a.totalFloat} days short` : a.totalFloat === 0 ? 'None' : `${a.totalFloat} day${a.totalFloat === 1 ? '' : 's'}`;
 
 /**
- * One activity's place in the network (v6 item 114): what it waits on and what waits on it, the dates the links give and
+ * One activity's place in the network: what it waits on and what waits on it, the dates the links give and
  * its float. Project editors add, change and remove its links here.
  */
 export function LinksDrawer({ projectId, data, activity, editor, onClose }: { projectId: string; data: GanttDto; activity: GanttActivityDto | null; editor: boolean; onClose: () => void }) {

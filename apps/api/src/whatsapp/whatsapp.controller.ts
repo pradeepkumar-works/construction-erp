@@ -6,7 +6,7 @@ import { Public } from '../common/decorators';
 import { WhatsappService } from './whatsapp.service';
 import { CaptureListQuery, CaptureSetupInput, SavedInAppInput } from './whatsapp.dto';
 
-/** WhatsApp entries (AI item 120): the providers' webhooks, each person's switch, and their messages with Save and Discard. */
+/** WhatsApp entries: the providers' webhooks, each person's switch, and their messages with Save and Discard. */
 @ApiTags('whatsapp')
 @ApiBearerAuth()
 @Controller('whatsapp')

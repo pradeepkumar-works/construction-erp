@@ -1,5 +1,5 @@
 /**
- * Hindrance register to notice tests (AI item 123). First the rules on their own: 100 labelled DPR remarks (9 in 10
+ * Hindrance register to notice tests. First the rules on their own: 100 labelled DPR remarks (9 in 10
  * must be read right: hindrance or not, and its cause), the day a hindrance began, short stops that are not
  * hindrances, the notice clause and the extension-of-time clause in the demo contracts, the notice clock's stages and
  * the notice letter. Then, when DATABASE_URL is set, the demo company: the seeded DPR remarks come up as suggestions
@@ -21,7 +21,6 @@ const test = (name: string, fn: () => void) => tests.push([name, fn]);
 
 const page = (docNo: string, n: number) => DEMO_CONTRACTS.find((c) => c.docNo === docNo)!.pages[n - 1].join(' ');
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Reading a remark
 
 test('100 labelled DPR remarks: 9 in 10 read right (hindrance or not, and its cause)', () => {
@@ -74,7 +73,6 @@ test('the day it began: dates, days ago, yesterday and weekdays, never after the
   assert.equal(classifyRemark('Continuous rain since 3 days, site waterlogged', on).startOffset, 3);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The contract
 
 test('notice clause: the road contract asks for notice in 14 days (9.1), the building one for an application (5.1)', () => {
@@ -97,7 +95,6 @@ test('extension-of-time clause: the one about claiming it', () => {
   assert.equal(eotClause(page('HB-AGR-01', 2)), '5.1');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The clock
 
 test('notice clock: due on the start plus the notice days, at 7, 3 and 0 days left', () => {
@@ -110,7 +107,6 @@ test('notice clock: due on the start plus the notice days, at 7, 3 and 0 days le
   assert.deepEqual(noticeClock('2026-10-11', 14, '2026-10-30'), { due: '2026-10-25', daysLeft: -5, stage: 0 });
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The letter
 
 const facts = (over: Partial<NoticeFacts> = {}): NoticeFacts => ({

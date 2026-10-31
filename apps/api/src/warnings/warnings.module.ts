@@ -14,6 +14,6 @@ import { WeighbridgeModule } from '../weighbridge/weighbridge.module';
 import { WarningsController } from './warnings.controller';
 import { WarningsService } from './warnings.service';
 
-/** Early warnings, the watch list (AI roadmap item 73). The weekly notification is `NotificationJobsService.watchList`. */
+/** Early warnings, the watch list. The weekly notification is `NotificationJobsService.watchList`. */
 @Module({ imports: [ReceivablesModule, PayablesModule, ReconciliationModule, LeakageModule, CashForecastModule, AttendanceCheckModule, QaModule, DesignModule, CostModule, QualityModule, TelematicsModule, WeighbridgeModule], controllers: [WarningsController], providers: [WarningsService], exports: [WarningsService] })
 export class WarningsModule {}

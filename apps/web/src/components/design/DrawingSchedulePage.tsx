@@ -621,7 +621,7 @@ function AsBuiltPanel() {
   );
 }
 
-/** The drawing schedule (item 138 part 1): the drawings each project needs and the as-built check. */
+/** The drawing schedule: the drawings each project needs and the as-built check. */
 export function DrawingSchedulePage() {
   const [tab, setTab] = useUrlTab<Tab>(TABS, 'schedule', { param: 'tab' });
   return (

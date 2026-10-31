@@ -14,7 +14,7 @@ import { PasswordLinkModal } from '@/components/users/PasswordLinkModal';
 import { ChangeList } from './ChangeList';
 import { DecideChangeForm, InviteLoginForm } from './StaffForms';
 
-/** A vendor's supplier-portal logins and the changes they asked for (v6 item 105), from the vendor master. */
+/** A vendor's supplier-portal logins and the changes they asked for, from the vendor master. */
 export function VendorPortalDrawer({ vendor, onClose }: { vendor: { id: string; name: string } | null; onClose: () => void }) {
   const { token } = theme.useToken();
   const { message } = App.useApp();

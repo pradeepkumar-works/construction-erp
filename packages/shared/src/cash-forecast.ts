@@ -3,7 +3,7 @@ import type { RoleKey } from './enums';
 import { canKeepBooks } from './permissions';
 
 /**
- * Cash forecast and billing readiness (AI item 122): the bank and cash balance from the books, 13 weeks of money in and
+ * Cash forecast and billing readiness: the bank and cash balance from the books, 13 weeks of money in and
  * out as a low, likely and high range, why each short week is short, what to chase or hold, and how far last month's
  * forecast was out. The rules are in `apps/api/src/cash-forecast/cash-forecast-rules.ts`.
  */
@@ -139,7 +139,7 @@ export interface BillingReadinessRowDto {
   notSent: { billId: string; label: string; billDate: string; amount: number }[];
   /** Sent bills not fully paid, the longest waiting first; `late` once past the days the client takes (or the contract's) */
   unpaid: { billId: string; label: string; sentDate: string; daysOutstanding: number; expectedDays: number; outstanding: number; late: boolean }[];
-  /** The next bill (intelligence quick win Q7): billable now and by the next month end at the current pace */
+  /** The next bill: billable now and by the next month end at the current pace */
   next: NextBillDto;
 }
 

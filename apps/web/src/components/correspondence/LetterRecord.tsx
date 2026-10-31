@@ -68,7 +68,7 @@ function lifecycleOf(l: LetterDto): Lifecycle {
       ],
     };
   }
-  // Item 169: a letter that waits for head office's seal shows it as a stage of its own between signing and issue
+  // A letter that waits for head office's seal shows it as a stage of its own between signing and issue
   const seal = l.needsSeal || !!l.signedAt;
   const signed = l.signedAt ?? l.approvedAt;
   const waiting = l.status === 'AWAITING_APPROVAL' ? (l.signedAt ? 2 : 1) : 0;
@@ -134,7 +134,7 @@ interface RecordProps {
 }
 
 /**
- * A letter (item 136), in a drawer or at `/correspondence/<id>`: one received with who has it and what they must do,
+ * A letter, in a drawer or at `/correspondence/<id>`: one received with who has it and what they must do,
  * or one we send with its signing, number, dispatch and proof of delivery.
  */
 export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: RecordMode }) {

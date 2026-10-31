@@ -100,7 +100,7 @@ export default function LoginScreen() {
 
         <ErrorBanner message={error} />
         <Text style={styles.label}>{t('Email')}</Text>
-        {/* Autofill hints (UX item 88) so a password manager, or Android's own, fills both fields. */}
+        {/* Autofill hints so a password manager, or Android's own, fills both fields. */}
         <Input
           accessibilityLabel={t('Email')}
           value={email}

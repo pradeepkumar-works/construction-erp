@@ -1,5 +1,5 @@
 /**
- * Demo pipe network (item 126, ARCHITECTURE "Pipe network"). All names, codes and figures are invented.
+ * Demo pipe network (ARCHITECTURE "Pipe network"). All names, codes and figures are invented.
  *
  * Zone 2 of the town water supply scheme (WS-2026-04, component 9.2) gets a branched HDPE network fed from its
  * overhead tank: a spine of twenty junctions with six branches, a sluice valve at the head of each branch and a scour

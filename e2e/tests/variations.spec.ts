@@ -8,7 +8,7 @@ type Boq = { id: string; itemNo: string; originalQty: string; revisedQty: string
 type Summary = { projectId: string; approved: string; revisedContractValue: string | null };
 
 /**
- * Variation register (v4 item 37): the QS claims more WMM and a new item on the road project, sends it to the client
+ * Variation register: the QS claims more WMM and a new item on the road project, sends it to the client
  * and records the client's approval at a lower rate for the new item. The BOQ gets the quantities and the new item,
  * and the revised contract value goes up by what was approved.
  */

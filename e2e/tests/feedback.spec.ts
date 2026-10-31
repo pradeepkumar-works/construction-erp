@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { api, apiToken, chooseOption, localToday, signIn, uniqueQty } from './helpers';
 
 /**
- * Feedback, undo and safe deletes (UX item 86): a delete asks by name and can be undone for ten seconds, a new entry's
+ * Feedback, undo and safe deletes: a delete asks by name and can be undone for ten seconds, a new entry's
  * notice opens it, an approval shows at once, and a failed request says so in plain words with a Retry that works.
  */
 

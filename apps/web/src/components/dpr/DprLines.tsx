@@ -30,9 +30,9 @@ const machines = (l: DprLineDto) => l.machines.map((m) => `${m.name} ${formatQty
 const material = (l: DprLineDto) => l.materials.map((m) => `${m.itemName} ${formatQty(m.quantity)} ${unitLabel(m.unit)}`).join(', ');
 
 /**
- * A DPR's work lines (item 127), grouped by component › sub-component, in the shape of the site's DPR: activity and
+ * A DPR's work lines, grouped by component › sub-component, in the shape of the site's DPR: activity and
  * where, today, up to previous, cumulative against scope, %, balance, then the crew, machines and material. With the
- * report's form (item 134 part 2), each line's own fields and its photos too.
+ * report's form, each line's own fields and its photos too.
  */
 export function DprWorkLines({ lines, def }: { lines: DprLineDto[]; def?: DprFormDef }) {
   const own = def ? ownFieldsOf(def, 'LINE') : [];
@@ -151,7 +151,7 @@ export function DprLineTotals({ lines }: { lines: DprLineDto[] }) {
 }
 
 /**
- * Today's pipe work (item 126) in the shape of the site's pipeline sheet: metres per stage by zone and diameter, and
+ * Today's pipe work in the shape of the site's pipeline sheet: metres per stage by zone and diameter, and
  * valves fixed. Only the stages worked today get a column.
  */
 export function DprPipelineSummary({ lines }: { lines: DprLineDto[] }) {

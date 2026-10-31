@@ -46,7 +46,7 @@ const LINE_GRID = { display: 'grid', gridTemplateColumns: '2.4fr 0.8fr 1fr 1fr 1
 const n = (v: string | null) => (v === null ? null : Number(v));
 const str = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
-/** Lines and remarks a new sheet starts with, e.g. measures taken off a drawing (item 118) or approved progress. */
+/** Lines and remarks a new sheet starts with, e.g. measures taken off a drawing or approved progress. */
 export interface MeasurementPrefill {
   lines: LineValues[];
   remarks?: string;

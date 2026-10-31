@@ -19,7 +19,7 @@ import { themeFontSize } from '@/lib/theme';
 
 const h = (v: string) => `${formatQty(v)} h`;
 
-/** What the machine's tracker read that day (item 146), and a flag when the log's hours are above it. */
+/** What the machine's tracker read that day, and a flag when the log's hours are above it. */
 function EngineFact({ log }: { log: MachineryLogDto }) {
   const e = log.engine!;
   const above = hoursAboveEngine(toNumber(log.hoursWorked) + toNumber(log.idleHours), toNumber(e.engineHours));

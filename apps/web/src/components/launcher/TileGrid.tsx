@@ -147,7 +147,7 @@ export function ProjectPick({ node, onClose }: { node: NavNode | null; onClose: 
 const MOVES: Record<string, number | 'row-up' | 'row-down' | 'first' | 'last'> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 'row-down', ArrowUp: 'row-up', Home: 'first', End: 'last' };
 
 /**
- * The launcher's grid of tiles (module screens; Home in phase 2). One Tab stop for the whole grid: the arrow keys move
+ * The launcher's grid of tiles (module screens and Home). One Tab stop for the whole grid: the arrow keys move
  * between tiles (Up and Down by row, as laid out), Home and End to the ends, Enter opens. Grouped tiles (Accounts) sit under
  * their headings, still one grid for the keys.
  */

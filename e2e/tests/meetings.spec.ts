@@ -22,7 +22,7 @@ async function road(token: string) {
 }
 
 /**
- * Meetings (v6 item 112): the project manager records a progress review with someone from the subcontractor, a decision
+ * Meetings: the project manager records a progress review with someone from the subcontractor, a decision
  * and an action for the team leader about an RFI, issues the minutes, and the action reaches the team leader's My work;
  * marking it done from the page closes it.
  */

@@ -10,7 +10,7 @@ interface Page<T> {
 }
 
 /**
- * Measure from progress (finding 14 of the October review): the quantities the site got approved on its daily reports
+ * Measure from progress: the quantities the site got approved on its daily reports
  * were read off them and typed into the measurement book again. The book now offers the approved days no sheet holds
  * yet, and starts a sheet with them as its lines.
  */

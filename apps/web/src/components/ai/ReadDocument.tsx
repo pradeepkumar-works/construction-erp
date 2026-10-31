@@ -15,7 +15,7 @@ import { pagesOf, type PageImage } from '@/lib/doc-pages';
 import { uploadFile, useReadDocument } from '@/lib/queries';
 import { SparkleIcon } from './SparkleIcon';
 
-/** A document read to fill a form (AI item 70): what came back, the pages it came from and the file picked. */
+/** A document read to fill a form: what came back, the pages it came from and the file picked. */
 export interface ReadState {
   result: DocReadResultDto;
   pages: PageImage[];
@@ -231,7 +231,7 @@ export function readFieldProps(state: ReadState | null, key: string, setActive: 
   const field = m ? state.result.lines[Number(m[1])]?.[m[2]] : state.result.fields[key];
   if (!field || (field.value === null && !problem)) return {};
   const tag = <ReadSource kind={state.result.kind} page={field.page} onActive={(on) => setActive(on ? key : null)} />;
-  // A value the form would not take (a date in the future, finding 13 of the October review) is amber with its reason,
+  // A value the form would not take (a date in the future) is amber with its reason,
   // however sure the model was.
   return problem || field.confidence === 'low'
     ? { validateStatus: 'warning', help: <span>Check this: {problem ?? field.reason ?? 'hard to read'}. {tag}</span> }
@@ -240,7 +240,7 @@ export function readFieldProps(state: ReadState | null, key: string, setActive: 
 
 /**
  * Why a date read off a document was not filled in, in words for the amber line under the field, or null when it was
- * taken (finding 13 of the October review).
+ * taken.
  */
 export function readDateReason(value: string | null | undefined): string | null {
   const problem = readDateProblem(value, dayjs().format('YYYY-MM-DD'));
@@ -250,7 +250,7 @@ export function readDateReason(value: string | null | undefined): string | null 
 }
 
 /**
- * Keeps the read file on the record (finding 13 of the October review): the scan the model read is uploaded and added
+ * Keeps the read file on the record: the scan the model read is uploaded and added
  * to the form's own attachment field, so nobody picks the same file twice. `kept` is its name once it is on the form.
  */
 export function useKeepReadFile(form: FormInstance, field: string | (string | number)[]) {

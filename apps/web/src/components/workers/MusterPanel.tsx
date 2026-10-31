@@ -43,7 +43,7 @@ const musterExport = (m: MusterDto): ExportColumn<MusterRowDto>[] => [
  * the roll call put on each activity against the progress approved in the same days.
  */
 export function MusterPanel({ projectId: fixedProject }: { projectId?: string }) {
-  // The header's project (UX item 84): picking one here picks it for every list.
+  // The header's project: picking one here picks it for every list.
   const [projectPick, setProjectPick] = useProjectScope();
   const projectId = fixedProject ?? projectPick;
   const [month, setMonth] = useState<Dayjs>(dayjs());

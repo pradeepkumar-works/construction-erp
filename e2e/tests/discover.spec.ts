@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Discover and access requests (launcher phase 3): Home's Discover shows modules marked New or Featured, modules never
+ * Discover and access requests: Home's Discover shows modules marked New or Featured, modules never
  * opened and, greyed, modules the role cannot open; asking for one reaches the admins in Admin › Home tiles, whose answer
  * comes back to the person.
  */

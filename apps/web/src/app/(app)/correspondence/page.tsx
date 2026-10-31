@@ -5,7 +5,7 @@ import { Card } from 'antd';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LetterRegister } from '@/components/correspondence/LetterRegister';
 
-/** The inward register (item 136): letters received, numbered on entry and marked to someone. */
+/** The inward register: letters received, numbered on entry and marked to someone. */
 export default function Page() {
   return (
     <div className="page-container">

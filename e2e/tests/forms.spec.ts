@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { formPanel, signIn } from './helpers';
 
 /**
- * Forms v2 (UI roadmap item 60): long forms open in a drawer with their actions in a footer that stays put; a new
+ * Forms v2: long forms open in a drawer with their actions in a footer that stays put; a new
  * entry's draft survives a refresh; closing with changes asks first; a failed submit lists what is missing; Enter in a
  * line table moves down and adds a line; Ctrl Enter submits.
  */

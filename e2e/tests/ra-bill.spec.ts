@@ -7,7 +7,7 @@ interface Page<T> {
 type Bill = { id: string; billLabel: string; status: string };
 
 /**
- * RA bills (v3 item 18): the quantity surveyor prepares the next bill of the road project from a measurement approved
+ * RA bills: the quantity surveyor prepares the next bill of the road project from a measurement approved
  * today, it is approved, sent and certified with a cut, and the bill shows what was claimed.
  */
 test('prepare, approve, send and certify an RA bill', async ({ page }) => {

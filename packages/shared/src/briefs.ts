@@ -1,5 +1,5 @@
 /**
- * The morning brief and the weekly narrative (AI item 74), written overnight in a batch. The brief is three lines for
+ * The morning brief and the weekly narrative, written overnight in a batch. The brief is three lines for
  * one person, each built from their own My work and watch list; the narrative is one paragraph on a project's week
  * for the client's weekly progress report. Every figure in either must be in the records it was written from, or the
  * rules' own draft is used instead.

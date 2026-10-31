@@ -13,7 +13,7 @@ import { todayIn } from '../notifications/time';
 const DAY = 24 * 3600_000;
 
 /**
- * The console for Nirmaan staff (v3 item 35): every company with its size and activity, suspend and lift, and a
+ * The console for Nirmaan staff: every company with its size and activity, suspend and lift, and a
  * read-only support session into a company that has agreed to it. Counts only: a company's records are seen through
  * a support session, which its admin allows and which is written to its audit log.
  */
@@ -115,7 +115,7 @@ export class PlatformService {
     return this.company(user, id);
   }
 
-  /** Set the company's plan, which decides the modules it has (v6 item 117; audited in the company). */
+  /** Set the company's plan, which decides the modules it has (audited in the company). */
   async setModuleTier(user: RequestUser, id: string, tier: ModuleTier | null) {
     this.assertStaff(user);
     await withoutTenant(async () => {

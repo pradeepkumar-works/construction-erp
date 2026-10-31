@@ -21,7 +21,7 @@ import { StatusCell, qty } from './ReconciliationPanel';
 const RED = themeColor('colorErrorText');
 
 /**
- * Material issued to each subcontractor against what their approved measured work should have taken (v5 item 92),
+ * Material issued to each subcontractor against what their approved measured work should have taken,
  * since the start of the work order. What they used beyond the allowance can be raised for recovery on their next bill.
  */
 export function SubconReconciliation({ projectId }: { projectId: string }) {

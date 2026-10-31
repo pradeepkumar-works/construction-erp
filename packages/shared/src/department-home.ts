@@ -1,5 +1,5 @@
 /**
- * Department screens (item 168, ARCHITECTURE "Department screens"): a department module's screen opens with a strip of
+ * Department screens (ARCHITECTURE "Department screens"): a department module's screen opens with a strip of
  * figures and the work in flight through it, as the client's screens asked. The figures are the area modules' own
  * (`ModuleHomeService`), picked per department here; the pipelines are read from the modules' own services (requests,
  * requests to order, procurement status, letters) and put in stage order by `pipelineStages` / `byPipelineUrgency`.

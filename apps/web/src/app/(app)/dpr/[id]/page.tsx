@@ -6,7 +6,7 @@ import type { DailyReportDto } from '@erp/shared';
 import { DprRecord } from '@/components/dpr/DprDrawer';
 import { DprFormModal } from '@/components/dpr/DprFormModal';
 
-/** One daily report, as its own page (UI roadmap item 57). */
+/** One daily report, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

@@ -16,7 +16,7 @@ const pct = (v: string | number | null) => (v === null ? NO_VALUE : <span classN
 const money = (v: string, c: ContractCurrency) => <span className="mono" translate="no">{formatMoney(v, c, true)}</span>;
 
 /**
- * A lump-sum bill's payment stages (item 129): what each stage's evidence gave at the measurements date, what earlier
+ * A lump-sum bill's payment stages: what each stage's evidence gave at the measurements date, what earlier
  * bills took, this bill's % (the suggestion, or a claim made by hand) and the amount. The preparer can claim a stage by
  * hand while the bill is a draft.
  */

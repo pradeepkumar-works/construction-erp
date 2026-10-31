@@ -2,7 +2,7 @@ import type { RoleKey } from './enums';
 import { canManageEquipment, canManageMaintenance, canManageStore, canPurchase, canSetMaterialNorms, canViewCost, canViewPurchaseOrders, canViewReconciliation } from './permissions';
 
 /**
- * Leakage checks (AI item 121): where material, money and fuel go missing on a site, as a month's flags with the rupees
+ * Leakage checks: where material, money and fuel go missing on a site, as a month's flags with the rupees
  * at risk. Material is the reconciliation against the company's other sites, rates are purchase order lines against
  * what another site paid, fuel is the norm and fuel issued to a machine with no log, and idle hire is a hired machine
  * paid for hours it did not work. The rules are in `apps/api/src/leakage/leakage-rules.ts`.

@@ -33,7 +33,7 @@ interface Period {
 }
 
 /**
- * Cash-flow forecast (v4 item 38), by month or week from today. Money in: RA bills not yet paid, expected the client's
+ * Cash-flow forecast, by month or week from today. Money in: RA bills not yet paid, expected the client's
  * payment days after they were sent; retention and deposit released at the end of the defect liability period; and the
  * work still to bill, spread evenly to completion and paid the client's payment days later, net of the deductions the
  * contract sets. Money out: vendor and subcontractor bills by due date, and the forecast to complete spread evenly to

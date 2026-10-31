@@ -75,7 +75,7 @@ const istStart = (day: string) => new Date(`${day}T00:00:00.000+05:30`);
 const EXT: Record<string, string> = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'audio/ogg': '.ogg', 'audio/mpeg': '.mp3', 'audio/mp4': '.m4a', 'audio/aac': '.aac', 'audio/amr': '.amr' };
 
 /**
- * WhatsApp entries (AI item 120). A message to the company's WhatsApp number from someone who switched entries on is
+ * WhatsApp entries. A message to the company's WhatsApp number from someone who switched entries on is
  * read as them: a voice note is written down, Ask Nirmaan (with their own access, through its draft tools) drafts the
  * record it describes, and the reply shows the draft with Save and Discard. Save creates the record through the
  * kind's own service, in their name and submitted for approval, exactly as the form would; nothing is saved otherwise.
@@ -97,7 +97,7 @@ export class WhatsappService {
     private expenses: ExpensesService,
   ) {}
 
-  /* ---------- webhooks ---------- */
+  // Webhooks
 
   /** The server can take messages in: a provider to reply with, and that provider's webhook secret. */
   receiving(): boolean {
@@ -316,7 +316,7 @@ export class WhatsappService {
     return link.startsWith('http') ? link : '';
   }
 
-  /* ---------- deciding ---------- */
+  // Deciding
 
   private async mine(user: RequestUser, id: string) {
     const row = await this.prisma.inboundMessage.findFirst({ where: { id, organizationId: user.organizationId }, include });
@@ -386,7 +386,7 @@ export class WhatsappService {
     return this.toDto(await this.prisma.inboundMessage.update({ where: { id }, data: { state: 'SAVED', outcome: 'CHANGED', recordKind: kind, recordId, decidedAt: new Date(), error: null }, include }));
   }
 
-  /* ---------- the page ---------- */
+  // The page
 
   toDto(r: Row): InboundMessageDto {
     const draft = (r.draft as unknown as AiDraftDto | null) ?? null;

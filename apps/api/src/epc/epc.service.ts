@@ -41,7 +41,7 @@ const optDate = (v: string | null | undefined) => (v === undefined ? undefined :
 const codeCompare = (a: { code: string }, b: { code: string }) => a.code.localeCompare(b.code, 'en', { numeric: true });
 
 /**
- * EPC packages and engineering deliverables (item 130, ARCHITECTURE "EPC"): the project's Engineering and packages tab.
+ * EPC packages and engineering deliverables (ARCHITECTURE "EPC"): the project's Engineering and packages tab.
  * Deliverables are kept by document control, packages by procurement and the project's managers, client inputs (milestones
  * the client owns) by anyone on the project, who can record a late one as a delay in the register. The arithmetic is in
  * `epc-rules.ts`.
@@ -173,7 +173,6 @@ export class EpcService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Deliverables
 
   private async assertElement(projectId: string, workElementId: string | null | undefined) {
@@ -227,7 +226,7 @@ export class EpcService {
   }
 
   /**
-   * A design submission's round went to the client or came back with its code (item 138 part 2): each deliverable that
+   * A design submission's round went to the client or came back with its code: each deliverable that
    * names one of its documents takes the day, the document's revision and the code, under the same status rule as an
    * edit by hand. Returns how many followed.
    */
@@ -258,7 +257,6 @@ export class EpcService {
     return this.get(user, projectId);
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Packages
 
   async savePackage(user: RequestUser, projectId: string, dto: SavePackageDto) {
@@ -327,7 +325,6 @@ export class EpcService {
     return this.get(user, projectId);
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Client inputs
 
   async saveClientInput(user: RequestUser, projectId: string, dto: SaveClientInputDto) {

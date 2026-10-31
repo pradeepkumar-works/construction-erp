@@ -34,8 +34,6 @@ import { CLIENT_ID_DOC } from '../common/idempotency';
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
 
-/* ---------- documents and revisions ---------- */
-
 export class CreateRevisionDto {
   @ApiProperty({ example: 'R1', description: 'As printed on the title block; unique per document' }) @trim() @IsString() @IsNotEmpty() @MaxLength(20) revision: string;
   @ApiProperty({ example: '2026-10-14' }) @IsDateString() issuedOn: string;
@@ -80,8 +78,6 @@ export class SiteDocumentsQuery {
   @ApiProperty() @IsUUID() projectId: string;
 }
 
-/* ---------- transmittals ---------- */
-
 export class TransmittalItemInputDto {
   @ApiProperty() @IsUUID() revisionId: string;
   @ApiPropertyOptional({ default: 1 }) @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(99) copies?: number;
@@ -112,8 +108,6 @@ export class ListTransmittalsQuery extends PageQuery {
 }
 
 
-/* ---------- drawing markup (item 109) ---------- */
-
 export class CreateMarkupDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty({ description: 'The revision it is drawn on' }) @IsUUID() revisionId: string;
@@ -142,8 +136,6 @@ export class ResolveMarkupDto {
 export class LinkMarkupRfiDto {
   @ApiPropertyOptional({ nullable: true, description: 'The RFI raised from this mark; null removes the link' }) @IsOptional() @IsUUID() rfiId: string | null;
 }
-
-/* ---------- measuring on drawings (v6 item 118) ---------- */
 
 export class SetDrawingScaleDto {
   @ApiProperty({ description: "One of the document's revision files" }) @IsUUID() attachmentId: string;

@@ -53,7 +53,7 @@ function stepText(s: SetupStepDto, project: ProjectDetail, setup: ProjectSetupDt
 }
 
 /**
- * A new project's setup checklist on its Overview (finding 6 of the October review): each step links to the tab it is
+ * A new project's setup checklist on its Overview: each step links to the tab it is
  * done on and ticks itself from the records. It shows until the steps are done, a tenth of the work is done, or someone
  * who edits the project hides it.
  */

@@ -58,7 +58,7 @@ function DlpTag({ daysLeft }: { daysLeft: number }) {
 }
 
 /**
- * A project's handover (v4 item 47): the completion certificate and the defect liability period, snags before handover
+ * A project's handover: the completion certificate and the defect liability period, snags before handover
  * and defects after, money the client still holds, and the close-out checklist.
  */
 export function HandoverPanel({ projectId, members, initialDefectId }: { projectId: string; members: ProjectMemberDto[]; initialDefectId?: string }) {

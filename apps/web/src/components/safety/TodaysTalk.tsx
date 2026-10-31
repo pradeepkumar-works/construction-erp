@@ -15,7 +15,7 @@ const LANGS = [
 ];
 
 /**
- * Today's toolbox talk (intelligence quick win Q8): the five-minute talk `GET /safety/talks/today` writes for a project
+ * Today's toolbox talk: the five-minute talk `GET /safety/talks/today` writes for a project
  * from its activities, today's permits and its recent incidents, in Hindi and English, with what brought each hazard up.
  * Record this talk opens the talk form with its topic and points; nothing is saved before that.
  */

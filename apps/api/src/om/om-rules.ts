@@ -7,14 +7,16 @@ import {
   type OmChemicalRowDto,
   type OmStaffLineDto,
 } from '@erp/shared';
+import { Prisma } from '@prisma/client';
 
 /**
- * O&M (item 131, ARCHITECTURE "Operation and maintenance"): pure arithmetic over an O&M contract's periods, the daily
+ * O&M (ARCHITECTURE "Operation and maintenance"): pure arithmetic over an O&M contract's periods, the daily
  * service levels, staff deployed and treatment chemicals, tested in `src/scripts/om-test.ts`. Dates are YYYY-MM-DD
  * strings and months YYYY-MM; money is rupees to the paisa.
  */
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
+const mulDivToPaisa = (a: number, b: number, c = 1) => new Prisma.Decimal(a).mul(b).div(c).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber();
 const round1 = (v: number) => Math.round(v * 10) / 10;
 const addDays = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 const daysIn = (month: string) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate();
@@ -36,7 +38,6 @@ export function monthsBetween(from: string, to: string): string[] {
   return out;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The contract's periods
 
 /** Instalments a year an O&M contract can be paid in: each must cover whole months. */
@@ -87,7 +88,7 @@ export function omPeriods(t: OmTerms): OmPeriod[] {
   const out: OmPeriod[] = [];
   for (let year = 1; year <= t.years; year++) {
     const yearPct = t.yearPcts[year - 1] ?? t.yearPcts[t.yearPcts.length - 1] ?? 0;
-    const amount = t.contractValue ? round2((t.contractValue * yearPct) / 100 / t.instalmentsPerYear) : 0;
+    const amount = t.contractValue ? mulDivToPaisa(t.contractValue, yearPct, 100 * t.instalmentsPerYear) : 0;
     for (let instalment = 1; instalment <= t.instalmentsPerYear; instalment++) {
       const from = addMonths(t.startOn, (year - 1) * 12 + (instalment - 1) * months);
       const to = addDays(addMonths(from, months), -1);
@@ -103,7 +104,6 @@ export const omEndsOn = (t: Pick<OmTerms, 'startOn' | 'years'>) => addDays(addMo
 /** The period a day falls in, or null outside the contract. */
 export const periodOf = (periods: OmPeriod[], day: string) => periods.find((p) => p.from <= day && day <= p.to) ?? null;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Service levels
 
 export interface DayReading {
@@ -221,13 +221,13 @@ export function monthFigures(args: {
       failures = complete && misses(s.key, value, limit) ? 1 : 0;
     }
     const penalised = Math.max(failures - s.allowedPerMonth, 0);
-    return { key: s.key, limit, failures, allowed: s.allowedPerMonth, penalised, penalty: round2(penalised * Number(s.penalty)), value, days: failed.sort() };
+    return { key: s.key, limit, failures, allowed: s.allowedPerMonth, penalised, penalty: mulDivToPaisa(penalised, Number(s.penalty)), value, days: failed.sort() };
   });
   const staffRecorded = args.deployed.size > 0;
   const staff = args.norms.map((n) => {
     const deployed = args.deployed.has(n.role) ? args.deployed.get(n.role)! : null;
     const short = deployed === null ? 0 : Math.max(n.required - deployed, 0);
-    return { role: n.role, required: n.required, deployed, short, deduction: round2(short * n.monthlyPay) };
+    return { role: n.role, required: n.required, deployed, short, deduction: mulDivToPaisa(short, n.monthlyPay) };
   });
   return {
     month,
@@ -243,7 +243,6 @@ export function monthFigures(args: {
   };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The O&M bill
 
 /** What an O&M bill keeps of the figures behind it (`RaBill.omDetail`). */
@@ -302,7 +301,6 @@ export function billProblem(period: OmPeriod | null, billDate: string, billed: {
   return null;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Chemicals
 
 /** A treatment chemical's use against its norm per ML of water produced. */

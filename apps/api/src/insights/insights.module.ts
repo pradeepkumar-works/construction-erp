@@ -6,6 +6,6 @@ import { AiModule } from '../ai/ai.module';
 import { InsightsController } from './insights.controller';
 import { InsightsService } from './insights.service';
 
-/** The watch list's Other checks strip (intelligence quick win Q0). */
+/** The watch list's Other checks strip. */
 @Module({ imports: [LeakageModule, CashForecastModule, AttendanceCheckModule, AiModule], controllers: [InsightsController], providers: [InsightsService] })
 export class InsightsModule {}

@@ -1,4 +1,4 @@
-/** Hindi for the site screens (v4 item 49). */
+/** Hindi for the site screens. */
 export const SITE: Record<string, string> = {
   // Shared by the site forms
   'Choose an activity': 'गतिविधि चुनें',
@@ -376,7 +376,7 @@ export const SITE: Record<string, string> = {
   'No answered RFIs to act on': 'जवाब आए किसी RFI पर काम बाकी नहीं',
   'No RFIs yet': 'अभी कोई RFI नहीं',
   'Ask the client or consultant about a drawing or the work, with a photo; see their answers.': 'ड्रॉइंग या काम के बारे में क्लाइंट या कंसल्टेंट से फ़ोटो के साथ पूछें; उनके जवाब देखें।',
-  // Fuel issue (v5 item 93)
+  // Fuel issue
   'Fuel issue': 'ईंधन जारी करें',
   'Choose the machine the fuel went into': 'वह मशीन चुनें जिसमें ईंधन डाला गया',
   'Choose the fuel': 'ईंधन चुनें',
@@ -400,12 +400,12 @@ export const SITE: Record<string, string> = {
   'No fuel has gone into machines today.': 'आज किसी मशीन में ईंधन नहीं डाला गया।',
   'Receipts and issues need a connection: the stock must be checked on the server. A fuel issue is kept on this phone and sent later.':
     'माल आना और जारी करना इंटरनेट से ही होगा: स्टॉक सर्वर पर जाँचा जाता है। ईंधन जारी इस फ़ोन पर रखा जाता है और बाद में भेजा जाता है।',
-  // Stock first on a material request (v5 item 95)
+  // Stock first on a material request
   '{qty} in stock here': 'यहाँ स्टॉक में {qty}',
   'None in stock here': 'यहाँ स्टॉक में नहीं',
   '{qty} at {n} other sites': '{n} अन्य साइटों पर {qty}',
   '{qty} from stock': 'स्टॉक से {qty}',
-  // Drawing markup (item 109)
+  // Drawing markup
   '1 open mark': '1 खुला निशान',
   '{n} open marks': '{n} खुले निशान',
   'Write the comment': 'टिप्पणी लिखें',
@@ -442,7 +442,7 @@ export const SITE: Record<string, string> = {
   'Only whoever made this mark, or document control, can change it.': 'यह निशान वही बदल सकता है जिसने इसे बनाया, या डॉक्यूमेंट कंट्रोल।',
   'Marks change with a connection.': 'निशान इंटरनेट होने पर बदलते हैं।',
 
-  // DPR work lines (item 127)
+  // DPR work lines
   'Outside the breakdown': 'ढांचे से बाहर',
   'Today {q} {unit} · {cum} of {scope} ({pct}%)': 'आज {q} {unit} · {scope} में से {cum} ({pct}%)',
   '{on} of the {n} on site are on a work line; {off} on none': 'साइट पर {n} में से {on} किसी काम की लाइन पर हैं; {off} किसी पर नहीं',
@@ -498,7 +498,7 @@ export const SITE: Record<string, string> = {
   'Add material': 'माल जोड़ें',
   'Add work line': 'काम की लाइन जोड़ें',
   'All {n} on site are on a work line': 'साइट के सभी {n} किसी काम की लाइन पर हैं',
-  // Schedule status on the project screen (October review, finding 1)
+  // Schedule status on the project screen (October review)
   'Schedule: completed': 'शेड्यूल: पूरा',
   'Schedule: on hold': 'शेड्यूल: रुका हुआ',
   'Schedule: past completion date': 'शेड्यूल: पूरा होने की तारीख़ निकल गई',
@@ -512,7 +512,7 @@ export const SITE: Record<string, string> = {
   'The plan ends {finish}, after the completion date of {completion}.': 'योजना {finish} को ख़त्म होती है, पूरा होने की तारीख़ {completion} के बाद।',
   'The completion date of {completion} has passed with the work not finished.': 'पूरा होने की तारीख़ {completion} निकल गई है और काम पूरा नहीं हुआ।',
   'No activity has planned dates yet.': 'अभी किसी गतिविधि की योजना वाली तारीख़ें नहीं हैं।',
-  // The DPR form of the project type (item 134 part 2)
+  // The DPR form of the project type
   'Site photos': 'साइट की फ़ोटो',
   'Choose the weather': 'मौसम चुनें',
   'Describe the site condition': 'साइट की हालत लिखें',

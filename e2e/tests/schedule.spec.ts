@@ -16,7 +16,7 @@ const iso = (offset: number) => {
 };
 const shown = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
-/** Gantt and baseline (v4 item 43): milestones on the road project, achieved from the Gantt tab. */
+/** Gantt and baseline: milestones on the road project, achieved from the Gantt tab. */
 test('the project manager adds a milestone and marks it achieved', async ({ page }) => {
   const pm = await apiToken('pm@demo.com');
   const road = (await api<{ items: { id: string; code: string }[] }>(pm, '/projects')).items.find((p) => p.code === 'RD-2026-01')!;

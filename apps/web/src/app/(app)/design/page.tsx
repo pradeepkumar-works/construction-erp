@@ -34,7 +34,7 @@ const TOKENS = [
   'colorFillSecondary',
 ] as const;
 
-/** The type scale (UX item 82): every size on screen is one of these, 12 px the floor, in either density. */
+/** The type scale: every size on screen is one of these, 12 px the floor, in either density. */
 const TYPE_SCALE = [
   { token: 'fontSizeHeading1', alias: '', use: 'The largest heading, used sparingly (the sign-in title)' },
   { token: 'fontSizeHeading2', alias: '', use: "A page's title (its h1) and the KPI figures on Home" },

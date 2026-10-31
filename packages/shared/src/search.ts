@@ -1,4 +1,4 @@
-/** Search everything (UI roadmap item 62): what `GET /search` can find, in the order the palette lists them. */
+/** Search everything: what `GET /search` can find, in the order the palette lists them. */
 export const SEARCH_KINDS = [
   'material_request',
   'purchase_order',

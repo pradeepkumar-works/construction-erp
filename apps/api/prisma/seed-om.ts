@@ -1,5 +1,5 @@
 /**
- * A water supply scheme in operation and maintenance (item 131, ARCHITECTURE "Operation and maintenance"). Invented names
+ * A water supply scheme in operation and maintenance (ARCHITECTURE "Operation and maintenance"). Invented names
  * and figures throughout.
  *
  * - WS-2025-05, a 7.5 MLD treatment plant with its rising main, two reservoirs and the town's distribution network,

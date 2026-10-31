@@ -17,7 +17,7 @@ function zipNames(buf: Buffer): string[] {
   return names;
 }
 
-/** Data export and privacy (v3 item 33): the demo admin downloads everything as one zip; nobody else can. */
+/** Data export and privacy: the demo admin downloads everything as one zip; nobody else can. */
 test('an admin downloads all company data as a zip', async ({ page }) => {
   await signIn(page, 'admin@demo.com');
   await page.goto('/company-data');

@@ -1,5 +1,5 @@
 /**
- * Weighbridge (item 148, ARCHITECTURE "Weighbridge"). The Connector on the site computer reads the weighbridge's
+ * Weighbridge (ARCHITECTURE "Weighbridge"). The Connector on the site computer reads the weighbridge's
  * indicator and sends each weight it held steady as a weighing. The store makes a ticket for each truck from its first
  * weight (loaded, on the way in) and its second (empty, on the way out); the net weight drafts the GRN against the
  * order, and the challan's quantity is checked against it. The figures here are shared by the API, the Stock ›

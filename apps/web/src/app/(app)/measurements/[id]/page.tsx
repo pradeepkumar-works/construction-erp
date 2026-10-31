@@ -6,7 +6,7 @@ import type { MeasurementSheetDto } from '@erp/shared';
 import { MeasurementRecord } from '@/components/measurements/MeasurementDrawer';
 import { MeasurementFormModal } from '@/components/measurements/MeasurementFormModal';
 
-/** One measurement book sheet, as its own page (UI roadmap item 61). */
+/** One measurement book sheet, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

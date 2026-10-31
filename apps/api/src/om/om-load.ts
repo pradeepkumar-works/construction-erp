@@ -4,7 +4,7 @@ import { dateOnly, parseDate } from '../common/serialize';
 import { monthFigures, monthsBetween, omBill, omEndsOn, omPeriods, type DayReading, type MonthFigures, type OmPeriod, type StaffNorm } from './om-rules';
 
 /*
- * Loading an O&M contract and its records for the rules (item 131). `OmService` reads the tab with it and `RaBillsService`
+ * Loading an O&M contract and its records for the rules. `OmService` reads the tab with it and `RaBillsService`
  * prices an O&M bill with it, inside the bill's transaction, so the tab and the bill agree.
  */
 

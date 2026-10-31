@@ -4,8 +4,7 @@ import { DPR_EXPORT } from '@/lib/exportColumns';
 import type { ExportColumn } from '@/lib/exportExcel';
 
 /**
- * The DPR export's columns: the standard ones, then one for each number field of the company's own on the day (item
- * 134 part 2) of the forms the reports were made on, named with its unit ("Rain hours (h)").
+ * The DPR export's columns: the standard ones, then one for each number field of the company's own on the day of the forms the reports were made on, named with its unit ("Rain hours (h)").
  */
 export async function dprExportColumns(rows: DailyReportDto[]): Promise<ExportColumn<DailyReportDto>[]> {
   const ids = [...new Set(rows.flatMap((r) => (r.formId ? [r.formId] : [])))];

@@ -1,4 +1,4 @@
-/** Data export and company deletion (v3 item 33). */
+/** Data export and company deletion. */
 import { PRODUCT_NAME } from './brand';
 
 /** Days between an admin asking for the company to be deleted and the data being erased; the request can be cancelled until then. */

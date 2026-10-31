@@ -4,7 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Card } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
-import { usePortalBills, usePortalInspections, usePortalProject, usePortalRfis } from '@/lib/queries';
+import { usePortalBills, usePortalInspections, usePortalMeasurements, usePortalProject, usePortalRfis, usePortalSiteOrders } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PortalOverview } from '@/components/portal/PortalOverview';
@@ -12,9 +12,11 @@ import { PortalDprs } from '@/components/portal/PortalDprs';
 import { PortalBills } from '@/components/portal/PortalBills';
 import { PortalInspections } from '@/components/portal/PortalInspections';
 import { PortalRfis } from '@/components/portal/PortalRfis';
+import { PortalMeasurements } from '@/components/portal/PortalMeasurements';
+import { SiteOrderBook } from '@/components/site-orders/SiteOrderBook';
 import { ProgressReportView } from '@/components/reports/ProgressReportView';
 
-const TABS = ['overview', 'dprs', 'report', 'bills', 'inspections', 'rfis'] as const;
+const TABS = ['overview', 'dprs', 'report', 'measurements', 'bills', 'inspections', 'site-orders', 'rfis'] as const;
 type Tab = (typeof TABS)[number];
 
 function PortalProject() {
@@ -26,14 +28,18 @@ function PortalProject() {
   const bills = usePortalBills(id);
   const inspections = usePortalInspections(id);
   const rfis = usePortalRfis(id);
+  const measurements = usePortalMeasurements(id);
+  const orders = usePortalSiteOrders(id);
   const [billId, setBillId] = useState<string | null>(null);
+  const [sheetId, setSheetId] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [inspectionId, setInspectionId] = useState<string | null>(null);
   const [rfiId, setRfiId] = useState<string | null>(null);
   const raw = search.get('tab') as Tab | null;
   const tab: Tab = raw && TABS.includes(raw) ? raw : 'overview';
   const go = (t: Tab) => router.replace(`${pathname}?tab=${t}`, { scroll: false });
 
-  // A notification links here with ?open=<bill, inspection or RFI id>.
+  // A notification links here with ?open=<bill, inspection, RFI, sheet or site order id>.
   const open = search.get('open');
   useEffect(() => {
     if (!open) return;
@@ -46,12 +52,20 @@ function PortalProject() {
     } else if (rfis.data?.some((r) => r.id === open)) {
       setRfiId(open);
       router.replace(`${pathname}?tab=rfis`, { scroll: false });
+    } else if (measurements.data?.sheets.some((m) => m.id === open)) {
+      setSheetId(open);
+      router.replace(`${pathname}?tab=measurements`, { scroll: false });
+    } else if (orders.data?.some((o) => o.id === open)) {
+      setOrderId(open);
+      router.replace(`${pathname}?tab=site-orders`, { scroll: false });
     }
-  }, [open, bills.data, inspections.data, rfis.data, pathname, router]);
+  }, [open, bills.data, inspections.data, rfis.data, measurements.data, orders.data, pathname, router]);
 
   const toCertify = bills.data?.filter((b) => b.stage === 'SENT').length ?? 0;
   const requested = inspections.data?.filter((i) => i.status === 'SUBMITTED').length ?? 0;
   const toAnswer = rfis.data?.filter((r) => r.status === 'OPEN').length ?? 0;
+  const toCheck = measurements.data?.toCheck.length ?? 0;
+  const toAccept = orders.data?.filter((o) => o.status === 'REPLIED').length ?? 0;
 
   return (
     <div className="page-container">
@@ -69,6 +83,14 @@ function PortalProject() {
               { key: 'dprs', label: 'Daily reports', children: <PortalDprs projectId={data.id} /> },
               { key: 'report', label: 'Progress report', children: <div style={{ padding: 12 }}><ProgressReportView projectId={data.id} portal /></div> },
               {
+                key: 'measurements',
+                label: 'Check measurement',
+                count: toCheck,
+                countLabel: 'to check for your share',
+                attention: true,
+                children: <PortalMeasurements measurements={measurements} openId={sheetId} onOpen={setSheetId} />,
+              },
+              {
                 key: 'bills',
                 label: 'RA bills',
                 count: toCertify,
@@ -82,6 +104,14 @@ function PortalProject() {
                 count: requested || null,
                 countLabel: 'requested',
                 children: <PortalInspections inspections={inspections} openId={inspectionId} onOpen={setInspectionId} />,
+              },
+              {
+                key: 'site-orders',
+                label: 'Site orders',
+                count: toAccept,
+                countLabel: 'complied, to accept',
+                attention: true,
+                children: <SiteOrderBook projectId={data.id} orders={orders} portal openId={orderId} onOpen={setOrderId} />,
               },
               {
                 key: 'rfis',

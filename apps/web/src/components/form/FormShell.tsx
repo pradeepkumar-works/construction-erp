@@ -54,7 +54,7 @@ export interface FormShellProps<T> {
    */
   projectDefault?: boolean;
   /**
-   * A draft Ask Nirmaan filled in (AI item 71), already put in the fields by the form. It takes the place of a kept
+   * A draft Ask Nirmaan filled in, already put in the fields by the form. It takes the place of a kept
    * draft, counts as changes (so closing asks, and it is kept on this device), and the form says what to check.
    */
   aiDraft?: AiDraftDto | null;
@@ -88,7 +88,7 @@ type NamePath = (string | number)[];
 
 /**
  * The API's validation messages that name a field of this form ("rate must not be less than 0",
- * "lines.0.quantity must be a number"), as errors to show on those fields (UX item 79). Others stay in the toast.
+ * "lines.0.quantity must be a number"), as errors to show on those fields. Others stay in the toast.
  */
 function serverFieldErrors(err: unknown, fields: Record<string, unknown>): { name: NamePath; errors: string[] }[] {
   if (!isAxiosError(err) || err.response?.status !== 400) return [];
@@ -113,13 +113,13 @@ const fieldHref = (el: HTMLElement) => {
 };
 
 const focusIn = (el: HTMLElement) => {
-  // Glides to the field unless the system asks for less motion (UX item 81).
+  // Glides to the field unless the system asks for less motion.
   el.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   el.querySelector<HTMLElement>('input:not([type=hidden]), textarea, [tabindex]:not([tabindex="-1"])')?.focus({ preventScroll: true });
 };
 
 /**
- * The frame every create and edit form sits in (UI roadmap item 60): a large drawer (long forms) or a modal (short
+ * The frame every create and edit form sits in: a large drawer (long forms) or a modal (short
  * ones) with the actions in a footer that stays put, a summary of what still needs filling when a submit fails, a check
  * before closing with unsaved changes, a draft of a new entry kept in this browser, and Ctrl Enter to submit.
  *
@@ -307,9 +307,9 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     setFailure(null);
     setSubmitting(secondary ? 'secondary' : 'primary');
     try {
-      // The form says what went wrong itself (UX item 86), so the save gets no toast as well.
+      // The form says what went wrong itself, so the save gets no toast as well.
       const saved = await handledInPlace(() => onSubmit(allValues ? (form.getFieldsValue(true) as T) : validated, secondary));
-      // A draft from a WhatsApp message (AI item 120), changed here and saved: that message is marked saved.
+      // A draft from a WhatsApp message, changed here and saved: that message is marked saved.
       const recordId = (saved as { id?: unknown } | null)?.id;
       if (aiDraft?.captureId && typeof recordId === 'string') void api.post(`/whatsapp/messages/${aiDraft.captureId}/saved-in-app`, { recordId }).catch(() => undefined);
       if (storageKey) clearDraft(storageKey);

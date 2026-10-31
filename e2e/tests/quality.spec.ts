@@ -5,7 +5,7 @@ type Test = { id: string; testNo: string; result: string; readings: { id: string
 type Ncr = { id: string; ncrNo: string; status: string; qualityTestId: string | null; cause: string | null };
 
 /**
- * Tests and NCRs (v3 item 27): site records concrete cubes and enters the 7 and 28-day results, the 28-day one fails,
+ * Tests and NCRs: site records concrete cubes and enters the 7 and 28-day results, the 28-day one fails,
  * QA/QC raises an NCR from the test, site records the cause and corrective action, and QA/QC closes it.
  */
 test.describe.serial('a failed cube test through its NCR', () => {

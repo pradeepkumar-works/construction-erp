@@ -255,7 +255,7 @@ function InstrumentDrawer({ id, onClose }: { id: string | null; onClose: () => v
   );
 }
 
-/** The calibration register (item 137 part 2): lab and survey instruments by where they stand, oldest due first. */
+/** The calibration register: lab and survey instruments by where they stand, oldest due first. */
 export function CalibrationPage() {
   const { token } = theme.useToken();
   const { user } = useAuth();

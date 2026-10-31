@@ -18,7 +18,7 @@ import { MARKUP_INK } from './MarkupLayer';
 export type ListScope = 'sheet' | 'all';
 
 /**
- * The marks beside the drawing (item 109): this sheet's own and the open ones carried from earlier revisions, or every
+ * The marks beside the drawing: this sheet's own and the open ones carried from earlier revisions, or every
  * mark on the drawing. Picking one shows it on the sheet; its maker and document control resolve or delete it, and
  * anyone can raise an RFI from it.
  */

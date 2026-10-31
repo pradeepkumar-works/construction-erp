@@ -31,7 +31,7 @@ const columnsOf = (config: unknown): BatchColumnMap | null => (isObj(config) ? (
 const fieldsOf = (v: Prisma.JsonValue): Record<string, string> => (isObj(v) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, typeof x === 'string' ? x : String(x ?? '')])) : {});
 
 /**
- * A batching plant's controller (item 149, ARCHITECTURE "Batching plant controller"): the rows of its batch reports as
+ * A batching plant's controller (ARCHITECTURE "Batching plant controller"): the rows of its batch reports as
  * the Connector reads them, read through the plant's column map, waiting on the RMC page to become challans. A challan
  * is made only through `RmcService.dispatch` (with the row's id), which issues the weighed materials from the plant's
  * store; this service keeps the rows, the map and the board.

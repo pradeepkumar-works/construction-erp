@@ -43,7 +43,7 @@ const isPhoto = (a: Pick<AttachmentDto, 'mimeType'>) => a.mimeType.startsWith('i
 const joined = (...parts: (string | null | undefined)[]) => parts.filter((p) => p && p.trim()).join('; ') || null;
 
 /**
- * Site photo checks (AI item 76): each photo on a DPR, a progress entry, a safety incident or a snag is shown to the
+ * Site photo checks: each photo on a DPR, a progress entry, a safety incident or a snag is shown to the
  * model once, the first time someone who can use Ask Nirmaan opens the record, and what it saw is kept. Who sees the
  * checks is who sees the record (its own service loads it). Advisory only: nothing here changes the record or its
  * approval, and the project's safety officer can switch the flags off.

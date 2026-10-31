@@ -40,7 +40,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
   const [formOpen, setFormOpen] = useState(false);
   const [dprOpen, setDprOpen] = useState(false);
   const [editing, setEditing] = useState<ProgressEntryDto | null>(null);
-  // A draft from Ask Nirmaan (AI item 71) the form opens with
+  // A draft from Ask Nirmaan the form opens with
   const [prefill, setPrefill] = useState<AiDraftDto | null>(null);
   const frame = useListFrame({
     list: 'progress',

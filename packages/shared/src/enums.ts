@@ -3,15 +3,15 @@
 export const PROJECT_TYPES = ['ROAD', 'BUILDING', 'WATER_SUPPLY', 'SEWERAGE', 'OTHER', 'PLANT', 'STORE'] as const;
 export type ProjectType = (typeof PROJECT_TYPES)[number];
 
-/** Where a project type's work is located on progress and measurements (item 134): chainage, floor, village. */
+/** Where a project type's work is located on progress and measurements: chainage, floor, village. */
 export const WORK_LOCATIONS = ['CHAINAGE', 'FLOOR', 'VILLAGE'] as const;
 export type WorkLocation = (typeof WORK_LOCATIONS)[number];
 
-/** How the contract pays (item 125): measured BOQ quantities, a lump sum paid in stages, or design and build. */
+/** How the contract pays: measured BOQ quantities, a lump sum paid in stages, or design and build. */
 export const CONTRACT_MODELS = ['ITEM_RATE', 'LUMP_SUM', 'EPC'] as const;
 export type ContractModel = (typeof CONTRACT_MODELS)[number];
 
-/** A project's work breakdown (item 125): components, and sub-components inside them. */
+/** A project's work breakdown: components, and sub-components inside them. */
 export const WORK_ELEMENT_LEVELS = ['COMPONENT', 'SUB_COMPONENT'] as const;
 export type WorkElementLevel = (typeof WORK_ELEMENT_LEVELS)[number];
 
@@ -39,7 +39,7 @@ export const WORK_ELEMENT_TYPES = [
 ] as const;
 export type WorkElementType = (typeof WORK_ELEMENT_TYPES)[number];
 
-/** Pipe network (item 126): the points of a zone's or main's model, pipe materials, and proposed or existing lines. */
+/** Pipe network: the points of a zone's or main's model, pipe materials, and proposed or existing lines. */
 export const PIPE_NODE_KINDS = ['JUNCTION', 'TANK', 'SOURCE', 'SLUICE_VALVE', 'AIR_VALVE', 'SCOUR', 'CHAMBER', 'END', 'CROSSING_PIT'] as const;
 export type PipeNodeKind = (typeof PIPE_NODE_KINDS)[number];
 export const PIPE_MATERIALS = ['HDPE', 'MDPE', 'DI', 'CI', 'MS', 'PVC', 'GRP', 'OTHER'] as const;
@@ -50,14 +50,14 @@ export type PipeScope = (typeof PIPE_SCOPES)[number];
 export const PIPE_STAGES = ['TRENCH', 'BEDDING', 'LAY_JOINT', 'VALVES', 'BACKFILL', 'TEST', 'RESTORATION', 'COMMISSIONING'] as const;
 export type PipeStage = (typeof PIPE_STAGES)[number];
 
-/** Stage billing (item 129): how a billing component is paid, and what moves a payment stage. */
+/** Stage billing: how a billing component is paid, and what moves a payment stage. */
 export const BILLING_BASES = ['STAGES', 'UNIT_RATE'] as const;
 export type BillingBasis = (typeof BILLING_BASES)[number];
 export const STAGE_TRIGGERS = ['EVENT', 'PROGRESS', 'SUPPLY', 'TEST'] as const;
 export type StageTrigger = (typeof STAGE_TRIGGERS)[number];
 
 /**
- * EPC (item 130): the engineering disciplines a deliverable belongs to, where a deliverable stands with the client, and
+ * EPC: the engineering disciplines a deliverable belongs to, where a deliverable stands with the client, and
  * the stages an equipment package goes through, in order. A domestic package leaves out shipping and customs.
  */
 export const ENGINEERING_DISCIPLINES = ['PROCESS', 'CIVIL', 'MECHANICAL', 'ELECTRICAL', 'INSTRUMENTATION'] as const;
@@ -86,7 +86,7 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export const SUBMISSION_STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CHANGES_REQUESTED'] as const;
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
-/** What an approval step records (v5 item 94): one level approved, an entry escalated past its waiting time, or its approvers reminded. */
+/** What an approval step records: one level approved, an entry escalated past its waiting time, or its approvers reminded. */
 export const APPROVAL_STEP_ACTIONS = ['APPROVED', 'ESCALATED', 'REMINDED'] as const;
 export type ApprovalStepAction = (typeof APPROVAL_STEP_ACTIONS)[number];
 
@@ -96,7 +96,7 @@ export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
 export const MATERIAL_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 export type MaterialPriority = (typeof MATERIAL_PRIORITIES)[number];
 
-export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST'] as const;
+export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST', 'SUPPLIER_CHOICE'] as const;
 export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
 
 export const ROLE_KEYS = [
@@ -163,7 +163,7 @@ export type StockEntryType = (typeof STOCK_ENTRY_TYPES)[number];
 export const GRN_QC_STATUSES = ['ACCEPTED', 'PARTLY_ACCEPTED', 'REJECTED'] as const;
 export type GrnQcStatus = (typeof GRN_QC_STATUSES)[number];
 
-/** How a contract's liquidated damages rate is expressed (v4 item 50). */
+/** How a contract's liquidated damages rate is expressed. */
 export const LD_PERIODS = ['DAY', 'WEEK', 'MONTH'] as const;
 export type LdPeriod = (typeof LD_PERIODS)[number];
 
@@ -218,6 +218,16 @@ export type RfiStatus = (typeof RFI_STATUSES)[number];
 export const RFI_PRIORITIES = ['NORMAL', 'URGENT'] as const;
 export type RfiPriority = (typeof RFI_PRIORITIES)[number];
 
+/**
+ * Where a consultant's engineer stands on a project: it sets how much of the measurements they check before a
+ * bill is certified (CHECK_LEVEL_SHARE), lowest first. Kept on their place in the project's team.
+ */
+export const CHECK_LEVELS = ['ASSISTANT_ENGINEER', 'RESIDENT_ENGINEER', 'DEPUTY_TEAM_LEADER', 'TEAM_LEADER'] as const;
+export type CheckLevel = (typeof CHECK_LEVELS)[number];
+/** A site order book entry: OPEN until the site replies with its compliance, REPLIED until the issuer accepts it. */
+export const SITE_ORDER_STATUSES = ['OPEN', 'REPLIED', 'CLOSED'] as const;
+export type SiteOrderStatus = (typeof SITE_ORDER_STATUSES)[number];
+
 /** A scheduled service when it falls due, or a breakdown repair. */
 export const MAINTENANCE_KINDS = ['SERVICE', 'BREAKDOWN'] as const;
 export type MaintenanceKind = (typeof MAINTENANCE_KINDS)[number];
@@ -254,18 +264,18 @@ export type MsmeCategory = (typeof MSME_CATEGORIES)[number];
 export const RECEIPT_MODES = ['BANK', 'UPI', 'CASH'] as const satisfies readonly PaymentMode[];
 
 /**
- * What a payment request (v5 item 90) asks to pay: an approved bill, or an advance against a PO or a work order; or
- * (v6 item 107) a site's fund request, released into its imprest or paid to a party on account.
+ * What a payment request asks to pay: an approved bill, or an advance against a PO or a work order; or
+ * a site's fund request, released into its imprest or paid to a party on account.
  */
 export const PAYMENT_REQUEST_KINDS = ['BILL', 'PO_ADVANCE', 'WO_ADVANCE', 'FUND_REQUEST'] as const;
 export type PaymentRequestKind = (typeof PAYMENT_REQUEST_KINDS)[number];
 
-/** What a site's fund request (v6 item 107) is for. */
+/** What a site's fund request is for. */
 export const FUND_PURPOSES = ['WAGES', 'LOCAL_PURCHASE', 'PETTY_CONTRACTOR', 'SITE_RUNNING', 'OTHER'] as const;
 export type FundPurpose = (typeof FUND_PURPOSES)[number];
 
 /**
- * What a vendor bill is against (v5 item 91): a purchase order (matched three ways), a hired machine's month from its
+ * What a vendor bill is against: a purchase order (matched three ways), a hired machine's month from its
  * approved logs, closed workshop job cards, or anything else (transport, testing, consultancy) under an expense head.
  */
 export const VENDOR_BILL_KINDS = ['PO', 'HIRE', 'SERVICE', 'OTHER'] as const;
@@ -275,27 +285,27 @@ export type VendorBillKind = (typeof VENDOR_BILL_KINDS)[number];
 export const HIRE_FUEL_BY = ['OWNER', 'COMPANY'] as const;
 export type HireFuelBy = (typeof HIRE_FUEL_BY)[number];
 
-/** How a machine's fuel norm is measured (v5 item 93): litres per working hour, or km per litre for vehicles. */
+/** How a machine's fuel norm is measured: litres per working hour, or km per litre for vehicles. */
 export const FUEL_NORM_UNITS = ['LITRES_PER_HOUR', 'KM_PER_LITRE'] as const;
 export type FuelNormUnit = (typeof FUEL_NORM_UNITS)[number];
 
-/** Parts tracked per machine with their life (v5 item 93). */
+/** Parts tracked per machine with their life. */
 export const EQUIPMENT_PART_KINDS = ['TYRE', 'BATTERY'] as const;
 export type EquipmentPartKind = (typeof EQUIPMENT_PART_KINDS)[number];
 
-/** Why a debit note takes money off a bill (v5 item 91). */
+/** Why a debit note takes money off a bill. */
 export const DEBIT_NOTE_REASONS = ['SHORTAGE', 'EXCESS', 'REJECTED', 'RETURNED', 'RATE_DIFFERENCE', 'OTHER'] as const;
 export type DebitNoteReason = (typeof DEBIT_NOTE_REASONS)[number];
 
-/** A rate-analysis resource besides material (v5 item 92): a trade in man-days or an equipment category in hours per BOQ unit. */
+/** A rate-analysis resource besides material: a trade in man-days or an equipment category in hours per BOQ unit. */
 export const BOQ_RESOURCE_KINDS = ['LABOUR', 'EQUIPMENT'] as const;
 export type BoqResourceKind = (typeof BOQ_RESOURCE_KINDS)[number];
 
-/** Why stock was adjusted (v5 item 92). Everything but OPENING counts in the wastage report. */
+/** Why stock was adjusted. Everything but OPENING counts in the wastage report. */
 export const STOCK_ADJUSTMENT_REASONS = ['OPENING', 'WASTAGE', 'DAMAGE', 'THEFT', 'COUNT_DIFFERENCE', 'OTHER'] as const;
 export type StockAdjustmentReason = (typeof STOCK_ADJUSTMENT_REASONS)[number];
 
-/** A payment for the Nirmaan subscription (v3 item 34): created with a Razorpay order, paid once Razorpay confirms it. */
+/** A payment for the Nirmaan subscription: created with a Razorpay order, paid once Razorpay confirms it. */
 export const BILLING_PAYMENT_STATUSES = ['CREATED', 'PAID'] as const;
 export type BillingPaymentStatus = (typeof BILLING_PAYMENT_STATUSES)[number];
 
@@ -307,7 +317,7 @@ export type WorkerSkill = (typeof WORKER_SKILLS)[number];
 export const WORKER_ID_TYPES = ['AADHAAR', 'VOTER_ID', 'DRIVING_LICENCE', 'PAN', 'OTHER'] as const;
 export type WorkerIdType = (typeof WORKER_ID_TYPES)[number];
 
-/** Site imprest (v4 item 45): cash advanced to the site, or handed back. */
+/** Site imprest: cash advanced to the site, or handed back. */
 export const IMPREST_ENTRY_KINDS = ['ADVANCE', 'RETURN'] as const;
 export type ImprestEntryKind = (typeof IMPREST_ENTRY_KINDS)[number];
 
@@ -315,7 +325,7 @@ export type ImprestEntryKind = (typeof IMPREST_ENTRY_KINDS)[number];
 export const IMPREST_ENTRY_STATUSES = ['REQUESTED', 'PAID', 'REJECTED'] as const;
 export type ImprestEntryStatus = (typeof IMPREST_ENTRY_STATUSES)[number];
 
-/** Guarantees, insurance and licences register (v4 item 46). */
+/** Guarantees, insurance and licences register. */
 export const COMPLIANCE_DOC_KINDS = ['BANK_GUARANTEE', 'EMD', 'INSURANCE', 'LICENCE'] as const;
 export type ComplianceDocKind = (typeof COMPLIANCE_DOC_KINDS)[number];
 
@@ -323,7 +333,7 @@ export type ComplianceDocKind = (typeof COMPLIANCE_DOC_KINDS)[number];
 export const COMPLIANCE_DOC_STATUSES = ['ACTIVE', 'RENEWED', 'RELEASED', 'INVOKED'] as const;
 export type ComplianceDocStatus = (typeof COMPLIANCE_DOC_STATUSES)[number];
 
-/** Handover and defects (v4 item 47): a snag before handover, or a defect in the defect liability period. */
+/** Handover and defects: a snag before handover, or a defect in the defect liability period. */
 export const DEFECT_PHASES = ['SNAG', 'DEFECT'] as const;
 export type DefectPhase = (typeof DEFECT_PHASES)[number];
 
@@ -334,7 +344,7 @@ export type DefectPriority = (typeof DEFECT_PRIORITIES)[number];
 export const DEFECT_STATUSES = ['OPEN', 'FIXED', 'CLOSED'] as const;
 export type DefectStatus = (typeof DEFECT_STATUSES)[number];
 
-/** Drawing markup (item 109, `markup.ts`): what a mark is, whether it is still open, and its ink. */
+/** Drawing markup (`markup.ts`): what a mark is, whether it is still open, and its ink. */
 export const MARKUP_KINDS = ['PIN', 'CLOUD', 'RECT', 'ARROW', 'TEXT', 'PEN'] as const;
 export type MarkupKind = (typeof MARKUP_KINDS)[number];
 export const MARKUP_STATUSES = ['OPEN', 'RESOLVED'] as const;
@@ -343,12 +353,12 @@ export type MarkupStatus = (typeof MARKUP_STATUSES)[number];
 export const MARKUP_COLORS = ['RED', 'BLUE', 'GREEN', 'ORANGE'] as const;
 export type MarkupColor = (typeof MARKUP_COLORS)[number];
 
-/** Launcher (phase 2, `launcher.ts`): what a pin on Home points at, and what kind of place a visit was. */
+/** Launcher (`launcher.ts`): what a pin on Home points at, and what kind of place a visit was. */
 export const NAV_PIN_KINDS = ['NODE', 'PROJECT'] as const;
 export type NavPinKind = (typeof NAV_PIN_KINDS)[number];
 export const NAV_VISIT_KINDS = ['NODE', 'PROJECT', 'RECORD'] as const;
 export type NavVisitKind = (typeof NAV_VISIT_KINDS)[number];
-/** What a company does (group companies, phase 1): sets the modules a new company of a group starts with. */
+/** What a company does (group companies): sets the modules a new company of a group starts with. */
 export const COMPANY_KINDS = ['CONSTRUCTION', 'CONSULTANCY', 'QUALITY_LAB', 'PLANT', 'HOLDING'] as const;
 export type CompanyKind = (typeof COMPANY_KINDS)[number];
 

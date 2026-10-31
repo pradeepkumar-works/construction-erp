@@ -12,14 +12,14 @@ export interface Appearance {
   compact: boolean;
 }
 
-/** The one type scale (UX item 82), in px: 12 is the floor, in either density. */
+/** The one type scale, in px: 12 is the floor, in either density. */
 export const TYPE_SCALE = [12, 14, 16, 20, 24, 30] as const;
 
 /** antd's line height for a font size (its `getLineHeight`): the text plus 8 px. */
 const lineHeightOf = (size: number) => (size + 8) / size;
 
 /**
- * The type and target floor, run after antd's own algorithms (UX item 82). antd's compact algorithm rebuilds every font
+ * The type and target floor, run after antd's own algorithms. antd's compact algorithm rebuilds every font
  * size from 12 (body 12, small 10) and makes small controls 21 px; this puts the type back on the scale (12 small, 14 body,
  * 16 large, 20 extra large; headings 30, 24, 20, 16, 14) so compact shrinks only heights and spacing, and keeps a small
  * control 24 px (WCAG 2.5.8) and the extra small one 16 px.
@@ -63,7 +63,7 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
     colorInfo: c.primary,
     borderRadius: 6,
     fontFamily: "var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
-    // The page behind a drawer or dialog dims to navy, and floating layers cast a navy-tinted shadow (brand look, phase 1).
+    // The page behind a drawer or dialog dims to navy, and floating layers cast a navy-tinted shadow (brand look).
     colorBgMask: dark ? c.nightScrim : c.scrim,
     boxShadowSecondary: dark ? c.nightShadowFloat : c.shadowFloat,
     ...(dark

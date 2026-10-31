@@ -206,7 +206,7 @@ function StepCard({ field, index, count, specs, onMove, onRemove }: { field: For
 }
 
 /**
- * Change a component kind (item 134): its specs (what the planner fills in, such as the staging height) and its steps,
+ * Change a component kind: its specs (what the planner fills in, such as the staging height) and its steps,
  * which become a new component's activities and sub-activities. Components already laid out keep theirs.
  */
 export function KindEditor({ kind, editable, onClose, onUpdateProjects }: { kind: ComponentKindDto | null; editable: boolean; onClose: () => void; onUpdateProjects?: (kind: ComponentKindDto) => void }) {

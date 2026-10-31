@@ -2,7 +2,7 @@ import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
 import { formatINRCompact, formatMonthShort, formatPct, toNumber } from '@/lib/format';
 
 /**
- * The figures behind the home page's charts, in words and as rows (UX item 81, WCAG 1.1.1): each chart has a one-line
+ * The figures behind the home page's charts, in words and as rows (WCAG 1.1.1): each chart has a one-line
  * summary above it, which is also the drawing's accessible name, and a table of the same figures. Kept apart from
  * `charts.tsx` so the charting library stays in its own bundle.
  */

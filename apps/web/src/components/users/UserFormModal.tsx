@@ -20,7 +20,7 @@ interface FormValues {
   password?: string;
   isActive?: boolean;
   how?: 'invite' | 'password';
-  /** The project teams they join as they are created (finding 17 of the October review) */
+  /** The project teams they join as they are created */
   projectIds?: string[];
 }
 
@@ -62,7 +62,7 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
           phone: v.phone || undefined,
           roleKey: v.roleKey,
           password: v.how === 'password' ? v.password : undefined,
-          // The teams they join as they are made (finding 17 of the October review).
+          // The teams they join as they are made.
           projectIds: perProject && v.projectIds?.length ? v.projectIds : undefined,
         })
       ).data;

@@ -35,7 +35,7 @@ interface FormValues extends SectorFormValues {
  * Create a progress entry, or (with `entry`) edit an existing draft / rejected / changes-requested
  * entry and resubmit it for approval in one go.
  */
-export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: ProgressEntryDto | null; /** Filled in by Ask Nirmaan (AI item 71) */ prefill?: AiDraftDto | null }) {
+export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: ProgressEntryDto | null; /** Filled in by Ask Nirmaan */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
@@ -43,7 +43,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
   const fixedProject = entry?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
   const { data: activities, isLoading: actLoading } = useActivities(selectedProject);
-  // Progress from the DPR only (item 127): a new entry is a line of the day's DPR instead.
+  // Progress from the DPR only: a new entry is a line of the day's DPR instead.
   const workOptions = useDprWorkOptions(open && !entry ? selectedProject : undefined).data;
   const dprOnly = !entry && !!workOptions?.progressFromDpr;
   const selectedActivity = Form.useWatch('activityId', form);

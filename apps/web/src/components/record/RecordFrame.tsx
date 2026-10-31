@@ -35,7 +35,7 @@ export type RecordMode = 'drawer' | 'page' | 'pane';
 type ActionSize = 'small' | 'middle';
 
 /**
- * An action that lives in the record's ⋯ menu rather than beside Approve (finding 15 of the October review: Delete sat
+ * An action that lives in the record's ⋯ menu rather than beside Approve (Delete sat
  * next to Approve in the bar). Anything that destroys or cannot be taken back belongs here; the deciding buttons stay
  * in the bar. A `danger` item asks first, usually through `useConfirmDelete`.
  */
@@ -88,7 +88,7 @@ export interface RecordFrameProps {
 const sectionId = (key: string) => `record-${key}`;
 
 /**
- * The record's sections, and its comments after them (v6 item 116) when it is a submission: the activity's type is the
+ * The record's sections, and its comments after them when it is a submission: the activity's type is the
  * comment kind, and the count is its threads.
  */
 function useSections(record: RecordFrameProps['record']): RecordSection[] {
@@ -100,7 +100,7 @@ function useSections(record: RecordFrameProps['record']): RecordSection[] {
   return [...record.sections, { key: 'comments', title: 'Comments', count: comments.data ? comments.data.threads.length : undefined, children: <CommentsSection kind={kind} entityId={id} /> }];
 }
 
-/** The approval levels under the stage bar (v5 item 94), once the entry has been submitted. */
+/** The approval levels under the stage bar, once the entry has been submitted. */
 const levelsOf = (record: NonNullable<RecordFrameProps['record']>) =>
   record.activity && record.lifecycle && record.lifecycle.current >= 2 ? <ApprovalLevels type={record.activity.type} id={record.activity.id} /> : null;
 
@@ -126,12 +126,12 @@ function useHeight<E extends HTMLElement>(): [React.RefObject<E | null>, number]
   return [ref, height];
 }
 
-/** On a phone the actions sit in a bar fixed to the bottom of the screen, above the home indicator (UX item 84). */
+/** On a phone the actions sit in a bar fixed to the bottom of the screen, above the home indicator. */
 const safeBottom = (padding: number) => `calc(${padding}px + env(safe-area-inset-bottom))`;
 const sectionTitle = (s: RecordSection) => (s.count === undefined ? s.title : `${s.title} (${s.count})`);
 
 /**
- * A submission or document shown whole (UI roadmap item 57): in a drawer for a quick look from a list, or as its own
+ * A submission or document shown whole: in a drawer for a quick look from a list, or as its own
  * page with key facts, the stage bar, sections with an anchor bar, the activity beside them and the actions in a footer
  * that stays in view. Each record type fills the same props once and gets both.
  */

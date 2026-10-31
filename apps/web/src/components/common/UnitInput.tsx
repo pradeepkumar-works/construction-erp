@@ -12,7 +12,7 @@ const matches = (input: string, opt?: { value?: unknown; name?: string }) => {
 };
 
 /**
- * Unit field for any quantity (v4 item 48): suggests the company's unit master so "Cum" is written the same way every
+ * Unit field for any quantity: suggests the company's unit master so "Cum" is written the same way every
  * time, and still takes a unit that is not in the list.
  */
 export function UnitInput(props: Omit<AutoCompleteProps, 'options' | 'showSearch'>) {
