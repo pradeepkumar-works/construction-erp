@@ -27,6 +27,7 @@ export class UpdateContractDto {
   endDate?: string | null;
   @pct('5', 'Retention money held from each bill') @IsOptional() @num() @IsNumberString() retentionPct?: string;
   @pct('2.5', 'Security deposit deducted from each bill') @IsOptional() @num() @IsNumberString() securityDepositPct?: string;
+  @ApiPropertyOptional({ example: '5', description: 'Security deposit stops at this % of the contract value, or of the work billed if larger; null for no cap' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() securityDepositCapPct?: string | null;
   @ApiPropertyOptional({ example: '9325000.00', description: 'Mobilisation advance received from the client' }) @IsOptional() @num() @IsNumberString() mobilisationAdvance?: string;
   @pct('10', 'Advance recovered from each bill until the whole advance is back') @IsOptional() @num() @IsNumberString() advanceRecoveryPct?: string;
   @ApiPropertyOptional({ example: 12 }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(120) defectLiabilityMonths?: number | null;

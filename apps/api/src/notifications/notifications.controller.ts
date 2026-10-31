@@ -110,6 +110,7 @@ export class NotificationsController {
     await this.jobs.machineryDue(q.date).catch(() => undefined);
     await this.jobs.complianceDue(q.date).catch(() => undefined);
     await this.jobs.handoverDue(q.date).catch(() => undefined);
+    await this.jobs.obligationsDue(q.date).catch(() => undefined);
     // ...and, on Mondays, the weekly watch list of early warnings and last week's money in from clients.
     await this.jobs.watchList(q.date).catch(() => undefined);
     await this.jobs.receiptsWeekly(q.date).catch(() => undefined);
@@ -185,6 +186,15 @@ export class NotificationsController {
   @Get('jobs/compliance-due')
   complianceDue(@Query() q: JobQuery) {
     return this.jobs.complianceDue(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Contract obligations due within 7 days or overdue, each alerted once per stage and deadline (item 171). Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/obligations-due')
+  obligationsDue(@Query() q: JobQuery) {
+    return this.jobs.obligationsDue(q.date);
   }
 
   @Public()
