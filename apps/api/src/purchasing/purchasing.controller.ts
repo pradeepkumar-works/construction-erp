@@ -78,6 +78,15 @@ export class PurchasingController {
     return this.toOrder.finalise(user, id, dto);
   }
 
+  @ApiOperation({
+    summary: 'A supplier choice sent for approval',
+    description: 'What purchase finalised on a material request and why, with its quotations ranked as they stand now. Approved through POST /approvals/supplier_choice/:id/review.',
+  })
+  @Get('supplier-choices/:id')
+  supplierChoice(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.toOrder.choice(user, id);
+  }
+
   @ApiOperation({ summary: 'Undo the supplier finalised on a request, to compare the quotations again' })
   @Post('material-requests/:id/reopen-supplier')
   reopenSupplier(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {

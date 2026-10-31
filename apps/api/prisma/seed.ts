@@ -2129,6 +2129,11 @@ const PAYMENT_RULES: typeof BILL_RULES = [
   { roleKey: 'MANAGEMENT', type: 'PAYMENT_REQUEST', maxAmount: null },
   { roleKey: 'PROJECT_MANAGER', type: 'PAYMENT_REQUEST', maxAmount: D(500000) },
 ];
+/** Supplier choices (Finalise L1 sent for approval): as purchase orders, management any, project managers up to ₹5 lakh. */
+const CHOICE_RULES: typeof BILL_RULES = [
+  { roleKey: 'MANAGEMENT', type: 'SUPPLIER_CHOICE', maxAmount: null },
+  { roleKey: 'PROJECT_MANAGER', type: 'SUPPLIER_CHOICE', maxAmount: D(500000) },
+];
 /** QA/QC passes inspections; management and project managers can too. */
 const QUALITY_RULES: typeof BILL_RULES = ['MANAGEMENT', 'PROJECT_MANAGER', 'QA_QC_ENGINEER'].map((roleKey) => ({ roleKey, type: 'INSPECTION', maxAmount: null }));
 
@@ -2147,9 +2152,9 @@ async function seedApprovalRules(organizationId: string) {
       skipDuplicates: true,
     });
   if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) {
-    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST'])
+    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST', 'SUPPLIER_CHOICE'])
       if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: type } })) === 0)
-        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES, ...QUALITY_RULES, ...PAYMENT_RULES].filter((r) => r.type === type));
+        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES, ...QUALITY_RULES, ...PAYMENT_RULES, ...CHOICE_RULES].filter((r) => r.type === type));
     return;
   }
   const types = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
@@ -2162,6 +2167,7 @@ async function seedApprovalRules(organizationId: string) {
     ...SUBCONTRACT_RULES,
     ...QUALITY_RULES,
     ...PAYMENT_RULES,
+    ...CHOICE_RULES,
   ];
   await write(rows);
 }

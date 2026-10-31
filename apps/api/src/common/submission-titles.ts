@@ -33,6 +33,13 @@ export const inr = (v: string) => `₹${Number(v).toLocaleString('en-IN', { mini
 /** "PO-2026-0004: ₹2,45,000.00 to Utkal Cement Traders". */
 export const poTitle = (poNo: string, total: string, vendor: string) => `${poNo}: ${inr(total)} to ${vendor}`;
 
+/** "Supplier for MR-2026-0012: Steel Traders (L1), ₹4,52,000.00" or "… lowest per item, split, …". */
+export const supplierChoiceTitle = (requestNo: string, vendor: string | null, split: boolean, rank: number | null, amount: string) =>
+  `Supplier for ${requestNo}: ${split ? 'lowest per item, split' : `${vendor ?? 'a deleted quotation'}${rank ? ` (L${rank})` : ''}`}, ${inr(amount)}`;
+
+/** The rows `supplierChoiceTitle` reads. */
+export const SUPPLIER_CHOICE_TITLE = { materialRequest: { select: { requestNo: true } }, quotation: { select: { vendor: { select: { name: true } } } } } as const;
+
 /** "WO-2026-0003: Brickwork, Block A, ₹8,40,000.00 to Mahanadi Builders". */
 export const woTitle = (woNo: string, title: string, value: string, vendor: string) => `${woNo}: ${title}, ${inr(value)} to ${vendor}`;
 

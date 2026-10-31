@@ -1413,6 +1413,8 @@ export interface ApprovalMatrixDto {
   paymentsNeedRequest: boolean;
   /** Progress is recorded only as DPR work lines (item 127) */
   progressFromDpr: boolean;
+  /** A purchase order on a material request waits for its supplier choice (Finalise L1) to be approved */
+  ordersNeedApprovedChoice: boolean;
   /** Reminders and escalation per submission type (v5 item 94); types left out have neither */
   escalations: ApprovalEscalationDto[];
 }

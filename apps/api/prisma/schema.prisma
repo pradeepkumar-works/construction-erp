@@ -772,48 +772,51 @@ model Organization {
   billingRemindedFor String?
 
   /// Ask Nirmaan (AI item 67): switched on by an admin; off until then
-  aiEnabled           Boolean            @default(false)
+  aiEnabled                Boolean            @default(false)
   /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
-  aiMonthlyCapInr     Int?
+  aiMonthlyCapInr          Int?
   /// Roles besides admins that may use Ask Nirmaan (AI item 77); empty = all staff
-  aiRoles             String[]           @default([])
+  aiRoles                  String[]           @default([])
   /// Payment requests (v5 item 90): accounts may pay a bill only against an approved payment request. Off for companies
   /// made before item 90, on for new sign-ups.
-  paymentsNeedRequest Boolean            @default(false)
+  paymentsNeedRequest      Boolean            @default(false)
   /// Progress from the DPR only (item 127): progress is recorded as the DPR's work lines, not on its own. Off for
   /// companies made before item 127, on for new sign-ups.
-  progressFromDpr     Boolean            @default(false)
+  progressFromDpr          Boolean            @default(false)
+  /// Supplier choice approval: a purchase order on a material request waits until the supplier finalised on it (Finalise
+  /// L1) is approved as a SUPPLIER_CHOICE. Off for companies made before it, on for new sign-ups.
+  ordersNeedApprovedChoice Boolean            @default(false)
   /// Module switches (v6 item 117): the switchable modules (SWITCHABLE_MODULES in @erp/shared) an admin turned off.
   /// Their data stays; turning one on again brings it back.
-  modulesOff          String[]           @default([])
+  modulesOff               String[]           @default([])
   /// Correspondence (item 136): which outward letters wait for their signatory's approval before they are numbered
-  letterApproval      LetterApprovalRule @default(CONTRACTUAL)
+  letterApproval           LetterApprovalRule @default(CONTRACTUAL)
   /// Item 169: which signed letters then wait for a director's seal at head office (L2) before they are numbered
-  letterSeal          LetterApprovalRule @default(NONE)
+  letterSeal               LetterApprovalRule @default(NONE)
   /// Item categories (master codes) whose receipts need the maker's test certificate (item 137 part 2)
-  mtcCategories       String[]           @default(["steel", "cement", "pipes-and-fittings"])
+  mtcCategories            String[]           @default(["steel", "cement", "pipes-and-fittings"])
   /// Launcher phase 3: Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
-  discoverLocked      Boolean            @default(true)
+  discoverLocked           Boolean            @default(true)
   /// The plan's module set, set from the Nirmaan console; null = every module
-  moduleTier          ModuleTier?
+  moduleTier               ModuleTier?
   /// Menu and names (NavSettingsDto in @erp/shared): the menu down the side or across the top, the top bar's look,
   /// how pages are grouped into modules, and the company's own names for modules (by module key)
-  navLayout           NavLayout          @default(SIDEBAR)
-  navLook             NavLook            @default(NAVY)
-  navModuleSet        NavModuleSet       @default(AREAS)
-  navNames            Json               @default("{}")
+  navLayout                NavLayout          @default(SIDEBAR)
+  navLook                  NavLook            @default(NAVY)
+  navModuleSet             NavModuleSet       @default(AREAS)
+  navNames                 Json               @default("{}")
   /// People may choose their own look (User.navLook)
-  navPersonalLook     Boolean            @default(false)
+  navPersonalLook          Boolean            @default(false)
   /// Group companies (phase 1): the group the company belongs to, if any, and what kind of company it is. The kind sets
   /// the modules a new company starts with (COMPANY_KIND_MODULES_OFF in @erp/shared); it changes nothing afterwards.
-  groupId             String?
-  group               CompanyGroup?      @relation(fields: [groupId], references: [id])
-  kind                CompanyKind        @default(CONSTRUCTION)
+  groupId                  String?
+  group                    CompanyGroup?      @relation(fields: [groupId], references: [id])
+  kind                     CompanyKind        @default(CONSTRUCTION)
   /// Legal details, kept for the group's list of companies and, later, consolidation
-  legalName           String?
-  pan                 String?
-  cin                 String?
-  gstin               String?
+  legalName                String?
+  pan                      String?
+  cin                      String?
+  gstin                    String?
 
   users                User[]
   roles                Role[]
@@ -902,6 +905,7 @@ model Organization {
   receipts             Receipt[]
   vendorPayments       VendorPayment[]
   paymentRequests      PaymentRequest[]
+  supplierChoices      SupplierChoice[]
   tallyConfig          TallyConfig?
   tallyExports         TallyExport[]
   checklists           ChecklistTemplate[]
@@ -1047,7 +1051,7 @@ model ApprovalRule {
   organization   Organization @relation(fields: [organizationId], references: [id])
   roleId         String
   role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST
+  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST | SUPPLIER_CHOICE
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
   /// v5 item 94: 1 is the matrix; 2 and 3 are further approvals of the same entry
@@ -1197,6 +1201,8 @@ model User {
   vendorPaymentsMade      VendorPayment[]            @relation("VendorPaymentCreator")
   submittedPayRequests    PaymentRequest[]           @relation("PayRequestSubmitter")
   reviewedPayRequests     PaymentRequest[]           @relation("PayRequestReviewer")
+  submittedChoices        SupplierChoice[]           @relation("SupplierChoiceSubmitter")
+  reviewedChoices         SupplierChoice[]           @relation("SupplierChoiceReviewer")
   quotationsEntered       Quotation[]                @relation("QuotationCreator")
   submittedPos            PurchaseOrder[]            @relation("PoSubmitter")
   reviewedPos             PurchaseOrder[]            @relation("PoReviewer")
@@ -1262,13 +1268,6 @@ model User {
   biometricDevices        BiometricDevice[]          @relation("BiometricDeviceCreator")
   biometricCommands       BiometricCommand[]         @relation("BiometricCommandCreator")
   contractObligations     ContractObligation[]       @relation("ContractObligationCreator")
-  measurementChecks       MeasurementCheck[]         @relation("MeasurementChecker")
-  hiddenWorkSigned        Inspection[]               @relation("InspectionHiddenSigner")
-  hiddenWorkCountersigned Inspection[]               @relation("InspectionHiddenCountersigner")
-  siteOrdersIssued        SiteOrder[]                @relation("SiteOrderIssuer")
-  siteOrdersRecorded      SiteOrder[]                @relation("SiteOrderRecorder")
-  siteOrdersReplied       SiteOrder[]                @relation("SiteOrderReplier")
-  siteOrdersClosed        SiteOrder[]                @relation("SiteOrderCloser")
   officialReportIssues    OfficialReportIssue[]      @relation("OfficialReportIssuer")
   integrationsMade        IntegrationConnection[]    @relation("IntegrationConnectionCreator")
   weighTicketsMade        WeighTicket[]              @relation("WeighTicketCreator")
@@ -1327,6 +1326,13 @@ model User {
   approvedMakesAdded      ApprovedMake[]             @relation("ApprovedMakeCreator")
   drawingScalesSet        DrawingScale[]             @relation("DrawingScaleSetter")
   drawingTakeoffs         DrawingTakeoff[]           @relation("DrawingTakeoffCreator")
+  measurementChecks       MeasurementCheck[]         @relation("MeasurementChecker")
+  hiddenWorkSigned        Inspection[]               @relation("InspectionHiddenSigner")
+  hiddenWorkCountersigned Inspection[]               @relation("InspectionHiddenCountersigner")
+  siteOrdersIssued        SiteOrder[]                @relation("SiteOrderIssuer")
+  siteOrdersRecorded      SiteOrder[]                @relation("SiteOrderRecorder")
+  siteOrdersReplied       SiteOrder[]                @relation("SiteOrderReplier")
+  siteOrdersClosed        SiteOrder[]                @relation("SiteOrderCloser")
 
   @@unique([organizationId, email])
   @@index([loginId])
@@ -1497,6 +1503,7 @@ model Project {
   receipts           Receipt[]
   vendorPayments     VendorPayment[]
   paymentRequests    PaymentRequest[]
+  supplierChoices    SupplierChoice[]
   fundRequestsRaised PaymentRequest[]         @relation("FundRequestRaisedAt")
   quotations         Quotation[]
   purchaseOrders     PurchaseOrder[]
@@ -1694,6 +1701,7 @@ model Quotation {
   purchaseOrders PurchaseOrder[]
   enquiryTokens  EnquiryToken[]
   finalFor       MaterialRequest[] @relation("MrFinalQuotation")
+  choices        SupplierChoice[]
 
   @@unique([materialRequestId, vendorId])
   @@index([organizationId])
@@ -2812,20 +2820,66 @@ model MaterialRequest {
   finalisedAt      DateTime?
   finalisedById    String?
   finalisedBy      User?            @relation("MrFinaliser", fields: [finalisedById], references: [id], onDelete: SetNull)
+  /// The finalised choice as sent for approval, when the company has orders wait for an approved choice
+  supplierChoiceId String?          @unique
+  supplierChoice   SupplierChoice?  @relation("MrCurrentChoice", fields: [supplierChoiceId], references: [id], onDelete: SetNull)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  items          MaterialRequestItem[]
-  attachments    Attachment[]
-  stockEntries   StockEntry[]
-  quotations     Quotation[]
-  purchaseOrders PurchaseOrder[]
-  enquiries      Enquiry[]
+  items           MaterialRequestItem[]
+  supplierChoices SupplierChoice[]      @relation("MrSupplierChoices")
+  attachments     Attachment[]
+  stockEntries    StockEntry[]
+  quotations      Quotation[]
+  purchaseOrders  PurchaseOrder[]
+  enquiries       Enquiry[]
 
   @@unique([organizationId, requestNo])
   @@index([projectId, status])
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
+}
+
+/// Supplier choice approval: the supplier purchase finalised on a material request (one quotation, or the lowest per
+/// item split), sent for approval as a submission (type SUPPLIER_CHOICE) when the company has orders wait for it
+/// (`Organization.ordersNeedApprovedChoice`). The request points at its current one; finalising again makes a new one and
+/// drops one still waiting, and a decided one stays as the record of that decision.
+model SupplierChoice {
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  materialRequestId String
+  materialRequest   MaterialRequest  @relation("MrSupplierChoices", fields: [materialRequestId], references: [id], onDelete: Cascade)
+  /// The quotation chosen; null for the split (or once that quotation is deleted)
+  quotationId       String?
+  quotation         Quotation?       @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  split             Boolean          @default(false)
+  /// Its L rank when chosen (1 = L1); null for the split or a quotation that leaves out an item
+  rank              Int?
+  /// Why a quotation other than L1 was chosen
+  reason            String?
+  /// What is still to order at the chosen rates, with GST and freight, when chosen: the approval matrix's amount
+  amount            Decimal          @db.Decimal(18, 2)
+  /// L1's total for the same items when chosen, so the approver sees the gap
+  l1Amount          Decimal?         @db.Decimal(18, 2)
+  status            SubmissionStatus @default(DRAFT)
+  submittedById     String
+  submittedBy       User             @relation("SupplierChoiceSubmitter", fields: [submittedById], references: [id])
+  submittedAt       DateTime?
+  reviewedById      String?
+  reviewedBy        User?            @relation("SupplierChoiceReviewer", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  reviewNote        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  currentFor MaterialRequest? @relation("MrCurrentChoice")
+
+  @@index([organizationId, status])
+  @@index([projectId, status])
+  @@index([materialRequestId])
 }
 
 model MaterialRequestItem {
