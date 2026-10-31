@@ -5,6 +5,7 @@ import { Flex, Segmented, Tabs, Typography, theme } from 'antd';
 import { AppstoreOutlined, CheckSquareOutlined, InboxOutlined, ScheduleOutlined, ToolOutlined, WalletOutlined } from '@/components/common/icons';
 import { readPref, writePref } from '@/lib/prefs';
 import { StickyTopContext, useStickyTop } from '@/lib/sticky';
+import { EmptyInline } from '@/components/common/EmptyArt';
 
 /** The project page's groups (UI roadmap item 56): six at the top, the old tabs as a second level inside. */
 export const WORKSPACE_GROUPS = [
@@ -112,7 +113,7 @@ export function ProjectWorkspace({
         )}
       </div>
       <div role="tabpanel" aria-label={current.label} style={{ paddingTop: token.paddingSM }}>
-        {current.children}
+        <EmptyInline value>{current.children}</EmptyInline>
       </div>
     </StickyTopContext.Provider>
   );
