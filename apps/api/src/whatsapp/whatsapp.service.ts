@@ -252,7 +252,7 @@ export class WhatsappService {
       select: { threadId: true },
     });
     const thread = today?.threadId ? await this.prisma.aiThread.findFirst({ where: { id: today.threadId, userId: user.id }, select: { id: true } }) : null;
-    const mine = await this.projects.list(user, { page: 1, pageSize: 2, status: 'ACTIVE' } as never).catch(() => null);
+    const mine = await this.projects.list(user, { page: 1, pageSize: 2, status: 'ACTIVE' }).catch(() => null);
     const projectId = mine?.total === 1 ? mine.items[0].id : null;
     let done: AiMessageDto | null = null;
     await this.ai.ask(
