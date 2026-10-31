@@ -1,5 +1,6 @@
 'use client';
 
+import { auditActionLabel } from '@/components/common/AuditTrail';
 import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Select, Skeleton, Space, Timeline, Typography } from 'antd';
@@ -238,7 +239,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               color: HISTORY_COLORS[h.action] ?? 'blue',
               content: (
                 <div>
-                  <Typography.Text strong>{(h.action.charAt(0) + h.action.slice(1).toLowerCase()).replace(/_/g, ' ')}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
+                  <Typography.Text strong>{auditActionLabel(h.action)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}
                   </div>

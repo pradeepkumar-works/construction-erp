@@ -1,5 +1,6 @@
 'use client';
 
+import { auditActionLabel } from '@/components/common/AuditTrail';
 import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Alert, Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Timeline, Typography } from 'antd';
@@ -176,7 +177,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
               key: h.id,
               content: (
                 <div>
-                  <Typography.Text strong>{(h.action.charAt(0) + h.action.slice(1).toLowerCase()).replace(/_/g, ' ')}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
+                  <Typography.Text strong>{auditActionLabel(h.action)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   {h.note ? <span> · {h.note}</span> : null}
                   <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}
