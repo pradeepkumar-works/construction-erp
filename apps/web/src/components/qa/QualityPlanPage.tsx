@@ -90,7 +90,7 @@ function LineDialog({ projectId, editing, onClose }: { projectId: string; editin
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={!!editing} onClose={onClose} form={form} layout="drawer" projectDefault={false} title={line ? `Edit ${line.testName}` : 'Add a test to the plan'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={!!editing} onClose={onClose} form={form} layout="drawer" projectDefault={false} title={line ? `Edit ${line.testName}` : 'New plan line'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="The test">
           <Form.Item name="testType" label="Test" rules={[{ required: true, message: 'Choose the test' }]}>
@@ -191,7 +191,7 @@ function PlanTable({ plan, onEdit }: { plan: QaPlanDto; onEdit: (l: QaPlanLineDt
                 render: (_: unknown, l: QaPlanLineDto) => (
                   <Flex gap={4}>
                     <Button type="text" icon={<EditOutlined />} aria-label={`Edit ${l.testName}`} onClick={() => onEdit(l)} />
-                    <ConfirmDelete what={`${l.testName} from the plan`} verb="Remove" description="Tests taken under it stay in the register." onConfirm={() => remove.mutateAsync(l.id)}>
+                    <ConfirmDelete what={l.testName} verb="Remove" description="It comes off the plan. Tests taken under it stay in the register." onConfirm={() => remove.mutateAsync(l.id)}>
                       <Button type="text" danger icon={<DeleteOutlined />} aria-label={`Remove ${l.testName}`} />
                     </ConfirmDelete>
                   </Flex>
@@ -232,7 +232,7 @@ export function QualityPlanPage() {
             <LinkButton href="/tests-due">Tests due</LinkButton>
             {plan?.canEdit ? (
               <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing('new')}>
-                Add test
+                New plan line
               </Button>
             ) : null}
           </>

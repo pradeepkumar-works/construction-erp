@@ -106,7 +106,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
       onClose={onClose}
       form={form}
       title={entry ? `${editActionLabel(entry.status)} · ${entry.activityName}` : 'New progress entry'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       layout="modal"
       width={640}

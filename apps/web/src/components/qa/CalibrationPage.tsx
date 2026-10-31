@@ -179,7 +179,7 @@ function CalibrateDialog({ inst, onClose }: { inst: QaInstrumentDto | null; onCl
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={!!inst} onClose={onClose} form={form} layout="modal" width={560} projectDefault={false} title={inst ? `Calibrate ${inst.name}` : 'Calibrate'} okText="Record calibration" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={!!inst} onClose={onClose} form={form} layout="modal" width={560} projectDefault={false} title={inst ? `Record calibration of ${inst.name}` : 'Record calibration'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="calibratedOn" label="Calibrated on" rules={[{ required: true, message: 'Pick the day it was calibrated' }]}>
@@ -360,7 +360,7 @@ export function CalibrationPage() {
                         render: (_: unknown, i: QaInstrumentDto) => (
                           <Flex gap={4} align="center">
                             <Button size="small" icon={<CheckCircleOutlined />} onClick={() => setCalibrating(i)}>
-                              Calibrated
+                              Record calibration
                             </Button>
                             <Button type="text" icon={<EditOutlined />} aria-label={`Edit ${i.name}`} onClick={() => setEditing(i)} />
                             <ConfirmDelete what={i.name} description={i.lastCalibratedOn ? 'It has calibrations, so it is switched off and kept with them.' : undefined} verb={i.lastCalibratedOn ? 'Remove' : 'Delete'} onConfirm={() => remove.mutateAsync(i.id)}>

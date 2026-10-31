@@ -267,7 +267,7 @@ export function ProjectFormModal({
       form={form}
       layout="drawer"
       title={isEdit ? (project?.type === 'STORE' ? 'Edit store' : 'Edit project') : initialType === 'STORE' ? 'New central store' : 'New project'}
-      okText={isEdit ? 'Save changes' : 'Create project'}
+      okText="Save"
       onSubmit={(v) => mutation.mutateAsync(v)}
     >
       <Form form={form} layout="vertical">

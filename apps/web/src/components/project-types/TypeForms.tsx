@@ -61,7 +61,7 @@ export function NewTypeForm({ open, onClose, types }: { open: boolean; onClose: 
       layout="modal"
       width={520}
       title="New project type"
-      okText="Make type"
+      okText="Save"
       projectDefault={false}
       draftKey="project-type:new"
       onSubmit={async (v) => {
@@ -137,7 +137,7 @@ export function NewKindForm({ open, onClose, kinds, onMade }: { open: boolean; o
       layout="modal"
       width={520}
       title="New component kind"
-      okText="Make kind"
+      okText="Save"
       projectDefault={false}
       draftKey="component-kind:new"
       onSubmit={async (v) => {

@@ -141,7 +141,7 @@ export function MeasurementFormModal({
       layout="drawer"
       width={900}
       title={sheet ? `${editActionLabel(sheet.status)} · ${sheet.mbNo}` : 'New measurement'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       // Lines filled in from elsewhere are not a draft of their own.
       draftKey={editing || prefill ? undefined : `measurement:${projectId ?? 'any'}`}

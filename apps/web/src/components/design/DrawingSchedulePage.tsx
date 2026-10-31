@@ -151,7 +151,7 @@ function NeedFormModal({ open, onClose, need, projectId, onSaved }: { open: bool
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} draftKey={need ? undefined : 'drawing-need'} title={need ? `Edit ${need.docNo ?? need.title}` : 'Add drawing to the schedule'} okText={need ? 'Save' : 'Add drawing'} onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} draftKey={need ? undefined : 'drawing-need'} title={need ? `Edit ${need.docNo ?? need.title}` : 'New drawing'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="Drawing">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!(need || projectId)}>
@@ -185,9 +185,9 @@ function NeedFormModal({ open, onClose, need, projectId, onSaved }: { open: bool
           </FormGrid>
           <Form.Item
             name="fromParty"
-            label="Addressed to"
-            extra="As a reminder letter is addressed"
-            rules={source && remindsByLetter(source) ? [{ required: true, whitespace: true, message: 'Say who issues it, such as the architect or the Executive Engineer' }] : []}
+            label="Issued by"
+            extra="Reminders are addressed to them"
+            rules={source && remindsByLetter(source) ? [{ required: true, whitespace: true, message: 'Enter who issues the drawing, such as the architect or the Executive Engineer' }] : []}
           >
             <Input maxLength={300} placeholder="The Executive Engineer, Building Division No. 1" />
           </Form.Item>
@@ -241,7 +241,7 @@ function ManyFormDrawer({ open, onClose, projectId }: { open: boolean; onClose: 
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={920} draftKey="drawing-needs" title="Add drawings to the schedule" okText="Add drawings" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={920} draftKey="drawing-needs" title="New drawings from a list" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="From">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
@@ -251,7 +251,7 @@ function ManyFormDrawer({ open, onClose, projectId }: { open: boolean; onClose: 
             <Form.Item name="source" label="Issued by">
               <Select options={DRAWING_SOURCES.map((s) => ({ value: s, label: DRAWING_SOURCE_LABELS[s] }))} />
             </Form.Item>
-            <Form.Item name="fromParty" label="Addressed to" rules={source && remindsByLetter(source) ? [{ required: true, whitespace: true, message: 'Say who issues them, such as the architect' }] : []}>
+            <Form.Item name="fromParty" label="Issued by" rules={source && remindsByLetter(source) ? [{ required: true, whitespace: true, message: 'Enter who issues the drawings, such as the architect' }] : []}>
               <Input maxLength={300} placeholder="The architect" />
             </Form.Item>
           </FormGrid>
@@ -515,9 +515,9 @@ function ScheduleList() {
   const newButton = may ? (
     <Space.Compact>
       <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing('new')}>
-        Add drawing
+        New drawing
       </Button>
-      <Button onClick={() => setAdding(true)}>Add a list</Button>
+      <Button onClick={() => setAdding(true)}>New drawings from a list</Button>
     </Space.Compact>
   ) : null;
   const c = data?.counts;

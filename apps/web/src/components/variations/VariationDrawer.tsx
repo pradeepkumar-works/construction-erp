@@ -191,7 +191,7 @@ function SendModal({ open, onClose, variation }: { open: boolean; onClose: () =>
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Send ${variation.label} to the client`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Send ${variation.label} to the client`} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="date" label="Sent on" rules={[{ required: true, message: 'Pick the date it was sent' }]}>
           <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
@@ -259,7 +259,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Client's decision on ${variation.label}`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)} width={760}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Record decision on ${variation.label}`} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)} width={760}>
       <Form form={form} layout="vertical">
         <FormGrid cols={3}>
           <Form.Item name="decision" label="Decision">

@@ -38,11 +38,11 @@ function AcknowledgeForm({ t }: { t: TransmittalDto }) {
       <Form.Item name="on" rules={[{ required: true, message: 'Pick the date it was received' }]}>
         <DatePicker disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(t.sentOn), 'day')} aria-label="Received on" />
       </Form.Item>
-      <Form.Item name="by" rules={[{ required: true, whitespace: true, message: 'Who signed for it' }]}>
-        <Input maxLength={200} placeholder="Received by" style={{ width: 220 }} />
+      <Form.Item name="by" rules={[{ required: true, whitespace: true, message: 'Give the name of the person who signed for it' }]}>
+        <Input maxLength={200} placeholder="Received by" aria-label="Received by" style={{ width: 220 }} />
       </Form.Item>
       <Button htmlType="submit" type="primary" loading={save.isPending}>
-        Acknowledged
+        Record acknowledgement
       </Button>
     </Form>
   );

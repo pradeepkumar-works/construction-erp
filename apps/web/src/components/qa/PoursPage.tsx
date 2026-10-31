@@ -137,11 +137,11 @@ export function PourDrawer({ id, onClose }: { id: string | null; onClose: () => 
           <Flex gap={token.marginXS} wrap>
             {!pour.card || cardBad ? (
               <Button loading={card.isPending} onClick={() => card.mutate()}>
-                Ask for pour card
+                Request pour card
               </Button>
             ) : null}
             <Button type="primary" onClick={() => setPouring(pour)}>
-              Record poured
+              Record pour
             </Button>
           </Flex>
         ) : null

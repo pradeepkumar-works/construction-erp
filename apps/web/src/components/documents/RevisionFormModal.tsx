@@ -78,7 +78,7 @@ export function RevisionFormModal({ open, onClose, doc, revision }: { open: bool
       layout="modal"
       width={640}
       title={doc ? (revision ? `${doc.docNo} Rev ${revision.revision}` : `New revision of ${doc.docNo}`) : ''}
-      okText={editing ? 'Save' : 'Add revision'}
+      okText={editing ? 'Save' : 'Record revision'}
       onSubmit={(v) => mutation.mutateAsync(v)}
     >
       <Form form={form} layout="vertical" style={{ marginTop: 8 }}>

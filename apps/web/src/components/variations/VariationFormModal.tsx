@@ -125,7 +125,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
       onClose={onClose}
       form={form}
       title={variation ? `Edit ${variation.label}` : 'New variation'}
-      okText={editing ? 'Save' : 'Prepare'}
+      okText={editing ? 'Save' : 'Save draft'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       width={900}
       draftKey={editing ? undefined : `variation:${projectId ?? 'any'}`}

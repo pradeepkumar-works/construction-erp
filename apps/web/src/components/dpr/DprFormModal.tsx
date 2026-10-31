@@ -228,7 +228,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
       onClose={onClose}
       form={form}
       title={entry ? `${editActionLabel(entry.status)} · DPR ${dayjs(entry.date).format('DD MMM YYYY')}` : 'New daily report'}
-      okText={editing ? 'Resubmit DPR' : 'Submit DPR'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing ? undefined : `dpr:${projectId ?? 'any'}`}
       aiDraft={draft}
