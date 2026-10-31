@@ -1,32 +1,62 @@
 /*
- * The public pages: the product page (/welcome) and privacy. Set by the taste skill's rules
- * (.claude/skills/design-taste-frontend): type does the work, whole fields of the Nirmaan colours separate the sections,
- * the app's real screens arrive large and few, and nothing is boxed, ruled, shadowed or graded. Archivo for the display
- * face, Public Sans for text. Five sizes: small, text, lead, heading and display.
+ * The public pages: the product page (/welcome, with its own welcome.css) and privacy. Set by the taste skill's rules
+ * (.claude/skills/design-taste-frontend): type does the work, whole fields of the Nirmaan colours separate the sections, the
+ * app's real screens arrive large, and nothing is boxed, ruled, shadowed or graded outside the product's own fragments.
+ * Archivo for the display face, Public Sans for text. The pages follow the visitor's light or dark setting: every colour is
+ * an --lp-* token over the brand palette (lib/brand.ts, as --brand-* variables), set again for the night.
  */
 
 .lp {
   --lp-max: 1280px;
   --lp-gutter: 32px;
+  --lp-bg: var(--brand-on-accent);
+  --lp-surface: var(--brand-canvas);
+  --lp-surface-2: var(--brand-hairline);
+  --lp-line: var(--brand-border);
+  --lp-ink: var(--brand-ink);
   --lp-text: var(--brand-site-text);
   --lp-muted: var(--brand-site-muted);
-  --lp-field: var(--brand-accent);
-  --lp-pale: color-mix(in srgb, var(--ant-color-white) 74%, var(--brand-accent));
-  --lp-on-dark: color-mix(in srgb, var(--ant-color-white) 78%, var(--brand-ink));
-  --lp-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --lp-link: var(--brand-link);
+  --lp-accent: var(--brand-accent);
+  --lp-accent-deep: var(--brand-accent-deep);
+  --lp-on-accent: var(--brand-on-accent);
+  /* The navy fields (the hero, the bill) and the text on them. */
+  --lp-stage: var(--brand-ink);
+  --lp-stage-2: var(--brand-primary-deep);
+  --lp-on-stage: var(--brand-on-accent);
+  --lp-on-stage-soft: color-mix(in srgb, var(--brand-on-accent) 78%, var(--brand-ink));
+  --lp-ring: var(--brand-accent-light);
+  --lp-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --lp-small: 15px;
   --lp-body: 18px;
-  --lp-lead: 24px;
-  --lp-h2: clamp(40px, 5.6vw, 88px);
-  --lp-display: clamp(84px, 13.5vw, 216px);
+  --lp-lead: 22px;
+  --lp-h2: clamp(32px, 3.6vw, 52px);
+  --lp-display: clamp(44px, 5.6vw, 88px);
   --lp-gap: 136px;
-  background: var(--ant-color-bg-container);
-  color: var(--brand-ink);
+  color-scheme: light;
+  background: var(--lp-bg);
+  color: var(--lp-ink);
   min-height: 100vh;
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: var(--lp-body);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+}
+@media (prefers-color-scheme: dark) {
+  .lp {
+    --lp-bg: var(--brand-night-layout);
+    --lp-surface: var(--brand-night-surface);
+    --lp-surface-2: var(--brand-night-elevated);
+    --lp-line: var(--brand-night-border);
+    --lp-ink: var(--brand-night-text);
+    --lp-text: color-mix(in srgb, var(--brand-night-text) 86%, var(--brand-night-layout));
+    --lp-muted: var(--brand-night-text-tertiary);
+    --lp-link: var(--brand-night-link);
+    --lp-stage: var(--brand-ink-deep);
+    --lp-stage-2: var(--brand-night-elevated);
+    --lp-on-stage-soft: color-mix(in srgb, var(--brand-night-text) 80%, var(--brand-ink-deep));
+    color-scheme: dark;
+  }
 }
 .lp h1,
 .lp h2,
@@ -49,6 +79,9 @@
   padding: 0;
   list-style: none;
 }
+.lp a {
+  color: inherit;
+}
 .lp-wrap {
   max-width: var(--lp-max);
   margin: 0 auto;
@@ -66,24 +99,11 @@
   letter-spacing: -0.01em;
   text-wrap: balance;
 }
-.lp h2.lp-big,
-.lp .lp-big {
-  font-size: var(--lp-h2);
-  line-height: 0.98;
-  letter-spacing: -0.025em;
-  max-width: 18ch;
-}
 .lp h3 {
   font-size: var(--lp-lead);
   font-weight: 700;
   font-stretch: 88%;
   line-height: 1.15;
-}
-.lp-caption {
-  margin-top: 16px !important;
-  font-size: var(--lp-small);
-  color: var(--lp-text);
-  max-width: 60ch;
 }
 .lp-sr {
   position: absolute;
@@ -108,57 +128,37 @@
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms var(--lp-ease);
+  text-decoration: none;
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, transform 200ms var(--lp-ease);
 }
 .lp-btn:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.98);
 }
 .lp-btn .anticon {
   font-size: var(--lp-small);
-  transition: transform 160ms var(--lp-ease);
+  transition: transform 200ms var(--lp-ease);
 }
 .lp-btn:hover .anticon {
   transform: translateX(4px);
 }
-.lp-btn:focus-visible,
-.lp-index-item:focus-visible,
-.lp-chip:focus-visible,
-.lp-final-link:focus-visible,
-.lp-nav a:focus-visible,
-.lp-foot a:focus-visible {
-  outline: 3px solid var(--brand-accent-light);
+.lp :focus-visible {
+  outline: 3px solid var(--lp-ring);
   outline-offset: 3px;
 }
-.lp-btn-primary {
-  background: var(--brand-accent);
-  color: var(--brand-on-accent);
+.lp .lp-btn-primary {
+  background: var(--lp-accent);
+  color: var(--lp-on-accent);
 }
-.lp-btn-primary:hover {
-  background: var(--brand-accent-deep);
-  color: var(--brand-on-accent);
+.lp .lp-btn-primary:hover {
+  background: var(--lp-accent-deep);
+  color: var(--lp-on-accent);
 }
-.lp-btn-ink {
-  background: var(--brand-ink);
-  color: var(--brand-on-accent);
+.lp .lp-btn-ghost-dark {
+  border-color: var(--lp-on-stage);
+  color: var(--lp-on-stage);
 }
-.lp-btn-ink:hover {
-  background: var(--brand-ink-deep);
-  color: var(--brand-on-accent);
-}
-.lp-btn-ghost {
-  border-color: var(--brand-ink);
-  color: var(--brand-ink);
-}
-.lp-btn-ghost:hover {
-  background: var(--brand-ink);
-  color: var(--brand-on-accent);
-}
-.lp-btn-ghost-dark {
-  border-color: var(--ant-color-white);
-  color: var(--ant-color-text-light-solid);
-}
-.lp-btn-ghost-dark:hover {
-  background: var(--ant-color-white);
+.lp .lp-btn-ghost-dark:hover {
+  background: var(--lp-on-stage);
   color: var(--brand-ink);
 }
 .lp-btn-sm {
@@ -172,12 +172,12 @@
   gap: 12px;
 }
 
-/* Top bar: a plain bar on the other pages; on the product page it is two corners of the hero's field. */
+/* Top bar: a plain navy bar on the other pages; on the product page it sits in the hero's field. */
 .lp-nav {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--brand-ink);
+  background: var(--lp-stage);
 }
 .lp-nav-inner {
   max-width: var(--lp-max);
@@ -202,20 +202,21 @@
   gap: 28px;
   margin: 0 auto;
 }
-.lp-nav-links a,
-.lp-nav-signin {
-  color: var(--lp-on-dark);
+.lp .lp-nav-links a,
+.lp .lp-nav-signin {
+  color: var(--lp-on-stage-soft);
   font-size: var(--lp-small);
   font-weight: 500;
-  transition: color 160ms ease;
+  text-decoration: none;
+  transition: color 200ms ease;
 }
-.lp-nav-field .lp-nav-links a,
-.lp-nav-field .lp-nav-signin {
-  color: var(--ant-color-text-light-solid);
+.lp .lp-nav-field .lp-nav-links a,
+.lp .lp-nav-field .lp-nav-signin {
+  color: var(--lp-on-stage);
 }
-.lp-nav-links a:hover,
-.lp-nav-signin:hover {
-  color: var(--ant-color-text-light-solid);
+.lp .lp-nav-links a:hover,
+.lp .lp-nav-signin:hover {
+  color: var(--lp-on-stage);
   text-decoration: underline;
   text-underline-offset: 6px;
 }
@@ -229,690 +230,10 @@
   margin-left: 0;
 }
 
-/* Hero: one field of Nirmaan blue and the sentence, pale line over white line. */
-.lp-hero {
-  background: var(--lp-field);
-  color: var(--ant-color-text-light-solid);
-  min-height: min(100svh, 980px);
-  display: flex;
-  flex-direction: column;
-}
-.lp-hero-inner {
-  flex: 1;
-  width: 100%;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 48px;
-  padding-top: 7vh;
-  padding-bottom: 56px;
-}
-.lp .lp-hero-title {
-  font-size: var(--lp-display);
-  font-weight: 800;
-  font-stretch: 85%;
-  line-height: 0.86;
-  letter-spacing: -0.035em;
-}
-.lp-line {
-  display: block;
-  overflow: hidden;
-  padding-bottom: 0.06em;
-}
-.lp-line > span {
-  display: block;
-  animation: lp-rise 900ms var(--lp-ease) both;
-}
-.lp-line:first-child > span {
-  color: var(--lp-pale);
-}
-.lp-line + .lp-line > span {
-  animation-delay: 110ms;
-}
-@keyframes lp-rise {
-  from {
-    transform: translateY(105%);
-  }
-}
-.lp-hero-side {
-  justify-self: end;
-  max-width: 520px;
-  display: grid;
-  gap: 32px;
-  animation: lp-fade 700ms var(--lp-ease) 500ms both;
-}
-@keyframes lp-fade {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-}
-.lp-lead {
-  font-size: var(--lp-lead);
-  line-height: 1.4;
-  color: var(--ant-color-text-light-solid);
-}
-
-/* Screens: the product's own edge, no browser frame and no shadow. */
-.lp-shot {
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid var(--brand-border);
-  background: var(--brand-canvas);
-}
-.lp-shot img,
-.lp-phone img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.lp-phone {
-  border-radius: 20px;
-  overflow: hidden;
-  background: var(--brand-canvas);
-}
-
-/* A day on site: the day as one bar, each moment as wide as the time until the next. */
-.lp-stages {
-  display: flex;
-  gap: 6px;
-  margin-top: 72px !important;
-}
-.lp-stages li {
-  flex-basis: 0;
-  min-width: 20%;
-}
-.lp-stage-bar {
-  min-height: 18vh;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
-  color: var(--brand-on-accent);
-  background: var(--brand-ink);
-}
-.lp-stages li:nth-child(2) .lp-stage-bar {
-  background: var(--brand-accent);
-}
-.lp-stages li:nth-child(3) .lp-stage-bar {
-  background: var(--lp-pale);
-  color: var(--brand-ink);
-}
-.lp-stages li:nth-child(4) .lp-stage-bar {
-  background: var(--brand-success);
-}
-.lp-stage-bar time {
-  font-family: var(--font-display), Arial, sans-serif;
-  font-size: clamp(24px, 2.4vw, 36px);
-  font-weight: 800;
-  font-stretch: 85%;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-.lp-stage-bar span {
-  font-size: var(--lp-small);
-  font-weight: 500;
-}
-.lp-stages h3 {
-  margin-top: 24px;
-  font-size: var(--lp-lead);
-}
-.lp-stage-where {
-  margin-top: 6px !important;
-  font-weight: 600;
-  color: var(--brand-link);
-}
-.lp-stages p:last-child {
-  margin-top: 8px !important;
-  color: var(--lp-text);
-  max-width: 36ch;
-}
-.lp-day-shot {
-  margin-top: 96px;
-}
-
-/* Modules: the five names as a large index; the chosen one's screen, lead and features beside it. */
-.lp-modules {
-  background: var(--brand-canvas);
-}
-.lp-modules-inner {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 64px;
-  align-items: start;
-}
-.lp-modules-index {
-  position: sticky;
-  top: 48px;
-}
-.lp-modules-index h2 {
-  max-width: 18ch;
-}
-.lp-index {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-top: 40px;
-}
-.lp-index-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  font-family: var(--font-display), Arial, sans-serif;
-  font-size: var(--lp-h2);
-  font-weight: 800;
-  font-stretch: 85%;
-  line-height: 1.04;
-  letter-spacing: -0.025em;
-  color: color-mix(in srgb, var(--brand-ink) 56%, var(--brand-canvas));
-  transition: color 200ms ease, transform 200ms var(--lp-ease);
-}
-.lp-index-item:hover {
-  color: var(--brand-ink);
-  transform: translateX(6px);
-}
-.lp-index-item[aria-selected='true'] {
-  color: var(--brand-ink);
-}
-.lp-index-item[aria-selected='true']::before {
-  content: '';
-  width: 0.24em;
-  height: 0.24em;
-  border-radius: 50%;
-  background: var(--brand-accent);
-}
-.lp-panel {
-  animation: lp-fade 420ms var(--lp-ease) both;
-}
-.lp-panel[hidden] {
-  display: none;
-}
-.lp-panel h3 {
-  font-size: var(--lp-lead);
-}
-.lp-panel-lead {
-  margin: 12px 0 32px !important;
-  font-size: var(--lp-body);
-  color: var(--lp-text);
-  max-width: 56ch;
-}
-.lp-feats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 28px 40px;
-  margin-top: 40px !important;
-}
-.lp-feats dt {
-  font-weight: 700;
-}
-.lp-feats dd {
-  margin-top: 4px;
-  color: var(--lp-text);
-}
-
-/* Money: a navy field, the bill you can work out, and the three flows that end in Tally. */
-.lp-money {
-  background: var(--brand-ink);
-  color: var(--ant-color-text-light-solid);
-}
-.lp-money-head {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  gap: 48px;
-  align-items: end;
-}
-.lp-money-head p {
-  color: var(--lp-on-dark);
-  max-width: 44ch;
-}
-.lp-billline {
-  margin-top: 72px;
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  grid-template-areas:
-    'label label'
-    'field field'
-    'help help'
-    'bill examples';
-  gap: 0 48px;
-}
-.lp-billline > * {
-  min-width: 0;
-}
-.lp-billline-label {
-  grid-area: label;
-  font-size: var(--lp-small);
-  color: var(--lp-on-dark);
-}
-.lp-billline-field {
-  grid-area: field;
-  display: flex;
-  align-items: baseline;
-  gap: 0.12em;
-  font-family: var(--font-display), Arial, sans-serif;
-  font-size: var(--lp-display);
-  font-weight: 800;
-  font-stretch: 85%;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--brand-accent-light);
-}
-.lp-billline-field input {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  border-bottom: 4px solid color-mix(in srgb, var(--brand-accent-light) 40%, transparent);
-  border-radius: 0;
-  background: transparent;
-  color: var(--ant-color-text-light-solid);
-  font: inherit;
-  letter-spacing: inherit;
-  font-variant-numeric: tabular-nums;
-  caret-color: var(--brand-accent-light);
-}
-.lp-billline-field input:focus {
-  outline: none;
-  border-bottom-color: var(--brand-accent-light);
-}
-.lp-billline-help {
-  grid-area: help;
-  margin-top: 12px !important;
-  font-size: var(--lp-small);
-  color: var(--lp-on-dark);
-}
-.lp-bill {
-  grid-area: bill;
-  margin-top: 48px;
-  max-width: 600px;
-  padding: 24px 28px;
-  border-radius: 6px;
-  background: var(--ant-color-bg-container);
-  color: var(--brand-ink);
-  font-size: var(--lp-small);
-}
-.lp-bill table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.lp-bill caption {
-  text-align: left;
-  padding-bottom: 12px;
-  font-weight: 700;
-  font-size: var(--lp-body);
-}
-.lp-bill th,
-.lp-bill td {
-  padding: 8px 0;
-  border-top: 1px solid var(--brand-hairline);
-}
-.lp-bill th {
-  text-align: left;
-  font-weight: 400;
-  color: var(--lp-text);
-}
-.lp-bill td {
-  text-align: right;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.lp-bill-less td {
-  color: var(--lp-text);
-}
-.lp-bill-net th,
-.lp-bill-net td {
-  padding-top: 14px;
-  border-top: 2px solid var(--brand-ink);
-  font-weight: 700;
-  color: var(--brand-ink);
-  font-size: var(--lp-body);
-}
-.lp-bill-empty {
-  color: var(--lp-text);
-}
-.lp-billline-examples {
-  grid-area: examples;
-  margin-top: 48px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-.lp-chip {
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  color: var(--ant-color-text-light-solid);
-  font: inherit;
-  font-size: var(--lp-body);
-  text-align: left;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--brand-accent-light) 60%, transparent);
-  text-underline-offset: 6px;
-  transition: color 160ms ease, text-decoration-color 160ms ease;
-}
-.lp-chip:hover {
-  color: var(--brand-accent-light);
-  text-decoration-color: var(--brand-accent-light);
-}
-.lp-flows {
-  margin-top: 96px;
-  display: grid;
-  gap: 40px;
-}
-.lp-flow {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
-  gap: 24px;
-  align-items: baseline;
-}
-.lp-flow h3 {
-  color: var(--brand-accent-light);
-}
-.lp-flow ol {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 0;
-  font-size: var(--lp-body);
-  color: var(--lp-on-dark);
-}
-.lp-flow li + li::before {
-  content: '→';
-  margin: 0 12px;
-  color: var(--brand-accent-light);
-}
-.lp-flow li.lp-flow-end {
-  color: var(--ant-color-text-light-solid);
-  font-weight: 700;
-}
-
-/* Typed once: two words compared, cut by the section's lower edge. */
-.lp-once {
-  padding-top: var(--lp-gap);
-  overflow: hidden;
-}
-.lp-once-head {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 48px;
-  align-items: start;
-}
-.lp-once-head h2 {
-  font-size: var(--lp-lead);
-}
-.lp-once-head p {
-  max-width: 52ch;
-  color: var(--lp-text);
-}
-.lp-specimens {
-  margin-top: 10vh;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  height: clamp(130px, 15vw, 230px);
-  overflow: hidden;
-}
-.lp-specimen {
-  font-family: var(--font-display), Arial, sans-serif;
-  font-size: clamp(120px, 19vw, 320px);
-  font-weight: 800;
-  font-stretch: 85%;
-  line-height: 0.8;
-  letter-spacing: -0.04em;
-  color: var(--brand-ink);
-}
-.lp-specimen + .lp-specimen {
-  color: var(--brand-accent);
-}
-
-/* Made for Indian contracts: one line-up at one size, then the Tally export. */
-.lp-local {
-  background: var(--brand-canvas);
-}
-.lp-lineup {
-  width: 100%;
-  margin-top: 64px;
-  border-collapse: collapse;
-  font-size: clamp(20px, 1.8vw, 26px);
-  line-height: 1.4;
-}
-.lp-lineup th,
-.lp-lineup td {
-  padding: 6px 0;
-  vertical-align: baseline;
-}
-.lp-lineup th {
-  width: 50%;
-  text-align: left;
-  font-weight: 600;
-  padding-right: 32px;
-}
-.lp-lineup td {
-  color: var(--lp-text);
-}
-.lp-local-shot {
-  margin-top: 72px;
-}
-
-/* The site app: side facts beside a wide paragraph, then the phone's own screens. */
-.lp-app-row {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-  gap: 48px;
-}
-.lp-facts {
-  display: grid;
-  gap: 24px;
-  align-content: start;
-}
-.lp-facts dt {
-  font-size: var(--lp-small);
-  color: var(--lp-muted);
-}
-.lp-facts dd {
-  font-weight: 700;
-}
-.lp-app-row h2 {
-  font-size: var(--lp-h2);
-  line-height: 0.98;
-  letter-spacing: -0.025em;
-}
-.lp-app-text {
-  margin-top: 28px !important;
-  font-size: var(--lp-lead);
-  line-height: 1.4;
-  max-width: 40ch;
-}
-.lp-phones {
-  margin-top: 72px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 32px;
-}
-.lp-phones .lp-phone:nth-child(2) {
-  transform: translateY(64px);
-}
-
-/* Roles: the people who share one record. */
-.lp-roles {
-  background: var(--brand-canvas);
-}
-.lp-roles-inner {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-  gap: 48px;
-}
-.lp-roles-inner h2 {
-  font-size: var(--lp-lead);
-}
-.lp-role-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 32px 40px;
-}
-.lp-role-list dt {
-  font-weight: 700;
-}
-.lp-role-list dd {
-  margin-top: 4px;
-  color: var(--lp-text);
-}
-
-/* What the demo holds, as one sentence, and what a company can check for itself. */
-.lp-holds {
-  font-family: var(--font-display), Arial, sans-serif;
-  font-size: clamp(24px, 2.6vw, 36px);
-  font-weight: 700;
-  font-stretch: 88%;
-  line-height: 1.25;
-  max-width: 52ch;
-  color: color-mix(in srgb, var(--brand-ink) 58%, var(--ant-color-white));
-}
-.lp-holds strong,
-.lp-holds .lp-lit {
-  color: var(--brand-ink);
-}
-.lp-holds span {
-  transition: color 400ms ease;
-}
-.lp-trust {
-  margin-top: 72px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 40px;
-}
-.lp-trust p {
-  margin-top: 10px !important;
-  color: var(--lp-text);
-}
-
-/* Pricing: the price as one large figure. */
-.lp-pricing {
-  background: var(--brand-canvas);
-}
-.lp-pricing-inner {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-  gap: 48px;
-  align-items: center;
-}
-.lp-pricing-text {
-  margin-top: 16px !important;
-  color: var(--lp-text);
-  max-width: 40ch;
-}
-.lp-price-figure {
-  font-family: var(--font-display), Arial, sans-serif;
-  font-size: var(--lp-display);
-  font-weight: 800;
-  font-stretch: 85%;
-  line-height: 0.85;
-  letter-spacing: -0.035em;
-  font-variant-numeric: tabular-nums;
-  color: var(--brand-ink);
-}
-.lp-price-sign {
-  font-size: 0.5em;
-  vertical-align: 0.7em;
-  margin-right: 0.05em;
-}
-.lp .lp-price-period {
-  margin-top: 16px;
-  font-weight: 500;
-}
-.lp-price ul {
-  margin: 32px 0 !important;
-  display: grid;
-  gap: 6px;
-}
-
-/* Questions: answers as reading text, the question run in. */
-.lp-faq-inner {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
-  gap: 48px;
-}
-.lp-faq-inner h2 {
-  font-size: var(--lp-lead);
-}
-.lp-faq-text {
-  columns: 2;
-  column-gap: 56px;
-}
-.lp-faq-text p {
-  break-inside: avoid;
-  margin-bottom: 24px !important;
-  color: var(--lp-text);
-}
-.lp-faq-text strong {
-  color: var(--brand-ink);
-  font-weight: 700;
-}
-
-/* The close: the whole band is the action. */
-.lp-final-link {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 60svh;
-  padding: 32px var(--lp-gutter) 24px;
-  background: var(--lp-field);
-  color: var(--ant-color-text-light-solid);
-  overflow: hidden;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-.lp-final-link:hover {
-  background: var(--brand-ink);
-  color: var(--brand-accent-light);
-}
-.lp-final-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 32px;
-  max-width: calc(var(--lp-max) - 2 * var(--lp-gutter));
-  width: 100%;
-  margin: 0 auto;
-}
-.lp-final-top > span {
-  display: grid;
-  gap: 8px;
-  max-width: 40ch;
-}
-.lp-final-note {
-  font-size: var(--lp-body);
-}
-.lp-final-arrow {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  transition: transform 200ms var(--lp-ease);
-}
-.lp-final-link:hover .lp-final-arrow {
-  transform: translate(4px, -4px);
-}
-.lp-final-word {
-  display: block;
-  max-width: calc(var(--lp-max) - 2 * var(--lp-gutter));
-  width: 100%;
-  margin: 0 auto;
-  font-family: var(--font-display), Arial, sans-serif;
-  font-size: clamp(120px, 26vw, 400px);
-  font-weight: 800;
-  font-stretch: 85%;
-  line-height: 0.92;
-  letter-spacing: -0.045em;
-}
-
-/* Footer: the name first, then the ways in. */
+/* Footer of the other public pages: the name first, then the ways in. */
 .lp-foot {
   background: var(--brand-ink-deep);
-  color: var(--lp-on-dark);
+  color: var(--lp-on-stage-soft);
   font-size: var(--lp-small);
 }
 .lp .lp-foot-name {
@@ -923,7 +244,7 @@
   font-stretch: 85%;
   line-height: 0.85;
   letter-spacing: -0.03em;
-  color: var(--brand-on-accent);
+  color: var(--lp-on-stage);
 }
 .lp-foot-top {
   display: grid;
@@ -943,14 +264,15 @@
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: var(--lp-small);
   font-weight: 700;
-  color: var(--brand-on-accent);
+  color: var(--lp-on-stage);
   margin-bottom: 4px;
 }
-.lp-foot a {
-  color: var(--lp-on-dark);
+.lp .lp-foot a {
+  color: var(--lp-on-stage-soft);
+  text-decoration: none;
 }
-.lp-foot a:hover {
-  color: var(--ant-color-text-light-solid);
+.lp .lp-foot a:hover {
+  color: var(--lp-on-stage);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
@@ -960,40 +282,6 @@
   gap: 16px;
   flex-wrap: wrap;
   padding: 24px 0 32px;
-}
-
-/* Scroll reveal: only once the script has marked the page, so nothing stays hidden without it. */
-.lp-js .rv {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 700ms var(--lp-ease), transform 700ms var(--lp-ease);
-}
-.lp-js .rv.in {
-  opacity: 1;
-  transform: none;
-}
-.lp-js .lp-phones.rv.in .lp-phone:nth-child(2) {
-  transform: translateY(64px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lp-js .rv {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-  .lp-line > span,
-  .lp-hero-side,
-  .lp-panel {
-    animation: none;
-  }
-  .lp-btn,
-  .lp-btn .anticon,
-  .lp-index-item,
-  .lp-final-arrow,
-  .lp-holds span {
-    transition: none;
-  }
 }
 
 /* Text pages (privacy) */
@@ -1010,11 +298,11 @@
   font-weight: 800;
   font-stretch: 85%;
   line-height: 1;
-  color: var(--brand-ink);
+  color: var(--lp-ink);
   margin-bottom: 12px;
 }
 .lp .lp-doc h2 {
-  color: var(--brand-ink);
+  color: var(--lp-ink);
   margin: 40px 0 12px;
 }
 .lp-doc p {
@@ -1028,13 +316,35 @@
 .lp-doc li {
   margin-bottom: 6px;
 }
-.lp-doc a {
-  color: var(--brand-link);
+.lp .lp-doc a {
+  color: var(--lp-link);
 }
 .lp-doc-meta {
   color: var(--lp-muted);
   font-size: var(--lp-small);
   margin-bottom: 32px !important;
+}
+
+/* Scroll reveal: only once the script has marked the page, so nothing stays hidden without it. */
+.lp-js .rv {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 800ms var(--lp-ease), transform 800ms var(--lp-ease);
+}
+.lp-js .rv.in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-js .rv {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .lp-btn,
+  .lp-btn .anticon {
+    transition: none;
+  }
 }
 
 @media (max-width: 1080px) {
@@ -1047,62 +357,10 @@
   .lp-nav-actions {
     margin-left: auto !important;
   }
-  .lp-modules-inner,
-  .lp-money-head,
-  .lp-roles-inner,
-  .lp-pricing-inner,
-  .lp-faq-inner,
-  .lp-app-row,
-  .lp-once-head {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-  .lp-modules-index {
-    position: static;
-  }
-  .lp-facts {
-    order: 2;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .lp-trust {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .lp-pricing-inner {
-    min-height: 0;
-  }
 }
 @media (max-width: 860px) {
   .lp {
     --lp-gap: 96px;
-  }
-  .lp-stages {
-    flex-direction: column;
-  }
-  .lp-stages li {
-    min-width: 0;
-  }
-  .lp-stage-bar {
-    min-height: 88px;
-  }
-  .lp-stages li + li {
-    margin-top: 24px;
-  }
-  .lp-billline {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'label' 'field' 'help' 'examples' 'bill';
-  }
-  .lp-billline-examples {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px 20px;
-    margin-top: 24px;
-  }
-  .lp-flow {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  .lp-faq-text {
-    columns: 1;
   }
   .lp-foot-top {
     grid-template-columns: 1fr 1fr;
@@ -1116,90 +374,10 @@
     --lp-gutter: 20px;
     --lp-gap: 80px;
     --lp-body: 17px;
-    --lp-lead: 21px;
-    --lp-display: 20vw;
-  }
-  .lp-nav-signin {
-    display: none;
-  }
-  .lp-nav-field .lp-nav-signin {
-    display: inline;
-  }
-  .lp-hero {
-    min-height: 92svh;
-  }
-  .lp-hero-inner {
-    padding-top: 12vh;
-  }
-  .lp-hero-side {
-    justify-self: start;
+    --lp-lead: 20px;
   }
   .lp-cta .lp-btn {
     flex: 1 1 auto;
-  }
-  .lp-feats,
-  .lp-role-list,
-  .lp-trust {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  .lp-index-item {
-    font-size: 12vw;
-  }
-  .lp-billline-field {
-    font-size: 15vw;
-  }
-  .lp-bill {
-    padding: 20px;
-  }
-  .lp-lineup,
-  .lp-lineup tbody,
-  .lp-lineup tr,
-  .lp-lineup th,
-  .lp-lineup td {
-    display: block;
-    width: auto;
-  }
-  .lp-lineup {
-    font-size: var(--lp-lead);
-  }
-  .lp-lineup tr {
-    padding: 10px 0;
-  }
-  .lp-lineup th,
-  .lp-lineup td {
-    padding: 0;
-  }
-  .lp-lineup td {
-    font-size: var(--lp-small);
-  }
-  .lp-specimens {
-    grid-template-columns: 1fr;
-    height: auto;
-    gap: 24px;
-  }
-  .lp-specimen {
-    display: block;
-    height: 34vw;
-    overflow: hidden;
-    font-size: 40vw;
-  }
-  .lp-phones {
-    gap: 10px;
-  }
-  .lp-phone {
-    border-radius: 12px;
-  }
-  .lp-phones .lp-phone:nth-child(2),
-  .lp-js .lp-phones.rv.in .lp-phone:nth-child(2) {
-    transform: none;
-  }
-  .lp-final-link {
-    min-height: 46svh;
-  }
-  .lp-final-arrow {
-    width: 32px;
-    height: 32px;
   }
   .lp-foot-top {
     grid-template-columns: 1fr;
