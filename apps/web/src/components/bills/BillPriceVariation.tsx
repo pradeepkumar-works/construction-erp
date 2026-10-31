@@ -11,7 +11,7 @@ import type { RaBillDto, RaBillPvLineDto } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useContract } from '@/lib/queries';
-import { formatINR, toNumber, formatMonth } from '@/lib/format';
+import { formatINR, formatPct, toNumber, formatMonth } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
@@ -59,7 +59,7 @@ export function BillPriceVariation({ bill, editable }: { bill: RaBillDto; editab
           )}
           columns={[
             { title: 'Component', dataIndex: 'name' },
-            { title: 'Share', dataIndex: 'sharePct', align: 'right', render: (v: string) => `${v}%` },
+            { title: 'Share', dataIndex: 'sharePct', align: 'right', render: (v: string) => formatPct(v) },
             { title: 'Base index', dataIndex: 'baseIndex', align: 'right', render: (v: string) => <span className="mono" translate="no">{v}</span> },
             { title: 'This bill', dataIndex: 'currentIndex', align: 'right', render: (v: string) => <span className="mono" translate="no">{v}</span> },
             {
@@ -171,7 +171,7 @@ function IndicesModal({ open, bill, components, onClose }: { open: boolean; bill
           <Form.Item
             key={c.id}
             name={['current', c.id]}
-            label={`${c.name} (${c.sharePct}% share, base ${c.baseIndex})`}
+            label={`${c.name} (${formatPct(c.sharePct)} share, base ${c.baseIndex})`}
             rules={[{ required: true, message: `Enter the ${c.name.toLowerCase()} index` }]}
           >
             <InputNumber min={0.001} step={0.1} style={{ width: '100%' }} />

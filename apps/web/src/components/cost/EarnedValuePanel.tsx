@@ -99,7 +99,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
             <Col xs={12} md={6}>
               <Statistic title="Cost index (CPI)" value={data.cpi ?? '-'} precision={data.cpi === null ? undefined : 2} styles={big(indexColor(data.cpi))} />
               <div className="text-muted" style={small}>
-                {data.cpi === null ? 'Nothing spent or earned yet' : `₹${data.cpi.toFixed(2)} of work for each ₹1 spent`}
+                {data.cpi === null ? 'Nothing spent or earned yet' : `${formatINR(data.cpi, true)} of work for each ${formatINR(1)} spent`}
               </div>
             </Col>
             <Col xs={12} md={6}>

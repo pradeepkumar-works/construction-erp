@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, theme } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, theme } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
-import { DeleteOutlined, EditOutlined, PlusOutlined, ToolOutlined } from '@/components/common/icons';
+import { PlusOutlined, ToolOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField, FuelNormUnit, HireFuelBy } from '@erp/shared';
 import {
@@ -42,7 +42,8 @@ import { OwnershipTag } from './hours';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { RowMenu } from '@/components/list/RowMenu';
 import { EquipmentPartsDrawer } from './EquipmentPartsDrawer';
 import { MasterInput } from '@/components/masters/MasterInput';
 
@@ -123,6 +124,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
     },
     meta: FAIL_NOTICE,
   });
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async (e: EquipmentDto) => (await api.delete(`/equipment/${e.id}`)).data,
     onSuccess: () => {
@@ -217,19 +219,18 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           label: 'Actions',
           locked: true,
           fixed: 'right' as const,
-          width: mayManage ? 120 : 56,
+          width: 64,
           render: (_: unknown, r: EquipmentDto) => (
-            <Space size="small">
-              <Button type="text" size="small" icon={<ToolOutlined />} onClick={() => setPartsOf(r)} aria-label={`Tyres and batteries of ${r.code}`} title="Tyres and batteries" />
-              {mayManage ? (
-                <>
-                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                  <ConfirmDelete what={`machine ${r.code}`} onConfirm={() => remove.mutateAsync(r)} disabled={!!r.lastLogDate}>
-                    <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={!!r.lastLogDate} title={r.lastLogDate ? 'Has logs; mark it inactive instead' : undefined} aria-label="Delete" />
-                  </ConfirmDelete>
-                </>
-              ) : null}
-            </Space>
+            <RowMenu
+              label={`Actions for ${r.code}`}
+              items={[
+                ...(mayManage ? [{ key: 'edit', label: 'Edit', onSelect: () => open(r) }] : []),
+                { key: 'parts', label: 'Tyres and batteries', onSelect: () => setPartsOf(r) },
+                ...(mayManage
+                  ? [{ key: 'delete', label: r.lastLogDate ? 'Delete (it has logs; mark it inactive instead)' : 'Delete', danger: true, disabled: !!r.lastLogDate, onSelect: () => askDelete({ what: `machine ${r.code}`, onConfirm: () => remove.mutateAsync(r) }) }]
+                  : []),
+              ]}
+            />
           ),
         } satisfies ListColumn<EquipmentDto>,
       ];
@@ -250,6 +251,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
 
   return (
     <>
+      {deleteDialog}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}

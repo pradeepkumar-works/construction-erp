@@ -183,7 +183,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             <Form.Item
               name="exchangeRate"
               label={`Day's rate (₹ to 1 ${cur!.currency})`}
-              extra={`The bank's rate on the day. The contract is kept at ₹ ${cur!.exchangeRate}; the difference is booked to exchange difference. Empty takes the contract rate.`}
+              extra={`The bank's rate on the day. The contract is kept at ${formatINR(cur!.exchangeRate, true)}; the difference is booked to exchange difference. Empty takes the contract rate.`}
             >
               <InputNumber<number> style={{ width: '100%' }} min={0.000001} precision={6} controls={false} inputMode="decimal" placeholder={cur!.exchangeRate ?? undefined} />
             </Form.Item>

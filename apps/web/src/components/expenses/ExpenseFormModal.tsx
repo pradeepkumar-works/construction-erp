@@ -165,8 +165,8 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           <Form.Item
             name="gstAmount"
             label="GST on bill"
-            tooltip={`Leave empty to use ${rate ?? 0}% of the amount. A typed value must be within ₹${GST_TOLERANCE} of it.`}
-            rules={[{ validator: async (_, v) => (v === undefined || v === null || Math.abs(Number(v) - computedGst) <= GST_TOLERANCE ? undefined : Promise.reject(new Error(`Expected about ₹${computedGst.toFixed(2)}`))) }]}
+            tooltip={`Leave empty to use ${rate ?? 0}% of the amount. A typed value must be within ${formatINR(GST_TOLERANCE, true)} of it.`}
+            rules={[{ validator: async (_, v) => (v === undefined || v === null || Math.abs(Number(v) - computedGst) <= GST_TOLERANCE ? undefined : Promise.reject(new Error(`Enter about ${formatINR(computedGst, true)}, or leave it empty`))) }]}
           >
             <MoneyInput placeholder={computedGst.toFixed(2)} />
           </Form.Item>

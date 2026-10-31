@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, MergeCellsOutlined, PlusOutlined } from '@/components/common/icons';
+import { MergeCellsOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField, PipeMaterial } from '@erp/shared';
 import { LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, pipeSizeLabel, pipeSizeOf } from '@erp/shared';
@@ -21,7 +21,8 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { RowMenu } from '@/components/list/RowMenu';
 import { ItemDuplicates } from './ItemDuplicates';
 import { MasterInput } from '@/components/masters/MasterInput';
 
@@ -67,6 +68,7 @@ export function ItemsTable() {
     },
     meta: FAIL_NOTICE,
   });
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const remove = useMutation({
     mutationFn: async (i: ItemDto) => (await api.delete(`/stock/items/${i.id}`)).data,
     onSuccess: () => {
@@ -135,12 +137,13 @@ export function ItemsTable() {
                 locked: true,
                 width: 100,
                 render: (_: unknown, r: ItemDto) => (
-                  <Space size="small">
-                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                    <ConfirmDelete what={`item ${r.name}`} onConfirm={() => remove.mutateAsync(r)} disabled={r.projectCount > 0}>
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={r.projectCount > 0} title={r.projectCount > 0 ? 'Has stock movements' : undefined} aria-label="Delete" />
-                    </ConfirmDelete>
-                  </Space>
+                  <RowMenu
+                    label={`Actions for ${r.name}`}
+                    items={[
+                      { key: 'edit', label: 'Edit', onSelect: () => open(r) },
+                      { key: 'delete', label: r.projectCount > 0 ? 'Delete (it has stock movements)' : 'Delete', danger: true, disabled: r.projectCount > 0, onSelect: () => askDelete({ what: `item ${r.name}`, onConfirm: () => remove.mutateAsync(r) }) },
+                    ]}
+                  />
                 ),
               } satisfies ListColumn<ItemDto>,
             ]
@@ -160,6 +163,7 @@ export function ItemsTable() {
 
   return (
     <>
+      {deleteDialog}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar wrap gap={8} align="center">
         <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, unit or category" aria-label="Search items" />

@@ -7,7 +7,7 @@ import type { BudgetBoqItemDto, BudgetHeadDto } from '@erp/shared';
 import { COST_HEAD_LABELS, canSetBudget } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProjectBudget } from '@/lib/queries';
-import { formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { HEAD_COLORS } from './CostBar';
 import { BudgetFormModal } from './BudgetFormModal';
@@ -205,7 +205,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                   dataIndex: 'plannedMarginPct',
                   width: 120,
                   align: 'right',
-                  render: (v: number | null) => (v === null ? <span className="text-muted">-</span> : <span style={{ color: v < 0 ? RED : undefined }}>{v}%</span>),
+                  render: (v: number | null) => (v === null ? <span className="text-muted">-</span> : <span style={{ color: v < 0 ? RED : undefined }}>{formatPct(v)}</span>),
                 },
                 { title: 'Budget', dataIndex: 'budgetAmount', width: 130, align: 'right', render: money },
                 { title: 'Done', dataIndex: 'executedQty', width: 120, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },

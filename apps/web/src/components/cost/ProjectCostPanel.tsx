@@ -8,7 +8,7 @@ import { TeamOutlined } from '@/components/common/icons';
 import type { ProjectCostDto } from '@erp/shared';
 import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
 import { useProjectCost } from '@/lib/queries';
-import { formatINR, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
+import { formatINR, formatPct, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CostBar, CostHeadTitle, CostLegend } from './CostBar';
 import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
@@ -53,7 +53,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
             </Col>
             <Col xs={12} md={6}>
               <Statistic
-                title={`Margin${data.costPct !== null ? ` (cost ${data.costPct}% of executed)` : ''}`}
+                title={`Margin${data.costPct !== null ? ` (cost ${formatPct(data.costPct)} of work done)` : ''}`}
                 value={formatINR(data.margin)}
                 styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: toNumber(data.margin) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }}
               />
