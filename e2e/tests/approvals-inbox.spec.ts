@@ -58,7 +58,7 @@ test('the project manager works through the queue from the keyboard', async ({ p
   expect(await statusOf(first.id)).toBe('APPROVED');
   expect(await statusOf(second.id)).toBe('REJECTED');
 
-  await page.getByRole('button', { name: /Approved today/ }).click();
+  await page.getByRole('button', { name: /Reviewed today/ }).click();
   const today = page.getByRole('list', { name: 'Reviewed today' });
   await expect(today.locator('li').filter({ hasText: `: ${first.qty} ` })).toContainText('Approved');
   await expect(today.locator('li').filter({ hasText: `: ${second.qty} ` })).toContainText('Rejected');
@@ -72,7 +72,7 @@ test('a selection of one type is approved together', async ({ page }) => {
 
   const bar = page.getByRole('toolbar', { name: 'Selection' });
   await expect(bar).toContainText('2 selected in progress');
-  const otherGroup = page.getByRole('checkbox', { name: 'Select all material requests' });
+  const otherGroup = page.getByRole('checkbox', { name: 'Select all indents' });
   if (await otherGroup.count()) await expect(otherGroup).toBeDisabled();
 
   await bar.getByRole('button', { name: /Approve 2/ }).click();

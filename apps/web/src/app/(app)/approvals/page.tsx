@@ -210,7 +210,17 @@ export default function ApprovalsPage() {
     return () => window.removeEventListener('resize', measure);
   });
 
-  const typeOptions = QUEUE_TYPES.filter(([t]) => rights.some((r) => r.type === t)).map(([t, label]) => ({ value: t, label: `${label} (${counts[t] ?? 0})` }));
+  const typeOptions = QUEUE_TYPES.filter(([t]) => rights.some((r) => r.type === t)).map(([t, label]) => ({
+    value: t,
+    label: (
+      <Flex justify="space-between" gap={token.marginSM}>
+        <span>{label}</span>
+        <Typography.Text type="secondary">{counts[t] ?? 0} waiting</Typography.Text>
+      </Flex>
+    ),
+  }));
+  const limitLine = limited.length > 0 ? ` Your approval limit: ${limited.map((r) => `${inSentence(SUBMISSION_TYPE_LABELS[r.type])} up to ${formatINR(r.maxAmount)}`).join(', ')}; anything above goes to a higher approver.` : '';
+  const subtitle = !approver ? 'Entries waiting for approval' : data ? `${data.length} waiting for your approval.${limitLine}` : undefined;
 
   const queue = (
     <>
@@ -270,17 +280,8 @@ export default function ApprovalsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Approvals" subtitle={approver ? `${data?.length ?? 0} waiting for your review` : 'Site submissions waiting for review'} extra={approver ? <ReviewedToday onOpen={(r) => setDrawer({ type: r.type, id: r.id })} /> : undefined} />
+      <PageHeader title="Approvals" subtitle={subtitle} extra={approver ? <ReviewedToday onOpen={(r) => setDrawer({ type: r.type, id: r.id })} /> : undefined} />
       {!approver && <Alert type="info" showIcon title="Your role cannot approve submissions. Submissions you create appear in the project pages with their current status." style={{ marginBottom: token.margin }} />}
-      {limited.length > 0 && (
-        <Alert
-          type="info"
-          showIcon
-          closable
-          title={`Your approval limit: ${limited.map((r) => `${inSentence(SUBMISSION_TYPE_LABELS[r.type])} up to ${formatINR(r.maxAmount)}`).join(', ')}. Anything above goes to a higher approver.`}
-          style={{ marginBottom: token.margin }}
-        />
-      )}
       {!!error && <QueryError error={error} onRetry={() => refetch()} />}
       <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.marginSM }}>
         <Input.Search allowClear placeholder="Search the queue" aria-label="Search the queue" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: screens.md ? 240 : '100%' }} />
