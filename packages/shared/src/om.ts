@@ -219,6 +219,7 @@ export interface OmMonthDto {
 }
 
 export type OmPeriodStatus = 'FUTURE' | 'RUNNING' | 'DUE' | 'BILLED';
+export const OM_PERIOD_STATUS_LABELS: Record<OmPeriodStatus, string> = { FUTURE: 'Not started', RUNNING: 'Running', DUE: 'Due to bill', BILLED: 'Billed' };
 
 export interface OmPeriodDto {
   year: number;
@@ -256,8 +257,11 @@ export interface OmChemicalRowDto {
   consumedQty: string;
   /** Consumed against the norm, %, one decimal; null with no norm quantity */
   variancePct: number | null;
-  status: 'OVER' | 'UNDER' | 'WITHIN' | 'NO_WATER';
+  status: OmChemicalState;
 }
+
+export type OmChemicalState = 'OVER' | 'UNDER' | 'WITHIN' | 'NO_WATER';
+export const OM_CHEMICAL_STATE_LABELS: Record<OmChemicalState, string> = { OVER: 'Over the norm', UNDER: 'Under the norm', WITHIN: 'Within the norm', NO_WATER: 'No water logged' };
 
 export interface OmDto {
   projectId: string;

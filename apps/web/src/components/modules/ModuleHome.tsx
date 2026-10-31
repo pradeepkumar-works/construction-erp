@@ -6,12 +6,12 @@ import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Flex, Grid, Result, Row, Typography, theme } from 'antd';
 import { CheckSquareOutlined, HourglassOutlined, RollbackOutlined } from '@/components/common/icons';
 import type { ModuleHomeDto, ModuleKey } from '@erp/shared';
-import { MODULE_INTROS, MODULE_LABELS, MODULE_SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
+import { MODULE_INTROS, MODULE_LABELS, MODULE_SUBMISSION_TYPES, SUBMISSION_TYPE_PLURAL_LABELS, canManageStaff, canSeeNav, canViewEmployeePrivate, isModuleKey, navDestination, navNode, navTilesFor, projectTabHref, submissionListHref } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useModuleHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { requestNew } from '@/lib/new-intent';
-import { formatINRCompact } from '@/lib/format';
+import { formatINRCompact, inSentence } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { kpiColumns } from '@/components/home/KpiTile';
@@ -24,7 +24,7 @@ import { usePins } from '@/components/launcher/pins';
 import { useNavMenu } from '@/components/shell/menu';
 import { ResultMark } from '@/components/common/ResultMark';
 
-const days = (n: number) => (n === 0 ? 'today' : `${n} day${n === 1 ? '' : 's'}`);
+const oldest = (n: number) => (n === 0 ? 'all from today' : `oldest ${n} day${n === 1 ? '' : 's'}`);
 
 /** What waits for the caller in this module: approvals by type, their entries sent back, and theirs waiting with others. */
 function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
@@ -36,7 +36,7 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
     <Card size="small" title="Waiting for you" style={{ height: '100%' }}>
       {total === 0 && back === 0 && data.waitingWithOthers === 0 ? (
         <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-          Nothing waits for you in {label.toLowerCase()}.
+          Nothing waits for you in {inSentence(label)}.
         </Typography.Paragraph>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -45,11 +45,11 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
               <Link href={`/approvals?type=${w.type}`} className="text-link">
                 <Flex align="center" justify="space-between" gap={token.marginSM} style={row}>
                   <span>
-                    <CheckSquareOutlined aria-hidden /> {w.count} {SUBMISSION_TYPE_LABELS[w.type].toLowerCase()} to approve
+                    <CheckSquareOutlined aria-hidden /> {SUBMISSION_TYPE_PLURAL_LABELS[w.type]}: {w.count} to approve
                   </span>
                   <Typography.Text type={w.oldestDays > 2 ? 'warning' : 'secondary'} style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap' }}>
                     {w.amount !== null ? <span translate="no">{formatINRCompact(w.amount)} · </span> : null}
-                    oldest {days(w.oldestDays)}
+                    {oldest(w.oldestDays)}
                   </Typography.Text>
                 </Flex>
               </Link>
@@ -59,7 +59,7 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
             <li key={`back-${s.type}`}>
               <Link href={submissionListHref(s.type)} className="text-link">
                 <Flex align="center" gap={token.marginXS} style={row}>
-                  <RollbackOutlined aria-hidden /> {s.count} of your {SUBMISSION_TYPE_LABELS[s.type].toLowerCase()} entries sent back or turned down
+                  <RollbackOutlined aria-hidden /> {SUBMISSION_TYPE_PLURAL_LABELS[s.type]}: {s.count} of yours with changes requested or rejected
                 </Flex>
               </Link>
             </li>
@@ -120,7 +120,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
     <>
       {starts.map((e) => (
         <Button key={e.kind} icon={e.icon} onClick={() => requestNew(e.kind, () => router.push(e.href))}>
-          {e.label}
+          {e.action}
         </Button>
       ))}
     </>
@@ -132,7 +132,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
     <div className="page-container">
       <PageHeader title={`${label} overview`} subtitle={MODULE_INTROS[key]} extra={actions} />
       <Flex vertical gap={24}>
-        <TileGrid entries={tileEntries(tiles)} label={`Pages in ${label.toLowerCase()}`} menu={tileMenu} />
+        <TileGrid entries={tileEntries(tiles)} label={`Pages in ${inSentence(label)}`} menu={tileMenu} />
         {isLoading && <PageSkeleton shape="home" header={false} />}
         {error && <QueryError error={error} onRetry={() => refetch()} />}
         {data && (data.figures.length > 0 || waits) && (

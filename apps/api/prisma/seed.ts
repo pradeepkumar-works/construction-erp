@@ -33,7 +33,7 @@ import { seedDemoGroup, seedGroupCompanies } from './seed-group';
 import { seedGroupModules } from './seed-group-modules';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
-import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
+import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, ROLE_KEYS, ROLE_LABELS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -44,24 +44,7 @@ const day = (offset: number) => {
   return d;
 };
 
-const ROLES: [string, string][] = [
-  ['ADMIN', 'Admin'],
-  ['MANAGEMENT', 'Management'],
-  ['PROJECT_MANAGER', 'Project Manager'],
-  ['TEAM_LEADER', 'Team Leader / Site Supervisor'],
-  ['SITE_ENGINEER', 'Site Engineer'],
-  ['STORE_MANAGER', 'Store Manager'],
-  ['QUANTITY_SURVEYOR', 'Quantity Surveyor'],
-  ['PROCUREMENT_MANAGER', 'Procurement Manager'],
-  ['QA_QC_ENGINEER', 'QA/QC Engineer'],
-  ['SAFETY_OFFICER', 'Safety Officer'],
-  ['DOCUMENT_CONTROLLER', 'Document Controller'],
-  ['ACCOUNTS_MANAGER', 'Accounts Manager'],
-  ['HR_MANAGER', 'HR Manager'],
-  ['CLIENT_ENGINEER', "Client's Engineer (guest)"],
-  ['CONSULTANT', 'Consultant / PMC (guest)'],
-  ['SUPPLIER', 'Supplier (portal)'],
-];
+const ROLES: [string, string][] = ROLE_KEYS.map((key) => [key, ROLE_LABELS[key]]);
 
 const USERS: { email: string; name: string; role: string; phone: string }[] = [
   { email: 'admin@demo.com', name: 'Arun Sharma', role: 'ADMIN', phone: '9800000001' },

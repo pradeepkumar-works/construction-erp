@@ -4,6 +4,7 @@ import {
   LEAVE_ENTITLEMENT,
   LEAVE_TYPE_LABELS,
   LEAVE_TYPES,
+  ROLE_LABELS,
   STANDARD_DAY_HOURS,
   DEFAULT_SITE_RADIUS_M,
   canManageStaff,
@@ -22,6 +23,7 @@ import {
   type LeaveType,
   type MyStaffDto,
   type Paginated,
+  type RoleKey,
   type SortOrder,
   type CheckInSiteDto,
   type StaffAttendanceDto,
@@ -461,10 +463,10 @@ export class StaffService {
     this.access.assertCanManageStaff(user);
     const rows = await this.prisma.user.findMany({
       where: { organizationId: user.organizationId, isActive: true, OR: [{ employee: null }, ...(employeeId ? [{ employee: { id: employeeId } }] : [])] },
-      select: { id: true, fullName: true, email: true, role: { select: { name: true } } },
+      select: { id: true, fullName: true, email: true, role: { select: { key: true } } },
       orderBy: { fullName: 'asc' },
     });
-    return rows.map((u) => ({ id: u.id, fullName: u.fullName, email: u.email, roleName: u.role.name }));
+    return rows.map((u) => ({ id: u.id, fullName: u.fullName, email: u.email, roleName: ROLE_LABELS[u.role.key as RoleKey] }));
   }
 
   private async checkLinks(user: RequestUser, dto: { userId?: string | null; projectId?: string | null; reportingToId?: string | null }, self?: string) {

@@ -399,13 +399,13 @@ export default function AiSettingsPage() {
   if (!allowed)
     return (
       <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-        <PageHeader title={`Ask ${PRODUCT_NAME}`} />
+        <PageHeader title={`Ask ${PRODUCT_NAME} settings`} />
         <Alert type="info" title={`Only an admin can change Ask ${PRODUCT_NAME} settings.`} />
       </div>
     );
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title={`Ask ${PRODUCT_NAME}`} subtitle="An assistant that answers questions about your company's records, with links to each record it used." />
+      <PageHeader title={`Ask ${PRODUCT_NAME} settings`} subtitle="An assistant that answers questions about your company's records, with links to each record it used." />
       {error ? (
         <QueryError error={error} onRetry={() => refetch()} />
       ) : isLoading || !data ? (

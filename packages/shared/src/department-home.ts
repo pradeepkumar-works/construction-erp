@@ -74,16 +74,16 @@ export const PIPELINE_STAGES: Record<PipelineKey, { key: string; label: string }
     { key: 'PARTLY_RECEIVED', label: 'Part received' },
   ],
   letters: [
-    { key: 'SIGN', label: 'Waiting for the signature' },
+    { key: 'SIGN', label: 'Waiting for signature' },
     { key: 'SEAL', label: 'Waiting for the seal' },
     { key: 'REPLY', label: 'Our reply due' },
   ],
 };
 
 export const PIPELINE_TITLES: Record<PipelineKey, { title: string; note: string; href: string }> = {
-  indents: { title: 'Indents in flight', note: 'Each material request from approval through quotations and the order to the last delivery.', href: '/material-requests' },
+  indents: { title: 'Open indents', note: 'Each indent from approval through quotations and the order to the last delivery.', href: '/material-requests' },
   deliveries: { title: 'Deliveries to receive', note: 'Approved orders with material still to come, late ones first.', href: '/purchase-orders?tab=status' },
-  letters: { title: 'Letters in flight', note: 'Outward letters waiting to be signed or sealed, and letters waiting for our reply.', href: '/correspondence' },
+  letters: { title: 'Letters open', note: 'Outward letters waiting to be signed or sealed, and letters waiting for our reply.', href: '/correspondence' },
 };
 
 /** At most this many rows of a pipeline on the screen; the stage counts cover them all. */

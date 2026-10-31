@@ -117,7 +117,7 @@ export class AiDraftsService {
     const requiredDate = this.when(i.requiredDate, 'requiredDate', addDays(todayIn(), 7), flags, 'requiredDate', 'future');
     if (i.requiredDate === undefined || i.requiredDate === '') flags.push({ field: 'requiredDate', note: 'No date given; set to a week from today' });
     const priority = pick(i.priority, MATERIAL_PRIORITIES) ?? 'NORMAL';
-    const title = `Material request for ${project.name}: ${items.length === 1 ? `${items[0].quantity} ${items[0].unit} ${items[0].itemName}` : plural(items.length, 'item')}, needed by ${longDate(requiredDate)}`;
+    const title = `Indent for ${project.name}: ${items.length === 1 ? `${items[0].quantity} ${items[0].unit} ${items[0].itemName}` : plural(items.length, 'item')}, needed by ${longDate(requiredDate)}`;
     return this.draft('material-request', project, title, { requiredDate, priority, remarks: text(i.remarks, 1000), items }, flags);
   }
 

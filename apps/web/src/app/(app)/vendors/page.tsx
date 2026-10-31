@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button, Card, Checkbox, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -270,6 +271,7 @@ function UnlistedTab({ editable, onAdd }: { editable: boolean; onAdd: (u: Unlist
 
 export default function VendorsPage() {
   const { user } = useAuth();
+  const subcontractors = useSearchParams().get('kind') === 'SUBCONTRACTOR';
   const editable = !!user && canEditVendors(user.roleKey);
   const [editing, setEditing] = useState<VendorDto | null>(null);
   const [adding, setAdding] = useState<Partial<{ name: string; gstin: string; kinds: VendorKind[] }> | null>(null);
@@ -286,7 +288,7 @@ export default function VendorsPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Vendors"
+        title={subcontractors ? 'Subcontractors' : 'Vendors'}
         subtitle="Suppliers, hire agencies, subcontractors and service providers, with GSTIN, MSME registration and bank details. Expenses, machines and GRNs pick from this list."
         extra={newButton}
       />

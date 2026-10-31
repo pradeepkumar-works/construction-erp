@@ -199,7 +199,7 @@ test('required built-in fields and photos are asked for in words, under the name
     ],
     minPhotos: 2,
   });
-  assert.deepEqual(dprRequiredProblems(def, empty), ['Choose the weather', 'Fill in Plan for tomorrow', 'Add the manpower on site today', 'Add at least 2 site photos']);
+  assert.deepEqual(dprRequiredProblems(def, empty), ['Choose the weather', 'Fill in Plan for tomorrow', 'Add the labour on site today', 'Add at least 2 site photos']);
   assert.deepEqual(dprRequiredProblems(def, { ...empty, weather: 'CLEAR', nextDayPlan: 'Lay GSB', manpower: 12, photos: 2 }), []);
   assert.deepEqual(dprRequiredProblems(normaliseDprForm({ minPhotos: 1 }), empty), ['Add a site photo']);
 });

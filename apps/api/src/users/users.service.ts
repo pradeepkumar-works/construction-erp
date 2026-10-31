@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
-import type { CreateUserResultDto, Paginated, PasswordLinkDto, RoleKey, SortOrder, UserSortField, UserSummary } from '@erp/shared';
+import { ROLE_LABELS, type CreateUserResultDto, type Paginated, type PasswordLinkDto, type RoleKey, type SortOrder, type UserSortField, type UserSummary } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -41,7 +41,7 @@ export class UsersService {
   ) {}
 
   private toDto(u: { id: string; email: string; fullName: string; phone: string | null; isActive: boolean; invitedAt: Date | null; createdAt: Date; role: { key: string; name: string } }): UserSummary {
-    return { id: u.id, email: u.email, fullName: u.fullName, phone: u.phone, isActive: u.isActive, roleKey: u.role.key as RoleKey, roleName: u.role.name, createdAt: u.createdAt.toISOString(), invitePending: u.invitedAt !== null };
+    return { id: u.id, email: u.email, fullName: u.fullName, phone: u.phone, isActive: u.isActive, roleKey: u.role.key as RoleKey, roleName: ROLE_LABELS[u.role.key as RoleKey], createdAt: u.createdAt.toISOString(), invitePending: u.invitedAt !== null };
   }
 
   /** Sign-in is by email alone, so an email belongs to one sign-in across all organisations. */
@@ -75,7 +75,8 @@ export class UsersService {
 
   async roles(req: RequestUser) {
     // A supplier's login is made from their vendor (the supplier portal), never here.
-    return this.prisma.role.findMany({ where: { organizationId: req.organizationId, key: { not: 'SUPPLIER' } }, select: { id: true, key: true, name: true }, orderBy: { name: 'asc' } });
+    const roles = await this.prisma.role.findMany({ where: { organizationId: req.organizationId, key: { not: 'SUPPLIER' } }, select: { id: true, key: true }, orderBy: { name: 'asc' } });
+    return roles.map((r) => ({ ...r, name: ROLE_LABELS[r.key as RoleKey] }));
   }
 
   /**

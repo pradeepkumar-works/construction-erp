@@ -8,8 +8,9 @@ import { canFreezeBaseline, canViewContract, canViewCost, canViewReconciliation 
  * the check that the BOQ adds up to roughly the contract value. Pure, tested in `apps/api/src/scripts/project-setup-test.ts`.
  */
 
-/** Bill deductions a new project starts with when its client has no terms of its own (usual for government works). */
-export const STANDARD_TERMS = { retentionPct: '5', securityDepositPct: '0', tdsPct: '2', gstTdsPct: '2', labourCessPct: '1', gstRate: '18' } as const;
+/** Bill deductions a new project starts with when its client has no terms of its own: government works keep a security
+ *  deposit of 5 % from each RA bill and no retention apart from it. */
+export const STANDARD_TERMS = { retentionPct: '0', securityDepositPct: '5', tdsPct: '2', gstTdsPct: '2', labourCessPct: '1', gstRate: '18' } as const;
 
 /** A client's usual terms (the client master): percentages a new project of theirs starts with, and two periods. */
 export const CLIENT_TERM_PERCENTS = ['retentionPct', 'securityDepositPct', 'tdsPct', 'gstTdsPct', 'labourCessPct', 'gstRate'] as const;

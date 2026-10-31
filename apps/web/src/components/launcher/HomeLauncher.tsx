@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Empty, Flex, Input, Skeleton, Typography } from 'antd';
-import type { AuthUser, NavNode, NavVisitDto } from '@erp/shared';
-import { NAV_TREE, NAV_VISIT_KIND_LABELS, canSeeNav, navDestination, navNode, navNodeAt, navTilesFor } from '@erp/shared';
+import type { AuthUser, NavMenuModule, NavNode, NavVisitDto } from '@erp/shared';
+import { NAV_TREE, NAV_VISIT_KIND_LABELS, canSeeNav, navDestination, navMenuPlace, navNode, navNodeAt, navNodeForPath, navTilesFor } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { formatLongDay } from '@/lib/format';
@@ -92,11 +92,16 @@ function useImportOnce(user: AuthUser | null) {
   }, [user, qc]);
 }
 
-function RecentLink({ visit, user }: { visit: NavVisitDto; user: AuthUser }) {
+function RecentLink({ visit, user, menu }: { visit: NavVisitDto; user: AuthUser; menu: NavMenuModule[] }) {
   const node = visit.kind === 'NODE' ? navNode(visit.target) : undefined;
   if (visit.kind === 'NODE' && (!node || !canSeeNav(user, node))) return null;
-  // Under its module's name; a module itself (no parent, no page of its own) says so.
-  const where = node?.parent ? navNode(node.parent)?.label : node && !node.route ? 'Module' : NAV_VISIT_KIND_LABELS[visit.kind];
+  // A page under its module's name in the company's menu, a module itself says so, and a record under its list's name.
+  const record = visit.kind === 'RECORD' ? navNodeForPath(visit.href.split('?')[0]) : undefined;
+  const where = node?.parent
+    ? (navMenuPlace(menu, node.id)?.module.label ?? navNode(node.parent)?.label)
+    : node && !node.route
+      ? 'Module'
+      : (record?.label ?? NAV_VISIT_KIND_LABELS[visit.kind]);
   return (
     <li>
       <Link href={visit.href} className={s.recent}>
@@ -261,7 +266,7 @@ export function HomeLauncher() {
             ) : recentShown.length ? (
               <ul className={s.recentList}>
                 {recentShown.map((v) => (
-                  <RecentLink key={`${v.kind}:${v.target}`} visit={v} user={user} />
+                  <RecentLink key={`${v.kind}:${v.target}`} visit={v} user={user} menu={menu} />
                 ))}
               </ul>
             ) : (

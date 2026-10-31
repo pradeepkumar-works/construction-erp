@@ -159,7 +159,7 @@ test('guests cannot ask, and nobody can ask once an admin switches it off', asyn
 test('an admin sees the switch, the allowance and this month’s use', async ({ page }) => {
   await signIn(page, 'admin@demo.com');
   await page.goto('/ai-settings');
-  await expect(page.getByRole('heading', { name: 'Ask Nirmaan' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ask Nirmaan settings' })).toBeVisible();
   const toggle = page.getByRole('switch', { name: 'On for the company' });
   await expect(toggle).toBeChecked();
   await expect(page.getByRole('spinbutton', { name: 'Monthly allowance' })).toBeVisible();
@@ -180,7 +180,7 @@ test('an admin opens Ask Nirmaan to some roles only, and the others lose it (AI 
   const roles = page.getByRole('group', { name: 'Who can use it' });
   await roles.getByRole('radio', { name: 'Only the roles I choose' }).check();
   await expect(roles.getByRole('button', { name: 'Save roles' })).toBeDisabled();
-  await roles.getByRole('checkbox', { name: 'Project Manager' }).check();
+  await roles.getByRole('checkbox', { name: 'Project manager' }).check();
   await roles.getByRole('button', { name: 'Save roles' }).click();
   await expect(page.getByText('Roles saved')).toBeVisible();
   try {

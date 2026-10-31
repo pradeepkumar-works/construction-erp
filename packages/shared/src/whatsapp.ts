@@ -24,7 +24,7 @@ export type InboundState = (typeof INBOUND_STATES)[number];
 export const INBOUND_STATE_LABELS: Record<InboundState, string> = {
   RECEIVED: 'Reading',
   ANSWERED: 'Answered',
-  DRAFTED: 'Waiting for Save',
+  DRAFTED: 'Waiting to be saved',
   SAVED: 'Saved',
   DISCARDED: 'Discarded',
   FAILED: 'Failed',

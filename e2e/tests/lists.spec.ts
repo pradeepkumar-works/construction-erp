@@ -11,7 +11,7 @@ test('a view sets the filters, which go in the address bar and come back from a 
   await page.getByRole('tab', { name: 'Waiting for me' }).click();
   await expect(page).toHaveURL(/\/dpr\?status=SUBMITTED$/);
   await expect(page.getByRole('tab', { name: 'Waiting for me' })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('.ant-tag').filter({ hasText: 'Status: Pending Approval' })).toBeVisible();
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Status: Waiting for approval' })).toBeVisible();
 
   // A link with filters opens the list filtered, with the chips to take them off.
   await page.goto('/dpr?status=APPROVED&from=2026-01-01');
@@ -158,7 +158,7 @@ test('projects, clients, vendors and users have views, chips and columns too', a
   await expect(page.getByRole('tab', { name: 'Including inactive' })).toBeVisible();
 
   await page.goto('/users?roleKey=SITE_ENGINEER');
-  await expect(page.locator('.ant-tag').filter({ hasText: 'Role: Site Engineer' })).toBeVisible();
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Role: Site engineer' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Site engineers' })).toHaveAttribute('aria-selected', 'true');
   // Clicking a user opens the edit form.
   await rows(page).first().locator('td').nth(2).click();

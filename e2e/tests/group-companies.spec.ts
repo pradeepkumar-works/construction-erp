@@ -54,7 +54,7 @@ test('an admin makes a group with a lab, and a colleague moves between the two o
   await page.getByRole('tab', { name: /People/ }).click();
   await page.getByRole('button', { name: 'Give Sunil Site a place' }).click();
   const give = page.getByRole('dialog', { name: 'Give Sunil Site a place' });
-  await chooseOption(give.getByLabel('Role there'), 'Site Engineer');
+  await chooseOption(give.getByLabel('Role there'), 'Site engineer');
   await give.getByRole('button', { name: 'Give place' }).click();
   await expect(page.getByText(`Sunil Site can now work in ${lab}`)).toBeVisible();
 

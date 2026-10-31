@@ -102,15 +102,18 @@ export function inSentence(label: string): string {
 
 const pctFormats = new Map<string, Intl.NumberFormat>();
 
+/** What a cell or a fact shows when it has no value, on every screen (WRITING.md, Words we use). */
+export const NO_VALUE = '–';
+
 /**
  * A percentage, written one way everywhere (UX item 85): whole numbers from 10% up, one decimal below it (2.5%, and 2%
  * rather than 2.0%), `%` without a space, `–` for none. `digits` fixes the decimals instead ({ digits: 0 } for a
  * whole number always).
  */
 export function formatPct(value: number | string | null | undefined, opts: { digits?: number } = {}): string {
-  if (value === null || value === undefined || value === '') return '–';
+  if (value === null || value === undefined || value === '') return NO_VALUE;
   const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(n)) return '–';
+  if (!Number.isFinite(n)) return NO_VALUE;
   const digits = opts.digits ?? (Math.abs(n) >= 9.95 ? 0 : 1);
   const key = `${digits}:${opts.digits !== undefined}`;
   let f = pctFormats.get(key);

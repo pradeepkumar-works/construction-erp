@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -286,6 +286,32 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
     usedOn: 'projects and tenders',
     manage: (role) => P.canEditProjects(role),
     standard: entries(['Water', 'जल'], ['Buildings', 'भवन'], ['Irrigation', 'सिंचाई'], ['Roads and bridges', 'सड़क और पुल']),
+  },
+  workTrade: {
+    key: 'workTrade',
+    label: 'Work trades',
+    singular: 'work trade',
+    description: 'The trade a snag or defect belongs to, such as plaster, plumbing or electrical.',
+    slug: 'work-trade',
+    node: 'projects.workTrades',
+    usedOn: 'snags and defects',
+    manage: (role) => P.canManageHandover(role),
+    standard: entries(
+      ['Civil', 'सिविल'],
+      ['Plaster', 'प्लास्टर'],
+      ['Masonry', 'चिनाई'],
+      ['Tiling', 'टाइल'],
+      ['Painting', 'पेंटिंग'],
+      ['Plumbing', 'प्लंबिंग'],
+      ['Electrical', 'बिजली'],
+      ['Joinery', 'बढ़ईगीरी'],
+      ['Waterproofing', 'वॉटरप्रूफ़िंग'],
+      ['Fabrication', 'फ़ैब्रिकेशन'],
+      ['Road work', 'सड़क का काम'],
+      ['Drainage', 'नाली'],
+      ['Road marking', 'सड़क मार्किंग'],
+      ['Landscaping', 'लैंडस्केपिंग'],
+    ),
   },
 };
 
