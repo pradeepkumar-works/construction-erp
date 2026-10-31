@@ -130,14 +130,14 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
         <FormSection title="Crew">
           <FormGrid cols={2}>
             <Form.Item name="contractor" label="Contractor">
-              <Input maxLength={200} placeholder="Optional" />
+              <Input maxLength={200} placeholder="Labour contractor or subcontractor; empty for our own workers" />
             </Form.Item>
             <Form.Item name="workerCount" label="Workers">
               <InputNumber min={1} max={500} precision={0} inputMode="numeric" style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
           <Form.Item name="workers" label="Names">
-            <Input maxLength={2000} placeholder="Optional" />
+            <Input maxLength={2000} />
           </Form.Item>
         </FormSection>
         <FormSection title="Precautions">

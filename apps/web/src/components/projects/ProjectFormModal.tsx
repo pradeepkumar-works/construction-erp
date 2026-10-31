@@ -338,7 +338,7 @@ export function ProjectFormModal({
         </FormSection>
         <FormSection title="Client and contract">
           <FormGrid cols={2}>
-            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'} {...(readState?.result.client ? read('clientName') : {})}>
+            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Client billing › Clients, or from the Contract tab.'} {...(readState?.result.client ? read('clientName') : {})}>
               <ClientSelect allowClear />
             </Form.Item>
             <Form.Item name="consultantName" label="Consultant / PMC">
@@ -369,7 +369,7 @@ export function ProjectFormModal({
             <Form.Item name="contractValue" label="Contract value" {...read('contractValue')}>
               <MoneyInput />
             </Form.Item>
-            <Form.Item name="contractModel" label="Contract type" tooltip="Item rate pays measured BOQ quantities. Lump sum and EPC pay in stages; their components are weighed by the billing breakup.">
+            <Form.Item name="contractModel" label="Contract type" tooltip="Item rate pays measured BOQ quantities. Lump sum and EPC pay in stages; each component's weight is its share in the contract's payment schedule.">
               <Select options={CONTRACT_MODELS.map((m) => ({ value: m, label: CONTRACT_MODEL_LABELS[m] }))} placeholder="Item rate" />
             </Form.Item>
           </FormGrid>

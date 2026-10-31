@@ -228,8 +228,8 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
           locale={{ emptyText: 'No days logged this month' }}
           columns={[
             { key: 'date', title: 'Day', width: 110, render: (_, d) => <span translate="no" style={{ whiteSpace: 'nowrap' }}>{dayjs(d.date).format('ddd D MMM')}</span> },
-            { key: 'prod', title: 'Produced (kl)', width: 110, align: 'right', render: (_, d) => num(d.producedKl) },
-            { key: 'sup', title: 'Supplied (kl)', width: 110, align: 'right', render: (_, d) => num(d.suppliedKl) },
+            { key: 'prod', title: 'Produced (kL)', width: 110, align: 'right', render: (_, d) => num(d.producedKl) },
+            { key: 'sup', title: 'Supplied (kL)', width: 110, align: 'right', render: (_, d) => num(d.suppliedKl) },
             { key: 'lpcd', title: 'lpcd', width: 80, align: 'right', render: (_, d) => num(d.lpcd) },
             { key: 'loss', title: 'Lost', width: 80, align: 'right', render: (_, d) => (d.lossPct === null ? '-' : <span translate="no">{formatPct(d.lossPct)}</span>) },
             { key: 'cl', title: 'Chlorine (mg/l)', width: 120, align: 'right', render: (_, d) => num(d.residualChlorine) },

@@ -172,8 +172,8 @@ export function MeasurementFormModal({
             </Form.Item>
           </FormGrid>
           {woOptions.length > 0 && (
-            <Form.Item name="workOrderId" label="Done by (work order)" extra="Tag the subcontractor's work so it goes in their bill. Leave empty for departmental work.">
-              <Select allowClear placeholder="Departmental (no work order)" options={woOptions} />
+            <Form.Item name="workOrderId" label="Work order" extra="Tag the subcontractor's work so it goes in their bill. Leave empty for departmental work.">
+              <Select allowClear placeholder="Departmental (our own workers)" options={woOptions} />
             </Form.Item>
           )}
           <SectorInputs projectId={selectedProject} />

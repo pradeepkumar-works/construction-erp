@@ -185,7 +185,7 @@ export function ElementFormDrawer({
               <Form.Item name="code" label="Number" tooltip="Outline number, e.g. 8 or 8.1. Left empty, the next free one.">
                 <Input placeholder="Next free" />
               </Form.Item>
-              <Form.Item name="weightPct" label="Weight" tooltip="Share of the project, or of its component, %. Lump sum contracts usually take the billing breakup. Left empty, it shares what is left by BOQ value.">
+              <Form.Item name="weightPct" label="Weight" tooltip="Share of the project, or of its component, %. Lump sum contracts usually take its share in the payment schedule. Left empty, it shares what is left by BOQ value.">
                 <InputNumber min={0} max={100} step={0.5} suffix="%" style={{ width: '100%' }} placeholder="Auto" />
               </Form.Item>
             </FormGrid>

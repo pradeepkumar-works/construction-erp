@@ -158,7 +158,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         action={
           freezer ? (
             <Button size="small" onClick={() => setFreezeOpen(true)}>
-              {data.baselineAt ? 'Re-baseline' : 'Freeze baseline'}
+              {data.baselineAt ? 'Replace baseline' : 'Freeze baseline'}
             </Button>
           ) : undefined
         }
@@ -234,7 +234,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         confirmLoading={schedule.isPending}
         destroyOnHidden
       >
-        <p>Each keeps its length and starts on the first day its links allow. Activities already started stay where they are. The audit log keeps the old dates.</p>
+        <p>Each keeps its length and starts on the first day its links allow. Activities already started stay where they are. The record's history keeps the old dates.</p>
         <Table<GanttActivityDto>
           size="small"
           rowKey="id"
@@ -260,7 +260,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
       >
         <p>
           Today&apos;s planned dates of every activity and the due date of every milestone become the baseline.
-          {data.baselineAt ? ` The baseline frozen ${formatDate(data.baselineAt)} is replaced; the audit log keeps who changed it and when.` : ''}
+          {data.baselineAt ? ` The baseline frozen ${formatDate(data.baselineAt)} is replaced; the history keeps who changed it and when.` : ''}
         </p>
         <Form layout="vertical">
           <Form.Item label="Note" style={{ marginBottom: 0 }}>

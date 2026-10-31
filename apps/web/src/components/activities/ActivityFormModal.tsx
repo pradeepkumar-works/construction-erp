@@ -116,7 +116,7 @@ export function ActivityFormModal({
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? 'Edit activity' : 'New activity'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="boqItemId" label="Linked BOQ item">
-          <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Optional - pick a BOQ item to link" onChange={onBoqChange} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))} />
+          <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Pick the BOQ item it measures" onChange={onBoqChange} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))} />
         </Form.Item>
         <Form.Item name="name" label="Activity name" rules={[{ required: true, whitespace: true, message: 'Name the activity, e.g. GSB laying' }]}>
           <Input placeholder="GSB laying" />
@@ -160,7 +160,7 @@ export function ActivityFormModal({
         </FormGrid>
         <FormGrid cols={2}>
           <Form.Item name="checklistTemplateId" label="Inspection checklist">
-            <Select allowClear placeholder={checklists?.length ? 'None' : 'No checklist yet (Inspections > Checklists)'} options={(checklists ?? []).map((c) => ({ value: c.id, label: c.name }))} />
+            <Select allowClear placeholder={checklists?.length ? 'None' : 'No checklist yet (Quality › Checklists)'} options={(checklists ?? []).map((c) => ({ value: c.id, label: c.name }))} />
           </Form.Item>
           <Form.Item name="holdPoint" valuePropName="checked" style={{ alignSelf: 'end' }} tooltip="Progress of this activity is approved only after a passed inspection at the same location">
             <Checkbox>Hold point</Checkbox>

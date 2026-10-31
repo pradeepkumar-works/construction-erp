@@ -147,8 +147,8 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
               </Form.Item>
             </>
           ) : null}
-          <Form.Item name="contractor" label="Whose workers">
-            <Input maxLength={200} placeholder="Labour contractor or subcontractor" />
+          <Form.Item name="contractor" label="Contractor">
+            <Input maxLength={200} placeholder="Labour contractor or subcontractor; empty for our own workers" />
           </Form.Item>
           <Form.Item name="immediateAction" label="Immediate action">
             <Input.TextArea rows={2} maxLength={2000} placeholder="First aid given, area cordoned off, work stopped" />

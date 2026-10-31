@@ -120,7 +120,7 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
                     ...(data.daysLost !== null ? [{ key: 'lost', label: 'Days off work', children: data.daysLost }] : []),
                   ]
                 : []),
-              { key: 'contractor', label: 'Whose workers', children: data.contractor ?? '-', span: 2 },
+              { key: 'contractor', label: 'Contractor', children: data.contractor ?? '-', span: 2 },
               { key: 'immediate', label: 'Immediate action', children: data.immediateAction ?? '-', span: 2 },
               { key: 'root', label: 'Root cause', children: data.rootCause ?? <Typography.Text type="secondary">not yet recorded</Typography.Text>, span: 2 },
               { key: 'action', label: 'Corrective action', children: data.correctiveAction ?? <Typography.Text type="secondary">not yet recorded</Typography.Text>, span: 2 },

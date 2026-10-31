@@ -151,7 +151,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
               { key: 't', title: 'Deliverables', align: 'right', render: (_, r) => <span translate="no">{r.total}</span> },
               { key: 's', title: 'Submitted', align: 'right', render: (_, r) => <span translate="no">{r.submitted}</span> },
               { key: 'a', title: 'Approved', align: 'right', render: (_, r) => <span translate="no">{`${r.approved} (${formatPct((100 * r.approved) / r.total)})`}</span> },
-              { key: 'l', title: 'Late', align: 'right', render: (_, r) => (r.late ? <AppTag tone="danger">{r.late}</AppTag> : '0') },
+              { key: 'l', title: 'Overdue', align: 'right', render: (_, r) => (r.late ? <AppTag tone="danger">{r.late}</AppTag> : '0') },
             ]}
           />
         </Section>
@@ -172,7 +172,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
               value={status}
               onChange={setStatus}
               style={{ width: 190 }}
-              options={[{ value: 'all', label: 'Any status' }, { value: 'late', label: 'Late' }, ...DELIVERABLE_STATUSES.map((st) => ({ value: st, label: DELIVERABLE_STATUS_LABELS[st] }))]}
+              options={[{ value: 'all', label: 'Any status' }, { value: 'late', label: 'Overdue' }, ...DELIVERABLE_STATUSES.map((st) => ({ value: st, label: DELIVERABLE_STATUS_LABELS[st] }))]}
             />
             {newButton}
           </Space>
@@ -670,12 +670,12 @@ function PackageForm({ projectId, data, target, onClose }: { projectId: string; 
             <Form.Item name="neededOn" label="Needed on site" extra="The day erection needs it; a package forecast after it is late">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="byShip" label="Comes by sea or air">
+            <Form.Item name="byShip" label="How it comes">
               <Segmented<'yes' | 'no'>
-                aria-label="Comes by sea or air"
+                aria-label="How it comes"
                 options={[
-                  { value: 'no', label: 'By road' },
-                  { value: 'yes', label: 'Imported' },
+                  { value: 'no', label: 'By road (from India)' },
+                  { value: 'yes', label: 'Imported (by sea or air)' },
                 ]}
               />
             </Form.Item>

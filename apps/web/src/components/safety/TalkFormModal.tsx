@@ -117,15 +117,15 @@ export function TalkFormModal({
           <Form.Item name="attendeeCount" label="Attended" rules={[{ required: true, message: 'Enter how many attended' }]}>
             <InputNumber min={1} max={2000} precision={0} inputMode="numeric" style={{ width: '100%' }} suffix="workers" />
           </Form.Item>
-          <Form.Item name="durationMinutes" label="Minutes">
+          <Form.Item name="durationMinutes" label="Duration (min)">
             <InputNumber min={1} max={480} precision={0} inputMode="numeric" style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="contractor" label="Contractor's gang">
-          <Input maxLength={200} placeholder="Optional" />
+        <Form.Item name="contractor" label="Contractor">
+          <Input maxLength={200} placeholder="Labour contractor or subcontractor; empty for our own workers" />
         </Form.Item>
         <Form.Item name="attendees" label="Names">
-          <Input.TextArea rows={2} maxLength={4000} placeholder="Optional; or attach the signed attendance sheet" />
+          <Input.TextArea rows={2} maxLength={4000} placeholder="Or attach the signed attendance sheet" />
         </Form.Item>
         <Form.Item name="notes" label="Points covered">
           <Input.TextArea rows={2} maxLength={2000} />
