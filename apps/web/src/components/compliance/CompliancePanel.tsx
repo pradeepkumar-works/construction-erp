@@ -61,6 +61,8 @@ function StandTag({ d }: { d: ComplianceDocDto }) {
  * Guarantees, insurance and licences register (v4 item 46): bank guarantees and EMDs out with the money they tie up,
  * insurance policies and licences, soonest expiry first, with renewals and releases.
  */
+
+const validity = (from: string | null, to: string | null, open: string) => (from ? `${formatDate(from)} to ${to ? formatDate(to) : open}` : to ? `Until ${formatDate(to)}` : open.charAt(0).toUpperCase() + open.slice(1));
 export function CompliancePanel({ initialId }: { initialId?: string }) {
   const { user } = useAuth();
   const keeper = !!user && canManageCompliance(user.roleKey);
@@ -281,7 +283,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
               {d.amount ? <Descriptions.Item label={COMPLIANCE_AMOUNT_LABELS[d.kind]}>{formatINR(d.amount, true)}</Descriptions.Item> : null}
               {d.margin ? <Descriptions.Item label="Margin money">{formatINR(d.margin, true)}</Descriptions.Item> : null}
               <Descriptions.Item label="Valid">
-                {d.issuedOn ? formatDate(d.issuedOn) : '?'} to {d.expiresOn ? formatDate(d.expiresOn) : 'no expiry'}
+                {validity(d.issuedOn, d.expiresOn, 'no expiry')}
               </Descriptions.Item>
               {d.claimUntil ? <Descriptions.Item label="Claim period to">{formatDate(d.claimUntil)}</Descriptions.Item> : null}
               {d.status !== 'ACTIVE' ? (
@@ -313,7 +315,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
                   onRow={(r) => openableRow(() => setOpenId(r.id))}
                   columns={[
                     { title: 'Number', dataIndex: 'reference' },
-                    { title: 'Valid', key: 'v', render: (_, h) => `${h.issuedOn ? formatDate(h.issuedOn) : '?'} to ${h.expiresOn ? formatDate(h.expiresOn) : NO_VALUE}` },
+                    { title: 'Valid', key: 'v', render: (_, h) => validity(h.issuedOn, h.expiresOn, NO_VALUE) },
                     { title: 'Amount', dataIndex: 'amount', align: 'right', render: (v: string | null) => (v ? formatINR(v) : NO_VALUE) },
                   ]}
                 />

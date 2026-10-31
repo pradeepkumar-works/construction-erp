@@ -170,7 +170,7 @@ export default function Page() {
           onClick={() => toggleWhy(w.key)}
           style={{ paddingInline: 0 }}
         >
-          Why: the working
+          Show how this was worked out
         </Button>
         {why.has(w.key) ? (
           <div id={`why-${w.key}`} style={{ marginTop: token.marginXS }}>

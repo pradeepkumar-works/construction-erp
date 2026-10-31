@@ -242,7 +242,7 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
   const act = async (action: 'save' | 'discard') => {
     try {
       const r = await decide.mutateAsync({ id: m.id, action });
-      message.success(action === 'save' ? `Saved and sent for approval: ${r.record?.label ?? 'entry'}` : 'Discarded. Nothing was saved.');
+      message.success(action === 'save' ? `Saved and submitted for approval: ${r.record?.label ?? 'entry'}` : 'Discarded. Nothing was saved.');
     } catch (e) {
       message.error(errorMessage(e));
     }

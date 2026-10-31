@@ -101,7 +101,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
       ).data;
     },
     onSuccess: (r) => {
-      notify.saved(`${r.requestNo} ${editing ? 'resubmitted' : 'sent'} for approval`, recordPage('PAYMENT_REQUEST', r.id));
+      notify.saved(`${r.requestNo} ${editing ? 'resubmitted' : 'submitted'} for approval`, recordPage('PAYMENT_REQUEST', r.id));
       for (const k of PAYMENT_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
       qc.invalidateQueries({ queryKey: ['approvals'] });
     },

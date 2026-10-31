@@ -781,7 +781,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         subtitle={
           revision ? (
             <Space size={6} wrap>
-              <span translate="no">Rev {revision.revision}</span>
+              <span translate="no">{revLabel(revision.revision)}</span>
               <RevisionStatusTag status={revision.status} />
               {!revision.current ? <Typography.Text type="warning">Superseded</Typography.Text> : null}
               <span>{doc.projectName}</span>
@@ -857,11 +857,11 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               <Flex gap={token.marginSM} wrap align="center" style={{ fontSize: token.fontSizeSM }}>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareOld, verticalAlign: 'middle', marginRight: 4 }} />
-                  Only on Rev {compareIsOlder ? compareRev.revision : revision.revision} (older)
+                  Only on {revLabel(compareIsOlder ? compareRev.revision : revision.revision)} (older)
                 </span>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareNew, verticalAlign: 'middle', marginRight: 4 }} />
-                  Only on Rev {compareIsOlder ? revision.revision : compareRev.revision} (newer)
+                  Only on {revLabel(compareIsOlder ? revision.revision : compareRev.revision)} (newer)
                 </span>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareBoth, verticalAlign: 'middle', marginRight: 4 }} />

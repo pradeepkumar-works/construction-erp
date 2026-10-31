@@ -282,7 +282,7 @@ function AttendanceCheck() {
             scroll={{ x: 640, y: 420 }}
             columns={[
               { title: 'Day', dataIndex: 'date', key: 'date', width: 110, render: (v: string) => formatDate(v) },
-              { title: 'DPR manpower', key: 'dpr', align: 'right', render: (_, d) => figure(d.dpr, 'No DPR') },
+              { title: 'DPR labour', key: 'dpr', align: 'right', render: (_, d) => figure(d.dpr, 'No DPR') },
               { title: 'Head count', key: 'head', align: 'right', render: (_, d) => figure(d.headCount, 'No sheet') },
               { title: 'Roll call', key: 'roll', align: 'right', render: (_, d) => figure(d.rollCall, 'Not kept') },
               {

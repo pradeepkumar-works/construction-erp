@@ -204,7 +204,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
         {byTrade.length ? (
           <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
             <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginRight: 4 }}>
-              Fills the DPR manpower:
+              Fills the DPR labour:
             </Typography.Text>
             {byTrade.map((m) => (
               <AppTag key={m.category} style={{ margin: 0 }}>
