@@ -107,7 +107,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (
         <>
-          {data.expired ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="This permit has run out. Close it, or ask for a new one if the work goes on." /> : null}
+          {data.expired ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="This permit has expired. Close it, or request a new one if the work goes on." /> : null}
           <Descriptions
             size="small"
             column={2}

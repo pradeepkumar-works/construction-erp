@@ -148,7 +148,7 @@ function InspectPanel({ data }: { data: InspectionDto }) {
 /** The stage bar in an inspection's own words: requested, then passed, failed or re-inspect. */
 function inspectionLifecycle(x: InspectionDto): Lifecycle {
   const l = submissionLifecycle(x);
-  const titles = ['Draft', 'Requested', x.status === 'SUBMITTED' || x.status === 'DRAFT' ? 'Inspection' : INSPECTION_STATUS_LABELS[x.status]];
+  const titles = [INSPECTION_STATUS_LABELS.DRAFT, INSPECTION_STATUS_LABELS.SUBMITTED, x.status === 'SUBMITTED' || x.status === 'DRAFT' ? 'Inspection' : INSPECTION_STATUS_LABELS[x.status]];
   return { ...l, items: l.items.map((item, i) => ({ ...item, title: titles[i] ?? item.title })) };
 }
 

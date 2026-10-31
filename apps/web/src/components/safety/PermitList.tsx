@@ -39,7 +39,7 @@ const EXPORT: ExportColumn<WorkPermitDto>[] = [
 type View = 'ACTIVE' | WorkPermitStatus | 'ALL';
 const KEYS = ['view', 'type'] as const;
 const VIEWS: View[] = ['ACTIVE', 'REQUESTED', 'ISSUED', 'CLOSED', 'ALL'];
-const VIEW_LABELS: Record<string, string> = { ACTIVE: 'Waiting + live', REQUESTED: 'Waiting', ISSUED: 'Issued', CLOSED: 'Closed', ALL: 'All' };
+const VIEW_LABELS: Record<string, string> = { ACTIVE: `${WORK_PERMIT_STATUS_LABELS.REQUESTED} and ${WORK_PERMIT_STATUS_LABELS.ISSUED.toLowerCase()}`, ...WORK_PERMIT_STATUS_LABELS, ALL: 'All' };
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();

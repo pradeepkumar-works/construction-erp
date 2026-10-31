@@ -5,7 +5,7 @@ import { App, Form, Input, InputNumber, Segmented, Select, Typography } from 'an
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { AttachmentDto, QualityTestDto, TestKind, TestResult, TestTypeDto } from '@erp/shared';
-import { CALIBRATION_STATE_LABELS, TEST_KINDS, TEST_KIND_DEFAULTS, TEST_KIND_LABELS, comparePipeCodes, segmentLabel } from '@erp/shared';
+import { CALIBRATION_STATE_LABELS, TEST_RESULT_LABELS, TEST_KINDS, TEST_KIND_DEFAULTS, TEST_KIND_LABELS, comparePipeCodes, segmentLabel } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -256,9 +256,9 @@ export function TestFormModal({ open, onClose, projectId, test, prefill }: { ope
             <Form.Item name="result" label="Result" tooltip="Without limits to judge by, record the result here once known">
               <Segmented
                 options={[
-                  { value: 'PENDING', label: 'Pending' },
-                  { value: 'PASS', label: 'Pass' },
-                  { value: 'FAIL', label: 'Fail' },
+                  { value: 'PENDING', label: TEST_RESULT_LABELS.PENDING },
+                  { value: 'PASS', label: TEST_RESULT_LABELS.PASS },
+                  { value: 'FAIL', label: TEST_RESULT_LABELS.FAIL },
                 ]}
               />
             </Form.Item>

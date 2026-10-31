@@ -40,7 +40,7 @@ export const PermitStatusTag = ({ p }: { p: Pick<WorkPermitDto, 'status' | 'expi
     </AppTag>
   ) : (
     <AppTag color={PERMIT_COLORS[p.status]} style={{ margin: 0 }}>
-      {p.status === 'ISSUED' ? 'Live' : WORK_PERMIT_STATUS_LABELS[p.status]}
+      {WORK_PERMIT_STATUS_LABELS[p.status]}
     </AppTag>
   );
 
