@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
-import { LEAVE_TYPE_LABELS, STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES, type StaffAttendanceStatus, type StaffRegisterDto, type StaffRegisterRowDto } from '@erp/shared';
+import { StyleSheet, Text, View } from 'react-native';
+import { LEAVE_STATUS_LABELS, LEAVE_TYPE_LABELS, STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES, type StaffAttendanceStatus, type StaffRegisterDto, type StaffRegisterRowDto } from '@erp/shared';
 import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { useT } from '../src/i18n/LanguageContext';
-import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Loading, Screen, Select } from '../src/components';
+import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Loading, Screen, Select, useSnackbar } from '../src/components';
+import { useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { useProjectOptions } from '../src/forms/common';
 import { colors, spacing, typography } from '../src/theme';
 import { formatTime, isIsoDate, today } from '../src/utils/format';
@@ -22,6 +23,10 @@ export default function StaffRegisterScreen() {
   const [marks, setMarks] = useState<Record<string, StaffAttendanceStatus | null>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const snackbar = useSnackbar();
+  // Marks typed but not saved: leaving asks first (the sheet itself is on the server, so nothing is kept as a draft).
+  const draft = useFormDraft(null, marks, () => undefined);
+  useLeaveGuard(draft, { keepsDraft: false, busy });
 
   useEffect(() => {
     if (!projectId && projects.options.length) setProjectId(projects.options[0].value);
@@ -31,7 +36,8 @@ export default function StaffRegisterScreen() {
   const reg = useFetch<StaffRegisterDto>((a) => a.get('/staff/register', { projectId: projectId!, date }), [projectId, date], { enabled: valid, refetchOnFocus: false });
   useEffect(() => {
     setMarks(Object.fromEntries((reg.data?.rows ?? []).map((r) => [r.employee.id, r.attendance?.status ?? null])));
-  }, [reg.data]);
+    draft.settle();
+  }, [reg.data, draft.settle]);
 
   const changed = useMemo(() => (reg.data?.rows ?? []).filter((r) => (marks[r.employee.id] ?? null) !== (r.attendance?.status ?? null)), [reg.data, marks]);
 
@@ -48,7 +54,7 @@ export default function StaffRegisterScreen() {
     try {
       const d = await api.put<StaffRegisterDto>('/staff/register', { projectId, date, entries: changed.map((r) => ({ employeeId: r.employee.id, status: marks[r.employee.id] ?? null })) });
       reg.setData(d);
-      Alert.alert(t('Register saved'));
+      snackbar.show(t('Register saved'));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -61,7 +67,7 @@ export default function StaffRegisterScreen() {
       <Text style={typography.bodyStrong}>{r.employee.fullName}</Text>
       <Text style={typography.caption}>
         {r.employee.designation}
-        {r.leave ? ` · ${t(LEAVE_TYPE_LABELS[r.leave.type])}${r.leave.halfDay ? `, ${t('half day')}` : ''}${r.leave.status === 'PENDING' ? ` (${t('waiting')})` : ''}` : ''}
+        {r.leave ? ` · ${t(LEAVE_TYPE_LABELS[r.leave.type])}${r.leave.halfDay ? ` · ${t('Half day')}` : ''}${r.leave.status === 'PENDING' ? ` · ${t(LEAVE_STATUS_LABELS.PENDING)}` : ''}` : ''}
         {r.attendance?.checkIn ? ` · ${t('checked in {time}', { time: formatTime(r.attendance.checkIn) })}` : ''}
       </Text>
       <Chips value={marks[r.employee.id] ?? null} onChange={(v) => setMarks((m) => ({ ...m, [r.employee.id]: v }))} options={STAFF_ATTENDANCE_STATUSES.map((s) => ({ value: s, label: t(STAFF_ATTENDANCE_LABELS[s]) }))} />
@@ -71,12 +77,12 @@ export default function StaffRegisterScreen() {
   return (
     <Screen refreshing={reg.refreshing} onRefresh={reg.refresh}>
       <Select label={t('Project')} value={projectId} options={projects.options} onChange={setProjectId} searchable />
-      <DatePicker label={t('Date')} value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? t('Not a future day') : null} />
+      <DatePicker label={t('Date')} value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? t('Choose a date up to today') : null} />
       <ErrorBanner message={error ?? reg.error} />
       {reg.data && (reg.data.holiday || reg.data.weeklyOff) ? (
         <Card>
           <Text style={typography.caption}>
-            {reg.data.holiday ? t('Holiday: {name}.', { name: reg.data.holiday }) : t('Sunday, the weekly off.')} {t('Anyone marked present earns a comp-off.')}
+            {reg.data.holiday ? t('Holiday: {name}.', { name: reg.data.holiday }) : t('Weekly off.')} {t('Anyone marked present earns a comp-off.')}
           </Text>
         </Card>
       ) : null}
@@ -86,7 +92,7 @@ export default function StaffRegisterScreen() {
       {reg.data?.rows.length ? (
         <View style={styles.actions}>
           <Button title={t('Mark the rest present')} variant="secondary" onPress={restPresent} />
-          <Button title={changed.length ? t('Save ({n})', { n: changed.length }) : t('Save')} loading={busy} disabled={!changed.length} onPress={() => void save()} />
+          <Button title={changed.length ? t(changed.length === 1 ? 'Save 1 change' : 'Save {n} changes', { n: changed.length }) : t('Save')} loading={busy} disabled={!changed.length} onPress={() => void save()} />
         </View>
       ) : null}
     </Screen>

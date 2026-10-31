@@ -124,7 +124,7 @@ export default function IssueScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: t('Issue Material') }} />
+      <Stack.Screen options={{ title: t('Issue material') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? (online ? stock.error : t('You are offline. Issuing material needs a connection.'))} />
       <Card>

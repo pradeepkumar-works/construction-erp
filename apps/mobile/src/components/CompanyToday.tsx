@@ -234,7 +234,7 @@ export function CompanyTodayPanel({ data, loading }: { data: CompanyTodayDto | n
           summary: [t('Your entries waiting for someone else to approve.')],
           rows: [],
           empty: '',
-          open: { label: t('My submissions'), route: '/submissions' },
+          open: { label: t('My entries'), route: '/submissions' },
         };
       }
     }

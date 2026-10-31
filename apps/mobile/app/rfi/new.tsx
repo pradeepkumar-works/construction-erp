@@ -147,7 +147,7 @@ export default function RaiseRfiScreen() {
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={t('Raise RFI')} icon="send" onPress={submit} loading={busy} />
+      <Button title={t('New RFI')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

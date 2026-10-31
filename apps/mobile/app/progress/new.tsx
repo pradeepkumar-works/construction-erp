@@ -248,7 +248,7 @@ export default function NewProgressScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Progress Entry') : outboxId ? t('Fix Progress Entry') : t('New Progress Entry') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit progress entry') : outboxId ? t('Fix progress entry') : t('New progress entry') }} />
       <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />

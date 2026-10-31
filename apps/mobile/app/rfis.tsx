@@ -44,7 +44,7 @@ export default function RfisScreen() {
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
         <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
-        {mayRaise ? <Button title={t('Raise RFI')} icon="help-circle-outline" onPress={() => router.push(`/rfi/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
+        {mayRaise ? <Button title={t('New RFI')} icon="help-circle-outline" onPress={() => router.push(`/rfi/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
       </Card>
       {s ? (
         <View style={styles.stats}>

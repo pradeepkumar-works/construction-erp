@@ -8,6 +8,7 @@ import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Input, Loadin
 import { useProjectOptions } from '../src/forms/common';
 import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { useT } from '../src/i18n/LanguageContext';
+import { isOfflineError } from '../src/offline';
 import { colors, spacing, typography } from '../src/theme';
 import type { TranslateVars } from '../src/i18n/translate';
 import { isIsoDate, today } from '../src/utils/format';
@@ -125,7 +126,7 @@ export default function RollCallScreen() {
       const head = (d.headCount ?? []).reduce((s, l) => s + l.count, 0);
       snackbar.show(`${t('Roll call saved')}. ${t('Head count for the day: {n}', { n: head })}`);
     } catch (e) {
-      setError(errorMessage(e));
+      setError(isOfflineError(e) && fresh ? t('No signal. The marks are kept on this phone: save again when you have a signal.') : errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -147,7 +148,7 @@ export default function RollCallScreen() {
       <Select label={t('Project')} value={projectId} options={projects.options} onChange={setProjectId} searchable />
       <DatePicker label={t('Date')} value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? t('Choose a date up to today') : null} />
       <Select
-        label={t('Working on (for those you mark)')}
+        label={t('Activity for the workers you mark')}
         value={activityId}
         options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))}
         onChange={setActivityId}
@@ -196,7 +197,7 @@ export default function RollCallScreen() {
       {rows.length && !locked ? (
         <View style={styles.actions}>
           <Button title={t('Mark the rest present')} variant="secondary" onPress={restPresent} style={styles.flex} />
-          <Button title={changed.length ? t('Save ({n})', { n: changed.length }) : t('Save')} loading={busy} disabled={!changed.length} onPress={() => void save()} style={styles.flex} />
+          <Button title={changed.length ? t(changed.length === 1 ? 'Save 1 change' : 'Save {n} changes', { n: changed.length }) : t('Save')} loading={busy} disabled={!changed.length} onPress={() => void save()} style={styles.flex} />
         </View>
       ) : null}
     </Screen>
@@ -219,6 +220,9 @@ const RollRow = memo(function RollRow({
   onSet: (id: string, patch: Partial<Mark>) => void;
   t: (en: string, vars?: TranslateVars) => string;
 }) {
+  // Overtime is the exception: its field opens on a tap, so marking 200 present adds no 200 fields to scroll past.
+  const [overtime, setOvertime] = useState(false);
+  const present = !!m?.status && m.status !== 'ABSENT';
   return (
     <View style={styles.row}>
       <Text style={typography.bodyStrong}>{r.name}</Text>
@@ -227,7 +231,10 @@ const RollRow = memo(function RollRow({
         {r.activityName ? ` · ${r.activityName}` : ''}
       </Text>
       <Chips groupLabel={r.name} value={m?.status ?? null} onChange={(v) => !locked && onSet(r.workerId, { status: v })} options={options} />
-      {m && m.status && m.status !== 'ABSENT' ? (
+      {present && !overtime && !m.ot && !locked ? (
+        <Button title={t('Add overtime')} icon="time-outline" variant="ghost" size="sm" onPress={() => setOvertime(true)} accessibilityHint={t('Opens the overtime hours for {name}', { name: r.name })} style={styles.addOt} />
+      ) : null}
+      {m && present && (overtime || !!m.ot) ? (
         <Input
           label={t('Overtime hours')}
           accessibilityLabel={t('Overtime hours for {name}', { name: r.name })}
@@ -238,6 +245,7 @@ const RollRow = memo(function RollRow({
           placeholder="0"
           editable={!locked}
           containerStyle={styles.ot}
+          autoFocus={overtime && !m.ot}
         />
       ) : null}
     </View>
@@ -250,6 +258,7 @@ const styles = StyleSheet.create({
   row: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginBottom: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   summary: { marginBottom: spacing.sm },
   ot: { marginTop: spacing.sm, marginBottom: 0 },
+  addOt: { alignSelf: 'flex-start', marginTop: spacing.xs },
   // Pinned under the list, so Save is one tap away however far down the roll the user is.
   actions: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
 });

@@ -19,7 +19,7 @@ export default function SectorScreen() {
   if (!data) return null;
   // The project's places (its type's, item 134) as the project screen named them; the type's own when opened without.
   const step = kind ?? sectorStepOf(data.type);
-  const title = step === 'chainage' ? t('Progress by chainage') : step === 'floors' ? t('Progress by floor') : t('Villages & pipeline');
+  const title = step === 'chainage' ? t('Progress by chainage') : step === 'floors' ? t('Progress by floor') : t('Villages and pipeline');
   const empty = !data.pipeline && !data.strip?.length && !data.matrix?.rows.length;
 
   return (

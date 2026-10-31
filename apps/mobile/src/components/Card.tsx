@@ -9,13 +9,16 @@ interface Props {
   style?: ViewStyle;
   title?: string;
   right?: React.ReactNode;
+  /** How many the card lists, on the right of its title (never "Title (3)"). */
+  count?: number;
   /** A tappable card is a button unless it opens a page in the way a link does. */
   accessibilityRole?: 'button' | 'link';
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }
 
-export function Card({ children, onPress, style, title, right, accessibilityRole = 'button', accessibilityLabel, accessibilityHint }: Props) {
+export function Card({ children, onPress, style, title, right: rightProp, count, accessibilityRole = 'button', accessibilityLabel, accessibilityHint }: Props) {
+  const right = count !== undefined ? <Text style={typography.caption}>{count}</Text> : rightProp;
   const content = (
     <>
       {(title || right) && (

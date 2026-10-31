@@ -103,7 +103,7 @@ export default function BreakdownScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: t('Report Breakdown') }} />
+      <Stack.Screen options={{ title: t('Report breakdown') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? (online ? null : t('You are offline. A breakdown is sent straight away, so it needs a connection.'))} />
       <Card>

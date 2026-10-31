@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   LEAVE_STATUS_LABELS,
@@ -22,7 +22,9 @@ import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { useT } from '../src/i18n/LanguageContext';
 import type { TranslateVars } from '../src/i18n/translate';
-import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, Screen, SectionTitle } from '../src/components';
+import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, ReasonSheet, Screen, SectionTitle, useSnackbar } from '../src/components';
+import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
+import { ErrorSummary, useErrorSummary } from '../src/forms/errors';
 import { colors, fontSize, spacing, toneIcon, typography, type Tone } from '../src/theme';
 import { formatDate, formatTime, isIsoDate, today } from '../src/utils/format';
 import { metres } from '../src/utils/location';
@@ -137,6 +139,27 @@ export default function StaffScreen() {
   const [halfDay, setHalfDay] = useState(false);
   const [reason, setReason] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [rejecting, setRejecting] = useState<{ kind: 'leave'; l: LeaveRequestDto } | { kind: 'overtime'; a: StaffAttendanceDto } | null>(null);
+  const snackbar = useSnackbar();
+  const errorSummary = useErrorSummary();
+  const draft = useFormDraft('leave', { applying, type, from, to, halfDay, reason }, (d) => {
+    setApplying(d.applying);
+    setType(d.type);
+    setFrom(d.from);
+    setTo(d.to);
+    setHalfDay(d.halfDay);
+    setReason(d.reason);
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
+  const startOver = () => {
+    setApplying(false);
+    setType('CASUAL');
+    setFrom(today());
+    setTo(today());
+    setHalfDay(false);
+    setReason('');
+    setFormErrors({});
+  };
 
   const data = me.data;
   const holidays = useMemo(() => new Set((data?.holidays ?? []).map((h) => h.date)), [data]);
@@ -149,7 +172,7 @@ export default function StaffScreen() {
     try {
       await fn();
       await Promise.all([me.reload(), toDecide.reload(), overtime.reload()]);
-      Alert.alert(done);
+      snackbar.show(done);
       return true;
     } catch (e) {
       setError(errorMessage(e));
@@ -162,36 +185,31 @@ export default function StaffScreen() {
   const apply = async () => {
     const e: Record<string, string> = {};
     if (!type) e.type = t('Choose the leave');
-    if (!isIsoDate(from)) e.from = t('Enter a valid date');
-    if (!isIsoDate(to)) e.to = t('Enter a valid date');
+    if (!isIsoDate(from)) e.from = t('Pick the date from the calendar');
+    if (!isIsoDate(to)) e.to = t('Pick the date from the calendar');
     else if (isIsoDate(from) && to < from) e.to = t('The leave cannot end before it starts');
     if (!reason.trim()) e.reason = t('Enter a reason');
     setFormErrors(e);
+    errorSummary.report(e);
     if (Object.keys(e).length) return;
     const ok = await run(() => api.post('/staff/leave', { type, fromDate: from, toDate: to, halfDay: halfDay && from === to, reason: reason.trim() }), t('Leave applied. Your site manager and HR have been told.'));
     if (ok) {
+      draft.clear();
       setApplying(false);
       setReason('');
       setHalfDay(false);
     }
   };
 
-  const reject = (l: LeaveRequestDto) =>
-    Platform.OS === 'ios'
-      ? Alert.prompt(t('Reject leave'), t('Why, so they can plan again'), (note) => note?.trim() && void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: note.trim() }), t('Leave rejected')))
-      : Alert.alert(t('Reject leave'), t("Reject {name}'s leave?", { name: l.employeeName }), [
-          { text: t('Keep'), style: 'cancel' },
-          { text: t('Reject'), style: 'destructive', onPress: () => void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: 'Not possible on these dates; please speak to me' }), t('Leave rejected')) },
-        ]);
-
-  const rejectOvertime = (a: StaffAttendanceDto) => {
-    const send = (note: string) => void run(() => api.post(`/staff/attendance/${a.id}/overtime/reject`, { note }), t('Overtime rejected'));
-    return Platform.OS === 'ios'
-      ? Alert.prompt(t('Reject overtime'), t('Why, so they know what counts'), (note) => note?.trim() && send(note.trim()))
-      : Alert.alert(t('Reject overtime'), t("Reject {name}'s {h} h overtime on {date}?", { name: a.employeeName, h: a.overtimeHours ?? '0', date: formatDate(a.date) }), [
-          { text: t('Keep'), style: 'cancel' },
-          { text: t('Reject'), style: 'destructive', onPress: () => send('Not agreed in advance; please speak to me') },
-        ]);
+  // The reason is the approver's own words: the person reads it on their request.
+  const sendReject = async (note: string) => {
+    if (!rejecting) return;
+    const r = rejecting;
+    setError(null);
+    if (r.kind === 'leave') await api.post(`/staff/leave/${r.l.id}/reject`, { note });
+    else await api.post(`/staff/attendance/${r.a.id}/overtime/reject`, { note });
+    await Promise.all([me.reload(), toDecide.reload(), overtime.reload()]);
+    snackbar.show(r.kind === 'leave' ? t('Leave rejected for {name}', { name: r.l.employeeName }) : t('Overtime rejected for {name}', { name: r.a.employeeName }), { tone: 'info' });
   };
 
   const face = useFaceMark(me.reload);
@@ -204,7 +222,9 @@ export default function StaffScreen() {
   const waiting = toDecide.data?.items ?? [];
   const otWaiting = overtime.data ?? [];
   return (
-    <Screen keyboard refreshing={me.refreshing} onRefresh={() => void Promise.all([me.refresh(), toDecide.refresh(), overtime.refresh()])}>
+    <Screen keyboard scrollRef={errorSummary.scrollRef} refreshing={me.refreshing} onRefresh={() => void Promise.all([me.refresh(), toDecide.refresh(), overtime.refresh()])}>
+      <DraftNotice draft={draft} onStartOver={startOver} />
+      <ErrorSummary errors={formErrors} />
       <ErrorBanner message={error} />
       {!data.employee ? (
         <Card>
@@ -215,7 +235,7 @@ export default function StaffScreen() {
           <Card title={t('Today, {date}', { date: formatDate(today()) })}>
             {data.todayOff && !day ? (
               <Text style={typography.caption}>
-                {data.todayOff === 'Sunday' ? t('Sunday, the weekly off.') : t('Holiday: {name}.', { name: data.todayOff })} {t('Working today earns a comp-off.')}
+                {data.todayOff === 'Sunday' ? t('Weekly off.') : t('Holiday: {name}.', { name: data.todayOff })} {t('Working today earns a comp-off.')}
               </Text>
             ) : null}
             {day ? (
@@ -308,14 +328,14 @@ export default function StaffScreen() {
 
       {waiting.length ? (
         <>
-          <SectionTitle title={t('Leave waiting on you ({n})', { n: waiting.length })} />
+          <SectionTitle title={t('Leave waiting on you')} count={waiting.length} />
           {waiting.map((l) => (
             <LeaveRow
               key={l.id}
               l={l}
               busy={busy}
               onApprove={() => void run(() => api.post(`/staff/leave/${l.id}/approve`, {}), t('Leave approved for {name}', { name: l.employeeName }))}
-              onReject={() => reject(l)}
+              onReject={() => setRejecting({ kind: 'leave', l })}
             />
           ))}
         </>
@@ -323,14 +343,14 @@ export default function StaffScreen() {
 
       {otWaiting.length ? (
         <>
-          <SectionTitle title={t('Overtime waiting on you ({n})', { n: otWaiting.length })} />
+          <SectionTitle title={t('Overtime waiting on you')} count={otWaiting.length} />
           {otWaiting.map((a) => (
             <OvertimeRow
               key={a.id}
               a={a}
               busy={busy}
               onApprove={() => void run(() => api.post(`/staff/attendance/${a.id}/overtime/approve`, {}), t('Overtime approved for {name}', { name: a.employeeName }))}
-              onReject={() => rejectOvertime(a)}
+              onReject={() => setRejecting({ kind: 'overtime', a })}
             />
           ))}
         </>
@@ -370,6 +390,26 @@ export default function StaffScreen() {
           ))}
         </Card>
       ) : null}
+
+      <ReasonSheet
+        visible={!!rejecting}
+        onClose={() => setRejecting(null)}
+        title={rejecting?.kind === 'overtime' ? 'Reject overtime' : 'Reject leave'}
+        subtitle={
+          rejecting?.kind === 'leave'
+            ? `${rejecting.l.employeeName} · ${span(rejecting.l, t)}`
+            : rejecting?.kind === 'overtime'
+              ? `${rejecting.a.employeeName} · ${t('{h} h', { h: rejecting.a.overtimeHours ?? '0' })} · ${formatDate(rejecting.a.date)}`
+              : undefined
+        }
+        field="Reason for rejecting"
+        quick={rejecting?.kind === 'overtime' ? ['Not agreed in advance', 'Hours do not match the register'] : ['Too many people away on those dates', 'Work planned on those dates needs you']}
+        required
+        missing={rejecting?.kind === 'overtime' ? 'Say why, so they know what counts' : 'Say why, so they can plan again'}
+        confirm="Reject"
+        variant="danger"
+        onConfirm={sendReject}
+      />
 
       {user && canMarkStaff(user.roleKey) ? <Button title={t('Staff register')} icon="people-outline" variant="secondary" onPress={() => router.push('/staff-register')} /> : null}
     </Screen>

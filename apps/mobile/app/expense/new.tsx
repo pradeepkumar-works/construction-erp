@@ -182,7 +182,7 @@ export default function NewExpenseScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Expense') : t('New Site Expense') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit site expense') : t('New site expense') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />

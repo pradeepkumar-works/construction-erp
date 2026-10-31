@@ -2,11 +2,14 @@ import React from 'react';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { colors, spacing, typography } from '../theme';
 
-export function SectionTitle({ title, right, style }: { title: string; right?: React.ReactNode; style?: ViewStyle }) {
+/** `count` is how many the section holds, on the right (never "Title (3)"). */
+export function SectionTitle({ title, right, count, style }: { title: string; right?: React.ReactNode; count?: number; style?: ViewStyle }) {
   return (
     <View style={[styles.sectionRow, style]}>
-      <Text style={typography.h3}>{title}</Text>
-      {right}
+      <Text style={typography.h3} accessibilityRole="header">
+        {title}
+      </Text>
+      {count !== undefined ? <Text style={typography.caption}>{count}</Text> : right}
     </View>
   );
 }

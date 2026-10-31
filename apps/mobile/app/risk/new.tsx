@@ -214,7 +214,7 @@ export default function RiskFormScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Update {no}', { no: existing.data?.riskNo ?? '' }) : t(isDelay ? 'Record a Delay' : 'Raise a Risk') }} />
+      <Stack.Screen options={{ title: editId ? t('Update {no}', { no: existing.data?.riskNo ?? '' }) : t(isDelay ? 'Record delay' : 'New risk') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>

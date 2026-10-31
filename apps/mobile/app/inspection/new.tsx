@@ -154,7 +154,7 @@ export default function RequestInspectionScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: t(editId ? 'Edit Inspection Request' : 'Request Inspection') }} />
+      <Stack.Screen options={{ title: t(editId ? 'Edit inspection request' : 'Request inspection') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? activities.error} />
       <ReviewerNote entry={existing.data} />

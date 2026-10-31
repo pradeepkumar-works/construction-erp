@@ -291,7 +291,6 @@ export const COMMON: Record<string, string> = {
   'Opens the photo': 'फ़ोटो खोलता है',
   'Taken {time}': '{time} पर ली गई',
   'Puts this reason in the note': 'यह कारण नोट में डालता है',
-  'A few words for the submitter': 'भेजने वाले के लिए कुछ शब्द',
   'Say what needs changing. The submitter sees it with the entry.': 'बताएँ क्या बदलना है। भेजने वाला इसे एंट्री के साथ देखेगा।',
   'Say why you are rejecting it. The submitter sees it with the entry.': 'बताएँ कि नामंज़ूर क्यों कर रहे हैं। भेजने वाला इसे एंट्री के साथ देखेगा।',
   'What needs changing': 'क्या बदलना है',
@@ -303,4 +302,6 @@ export const COMMON: Record<string, string> = {
   'Wrong date or project': 'तारीख़ या प्रोजेक्ट ग़लत है',
   'Entered twice': 'दो बार दर्ज हुई',
   'Work not done on site': 'साइट पर काम नहीं हुआ',
+  'Save 1 change': '1 बदलाव सेव करें',
+  'Save {n} changes': '{n} बदलाव सेव करें',
 };

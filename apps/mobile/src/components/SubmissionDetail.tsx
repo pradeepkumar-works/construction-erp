@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { ApprovalStageDto, AttachmentDto, ReviewDecision, SubmissionBase, SubmissionType } from '@erp/shared';
 import { absoluteUrl } from '../config';
-import { colors, fontSize, radius, spacing, touch, typography } from '../theme';
+import { colors, fontSize, radius, spacing, typography } from '../theme';
 import { formatDateTime } from '../utils/format';
 import { takenAtFromName } from '../utils/photoTime';
 import { IconButton, Touchable } from './Touchable';
@@ -13,12 +13,10 @@ import { Card } from './Card';
 import { KeyValue } from './Layout';
 import { StatusBadge } from './StatusBadge';
 import { Button } from './Button';
-import { Input } from './Input';
 import { BottomSheet, SheetActions, type SheetAction } from './BottomSheet';
+import { ReasonSheet } from './ReasonSheet';
 import { useApi, useFetch } from '../api/hooks';
-import { errorMessage } from '../api/client';
-import { REVIEW_PATH, approvedLine, reviewNoteProblem, reviewSubmission } from '../api/review';
-import { ErrorBanner } from './States';
+import { REVIEW_PATH, approvedLine, reviewSubmission } from '../api/review';
 import { useSnackbar } from './Snackbar';
 import { useAuth } from '../auth/AuthContext';
 import { canEditSubmission, canResubmit, mayApproveType } from '@erp/shared';
@@ -119,7 +117,6 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
 const DECISIONS: {
   decision: ReviewDecision;
   label: string;
-  confirm: string;
   done: string;
   variant: 'success' | 'accent' | 'danger';
   icon: 'checkmark' | 'create-outline' | 'close';
@@ -127,29 +124,30 @@ const DECISIONS: {
   ask: string;
   field: string;
   quick: string[];
+  missing?: string;
 }[] = [
-  { decision: 'APPROVE', label: 'Approve', confirm: 'Confirm approve', done: 'Approved', variant: 'success', icon: 'checkmark', ask: 'Add an optional note for the submitter.', field: 'Note (optional)', quick: [] },
+  { decision: 'APPROVE', label: 'Approve', done: 'Approved', variant: 'success', icon: 'checkmark', ask: 'Add an optional note for the submitter.', field: 'Note (optional)', quick: [] },
   {
     decision: 'REQUEST_CHANGES',
     label: 'Request changes',
-    confirm: 'Confirm request changes',
-    done: 'Sent back for changes',
+    done: 'Changes requested',
     variant: 'accent',
     icon: 'create-outline',
     ask: 'Say what needs changing. The submitter sees it with the entry.',
     field: 'What needs changing',
     quick: ['Add photos of the work', 'Quantities do not match the site', 'Wrong date or project'],
+    missing: 'Say what needs changing',
   },
   {
     decision: 'REJECT',
     label: 'Reject',
-    confirm: 'Confirm reject',
     done: 'Rejected',
     variant: 'danger',
     icon: 'close',
     ask: 'Say why you are rejecting it. The submitter sees it with the entry.',
     field: 'Reason for rejecting',
     quick: ['Entered twice', 'Work not done on site'],
+    missing: 'Say why you are rejecting it',
   },
 ];
 
@@ -181,10 +179,6 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   const { user } = useAuth();
   const api = useApi();
   const [pending, setPending] = useState<ReviewDecision | null>(null);
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [noteError, setNoteError] = useState<string | null>(null);
   const t = useT();
   const snackbar = useSnackbar();
 
@@ -198,33 +192,13 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   if (!(stage ? stage.canReview : mayApproveType(user, type, amount))) return stage ? <StageCard stage={stage} /> : null;
   const meta = DECISIONS.find((d) => d.decision === pending);
 
-  const choose = (d: ReviewDecision) => {
-    setNote('');
-    setNoteError(null);
-    setError(null);
-    setPending(d);
-  };
-
-  const confirm = async () => {
+  const confirm = async (note: string) => {
     if (!pending) return;
-    const problem = reviewNoteProblem(pending, note);
-    setNoteError(problem ? t(problem) : null);
-    if (problem) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await reviewSubmission(api, type, item.id, pending, note);
-      const updated = await api.get<T>(`/${DETAIL_API[type]}/${item.id}`);
-      setPending(null);
-      setNote('');
-      onReviewed(updated);
-      const level = approvedLine(result);
-      if (meta) snackbar.show(level ? t(...level) : t(meta.done), { tone: pending === 'APPROVE' ? 'success' : 'info' });
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setBusy(false);
-    }
+    const result = await reviewSubmission(api, type, item.id, pending, note);
+    const updated = await api.get<T>(`/${DETAIL_API[type]}/${item.id}`);
+    onReviewed(updated);
+    const level = approvedLine(result);
+    if (meta) snackbar.show(level ? t(...level) : t(meta.done), { tone: pending === 'APPROVE' ? 'success' : 'info' });
   };
 
   return (
@@ -235,48 +209,24 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
       </Text>
       <View style={styles.actions}>
         {DECISIONS.map((d) => (
-          <Button key={d.decision} title={t(d.label)} variant={d.variant} icon={d.icon} onPress={() => choose(d.decision)} style={styles.actionBtn} />
+          <Button key={d.decision} title={t(d.label)} variant={d.variant} icon={d.icon} onPress={() => setPending(d.decision)} style={styles.actionBtn} />
         ))}
       </View>
-      <BottomSheet visible={!!pending} onClose={() => setPending(null)} dismissable={!busy} title={meta ? t(meta.label) : undefined} subtitle={meta ? t(meta.ask) : undefined}>
-        {meta?.quick.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quick} keyboardShouldPersistTaps="handled">
-            {meta.quick.map((q) => (
-              <Touchable
-                key={q}
-                accessibilityRole="button"
-                accessibilityHint={t('Puts this reason in the note')}
-                onPress={() => {
-                  setNote((n) => (n.trim() ? `${n.trim()}. ${t(q)}` : t(q)));
-                  setNoteError(null);
-                }}
-                style={styles.quickChip}
-              >
-                <Text style={styles.quickText}>{t(q)}</Text>
-              </Touchable>
-            ))}
-          </ScrollView>
-        ) : null}
-        <Input
-          label={meta ? t(meta.field) : undefined}
-          required={pending !== 'APPROVE'}
-          value={note}
-          onChangeText={(v) => {
-            setNote(v);
-            if (noteError) setNoteError(null);
-          }}
-          placeholder={pending === 'APPROVE' ? t('Note (optional)') : t('A few words for the submitter')}
-          accessibilityLabel={pending === 'APPROVE' ? t('Note for the submitter (optional)') : meta ? t(meta.field) : undefined}
-          error={noteError}
-          multiline
-          autoFocus
+      {meta ? (
+        <ReasonSheet
+          visible={!!pending}
+          onClose={() => setPending(null)}
+          title={meta.label}
+          subtitle={t(meta.ask)}
+          field={meta.field}
+          quick={meta.quick}
+          required={meta.decision !== 'APPROVE'}
+          missing={meta.missing}
+          confirm={meta.label}
+          variant={meta.variant}
+          onConfirm={confirm}
         />
-        <ErrorBanner message={error} />
-        <View style={styles.sheetBtns}>
-          <Button title={t('Cancel')} variant="ghost" onPress={() => setPending(null)} disabled={busy} style={styles.flex} />
-          <Button title={meta ? t(meta.confirm) : ''} variant={meta?.variant ?? 'primary'} onPress={confirm} loading={busy} style={styles.flex2} />
-        </View>
-      </BottomSheet>
+      ) : null}
     </Card>
   );
 }
@@ -322,7 +272,6 @@ export function SubmitterActions({ type, item }: { type: SubmissionType; item: S
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  flex2: { flex: 1.6, marginLeft: spacing.sm },
   headRow: { flexDirection: 'row', alignItems: 'flex-start' },
   more: { marginLeft: spacing.sm },
   subtitle: { marginTop: 2 },
@@ -345,8 +294,4 @@ const styles = StyleSheet.create({
   stageReason: { marginTop: spacing.sm },
   actions: { gap: spacing.sm },
   actionBtn: {},
-  sheetBtns: { flexDirection: 'row' },
-  quick: { gap: spacing.sm, paddingBottom: spacing.md },
-  quickChip: { minHeight: touch.min, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.borderStrong, backgroundColor: colors.surface },
-  quickText: { fontSize: fontSize.secondary, fontWeight: '600', color: colors.text },
 });

@@ -124,7 +124,7 @@ export default function ReportSnagScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: t('Report Snag') }} />
+      <Stack.Screen options={{ title: t('Report snag') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? (online ? null : t('You are offline. A snag is sent straight away, so it needs a connection.'))} />
       <Card>

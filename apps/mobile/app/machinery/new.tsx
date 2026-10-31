@@ -240,7 +240,7 @@ export default function NewMachineryLogScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Machinery Log') : t('Log Machinery') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit machinery log') : t('New machinery log') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? fleet.error} />
       <ReviewerNote entry={existing.data} />

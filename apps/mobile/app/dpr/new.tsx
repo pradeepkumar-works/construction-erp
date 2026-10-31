@@ -430,7 +430,7 @@ export default function NewDprScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Daily Report') : outboxId ? t('Fix Daily Report') : t('New Daily Report') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit daily report') : outboxId ? t('Fix daily report') : t('New daily report') }} />
       {askDraft ? <AskDraftNotice draft={askDraft} /> : <DraftNotice draft={draft} onStartOver={startOver} />}
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />

@@ -140,7 +140,7 @@ export default function IncidentFormScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: t(type === 'NEAR_MISS' ? 'Report a Near Miss' : 'Report an Incident') }} />
+      <Stack.Screen options={{ title: t(type === 'NEAR_MISS' ? 'Report near miss' : 'Report incident') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>

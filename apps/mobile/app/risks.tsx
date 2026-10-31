@@ -48,7 +48,7 @@ export default function RisksScreen() {
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
         <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
-        <Chips value={show} clearable={false} onChange={(v) => v && setShow(v)} options={[{ value: 'active', label: t('Open + monitoring') }, { value: 'closed', label: t('Closed') }, { value: 'all', label: t('All') }]} />
+        <Chips value={show} clearable={false} onChange={(v) => v && setShow(v)} options={[{ value: 'active', label: t('Open and monitoring') }, { value: 'closed', label: t('Closed') }, { value: 'all', label: t('All') }]} />
         <Chips value={kind} onChange={setKind} options={[{ value: 'DELAY', label: t('Delays') }, { value: 'RISK', label: t('Risks') }]} />
         {mayRaise ? (
           <View style={styles.actions}>

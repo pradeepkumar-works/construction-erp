@@ -146,7 +146,7 @@ export default function NewMaterialRequestScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Material Request') : t('New Material Request') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit indent') : t('New indent') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />

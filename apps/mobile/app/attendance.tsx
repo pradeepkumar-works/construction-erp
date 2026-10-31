@@ -279,7 +279,7 @@ export default function AttendanceScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: refused ? t('Fix Attendance') : sheet ? t('Edit Attendance') : t('Attendance') }} />
+      <Stack.Screen options={{ title: refused ? t('Fix attendance') : sheet ? t('Edit attendance') : t('Labour attendance') }} />
       {!sheet ? <DraftNotice draft={draft} onStartOver={startOver} /> : null}
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />

@@ -289,7 +289,7 @@ export default function NewMeasurementScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: editId ? t('Edit Measurement') : outboxId ? t('Fix Measurement') : t('New Measurement') }} />
+      <Stack.Screen options={{ title: editId ? t('Edit measurement') : outboxId ? t('Fix measurement') : t('New measurement') }} />
       <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? boq.error} />

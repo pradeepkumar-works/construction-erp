@@ -165,7 +165,7 @@ export default function ReceiveScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
-      <Stack.Screen options={{ title: t('Receive Material') }} />
+      <Stack.Screen options={{ title: t('Receive material (GRN)') }} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? (online ? (receivable.error ?? orders.error) : t('You are offline. Receiving material needs a connection.'))} />
       <Card>

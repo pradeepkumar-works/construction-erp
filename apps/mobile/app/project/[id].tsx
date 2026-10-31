@@ -73,10 +73,10 @@ export default function ProjectScreen() {
       ) : null}
       <Button title={t('Stock')} icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
       {sector ? (
-        <Button title={sector === 'chainage' ? t('Progress by chainage') : sector === 'floors' ? t('Progress by floor') : t('Villages & pipeline')} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}&kind=${sector}`)} style={styles.attendance} />
+        <Button title={sector === 'chainage' ? t('Progress by chainage') : sector === 'floors' ? t('Progress by floor') : t('Villages and pipeline')} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}&kind=${sector}`)} style={styles.attendance} />
       ) : null}
       <Button title={t('Structure')} icon="git-network-outline" variant="secondary" onPress={() => router.push(`/structure?projectId=${project.id}`)} style={styles.attendance} />
-      <Button title={t('Delays & risks')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title={t('Delays and risks')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
       {!user?.modulesOff?.includes('safety') ? (
         <Button title={t('Safety')} icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
