@@ -32,10 +32,10 @@ test('the MD sees warnings with their action and working, dismisses one as Known
   await card.getByRole('button', { name: 'Dismiss' }).click();
   const modal = formPanel(page, 'Dismiss this warning');
   await modal.getByRole('button', { name: 'Dismiss' }).click();
-  await expect(modal.getByText('Choose what became of it')).toBeVisible();
+  await expect(modal.getByText('Choose what became of it', { exact: true })).toBeVisible();
   await modal.getByRole('radio', { name: /Known and accepted/ }).check();
   await modal.getByRole('button', { name: 'Dismiss' }).click();
-  await expect(modal.getByText('Say why it can be left as it is')).toBeVisible();
+  await expect(modal.getByText('Say why it can be left as it is', { exact: true })).toBeVisible();
   await modal.getByLabel('Why it can be left').fill('Second crew starts Monday');
   await modal.getByRole('button', { name: 'Dismiss' }).click();
   await expect(page.getByText('Dismissed for everyone in the company')).toBeVisible();
