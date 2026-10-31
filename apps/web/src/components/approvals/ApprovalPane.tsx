@@ -23,7 +23,7 @@ import { SubBillRecord } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionRecord } from '@/components/inspections/InspectionDrawer';
 import { PaymentRequestRecord } from '@/components/payables/PaymentRequestRecord';
 import { SupplierChoiceRecord } from '@/components/purchasing/SupplierChoiceRecord';
-import { decidedInPlace, QUEUE_TYPE_LABELS } from './queue';
+import { decidedInPlace } from './queue';
 import { TypeTag } from './ApprovalQueue';
 
 /** The record of the entry picked in the queue, then the decision bar. */
