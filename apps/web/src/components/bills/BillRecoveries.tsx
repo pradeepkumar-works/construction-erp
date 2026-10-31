@@ -7,7 +7,7 @@ import type { ContractCurrency, ObligationBillLineDto } from '@erp/shared';
 import { formatMoney, toNumber } from '@/lib/format';
 
 /**
- * What a bill deducts for the contract's obligations (item 167): per obligation, what it costs as of the bill's date, what
+ * What a bill deducts for the contract's obligations (item 171): per obligation, what it costs as of the bill's date, what
  * earlier bills took and this bill's share, negative where a withholding is given back once met.
  */
 export function ObligationRecoveryNotes({ lines, total, c, projectId }: { lines: ObligationBillLineDto[]; total: string; c: ContractCurrency; projectId: string }) {

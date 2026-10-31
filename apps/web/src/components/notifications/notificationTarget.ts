@@ -9,7 +9,7 @@ export function notificationHref(n: NotificationDto): string {
   if (n.type === 'MACHINERY')
     return n.entityType === 'EQUIPMENT_DOCUMENT' || n.entityType === 'DRIVER' ? '/machinery?tab=papers' : `/machinery?tab=maintenance${n.entityType === 'MAINTENANCE_JOB' && n.entityId ? `&id=${n.entityId}` : ''}`;
   if (n.type === 'IMPREST') return `/imprest${n.entityId ? `?id=${n.entityId}` : ''}`;
-  // A contract obligation coming due (item 167): the project's Contract tab.
+  // A contract obligation coming due (item 171): the project's Contract tab.
   if (n.entityType === 'CONTRACT_OBLIGATION' && n.projectId) return `/projects/${n.projectId}?tab=contract`;
   if (n.type === 'COMPLIANCE') return `/compliance${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.type === 'DEFECT' && n.projectId) return `/projects/${n.projectId}?tab=handover${n.entityType === 'DEFECT' && n.entityId ? `&defect=${n.entityId}` : ''}`;

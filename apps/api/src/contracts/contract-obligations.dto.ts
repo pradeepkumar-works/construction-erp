@@ -6,7 +6,7 @@ import { IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsStr
 const blankNull = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() || null : value));
 
-/** A contract obligation (item 167). */
+/** A contract obligation (item 171). */
 export class CreateContractObligationDto {
   @ApiProperty({ example: 'Submit the construction programme' }) @IsString() @MaxLength(200) title!: string;
   @ApiPropertyOptional({ example: 'GCC 13.1' }) @IsOptional() @blankNull() @IsString() @MaxLength(60) clause?: string | null;

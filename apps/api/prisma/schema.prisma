@@ -788,6 +788,8 @@ model Organization {
   modulesOff          String[]           @default([])
   /// Correspondence (item 136): which outward letters wait for their signatory's approval before they are numbered
   letterApproval      LetterApprovalRule @default(CONTRACTUAL)
+  /// Item 169: which signed letters then wait for a director's seal at head office (L2) before they are numbered
+  letterSeal          LetterApprovalRule @default(NONE)
   /// Item categories (master codes) whose receipts need the maker's test certificate (item 137 part 2)
   mtcCategories       String[]           @default(["steel", "cement", "pipes-and-fittings"])
   /// Launcher phase 3: Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
@@ -1227,6 +1229,7 @@ model User {
   lettersRecorded       Letter[]                   @relation("LetterRecorder")
   lettersMarkedTo       Letter[]                   @relation("LetterMarkedTo")
   lettersToSign         Letter[]                   @relation("LetterSignatory")
+  lettersSigned         Letter[]                   @relation("LetterSigner")
   lettersClosed         Letter[]                   @relation("LetterCloser")
   letterMarksFrom       LetterMark[]               @relation("LetterMarkFrom")
   letterMarksTo         LetterMark[]               @relation("LetterMarkTo")
@@ -1340,6 +1343,8 @@ model Project {
   typeCode               String?
   /// The type's version the project was made with
   typeVersion            Int?
+  /// Item 167: the business line (vertical) the project belongs to, a code of the `vertical` master; filled from its type
+  verticalCode           String?
   status                 ProjectStatus  @default(PLANNED)
   /// Item rate, lump sum or EPC (item 125): lump sum and EPC projects weigh their components by billing share
   contractModel          ContractModel  @default(ITEM_RATE)
@@ -1548,6 +1553,7 @@ model Project {
   @@unique([organizationId, code])
   @@index([organizationId, status])
   @@index([projectManagerId])
+  @@index([organizationId, verticalCode])
 }
 
 /// A client (employer) the organisation builds for: a government department or a private owner.
@@ -3587,7 +3593,7 @@ model RaBill {
   /// and the components behind it (SlippageLineDto[])
   slippageWithheld      Decimal          @default(0) @db.Decimal(18, 2)
   slippageLines         Json?
-  /// Contract obligations (item 167): penalties and withholdings due by the bill's date less what earlier bills took (negative
+  /// Contract obligations (item 171): penalties and withholdings due by the bill's date less what earlier bills took (negative
   /// when a withholding is given back), and the obligations behind it (ObligationBillLine[])
   obligationRecovery    Decimal          @default(0) @db.Decimal(18, 2)
   obligationLines       Json?
@@ -5188,6 +5194,10 @@ model Letter {
   signatoryId       String?
   signatory         User?     @relation("LetterSignatory", fields: [signatoryId], references: [id], onDelete: SetNull)
   sentForApprovalAt DateTime?
+  /// Item 169: the signatory's approval (L1) where the letter then waits for a director's seal at head office (L2)
+  signedAt          DateTime?
+  signedById        String?
+  signedBy          User?     @relation("LetterSigner", fields: [signedById], references: [id], onDelete: SetNull)
   approvedAt        DateTime?
   returnNote        String?
 
@@ -7739,6 +7749,8 @@ model Tender {
   /// The client's name (a copy of the client master's, or free text without one)
   clientName       String?
   location         String?
+  /// Item 167: the business line (vertical) the tender is for, a code of the `vertical` master
+  verticalCode     String?
   bidType          TenderBidType  @default(PERCENTAGE)
   sorBookId        String?
   sorBook          SorBook?       @relation(fields: [sorBookId], references: [id], onDelete: SetNull)
@@ -9074,7 +9086,7 @@ model PlantBatchRow {
   @@index([rmcBatchId])
 }
 
-/// The day a contract obligation's deadline counts from (item 167)
+/// The day a contract obligation's deadline counts from (item 171)
 enum ObligationAnchor {
   AGREEMENT
   START
@@ -9083,7 +9095,7 @@ enum ObligationAnchor {
   DATE
 }
 
-/// What missing a contract obligation costs (item 167)
+/// What missing a contract obligation costs (item 171)
 enum ObligationPenalty {
   NONE
   WITHHOLD_PCT
@@ -9092,13 +9104,13 @@ enum ObligationPenalty {
   ONCE_AMOUNT
 }
 
-/// Who owes a contract obligation (item 167)
+/// Who owes a contract obligation (item 171)
 enum ObligationParty {
   CONTRACTOR
   CLIENT
 }
 
-/// Something the contract data says must be done by a day, and what missing it costs (item 167): the programme within 15
+/// Something the contract data says must be done by a day, and what missing it costs (item 171): the programme within 15
 /// days of the agreement, the field laboratory within two months, the final account within 21 days of completion. Bills
 /// deduct the penalties through `billRecoveryLines` (@erp/shared contract-obligations.ts).
 model ContractObligation {

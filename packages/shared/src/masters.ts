@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -275,6 +275,17 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
       'Thermometer',
       'Proving ring',
     ),
+  },
+  vertical: {
+    key: 'vertical',
+    label: 'Verticals',
+    singular: 'vertical',
+    description: "The company's business lines (item 167). Each project and tender belongs to one; the header, lists, department screens and reports can show one vertical at a time.",
+    slug: 'vertical',
+    node: 'projects.verticals',
+    usedOn: 'projects and tenders',
+    manage: (role) => P.canEditProjects(role),
+    standard: entries(['Water', 'जल'], ['Buildings', 'भवन'], ['Irrigation', 'सिंचाई'], ['Roads and bridges', 'सड़क और पुल']),
   },
 };
 

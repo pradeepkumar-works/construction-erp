@@ -1,5 +1,5 @@
 /**
- * Contract obligations and recoveries (item 167, ARCHITECTURE "Contract obligations and recoveries"). The contract data of a
+ * Contract obligations and recoveries (item 171, ARCHITECTURE "Contract obligations and recoveries"). The contract data of a
  * works contract sets deadlines that turn into money: the programme within 15 days of the agreement or 0.20% of the contract
  * is withheld until it comes, the field laboratory within two months or the same, Rs 20,000 a month for each engineer short.
  * Each is an obligation with the date it counts from, its offset, and what missing it costs; a bill deducts what has fallen

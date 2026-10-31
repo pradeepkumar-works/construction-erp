@@ -26,7 +26,7 @@ import { CreateContractObligationDto, UpdateContractObligationDto } from './cont
 type Row = Prisma.ContractObligationGetPayload<object>;
 
 /**
- * A contract's obligations (item 167, ARCHITECTURE "Contract obligations and recoveries"): what each side has to do by
+ * A contract's obligations (item 171, ARCHITECTURE "Contract obligations and recoveries"): what each side has to do by
  * when, counted from the agreement, the start, completion or the handover, and what missing it costs on our bills.
  * Seen with the contract terms (`canViewContract`), changed by those who change them (`canEditContract`).
  */

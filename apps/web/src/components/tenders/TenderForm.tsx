@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import type { AttachmentDto, TenderBidType, TenderDetailDto } from '@erp/shared';
 import { TENDER_BID_TYPES, TENDER_BID_TYPE_LABELS } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
-import { useSorBooks, useTenderAction } from '@/lib/queries';
+import { useMasterList, useSorBooks, useTenderAction } from '@/lib/queries';
 import { toNumber } from '@/lib/format';
 import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, MoneyInput } from '@/components/form/inputs';
@@ -23,6 +23,8 @@ interface Values {
   clientId?: string | null;
   clientName?: string;
   location?: string;
+  /** Its vertical (item 167) */
+  verticalCode?: string | null;
   bidType: TenderBidType;
   sorBookId?: string | null;
   estimatedValue?: number | null;
@@ -50,6 +52,7 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
   const notify = useNotify();
   const save = useTenderAction();
   const { data: books } = useSorBooks(open);
+  const { data: verticals } = useMasterList('vertical', false, open);
   const editing = !!tender;
   const pricingFixed = !!tender && tender.status !== 'PREPARING';
   const saved = useRef<string | null>(null);
@@ -65,6 +68,7 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
         clientId: tender.clientId,
         clientName: tender.clientId ? undefined : (tender.clientName ?? undefined),
         location: tender.location ?? undefined,
+        verticalCode: tender.verticalCode,
         bidType: tender.bidType,
         sorBookId: tender.sorBookId,
         estimatedValue: tender.estimatedValue ? toNumber(tender.estimatedValue) : null,
@@ -113,6 +117,7 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
           clientId: v.clientId ?? null,
           clientName: v.clientId ? null : v.clientName?.trim() || null,
           location: v.location?.trim() || null,
+          verticalCode: v.verticalCode || null,
           submitBy: ymd(v.submitBy),
           publishedOn: ymd(v.publishedOn),
           completionMonths: v.completionMonths ?? null,
@@ -157,10 +162,15 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
               )}
             </Form.Item>
           </FormGrid>
-          <FormGrid cols={3}>
+          <FormGrid cols={2}>
             <Form.Item name="location" label="Location">
               <Input maxLength={160} placeholder="Khurda" />
             </Form.Item>
+            <Form.Item name="verticalCode" label="Vertical">
+              <Select allowClear placeholder="No vertical" options={(verticals?.entries ?? []).filter((e) => e.isActive || e.code === tender?.verticalCode).map((e) => ({ value: e.code, label: e.name }))} />
+            </Form.Item>
+          </FormGrid>
+          <FormGrid cols={2}>
             <Form.Item name="publishedOn" label="Published on">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>

@@ -83,7 +83,7 @@ function stateNote(o: ContractObligationDto): string | null {
 }
 
 /**
- * The contract's obligations (item 167): what each side has to do by when, where each stands and what missing it costs.
+ * The contract's obligations (item 171): what each side has to do by when, where each stands and what missing it costs.
  * Bills deduct what is due as of their date and give back a withholding once it is met.
  */
 export function ObligationsCard({ projectId }: { projectId: string }) {

@@ -505,7 +505,7 @@ export class BillChecksService {
           label: 'Security deposit',
           pct: n(bill.securityDepositPct),
           amount: n(bill.securityDepositAmount),
-          // Held to the contract's cap (item 167): the % of the bill, but no more than the cap less earlier bills' deposit.
+          // Held to the contract's cap (item 171): the % of the bill, but no more than the cap less earlier bills' deposit.
           ...(project.securityDepositCapPct
             ? {
                 expected: cappedSecurityDeposit(

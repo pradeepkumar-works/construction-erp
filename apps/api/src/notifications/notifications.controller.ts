@@ -191,7 +191,7 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Contract obligations due within 7 days or overdue, each alerted once per stage and deadline (item 167). Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Contract obligations due within 7 days or overdue, each alerted once per stage and deadline (item 171). Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/obligations-due')
   obligationsDue(@Query() q: JobQuery) {
     return this.jobs.obligationsDue(q.date);

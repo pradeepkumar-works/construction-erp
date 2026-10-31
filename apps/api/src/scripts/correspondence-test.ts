@@ -21,7 +21,11 @@ import {
   fillLetterTemplate,
   formatLetterNo,
   letterFy,
+  letterApprovalStage,
   letterNeedsApproval,
+  letterNeedsSeal,
+  letterRulesProblem,
+  maySealLetters,
   letterPatternProblem,
   letterPrefixOf,
   letterPrefixProblem,
@@ -127,6 +131,29 @@ test('the module: registers and masters in the tree, in the department menu, and
   assert.ok(hrefs('DOCUMENT_CONTROLLER').includes('/correspondence/numbering'));
   assert.ok(hrefs('PROJECT_MANAGER').includes('/correspondence/outward') && !hrefs('PROJECT_MANAGER').includes('/correspondence/numbering'));
   assert.ok(!hrefs('SITE_ENGINEER').some((h) => h.startsWith('/correspondence')));
+});
+
+test('the seal at head office (item 169): after a signature that is not a director\'s, for the categories its rule names', () => {
+  assert.equal(letterNeedsSeal('CONTRACTUAL', 'claim', 'PROJECT_MANAGER'), true, 'a claim signed by the PM waits for head office');
+  assert.equal(letterNeedsSeal('CONTRACTUAL', 'general', 'PROJECT_MANAGER'), false, 'a general letter is numbered when signed');
+  assert.equal(letterNeedsSeal('ALL', 'general', 'PROJECT_MANAGER'), true);
+  assert.equal(letterNeedsSeal('ALL', 'claim', 'MANAGEMENT'), false, 'a director signing has sealed it already');
+  assert.equal(letterNeedsSeal('NONE', 'claim', 'PROJECT_MANAGER'), false);
+  assert.ok(maySealLetters('ADMIN') && maySealLetters('MANAGEMENT') && !maySealLetters('PROJECT_MANAGER') && !maySealLetters('DOCUMENT_CONTROLLER'));
+});
+
+test('the seal never reaches a letter the signature does not', () => {
+  assert.equal(letterRulesProblem('CONTRACTUAL', 'CONTRACTUAL'), null);
+  assert.equal(letterRulesProblem('ALL', 'CONTRACTUAL'), null);
+  assert.equal(letterRulesProblem('ALL', 'NONE'), null);
+  assert.match(letterRulesProblem('CONTRACTUAL', 'ALL')!, /signed first/);
+  assert.match(letterRulesProblem('NONE', 'CONTRACTUAL')!, /signature first/);
+});
+
+test('where a letter waiting for approval stands', () => {
+  assert.equal(letterApprovalStage({ status: 'AWAITING_APPROVAL', signedAt: null }), 'SIGN');
+  assert.equal(letterApprovalStage({ status: 'AWAITING_APPROVAL', signedAt: '2026-10-30T10:00:00Z' }), 'SEAL');
+  assert.equal(letterApprovalStage({ status: 'ISSUED', signedAt: '2026-10-30T10:00:00Z' }), null);
 });
 
 let failed = 0;

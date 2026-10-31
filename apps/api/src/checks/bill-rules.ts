@@ -374,7 +374,7 @@ export interface RaBillFacts {
   slippageWithheld: number;
   /** Service level penalties on an O&M bill (item 131) */
   omPenalty?: number;
-  /** What the contract's missed obligations cost on this bill (item 167), negative when given back */
+  /** What the contract's missed obligations cost on this bill (item 171), negative when given back */
   obligationRecovery?: number;
   totalDeductions: number;
   netPayable: number;

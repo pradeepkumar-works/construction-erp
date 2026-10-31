@@ -614,7 +614,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * Contract obligations (item 167): an open obligation coming due within OBLIGATION_SOON_DAYS, or past its deadline, to
+   * Contract obligations (item 171): an open obligation coming due within OBLIGATION_SOON_DAYS, or past its deadline, to
    * the project manager and the company's contract editors, once per stage and deadline. What we owe can cost us on the
    * next bill; what the client owes is ours to chase.
    */

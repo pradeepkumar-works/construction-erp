@@ -103,7 +103,7 @@ export async function measuredLines(tx: Prisma.TransactionClient, bill: { id: st
  * Work value, price variation, GST, deductions and net payable of a set of lines priced on certified (else claimed)
  * quantities, with the stages' amounts and the slippage withheld (item 129). GST and the deductions are on work value +
  * price variation. A works bill also deducts what the contract's missed obligations cost as of its date, and holds the
- * security deposit to its cap (item 167).
+ * security deposit to its cap (item 171).
  */
 export async function billTotals(
   tx: Prisma.TransactionClient,

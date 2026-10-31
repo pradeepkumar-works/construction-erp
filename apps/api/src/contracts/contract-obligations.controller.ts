@@ -11,7 +11,7 @@ export class ContractObligationsController {
   constructor(private obligations: ContractObligationsService) {}
 
   @ApiOperation({
-    summary: "A contract's obligations (item 167)",
+    summary: "A contract's obligations (item 171)",
     description:
       'What each side has to do by when (the programme, the field laboratory, the staff named in the bid, the final account…), the ' +
       'deadline counted from the agreement, start, completion after extensions or handover, where it stands today, what missing it ' +

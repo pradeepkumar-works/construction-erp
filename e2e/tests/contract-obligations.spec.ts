@@ -3,7 +3,7 @@ import type { ContractObligationsDto, RaBillDto } from '../../packages/shared/sr
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Contract obligations and recoveries (item 167) on the town water scheme: the seed puts the standard obligations on its
+ * Contract obligations and recoveries (item 171) on the town water scheme: the seed puts the standard obligations on its
  * contract before RA bills 1 to 4, so bill 1 withholds for the late programme and recovers for the staff deployed late,
  * and bill 2 gives the withholding back. The project manager adds an obligation, is refused a penalty on what the client
  * owes, marks it met and deletes it again, so nothing is left behind.
