@@ -15,7 +15,7 @@ export class ProjectAccessService {
   constructor(private prisma: PrismaService, private rights: ApprovalRightsService) {}
 
   /** Prisma where-clause restricting projects to those visible to the user. */
-  projectWhere(user: RequestUser): Prisma.ProjectWhereInput {
+  projectWhere(user: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>): Prisma.ProjectWhereInput {
     if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
     return {
       organizationId: user.organizationId,
@@ -44,6 +44,20 @@ export class ProjectAccessService {
     return project;
   }
 
+  async userSeesProject(u: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>, projectId: string) {
+    return (await this.prisma.project.count({ where: { id: projectId, ...this.projectWhere(u) } })) > 0;
+  }
+
+  seesProjectWhere(projectId: string): Prisma.UserWhereInput {
+    return {
+      OR: [
+        { role: { key: { in: COMPANY_WIDE_ROLES } } },
+        { managedProjects: { some: { id: projectId } } },
+        { memberships: { some: { projectId } } },
+      ],
+    };
+  }
+
   /**
    * Inverse of the visibility rule: every active user who may approve submissions of this project
    * (company-wide approvers plus approvers who manage or are a member of it). With a submission type (and amount),
@@ -60,11 +74,7 @@ export class ProjectAccessService {
         organizationId,
         isActive: true,
         role: { key: { in: roleKeys } },
-        OR: [
-          { role: { key: { in: COMPANY_WIDE_ROLES } } },
-          { managedProjects: { some: { id: projectId } } },
-          { memberships: { some: { projectId } } },
-        ],
+        ...this.seesProjectWhere(projectId),
       },
       select: { id: true, email: true, fullName: true },
     });
@@ -281,12 +291,8 @@ export class ProjectAccessService {
     const users = await this.approversForProject(organizationId, projectId, 'INSPECTION');
     if (!onProjectOnly) return users;
     // Routine reminders go to the people on the project, not to every company-wide approver.
-    const onProject = await this.prisma.user.findMany({
-      where: { id: { in: users.map((u) => u.id) }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
-      select: { id: true },
-    });
-    const ids = new Set(onProject.map((u) => u.id));
-    return users.filter((u) => ids.has(u.id));
+    const team = new Set(await this.projectPeople(projectId));
+    return users.filter((u) => team.has(u.id));
   }
 
   /** Raise a delay or risk: a raiser role with access to the project. */
