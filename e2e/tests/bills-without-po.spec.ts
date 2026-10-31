@@ -43,7 +43,7 @@ test('record a hire bill from the logs, then raise a debit note on it', async ({
   await page.goto('/vendor-bills');
   await page.getByRole('button', { name: 'Record vendor bill' }).first().click();
   await page.getByRole('menuitem', { name: /Machine hire/ }).click();
-  const form = formPanel(page, 'Record hire bill');
+  const form = formPanel(page, 'Record vendor bill · Machine hire');
   await chooseOption(form.getByLabel('Project'), project.code);
   await chooseOption(form.getByLabel('Hired machine'), machine.code);
   const [y, m] = month.split('-');
@@ -78,12 +78,12 @@ test('record a hire bill from the logs, then raise a debit note on it', async ({
 
   // A rate difference of 1,000 plus GST, raised from the bill's own page.
   await page.goto(`/vendor-bills/${bill.id}`);
-  await page.getByRole('button', { name: 'Raise debit note' }).click();
-  const note = formPanel(page, `Raise debit note · ${bill.billNo}`);
+  await page.getByRole('button', { name: 'New debit note' }).click();
+  const note = formPanel(page, `New debit note · ${bill.billNo}`);
   await chooseOption(note.getByLabel('Reason'), 'Rate difference');
   await note.getByLabel('What line 1 is for').fill('Hire rate agreed at a lower figure');
   await note.getByLabel('Lump sum of line 1').fill('1000');
-  await note.getByRole('button', { name: 'Raise debit note' }).click();
+  await note.getByRole('button', { name: 'Save debit note' }).click();
   await expect(page.getByText(/DN-\d{4}-\d{4} raised/)).toBeVisible();
 
   const after = await api<Bill>(accounts, `/vendor-bills/${bill.id}`);

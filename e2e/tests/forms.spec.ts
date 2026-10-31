@@ -41,8 +41,8 @@ test('a new daily report keeps its draft through a refresh, and Start over clear
 test('a failed submit lists what is missing, and Enter in the item table adds a line', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   await page.goto('/material-requests');
-  await page.getByRole('button', { name: /New request|New material request/ }).first().click();
-  const form = formPanel(page, 'New material request');
+  await page.getByRole('button', { name: /New request|New indent/ }).first().click();
+  const form = formPanel(page, 'New indent');
   await expect(form).toBeVisible();
 
   // Enter on the last line's quantity adds a line and moves to it.

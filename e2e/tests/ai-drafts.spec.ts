@@ -35,7 +35,7 @@ test('a sentence becomes a material request, matched to the item master, saved o
 
   await card.getByRole('button', { name: 'Open form' }).click();
   await expect(page).toHaveURL(/\/material-requests/);
-  const form = page.locator('.ant-drawer').filter({ hasText: 'New material request' });
+  const form = page.locator('.ant-drawer').filter({ hasText: 'New indent' });
   await expect(form.getByText('Filled in by Ask Nirmaan from what you wrote')).toBeVisible();
   await expect(form.getByRole('list', { name: 'To check' })).toContainText('"unobtanium widgets" is not in the item master');
   // "OPC 53 cement" is the item master's "OPC 53 Grade Cement", in its unit.
@@ -54,7 +54,7 @@ test('a sentence becomes a material request, matched to the item master, saved o
   await expect(page.getByRole('dialog', { name: 'Close this form?' })).toBeHidden();
 
   await form.getByRole('button', { name: 'Submit request' }).click();
-  await expect(page.getByText('Material request submitted for approval')).toBeVisible();
+  await expect(page.getByText('Indent submitted for approval')).toBeVisible();
   const saved = (await api<Page_<Mr>>(engineer, '/material-requests?pageSize=1&sortBy=createdAt&sortOrder=desc')).items[0];
   const full = await api<Mr>(engineer, `/material-requests/${saved.id}`);
   expect(full.items.map((i) => [i.itemName, i.unit, Number(i.quantity)])).toEqual([

@@ -33,7 +33,7 @@ test('a site asks for funds into its imprest, and accounts release them once app
   await expect(modal.getByText(/Priya Mohanty · /)).toBeVisible();
   await modal.getByLabel('Amount').fill('15000');
   await modal.getByLabel('What it is for').fill(reason);
-  await modal.getByRole('button', { name: 'Send for approval' }).click();
+  await modal.getByRole('button', { name: 'Submit for approval' }).click();
   await expect(page.getByText(/PR-\d{4}-\d{4} sent for approval/)).toBeVisible();
 
   const mine = (await api<Page<Request>>(engineer, `/payment-requests?kind=FUND_REQUEST&q=${encodeURIComponent(reason)}`)).items[0];

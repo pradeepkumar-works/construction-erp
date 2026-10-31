@@ -58,16 +58,16 @@ test('an approved request reaches purchase, who finalise L1 and raise the order 
   await expect(page.getByRole('heading', { level: 1, name: mr.requestNo })).toBeVisible();
 
   // The request lands on Finalise L1, with the ranking and the figures to decide by.
-  await expect(page.getByRole('tab', { name: /3\. Finalise L1/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: /Finalise L1/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('L1 for what is left')).toBeVisible();
   await page.getByRole('button', { name: 'Finalise L1' }).click();
   // Finalising moves on to the order, raised on the supplier finalised.
-  await expect(page.getByRole('tab', { name: /4\. Purchase order/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: /Purchase order/ })).toHaveAttribute('aria-selected', 'true');
   const ready = await row();
   expect(ready.stage).toBe('READY');
   expect([ready.final?.vendorName, ready.final?.rank]).toEqual(['Kalinga Safety Store', 1]);
 
-  await page.getByRole('button', { name: 'Raise PO on Kalinga Safety Store' }).click();
+  await page.getByRole('button', { name: 'New purchase order on Kalinga Safety Store' }).click();
   await expect(page.getByText(`Purchase order for ${mr.requestNo}`)).toBeVisible();
 });
 

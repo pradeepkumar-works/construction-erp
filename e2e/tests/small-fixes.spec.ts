@@ -47,7 +47,7 @@ test('a new project, vendor and user are offered what the company already knows'
   await vendorForm.getByLabel('Vendor name').fill('Sahoo Traders');
   await vendorForm.getByLabel('GSTIN').fill('21ABCPT1234F1Z9');
   await expect(vendorForm.getByLabel('PAN')).toHaveValue('ABCPT1234F');
-  await vendorForm.getByRole('button', { name: 'Add vendor' }).click();
+  await vendorForm.getByRole('button', { name: 'Save vendor' }).click();
   await expect(vendorForm).toBeHidden();
 
   // New user: the projects they join are part of making them.

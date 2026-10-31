@@ -179,10 +179,10 @@ test('an admin opens Ask Nirmaan to some roles only, and the others lose it (AI 
   await page.goto('/ai-settings');
   const roles = page.getByRole('group', { name: 'Who can use it' });
   await roles.getByRole('radio', { name: 'Only the roles I choose' }).check();
-  await expect(roles.getByRole('button', { name: 'Save roles' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Save settings' })).toBeDisabled();
   await roles.getByRole('checkbox', { name: 'Project Manager' }).check();
-  await roles.getByRole('button', { name: 'Save roles' }).click();
-  await expect(page.getByText('Roles saved')).toBeVisible();
+  await page.getByRole('button', { name: 'Save settings' }).click();
+  await expect(page.getByText('Settings saved')).toBeVisible();
   try {
     expect(await api<Status>(engineer, '/ai/status')).toMatchObject({ enabled: false, reason: 'ROLE_OFF' });
     const refused = await askApi(engineer, 'Show me the bills');
@@ -193,8 +193,8 @@ test('an admin opens Ask Nirmaan to some roles only, and the others lose it (AI 
     expect((await api<Status>(admin, '/ai/status')).enabled).toBe(true);
   } finally {
     await roles.getByRole('radio', { name: 'All staff' }).check();
-    await roles.getByRole('button', { name: 'Save roles' }).click();
-    await expect(page.getByText('Open to all staff')).toBeVisible();
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect.poll(async () => (await api<Status>(engineer, '/ai/status')).enabled).toBe(true);
   }
   expect((await api<Status>(engineer, '/ai/status')).enabled).toBe(true);
   // Only admins choose.

@@ -26,7 +26,7 @@ test('ask for an advance on a PO, approve it and pay it', async ({ page }) => {
   const modal = page.locator('.ant-modal').filter({ hasText: `Request advance · ${before.poNo}` });
   await modal.getByLabel('Amount').fill('1500');
   await modal.getByLabel('Reason').fill(reason);
-  await modal.getByRole('button', { name: 'Send for approval' }).click();
+  await modal.getByRole('button', { name: 'Submit for approval' }).click();
   await expect(page.getByText(/PR-\d{4}-\d{4} sent for approval/)).toBeVisible();
 
   const mine = (await api<Page<Request & { reason: string }>>(md, `/payment-requests?q=${encodeURIComponent(reason)}`)).items[0];
