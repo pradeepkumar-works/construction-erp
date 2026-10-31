@@ -60,10 +60,10 @@ export class PoursService {
       projectName: r.project.name,
       activityId: r.activityId,
       activityName: r.activity.name,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       location: r.location,
       grade: r.grade,
-      plannedVolume: dec(r.plannedVolume)!,
+      plannedVolume: dec(r.plannedVolume),
       volume,
       source: r.source as PourSource,
       supplier: r.supplier,
@@ -71,11 +71,11 @@ export class PoursService {
       remarks: r.remarks,
       card: r.inspection ? { id: r.inspection.id, inspectionNo: r.inspection.inspectionNo, status: r.inspection.status } : null,
       cardPassed,
-      tests: r.tests.map((x) => ({ id: x.id, testNo: x.testNo, sampledOn: dateOnly(x.sampledOn)!, result: x.result, value: dec(x.readings[x.readings.length - 1]?.value ?? null) })),
+      tests: r.tests.map((x) => ({ id: x.id, testNo: x.testNo, sampledOn: dateOnly(x.sampledOn), result: x.result, value: dec(x.readings[x.readings.length - 1]?.value ?? null) })),
       cubeSetsDue: cubeSetsFor(Number(volume ?? r.plannedVolume)),
       flags: pourFlags({ status, volume: volume === null ? null : Number(volume), cardPassed, cubeSets: r.tests.length }),
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -214,7 +214,7 @@ export class PoursService {
       if (card && card.status !== 'REJECTED') throw new BadRequestException('This pour already has its card');
     }
     const today = todayIn();
-    const pourDay = dateOnly(cur.date)!;
+    const pourDay = dateOnly(cur.date);
     const inspection = await this.inspections.create(user, {
       projectId: cur.projectId,
       activityId: cur.activityId,
@@ -234,7 +234,7 @@ export class PoursService {
     const cur = await this.load(user, id);
     if (cur.status !== 'PLANNED') throw new BadRequestException(cur.status === 'POURED' ? 'This pour is already recorded' : 'A cancelled pour is not poured');
     this.volume(dto.volume, 'volume poured');
-    const date = dto.date ?? dateOnly(cur.date)!;
+    const date = dto.date ?? dateOnly(cur.date);
     if (date > todayIn()) throw new BadRequestException('A pour is recorded on or after its day');
     await this.prisma.pour.update({
       where: { id },

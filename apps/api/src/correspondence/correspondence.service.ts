@@ -14,6 +14,7 @@ import {
   canViewLetters,
   contactLine,
   formatLetterNo,
+  isDirector,
   isGuest,
   letterFy,
   letterNeedsApproval,
@@ -157,7 +158,7 @@ export class CorrespondenceService {
   private can(user: RequestUser, l: { direction: LetterDirection; status: LetterStatus; createdById: string; markedToId: string | null; signatoryId: string | null; signedAt: Date | null; projectId: string | null; letterNo: string | null }): LetterDto['can'] {
     const keeper = canViewLetters(user.roleKey);
     const head = canHeadLetters(user.roleKey);
-    const director = user.roleKey === 'ADMIN' || user.roleKey === 'MANAGEMENT';
+    const director = isDirector(user.roleKey);
     const isIn = l.direction === 'IN';
     return {
       edit: keeper && (isIn ? l.status === 'OPEN' : l.status === 'DRAFT'),
@@ -173,7 +174,7 @@ export class CorrespondenceService {
   // DTOs
 
   private ref(l: { id: string; letterNo: string | null; direction: LetterDirection; letterDate: Date; subject: string }): LetterRefDto {
-    return { id: l.id, letterNo: l.letterNo, direction: l.direction, letterDate: dateOnly(l.letterDate)!, subject: l.subject };
+    return { id: l.id, letterNo: l.letterNo, direction: l.direction, letterDate: dateOnly(l.letterDate), subject: l.subject };
   }
 
   private markDto(m: Prisma.LetterMarkGetPayload<{ include: typeof markInclude }>): LetterMarkDto {
@@ -187,7 +188,7 @@ export class CorrespondenceService {
       note: m.note,
       doneAt: iso(m.doneAt),
       doneNote: m.doneNote,
-      createdAt: iso(m.createdAt)!,
+      createdAt: iso(m.createdAt),
     };
   }
 
@@ -211,7 +212,7 @@ export class CorrespondenceService {
       letterNo: l.letterNo,
       status: l.status,
       theirRef: l.theirRef,
-      letterDate: dateOnly(l.letterDate)!,
+      letterDate: dateOnly(l.letterDate),
       receivedOn: dateOnly(l.receivedOn),
       party: l.party,
       contactId: l.contactId,
@@ -257,8 +258,8 @@ export class CorrespondenceService {
       attachments: l.attachments.map((a) => this.attachments.toDto(a)),
       marks,
       can: this.can(user, l),
-      createdAt: iso(l.createdAt)!,
-      updatedAt: iso(l.updatedAt)!,
+      createdAt: iso(l.createdAt),
+      updatedAt: iso(l.updatedAt),
     };
   }
 
@@ -391,28 +392,29 @@ export class CorrespondenceService {
     this.assertRegister(user);
     const users = await this.prisma.user.findMany({
       where: { organizationId: user.organizationId, isActive: true },
-      select: { id: true, fullName: true, role: { select: { key: true } }, managedProjects: projectId ? { where: { id: projectId }, select: { id: true } } : false, memberships: projectId ? { where: { projectId }, select: { id: true } } : false },
+      select: { id: true, fullName: true, role: { select: { key: true } } },
       orderBy: { fullName: 'asc' },
     });
+    const team = new Set(projectId ? await this.access.projectPeople(projectId) : []);
     return users
       .filter((u) => !isGuest(u.role.key as RoleKey))
       .map((u) => {
         const role = u.role.key as RoleKey;
-        const onProject = !!projectId && ((u.managedProjects?.length ?? 0) > 0 || (u.memberships?.length ?? 0) > 0);
-        return { id: u.id, fullName: u.fullName, roleName: ROLE_LABELS[role], onProject, canSign: this.maySign(role, projectId ? onProject : false) };
+        const onProject = team.has(u.id);
+        return { id: u.id, fullName: u.fullName, roleName: ROLE_LABELS[role], onProject, canSign: this.maySign(role, onProject) };
       });
   }
 
   /** A signatory for a project letter: its project manager (on it) or a director; for head office, a director. */
   private maySign(role: RoleKey, onProject: boolean) {
     if (!canSignLetters(role)) return false;
-    return role === 'ADMIN' || role === 'MANAGEMENT' || onProject;
+    return isDirector(role) || onProject;
   }
 
   private async assertSignatory(organizationId: string, signatoryId: string, projectId: string | null) {
     const s = await this.prisma.user.findFirst({ where: { id: signatoryId, organizationId, isActive: true }, select: { id: true, fullName: true, role: { select: { key: true } } } });
     if (!s) throw new NotFoundException('The signatory is not an active user of the company');
-    const onProject = projectId ? (await this.prisma.project.count({ where: { id: projectId, OR: [{ projectManagerId: s.id }, { members: { some: { userId: s.id } } }] } })) > 0 : false;
+    const onProject = projectId ? (await this.access.projectPeople(projectId)).includes(s.id) : false;
     if (!this.maySign(s.role.key as RoleKey, onProject)) throw new BadRequestException(`${s.fullName} cannot sign this letter. Choose its project manager or a director.`);
     return s;
   }
@@ -584,7 +586,7 @@ export class CorrespondenceService {
       if (cur.letterNo) throw new BadRequestException('A numbered letter stays in its own register');
       await this.assertMayRecord(user, projectId);
     } else if (cur.projectId) await this.access.assertCanAccessProject(user, cur.projectId);
-    const letterDate = dto.letterDate ?? dateOnly(cur.letterDate)!;
+    const letterDate = dto.letterDate ?? dateOnly(cur.letterDate);
     const receivedOn = dto.receivedOn !== undefined ? dto.receivedOn : dateOnly(cur.receivedOn);
     const replyBy = dto.replyBy !== undefined ? dto.replyBy : dateOnly(cur.replyBy);
     this.checkDates({ direction: cur.direction, letterDate, receivedOn: cur.direction === 'IN' ? receivedOn : null, replyBy });
@@ -631,7 +633,7 @@ export class CorrespondenceService {
     if (!this.can(user, cur).mark) throw new ForbiddenException(cur.status === 'CLOSED' ? 'The letter is closed; reopen it to mark it again' : 'Only letters received are marked, by the correspondence desk or whoever has it now');
     const to = await this.prisma.user.findFirst({ where: { id: dto.toId, organizationId: user.organizationId, isActive: true }, select: { id: true, fullName: true, role: { select: { key: true } } } });
     if (!to || isGuest(to.role.key as RoleKey)) throw new NotFoundException('Choose someone on the company’s staff');
-    if (dto.dueOn && dto.dueOn < dateOnly(cur.receivedOn ?? cur.letterDate)!) throw new BadRequestException('The action date is before the letter came in. Choose a later day.');
+    if (dto.dueOn && dto.dueOn < dateOnly(cur.receivedOn ?? cur.letterDate)) throw new BadRequestException('The action date is before the letter came in. Choose a later day.');
     await this.prisma.$transaction(async (tx) => {
       await tx.letterMark.updateMany({ where: { letterId: id, doneAt: null }, data: { doneAt: new Date(), doneNote: `Forwarded to ${to.fullName}` } });
       await tx.letterMark.create({ data: { organizationId: user.organizationId, letterId: id, fromId: user.id, toId: to.id, action: dto.action, dueOn: dto.dueOn ? parseDate(dto.dueOn) : null, note: dto.note || null } });
@@ -828,7 +830,7 @@ export class CorrespondenceService {
     const cur = await this.load(user, id);
     if (!this.can(user, cur).dispatch) throw new BadRequestException('Only an issued letter is dispatched, by the correspondence desk');
     const today = todayIn();
-    const dated = dateOnly(cur.letterDate)!;
+    const dated = dateOnly(cur.letterDate);
     if (dto.dispatchedOn > today) throw new BadRequestException('The dispatch date cannot be after today. Choose today or an earlier day.');
     if (dto.dispatchedOn < dated) throw new BadRequestException('The letter went before it was dated. Check the dispatch date.');
     if (dto.deliveredOn && dto.deliveredOn > today) throw new BadRequestException('The delivery date cannot be after today. Choose today or an earlier day.');

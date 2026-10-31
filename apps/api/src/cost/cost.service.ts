@@ -25,12 +25,12 @@ export interface Heads {
 const emptyHeads = (): Heads => ({ expenses: ZERO, material: ZERO, machinery: ZERO, labour: ZERO, subcontract: ZERO });
 export const total = (h: Heads) => h.expenses.plus(h.material).plus(h.machinery).plus(h.labour).plus(h.subcontract);
 const headsDto = (h: Heads): CostHeadsDto => ({
-  expenses: money(h.expenses)!,
-  material: money(h.material)!,
-  machinery: money(h.machinery)!,
-  labour: money(h.labour)!,
-  subcontract: money(h.subcontract)!,
-  total: money(total(h))!,
+  expenses: money(h.expenses),
+  material: money(h.material),
+  machinery: money(h.machinery),
+  labour: money(h.labour),
+  subcontract: money(h.subcontract),
+  total: money(total(h)),
 });
 
 /** Everything the cost view needs for one project, before it is turned into DTOs. */
@@ -127,7 +127,7 @@ export class CostService {
     const sortAmount = <T extends { amount: D }>(a: T, b: T) => b.amount.comparedTo(a.amount);
     const months: CostMonthDto[] = [...acc.months.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, m]) => ({ month, executedValue: money(m.executed)!, ...headsDto(m.heads) }));
+      .map(([month, m]) => ({ month, executedValue: money(m.executed), ...headsDto(m.heads) }));
     return {
       ...this.summaryDto(p, acc),
       from: q.from ?? null,
@@ -136,22 +136,22 @@ export class CostService {
       expensesByCategory: [...acc.expenses.entries()]
         .map(([category, v]) => ({ category: category as ExpenseCategory, count: v.count, amount: v.amount }))
         .sort(sortAmount)
-        .map((v) => ({ ...v, amount: money(v.amount)! })),
+        .map((v) => ({ ...v, amount: money(v.amount) })),
       materialByItem: [...acc.material.entries()]
         .map(([itemId, v]) => ({ itemId, ...v }))
         .sort((a, b) => sortAmount(a, b) || a.name.localeCompare(b.name))
-        .map((v) => ({ itemId: v.itemId, name: v.name, unit: v.unit, quantity: dec(v.qty)!, rate: money(v.rate), amount: money(v.amount)! })),
+        .map((v) => ({ itemId: v.itemId, name: v.name, unit: v.unit, quantity: dec(v.qty), rate: money(v.rate), amount: money(v.amount) })),
       machineryByEquipment: [...acc.machinery.entries()]
         .map(([equipmentId, v]) => ({ equipmentId, ...v }))
         .sort((a, b) => sortAmount(a, b) || a.code.localeCompare(b.code))
-        .map((v) => ({ equipmentId: v.equipmentId, code: v.code, name: v.name, rateUnit: v.rateUnit, rate: money(v.rate), days: v.days, hours: dec(v.hours)!, amount: money(v.amount)! })),
+        .map((v) => ({ equipmentId: v.equipmentId, code: v.code, name: v.name, rateUnit: v.rateUnit, rate: money(v.rate), days: v.days, hours: dec(v.hours), amount: money(v.amount) })),
       labourByTrade: [...acc.labour.values()]
         .sort((a, b) => sortAmount(a, b) || b.manDays - a.manDays)
-        .map((v) => ({ category: v.category, manDays: v.manDays, dailyRate: money(v.rate), amount: money(v.amount)! })),
+        .map((v) => ({ category: v.category, manDays: v.manDays, dailyRate: money(v.rate), amount: money(v.amount) })),
       subcontractByOrder: [...acc.subcontract.entries()]
         .map(([workOrderId, v]) => ({ workOrderId, ...v }))
         .sort((a, b) => sortAmount(a, b) || a.woNo.localeCompare(b.woNo))
-        .map((v) => ({ workOrderId: v.workOrderId, woNo: v.woNo, vendorName: v.vendorName, bills: v.bills, amount: money(v.amount)! })),
+        .map((v) => ({ workOrderId: v.workOrderId, woNo: v.woNo, vendorName: v.vendorName, bills: v.bills, amount: money(v.amount) })),
     };
   }
 
@@ -163,15 +163,15 @@ export class CostService {
       projectName: p.name,
       projectType: p.type,
       contractValue: money(p.contractValue),
-      executedValue: money(acc.executed)!,
-      measuredValue: money(acc.measured)!,
+      executedValue: money(acc.executed),
+      measuredValue: money(acc.measured),
       cost: headsDto(acc.heads),
-      margin: money(acc.executed.minus(cost))!,
+      margin: money(acc.executed.minus(cost)),
       costPct: acc.executed.gt(0) ? Math.round(cost.div(acc.executed).mul(1000).toNumber()) / 10 : null,
-      billedValue: money(acc.billed)!,
-      cashIn: money(acc.cashIn)!,
-      payableBilled: money(acc.payableBilled)!,
-      cashOut: money(acc.cashOut)!,
+      billedValue: money(acc.billed),
+      cashIn: money(acc.cashIn),
+      payableBilled: money(acc.payableBilled),
+      cashOut: money(acc.cashOut),
       unpriced: { materialItems: acc.unpricedItems.size, machineryLogs: acc.unpricedLogs, labourManDays: acc.unpricedManDays },
     };
   }
@@ -347,7 +347,7 @@ export class CostService {
     ]);
     const priced = new Set(rates.map((r) => key(r.category)));
     const unpriced = [...new Map(trades.filter((t) => !priced.has(key(t.category))).map((t) => [key(t.category), t.category])).values()].sort();
-    return { rates: rates.map((r) => ({ id: r.id, category: r.category, dailyRate: money(r.dailyRate)! })), unpricedTrades: unpriced };
+    return { rates: rates.map((r) => ({ id: r.id, category: r.category, dailyRate: money(r.dailyRate) })), unpricedTrades: unpriced };
   }
 
   async setLabourRates(user: RequestUser, dto: SetLabourRatesDto): Promise<LabourRatesDto> {

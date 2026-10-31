@@ -35,11 +35,11 @@ export class DprLineInputDto {
   @ApiPropertyOptional({ type: [ManpowerLineDto], description: 'The crew on this line' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => ManpowerLineDto) labour?: ManpowerLineDto[];
   @ApiPropertyOptional({ type: [MachineryLineDto], description: 'Machines on this line' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => MachineryLineDto) machines?: MachineryLineDto[];
   @ApiPropertyOptional({ type: [DprMaterialInputDto], description: 'Material used, from the store items' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => DprMaterialInputDto) materials?: DprMaterialInputDto[];
-  @ApiPropertyOptional({ nullable: true, description: 'On a pipe stage activity (item 126): the segment worked on' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pipeSegmentId?: string | null;
+  @ApiPropertyOptional({ nullable: true, description: 'On a pipe stage activity: the segment worked on' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pipeSegmentId?: string | null;
   @ApiPropertyOptional({ nullable: true, description: 'The valve fixed (VALVES stage), or the end of the segment the work started from' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pipeNodeId?: string | null;
   @ApiPropertyOptional({ description: "A work order of the project the line was done under", nullable: true }) @IsOptional() @IsUUID() workOrderId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) remarks?: string | null;
-  @ApiPropertyOptional({ description: "The line's fields of the company's own (item 134 part 2), by key", example: { trenchOpenRmt: 40 } }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsObject() extra?: Record<string, unknown> | null;
+  @ApiPropertyOptional({ description: "The line's fields of the company's own, by key", example: { trenchOpenRmt: 40 } }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsObject() extra?: Record<string, unknown> | null;
   @ApiPropertyOptional({ type: [String], description: "The line's photos; on an edit, when sent, the complete list" }) @IsOptional() @IsArray() @ArrayMaxSize(10) @IsUUID('4', { each: true }) attachmentIds?: string[];
 }
 
@@ -53,7 +53,7 @@ export class CreateDprDto {
   @ApiPropertyOptional({ type: [MachineryLineDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => MachineryLineDto) machinery?: MachineryLineDto[];
   @ApiPropertyOptional() @IsOptional() @IsString() materialReceived?: string;
   @ApiPropertyOptional({ description: 'Required without work lines; written from the lines when left out' }) @IsOptional() @IsString() workExecuted?: string;
-  @ApiPropertyOptional({ type: [DprLineInputDto], description: 'The work done, line by line (item 127). On an edit, when sent, the complete list: lines left out are removed.' })
+  @ApiPropertyOptional({ type: [DprLineInputDto], description: 'The work done, line by line. On an edit, when sent, the complete list: lines left out are removed.' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(200)
@@ -65,7 +65,7 @@ export class CreateDprDto {
   @ApiPropertyOptional() @IsOptional() @IsString() issues?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() nextDayPlan?: string;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
-  @ApiPropertyOptional({ description: "The day's fields of the company's own (item 134 part 2), by key", example: { rainHours: 2.5 } }) @IsOptional() @IsObject() extra?: Record<string, unknown>;
+  @ApiPropertyOptional({ description: "The day's fields of the company's own, by key", example: { rainHours: 2.5 } }) @IsOptional() @IsObject() extra?: Record<string, unknown>;
   @ApiPropertyOptional({ description: "The version of the project type's DPR form the report was filled on (a phone filling offline); else the type's latest. Ignored on an edit, which keeps the report's own." })
   @IsOptional()
   @IsUUID()

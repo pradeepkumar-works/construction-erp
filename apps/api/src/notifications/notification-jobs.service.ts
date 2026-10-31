@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EMI_DUE_DAYS, TALLY_ROLES, COMPANY_WIDE_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, DAILY_WARNING_ALERTS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { EMI_DUE_DAYS, TALLY_ROLES, COMPANY_WIDE_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, DAILY_WARNING_ALERTS, canSeeWatchList, canEditContract, daysFrom, obligationDue, obligationState, OBLIGATION_PENALTY_LABELS, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
@@ -19,6 +19,7 @@ import { WarningsService } from '../warnings/warnings.service';
 import { alertsToSend } from '../warnings/warning-rules';
 import { BriefsService, toBrief } from '../briefs/briefs.service';
 import { usesModuleWhere } from '../common/module-switch.guard';
+import { ANCHOR_SELECT, anchorsOf, termsOf } from '../contracts/obligation-recovery';
 
 const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
 /** Bills falling due within this many days (today included) trigger the payments-due alert. */
@@ -609,6 +610,59 @@ export class NotificationJobsService {
       result.skipped += r.skipped;
     }
     this.log.log(`Compliance due ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * Contract obligations: an open obligation coming due within OBLIGATION_SOON_DAYS, or past its deadline, to
+   * the project manager and the company's contract editors, once per stage and deadline. What we owe can cost us on the
+   * next bill; what the client owes is ours to chase.
+   */
+  async obligationsDue(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'OBLIGATIONS_DUE', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
+    const rows = await this.prisma.contractObligation.findMany({
+      where: { metOn: null, waived: false, project: { status: { in: ['ACTIVE', 'ON_HOLD', 'COMPLETED'] } } },
+      include: { project: { select: { name: true, projectManagerId: true, ...ANCHOR_SELECT } } },
+      orderBy: [{ projectId: 'asc' }, { sortOrder: 'asc' }],
+    });
+    const editors = new Map<string, string[]>();
+    for (const o of rows) {
+      const terms = termsOf(o);
+      const due = obligationDue(terms, anchorsOf(o.project));
+      const state = obligationState(terms, due, date);
+      if (!due || (state !== 'DUE_SOON' && state !== 'OVERDUE')) continue;
+      if (!editors.has(o.organizationId))
+        editors.set(
+          o.organizationId,
+          (await this.prisma.user.findMany({ where: { organizationId: o.organizationId, isActive: true, role: { key: { in: COMPANY_WIDE_ROLES.filter(canEditContract) } } }, select: { id: true } })).map((u) => u.id),
+        );
+      const userIds = [...editors.get(o.organizationId)!];
+      if (o.project.projectManagerId && !userIds.includes(o.project.projectManagerId)) userIds.push(o.project.projectManagerId);
+      const days = Math.abs(daysFrom(date, due));
+      const when = state === 'OVERDUE' ? `${days} day${days === 1 ? '' : 's'} overdue` : days === 0 ? 'due today' : `due in ${days} day${days === 1 ? '' : 's'}`;
+      const cost =
+        o.party === 'CLIENT'
+          ? 'The client owes it: chase it and keep the letter.'
+          : o.penalty === 'NONE'
+            ? 'Mark it met on the Contract tab once done.'
+            : `${OBLIGATION_PENALTY_LABELS[o.penalty]} on the next bill until it is met. Mark it met on the Contract tab once done.`;
+      const r = await this.notifications.notify({
+        organizationId: o.organizationId,
+        userIds,
+        type: 'COMPLIANCE',
+        title: `${o.title} ${when}: ${o.project.name}`,
+        body: `${o.clause ? `${o.clause}, ` : ''}due ${due}. ${cost}`,
+        projectId: o.projectId,
+        entityType: 'CONTRACT_OBLIGATION',
+        entityId: o.id,
+        dedupeKey: `OBLIGATION:${o.id}:${state}:${due}`,
+        email: { href: `/projects/${o.projectId}?tab=contract`, cta: 'Open the contract' },
+      });
+      result.created += r.created;
+      result.pushed += r.pushed;
+      result.skipped += r.skipped;
+    }
+    this.log.log(`Obligations due ${date}: ${JSON.stringify(result)}`);
     return result;
   }
 

@@ -18,6 +18,9 @@ import {
   NO_VERTICAL,
   verticalOfType,
   verticalProblem,
+  CHECK_LEVEL_LABELS,
+  isClientGuest,
+  type CheckLevel,
 } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { physicalProgress } from '../common/progress';
@@ -147,9 +150,9 @@ export class ProjectsService {
       siteRadiusM: p.siteRadiusM,
       siteCheckInStrict: p.siteCheckInStrict,
       handedOverOn: dateOnly(handover?.completedOn ?? null),
-      members: p.members.map((m) => ({ id: m.id, userId: m.userId, fullName: m.user.fullName, roleKey: m.user.role.key as RoleKey, roleName: m.user.role.name })),
-      createdAt: iso(p.createdAt)!,
-      updatedAt: iso(p.updatedAt)!,
+      members: p.members.map((m) => ({ id: m.id, userId: m.userId, fullName: m.user.fullName, roleKey: m.user.role.key as RoleKey, roleName: m.user.role.name, checkLevel: m.checkLevel })),
+      createdAt: iso(p.createdAt),
+      updatedAt: iso(p.updatedAt),
     };
   }
 
@@ -405,6 +408,20 @@ export class ProjectsService {
     await this.access.assertCanAccessProject(user, dto.fromProjectId);
     const target = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { projectManagerId: true } });
     await this.joinTeam(user, id, await this.teamOf(dto.fromProjectId, target.projectManagerId));
+    return this.get(user, id);
+  }
+
+  /**
+   * A client guest's check level on the project: how much of the measurements they check before certifying a
+   * bill, and whose sign-off of hidden work they may countersign. Null clears it.
+   */
+  async setMemberLevel(user: RequestUser, id: string, userId: string, checkLevel: CheckLevel | null): Promise<ProjectDetail> {
+    await this.access.assertCanAccessProject(user, id);
+    const m = await this.prisma.projectMember.findUnique({ where: { projectId_userId: { projectId: id, userId } }, select: { id: true, user: { select: { fullName: true, role: { select: { key: true } } } } } });
+    if (!m) throw new NotFoundException('That person is not on this project\'s team');
+    if (!isClientGuest(m.user.role.key as RoleKey)) throw new BadRequestException("A check level is for the consultant's engineers and the client's engineer");
+    await this.prisma.projectMember.update({ where: { id: m.id }, data: { checkLevel } });
+    await this.audit.log(user, 'PROJECT', id, 'MEMBER_LEVEL', `${m.user.fullName}: ${checkLevel ? CHECK_LEVEL_LABELS[checkLevel] : 'no level'}`);
     return this.get(user, id);
   }
 

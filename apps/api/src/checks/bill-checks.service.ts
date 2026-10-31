@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { createHash } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import type { BillCheckDto, BillChecksDto, BillCheckSummaryDto, CheckKind, DraftChecksDto, SubmissionType } from '@erp/shared';
-import { billsByStages, canRecordVendorBill, gstinChecksumOk } from '@erp/shared';
+import { billsByStages, canRecordVendorBill, cappedSecurityDeposit, gstinChecksumOk } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -199,13 +199,13 @@ export class BillChecksService {
   /** The billed logs against the machine's engine hours, on the days its tracker read. */
   private async engineFacts(equipmentId: string, logs: { date: Date; hoursWorked: Prisma.Decimal; idleHours: Prisma.Decimal }[]) {
     const engine = await this.telematics.engineHoursOn(equipmentId, logs.map((l) => l.date));
-    const tracked = logs.filter((l) => engine.has(dateOnly(l.date)!));
+    const tracked = logs.filter((l) => engine.has(dateOnly(l.date)));
     if (!tracked.length) return null;
     return {
       days: tracked.length,
       loggedHours: tracked.reduce((s, l) => s + n(l.hoursWorked) + n(l.idleHours), 0),
-      engineHours: tracked.reduce((s, l) => s + engine.get(dateOnly(l.date)!)!, 0),
-      deadDays: tracked.filter((l) => n(l.hoursWorked) > 0 && engine.get(dateOnly(l.date)!)! < 0.1).map((l) => formatDay(dateOnly(l.date))),
+      engineHours: tracked.reduce((s, l) => s + engine.get(dateOnly(l.date))!, 0),
+      deadDays: tracked.filter((l) => n(l.hoursWorked) > 0 && engine.get(dateOnly(l.date))! < 0.1).map((l) => formatDay(dateOnly(l.date))),
     };
   }
 
@@ -455,10 +455,10 @@ export class BillChecksService {
       this.prisma.measurementSheet.groupBy({ by: ['boqItemId'], where: { OR: [{ raBillId: id }, { raBill: earlier }] }, _sum: { totalQty: true } }),
       this.prisma.project.findUniqueOrThrow({
         where: { id: bill.projectId },
-        select: { contractModel: true, tenderFactor: true, mobilisationAdvance: true, contractValue: true, advanceRecoveryFromPct: true, advanceRecoveryToPct: true },
+        select: { contractModel: true, tenderFactor: true, mobilisationAdvance: true, contractValue: true, advanceRecoveryFromPct: true, advanceRecoveryToPct: true, securityDepositCapPct: true },
       }),
       this.prisma.raBillStageLine.aggregate({ where: { billId: id }, _sum: { amount: true } }),
-      this.prisma.raBill.aggregate({ where: earlier, _sum: { advanceRecoveryAmount: true } }),
+      this.prisma.raBill.aggregate({ where: earlier, _sum: { advanceRecoveryAmount: true, securityDepositAmount: true } }),
     ]);
     // A recovery window recovers the advance by the contract executed, not a % of the bill.
     const windowed =
@@ -501,7 +501,23 @@ export class BillChecksService {
       gstAmount: n(bill.gstAmount),
       deductions: [
         { label: 'Retention', pct: n(bill.retentionPct), amount: n(bill.retentionAmount) },
-        { label: 'Security deposit', pct: n(bill.securityDepositPct), amount: n(bill.securityDepositAmount) },
+        {
+          label: 'Security deposit',
+          pct: n(bill.securityDepositPct),
+          amount: n(bill.securityDepositAmount),
+          // Held to the contract's cap: the % of the bill, but no more than the cap less earlier bills' deposit.
+          ...(project.securityDepositCapPct
+            ? {
+                expected: cappedSecurityDeposit(
+                  Math.round(Math.max(n(bill.grossAmount) + n(bill.pvAmount), 0) * n(bill.securityDepositPct)) / 100,
+                  n(project.securityDepositCapPct),
+                  n(project.contractValue),
+                  n(bill.grossUpto),
+                  n(recovered._sum.securityDepositAmount),
+                ),
+              }
+            : {}),
+        },
         { label: 'Advance recovery', pct: n(bill.advanceRecoveryPct), amount: n(bill.advanceRecoveryAmount), capped: true, ...(windowed ? { expected: n(windowed) } : {}) },
         { label: 'TDS', pct: n(bill.tdsPct), amount: n(bill.tdsAmount) },
         { label: 'GST TDS', pct: n(bill.gstTdsPct), amount: n(bill.gstTdsAmount) },
@@ -510,6 +526,7 @@ export class BillChecksService {
       otherDeduction: n(bill.otherDeduction),
       slippageWithheld: n(bill.slippageWithheld),
       omPenalty: n(bill.omPenalty),
+      obligationRecovery: n(bill.obligationRecovery),
       totalDeductions: n(bill.totalDeductions),
       netPayable: n(bill.netPayable),
     });

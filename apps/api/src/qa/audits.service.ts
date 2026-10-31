@@ -59,7 +59,7 @@ export class QaAuditsService {
   }
 
   private toDto(a: AuditRow, today: string): QaAuditDto {
-    const date = dateOnly(a.date)!;
+    const date = dateOnly(a.date);
     const findings = a.findings.map((f) => {
       const facts = { closedOn: dateOnly(f.closedOn), ncrStatus: (f.ncr?.status ?? null) as NcrStatus | null };
       return {
@@ -89,7 +89,7 @@ export class QaAuditsService {
       findings,
       open: auditCounts(findings).open,
       createdByName: a.createdBy.fullName,
-      createdAt: iso(a.createdAt)!,
+      createdAt: iso(a.createdAt),
       attachments: a.attachments.map((x) => this.attachments.toDto(x)),
     };
   }
@@ -104,7 +104,7 @@ export class QaAuditsService {
     });
     return rows
       .map((f) => {
-        const auditOn = dateOnly(f.audit.date)!;
+        const auditOn = dateOnly(f.audit.date);
         const due = dateOnly(f.dueOn);
         return {
           auditId: f.audit.id,
@@ -282,7 +282,7 @@ export class QaAuditsService {
       description: `${QA_AUDIT_KIND_LABELS[kind]} ${audit.auditNo} on ${dateOnly(audit.date)}${audit.visitor ? ` by ${audit.visitor}` : ''}: ${f.text}`,
       severity: f.severity,
       // A put-right day already past starts the NCR without one.
-      dueDate: f.dueOn && dateOnly(f.dueOn)! >= todayIn() ? dateOnly(f.dueOn) : null,
+      dueDate: f.dueOn && dateOnly(f.dueOn) >= todayIn() ? dateOnly(f.dueOn) : null,
       actionById: dto.actionById ?? null,
       category: dto.category ?? null,
       raisedByClient: isExternalAudit(kind),

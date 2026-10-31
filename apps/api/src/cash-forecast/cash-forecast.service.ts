@@ -211,10 +211,10 @@ export class CashForecastService {
     const lastOf = new Map(lastBills.map((b) => [b.projectId, b]));
     const mbBy = new Map<string, { value: number; sheets: number; oldest: string }>();
     for (const m of unbilled) {
-      const v = mbBy.get(m.projectId) ?? { value: 0, sheets: 0, oldest: dateOnly(m.date)! };
+      const v = mbBy.get(m.projectId) ?? { value: 0, sheets: 0, oldest: dateOnly(m.date) };
       v.value += N(m.totalQty) * N(m.boqItem.rate);
       v.sheets += 1;
-      if (dateOnly(m.date)! < v.oldest) v.oldest = dateOnly(m.date)!;
+      if (dateOnly(m.date) < v.oldest) v.oldest = dateOnly(m.date);
       mbBy.set(m.projectId, v);
     }
     for (const [projectId, v] of mbBy) {
@@ -258,7 +258,7 @@ export class CashForecastService {
 
     for (const o of orders) {
       const left = N(o.total) - o.vendorBills.reduce((s, b) => s + N(b.total), 0);
-      const dates = purchaseOrderDates(dateOnly(o.poDate)!, dateOnly(o.deliveryBy), o.paymentDays, today);
+      const dates = purchaseOrderDates(dateOnly(o.poDate), dateOnly(o.deliveryBy), o.paymentDays, today);
       add({
         key: `po:${o.id}`,
         kind: 'PURCHASE_ORDER',
@@ -267,7 +267,7 @@ export class CashForecastService {
         projectId: o.projectId,
         amount: Math.round(left),
         uncertain: false,
-        why: `${rupees(left)} not billed yet; delivery ${o.deliveryBy ? `by ${day(dateOnly(o.deliveryBy)!)}` : 'two weeks after the order'}, paid ${o.paymentDays ?? 30} days after`,
+        why: `${rupees(left)} not billed yet; delivery ${o.deliveryBy ? `by ${day(dateOnly(o.deliveryBy))}` : 'two weeks after the order'}, paid ${o.paymentDays ?? 30} days after`,
         msme: isMsme(o.vendor.msmeCategory),
         href: `/purchase-orders/${o.id}`,
         dates,
@@ -322,7 +322,7 @@ export class CashForecastService {
     }
 
     for (const e of emis) {
-      const due = dateOnly(e.dueDate)!;
+      const due = dateOnly(e.dueDate);
       add({
         key: `emi:${e.id}`,
         kind: 'LOAN_EMI',
@@ -419,7 +419,7 @@ export class CashForecastService {
     });
     if (!snap) return null;
     const actual = await this.balance(user, lastSunday);
-    return forecastError(dateOnly(snap.asOf)!, snap.weeks as unknown as CashWeekDto[], lastSunday, actual.bank + actual.cash);
+    return forecastError(dateOnly(snap.asOf), snap.weeks as unknown as CashWeekDto[], lastSunday, actual.bank + actual.cash);
   }
 
   // Billing readiness
@@ -459,10 +459,10 @@ export class CashForecastService {
       const r = rowOf.get(s.projectId)!;
       r.unbilledValue += N(s.totalQty) * N(s.boqItem.rate);
       r.unbilledSheets += 1;
-      const d = dateOnly(s.date)!;
+      const d = dateOnly(s.date);
       if (!r.oldestUnbilled || d < r.oldestUnbilled) r.oldestUnbilled = d;
     }
-    for (const b of notSent) rowOf.get(b.projectId)!.notSent.push({ billId: b.id, label: billLabel(b.billNo, b.isFinal, b.omYear !== null), billDate: dateOnly(b.billDate)!, amount: N(b.netPayable) });
+    for (const b of notSent) rowOf.get(b.projectId)!.notSent.push({ billId: b.id, label: billLabel(b.billNo, b.isFinal, b.omYear !== null), billDate: dateOnly(b.billDate), amount: N(b.netPayable) });
     for (const b of recv.openBills) {
       const r = rowOf.get(b.projectId);
       if (!r) continue;
@@ -492,7 +492,7 @@ export class CashForecastService {
    * and the pace of approved work over the last `PACE_DAYS` at BOQ rates, on activities in their BOQ item's own unit.
    */
   private async nextBills(user: RequestUser, ids: string[], today: string) {
-    const from = parseDate(dateOnly(new Date(Date.parse(`${today}T00:00:00Z`) - (PACE_DAYS - 1) * 86_400_000))!);
+    const from = parseDate(dateOnly(new Date(Date.parse(`${today}T00:00:00Z`) - (PACE_DAYS - 1) * 86_400_000)));
     const [sheets, recent, staged] = await Promise.all([
       this.prisma.measurementSheet.findMany({ where: { projectId: { in: ids }, status: 'APPROVED', raBillId: null, workOrderId: null }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.progressEntry.findMany({
@@ -555,7 +555,7 @@ export class CashForecastService {
     if (!party) flags.push({ field: 'party', note: 'The project has no client name: say who the letter is to' });
     if (!clause) flags.push({ field: 'body', note: 'No payment clause was found in the filed contract: check the days before sending' });
     const lines = [
-      `We refer to our ${label} dated ${longDate(dateOnly(bill.billDate)!)} for ${bill.project.name}${bill.project.agreementNo ? ` under agreement ${bill.project.agreementNo}` : ''}${sent ? `, submitted on ${longDate(sent)}` : ''}.`,
+      `We refer to our ${label} dated ${longDate(dateOnly(bill.billDate))} for ${bill.project.name}${bill.project.agreementNo ? ` under agreement ${bill.project.agreementNo}` : ''}${sent ? `, submitted on ${longDate(sent)}` : ''}.`,
       '',
       `${inr(outstanding)} remains unpaid${waited !== null ? ` ${waited} days after submission` : ''}${days && waited !== null ? (waited > days ? `, beyond the ${days} days the contract allows` : `; the contract allows ${days} days`) : ''}.`,
       ...(clause ? ['', `Clause ${clause.no} of the agreement (${clause.docNo}) reads: "${clause.text}"`] : []),

@@ -227,7 +227,7 @@ export class StaffService {
       employeeId: a.employeeId,
       employeeName: a.employee.fullName,
       employeeCode: a.employee.employeeCode,
-      date: dateOnly(a.date)!,
+      date: dateOnly(a.date),
       projectId: a.projectId,
       projectName: a.project?.name ?? null,
       status: a.status,
@@ -257,7 +257,7 @@ export class StaffService {
 
   private toLeaveDto(l: LeaveRow, user: RequestUser, today = todayIn()): LeaveRequestDto {
     const own = l.employee.userId === user.id || l.appliedById === user.id;
-    const from = dateOnly(l.fromDate)!;
+    const from = dateOnly(l.fromDate);
     return {
       id: l.id,
       employeeId: l.employeeId,
@@ -268,9 +268,9 @@ export class StaffService {
       projectName: l.employee.project?.name ?? null,
       type: l.type,
       fromDate: from,
-      toDate: dateOnly(l.toDate)!,
+      toDate: dateOnly(l.toDate),
       halfDay: l.halfDay,
-      days: dec(l.days)!,
+      days: dec(l.days),
       reason: l.reason,
       status: l.status,
       appliedByName: l.appliedBy.fullName,
@@ -284,7 +284,7 @@ export class StaffService {
   }
 
   private toHolidayDto(h: { id: string; projectId: string | null; project: { name: string } | null; date: Date; name: string }): HolidayDto {
-    return { id: h.id, projectId: h.projectId, projectName: h.project?.name ?? null, date: dateOnly(h.date)!, name: h.name };
+    return { id: h.id, projectId: h.projectId, projectName: h.project?.name ?? null, date: dateOnly(h.date), name: h.name };
   }
 
   // Lookups
@@ -306,7 +306,7 @@ export class StaffService {
       where: { organizationId, date: { gte: parseDate(from), lte: parseDate(to) }, OR: [{ projectId: null }, ...(projectId ? [{ projectId }] : [])] },
       select: { date: true, name: true },
     });
-    return new Map(rows.map((h) => [dateOnly(h.date)!, h.name]));
+    return new Map(rows.map((h) => [dateOnly(h.date), h.name]));
   }
 
   // Summary and me
@@ -516,7 +516,7 @@ export class StaffService {
               employeeId: e.id,
               type: 'JOINED',
               effectiveDate: e.joinedOn,
-              letterNo: await nextLetterNo(tx, user.organizationId, dateOnly(e.joinedOn)!),
+              letterNo: await nextLetterNo(tx, user.organizationId, dateOnly(e.joinedOn)),
               toProjectId: e.projectId,
               toDesignation: e.designation,
               toDepartment: e.department,
@@ -756,7 +756,7 @@ export class StaffService {
     const emp = await db.employee.findUnique({ where: { id: employeeId }, select: { organizationId: true } });
     const holidays = emp ? await db.holiday.findMany({ where: { organizationId: emp.organizationId, date: range }, select: { date: true, projectId: true } }) : [];
     const isOff = (d: Date, p: string | null) => {
-      const s = dateOnly(d)!;
+      const s = dateOnly(d);
       return isWeeklyOff(s) || holidays.some((h) => dateOnly(h.date) === s && (h.projectId === null || h.projectId === (p ?? projectId)));
     };
     const compOff = worked.filter((a) => isOff(a.date, a.projectId)).reduce((n, a) => n + (a.status === 'HALF_DAY' ? 0.5 : 1), 0);
@@ -886,7 +886,7 @@ export class StaffService {
       await this.lockEmployee(tx, cur.employeeId);
       const fresh = await tx.leaveRequest.findUnique({ where: { id }, select: { status: true } });
       if (fresh?.status !== 'PENDING') throw new BadRequestException('This leave has already been decided or cancelled');
-      if (status === 'APPROVED') await this.assertBalance(tx, cur.employeeId, cur.employee.projectId, cur.type, dateOnly(cur.fromDate)!, num(cur.days), id);
+      if (status === 'APPROVED') await this.assertBalance(tx, cur.employeeId, cur.employee.projectId, cur.type, dateOnly(cur.fromDate), num(cur.days), id);
       return tx.leaveRequest.update({ where: { id }, data: { status, decidedById: user.id, decidedAt: new Date(), decisionNote: note || null }, include: leaveInclude });
     });
     await this.audit.log(user, 'LEAVE', id, status, note || null);

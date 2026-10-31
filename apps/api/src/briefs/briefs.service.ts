@@ -204,5 +204,5 @@ export class BriefsService {
 }
 
 export function toBrief(row: { date: Date; lines: Prisma.JsonValue; createdAt: Date; byAssistant: boolean }): MorningBriefDto {
-  return { date: dateOnly(row.date)!, lines: row.lines as unknown as BriefLineDto[], writtenAt: row.createdAt.toISOString(), byAssistant: row.byAssistant };
+  return { date: dateOnly(row.date), lines: row.lines as unknown as BriefLineDto[], writtenAt: row.createdAt.toISOString(), byAssistant: row.byAssistant };
 }

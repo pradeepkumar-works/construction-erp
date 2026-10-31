@@ -8,6 +8,7 @@ import { AttachmentsService } from '../common/attachments.service';
 import { physicalProgress } from '../common/progress';
 import { dateOnly, dec, money, parseDate, pct } from '../common/serialize';
 import { ProgressReportQuery } from './reports.dto';
+import { todayIn } from '../notifications/time';
 
 const Dec = Prisma.Decimal;
 type D = Prisma.Decimal;
@@ -75,7 +76,7 @@ export class ReportsService {
       this.prisma.workElement.findMany({ where: { projectId }, select: { id: true, parentId: true, weightPct: true } }),
     ]);
 
-    const todayUtc = parseDate(new Date().toISOString().slice(0, 10));
+    const todayUtc = parseDate(todayIn());
     // Activities: this period, cumulative, % and delay at the end of the period.
     const activityRows = activities.map((a) => {
       const cumulative = sum(a.progressEntries, (e) => e.quantity);
@@ -129,7 +130,7 @@ export class ReportsService {
 
     const approvedDprs = dprs.filter((d) => d.status === 'APPROVED');
     const notes = (f: (d: (typeof dprs)[number]) => string | null) =>
-      approvedDprs.filter((d) => (f(d) ?? '').trim()).map((d) => ({ date: dateOnly(d.date)!, text: f(d)!.trim() }));
+      approvedDprs.filter((d) => (f(d) ?? '').trim()).map((d) => ({ date: dateOnly(d.date), text: f(d)!.trim() }));
 
     const start = project.startDate;
     const end = project.endDate;
@@ -162,19 +163,19 @@ export class ReportsService {
       physical,
       timeElapsedPct,
       financial: {
-        periodValue: money(periodValue)!,
-        cumulativeValue: money(cumulativeValue)!,
+        periodValue: money(periodValue),
+        cumulativeValue: money(cumulativeValue),
         contractPct: contract && contract.gt(0) ? Math.round(cumulativeValue.div(contract).mul(1000).toNumber()) / 10 : null,
-        measuredPeriodValue: money(sum(boqRows, (r) => r.measuredPeriodQty.mul(r.b.rate)))!,
-        measuredCumulativeValue: money(sum(boqRows, (r) => r.measuredCumulativeQty.mul(r.b.rate)))!,
+        measuredPeriodValue: money(sum(boqRows, (r) => r.measuredPeriodQty.mul(r.b.rate))),
+        measuredCumulativeValue: money(sum(boqRows, (r) => r.measuredCumulativeQty.mul(r.b.rate))),
       },
       activities: activityRows.map((r) => ({
         id: r.a.id,
         name: r.a.name,
         unit: r.a.unit,
-        plannedQty: dec(r.a.plannedQty)!,
-        periodQty: dec(r.period)!,
-        cumulativeQty: dec(r.cumulative)!,
+        plannedQty: dec(r.a.plannedQty),
+        periodQty: dec(r.period),
+        cumulativeQty: dec(r.cumulative),
         pct: r.pct,
         plannedStart: dateOnly(r.a.plannedStart),
         plannedEnd: dateOnly(r.a.plannedEnd),
@@ -186,12 +187,12 @@ export class ReportsService {
           itemNo: r.b.itemNo,
           description: r.b.description,
           unit: r.b.unit,
-          rate: money(r.b.rate)!,
-          periodQty: dec(r.periodQty)!,
-          periodValue: money(r.periodQty.mul(r.b.rate))!,
-          cumulativeQty: dec(r.cumulativeQty)!,
-          cumulativeValue: money(r.cumulativeQty.mul(r.b.rate))!,
-          measuredPeriodQty: dec(r.measuredPeriodQty)!,
+          rate: money(r.b.rate),
+          periodQty: dec(r.periodQty),
+          periodValue: money(r.periodQty.mul(r.b.rate)),
+          cumulativeQty: dec(r.cumulativeQty),
+          cumulativeValue: money(r.cumulativeQty.mul(r.b.rate)),
+          measuredPeriodQty: dec(r.measuredPeriodQty),
         })),
       manpower: [...trades.entries()]
         .sort((a, b) => b[1] - a[1])
@@ -199,8 +200,8 @@ export class ReportsService {
       attendanceDays,
       machinery: [...machines.values()]
         .sort((a, b) => a.code.localeCompare(b.code))
-        .map((m) => ({ code: m.code, name: m.name, days: m.days, hours: dec(m.hours)!, idleHours: dec(m.idle)!, breakdownHours: dec(m.down)! })),
-      materials: [...materials.values()].sort((a, b) => a.name.localeCompare(b.name)).map((m) => ({ name: m.name, unit: m.unit, received: dec(m.received)!, issued: dec(m.issued)! })),
+        .map((m) => ({ code: m.code, name: m.name, days: m.days, hours: dec(m.hours), idleHours: dec(m.idle), breakdownHours: dec(m.down) })),
+      materials: [...materials.values()].sort((a, b) => a.name.localeCompare(b.name)).map((m) => ({ name: m.name, unit: m.unit, received: dec(m.received), issued: dec(m.issued) })),
       dpr: { days, approved: approvedDprs.length, rainyDays: approvedDprs.filter((d) => d.weather === 'RAINY').length },
       issues: notes((d) => d.issues),
       safety: notes((d) => d.safetyObservations),
@@ -228,7 +229,7 @@ export class ReportsService {
         .map((x) => ({ riskNo: x.riskNo, title: x.title, score: x.score, mitigation: x.mitigation, ownerName: x.owner?.fullName ?? null, dueDate: dateOnly(x.dueDate) })),
       nextPeriod: activityRows
         .filter((r) => r.pct < 100 && !!r.a.plannedStart && r.a.plannedStart <= nextEnd)
-        .map((r) => ({ activityId: r.a.id, name: r.a.name, unit: r.a.unit, balanceQty: dec(Prisma.Decimal.max(r.a.plannedQty.minus(r.cumulative), ZERO))!, plannedEnd: dateOnly(r.a.plannedEnd) })),
+        .map((r) => ({ activityId: r.a.id, name: r.a.name, unit: r.a.unit, balanceQty: dec(Prisma.Decimal.max(r.a.plannedQty.minus(r.cumulative), ZERO)), plannedEnd: dateOnly(r.a.plannedEnd) })),
       photos: photos.map((p) => ({
         url: this.attachments.toDto(p).url,
         caption: [p.progressEntry?.activity.name, dateOnly(p.progressEntry?.date ?? null)].filter(Boolean).join(' · '),

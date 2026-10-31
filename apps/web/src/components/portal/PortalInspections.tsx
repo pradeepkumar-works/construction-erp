@@ -6,10 +6,11 @@ import { AppTag } from '@/components/common/AppTag';
 import { EyeOutlined } from '@/components/common/icons';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { InspectionResult, PortalInspectionDto } from '@erp/shared';
-import { INSPECTION_STATUS_LABELS, checklistCounts, isGuest } from '@erp/shared';
+import { CHECK_LEVEL_LABELS, INSPECTION_STATUS_LABELS, checklistCounts, isGuest } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useWitnessInspection } from '@/lib/queries';
+import { useCountersignHidden, useSignHidden, useWitnessInspection } from '@/lib/queries';
+import { QuantityInput } from '@/components/form/inputs';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -44,6 +45,11 @@ export function PortalInspections({ inspections, openId, onOpen }: { inspections
                 {r.holdPoint && (
                   <AppTag tone="pending" style={{ marginLeft: 8 }}>
                     Hold point
+                  </AppTag>
+                )}
+                {r.hiddenWork && (
+                  <AppTag tone={r.hidden?.countersignedAt ? 'success' : r.hidden?.signedAt ? 'info' : 'pending'} style={{ marginLeft: 8 }}>
+                    {r.hidden?.countersignedAt ? 'Hidden work countersigned' : r.hidden?.signedAt ? 'Hidden work to countersign' : 'Hidden work'}
                   </AppTag>
                 )}
               </span>
@@ -130,6 +136,7 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
               </Button>
             </>
           )}
+          {data.hiddenWork ? <HiddenWorkSection key={`hidden-${data.id}`} data={data} /> : null}
           {data.checklist.length > 0 && (
             <>
               <Divider titlePlacement="start" plain>
@@ -155,5 +162,72 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
         </>
       )}
     </Drawer>
+  );
+}
+
+/**
+ * Hidden work (item 172): measured before it is covered and signed off here at the guest's level, then countersigned by
+ * someone above (or the client's engineer). Its progress is approved only once both are in and the inspection passed.
+ */
+function HiddenWorkSection({ data }: { data: PortalInspectionDto }) {
+  const { user } = useAuth();
+  const { message } = App.useApp();
+  const sign = useSignHidden();
+  const countersign = useCountersignHidden();
+  const h = data.hidden;
+  const [qty, setQty] = useState<number | null>(h?.qty ? Number(h.qty) : null);
+  const [note, setNote] = useState(h?.note ?? '');
+  const [counterNote, setCounterNote] = useState('');
+  const guest = !!user && isGuest(user.roleKey);
+  const open = data.status === 'SUBMITTED' || data.status === 'APPROVED';
+  const maySign = guest && open && !h?.countersignedAt;
+  const mayCountersign = guest && !!h?.signedAt && !h.countersignedAt && h.signedById !== user?.id;
+  const run = async (fn: () => Promise<unknown>, done: string) => {
+    try {
+      await fn();
+      message.success(done);
+    } catch (e) {
+      message.error(errorMessage(e));
+    }
+  };
+  return (
+    <>
+      <Divider titlePlacement="start" plain>
+        Hidden work
+      </Divider>
+      <Typography.Paragraph type="secondary">This work is covered once done. Measure it and sign it off before it is covered; someone above you, or the client&apos;s engineer, countersigns. Its progress is approved only after both.</Typography.Paragraph>
+      {h?.signedAt ? (
+        <Descriptions
+          size="small"
+          column={1}
+          bordered
+          items={[
+            { key: 's', label: 'Signed off', children: `${h.signedByName ?? ''}${h.signedLevel ? `, ${CHECK_LEVEL_LABELS[h.signedLevel].toLowerCase()}` : ''}, ${formatDateTime(h.signedAt)}${h.qty ? `. Measured ${h.qty}` : ''}${h.note ? `. ${h.note}` : ''}` },
+            { key: 'c', label: 'Countersigned', children: h.countersignedAt ? `${h.countersignedByName ?? ''}, ${formatDateTime(h.countersignedAt)}${h.countersignNote ? `: ${h.countersignNote}` : ''}` : 'Not yet' },
+          ]}
+        />
+      ) : null}
+      {maySign ? (
+        <div style={{ marginTop: 12 }}>
+          <QuantityInput aria-label="Quantity measured before cover-up" placeholder="Quantity measured" value={qty} onChange={(v) => setQty(v ?? null)} style={{ maxWidth: 240 }} />
+          <Input.TextArea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What you measured and checked" aria-label="Sign-off note" maxLength={2000} style={{ marginTop: 8 }} />
+          <Button
+            style={{ marginTop: 8 }}
+            loading={sign.isPending}
+            onClick={() => run(() => sign.mutateAsync({ id: data.id, qty: qty == null ? null : String(qty), note: note.trim() || null }), `Hidden work on ${data.inspectionNo} signed off`)}
+          >
+            {h?.signedAt ? 'Sign off again' : 'Sign off before cover-up'}
+          </Button>
+        </div>
+      ) : null}
+      {mayCountersign ? (
+        <div style={{ marginTop: 12 }}>
+          <Input.TextArea rows={2} value={counterNote} onChange={(e) => setCounterNote(e.target.value)} placeholder="Note (optional)" aria-label="Countersign note" maxLength={2000} />
+          <Button type="primary" style={{ marginTop: 8 }} loading={countersign.isPending} onClick={() => run(() => countersign.mutateAsync({ id: data.id, note: counterNote.trim() || null }), `Hidden work on ${data.inspectionNo} countersigned`)}>
+            Countersign
+          </Button>
+        </div>
+      ) : null}
+    </>
   );
 }

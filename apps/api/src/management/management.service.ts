@@ -34,7 +34,7 @@ import { plannedProgress } from '../dashboard/dashboard.service';
 import { approvalAgeing, byUrgency, contractWorkDone, daysBetween, forecastCost, healthOf, lastMonths, paidWork, pctOf, scheduleOf, unbilledDays, workDoneValue } from './management-rules';
 
 const N = (v: Prisma.Decimal | number | string | null | undefined) => Number(v ?? 0);
-const m = (n: number) => money(new Prisma.Decimal(n.toFixed(2)))!;
+const m = (n: number) => money(new Prisma.Decimal(n.toFixed(2)));
 
 /** Everything one project's row is built from, before it is a DTO. */
 interface Built {
@@ -185,12 +185,12 @@ export class ManagementService {
       ...pos.map((p) => {
         const value = N(p.subtotal) + N(p.freight);
         const billed = p.vendorBills.reduce((s, b) => s + N(b.subtotal) + N(b.freight), 0);
-        return { kind: 'PO' as const, id: p.id, number: p.poNo, vendorName: p.vendor.name, date: dateOnly(p.poDate)!, value: m(value), billed: m(billed), open: m(Math.max(0, value - billed)) };
+        return { kind: 'PO' as const, id: p.id, number: p.poNo, vendorName: p.vendor.name, date: dateOnly(p.poDate), value: m(value), billed: m(billed), open: m(Math.max(0, value - billed)) };
       }),
       ...wos.map((w) => {
         const value = N(w.value);
         const billed = w.bills.reduce((s, b) => s + N(b.grossAmount), 0);
-        return { kind: 'WO' as const, id: w.id, number: w.woNo, vendorName: w.vendor.name, date: dateOnly(w.woDate)!, value: m(value), billed: m(billed), open: m(Math.max(0, value - billed)) };
+        return { kind: 'WO' as const, id: w.id, number: w.woNo, vendorName: w.vendor.name, date: dateOnly(w.woDate), value: m(value), billed: m(billed), open: m(Math.max(0, value - billed)) };
       }),
     ].filter((o) => N(o.open) > 0);
     return {
@@ -267,7 +267,7 @@ export class ManagementService {
           billed += work;
           if (b.certifiedDate || b.stage === 'CERTIFIED' || b.stage === 'PAID') certified += work;
           paid += paidWork(work, N(invoiceOf(b)), N(settlement(b.receipts).settled));
-          const upTo = dateOnly(b.measuredUpTo)!;
+          const upTo = dateOnly(b.measuredUpTo);
           if (!billedUpTo || upTo > billedUpTo) billedUpTo = upTo;
         }
         const unbilled = Math.max(0, workDone - billed);
@@ -282,7 +282,7 @@ export class ManagementService {
           rates,
           today,
         );
-        const late = leaves.filter((a) => a.plannedEnd && dateOnly(a.plannedEnd)! < today && (progressQty.get(a.id) ?? 0) < N(a.plannedQty)).length;
+        const late = leaves.filter((a) => a.plannedEnd && dateOnly(a.plannedEnd) < today && (progressQty.get(a.id) ?? 0) < N(a.plannedQty)).length;
         const plannedFinish = dated.reduce<string | null>((max, a) => {
           const e = dateOnly(a.plannedEnd)!;
           return !max || e > max ? e : max;
@@ -377,8 +377,8 @@ export class ManagementService {
         const h = a.months.get(month)?.heads;
         return s + (h ? N(total(h)) : 0);
       }, 0);
-      const billed = bills.filter((b) => dateOnly(b.billDate)!.startsWith(month)).reduce((s, b) => s + N(b.grossAmount) + N(b.pvAmount), 0);
-      const received = receipts.filter((r) => dateOnly(r.receiptDate)!.startsWith(month)).reduce((s, r) => s + N(r.amount), 0);
+      const billed = bills.filter((b) => dateOnly(b.billDate).startsWith(month)).reduce((s, b) => s + N(b.grossAmount) + N(b.pvAmount), 0);
+      const received = receipts.filter((r) => dateOnly(r.receiptDate).startsWith(month)).reduce((s, r) => s + N(r.amount), 0);
       return { month, billed: m(billed), received: m(received), cost: m(cost) };
     });
   }

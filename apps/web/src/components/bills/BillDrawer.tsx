@@ -25,6 +25,7 @@ import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
 import { BillStages, SlippageNotes } from './BillStages';
+import { ObligationRecoveryNotes } from './BillRecoveries';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
@@ -223,6 +224,9 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               : []),
             ...(data.slippageLines.length || toNumber(data.slippageWithheld) !== 0
               ? [{ key: 'slippage', title: 'Milestone slippage', children: <SlippageNotes lines={data.slippageLines} withheld={data.slippageWithheld} c={data} /> }]
+              : []),
+            ...(data.obligationLines.length
+              ? [{ key: 'obligations', title: 'Contract recoveries', count: data.obligationLines.length, children: <ObligationRecoveryNotes lines={data.obligationLines} total={data.obligationRecovery} c={data} projectId={data.projectId} /> }]
               : []),
             {
               key: 'abstract',

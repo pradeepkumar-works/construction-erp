@@ -75,7 +75,7 @@ export class AttendanceService {
       id: r.id,
       projectId: r.projectId,
       projectName: r.project.name,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       remarks: r.remarks,
       totalWorkers: r.totalWorkers,
       lines,
@@ -86,8 +86,8 @@ export class AttendanceService {
       dprStatus,
       locked: isAttendanceLocked(run?.status),
       lockedByRun: run?.runNo ?? null,
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -121,13 +121,13 @@ export class AttendanceService {
   async lockingRuns(organizationId: string, days: { projectId: string; date: Date }[]): Promise<Map<string, LockingRun>> {
     const out = new Map<string, LockingRun>();
     if (!days.length) return out;
-    const months = [...new Set(days.map((d) => dateOnly(d.date)!.slice(0, 7)))];
+    const months = [...new Set(days.map((d) => dateOnly(d.date).slice(0, 7)))];
     const runs = await this.prisma.payrollRun.findMany({
       where: { organizationId, month: { in: months }, status: { in: ['APPROVED', 'PAID'] }, OR: [{ projectId: null }, { projectId: { in: [...new Set(days.map((d) => d.projectId))] } }] },
       select: { runNo: true, month: true, projectId: true, status: true },
     });
     for (const d of days) {
-      const month = dateOnly(d.date)!.slice(0, 7);
+      const month = dateOnly(d.date).slice(0, 7);
       const run = runs.find((r) => r.month === month && r.projectId === d.projectId) ?? runs.find((r) => r.month === month && r.projectId === null);
       if (run) out.set(dayKey(d.projectId, d.date), { runNo: run.runNo, status: run.status });
     }
@@ -144,8 +144,8 @@ export class AttendanceService {
     if (isAttendanceLocked(run?.status))
       throw new ConflictException(
         run!.status === 'PAID'
-          ? `Payroll for ${monthName(dateOnly(date)!)} is paid (${run!.runNo}), so attendance for ${dateOnly(date)} can no longer change.`
-          : `Payroll for ${monthName(dateOnly(date)!)} is approved (${run!.runNo}), so attendance for ${dateOnly(date)} can no longer change. Ask for the run to be sent back first.`,
+          ? `Payroll for ${monthName(dateOnly(date))} is paid (${run!.runNo}), so attendance for ${dateOnly(date)} can no longer change.`
+          : `Payroll for ${monthName(dateOnly(date))} is approved (${run!.runNo}), so attendance for ${dateOnly(date)} can no longer change. Ask for the run to be sent back first.`,
       );
   }
 

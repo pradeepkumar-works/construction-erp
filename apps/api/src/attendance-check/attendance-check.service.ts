@@ -157,7 +157,7 @@ export class AttendanceCheckService {
     const deviceUp = new Set<string>();
     const punchedBy = new Map<string, Set<string>>();
     for (const p of punches) {
-      const k = key(deviceProject.get(p.deviceId)!, dateOnly(p.date)!);
+      const k = key(deviceProject.get(p.deviceId)!, dateOnly(p.date));
       deviceUp.add(k);
       const w = workerOfPin.get(p.pin);
       if (!w) continue;
@@ -171,17 +171,17 @@ export class AttendanceCheckService {
       deviceUp,
       devices: new Set(devices.map((d) => d.projectId!)),
       punchedBy,
-      dprs: new Map(dprs.map((d) => [key(d.projectId, dateOnly(d.date)!), { id: d.id, manpower: dprManpower(d.manpower) }])),
+      dprs: new Map(dprs.map((d) => [key(d.projectId, dateOnly(d.date)), { id: d.id, manpower: dprManpower(d.manpower) }])),
       rates: new Map(rates.map((r) => [normTrade(r.category), n(r.dailyRate)])),
     };
     for (const s of sheets)
-      facts.sheets.set(key(s.projectId, dateOnly(s.date)!), {
+      facts.sheets.set(key(s.projectId, dateOnly(s.date)), {
         id: s.id,
         total: s.totalWorkers,
         lines: s.lines.map((l) => ({ crew: crewOf(l.vendorId, l.contractor), crewName: l.contractor, trade: l.category, count: l.count })),
       });
     for (const r of roll) {
-      const k = key(r.projectId, dateOnly(r.date)!);
+      const k = key(r.projectId, dateOnly(r.date));
       if (!facts.roll.has(k)) facts.roll.set(k, []);
       facts.roll.get(k)!.push({
         worker: { id: r.worker.id, workerNo: r.worker.workerNo, name: r.worker.name, dailyWage: n(r.worker.dailyWage) },
@@ -235,10 +235,10 @@ export class AttendanceCheckService {
       withDays.map((b) => {
         const prev = earlier
           .filter((e) => e.workOrderId === b.workOrderId && e.billNo < b.billNo)
-          .map((e) => dateOnly(e.measuredUpTo)!)
+          .map((e) => dateOnly(e.measuredUpTo))
           .sort()
           .pop();
-        return [b.id, billSpan(prev ?? null, dateOnly(b.workOrder.startDate), dateOnly(b.workOrder.woDate)!, dateOnly(b.measuredUpTo)!)];
+        return [b.id, billSpan(prev ?? null, dateOnly(b.workOrder.startDate), dateOnly(b.workOrder.woDate), dateOnly(b.measuredUpTo))];
       }),
     );
     const all = [...spans.values()];

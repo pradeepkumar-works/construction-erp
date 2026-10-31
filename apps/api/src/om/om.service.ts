@@ -136,7 +136,7 @@ export class OmService {
     ]);
     const days: ServiceLevelDayDto[] = dayRows.map((r) => {
       const reading = {
-        date: dateOnly(r.date)!,
+        date: dateOnly(r.date),
         producedKl: Number(r.producedKl),
         suppliedKl: Number(r.suppliedKl),
         residualChlorine: r.residualChlorine === null ? null : Number(r.residualChlorine),
@@ -148,8 +148,8 @@ export class OmService {
       return {
         id: r.id,
         date: reading.date,
-        producedKl: dec(r.producedKl)!,
-        suppliedKl: dec(r.suppliedKl)!,
+        producedKl: dec(r.producedKl),
+        suppliedKl: dec(r.suppliedKl),
         lpcd: lpcdOf(reading.suppliedKl, om.contract.population),
         lossPct: lossPctOf(reading.producedKl, reading.suppliedKl),
         residualChlorine: dec(r.residualChlorine),
@@ -186,14 +186,14 @@ export class OmService {
       startOn: om.startOn,
       endsOn: om.endsOn,
       years: c.years,
-      yearPcts: c.yearPcts.map((p) => dec(p)!),
+      yearPcts: c.yearPcts.map((p) => dec(p)),
       instalmentsPerYear: c.instalmentsPerYear,
       extensionYears: c.extensionYears,
       population: c.population,
       contractValue: money(c.project.contractValue),
       benchmarks: om.settings,
-      staff: c.staffNorms.map((n) => ({ role: n.role, required: n.required, monthlyPay: money(n.monthlyPay)! })),
-      chemicals: c.chemicalNorms.map((n) => ({ itemId: n.itemId, itemName: n.item.name, unit: n.item.unit, perMl: dec(n.perMl)! })),
+      staff: c.staffNorms.map((n) => ({ role: n.role, required: n.required, monthlyPay: money(n.monthlyPay) })),
+      chemicals: c.chemicalNorms.map((n) => ({ itemId: n.itemId, itemName: n.item.name, unit: n.item.unit, perMl: dec(n.perMl) })),
       note: c.note,
     };
   }
@@ -230,10 +230,10 @@ export class OmService {
         itemId: n.itemId,
         itemName: n.item.name,
         unit: n.item.unit,
-        perMl: dec(n.perMl)!,
-        producedMl: dec(row.producedMl)!,
-        normQty: dec(row.normQty)!,
-        consumedQty: dec(used)!,
+        perMl: dec(n.perMl),
+        producedMl: dec(row.producedMl),
+        normQty: dec(row.normQty),
+        consumedQty: dec(used),
         variancePct: row.variancePct,
         status: row.status,
       };
@@ -250,7 +250,7 @@ export class OmService {
     const yearPcts = dto.yearPcts.map(Number);
     const problem = termsProblem({ startOn: dto.startOn, years: dto.years, yearPcts, instalmentsPerYear: dto.instalmentsPerYear, population: dto.population });
     if (problem) throw new BadRequestException(problem);
-    if (dto.startOn <= dateOnly(handover.completedOn)!) throw new BadRequestException(`O&M starts after the completion on ${dateOnly(handover.completedOn)}: choose a later first of the month`);
+    if (dto.startOn <= dateOnly(handover.completedOn)) throw new BadRequestException(`O&M starts after the completion on ${dateOnly(handover.completedOn)}: choose a later first of the month`);
     if (new Set(dto.benchmarks.map((b) => b.key)).size !== dto.benchmarks.length) throw new BadRequestException('Each benchmark can be set once');
     if (dto.benchmarks.some((b) => Number(b.limit) < 0 || Number(b.penalty) < 0)) throw new BadRequestException('Limits and penalties cannot be negative');
     const roles = dto.staff.map((s) => s.role.toLowerCase());
@@ -342,7 +342,7 @@ export class OmService {
     const row = await this.prisma.serviceLevelDay.findFirst({ where: { id: dayId, projectId } });
     if (!row) throw new NotFoundException('Reading not found');
     const om = await this.loaded(projectId);
-    const day = dateOnly(row.date)!;
+    const day = dateOnly(row.date);
     if (this.lockedDay(om, await this.bills(projectId), day)) throw new ConflictException('This day’s period has been billed: its readings can no longer change');
     await this.prisma.serviceLevelDay.delete({ where: { id: dayId } });
     await this.audit.log(user, 'SERVICE_LEVEL_DAY', dayId, 'DELETED', day);

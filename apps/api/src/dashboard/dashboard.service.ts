@@ -95,7 +95,7 @@ export class DashboardService {
 
   async company(user: RequestUser): Promise<CompanyDashboard> {
     const projects = await this.projects.listAll(user);
-    const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z');
+    const today = parseDate(todayIn());
     const projectIds = projects.map((p) => p.id);
     const month = today.toISOString().slice(0, 7);
     const monthStart = parseDate(`${month}-01`);
@@ -108,7 +108,7 @@ export class DashboardService {
       this.prisma.activity.findMany({ where: { projectId: { in: projectIds }, plannedEnd: { lt: today } }, include: { progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } } }),
       seesBills ? this.receivables.summary(user) : null,
       canViewPayables(user.roleKey) ? this.payables.summary(user) : null,
-      canViewCost(user.roleKey) ? this.cost.summary(user, { from: `${month}-01`, to: dateOnly(monthEnd)! }) : null,
+      canViewCost(user.roleKey) ? this.cost.summary(user, { from: `${month}-01`, to: dateOnly(monthEnd) }) : null,
       seesBills ? this.prisma.raBill.aggregate({ where: { ...billsWhere, billDate: { gte: monthStart, lte: monthEnd } }, _sum: { grossAmount: true }, _count: true }) : null,
       seesBills ? this.prisma.raBill.groupBy({ by: ['projectId'], where: billsWhere, _sum: { grossAmount: true } }) : null,
     ]);
@@ -124,12 +124,12 @@ export class DashboardService {
       const withValue = projects.filter((p) => p.revisedContractValue && new Prisma.Decimal(p.revisedContractValue).gt(0));
       const contract = withValue.reduce((s, p) => s.add(p.revisedContractValue!), ZERO);
       const billed = withValue.reduce((s, p) => s.add(billedBy.get(p.id) ?? ZERO), ZERO);
-      financialProgress = { contractValue: money(contract)!, billed: money(billed)!, pct: contract.gt(0) ? Math.round(billed.div(contract).mul(1000).toNumber()) / 10 : null };
+      financialProgress = { contractValue: money(contract), billed: money(billed), pct: contract.gt(0) ? Math.round(billed.div(contract).mul(1000).toNumber()) / 10 : null };
     }
     return {
       activeProjects: projects.filter((p) => p.status === 'ACTIVE').length,
       totalProjects: projects.length,
-      totalContractValue: money(totalContractValue)!,
+      totalContractValue: money(totalContractValue),
       projectsByType: [...byType.entries()].map(([type, count]) => ({ type, count })),
       pendingApprovals: pending.length,
       delayedActivities,
@@ -143,12 +143,12 @@ export class DashboardService {
         ? {
             monthCost: {
               month,
-              total: money(monthCost.reduce((s, p) => s.add(p.cost.total), ZERO))!,
-              expenses: money(monthCost.reduce((s, p) => s.add(p.cost.expenses), ZERO))!,
+              total: money(monthCost.reduce((s, p) => s.add(p.cost.total), ZERO)),
+              expenses: money(monthCost.reduce((s, p) => s.add(p.cost.expenses), ZERO)),
             },
           }
         : {}),
-      ...(monthBills ? { monthBilling: { month, gross: money(monthBills._sum.grossAmount ?? ZERO)!, bills: monthBills._count } } : {}),
+      ...(monthBills ? { monthBilling: { month, gross: money(monthBills._sum.grossAmount ?? ZERO), bills: monthBills._count } } : {}),
       ...(financialProgress ? { financialProgress } : {}),
       projects,
     };
@@ -180,8 +180,8 @@ export class DashboardService {
       activitiesScheduled: scheduled.length,
       plannedFinish,
       completionDate: revisedCompletion(project.endDate, eot._sum.eotGrantedDays ?? 0),
-      boqTotalAmount: money(boqTotal)!,
-      boqExecutedAmount: money(boqExecuted)!,
+      boqTotalAmount: money(boqTotal),
+      boqExecutedAmount: money(boqExecuted),
       activitiesTotal: activities.length,
       activitiesCompleted: activities.filter((a) => a.progressPct >= 100).length,
       activitiesDelayed: activities.filter((a) => a.isDelayed).length,

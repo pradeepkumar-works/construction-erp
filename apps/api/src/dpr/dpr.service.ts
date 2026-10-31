@@ -119,7 +119,7 @@ export class DprService {
       id: r.id,
       projectId: r.projectId,
       projectName: r.project.name,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       weather: r.weather,
       siteCondition: r.siteCondition,
       manpower,
@@ -144,8 +144,8 @@ export class DprService {
       formId: r.dprFormConfigId,
       typeCode: typeCodeOf(r.project),
       extra: extraOf(r.extra),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -201,7 +201,7 @@ export class DprService {
       parentActivityName: r.activity.parentActivity?.name ?? null,
       unit: r.activity.unit,
       ...placeOf(r.activity.workElement),
-      quantity: dec(r.quantity)!,
+      quantity: dec(r.quantity),
       location: r.location,
       chainageFrom: r.chainageFrom,
       chainageTo: r.chainageTo,
@@ -209,7 +209,7 @@ export class DprService {
       village: r.village,
       labour: (r.labour as unknown as ManpowerLine[] | null) ?? [],
       machines: (r.machines as unknown as MachineryLine[] | null) ?? [],
-      materials: r.materials.map((m) => ({ itemId: m.itemId, itemName: m.item.name, unit: m.item.unit, quantity: dec(m.quantity)! })),
+      materials: r.materials.map((m) => ({ itemId: m.itemId, itemName: m.item.name, unit: m.item.unit, quantity: dec(m.quantity) })),
       workOrderId: r.workOrderId,
       workOrderNo: r.workOrder?.woNo ?? null,
       remarks: r.remarks,
@@ -221,7 +221,7 @@ export class DprService {
       segmentDiameterMm: r.pipeSegment?.diameterMm ?? null,
       pipeNodeId: r.pipeNodeId,
       nodeCode: r.pipeNode?.code ?? null,
-      scope: dec(r.activity.plannedQty)!,
+      scope: dec(r.activity.plannedQty),
       ...figures[i],
     }));
   }
@@ -284,8 +284,8 @@ export class DprService {
         parentActivityName: a.parentActivity?.name ?? null,
         unit: a.unit,
         ...place,
-        plannedQty: dec(a.plannedQty)!,
-        doneQty: dec(new Prisma.Decimal(doneQty))!,
+        plannedQty: dec(a.plannedQty),
+        doneQty: dec(new Prisma.Decimal(doneQty)),
         lookAhead: started && notOver && (planned <= 0 || doneQty < planned),
         holdPoint: a.holdPoint,
         // The activity's own norms come before its BOQ item's
@@ -322,7 +322,7 @@ export class DprService {
       workOrders: workOrders.map((w) => ({ id: w.id, woNo: w.woNo, title: w.title, vendorName: w.vendor.name })),
       progressFromDpr: org.progressFromDpr,
       segments: segments
-        .map((sg) => ({ id: sg.id, zoneId: sg.zoneId, code: sg.code, fromNodeId: sg.fromNodeId, fromCode: sg.fromNode.code, toNodeId: sg.toNodeId, toCode: sg.toNode.code, lengthM: dec(sg.lengthM)!, diameterMm: sg.diameterMm, held: heldOf.get(sg.id) ?? {} }))
+        .map((sg) => ({ id: sg.id, zoneId: sg.zoneId, code: sg.code, fromNodeId: sg.fromNodeId, fromCode: sg.fromNode.code, toNodeId: sg.toNodeId, toCode: sg.toNode.code, lengthM: dec(sg.lengthM), diameterMm: sg.diameterMm, held: heldOf.get(sg.id) ?? {} }))
         .sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true })),
       valves: valves.map((v) => ({ id: v.id, zoneId: v.zoneId, code: v.code, kind: v.kind, fixed: fixed.has(v.id) })).sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true })),
     };

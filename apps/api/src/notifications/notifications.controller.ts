@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { NotificationJobsService } from './notification-jobs.service';
@@ -17,6 +17,8 @@ import { DocumentTextService } from '../documents/document-text.service';
 @AllowWhenUnpaid()
 @Controller('notifications')
 export class NotificationsController {
+  private readonly log = new Logger(NotificationsController.name);
+
   constructor(
     private notifications: NotificationsService,
     private jobs: NotificationJobsService,
@@ -72,15 +74,15 @@ export class NotificationsController {
   @Get('jobs/dpr-reminder')
   async dprReminder(@Query() q: JobQuery) {
     // Reminders and escalation of waiting approvals ride on both daily crons where nothing runs them hourly.
-    await this.jobs.approvalEscalation().catch(() => undefined);
-    return this.jobs.dprReminder(q.date);
+    const failed = await this.runAll({ APPROVAL_ESCALATION: () => this.jobs.approvalEscalation() });
+    return { ...(await this.jobs.dprReminder(q.date)), failed };
   }
 
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
   @ApiOperation({
-    summary: 'Reminders and escalation of approvals waiting too long (v5 item 94). Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the two daily jobs run it too. Auth: Authorization: Bearer <CRON_SECRET>.',
+    summary: 'Reminders and escalation of approvals waiting too long. Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the two daily jobs run it too. Auth: Authorization: Bearer <CRON_SECRET>.',
   })
   @Get('jobs/approval-escalation')
   approvalEscalation() {
@@ -95,37 +97,48 @@ export class NotificationsController {
   async approvalDigest(@Query() q: JobQuery) {
     // Vercel Hobby has no third cron for the overnight batch, so morning briefs not yet written are written first
     // (a no-op where jobs/briefs already ran), go into the digest email, and are sent after it.
-    await this.jobs.writeBriefs(q.date).catch(() => undefined);
-    await this.jobs.approvalEscalation().catch(() => undefined);
+    const before = await this.runAll({
+      BRIEFS: () => this.jobs.writeBriefs(q.date),
+      APPROVAL_ESCALATION: () => this.jobs.approvalEscalation(),
+    });
     const digest = await this.jobs.approvalDigest(q.date);
-    await this.jobs.morningBrief(q.date).catch(() => undefined);
-    // New early warnings, at most five a person a day.
-    await this.jobs.warningAlerts(q.date).catch(() => undefined);
-    // Vercel Hobby allows two crons, so the daily test and payment reminders ride on the digest's.
-    await this.jobs.testsDue(q.date).catch(() => undefined);
-    await this.jobs.billsDue(q.date).catch(() => undefined);
-    await this.jobs.loanEmisDue(q.date).catch(() => undefined);
-    await this.jobs.machineryDue(q.date).catch(() => undefined);
-    await this.jobs.complianceDue(q.date).catch(() => undefined);
-    await this.jobs.handoverDue(q.date).catch(() => undefined);
-    // ...and, on Mondays, the weekly watch list of early warnings and last week's money in from clients.
-    await this.jobs.watchList(q.date).catch(() => undefined);
-    await this.jobs.receiptsWeekly(q.date).catch(() => undefined);
-    // ...and so does erasing companies whose deletion date has come.
-    await this.companyData.purgeDue(q.date).catch(() => undefined);
-    // ...and starting trials and billing reminders.
-    await this.billing.daily(q.date).catch(() => undefined);
-    // ...and makers' machine feeds where nothing reads them hourly.
-    await this.integrations.pollDue().catch(() => undefined);
-    // ...and reading filed PDFs no search has read yet (Ask the contract), for a minute at most.
-    await this.documentText.readAllPending(60_000).catch(() => undefined);
-    return digest;
+    const after = await this.runAll({
+      MORNING_BRIEF: () => this.jobs.morningBrief(q.date),
+      WARNING_ALERTS: () => this.jobs.warningAlerts(q.date),
+      TESTS_DUE: () => this.jobs.testsDue(q.date),
+      BILLS_DUE: () => this.jobs.billsDue(q.date),
+      LOAN_EMIS_DUE: () => this.jobs.loanEmisDue(q.date),
+      MACHINERY_DUE: () => this.jobs.machineryDue(q.date),
+      COMPLIANCE_DUE: () => this.jobs.complianceDue(q.date),
+      HANDOVER_DUE: () => this.jobs.handoverDue(q.date),
+      OBLIGATIONS_DUE: () => this.jobs.obligationsDue(q.date),
+      WATCH_LIST: () => this.jobs.watchList(q.date),
+      RECEIPTS_WEEKLY: () => this.jobs.receiptsWeekly(q.date),
+      PURGE_COMPANIES: () => this.companyData.purgeDue(q.date),
+      BILLING: () => this.billing.daily(q.date),
+      POLL_FEEDS: () => this.integrations.pollDue(),
+      READ_DOCUMENTS: () => this.documentText.readAllPending(60_000),
+    });
+    return { ...digest, failed: [...before, ...after] };
+  }
+
+  private async runAll(jobs: Record<string, () => Promise<unknown>>): Promise<string[]> {
+    const failed: string[] = [];
+    for (const [name, run] of Object.entries(jobs)) {
+      try {
+        await run();
+      } catch (e) {
+        this.log.error(`${name} failed: ${(e as Error).message}`, (e as Error).stack);
+        failed.push(name);
+      }
+    }
+    return failed;
   }
 
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Reads the text of filed PDFs (current document revisions and letters) not read yet, page by page, for Ask the contract (AI item 75); searches read their own projects\' files too. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Reads the text of filed PDFs (current document revisions and letters) not read yet, page by page, for Ask the contract; searches read their own projects\' files too. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/read-documents')
   async readDocuments() {
     return { job: 'READ_DOCUMENTS', read: await this.documentText.readAllPending(240_000) };
@@ -134,7 +147,7 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: "The overnight batch: today's morning briefs and, on Mondays, last week's summary paragraph for each project's report (AI item 74). Writes only; the digest sends the briefs. Auth: Authorization: Bearer <CRON_SECRET>." })
+  @ApiOperation({ summary: "The overnight batch: today's morning briefs and, on Mondays, last week's summary paragraph for each project's report. Writes only; the digest sends the briefs. Auth: Authorization: Bearer <CRON_SECRET>." })
   @Get('jobs/briefs')
   writeBriefs(@Query() q: JobQuery) {
     return this.jobs.writeBriefs(q.date);
@@ -183,6 +196,15 @@ export class NotificationsController {
   @Get('jobs/compliance-due')
   complianceDue(@Query() q: JobQuery) {
     return this.jobs.complianceDue(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Contract obligations due within 7 days or overdue, each alerted once per stage and deadline (item 171). Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/obligations-due')
+  obligationsDue(@Query() q: JobQuery) {
+    return this.jobs.obligationsDue(q.date);
   }
 
   @Public()

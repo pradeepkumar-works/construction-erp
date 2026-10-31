@@ -15,6 +15,7 @@ import { WorkOrdersService } from '../subcontracts/work-orders.service';
 import { SubcontractBillsService } from '../subcontracts/subcontract-bills.service';
 import { InspectionsService } from '../inspections/inspections.service';
 import { PaymentRequestsService } from '../payables/payment-requests.service';
+import { RequestsToOrderService } from '../purchasing/requests-to-order.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { MaterialApprovalsService } from '../material-approvals/material-approvals.service';
 import { moduleOffMessage, moduleOn } from '../common/module-switch.guard';
@@ -52,6 +53,7 @@ export class CommentTargetsService {
     subBills: SubcontractBillsService,
     inspections: InspectionsService,
     paymentRequests: PaymentRequestsService,
+    toOrder: RequestsToOrderService,
   ) {
     this.getters = {
       PROGRESS: (u, id) => progress.get(u, id),
@@ -67,6 +69,7 @@ export class CommentTargetsService {
       SUBCONTRACT_BILL: (u, id) => subBills.get(u, id),
       INSPECTION: (u, id) => inspections.get(u, id),
       PAYMENT_REQUEST: (u, id) => paymentRequests.get(u, id),
+      SUPPLIER_CHOICE: (u, id) => toOrder.choice(u, id),
     };
   }
 

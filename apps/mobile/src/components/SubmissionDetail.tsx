@@ -171,6 +171,7 @@ const DETAIL_API: Record<SubmissionType, string> = {
   SUBCONTRACT_BILL: 'subcontract-bills',
   INSPECTION: 'inspections',
   PAYMENT_REQUEST: 'payment-requests',
+  SUPPLIER_CHOICE: 'supplier-choices',
 };
 
 /**

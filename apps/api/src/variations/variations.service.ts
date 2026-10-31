@@ -75,7 +75,7 @@ export class VariationsService {
       cause: r.cause,
       description: r.description,
       status: r.status,
-      claimedAmount: money(r.claimedAmount)!,
+      claimedAmount: money(r.claimedAmount),
       approvedAmount: money(r.approvedAmount),
       submittedDate: dateOnly(r.submittedDate),
       submittedRef: r.submittedRef,
@@ -83,8 +83,8 @@ export class VariationsService {
       clientRef: r.clientRef,
       decisionNote: r.decisionNote,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
       lines: r.lines.map((l) => ({
         id: l.id,
         boqItemId: l.boqItemId,
@@ -92,9 +92,9 @@ export class VariationsService {
         itemNo: l.itemNo,
         description: l.description,
         unit: l.unit,
-        qty: dec(l.qty)!,
-        rate: money(l.rate)!,
-        amount: money(round2(l.qty.mul(l.rate)))!,
+        qty: dec(l.qty),
+        rate: money(l.rate),
+        amount: money(round2(l.qty.mul(l.rate))),
         approvedQty: dec(l.approvedQty),
         approvedRate: money(l.approvedRate),
         approvedAmount: l.approvedQty !== null ? money(round2(l.approvedQty.mul(l.approvedRate ?? l.rate))) : null,
@@ -156,8 +156,8 @@ export class VariationsService {
         projectCode: p.code,
         projectName: p.name,
         contractValue: money(p.contractValue),
-        approved: money(approved)!,
-        pending: money(pending)!,
+        approved: money(approved),
+        pending: money(pending),
         revisedContractValue: p.contractValue ? money(p.contractValue.add(approved)) : null,
         count: mine.length,
         unapprovedExtraItems: extraCount.get(p.id) ?? 0,
@@ -293,7 +293,7 @@ export class VariationsService {
     const cur = await this.load(user, id);
     if (cur.status !== 'SUBMITTED') throw new ConflictException(`Only a variation with the client can be decided (this one is ${VARIATION_STATUS_LABELS[cur.status].toLowerCase()})`);
     if (dto.date > todayIn()) throw new BadRequestException('The decision date cannot be in the future');
-    if (cur.submittedDate && dto.date < dateOnly(cur.submittedDate)!) throw new BadRequestException('The decision cannot be dated before the variation was sent');
+    if (cur.submittedDate && dto.date < dateOnly(cur.submittedDate)) throw new BadRequestException('The decision cannot be dated before the variation was sent');
     const decided = { decidedDate: parseDate(dto.date), clientRef: dto.clientRef ?? null, decisionNote: dto.note ?? null };
     if (dto.decision === 'REJECTED') {
       await this.prisma.variation.update({ where: { id }, data: { status: 'REJECTED', ...decided } });

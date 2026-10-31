@@ -51,11 +51,11 @@ import { BankImportDto, BankMatchDto, BankQuery, LockDto, PeriodQuery, ProfitLos
 
 type Tx = Prisma.TransactionClient;
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
-const today = () => dateOnly(new Date())!;
+const today = () => dateOnly(new Date());
 const addDays = (date: string, n: number) => {
   const d = parseDate(date);
   d.setUTCDate(d.getUTCDate() + n);
-  return dateOnly(d)!;
+  return dateOnly(d);
 };
 /** The system accounts the statements make: where a year's profit goes, and what the opening balances do not explain. */
 const PROFIT_KEY = 'PROFIT_AND_LOSS';
@@ -136,14 +136,14 @@ export class StatementsService {
       t.credit = t.credit.add(cr);
       t.closingDebit = t.closingDebit.add(c.gt(0) ? c : 0);
       t.closingCredit = t.closingCredit.add(c.lt(0) ? c.neg() : 0);
-      return [{ accountId: a.id, name: a.name, code: a.code, group: a.group, opening: money(o)!, debit: money(dr)!, credit: money(cr)!, closing: money(c)! }];
+      return [{ accountId: a.id, name: a.name, code: a.code, group: a.group, opening: money(o), debit: money(dr), credit: money(cr), closing: money(c) }];
     });
     return {
       from: q.from,
       to: q.to,
       projectId: q.projectId ?? null,
       rows,
-      totals: Object.fromEntries(Object.entries(t).map(([k, v]) => [k, money(v)!])) as TrialBalanceDto['totals'],
+      totals: Object.fromEntries(Object.entries(t).map(([k, v]) => [k, money(v)])) as TrialBalanceDto['totals'],
     };
   }
 
@@ -172,7 +172,7 @@ export class StatementsService {
         .filter((a) => cells.has(a.id))
         .map((a) => {
           const row = cells.get(a.id)!;
-          return { accountId: a.id, name: a.name, group: a.group, cells: Object.fromEntries(Object.entries(row).map(([k, v]) => [k, money(v)!])), total: money(Object.values(row).reduce((s, v) => s.add(v), D(0)))! };
+          return { accountId: a.id, name: a.name, group: a.group, cells: Object.fromEntries(Object.entries(row).map(([k, v]) => [k, money(v)])), total: money(Object.values(row).reduce((s, v) => s.add(v), D(0))) };
         }),
     };
   }
@@ -201,7 +201,7 @@ export class StatementsService {
     const income = statementLines(figures, PROFIT_LOSS_INCOME);
     const expenses = statementLines(figures, PROFIT_LOSS_EXPENSES);
     const [tax] = statementLines(figures, ['TAX']);
-    const pair = (f: (w: 'amount' | 'previous') => Prisma.Decimal) => ({ amount: money(f('amount'))!, previous: money(f('previous'))! });
+    const pair = (f: (w: 'amount' | 'previous') => Prisma.Decimal) => ({ amount: money(f('amount')), previous: money(f('previous')) });
     const totalIncome = (w: 'amount' | 'previous') => sumLines(income, w);
     const totalExpenses = (w: 'amount' | 'previous') => sumLines(expenses, w);
     const pbt = (w: 'amount' | 'previous') => totalIncome(w).sub(totalExpenses(w));
@@ -238,7 +238,7 @@ export class StatementsService {
         lines.set(line, row);
         profit[col] = (profit[col] ?? D(0)).sub(net);
       }
-      const asText = (r: Record<string, Prisma.Decimal>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, money(v)!]));
+      const asText = (r: Record<string, Prisma.Decimal>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, money(v)]));
       dto.byProject = {
         projects,
         lines: [...PROFIT_LOSS_INCOME, ...PROFIT_LOSS_EXPENSES, 'TAX' as const].map((line) => ({ line, cells: asText(lines.get(line) ?? {}) })),
@@ -273,17 +273,17 @@ export class StatementsService {
     figures.push({ accountId: PROFIT_KEY, name: 'Profit not yet closed into reserves', key: 'PROFIT_NOT_CLOSED', group: 'RESERVES_SURPLUS', statementLine: 'RESERVES', balance: notClosed, previous: notClosedBefore });
     const sections = BALANCE_SHEET_SECTIONS.map((s) => {
       const lines = statementLines(figures, s.lines);
-      return { key: s.key, label: s.label, side: s.side, lines, total: { amount: money(sumLines(lines, 'amount'))!, previous: money(sumLines(lines, 'previous'))! } };
+      return { key: s.key, label: s.label, side: s.side, lines, total: { amount: money(sumLines(lines, 'amount')), previous: money(sumLines(lines, 'previous')) } };
     });
     const side = (which: 'ASSET' | 'LIABILITY', w: 'amount' | 'previous') => sections.filter((s) => s.side === which).reduce((t, s) => t.add(s.total[w]), D(0));
     return {
       asOn,
       previousAsOn,
       sections,
-      totalLiabilities: { amount: money(side('LIABILITY', 'amount'))!, previous: money(side('LIABILITY', 'previous'))! },
-      totalAssets: { amount: money(side('ASSET', 'amount'))!, previous: money(side('ASSET', 'previous'))! },
-      profitNotClosed: { amount: money(notClosed.neg())!, previous: money(notClosedBefore.neg())! },
-      difference: money(side('ASSET', 'amount').sub(side('LIABILITY', 'amount')))!,
+      totalLiabilities: { amount: money(side('LIABILITY', 'amount')), previous: money(side('LIABILITY', 'previous')) },
+      totalAssets: { amount: money(side('ASSET', 'amount')), previous: money(side('ASSET', 'previous')) },
+      profitNotClosed: { amount: money(notClosed.neg()), previous: money(notClosedBefore.neg()) },
+      difference: money(side('ASSET', 'amount').sub(side('LIABILITY', 'amount'))),
     };
   }
 
@@ -324,14 +324,14 @@ export class StatementsService {
       asOn: q.asOn,
       booksBalance,
       statementFrom,
-      book: book.map((b) => ({ date: dateOnly(b.voucher.date)!, debit: b.debit, credit: b.credit, clearedOn: dateOnly(b.statementLine?.date) })),
-      statement: statement.map((s) => ({ date: dateOnly(s.date)!, withdrawal: s.withdrawal, deposit: s.deposit, balance: s.balance, seq: s.seq, matched: !!s.bookLine && dateOnly(s.bookLine.voucher.date)! <= q.asOn })),
+      book: book.map((b) => ({ date: dateOnly(b.voucher.date), debit: b.debit, credit: b.credit, clearedOn: dateOnly(b.statementLine?.date) })),
+      statement: statement.map((s) => ({ date: dateOnly(s.date), withdrawal: s.withdrawal, deposit: s.deposit, balance: s.balance, seq: s.seq, matched: !!s.bookLine && dateOnly(s.bookLine.voucher.date) <= q.asOn })),
     });
     const statementRows: BankStatementLineDto[] = statement
-      .filter((s) => dateOnly(s.date)! >= from || !s.bookLineId)
+      .filter((s) => dateOnly(s.date) >= from || !s.bookLineId)
       .map((s) => ({
         id: s.id,
-        date: dateOnly(s.date)!,
+        date: dateOnly(s.date),
         description: s.description,
         reference: s.reference,
         withdrawal: s.withdrawal.gt(0) ? money(s.withdrawal) : null,
@@ -344,7 +344,7 @@ export class StatementsService {
       }));
     const bookRows: BankBookLineDto[] = book
       .filter((b) => {
-        const d = dateOnly(b.voucher.date)!;
+        const d = dateOnly(b.voucher.date);
         if (statementFrom && d < statementFrom) return false;
         return d >= from || !b.statementLine;
       })
@@ -353,7 +353,7 @@ export class StatementsService {
         lineId: b.id,
         voucherId: b.voucher.id,
         voucherNo: b.voucher.voucherNo,
-        date: dateOnly(b.voucher.date)!,
+        date: dateOnly(b.voucher.date),
         against: againstOf(
           b.voucher.lines.map((l) => ({ accountId: l.accountId, name: l.account.name, debit: l.debit })),
           b,
@@ -366,15 +366,15 @@ export class StatementsService {
         statementDate: dateOnly(b.statementLine?.date),
       }));
     return {
-      account: { id: account.id, name: account.name, balance: money(booksBalance)! },
+      account: { id: account.id, name: account.name, balance: money(booksBalance) },
       asOn: q.asOn,
       statementFrom,
-      booksBalance: money(booksBalance)!,
-      notPresented: money(r.notPresented)!,
-      notCleared: money(r.notCleared)!,
-      bankOnlyDeposits: money(r.bankOnlyDeposits)!,
-      bankOnlyWithdrawals: money(r.bankOnlyWithdrawals)!,
-      expectedBankBalance: money(r.expectedBankBalance)!,
+      booksBalance: money(booksBalance),
+      notPresented: money(r.notPresented),
+      notCleared: money(r.notCleared),
+      bankOnlyDeposits: money(r.bankOnlyDeposits),
+      bankOnlyWithdrawals: money(r.bankOnlyWithdrawals),
+      expectedBankBalance: money(r.expectedBankBalance),
       statementBalance: money(r.statementBalance),
       difference: money(r.difference),
       statement: statementRows,
@@ -428,7 +428,7 @@ export class StatementsService {
     const org = user.organizationId;
     const statement = await this.prisma.bankStatementLine.findMany({ where: { organizationId: org, accountId, bookLineId: null } });
     if (!statement.length) return 0;
-    const dates = statement.map((s) => dateOnly(s.date)!).sort();
+    const dates = statement.map((s) => dateOnly(s.date)).sort();
     const book = await this.prisma.bookLine.findMany({
       where: {
         organizationId: org,
@@ -439,8 +439,8 @@ export class StatementsService {
       include: { voucher: { select: { voucherNo: true, reference: true, date: true } } },
     });
     const pairs = autoMatch(
-      statement.map((s) => ({ id: s.id, date: dateOnly(s.date)!, description: s.description, reference: s.reference, withdrawal: s.withdrawal, deposit: s.deposit })),
-      book.map((b) => ({ id: b.id, date: dateOnly(b.voucher.date)!, voucherNo: b.voucher.voucherNo, reference: b.voucher.reference, debit: b.debit, credit: b.credit })),
+      statement.map((s) => ({ id: s.id, date: dateOnly(s.date), description: s.description, reference: s.reference, withdrawal: s.withdrawal, deposit: s.deposit })),
+      book.map((b) => ({ id: b.id, date: dateOnly(b.voucher.date), voucherNo: b.voucher.voucherNo, reference: b.voucher.reference, debit: b.debit, credit: b.credit })),
     );
     const at = new Date();
     for (const p of pairs) await this.prisma.bankStatementLine.update({ where: { id: p.statementLineId }, data: { bookLineId: p.bookLineId, matchedBy: 'AUTO', matchedAt: at } });
@@ -551,7 +551,7 @@ export class StatementsService {
         closed: !!close,
         closedAt: iso(close?.approvedAt),
         closedByName: close?.approvedBy?.fullName ?? null,
-        profit: money(profit)!,
+        profit: money(profit),
         blockers,
         canClose: approver && !close && blockers.length === 0,
         canReopen: approver && !!close && code === latestClosed,
@@ -563,8 +563,8 @@ export class StatementsService {
       booksFrom,
       lockedUpTo,
       opening: openingLines.map((l) => ({ accountId: l.accountId, name: l.account.name, group: l.account.group, debit: l.debit.gt(0) ? money(l.debit) : null, credit: l.credit.gt(0) ? money(l.credit) : null })),
-      openingDebit: money(openingLines.reduce((s, l) => s.add(l.debit), D(0)))!,
-      openingCredit: money(openingLines.reduce((s, l) => s.add(l.credit), D(0)))!,
+      openingDebit: money(openingLines.reduce((s, l) => s.add(l.debit), D(0))),
+      openingCredit: money(openingLines.reduce((s, l) => s.add(l.credit), D(0))),
       years: years.reverse(),
       canChangeOpening: keep && !(lockedUpTo && booksFrom && dayBefore(booksFrom) <= lockedUpTo),
       canLock: approver,
@@ -640,7 +640,7 @@ export class StatementsService {
     const to = dto.lockedUpTo ?? null;
     if (to && to > today()) throw new BadRequestException('Lock up to today at the latest');
     const lastClose = await this.prisma.bookVoucher.findFirst({ where: { organizationId: org, source: 'YEAR_CLOSE' }, orderBy: { date: 'desc' }, select: { date: true, sourceId: true } });
-    if (lastClose && (!to || to < dateOnly(lastClose.date)!)) throw new BadRequestException(`${lastClose.sourceId} is closed, so the books stay locked up to ${formatDay(dateOnly(lastClose.date))}. Reopen the year to move the lock into it.`);
+    if (lastClose && (!to || to < dateOnly(lastClose.date))) throw new BadRequestException(`${lastClose.sourceId} is closed, so the books stay locked up to ${formatDay(dateOnly(lastClose.date))}. Reopen the year to move the lock into it.`);
     if (to) {
       const waiting = await this.prisma.bookVoucher.count({ where: { organizationId: org, source: 'MANUAL', status: 'SUBMITTED', date: { lte: parseDate(to) } } });
       if (waiting) throw new BadRequestException(`${waiting === 1 ? '1 voucher' : `${waiting} vouchers`} dated on or before ${formatDay(to)} ${waiting === 1 ? 'waits' : 'wait'} for approval. Decide ${waiting === 1 ? 'it' : 'them'} first.`);
@@ -676,7 +676,7 @@ export class StatementsService {
           profitAccount,
         );
         const st = await tx.booksState.findUnique({ where: { organizationId: org } });
-        const lockTo = st?.lockedUpTo && dateOnly(st.lockedUpTo)! > y.to ? st.lockedUpTo : parseDate(y.to);
+        const lockTo = st?.lockedUpTo && dateOnly(st.lockedUpTo) > y.to ? st.lockedUpTo : parseDate(y.to);
         await tx.booksState.upsert({ where: { organizationId: org }, create: { organizationId: org, lockedUpTo: lockTo }, update: { lockedUpTo: lockTo } });
         await tx.bookVoucher.create({
           data: {
@@ -733,6 +733,6 @@ export class StatementsService {
     ]);
     const pl = new Set(accounts.filter((a) => ACCOUNT_GROUP_NATURE[a.group] === 'INCOME' || ACCOUNT_GROUP_NATURE[a.group] === 'EXPENSE').map((a) => a.id));
     const profit = rows.filter((r) => pl.has(r.accountId)).reduce((s, r) => s.add(r.credit).sub(r.debit), D(0));
-    return { profitThisYear: money(profit)!, unmatchedBankLines: unmatched };
+    return { profitThisYear: money(profit), unmatchedBankLines: unmatched };
   }
 }

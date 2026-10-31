@@ -50,8 +50,8 @@ export class SavedViewsService {
       ownerId: r.userId,
       ownerName: r.user.fullName,
       mine: r.userId === user.id,
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

@@ -30,7 +30,7 @@ export class CreateReceiptDto {
   materialRequestId?: string;
   @ApiPropertyOptional({ description: 'An approved, open purchase order; the supplier is its vendor' }) @IsOptional() @IsUUID() purchaseOrderId?: string;
   @ApiPropertyOptional({ description: "With purchaseOrderId: the supplier's dispatch note this GRN receives (supplier portal)" }) @IsOptional() @IsUUID() supplierDispatchId?: string;
-  @ApiPropertyOptional({ description: 'With purchaseOrderId: the weighbridge ticket this GRN was drafted from (item 148); weighed, of this order, not received yet' }) @IsOptional() @IsUUID() weighTicketId?: string;
+  @ApiPropertyOptional({ description: 'With purchaseOrderId: the weighbridge ticket this GRN was drafted from; weighed, of this order, not received yet' }) @IsOptional() @IsUUID() weighTicketId?: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
   @ApiPropertyOptional({ example: 'Maa Tarini Traders' }) @IsOptional() @IsString() @trim() @MaxLength(200) supplier?: string | null;
   @ApiPropertyOptional(VENDOR_ID_DOC) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() vendorId?: string | null;
@@ -65,7 +65,7 @@ export class CreateIssueDto {
   @IsUUID()
   workOrderId?: string;
   @ApiPropertyOptional({ description: 'Activity the material is used for' }) @IsOptional() @IsUUID() activityId?: string | null;
-  @ApiPropertyOptional({ description: "Component or pipe zone the material goes to (item 128); the activity's own when an activity is given" }) @IsOptional() @IsUUID() workElementId?: string | null;
+  @ApiPropertyOptional({ description: "Component or pipe zone the material goes to; the activity's own when an activity is given" }) @IsOptional() @IsUUID() workElementId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
 
   @ApiProperty({ type: [IssueLineDto], description: 'Each quantity may not exceed the stock at the project.' })
@@ -104,7 +104,7 @@ export class CreateAdjustmentDto {
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
   @ApiProperty({ example: 'Opening stock as on 1 Oct', description: 'What happened, required' }) @IsString() @trim() @MinLength(3) @MaxLength(1000) remarks: string;
-  @ApiPropertyOptional({ enum: STOCK_ADJUSTMENT_REASONS, description: 'Why (v5 item 92): opening stock, or a loss or gain the wastage report counts. Left out on older phone builds.' })
+  @ApiPropertyOptional({ enum: STOCK_ADJUSTMENT_REASONS, description: 'Why: opening stock, or a loss or gain the wastage report counts. Left out on older phone builds.' })
   @IsOptional() @IsIn(STOCK_ADJUSTMENT_REASONS) reason?: StockAdjustmentReason;
 
   @ApiProperty({ type: [AdjustmentLineDto] })
@@ -171,7 +171,7 @@ export class CreateSiteReturnDto {
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
   @ApiProperty({ example: 'Kalinga Builders (slab gang)', description: 'Who brought the material back' }) @IsString() @trim() @MinLength(1) @MaxLength(200) issuedTo: string;
   @ApiPropertyOptional({ description: 'Activity it had been issued for' }) @IsOptional() @IsUUID() activityId?: string | null;
-  @ApiPropertyOptional({ description: "Component or pipe zone it had been issued to (item 128); the activity's own when an activity is given" }) @IsOptional() @IsUUID() workElementId?: string | null;
+  @ApiPropertyOptional({ description: "Component or pipe zone it had been issued to; the activity's own when an activity is given" }) @IsOptional() @IsUUID() workElementId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
 
   @ApiProperty({ type: [IssueLineDto] })
@@ -233,7 +233,7 @@ export class ListStockBalancesQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional({ description: 'Only items below their minimum level' }) @IsOptional() @QueryBool() @IsBoolean() lowOnly?: boolean;
   @ApiPropertyOptional({ description: 'Only items with stock on hand (balance above zero)' }) @IsOptional() @QueryBool() @IsBoolean() inStock?: boolean;
-  @ApiPropertyOptional({ description: 'Only fuel items (v5 item 93)' }) @IsOptional() @QueryBool() @IsBoolean() fuel?: boolean;
+  @ApiPropertyOptional({ description: 'Only fuel items' }) @IsOptional() @QueryBool() @IsBoolean() fuel?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.stockBalances, default: 'item' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.stockBalances as unknown as string[]) sortBy?: StockBalanceSortField;
 }
 
@@ -242,7 +242,7 @@ export class ReceivableQuery {
 }
 
 export class ListItemsQuery extends PageQuery {
-  @ApiPropertyOptional({ description: 'Only fuel items (v5 item 93)' }) @IsOptional() @QueryBool() @IsBoolean() fuel?: boolean;
+  @ApiPropertyOptional({ description: 'Only fuel items' }) @IsOptional() @QueryBool() @IsBoolean() fuel?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.items, default: 'name' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.items as unknown as string[]) sortBy?: ItemSortField;
 }
 
@@ -251,8 +251,8 @@ export class CreateItemDto {
   @ApiProperty({ example: 'Bags' }) @IsString() @trim() @MinLength(1) @MaxLength(30) unit: string;
   @ApiPropertyOptional({ example: 'Cement' }) @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ example: '395.00', description: 'Standard rate per unit; values issues in the cost view' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
-  @ApiPropertyOptional({ description: 'Diesel, petrol and the like: issued to machines and in the daily fuel position (v5 item 93)' }) @IsOptional() @IsBoolean() isFuel?: boolean;
-  @ApiPropertyOptional({ example: 110, description: 'Pipe (item 128): the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;
+  @ApiPropertyOptional({ description: 'Diesel, petrol and the like: issued to machines and in the daily fuel position' }) @IsOptional() @IsBoolean() isFuel?: boolean;
+  @ApiPropertyOptional({ example: 110, description: 'Pipe: the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;
   @ApiPropertyOptional({ enum: PIPE_MATERIALS, nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(PIPE_MATERIALS) pipeMaterial?: PipeMaterial | null;
   @ApiPropertyOptional({ example: '42.5', description: 'Pipe bought by weight: kg per metre, to turn issues into metres' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() kgPerMetre?: string | null;
 }
@@ -263,7 +263,7 @@ export class UpdateItemDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ example: '395.00' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() isFuel?: boolean;
-  @ApiPropertyOptional({ example: 110, description: 'Pipe (item 128): the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;
+  @ApiPropertyOptional({ example: 110, description: 'Pipe: the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;
   @ApiPropertyOptional({ enum: PIPE_MATERIALS, nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(PIPE_MATERIALS) pipeMaterial?: PipeMaterial | null;
   @ApiPropertyOptional({ example: '42.5', description: 'Pipe bought by weight: kg per metre, to turn issues into metres' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() kgPerMetre?: string | null;
 }
@@ -294,7 +294,7 @@ class GrnQcLineDto {
 export class CheckGrnDto {
   @ApiProperty({ enum: GRN_QC_STATUSES }) @IsIn(GRN_QC_STATUSES) status: GrnQcStatus;
   @ApiPropertyOptional({ example: '20 bags lumpy, set aside for return' }) @IsOptional() @IsString() @MaxLength(1000) note?: string;
-  @ApiPropertyOptional({ example: 'TC/24/88123', description: "The maker's test certificate for the lot (item 137 part 2)" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) mtcNo?: string | null;
+  @ApiPropertyOptional({ example: 'TC/24/88123', description: "The maker's test certificate for the lot" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) mtcNo?: string | null;
   @ApiPropertyOptional({ example: '2026-10-18', description: 'The date on the certificate' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() mtcDate?: string | null;
   @ApiPropertyOptional({ type: [GrnQcLineDto], description: 'Partly accepted: the rejected quantity per line' })
   @IsOptional()

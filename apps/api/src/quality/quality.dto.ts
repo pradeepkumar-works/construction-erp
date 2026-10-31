@@ -67,7 +67,7 @@ export class CreateTestDto {
   @ArrayMaxSize(200)
   @IsUUID('all', { each: true })
   segmentIds?: string[];
-  @ApiPropertyOptional({ example: 'CUBE', description: "The test type it is taken as (item 137); counts it under the project's quality plan" })
+  @ApiPropertyOptional({ example: 'CUBE', description: "The test type it is taken as; counts it under the project's quality plan" })
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
   @trim()
@@ -80,7 +80,7 @@ export class CreateTestDto {
   @IsUUID()
   planLineId?: string | null;
   @ApiPropertyOptional({ description: 'Cubes taken at a pour of the same project' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pourId?: string | null;
-  @ApiPropertyOptional({ description: 'The lab the sample went to (item 137 part 2)' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() labId?: string | null;
+  @ApiPropertyOptional({ description: 'The lab the sample went to' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() labId?: string | null;
   @ApiPropertyOptional({ example: '2026-10-21', description: 'The day the sample went to the lab' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() sentOn?: string | null;
   @ApiPropertyOptional({ example: 'KTL/2026/4471' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) labReportNo?: string | null;
   @ApiPropertyOptional({ example: '2026-11-19', description: "The day of the lab's report" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() reportOn?: string | null;

@@ -124,8 +124,8 @@ export class OfficialReportsService {
       id: r.id,
       projectId: r.projectId,
       kind: r.kind,
-      from: dateOnly(r.periodFrom)!,
-      to: dateOnly(r.periodTo)!,
+      from: dateOnly(r.periodFrom),
+      to: dateOnly(r.periodTo),
       reportNo: r.reportNo,
       docNo: r.docNo,
       revision: r.revision,
@@ -261,7 +261,7 @@ export class OfficialReportsService {
       { label: 'Consultant', value: p.consultantName ?? '–' },
       { label: 'Contractor', value: org.name },
       { label: 'LOA / work order no.', value: p.workOrderNo ?? '–' },
-      { label: 'Agreement no.', value: project.agreementNo ? join(project.agreementNo, project.agreementDate ? `dated ${officialDate(dateOnly(project.agreementDate)!)}` : null) : '–' },
+      { label: 'Agreement no.', value: project.agreementNo ? join(project.agreementNo, project.agreementDate ? `dated ${officialDate(dateOnly(project.agreementDate))}` : null) : '–' },
       { label: 'Location', value: p.location ?? '–' },
       { label: q.kind === 'DAILY' ? 'Date' : q.kind === 'WEEKLY' ? 'Week' : 'Month', value: officialPeriodWords(q.kind, from, to) },
       { label: 'Work started', value: p.startDate, kind: 'date' },
@@ -679,7 +679,7 @@ export class OfficialReportsService {
       chapters.push({
         key: 'previous',
         title: 'Previous monthly reports',
-        blocks: [table([col('no', 'MPR no.', 'count'), col('month', 'Month'), col('rev', 'Revision', 'count'), col('date', 'Submitted on', 'date'), col('by', 'Issued by')], previous.map((r) => ({ no: r.reportNo, month: officialPeriodWords('MONTHLY', dateOnly(r.periodFrom)!, dateOnly(r.periodTo)!), rev: r.revision, date: dateOnly(r.issuedAt), by: r.issuedBy.fullName })), '')],
+        blocks: [table([col('no', 'MPR no.', 'count'), col('month', 'Month'), col('rev', 'Revision', 'count'), col('date', 'Submitted on', 'date'), col('by', 'Issued by')], previous.map((r) => ({ no: r.reportNo, month: officialPeriodWords('MONTHLY', dateOnly(r.periodFrom), dateOnly(r.periodTo)), rev: r.revision, date: dateOnly(r.issuedAt), by: r.issuedBy.fullName })), '')],
       });
     }
     chapters.push({ key: 'schedule', title: 'Progress against the programme', blocks: [this.delayTable(c)] });
@@ -743,7 +743,7 @@ export class OfficialReportsService {
       title: 'Meetings and their actions',
       blocks: [
         table([col('no', 'No.'), col('date', 'Date', 'date'), col('venue', 'Venue'), col('subject', 'Subject'), col('kind', 'Kind'), col('chair', 'Chaired by'), col('actions', 'Actions', 'count')], meetings.map((m) => ({ no: m.meetingNo, date: dateOnly(m.heldOn), venue: m.venue, subject: m.title, kind: MEETING_KIND_LABELS[m.kind], chair: m.chairedBy, actions: m._count.actions })), 'No meetings this month', { title: 'Meetings held this month' }),
-        table([col('mom', 'Minutes'), col('action', 'Action'), col('owner', 'By'), col('due', 'Due', 'date'), col('status', 'Status'), col('done', 'Done on', 'date')], actions.map((a) => ({ mom: `${a.meeting.meetingNo} (${officialDate(dateOnly(a.meeting.heldOn)!)})`, action: a.text, owner: a.ownerName, due: dateOnly(a.dueOn), status: MEETING_ACTION_STATUS_LABELS[a.status], done: dateOnly(a.doneOn) })), 'No actions open', {
+        table([col('mom', 'Minutes'), col('action', 'Action'), col('owner', 'By'), col('due', 'Due', 'date'), col('status', 'Status'), col('done', 'Done on', 'date')], actions.map((a) => ({ mom: `${a.meeting.meetingNo} (${officialDate(dateOnly(a.meeting.heldOn))})`, action: a.text, owner: a.ownerName, due: dateOnly(a.dueOn), status: MEETING_ACTION_STATUS_LABELS[a.status], done: dateOnly(a.doneOn) })), 'No actions open', {
           title: 'Compliance of the minutes',
           note: 'Actions still open, and those closed this month.',
         }),
@@ -840,7 +840,7 @@ export class OfficialReportsService {
       { label: 'Consultant', value: p.consultantName ?? '–' },
       { label: 'Contractor', value: c.base.organizationName },
       { label: 'LOA / work order no.', value: p.workOrderNo ?? '–' },
-      { label: 'Agreement no.', value: c.project.agreementNo ? join(c.project.agreementNo, c.project.agreementDate ? `dated ${officialDate(dateOnly(c.project.agreementDate)!)}` : null) : '–' },
+      { label: 'Agreement no.', value: c.project.agreementNo ? join(c.project.agreementNo, c.project.agreementDate ? `dated ${officialDate(dateOnly(c.project.agreementDate))}` : null) : '–' },
       ...(k ? [{ label: 'Cost of work', value: k.contractValue, kind: 'money' as const }, { label: 'Revised cost (with approved variations)', value: k.revisedContractValue, kind: 'money' as const }] : []),
       { label: 'Start date', value: p.startDate, kind: 'date' },
       { label: 'Completion as per agreement', value: p.endDate, kind: 'date' },

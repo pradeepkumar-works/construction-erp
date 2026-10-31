@@ -116,8 +116,8 @@ export class SupplierService {
       invoicesWithAccounts: invoices.filter((i) => i.stage === 'SUBMITTED').length,
       invoicesReturned: invoices.filter((i) => i.stage === 'RETURNED').length,
       changesPending,
-      due: money(split.due)!,
-      overdue: money(split.overdue)!,
+      due: money(split.due),
+      overdue: money(split.overdue),
       lastPayment: last ? { date: last.date, amount: last.amount } : null,
     };
   }
@@ -170,15 +170,15 @@ export class SupplierService {
         kind: 'PO' as const,
         id: p.id,
         number: p.poNo,
-        date: dateOnly(p.poDate)!,
-        sortDate: dateOnly(p.poDate)!,
+        date: dateOnly(p.poDate),
+        sortDate: dateOnly(p.poDate),
         projectName: p.project.name,
         title: p.deliveryAddress ?? p.project.name,
         deliveryAddress: p.deliveryAddress,
         dueBy: dateOnly(p.deliveryBy),
         paymentTerms: p.paymentTerms,
         paymentDays: p.paymentDays,
-        amount: money(p.total)!,
+        amount: money(p.total),
         acceptedAt: iso(p.supplierAcceptedAt),
         acceptedBy: p.supplierAcceptedBy?.fullName ?? null,
         supplierNote: p.supplierNote,
@@ -191,12 +191,12 @@ export class SupplierService {
             itemName: l.itemName,
             specification: l.specification,
             unit: l.unit,
-            quantity: dec(l.quantity)!,
-            rate: money(l.rate)!,
-            amount: money(l.amount)!,
-            onTheWay: dec(onTheWay)!,
-            received: dec(received)!,
-            toSend: dec(p.closedAt ? ZERO : toSend(l.quantity, received, onTheWay))!,
+            quantity: dec(l.quantity),
+            rate: money(l.rate),
+            amount: money(l.amount),
+            onTheWay: dec(onTheWay),
+            received: dec(received),
+            toSend: dec(p.closedAt ? ZERO : toSend(l.quantity, received, onTheWay)),
           };
         }),
       })),
@@ -204,20 +204,20 @@ export class SupplierService {
         kind: 'WO' as const,
         id: w.id,
         number: w.woNo,
-        date: dateOnly(w.woDate)!,
-        sortDate: dateOnly(w.woDate)!,
+        date: dateOnly(w.woDate),
+        sortDate: dateOnly(w.woDate),
         projectName: w.project.name,
         title: w.title,
         deliveryAddress: null,
         dueBy: dateOnly(w.endDate),
         paymentTerms: w.terms,
         paymentDays: w.paymentDays,
-        amount: money(w.value)!,
+        amount: money(w.value),
         acceptedAt: iso(w.supplierAcceptedAt),
         acceptedBy: w.supplierAcceptedBy?.fullName ?? null,
         supplierNote: w.supplierNote,
         closed: !!w.closedAt,
-        lines: w.lines.map((l) => ({ id: l.id, itemName: l.description, specification: null, unit: l.unit, quantity: dec(l.quantity)!, rate: money(l.rate)!, amount: money(l.amount)!, onTheWay: '0', received: '0', toSend: '0' })),
+        lines: w.lines.map((l) => ({ id: l.id, itemName: l.description, specification: null, unit: l.unit, quantity: dec(l.quantity), rate: money(l.rate), amount: money(l.amount), onTheWay: '0', received: '0', toSend: '0' })),
       })),
     ];
     return out.sort((a, b) => b.sortDate.localeCompare(a.sortDate) || b.number.localeCompare(a.number)).map(({ sortDate: _s, ...o }) => o);
@@ -260,7 +260,7 @@ export class SupplierService {
     return {
       id: d.id,
       dispatchNo: d.dispatchNo,
-      date: dateOnly(d.date)!,
+      date: dateOnly(d.date),
       purchaseOrderId: d.purchaseOrderId,
       poNo: d.purchaseOrder.poNo,
       projectName: d.purchaseOrder.project.name,
@@ -269,10 +269,10 @@ export class SupplierService {
       transporter: d.transporter,
       remarks: d.remarks,
       status: d.cancelledAt ? 'CANCELLED' : d.grn ? 'RECEIVED' : 'ON_THE_WAY',
-      grn: d.grn ? { id: d.grn.id, entryNo: d.grn.entryNo, date: dateOnly(d.grn.date)! } : null,
+      grn: d.grn ? { id: d.grn.id, entryNo: d.grn.entryNo, date: dateOnly(d.grn.date) } : null,
       lines: [...d.lines]
         .sort((a, b) => a.purchaseOrderLine.sortOrder - b.purchaseOrderLine.sortOrder)
-        .map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, itemName: l.purchaseOrderLine.itemName, unit: l.purchaseOrderLine.unit, quantity: dec(l.quantity)! })),
+        .map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, itemName: l.purchaseOrderLine.itemName, unit: l.purchaseOrderLine.unit, quantity: dec(l.quantity) })),
       createdAt: d.createdAt.toISOString(),
     };
   }
@@ -370,9 +370,9 @@ export class SupplierService {
             select: { id: true, billNo: true, invoiceNo: true, status: true, netPayable: true, debitNoteAmount: true, paidAmount: true, workOrder: { select: { woNo: true } } },
           }),
         ]);
-        for (const b of vbills) out.set(`${vendorId}|${b.invoiceNo}`, { kind: 'VENDOR_BILL', id: b.id, billNo: b.billNo, status: b.status, payable: money(vendorBillPayable(b))!, paid: money(b.paidAmount)! });
+        for (const b of vbills) out.set(`${vendorId}|${b.invoiceNo}`, { kind: 'VENDOR_BILL', id: b.id, billNo: b.billNo, status: b.status, payable: money(vendorBillPayable(b)), paid: money(b.paidAmount) });
         for (const b of sbills)
-          if (b.invoiceNo) out.set(`${vendorId}|${b.invoiceNo}`, { kind: 'SUBCONTRACT_BILL', id: b.id, billNo: `${b.workOrder.woNo} bill ${b.billNo}`, status: b.status, payable: money(subBillPayable(b))!, paid: money(b.paidAmount)! });
+          if (b.invoiceNo) out.set(`${vendorId}|${b.invoiceNo}`, { kind: 'SUBCONTRACT_BILL', id: b.id, billNo: `${b.workOrder.woNo} bill ${b.billNo}`, status: b.status, payable: money(subBillPayable(b)), paid: money(b.paidAmount) });
       }),
     );
     return out;
@@ -388,8 +388,8 @@ export class SupplierService {
         vendorId: r.vendorId,
         vendorName: r.vendor.name,
         invoiceNo: r.invoiceNo,
-        invoiceDate: dateOnly(r.invoiceDate)!,
-        amount: money(r.amount)!,
+        invoiceDate: dateOnly(r.invoiceDate),
+        amount: money(r.amount),
         gstAmount: money(r.gstAmount),
         purchaseOrderId: r.purchaseOrderId,
         poNo: r.purchaseOrder?.poNo ?? null,
@@ -548,12 +548,12 @@ export class SupplierService {
           id: b.id,
           ref: b.billNo,
           invoiceNo: b.invoiceNo,
-          date: dateOnly(b.invoiceDate)!,
-          dueDate: dateOnly(b.dueDate)!,
+          date: dateOnly(b.invoiceDate),
+          dueDate: dateOnly(b.dueDate),
           projectName: b.project.name,
-          payable: money(payable)!,
-          paid: money(b.paidAmount)!,
-          due: money(b.status === 'APPROVED' ? payable.sub(b.paidAmount) : payable)!,
+          payable: money(payable),
+          paid: money(b.paidAmount),
+          due: money(b.status === 'APPROVED' ? payable.sub(b.paidAmount) : payable),
           status: b.status,
         };
       }),
@@ -564,12 +564,12 @@ export class SupplierService {
           id: b.id,
           ref: `${b.workOrder.woNo} bill ${b.billNo}`,
           invoiceNo: b.invoiceNo,
-          date: dateOnly(b.billDate)!,
-          dueDate: dateOnly(b.dueDate)!,
+          date: dateOnly(b.billDate),
+          dueDate: dateOnly(b.dueDate),
           projectName: b.project.name,
-          payable: money(payable)!,
-          paid: money(b.paidAmount)!,
-          due: money(b.status === 'APPROVED' ? payable.sub(b.paidAmount) : payable)!,
+          payable: money(payable),
+          paid: money(b.paidAmount),
+          due: money(b.status === 'APPROVED' ? payable.sub(b.paidAmount) : payable),
           status: b.status,
         };
       }),
@@ -587,11 +587,11 @@ export class SupplierService {
     const entries: StatementEntry[] = [
       ...vbills
         .filter((b) => b.status === 'APPROVED')
-        .map((b) => ({ date: dateOnly(b.invoiceDate)!, kind: 'BILL' as const, ref: b.billNo, description: `Invoice ${b.invoiceNo}, ${b.project.name}`, debit: 0, credit: vendorBillCredit(b) })),
+        .map((b) => ({ date: dateOnly(b.invoiceDate), kind: 'BILL' as const, ref: b.billNo, description: `Invoice ${b.invoiceNo}, ${b.project.name}`, debit: 0, credit: vendorBillCredit(b) })),
       ...sbills
         .filter((b) => b.status === 'APPROVED')
         .map((b) => ({
-          date: dateOnly(b.billDate)!,
+          date: dateOnly(b.billDate),
           kind: 'BILL' as const,
           ref: `${b.workOrder.woNo}/${b.billNo}`,
           description: `${b.isFinal ? 'Final' : 'Running'} bill ${b.billNo} on ${b.workOrder.woNo}, ${b.project.name}${b.retentionAmount.gt(0) ? ` (retention ${inr(b.retentionAmount.toNumber())} held)` : ''}`,
@@ -599,37 +599,37 @@ export class SupplierService {
           credit: subBillCredit(b),
         })),
       ...payments.map((p) => ({
-        date: dateOnly(p.paymentDate)!,
+        date: dateOnly(p.paymentDate),
         kind: p.vendorBill || p.subcontractBill ? ('PAYMENT' as const) : ('ADVANCE' as const),
         ref: p.reference ?? p.mode,
         description: `${against(p)}${p.tdsAmount.gt(0) ? `, TDS ${inr(p.tdsAmount.toNumber())}` : ''}${p.otherDeduction.gt(0) ? `, deducted ${inr(p.otherDeduction.toNumber())}` : ''}`,
         debit: paymentDebit(p),
         credit: 0,
       })),
-      ...notes.map((n) => ({ date: dateOnly(n.date)!, kind: 'DEBIT_NOTE' as const, ref: n.noteNo, description: DEBIT_NOTE_REASON_LABELS[n.reason], debit: n.total, credit: 0 })),
+      ...notes.map((n) => ({ date: dateOnly(n.date), kind: 'DEBIT_NOTE' as const, ref: n.noteNo, description: DEBIT_NOTE_REASON_LABELS[n.reason], debit: n.total, credit: 0 })),
     ];
     const s = statement(entries, from);
     const deducted = sum(payments, (p) => D(p.tdsAmount).add(p.otherDeduction)).add(sum(notes, (n) => n.total));
     const paid = sum(payments, (p) => p.amount);
-    const rows = s.rows.map((r) => ({ date: r.date, kind: r.kind, ref: r.ref, description: r.description, debit: money(D(r.debit))!, credit: money(D(r.credit))!, balance: money(r.balance)! }));
-    if (s.opening) rows.unshift({ date: from!, kind: 'BILL', ref: '', description: 'Opening balance', debit: '0.00', credit: '0.00', balance: money(s.opening)! });
+    const rows = s.rows.map((r) => ({ date: r.date, kind: r.kind, ref: r.ref, description: r.description, debit: money(D(r.debit)), credit: money(D(r.credit)), balance: money(r.balance) }));
+    if (s.opening) rows.unshift({ date: from!, kind: 'BILL', ref: '', description: 'Opening balance', debit: '0.00', credit: '0.00', balance: money(s.opening) });
     return {
       from,
       to: todayIn(),
       rows,
-      billed: money(s.billed)!,
-      paid: money(paid)!,
-      deducted: money(deducted)!,
-      balance: money(s.balance)!,
-      retentionHeld: money(sum(sbills.filter((b) => b.status === 'APPROVED'), (b) => b.retentionAmount))!,
+      billed: money(s.billed),
+      paid: money(paid),
+      deducted: money(deducted),
+      balance: money(s.balance),
+      retentionHeld: money(sum(sbills.filter((b) => b.status === 'APPROVED'), (b) => b.retentionAmount)),
       bills,
       payments: payments.map(
         (p): SupplierPaymentDto => ({
           id: p.id,
-          date: dateOnly(p.paymentDate)!,
-          amount: money(p.amount)!,
-          tds: money(p.tdsAmount)!,
-          otherDeduction: money(p.otherDeduction)!,
+          date: dateOnly(p.paymentDate),
+          amount: money(p.amount),
+          tds: money(p.tdsAmount),
+          otherDeduction: money(p.otherDeduction),
           mode: p.mode,
           reference: p.reference,
           against: against(p),

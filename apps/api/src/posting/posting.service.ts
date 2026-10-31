@@ -137,7 +137,7 @@ export class PostingService {
     const held: TallyHeldDto[] = [];
     const add = (v: Voucher) => {
       if (balanced(v.lines)) vouchers.push(v);
-      else held.push({ kind: v.kind, sourceId: v.sourceId, date: dateOnly(v.date)!, number: v.number, party: v.party, reason: `Does not balance: debits ${debits(v.lines).toFixed(2)}, credits ${credits(v.lines).toFixed(2)}` });
+      else held.push({ kind: v.kind, sourceId: v.sourceId, date: dateOnly(v.date), number: v.number, party: v.party, reason: `Does not balance: debits ${debits(v.lines).toFixed(2)}, credits ${credits(v.lines).toFixed(2)}` });
     };
     const cc = { costCentre: true };
 
@@ -176,7 +176,7 @@ export class PostingService {
       const number = `RCPT/${shortId(r.id)}`;
       const ref = r.bill ? raBillRef(r.project.code, r.bill.billNo) : null;
       if (tally && r.bill && !r.bill.tallyExportId && !exportedBills.has(r.bill.id)) {
-        held.push({ kind: 'RECEIPT', sourceId: r.id, date: dateOnly(r.receiptDate)!, number, party: client.name, reason: `Its RA bill ${r.bill.billNo} goes to Tally once the client certifies it` });
+        held.push({ kind: 'RECEIPT', sourceId: r.id, date: dateOnly(r.receiptDate), number, party: client.name, reason: `Its RA bill ${r.bill.billNo} goes to Tally once the client certifies it` });
         continue;
       }
       const settled = [r.amount, r.tdsAmount, r.gstTdsAmount, r.retentionAmount, r.securityDepositAmount, r.advanceRecoveryAmount, r.labourCessAmount, r.otherDeduction].reduce((s, v) => s.add(v), D(0));

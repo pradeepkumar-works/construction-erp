@@ -84,7 +84,7 @@ export class StockViewsService {
     const { from, to, date } = this.period(q);
     const approvedLines = { projectId, status: 'APPROVED' as const, date, OR: [{ dailyReportId: { not: null } }, { materials: { some: {} } }] };
     const firstUse = await this.prisma.progressEntry.findFirst({ where: { projectId, status: 'APPROVED', date: { lte: parseDate(to) }, materials: { some: {} } }, orderBy: { date: 'asc' }, select: { date: true } });
-    const frontFrom = firstUse ? addDays(dateOnly(firstUse.date)!, -USE_ISSUE_DAYS) : null;
+    const frontFrom = firstUse ? addDays(dateOnly(firstUse.date), -USE_ISSUE_DAYS) : null;
     const [elements, activities, norms, placed, used, issues, untied, frontIssues, frontUsed] = await Promise.all([
       this.prisma.workElement.findMany({ where: { projectId }, select: ELEMENT_SELECT }),
       this.prisma.activity.findMany({ where: { projectId }, select: { id: true, name: true, unit: true, plannedQty: true, workElementId: true } }),
@@ -133,11 +133,11 @@ export class StockViewsService {
               itemId: r.itemId,
               itemName: item.name,
               unit: item.unit,
-              designQty: dec(r.design)!,
-              neededQty: dec(r.needed)!,
-              allowedQty: dec(r.allowed)!,
-              usedQty: dec(r.used)!,
-              issuedQty: dec(r.issued)!,
+              designQty: dec(r.design),
+              neededQty: dec(r.needed),
+              allowedQty: dec(r.allowed),
+              usedQty: dec(r.used),
+              issuedQty: dec(r.issued),
               atFrontQty: r.atFront ? dec(r.atFront) : null,
               variancePct: r.variancePct,
               status: r.status,
@@ -147,11 +147,11 @@ export class StockViewsService {
                   activityId: a.id,
                   activityName: a.name,
                   unit: a.unit,
-                  plannedQty: dec(l.planned)!,
-                  placedQty: dec(l.placed)!,
+                  plannedQty: dec(l.planned),
+                  placedQty: dec(l.placed),
                   qtyPerUnit: norm6(l.qtyPerUnit),
                   wastagePct: pctStr(l.wastagePct),
-                  usedQty: dec(l.used)!,
+                  usedQty: dec(l.used),
                   achievedPerUnit: l.achievedPerUnit ? norm6(l.achievedPerUnit) : null,
                 };
               }),
@@ -383,10 +383,10 @@ export class StockViewsService {
         unit: itemOf.get(r.itemId)!.unit,
         perKit: norm6(r.perKit),
         wastagePct: pctStr(r.wastagePct),
-        neededQty: dec(r.needed)!,
-        issuedQty: dec(r.issued)!,
-        usedQty: dec(r.used)!,
-        differenceQty: dec(r.difference)!,
+        neededQty: dec(r.needed),
+        issuedQty: dec(r.issued),
+        usedQty: dec(r.used),
+        differenceQty: dec(r.difference),
         kitsShort: r.kitsShort,
         status: r.status,
       }));
@@ -395,8 +395,8 @@ export class StockViewsService {
         activityName: a.name,
         elementLabel: a.workElement ? `${a.workElement.code} ${labelOf(a.workElement)}` : null,
         unit: a.unit,
-        doneQty: dec(doneQty)!,
-        plannedQty: dec(a.plannedQty)!,
+        doneQty: dec(doneQty),
+        plannedQty: dec(a.plannedQty),
         components,
         kitsShort: Math.max(0, ...components.map((c) => c.kitsShort)),
       };
@@ -429,11 +429,11 @@ export class StockViewsService {
       }),
       this.prisma.workElement.findMany({ where: { projectId }, select: ELEMENT_SELECT }),
     ]);
-    const tiesIssues = issues.some((i) => dateOnly(i.date)! >= from);
+    const tiesIssues = issues.some((i) => dateOnly(i.date) >= from);
     const events = exceptionEvents(
-      tiesIssues ? uses.map((u) => ({ date: dateOnly(u.progressEntry.date)!, elementId: u.progressEntry.activity.workElementId!, itemId: u.itemId, quantity: u.quantity, dprId: u.progressEntry.dailyReportId! })) : [],
-      issues.map((i) => ({ date: dateOnly(i.date)!, elementId: i.entry.workElementId!, itemId: i.itemId, quantity: i.quantity.neg(), entryId: i.entry.id, entryNo: i.entry.entryNo })),
-      work.map((w) => ({ date: dateOnly(w.date)!, elementId: w.activity.workElementId! })),
+      tiesIssues ? uses.map((u) => ({ date: dateOnly(u.progressEntry.date), elementId: u.progressEntry.activity.workElementId!, itemId: u.itemId, quantity: u.quantity, dprId: u.progressEntry.dailyReportId! })) : [],
+      issues.map((i) => ({ date: dateOnly(i.date), elementId: i.entry.workElementId!, itemId: i.itemId, quantity: i.quantity.neg(), entryId: i.entry.id, entryNo: i.entry.entryNo })),
+      work.map((w) => ({ date: dateOnly(w.date), elementId: w.activity.workElementId! })),
       to,
     ).filter((e) => e.date >= from);
     const items = new Map((await this.prisma.item.findMany({ where: { id: { in: [...new Set(events.map((e) => e.itemId))] } }, select: { id: true, name: true, unit: true } })).map((i) => [i.id, i]));

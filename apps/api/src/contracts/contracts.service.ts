@@ -42,7 +42,7 @@ export class ContractsService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private templates: TemplatesService) {}
 
   toDto(p: Row, ld?: LdInputs): ProjectContractDto {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIn();
     const extensions = p.risks.map((r) => ({
       riskId: r.id,
       riskNo: r.riskNo,
@@ -67,7 +67,7 @@ export class ContractsService {
       agreementNo: p.agreementNo,
       agreementDate: dateOnly(p.agreementDate),
       contractValue: money(p.contractValue),
-      approvedVariations: money(approvedVariations)!,
+      approvedVariations: money(approvedVariations),
       revisedContractValue: p.contractValue ? money(p.contractValue.add(approvedVariations)) : null,
       startDate: dateOnly(p.startDate),
       endDate,
@@ -76,7 +76,8 @@ export class ContractsService {
       extensions,
       retentionPct: pctStr(p.retentionPct),
       securityDepositPct: pctStr(p.securityDepositPct),
-      mobilisationAdvance: money(p.mobilisationAdvance)!,
+      securityDepositCapPct: p.securityDepositCapPct ? pctStr(p.securityDepositCapPct) : null,
+      mobilisationAdvance: money(p.mobilisationAdvance),
       advanceRecoveryPct: pctStr(p.advanceRecoveryPct),
       defectLiabilityMonths: p.defectLiabilityMonths,
       clientPaymentDays: p.clientPaymentDays,
@@ -95,7 +96,7 @@ export class ContractsService {
       ld: ld ? ContractsService.ldExposure(p, approvedVariations, extensionDays, ld) : null,
       currency: p.currency,
       exchangeRate: fxRate(p.exchangeRate),
-      updatedAt: iso(p.updatedAt)!,
+      updatedAt: iso(p.updatedAt),
     };
   }
 
@@ -138,7 +139,7 @@ export class ContractsService {
       ldRatePct: pctStr(p.ldRatePct),
       ldPeriod: p.ldPeriod,
       ldCapPct: pctStr(p.ldCapPct),
-      contractValue: money(value)!,
+      contractValue: money(value),
       endDate,
       extensionDays,
       revisedEndDate,
@@ -149,10 +150,10 @@ export class ContractsService {
       excusableDaysLost: excusable,
       contractorDaysLost: contractor,
       eotPendingDays,
-      ldToDate: money(ld(daysLate))!,
-      ldForecast: money(forecast)!,
-      ldForecastWithEot: money(ld(Math.max(0, forecastDaysLate - eotPendingDays)))!,
-      ldCap: money(cap)!,
+      ldToDate: money(ld(daysLate)),
+      ldForecast: money(forecast),
+      ldForecastWithEot: money(ld(Math.max(0, forecastDaysLate - eotPendingDays))),
+      ldCap: money(cap),
       capReached: p.ldRatePct.gt(0) && forecast.gte(cap) && cap.gt(0),
     };
   }
@@ -224,6 +225,11 @@ export class ContractsService {
       const max = k === 'gstRate' ? MAX_GST_RATE : 100;
       if (n.lt(0) || n.gt(max)) throw new BadRequestException(`${k} must be between 0 and ${max}`);
       data[k] = n;
+    }
+    if (dto.securityDepositCapPct !== undefined) {
+      const n = dto.securityDepositCapPct === null ? null : new Prisma.Decimal(dto.securityDepositCapPct);
+      if (n && (n.lte(0) || n.gt(100))) throw new BadRequestException('Give the security deposit cap as more than 0 and at most 100%, or clear it for no cap');
+      data.securityDepositCapPct = n;
     }
     if (dto.mobilisationAdvance !== undefined) {
       if (Number(dto.mobilisationAdvance) < 0) throw new BadRequestException('The mobilisation advance cannot be negative');

@@ -114,7 +114,7 @@ export class MachineryService {
       fuelTankLitres: dec(r.fuelTankLitres),
       // Machine finance: only those who keep the loans see that a machine is financed.
       loan: canManageMachineLoans(user.roleKey) && r.loans[0] ? { id: r.loans[0].id, lenderName: r.loans[0].lenderName } : null,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -260,7 +260,7 @@ export class MachineryService {
     const out = new Map<string, string>();
     for (const r of rows) {
       const v = sum.get(`${r.equipmentId}|${r.date.getTime()}`);
-      if (v) out.set(r.id, dec(v)!);
+      if (v) out.set(r.id, dec(v));
     }
     return out;
   }
@@ -274,10 +274,10 @@ export class MachineryService {
       equipmentCode: r.equipment.code,
       equipmentName: r.equipment.name,
       ownership: r.equipment.ownership,
-      date: dateOnly(r.date)!,
-      hoursWorked: dec(r.hoursWorked)!,
-      idleHours: dec(r.idleHours)!,
-      breakdownHours: dec(r.breakdownHours)!,
+      date: dateOnly(r.date),
+      hoursWorked: dec(r.hoursWorked),
+      idleHours: dec(r.idleHours),
+      breakdownHours: dec(r.breakdownHours),
       dieselLitres: dec(r.dieselLitres),
       fuelIssuedLitres: fuelIssued?.get(r.id) ?? null,
       meterStart: dec(r.meterStart),
@@ -299,8 +299,8 @@ export class MachineryService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

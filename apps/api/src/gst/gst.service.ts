@@ -35,7 +35,7 @@ interface Sums {
 }
 const totals = (rows: { taxable: string; igst: string; cgst: string; sgst: string }[]): GstTaxTotalsDto => {
   const t = rows.reduce<Sums>((s, r) => ({ taxable: s.taxable.add(r.taxable), igst: s.igst.add(r.igst), cgst: s.cgst.add(r.cgst), sgst: s.sgst.add(r.sgst) }), { taxable: ZERO, igst: ZERO, cgst: ZERO, sgst: ZERO });
-  return { taxable: money(t.taxable)!, igst: money(t.igst)!, cgst: money(t.cgst)!, sgst: money(t.sgst)!, tax: money(t.igst.add(t.cgst).add(t.sgst))! };
+  return { taxable: money(t.taxable), igst: money(t.igst), cgst: money(t.cgst), sgst: money(t.sgst), tax: money(t.igst.add(t.cgst).add(t.sgst)) };
 };
 
 /**
@@ -97,17 +97,17 @@ export class GstService {
         projectCode: b.project.code,
         projectName: b.project.name,
         invoiceNo,
-        invoiceDate: dateOnly(b.billDate)!,
+        invoiceDate: dateOnly(b.billDate),
         section: gstin ? 'B2B' : 'B2CS',
         recipientGstin: gstin,
         recipientName: c?.name ?? b.project.clientName ?? b.project.name,
         placeOfSupply: ours ?? c?.stateCode ?? gstStateCode(gstin),
-        rate: money(b.gstRate)!,
-        taxable: money(b.grossAmount.add(b.pvAmount))!,
-        igst: money(tax.igst)!,
-        cgst: money(tax.cgst)!,
-        sgst: money(tax.sgst)!,
-        invoiceValue: money(b.grossAmount.add(b.pvAmount).add(b.gstAmount))!,
+        rate: money(b.gstRate),
+        taxable: money(b.grossAmount.add(b.pvAmount)),
+        igst: money(tax.igst),
+        cgst: money(tax.cgst),
+        sgst: money(tax.sgst),
+        invoiceValue: money(b.grossAmount.add(b.pvAmount).add(b.gstAmount)),
       };
     });
 
@@ -117,7 +117,7 @@ export class GstService {
       const itcEligible = !!r.supplierGstin;
       if (!itcEligible) ineligible = ineligible.add(gst);
       const tax = split(gst, isInterState(ours, supplierState));
-      inward.push({ ...r, rate: money(rate)!, taxable: money(taxable)!, igst: money(tax.igst)!, cgst: money(tax.cgst)!, sgst: money(tax.sgst)!, itcEligible });
+      inward.push({ ...r, rate: money(rate), taxable: money(taxable), igst: money(tax.igst), cgst: money(tax.cgst), sgst: money(tax.sgst), itcEligible });
     };
     for (const b of vendorBills) {
       const byRate = new Map<string, { rate: Prisma.Decimal; taxable: Prisma.Decimal; gst: Prisma.Decimal }>();
@@ -139,8 +139,8 @@ export class GstService {
             supplierGstin: b.vendor.gstin,
             supplierName: b.vendor.name,
             invoiceNo: b.invoiceNo,
-            invoiceDate: dateOnly(b.invoiceDate)!,
-            invoiceValue: money(b.total)!,
+            invoiceDate: dateOnly(b.invoiceDate),
+            invoiceValue: money(b.total),
           },
           g.rate,
           g.taxable,
@@ -163,8 +163,8 @@ export class GstService {
           supplierGstin: v.gstin,
           supplierName: v.name,
           invoiceNo: b.invoiceNo,
-          invoiceDate: dateOnly(b.billDate)!,
-          invoiceValue: money(b.grossAmount.add(b.gstAmount))!,
+          invoiceDate: dateOnly(b.billDate),
+          invoiceValue: money(b.grossAmount.add(b.gstAmount)),
         },
         b.gstRate,
         b.grossAmount,
@@ -184,8 +184,8 @@ export class GstService {
           supplierGstin: e.vendorGstin,
           supplierName: e.vendor ?? e.description,
           invoiceNo: e.billNo,
-          invoiceDate: dateOnly(e.date)!,
-          invoiceValue: money(e.totalAmount)!,
+          invoiceDate: dateOnly(e.date),
+          invoiceValue: money(e.totalAmount),
         },
         e.gstRate,
         e.amount,
@@ -214,8 +214,8 @@ export class GstService {
             supplierGstin: n.vendor.gstin,
             supplierName: n.vendor.name,
             invoiceNo: n.vendorBill?.invoiceNo ?? n.subcontractBill?.invoiceNo ?? null,
-            invoiceDate: dateOnly(n.date)!,
-            invoiceValue: money(n.total.neg())!,
+            invoiceDate: dateOnly(n.date),
+            invoiceValue: money(n.total.neg()),
           },
           g.rate,
           g.taxable.neg(),
@@ -238,7 +238,7 @@ export class GstService {
       outwardTotals: totals(outward),
       inward,
       inwardTotals: totals(inward.filter((r) => r.itcEligible)),
-      ineligibleTax: money(ineligible)!,
+      ineligibleTax: money(ineligible),
       warnings,
     };
   }

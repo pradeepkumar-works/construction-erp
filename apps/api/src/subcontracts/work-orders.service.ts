@@ -24,6 +24,7 @@ import { nextDocNo } from '../common/doc-number';
 import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { D, MSME_MAX_PAYMENT_DAYS, ZERO, parseGstRate, parseQty, parseRate, sum } from '../purchasing/purchase-math';
 import { CloseWorkOrderDto, CreateWorkOrderDto, ListWorkOrdersQuery, MarginQuery, UpdateWorkOrderDto, WoLineInput } from './subcontracts.dto';
+import { todayIn } from '../notifications/time';
 
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 export const pctStr = (d: Prisma.Decimal) => d.toFixed(2).replace(/\.?0+$/, '') || '0';
@@ -100,7 +101,7 @@ export class WorkOrdersService {
       projectId: r.projectId,
       projectName: r.project.name,
       woNo: r.woNo,
-      woDate: dateOnly(r.woDate)!,
+      woDate: dateOnly(r.woDate),
       vendorId: r.vendorId,
       vendorName: r.vendor.name,
       vendorGstin: r.vendor.gstin,
@@ -111,14 +112,14 @@ export class WorkOrdersService {
       endDate: dateOnly(r.endDate),
       gstRate: pctStr(r.gstRate),
       retentionPct: pctStr(r.retentionPct),
-      advanceAmount: money(r.advanceAmount)!,
+      advanceAmount: money(r.advanceAmount),
       advanceRecoveryPct: pctStr(r.advanceRecoveryPct),
-      advanceRecovered: money(sum(r.bills, (b) => b.advanceRecoveryAmount))!,
-      advancePaid: money(sum(r.advances, (p) => p.amount.add(p.tdsAmount).add(p.otherDeduction)))!,
-      advanceRequested: money(sum(r.paymentRequests, (p) => p.amount))!,
+      advanceRecovered: money(sum(r.bills, (b) => b.advanceRecoveryAmount)),
+      advancePaid: money(sum(r.advances, (p) => p.amount.add(p.tdsAmount).add(p.otherDeduction))),
+      advanceRequested: money(sum(r.paymentRequests, (p) => p.amount)),
       tdsPct: pctStr(r.tdsPct),
       paymentDays: r.paymentDays,
-      value: money(r.value)!,
+      value: money(r.value),
       terms: r.terms,
       remarks: r.remarks,
       closedAt: iso(r.closedAt),
@@ -127,7 +128,7 @@ export class WorkOrdersService {
       supplierAcceptedBy: r.supplierAcceptedBy?.fullName ?? null,
       supplierNote: r.supplierNote,
       open: r.status === 'APPROVED' && !r.closedAt,
-      billedAmount: money(billed)!,
+      billedAmount: money(billed),
       billedPct: r.value.isZero() ? 0 : Math.round(billed.div(r.value).mul(100).toNumber()),
       lines: r.lines.map((l) => ({
         id: l.id,
@@ -135,11 +136,11 @@ export class WorkOrdersService {
         itemNo: l.boqItem?.itemNo ?? null,
         description: l.description,
         unit: l.unit,
-        quantity: dec(l.quantity)!,
-        rate: money(l.rate)!,
-        amount: money(l.amount)!,
-        measuredQty: dec(l.boqItemId ? (measured.get(l.boqItemId) ?? ZERO) : ZERO)!,
-        billedQty: dec(sum(l.billLines, (b) => b.thisQty))!,
+        quantity: dec(l.quantity),
+        rate: money(l.rate),
+        amount: money(l.amount),
+        measuredQty: dec(l.boqItemId ? (measured.get(l.boqItemId) ?? ZERO) : ZERO),
+        billedQty: dec(sum(l.billLines, (b) => b.thisQty)),
       })),
       status: r.status,
       submittedById: r.submittedById,
@@ -150,8 +151,8 @@ export class WorkOrdersService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -206,9 +207,9 @@ export class WorkOrdersService {
         billNo: b.billNo,
         label: subBillLabel(row.woNo, b.billNo, b.isFinal),
         isFinal: b.isFinal,
-        billDate: dateOnly(b.billDate)!,
-        grossAmount: money(b.grossAmount)!,
-        netPayable: money(b.netPayable)!,
+        billDate: dateOnly(b.billDate),
+        grossAmount: money(b.grossAmount),
+        netPayable: money(b.netPayable),
         status: b.status,
       })),
     };
@@ -235,12 +236,12 @@ export class WorkOrdersService {
         itemNo: b.itemNo,
         description: b.description,
         unit: b.unit,
-        boqQty: dec(b.revisedQty ?? b.originalQty)!,
-        clientRate: money(b.rate)!,
-        subRate: money(subRate)!,
-        margin: money(margin)!,
+        boqQty: dec(b.revisedQty ?? b.originalQty),
+        clientRate: money(b.rate),
+        subRate: money(subRate),
+        margin: money(margin),
         marginPct: b.rate.isZero() ? 0 : Math.round(margin.div(b.rate).mul(1000).toNumber()) / 10,
-        workOrders: ls.map((l) => ({ id: l.workOrder.id, woNo: l.workOrder.woNo, vendorName: l.workOrder.vendor.name, quantity: dec(l.quantity)!, rate: money(l.rate)! })),
+        workOrders: ls.map((l) => ({ id: l.workOrder.id, woNo: l.workOrder.woNo, vendorName: l.workOrder.vendor.name, quantity: dec(l.quantity), rate: money(l.rate) })),
       };
     });
   }
@@ -323,7 +324,7 @@ export class WorkOrdersService {
             projectId: dto.projectId,
             vendorId: vendor.id,
             woNo,
-            woDate: parseDate(dto.woDate ?? new Date().toISOString().slice(0, 10)),
+            woDate: parseDate(dto.woDate ?? todayIn()),
             title: dto.title,
             gstRate: (terms.gstRate as Prisma.Decimal | undefined) ?? D(vendor.gstin ? 18 : 0),
             tdsPct: (terms.tdsPct as Prisma.Decimal | undefined) ?? D(contractorTdsPct(vendor.pan)),

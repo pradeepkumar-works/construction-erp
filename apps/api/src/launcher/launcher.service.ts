@@ -28,7 +28,7 @@ import { CreatePinDto, ImportDto, VisitDto } from './launcher.dto';
 import { flagDto, myRequestDto } from './home-tiles.service';
 
 const pinDto = (p: NavPin, label = p.label): NavPinDto => ({ id: p.id, kind: p.kind, target: p.target, label, position: p.position });
-const visitDto = (v: NavVisit, label = v.label): NavVisitDto => ({ kind: v.kind, target: v.target, label, href: v.href, lastAt: iso(v.lastAt)! });
+const visitDto = (v: NavVisit, label = v.label): NavVisitDto => ({ kind: v.kind, target: v.target, label, href: v.href, lastAt: iso(v.lastAt) });
 
 /**
  * Pins and Recent on the launcher Home (ARCHITECTURE "Launcher Home"). They belong to the user and follow them to

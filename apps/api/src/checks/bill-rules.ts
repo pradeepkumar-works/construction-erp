@@ -370,6 +370,8 @@ export interface RaBillFacts {
   slippageWithheld: number;
   /** Service level penalties on an O&M bill */
   omPenalty?: number;
+  /** What the contract's missed obligations cost on this bill, negative when given back */
+  obligationRecovery?: number;
   totalDeductions: number;
   netPayable: number;
 }
@@ -405,7 +407,7 @@ export function raBillChecks(f: RaBillFacts): Check[] {
     { label: 'Gross', expected: f.items.reduce((s, i) => s + i.amount, f.stageAmount), actual: f.grossAmount },
     { label: 'GST', expected: pctOf(base, f.gstRate), actual: f.gstAmount },
     ...f.deductions.map((d) => ({ label: d.label, expected: d.expected ?? (d.capped ? Math.min(pctOf(base, d.pct), d.amount) : pctOf(base, d.pct)), actual: d.amount })),
-    { label: 'Deductions', expected: f.deductions.reduce((s, d) => s + d.amount, 0) + f.otherDeduction + f.slippageWithheld + (f.omPenalty ?? 0), actual: f.totalDeductions },
+    { label: 'Deductions', expected: f.deductions.reduce((s, d) => s + d.amount, 0) + f.otherDeduction + f.slippageWithheld + (f.omPenalty ?? 0) + (f.obligationRecovery ?? 0), actual: f.totalDeductions },
     { label: 'Net payable', expected: f.grossAmount + f.pvAmount + f.gstAmount - f.totalDeductions, actual: f.netPayable },
   ]);
 

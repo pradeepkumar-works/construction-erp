@@ -1,13 +1,13 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { COMPANY_WIDE_ROLES, DEFAULT_NOTICE_DAYS, DELAY_PARTY_LABELS, PAYMENT_ROLES, needsNotice, subBillLabel, type RoleKey, LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
+import { DEFAULT_NOTICE_DAYS, DELAY_PARTY_LABELS, PAYMENT_ROLES, needsNotice, subBillLabel, type RoleKey, LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, inr, titleDate } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE, supplierChoiceTitle, SUPPLIER_CHOICE_TITLE, inr, titleDate } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 import { MessagingService, type OutgoingMessage } from '../messaging/messaging.service';
 import { EmailService, escapeHtml } from './email.service';
@@ -56,7 +56,7 @@ export interface HandoffInput {
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
 type Row = Prisma.NotificationGetPayload<{ include: typeof include }>;
 
-const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill', INSPECTION: 'Inspection', PAYMENT_REQUEST: 'Payment request' };
+const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill', INSPECTION: 'Inspection', PAYMENT_REQUEST: 'Payment request', SUPPLIER_CHOICE: 'Supplier choice' };
 
 /**
  * Creates in-app notifications and pushes them to the users' devices.
@@ -89,7 +89,7 @@ export class NotificationsService {
       entityType: (r.entityType as NotificationDto['entityType']) ?? null,
       entityId: r.entityId,
       readAt: iso(r.readAt),
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -129,7 +129,7 @@ export class NotificationsService {
   // Push tokens
 
   private tokenDto(t: { id: string; token: string; platform: PushTokenDto['platform']; deviceName: string | null; createdAt: Date; lastSeenAt: Date }): PushTokenDto {
-    return { id: t.id, token: t.token, platform: t.platform, deviceName: t.deviceName, createdAt: iso(t.createdAt)!, lastSeenAt: iso(t.lastSeenAt)! };
+    return { id: t.id, token: t.token, platform: t.platform, deviceName: t.deviceName, createdAt: iso(t.createdAt), lastSeenAt: iso(t.lastSeenAt) };
   }
 
   async listTokens(user: RequestUser): Promise<PushTokenDto[]> {
@@ -219,13 +219,9 @@ export class NotificationsService {
    */
   async onProjectFirst<T extends { id: string }>(users: T[], projectId: string): Promise<T[]> {
     if (users.length < 2) return users;
-    const on = await this.prisma.user.findMany({
-      where: { id: { in: users.map((u) => u.id) }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
-      select: { id: true },
-    });
-    if (!on.length) return users;
-    const ids = new Set(on.map((u) => u.id));
-    return users.filter((u) => ids.has(u.id));
+    const team = new Set(await this.access.projectPeople(projectId));
+    const on = users.filter((u) => team.has(u.id));
+    return on.length ? on : users;
   }
 
   /** Tell the next role in the chain that a step waits on them, in the app and by email. */
@@ -342,22 +338,18 @@ export class NotificationsService {
         if (!r) return null;
         return { title: payRequestTitle(r), projectId: r.projectId, projectName: r.project.name, submittedById: r.submittedById };
       }
+      case 'SUPPLIER_CHOICE': {
+        const c = await this.prisma.supplierChoice.findUnique({ where: { id }, include: { project: { select: { name: true } }, ...SUPPLIER_CHOICE_TITLE } });
+        if (!c) return null;
+        return { title: supplierChoiceTitle(c.materialRequest.requestNo, c.quotation?.vendor.name ?? null, c.split, c.rank, c.amount.toFixed(2)), projectId: c.projectId, projectName: c.project.name, submittedById: c.submittedById };
+      }
     }
   }
 
   /** An approved payment request is money to release: tell the project's payers (admin, management, accounts). */
   private async onPaymentApproved(actor: RequestUser, id: string, s: { title: string; projectId: string; projectName: string; submittedById: string }) {
-    const payers = await this.prisma.user.findMany({
-      where: {
-        organizationId: actor.organizationId,
-        isActive: true,
-        // The approver and the one who asked hear of it already.
-        id: { notIn: [actor.id, s.submittedById] },
-        role: { key: { in: PAYMENT_ROLES } },
-        OR: [{ role: { key: { in: COMPANY_WIDE_ROLES } } }, { managedProjects: { some: { id: s.projectId } } }, { memberships: { some: { projectId: s.projectId } } }],
-      },
-      select: { id: true },
-    });
+    // The approver and the one who asked hear of it already.
+    const payers = (await this.access.usersWithRoles(actor.organizationId, s.projectId, PAYMENT_ROLES)).filter((u) => u.id !== actor.id && u.id !== s.submittedById);
     if (!payers.length) return;
     await this.notify({
       organizationId: actor.organizationId,
@@ -472,7 +464,6 @@ export class NotificationsService {
     }
   }
 
-  /** Tell the author how the review went. */
   /** An approved purchase or work order goes to the supplier's portal logins to accept. */
   private async onOrderApproved(actor: RequestUser, type: 'PURCHASE_ORDER' | 'WORK_ORDER', id: string, projectName: string) {
     const order =
@@ -803,11 +794,11 @@ export class NotificationsService {
   private async onDprHindrance(actor: RequestUser, dprId: string) {
     const d = await this.prisma.dailyReport.findUnique({ where: { id: dprId }, select: { date: true, issues: true, projectId: true, project: { select: { name: true, noticeDays: true, projectManagerId: true } } } });
     if (!d?.issues || !d.project.projectManagerId) return;
-    const date = dateOnly(d.date)!;
+    const date = dateOnly(d.date);
     const reading = classifyRemark(d.issues, date);
     if (reading.verdict === 'NONE' || !needsNotice(reading.party)) return;
     const start = new Date(d.date.getTime() - reading.startOffset * 86_400_000);
-    const clock = noticeClock(dateOnly(start)!, d.project.noticeDays ?? DEFAULT_NOTICE_DAYS, todayIn());
+    const clock = noticeClock(dateOnly(start), d.project.noticeDays ?? DEFAULT_NOTICE_DAYS, todayIn());
     const due = titleDate(new Date(`${clock.due}T00:00:00Z`));
     await this.handoff({
       organizationId: actor.organizationId,

@@ -210,7 +210,7 @@ export class StockService {
       projectName: r.project.name,
       type: r.type,
       entryNo: r.entryNo,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       materialRequestId: r.materialRequestId,
       requestNo: r.materialRequest?.requestNo ?? null,
       purchaseOrderId: r.purchaseOrderId,
@@ -251,7 +251,7 @@ export class StockService {
         itemName: l.item.name,
         unit: l.item.unit,
         category: l.item.category,
-        quantity: dec(l.quantity)!,
+        quantity: dec(l.quantity),
         materialRequestItemId: l.materialRequestItemId,
         purchaseOrderLineId: l.purchaseOrderLineId,
         rejectedQty: dec(l.rejectedQty),
@@ -259,7 +259,7 @@ export class StockService {
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       createdById: r.createdById,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -1006,7 +1006,7 @@ export class StockService {
   async valuation(user: RequestUser, q: StockValuationQuery): Promise<StockValuationDto> {
     if (!canManageStore(user.roleKey) && !canViewCost(user.roleKey)) throw new ForbiddenException('Stock value is for store managers, approvers and accounts');
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
-    const asOf = new Date().toISOString().slice(0, 10);
+    const asOf = todayIn();
     const today = parseDate(asOf).getTime();
     const balances = (await this.buildBalances(user.organizationId, this.access.projectWhere(user), q.projectId)).filter((b) => Number(b.balance) > 0);
     const projectIds = [...new Set(balances.map((b) => b.projectId))];
@@ -1059,13 +1059,13 @@ export class StockService {
         category: b.category,
         balance: b.balance,
         rate: money(rate),
-        value: money(value)!,
-        ageingQty: ageing.map((a) => dec(a)!),
+        value: money(value),
+        ageingQty: ageing.map((a) => dec(a)),
         oldestDays,
       };
     });
     rows.sort((a, b) => Number(b.value) - Number(a.value) || a.itemName.localeCompare(b.itemName));
-    return { asOf, rows, totalValue: money(totalValue)!, ageingValue: ageingValue.map((v) => money(v.toDecimalPlaces(2))!), unpricedItems: unpriced };
+    return { asOf, rows, totalValue: money(totalValue), ageingValue: ageingValue.map((v) => money(v.toDecimalPlaces(2))), unpricedItems: unpriced };
   }
 
   // Balances
@@ -1112,11 +1112,11 @@ export class StockService {
         itemName: item.name,
         unit: item.unit,
         category: item.category,
-        received: dec(a.received)!,
-        issued: dec(a.issued)!,
-        adjusted: dec(a.adjusted)!,
-        transferred: dec(a.transferred)!,
-        balance: dec(balance)!,
+        received: dec(a.received),
+        issued: dec(a.issued),
+        adjusted: dec(a.adjusted),
+        transferred: dec(a.transferred),
+        balance: dec(balance),
         minQty: a.min && a.min.gt(0) ? dec(a.min) : null,
         low: isLowStock(balance.toString(), a.min?.toString()),
         lastMovement: dateOnly(a.last),
@@ -1184,7 +1184,7 @@ export class StockService {
         requestNo: r.requestNo,
         projectId: r.projectId,
         projectName: r.project.name,
-        requiredDate: dateOnly(r.requiredDate)!,
+        requiredDate: dateOnly(r.requiredDate),
         priority: r.priority,
         lines: r.items.map((i) => {
           const received = i.stockTxns.reduce((s, t) => s.add(t.quantity), ZERO);
@@ -1194,9 +1194,9 @@ export class StockService {
             itemName: i.itemName,
             specification: i.specification,
             unit: i.unit,
-            requested: dec(i.quantity)!,
-            received: dec(received)!,
-            pending: dec(pending.gt(0) ? pending : ZERO)!,
+            requested: dec(i.quantity),
+            received: dec(received),
+            pending: dec(pending.gt(0) ? pending : ZERO),
           };
         }),
       }))
@@ -1318,9 +1318,9 @@ export class StockService {
           itemName: i.itemName,
           unit: i.unit,
           itemId: item?.id ?? null,
-          toOrderQty: dec(toOrderOf(i))!,
-          coveredQty: dec(i.covers.reduce((s, c) => s.add(c.quantity), ZERO))!,
-          here: dec(at.find((s) => s.projectId === mr.projectId)?._sum.quantity ?? ZERO)!,
+          toOrderQty: dec(toOrderOf(i)),
+          coveredQty: dec(i.covers.reduce((s, c) => s.add(c.quantity), ZERO)),
+          here: dec(at.find((s) => s.projectId === mr.projectId)?._sum.quantity ?? ZERO),
           others: at
             .filter((s) => s.projectId !== mr.projectId)
             .sort((a, b) => (b._sum.quantity ?? ZERO).cmp(a._sum.quantity ?? ZERO))
@@ -1490,7 +1490,7 @@ export class StockService {
       ? await this.prisma.stockTxn.groupBy({ by: ['itemId', 'projectId'], where: { itemId: { in: rows.map((r) => r.id) } } })
       : [];
     return paginated(
-      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
+      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt) })),
       total,
       args,
     );
@@ -1525,7 +1525,7 @@ export class StockService {
     const r = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!r) throw new NotFoundException('Item not found');
     const used = await this.prisma.stockTxn.groupBy({ by: ['projectId'], where: { itemId: id } });
-    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.length, createdAt: iso(r.createdAt)! };
+    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.length, createdAt: iso(r.createdAt) };
   }
 
   async createItem(user: RequestUser, dto: CreateItemDto): Promise<ItemDto> {

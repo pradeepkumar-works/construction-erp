@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@/components/common/icons';
 import type { ProjectDetail } from '@erp/shared';
-import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm } from '@erp/shared';
+import { canManageProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders, canViewEpc, canViewOm } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { readPref, writePref } from '@/lib/prefs';
@@ -33,6 +33,7 @@ import { RiskList } from '@/components/risks/RiskList';
 import { SafetyPanel } from '@/components/safety/SafetyPanel';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { ProjectQualityTab } from '@/components/quality/QualityTabs';
+import { SiteOrdersTab } from '@/components/site-orders/SiteOrdersTab';
 import { ProjectDocumentsTab } from '@/components/documents/DocumentTabs';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { ProjectBudgetPanel } from '@/components/cost/ProjectBudgetPanel';
@@ -87,7 +88,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
   const [editOpen, setEditOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const health = useProjectHealth(project);
-  const editor = !!user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
+  const editor = !!user && canManageProjects(user.roleKey);
   const can = (allowed: boolean) => !!user && allowed;
 
   const all: (WorkspaceTab | false)[] = [
@@ -105,6 +106,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
     { key: 'mb', group: 'site', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
     { key: 'inspections', group: 'site', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },
+    { key: 'site-orders', group: 'site', label: 'Site orders', children: <SiteOrdersTab projectId={project.id} initialOrderId={search.get('order') ?? undefined} /> },
     can(!user?.modulesOff?.includes('safety')) && { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
     { key: 'risks', group: 'site', label: 'Delays and risks', children: <RiskList projectId={project.id} /> },
     { key: 'documents', group: 'site', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },

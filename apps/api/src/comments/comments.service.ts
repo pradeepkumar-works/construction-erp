@@ -1,9 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { COMMENT_KIND_LABELS, COMPANY_WIDE_ROLES, GUEST_ROLES, ROLE_LABELS, isGuest, type CommentDto, type CommentKind, type CommentThreadDto, type CommentThreadsDto, type MentionableDto, type RoleKey } from '@erp/shared';
+import { COMMENT_KIND_LABELS, GUEST_ROLES, ROLE_LABELS, canRemoveAnyComment, isGuest, type CommentDto, type CommentKind, type CommentThreadDto, type CommentThreadsDto, type MentionableDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
+import { ProjectAccessService } from '../common/project-access.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CommentTargetsService, type CommentTarget } from './comment-targets.service';
 import { commentProblem, keptMentions, mayChange, noticeBody, noticeTitle, threadOrder, whoToTell, type Mention } from './comment-rules';
@@ -26,6 +27,7 @@ export class CommentsService {
     private targets: CommentTargetsService,
     private notifications: NotificationsService,
     private audit: AuditService,
+    private access: ProjectAccessService,
   ) {}
 
   private async target(user: RequestUser, kind: CommentKind, entityId: string): Promise<CommentTarget> {
@@ -88,9 +90,7 @@ export class CommentsService {
         isActive: true,
         id: { not: user.id },
         role: { key: { notIn: GUEST_ROLES } },
-        ...(t.projectId
-          ? { OR: [{ role: { key: { in: COMPANY_WIDE_ROLES } } }, { managedProjects: { some: { id: t.projectId } } }, { memberships: { some: { projectId: t.projectId } } }] }
-          : {}),
+        ...(t.projectId ? this.access.seesProjectWhere(t.projectId) : {}),
       },
       select: { id: true, fullName: true, role: { select: { key: true } } },
       orderBy: { fullName: 'asc' },
@@ -130,7 +130,7 @@ export class CommentsService {
     const row = await this.row(user, id);
     const kind = row.entityType as CommentKind;
     const t = await this.target(user, kind, row.entityId);
-    if (!mayChange(row, { id: user.id, isAdmin: user.roleKey === 'ADMIN' }, 'edit')) throw new ForbiddenException('Only its author can edit a comment');
+    if (!mayChange(row, { id: user.id, isAdmin: canRemoveAnyComment(user.roleKey) }, 'edit')) throw new ForbiddenException('Only its author can edit a comment');
     const body = dto.body.trim();
     const mentions = await this.checkMentions(user, kind, row.entityId, body, dto.mentions ?? row.mentions);
     await this.prisma.comment.update({ where: { id }, data: { body, mentions: mentions.map((m) => m.id), editedAt: new Date() } });
@@ -146,7 +146,7 @@ export class CommentsService {
     const row = await this.row(user, id);
     const kind = row.entityType as CommentKind;
     await this.target(user, kind, row.entityId);
-    if (!mayChange(row, { id: user.id, isAdmin: user.roleKey === 'ADMIN' }, 'remove')) throw new ForbiddenException('Only its author or an admin can remove a comment');
+    if (!mayChange(row, { id: user.id, isAdmin: canRemoveAnyComment(user.roleKey) }, 'remove')) throw new ForbiddenException('Only its author or an admin can remove a comment');
     await this.prisma.comment.update({ where: { id }, data: { body: '', mentions: [], removedAt: new Date() } });
     await this.audit.log(user, 'COMMENT', id, 'REMOVED', row.body.slice(0, 200));
     return this.list(user, kind, row.entityId);

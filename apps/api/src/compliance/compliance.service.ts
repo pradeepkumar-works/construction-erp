@@ -76,8 +76,8 @@ export class ComplianceService {
       daysLeft: e?.daysLeft ?? null,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

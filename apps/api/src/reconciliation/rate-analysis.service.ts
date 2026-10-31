@@ -32,7 +32,7 @@ const resourceDto = (r: ResourceRow): BoqResourceDto => ({
   qtyPerUnit: six(r.qtyPerUnit),
   note: r.note,
   updatedByName: r.updatedBy.fullName,
-  updatedAt: iso(r.updatedAt)!,
+  updatedAt: iso(r.updatedAt),
 });
 
 /** A line to write onto a BOQ item: a material norm or a labour or machine resource. */
@@ -147,7 +147,7 @@ export class RateAnalysisService {
         itemNo: b.itemNo,
         description: b.description,
         unit: b.unit,
-        quantity: dec(quantity)!,
+        quantity: dec(quantity),
         lines: lines.map(({ rateD, qtyD: _q, wastageD: _w, ...l }, i) => ({
           ...l,
           quantity: six(priced.lines[i].quantity),

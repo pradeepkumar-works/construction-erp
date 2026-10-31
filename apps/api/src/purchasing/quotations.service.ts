@@ -55,29 +55,29 @@ export class QuotationsService {
       vendorId: r.vendorId,
       vendorName: r.vendor.name,
       quoteRef: r.quoteRef,
-      quoteDate: dateOnly(r.quoteDate)!,
+      quoteDate: dateOnly(r.quoteDate),
       validUntil: dateOnly(r.validUntil),
       deliveryDays: r.deliveryDays,
       paymentTerms: r.paymentTerms,
-      freight: money(r.freight)!,
+      freight: money(r.freight),
       remarks: r.remarks,
       lines: priced.map((p) => ({
         materialRequestItemId: p.item.id,
         itemName: p.item.itemName,
         unit: p.item.unit,
-        quantity: dec(p.item.quantity)!,
-        rate: money(p.line.rate)!,
+        quantity: dec(p.item.quantity),
+        rate: money(p.line.rate),
         gstRate: p.line.gstRate.toString(),
-        amount: money(p.amount)!,
+        amount: money(p.amount),
         remarks: p.line.remarks,
       })),
-      subtotal: money(t.subtotal)!,
-      gstAmount: money(t.gstAmount)!,
-      total: money(t.total)!,
+      subtotal: money(t.subtotal),
+      gstAmount: money(t.gstAmount),
+      total: money(t.total),
       missingLines: items.length - priced.length,
       fromSupplier: r.fromSupplier,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -223,8 +223,8 @@ export class QuotationsService {
         itemName: i.itemName,
         specification: i.specification,
         unit: i.unit,
-        quantity: dec(i.quantity)!,
-        orderedQty: dec(sum(i.poLines, orderedOn))!,
+        quantity: dec(i.quantity),
+        orderedQty: dec(sum(i.poLines, orderedOn)),
         rates,
         lowestQuotationId: best?.id ?? null,
       };
@@ -240,7 +240,7 @@ export class QuotationsService {
    */
   private async vendorRecords(organizationId: string, vendorIds: string[]): Promise<VendorRecordDto[]> {
     if (!vendorIds.length) return [];
-    const since = parseDate(dateOnly(new Date(Date.now() - VENDOR_RECORD_DAYS * 86_400_000))!);
+    const since = parseDate(dateOnly(new Date(Date.now() - VENDOR_RECORD_DAYS * 86_400_000)));
     const [receipts, orders] = await Promise.all([
       this.prisma.stockEntry.findMany({
         where: { organizationId, type: 'RECEIPT', vendorId: { in: vendorIds }, purchaseOrderId: { not: null }, date: { gte: since } },

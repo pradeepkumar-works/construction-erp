@@ -75,7 +75,7 @@ export class ScEnquiriesService {
       awardedTotal: awarded ? money(c.quotes.find((q) => q.quoteId === awarded.id)!.total) : null,
       workOrderId: row.workOrderId,
       woNo: row.workOrder?.woNo ?? null,
-      createdAt: iso(row.createdAt)!,
+      createdAt: iso(row.createdAt),
     };
   }
 
@@ -134,7 +134,7 @@ export class ScEnquiriesService {
       decisionNote: row.decisionNote,
       decidedAt: iso(row.decidedAt),
       createdByName: row.createdBy.fullName,
-      closed: !!row.closesOn && dateOnly(row.closesOn)! < todayIn(),
+      closed: !!row.closesOn && dateOnly(row.closesOn) < todayIn(),
       canEdit: canRunSubcontractEnquiries(user.roleKey),
     };
   }
@@ -179,7 +179,7 @@ export class ScEnquiriesService {
     }
     return {
       items: rows.map((r) => this.summary(r, this.comparison(r))),
-      summary: { open: all.filter((r) => r.status === 'OPEN').length, awaitingQuotes: awaiting, readyToAward: ready, awardedThisYear: awardedCount, awardedValue: money(awardedValue)! },
+      summary: { open: all.filter((r) => r.status === 'OPEN').length, awaitingQuotes: awaiting, readyToAward: ready, awardedThisYear: awardedCount, awardedValue: money(awardedValue) },
     };
   }
 
@@ -297,7 +297,7 @@ export class ScEnquiriesService {
     }
     if (!lines.length) throw new BadRequestException('Enter at least one rate from their quote');
     const receivedOn = parseDate(dto.receivedOn);
-    if (dateOnly(receivedOn)! > todayIn()) throw new BadRequestException('Their quote cannot come after today');
+    if (dateOnly(receivedOn) > todayIn()) throw new BadRequestException('Their quote cannot come after today');
     await this.prisma.$transaction(async (tx) => {
       await tx.subcontractQuote.update({
         where: { id: quoteId },

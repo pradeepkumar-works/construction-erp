@@ -79,7 +79,7 @@ export class QaReportService {
         ncrsRaised: count(raised, p.id),
         ncrsClosed: grouped(closed, p.id),
         ncrsOpen: openHere.length,
-        ncrsOver30: openHere.filter((x) => ncrAgeBand(dateOnly(x.raisedOn)!, today) === 'OVER_30').length,
+        ncrsOver30: openHere.filter((x) => ncrAgeBand(dateOnly(x.raisedOn), today) === 'OVER_30').length,
         reworkCost: raised
           .filter((x) => x.projectId === p.id)
           .reduce((s, x) => s + Number(x.reworkCost ?? 0), 0)
@@ -91,7 +91,7 @@ export class QaReportService {
     });
     const rows = all.filter(reportRowHasWork);
     const bands = Object.keys(NCR_AGE_BAND_LABELS) as NcrAgeBand[];
-    const ages = open.map((x) => ncrAgeBand(dateOnly(x.raisedOn)!, today));
+    const ages = open.map((x) => ncrAgeBand(dateOnly(x.raisedOn), today));
     const nameIn = (list: { code: string; name: string }[]) => (code: string) => list.find((e) => e.code === code)?.name ?? code;
     return {
       month,

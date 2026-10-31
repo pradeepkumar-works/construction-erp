@@ -129,7 +129,7 @@ export class PipeNetworkService {
           fromCode: s.fromNode.code,
           toNodeId: s.toNodeId,
           toCode: s.toNode.code,
-          lengthM: dec(s.lengthM)!,
+          lengthM: dec(s.lengthM),
           diameterMm: s.diameterMm,
           material: s.material,
           pipeClass: s.pipeClass,

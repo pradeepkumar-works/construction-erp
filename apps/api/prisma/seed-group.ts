@@ -193,7 +193,7 @@ async function ensureCompany(prisma: PrismaClient, groupId: string, c: CompanySe
     (await prisma.organization.create({
       data: {
         code: c.code, name: c.name, groupId, kind: c.kind, legalName: c.legalName, pan: c.pan, cin: c.cin, gstin: gstin(c.pan),
-        modulesOff: [...COMPANY_KIND_INFO[c.kind].modulesOff], paymentsNeedRequest: true, progressFromDpr: true,
+        modulesOff: [...COMPANY_KIND_INFO[c.kind].modulesOff], paymentsNeedRequest: true, progressFromDpr: true, ordersNeedApprovedChoice: true,
       },
     }));
   if (existing) await prisma.organization.update({ where: { id: org.id }, data: { groupId } });
@@ -674,7 +674,7 @@ async function addApprovalRules(prisma: PrismaClient, co: Co) {
   if (await prisma.approvalRule.count({ where: { organizationId: co.id } })) return;
   const roles = new Map((await prisma.role.findMany({ where: { organizationId: co.id }, select: { id: true, key: true } })).map((r) => [r.key, r.id]));
   const site = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
-  const money = ['PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST'];
+  const money = ['SUPPLIER_CHOICE', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST'];
   const rows: [string, string, number | null][] = [
     ...site.map((t) => ['MANAGEMENT', t, null] as [string, string, null]),
     ...site.map((t) => ['PROJECT_MANAGER', t, t === 'EXPENSE' ? 25000 : null] as [string, string, number | null]),

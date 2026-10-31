@@ -36,7 +36,7 @@ export interface LoadedOm {
 export async function loadOm(tx: Prisma.TransactionClient, projectId: string): Promise<LoadedOm | null> {
   const contract = await tx.omContract.findUnique({ where: { projectId }, include: OM_CONTRACT_INCLUDE });
   if (!contract) return null;
-  const startOn = dateOnly(contract.startOn)!;
+  const startOn = dateOnly(contract.startOn);
   const terms = {
     startOn,
     years: contract.years,
@@ -58,7 +58,7 @@ export async function loadOm(tx: Prisma.TransactionClient, projectId: string): P
 export async function loadDays(tx: Prisma.TransactionClient, projectId: string, from: string, to: string): Promise<DayReading[]> {
   const rows = await tx.serviceLevelDay.findMany({ where: { projectId, date: { gte: parseDate(from), lte: parseDate(to) } }, orderBy: { date: 'asc' } });
   return rows.map((r) => ({
-    date: dateOnly(r.date)!,
+    date: dateOnly(r.date),
     producedKl: Number(r.producedKl),
     suppliedKl: Number(r.suppliedKl),
     residualChlorine: num(r.residualChlorine),
@@ -79,7 +79,7 @@ export async function loadMonths(tx: Prisma.TransactionClient, om: LoadedOm, pro
     tx.omStaffMonth.findMany({ where: { projectId, month: { gte: parseDate(first), lte: parseDate(to) } }, select: { month: true, role: true, deployed: true } }),
   ]);
   return months.map((month) => {
-    const deployed = new Map(staff.filter((s) => dateOnly(s.month)!.startsWith(month)).map((s) => [s.role, s.deployed]));
+    const deployed = new Map(staff.filter((s) => dateOnly(s.month).startsWith(month)).map((s) => [s.role, s.deployed]));
     return monthFigures({ month, startOn: om.startOn, endsOn: om.endsOn, today, days, settings: om.settings, population: om.contract.population, norms: om.norms, deployed });
   });
 }

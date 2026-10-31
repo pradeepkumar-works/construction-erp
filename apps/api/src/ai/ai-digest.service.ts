@@ -73,18 +73,17 @@ export class AiDigestService {
     if (start > end) throw new BadRequestException('from must be on or before to');
     if (addDays(start, 31) < end) throw new BadRequestException('Ask for 31 days or fewer; for longer, use monthly_trends or project_cost');
     const project = await this.projects.get(user, projectId);
-    const range = { projectId, from: start, to: end, page: 1, pageSize: READ };
 
     const [progress, gantt, dprs, sheets, logs, receipts, vendorBills, subBills, risks, pending] = await Promise.all([
-      this.progress.list(user, range as never),
+      this.progress.list(user, { projectId, from: start, to: end, page: 1, pageSize: READ }),
       this.schedule.gantt(user, projectId),
-      this.dpr.list(user, range as never),
-      this.attendance.list(user, range as never),
-      this.machinery.list(user, range as never),
-      section(() => this.stock.list(user, { ...range, type: 'RECEIPT' } as never)),
-      section(() => this.vendorBills.list(user, range as never)),
-      section(() => this.subBills.list(user, range as never)),
-      this.risks.list(user, { projectId, page: 1, pageSize: READ, sortBy: 'createdAt', sortOrder: 'desc' } as never),
+      this.dpr.list(user, { projectId, from: start, to: end, page: 1, pageSize: READ }),
+      this.attendance.list(user, { projectId, from: start, to: end, page: 1, pageSize: READ }),
+      this.machinery.list(user, { projectId, from: start, to: end, page: 1, pageSize: READ }),
+      section(() => this.stock.list(user, { projectId, from: start, to: end, page: 1, pageSize: READ, type: 'RECEIPT' })),
+      section(() => this.vendorBills.list(user, { projectId, from: start, to: end, page: 1, pageSize: READ })),
+      section(() => this.subBills.list(user, { projectId, from: start, to: end, page: 1, pageSize: READ })),
+      this.risks.list(user, { projectId, page: 1, pageSize: READ, sortBy: 'createdAt', sortOrder: 'desc' }),
       this.lifecycle.pending(user),
     ]);
 
@@ -190,14 +189,13 @@ export class AiDigestService {
     const gantt = await this.schedule.gantt(user, projectId);
     const picked = activityId ? gantt.activities.filter((a) => a.id === activityId) : gantt.activities.filter((a) => a.state === 'BEHIND' || a.state === 'LATE').slice(0, 10);
     if (activityId && !picked.length) throw new NotFoundException('No such activity on this project');
-    const recent = { projectId, from: since, to: today, page: 1, pageSize: READ };
 
     const [risks, dprs, logs, mrs, progress] = await Promise.all([
-      this.risks.list(user, { projectId, page: 1, pageSize: READ } as never),
-      this.dpr.list(user, recent as never),
-      this.machinery.list(user, recent as never),
-      this.mrs.list(user, { projectId, page: 1, pageSize: READ } as never),
-      Promise.all(picked.map((a) => this.progress.list(user, { projectId, activityId: a.id, page: 1, pageSize: 10 } as never))),
+      this.risks.list(user, { projectId, page: 1, pageSize: READ }),
+      this.dpr.list(user, { projectId, from: since, to: today, page: 1, pageSize: READ }),
+      this.machinery.list(user, { projectId, from: since, to: today, page: 1, pageSize: READ }),
+      this.mrs.list(user, { projectId, page: 1, pageSize: READ }),
+      Promise.all(picked.map((a) => this.progress.list(user, { projectId, activityId: a.id, page: 1, pageSize: 10 }))),
     ]);
 
     return {
@@ -249,7 +247,7 @@ export class AiDigestService {
 
   /** An RA bill against the one before it on the same project: item by item, and the totals. The latest bill when billId is left out. */
   async raBillChanges(user: RequestUser, projectId: string, billId?: string) {
-    const list = await this.raBills.list(user, { projectId, page: 1, pageSize: READ } as never);
+    const list = await this.raBills.list(user, { projectId, page: 1, pageSize: READ });
     const ordered = [...list.items].sort((a, b) => a.billNo - b.billNo);
     const current = billId ? ordered.find((b) => b.id === billId) : ordered[ordered.length - 1];
     if (!current) throw new NotFoundException(billId ? 'No such RA bill on this project' : 'This project has no RA bills yet');

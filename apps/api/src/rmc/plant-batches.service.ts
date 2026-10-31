@@ -123,7 +123,7 @@ export class PlantBatchesService {
         id: r.id,
         connectionId: r.connectionId,
         plantId: r.plantId,
-        takenAt: iso(r.takenAt)!,
+        takenAt: iso(r.takenAt),
         file: r.file,
         line: r.line,
         batchNo: read.batchNo,

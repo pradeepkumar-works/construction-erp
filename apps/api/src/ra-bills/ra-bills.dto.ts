@@ -17,7 +17,7 @@ export class CreateRaBillDto {
   @IsDateString()
   measuredUpTo?: string;
   @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() isFinal?: boolean;
-  @ApiPropertyOptional({ example: 2, description: 'An O&M bill (item 131): the O&M year, with omInstalment; it bills that period, so measuredUpTo is ignored' })
+  @ApiPropertyOptional({ example: 2, description: 'An O&M bill: the O&M year, with omInstalment; it bills that period, so measuredUpTo is ignored' })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -80,7 +80,7 @@ export class CertifyBillDto extends BillDateDto {
   @ValidateNested({ each: true })
   @Type(() => CertifiedItemDto)
   items?: CertifiedItemDto[];
-  @ApiPropertyOptional({ type: [CertifiedStageDto], description: 'Stages the client cut (item 129); stages left out are certified as claimed' })
+  @ApiPropertyOptional({ type: [CertifiedStageDto], description: 'Stages the client cut; stages left out are certified as claimed' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(1000)

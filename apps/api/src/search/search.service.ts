@@ -67,12 +67,11 @@ export class SearchService {
     materialApprovals: MaterialApprovalsService,
     letters: CorrespondenceService,
   ) {
-    const page = (q: string) => ({ q, page: 1, pageSize: PER_KIND });
     const sources: Source<any>[] = [
-      { kind: 'material_request', list: (u, q) => materialRequests.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.requestNo, subtitle: join(r.title, r.projectName), href: `/material-requests/${r.id}`, status: r.status }) },
-      { kind: 'purchase_order', list: (u, q) => purchaseOrders.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.poNo, subtitle: join(r.vendorName, r.projectName), href: `/purchase-orders/${r.id}`, status: r.status }) },
-      { kind: 'vendor_bill', list: (u, q) => vendorBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.billNo, subtitle: join(r.vendorName, r.invoiceNo ? `invoice ${r.invoiceNo}` : null, r.projectName), href: `/vendor-bills/${r.id}`, status: r.status }) },
-      { kind: 'work_order', list: (u, q) => workOrders.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.woNo, subtitle: join(r.vendorName, r.title), href: `/work-orders/${r.id}`, status: r.status }) },
+      { kind: 'material_request', list: (u, q) => materialRequests.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.requestNo, subtitle: join(r.title, r.projectName), href: `/material-requests/${r.id}`, status: r.status }) },
+      { kind: 'purchase_order', list: (u, q) => purchaseOrders.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.poNo, subtitle: join(r.vendorName, r.projectName), href: `/purchase-orders/${r.id}`, status: r.status }) },
+      { kind: 'vendor_bill', list: (u, q) => vendorBills.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.billNo, subtitle: join(r.vendorName, r.invoiceNo ? `invoice ${r.invoiceNo}` : null, r.projectName), href: `/vendor-bills/${r.id}`, status: r.status }) },
+      { kind: 'work_order', list: (u, q) => workOrders.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.woNo, subtitle: join(r.vendorName, r.title), href: `/work-orders/${r.id}`, status: r.status }) },
       {
         kind: 'subcontract_enquiry',
         module: 'subcontract_enquiries',
@@ -83,24 +82,24 @@ export class SearchService {
         },
         hit: (r) => ({ id: r.id, title: r.enquiryNo, subtitle: join(r.title, r.projectName), href: `/subcontract-enquiries/${r.id}`, status: null }),
       },
-      { kind: 'subcontract_bill', list: (u, q) => subcontractBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.label, subtitle: join(r.vendorName, r.projectName), href: `/subcontract-bills/${r.id}`, status: r.status }) },
+      { kind: 'subcontract_bill', list: (u, q) => subcontractBills.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.label, subtitle: join(r.vendorName, r.projectName), href: `/subcontract-bills/${r.id}`, status: r.status }) },
       {
         kind: 'payment_request',
         allowed: (u) => canViewPaymentRequests(u.roleKey) || canRequestFunds(u.roleKey),
-        list: (u, q) => paymentRequests.list(u, page(q) as never),
+        list: (u, q) => paymentRequests.list(u, { q, page: 1, pageSize: PER_KIND }),
         hit: (r) => ({ id: r.id, title: r.requestNo, subtitle: join(r.vendorName, r.targetLabel, r.projectName), href: `/payment-requests/${r.id}`, status: r.status }),
       },
-      { kind: 'ra_bill', list: (u, q) => raBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.billLabel, subtitle: r.projectName, href: `/bills/${r.id}`, status: r.status }) },
-      { kind: 'measurement', list: (u, q) => measurements.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.mbNo, subtitle: join(r.contractorName, r.projectName), href: `/measurements/${r.id}`, status: r.status }) },
-      { kind: 'expense', list: (u, q) => expenses.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.expenseNo, subtitle: join(r.description, r.projectName), href: `/expenses/${r.id}`, status: r.status }) },
-      { kind: 'inspection', list: (u, q) => inspections.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.inspectionNo, subtitle: join(r.activityName, r.projectName), href: `/inspections/${r.id}`, status: r.status }) },
-      { kind: 'risk', list: (u, q) => risks.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.riskNo, subtitle: join(r.title, r.projectName), href: `/risks?id=${r.id}`, status: null }) },
-      { kind: 'document', list: (u, q) => documents.listDocuments(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.docNo, subtitle: join(r.title, r.projectName), href: `/documents?id=${r.id}`, status: null }) },
-      { kind: 'rfi', list: (u, q) => rfis.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.rfiNo, subtitle: join(r.subject, r.projectName), href: `/documents?tab=rfis&rfi=${r.id}`, status: null }) },
+      { kind: 'ra_bill', list: (u, q) => raBills.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.billLabel, subtitle: r.projectName, href: `/bills/${r.id}`, status: r.status }) },
+      { kind: 'measurement', list: (u, q) => measurements.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.mbNo, subtitle: join(r.contractorName, r.projectName), href: `/measurements/${r.id}`, status: r.status }) },
+      { kind: 'expense', list: (u, q) => expenses.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.expenseNo, subtitle: join(r.description, r.projectName), href: `/expenses/${r.id}`, status: r.status }) },
+      { kind: 'inspection', list: (u, q) => inspections.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.inspectionNo, subtitle: join(r.activityName, r.projectName), href: `/inspections/${r.id}`, status: r.status }) },
+      { kind: 'risk', list: (u, q) => risks.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.riskNo, subtitle: join(r.title, r.projectName), href: `/risks?id=${r.id}`, status: null }) },
+      { kind: 'document', list: (u, q) => documents.listDocuments(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.docNo, subtitle: join(r.title, r.projectName), href: `/documents?id=${r.id}`, status: null }) },
+      { kind: 'rfi', list: (u, q) => rfis.list(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.rfiNo, subtitle: join(r.subject, r.projectName), href: `/documents?tab=rfis&rfi=${r.id}`, status: null }) },
       {
         kind: 'letter',
         allowed: (u) => canViewLetters(u.roleKey),
-        list: (u, q) => letters.list(u, page(q) as never),
+        list: (u, q) => letters.list(u, { q, page: 1, pageSize: PER_KIND }),
         hit: (r) => ({ id: r.id, title: r.letterNo ?? 'Draft letter', subtitle: join(r.subject, r.party, r.projectName ?? 'Head office'), href: `/correspondence/${r.id}`, status: null }),
       },
       {
@@ -127,13 +126,13 @@ export class SearchService {
         kind: 'vendor',
         // The vendor master is readable by anyone for pickers, but its page is for these roles.
         allowed: (u) => canEditVendors(u.roleKey) || canSeeVendorBank(u.roleKey),
-        list: (u, q) => vendors.list(u, page(q) as never),
+        list: (u, q) => vendors.list(u, { q, page: 1, pageSize: PER_KIND }),
         hit: (r) => ({ id: r.id, title: r.name, subtitle: join(...(r.kinds as (keyof typeof VENDOR_KIND_LABELS)[]).map((k) => VENDOR_KIND_LABELS[k]), r.gstin), href: `/vendors?q=${encodeURIComponent(r.name)}`, status: null }),
       },
       {
         kind: 'client',
         allowed: (u) => canViewContract(u.roleKey) || canEditContract(u.roleKey),
-        list: (u, q) => clients.list(u, page(q) as never),
+        list: (u, q) => clients.list(u, { q, page: 1, pageSize: PER_KIND }),
         hit: (r) => ({ id: r.id, title: r.name, subtitle: join(r.department, r.gstin), href: `/clients?q=${encodeURIComponent(r.name)}`, status: null }),
       },
       {
@@ -146,8 +145,8 @@ export class SearchService {
         },
         hit: (r) => ({ id: r.id, title: r.tenderNo, subtitle: join(r.title, r.clientName), href: `/tenders/${r.id}`, status: null }),
       },
-      { kind: 'item', list: (u, q) => stock.listItems(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.name, subtitle: join(r.category, r.unit), href: `/stock?q=${encodeURIComponent(r.name)}`, status: null }) },
-      { kind: 'person', list: (u, q) => staff.listEmployees(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.fullName, subtitle: join(r.employeeCode, r.designation, r.projectName ?? 'Head office'), href: `/staff?employee=${r.id}`, status: null }) },
+      { kind: 'item', list: (u, q) => stock.listItems(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.name, subtitle: join(r.category, r.unit), href: `/stock?q=${encodeURIComponent(r.name)}`, status: null }) },
+      { kind: 'person', list: (u, q) => staff.listEmployees(u, { q, page: 1, pageSize: PER_KIND }), hit: (r) => ({ id: r.id, title: r.fullName, subtitle: join(r.employeeCode, r.designation, r.projectName ?? 'Head office'), href: `/staff?employee=${r.id}`, status: null }) },
     ];
     this.sources = sources;
   }

@@ -100,7 +100,7 @@ export class SafetyService {
       projectName: r.project.name,
       incidentNo: r.incidentNo,
       type: r.type,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       time: r.time,
       location: r.location,
       description: r.description,
@@ -118,8 +118,8 @@ export class SafetyService {
       reportedById: r.reportedById,
       reportedByName: r.reportedBy.fullName,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -300,7 +300,7 @@ export class SafetyService {
       projectId: r.projectId,
       projectName: r.project.name,
       talkNo: r.talkNo,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       topic: r.topic,
       conductedBy: r.conductedBy,
       contractor: r.contractor,
@@ -311,7 +311,7 @@ export class SafetyService {
       recordedById: r.recordedById,
       recordedByName: r.recordedBy.fullName,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -462,7 +462,7 @@ export class SafetyService {
       date: today,
       activities,
       permits,
-      incidents: incidents.map((i) => ({ incidentNo: i.incidentNo, type: i.type, date: dateOnly(i.date)!, description: i.description, correctiveAction: i.correctiveAction ?? i.immediateAction })),
+      incidents: incidents.map((i) => ({ incidentNo: i.incidentNo, type: i.type, date: dateOnly(i.date), description: i.description, correctiveAction: i.correctiveAction ?? i.immediateAction })),
     });
     return { projectId, projectName: project.name, ...talk };
   }
@@ -470,7 +470,7 @@ export class SafetyService {
   // Permits to work
 
   private permitDto(r: PermitRow, now = new Date()): WorkPermitDto {
-    const validTo = iso(r.validTo)!;
+    const validTo = iso(r.validTo);
     return {
       id: r.id,
       projectId: r.projectId,
@@ -482,7 +482,7 @@ export class SafetyService {
       contractor: r.contractor,
       workerCount: r.workerCount,
       workers: r.workers,
-      validFrom: iso(r.validFrom)!,
+      validFrom: iso(r.validFrom),
       validTo,
       precautions: r.precautions,
       status: r.status,
@@ -496,7 +496,7 @@ export class SafetyService {
       closedAt: iso(r.closedAt),
       closeNote: r.closeNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 

@@ -156,7 +156,7 @@ export class MaterialApprovalsService {
         overdue,
         withUs,
         approvedThisMonth,
-        avgDaysToDecide: averageDays(reviewed.map((r) => ({ submittedOn: dateOnly(r.submittedOn)!, reviewedOn: dateOnly(r.reviewedOn)! }))),
+        avgDaysToDecide: averageDays(reviewed.map((r) => ({ submittedOn: dateOnly(r.submittedOn), reviewedOn: dateOnly(r.reviewedOn)! }))),
       },
     };
   }
@@ -181,7 +181,7 @@ export class MaterialApprovalsService {
       note: r.note,
       withdrawnNote: withdrawn?.note ?? null,
       revisions: r.revisions.map((v) => {
-        const sub = dateOnly(v.submittedOn)!;
+        const sub = dateOnly(v.submittedOn);
         const rev = dateOnly(v.reviewedOn);
         return {
           id: v.id,

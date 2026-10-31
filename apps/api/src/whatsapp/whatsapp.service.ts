@@ -252,7 +252,7 @@ export class WhatsappService {
       select: { threadId: true },
     });
     const thread = today?.threadId ? await this.prisma.aiThread.findFirst({ where: { id: today.threadId, userId: user.id }, select: { id: true } }) : null;
-    const mine = await this.projects.list(user, { page: 1, pageSize: 2, status: 'ACTIVE' } as never).catch(() => null);
+    const mine = await this.projects.list(user, { page: 1, pageSize: 2, status: 'ACTIVE' }).catch(() => null);
     const projectId = mine?.total === 1 ? mine.items[0].id : null;
     let done: AiMessageDto | null = null;
     await this.ai.ask(
@@ -393,7 +393,7 @@ export class WhatsappService {
     const kind = r.recordKind && isCaptureSaveKind(r.recordKind as CaptureSaveKind) ? (r.recordKind as CaptureSaveKind) : null;
     return {
       id: r.id,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
       userId: r.userId,
       userName: r.user?.fullName ?? null,
       fromPhone: r.fromPhone,

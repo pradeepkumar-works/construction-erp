@@ -133,7 +133,7 @@ test('the module: registers and masters in the tree, in the department menu, and
   assert.ok(!hrefs('SITE_ENGINEER').some((h) => h.startsWith('/correspondence')));
 });
 
-test('the seal at head office (item 169): after a signature that is not a director\'s, for the categories its rule names', () => {
+test('the seal at head office: after a signature that is not a director\'s, for the categories its rule names', () => {
   assert.equal(letterNeedsSeal('CONTRACTUAL', 'claim', 'PROJECT_MANAGER'), true, 'a claim signed by the PM waits for head office');
   assert.equal(letterNeedsSeal('CONTRACTUAL', 'general', 'PROJECT_MANAGER'), false, 'a general letter is numbered when signed');
   assert.equal(letterNeedsSeal('ALL', 'general', 'PROJECT_MANAGER'), true);

@@ -294,7 +294,7 @@ export class BiometricService {
       pin: p.pin,
       personName: who.get(p.pin)?.name ?? null,
       personCode: who.get(p.pin)?.code ?? null,
-      date: dateOnly(p.date)!,
+      date: dateOnly(p.date),
       time: p.time,
       result: p.result,
       note: p.note,

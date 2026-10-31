@@ -77,7 +77,7 @@ const daysFrom = (from: string, to: string) => Math.max(0, Math.round((Date.pars
 const plusDays = (day: string, n: number) => {
   const d = parseDate(day);
   d.setUTCDate(d.getUTCDate() + n);
-  return dateOnly(d)!;
+  return dateOnly(d);
 };
 
 /**
@@ -132,7 +132,7 @@ export class DesignSubmissionsService {
       riskId: r.riskId,
       riskNo: r.risk?.riskNo ?? null,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -167,7 +167,7 @@ export class DesignSubmissionsService {
         revisionStatus: (d.document.currentRevision?.status ?? null) as RevisionStatus | null,
       })),
       rounds: r.rounds.map((x) => {
-        const submittedOn = dateOnly(x.submittedOn)!;
+        const submittedOn = dateOnly(x.submittedOn);
         const reviewedOn = dateOnly(x.reviewedOn);
         return {
           id: x.id,
@@ -215,7 +215,7 @@ export class DesignSubmissionsService {
     });
     const summary = designSummary(
       rows.map((r) => ({ status: r.status, late: r.daysLate !== null, openComments: r.openComments })),
-      reviews.map((r) => ({ submittedOn: dateOnly(r.submittedOn)!, reviewedOn: dateOnly(r.reviewedOn)! })),
+      reviews.map((r) => ({ submittedOn: dateOnly(r.submittedOn), reviewedOn: dateOnly(r.reviewedOn)! })),
     );
     const f = q.status;
     const shown = rows
@@ -417,7 +417,7 @@ export class DesignSubmissionsService {
     const today = todayIn();
     const round = row.rounds[0];
     if (!round) throw new BadRequestException('Only a submission under review gets a code');
-    const problem = designCodeProblem(row.status as DesignSubmissionStatus, { code: dto.code, reviewedOn: dto.reviewedOn, submittedOn: dateOnly(round.submittedOn)!, newComments: dto.comments.length, today });
+    const problem = designCodeProblem(row.status as DesignSubmissionStatus, { code: dto.code, reviewedOn: dto.reviewedOn, submittedOn: dateOnly(round.submittedOn), newComments: dto.comments.length, today });
     if (problem) throw new BadRequestException(problem);
     const docIds = new Set(row.docs.map((d) => d.documentId));
     if (dto.comments.some((c) => c.documentId && !docIds.has(c.documentId))) throw new BadRequestException('A comment is on a drawing this submission does not send');
@@ -446,7 +446,7 @@ export class DesignSubmissionsService {
       const next = revisionStatusAfter(dto.code, purpose, r.status as RevisionStatus);
       if (next) await this.documents.updateRevision(user, r.documentId, r.id, { status: next });
     }
-    if (purpose === 'APPROVAL') await this.epc.followDesignRound(user, row.projectId, sent, { submittedOn: dateOnly(round.submittedOn)!, code: dto.code, reviewedOn: dto.reviewedOn });
+    if (purpose === 'APPROVAL') await this.epc.followDesignRound(user, row.projectId, sent, { submittedOn: dateOnly(round.submittedOn), code: dto.code, reviewedOn: dto.reviewedOn });
     await this.audit.log(user, 'DESIGN_SUBMISSION', id, 'REVIEWED', `R${round.revision} code ${dto.code}${dto.comments.length ? `, ${dto.comments.length} comments` : ''}`);
     return this.get(user, id);
   }

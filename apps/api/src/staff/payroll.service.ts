@@ -59,11 +59,11 @@ export class PayrollService {
     const isHoliday = (d: string, site: string | null) => holidays.some((h) => dateOnly(h.date) === d && (h.projectId === null || h.projectId === site));
 
     const rows = employees.map((e): PayrollRowDto => {
-      const att = new Map(attendance.filter((a) => a.employeeId === e.id).map((a) => [dateOnly(a.date)!, a]));
+      const att = new Map(attendance.filter((a) => a.employeeId === e.id).map((a) => [dateOnly(a.date), a]));
       const onLeave = new Map<string, { type: LeaveType; half: boolean }>();
-      for (const l of leave.filter((x) => x.employeeId === e.id)) for (const d of days(dateOnly(l.fromDate)!, dateOnly(l.toDate)!)) onLeave.set(d, { type: l.type, half: l.halfDay });
-      const first = e.joinedOn && dateOnly(e.joinedOn)! > from ? dateOnly(e.joinedOn)! : from;
-      const last = e.leftOn && dateOnly(e.leftOn)! < to ? dateOnly(e.leftOn)! : to;
+      for (const l of leave.filter((x) => x.employeeId === e.id)) for (const d of days(dateOnly(l.fromDate), dateOnly(l.toDate))) onLeave.set(d, { type: l.type, half: l.halfDay });
+      const first = e.joinedOn && dateOnly(e.joinedOn) > from ? dateOnly(e.joinedOn) : from;
+      const last = e.leftOn && dateOnly(e.leftOn) < to ? dateOnly(e.leftOn) : to;
       const r = { calendarDays: 0, offDays: 0, workingDays: 0, present: 0, absent: 0, notMarked: 0, offDaysWorked: 0, overtimeHours: 0, overtimePendingHours: 0, lopDays: 0 };
       const byType = Object.fromEntries(LEAVE_TYPES.map((t) => [t, 0])) as Record<LeaveType, number>;
       for (const d of days(first, last)) {
@@ -152,7 +152,7 @@ export class PayrollService {
           dates: new Set<string>(),
         } as ContractorMonthRowDto & { dates: Set<string> });
       g.manDays += l.count;
-      g.dates.add(dateOnly(l.sheet.date)!);
+      g.dates.add(dateOnly(l.sheet.date));
       g.vendorId = g.vendorId ?? l.vendorId;
       groups.set(k, g);
     }

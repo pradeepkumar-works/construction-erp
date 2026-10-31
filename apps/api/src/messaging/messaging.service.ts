@@ -126,7 +126,7 @@ export class MessagingService {
   }
 
   toDto(r: Row): OutboundMessageDto {
-    return { id: r.id, userId: r.userId, userName: r.user?.fullName ?? null, channel: r.channel, template: r.template, to: r.to, body: r.body, status: r.status, error: r.error, createdAt: iso(r.createdAt)! };
+    return { id: r.id, userId: r.userId, userName: r.user?.fullName ?? null, channel: r.channel, template: r.template, to: r.to, body: r.body, status: r.status, error: r.error, createdAt: iso(r.createdAt) };
   }
 
   async list(user: RequestUser, q: ListMessagesQuery): Promise<Paginated<OutboundMessageDto>> {

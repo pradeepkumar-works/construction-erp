@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DprService } from './dpr.service';
 import { type CheckReport, type EarlierPhoto, type EarlierReport, crewKeyOf, dprChecks } from './dpr-check-rules';
 
-const daysBefore = (d: string, n: number) => dateOnly(new Date(Date.parse(`${d}T00:00:00Z`) - n * 86_400_000))!;
+const daysBefore = (d: string, n: number) => dateOnly(new Date(Date.parse(`${d}T00:00:00Z`) - n * 86_400_000));
 const crewOf = (v: unknown): ManpowerLine[] => (Array.isArray(v) ? (v as ManpowerLine[]) : []);
 
 /**
@@ -97,14 +97,14 @@ export class DprChecksService {
 
     const earlier: EarlierReport[] = earlierRows.map((e) => ({
       id: e.id,
-      date: dateOnly(e.date)!,
+      date: dateOnly(e.date),
       crewKey: crewKeyOf(crewOf(e.manpower)),
       lines: e.lines.map((l) => ({ activityId: l.activityId, quantity: Number(l.quantity) })),
     }));
     const earlierPhotos: EarlierPhoto[] = photos
       .map((p) => {
         const r = p.dailyReport ?? p.progressEntry?.dailyReport;
-        return r ? { id: p.id, fileName: p.fileName, mimeType: p.mimeType, size: p.size, dprId: r.id, date: dateOnly(r.date)! } : null;
+        return r ? { id: p.id, fileName: p.fileName, mimeType: p.mimeType, size: p.size, dprId: r.id, date: dateOnly(r.date) } : null;
       })
       .filter((p) => !!p)
       .sort((a, b) => b.date.localeCompare(a.date));

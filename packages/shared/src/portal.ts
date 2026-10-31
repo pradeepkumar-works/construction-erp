@@ -55,7 +55,7 @@ export type PortalDprDto = Pick<
 >;
 
 export interface PortalInspectionDto
-  extends Pick<InspectionDto, 'id' | 'projectId' | 'inspectionNo' | 'activityName' | 'holdPoint' | 'date' | 'location' | 'remarks' | 'checklistName' | 'checklist' | 'status' | 'submittedByName' | 'reviewedByName' | 'reviewedAt' | 'reviewNote' | 'attachments'> {
+  extends Pick<InspectionDto, 'id' | 'projectId' | 'inspectionNo' | 'activityName' | 'holdPoint' | 'hiddenWork' | 'hidden' | 'date' | 'location' | 'remarks' | 'checklistName' | 'checklist' | 'status' | 'submittedByName' | 'reviewedByName' | 'reviewedAt' | 'reviewNote' | 'attachments'> {
   witnessedByName: string | null;
   witnessedAt: string | null;
   witnessNote: string | null;
