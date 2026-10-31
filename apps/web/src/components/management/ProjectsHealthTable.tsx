@@ -118,7 +118,7 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
     },
     {
       key: 'unbilled',
-      title: 'Not billed',
+      title: 'Work done, not billed',
       align: 'right',
       render: (_, p) => (
         <>

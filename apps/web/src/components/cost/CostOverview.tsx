@@ -25,7 +25,7 @@ const EXPORT: ExportColumn<ProjectCostSummaryDto>[] = [
   { header: 'Project code', value: (r) => r.projectCode, width: 14 },
   { header: 'Project', value: (r) => r.projectName, width: 40 },
   { header: 'Type', value: (r) => PROJECT_TYPE_LABELS[r.projectType], width: 14 },
-  { header: 'Executed value', value: (r) => toNumber(r.executedValue), width: 16 },
+  { header: 'Work done', value: (r) => toNumber(r.executedValue), width: 16 },
   { header: 'Measured value', value: (r) => toNumber(r.measuredValue), width: 16 },
   { header: 'Site expenses', value: (r) => toNumber(r.cost.expenses), width: 14 },
   { header: 'Material issued', value: (r) => toNumber(r.cost.material), width: 14 },
@@ -35,9 +35,9 @@ const EXPORT: ExportColumn<ProjectCostSummaryDto>[] = [
   { header: 'Total cost', value: (r) => toNumber(r.cost.total), width: 14 },
   { header: 'Margin', value: (r) => toNumber(r.margin), width: 16 },
   { header: 'Billed (RA bills)', value: (r) => toNumber(r.billedValue), width: 16 },
-  { header: 'Cash in', value: (r) => toNumber(r.cashIn), width: 16 },
+  { header: 'Money in', value: (r) => toNumber(r.cashIn), width: 16 },
   { header: 'Vendor bills (incl. GST)', value: (r) => toNumber(r.payableBilled), width: 16 },
-  { header: 'Cash out', value: (r) => toNumber(r.cashOut), width: 16 },
+  { header: 'Money out', value: (r) => toNumber(r.cashOut), width: 16 },
   { header: 'Cost % of executed', value: (r) => r.costPct, width: 12 },
   { header: 'Missing rates', value: (r) => unpricedText(r.unpriced).join('; '), width: 40 },
 ];
@@ -68,7 +68,7 @@ export function CostOverview() {
         </div>
       ),
     },
-    { title: 'Executed value', dataIndex: 'executedValue', width: 140, align: 'right', render: money, sorter: (a, b) => toNumber(a.executedValue) - toNumber(b.executedValue) },
+    { title: 'Work done', dataIndex: 'executedValue', width: 140, align: 'right', render: money, sorter: (a, b) => toNumber(a.executedValue) - toNumber(b.executedValue) },
     { title: 'Measured (MB)', dataIndex: 'measuredValue', width: 130, align: 'right', render: money },
     {
       title: 'Cost',
@@ -94,8 +94,8 @@ export function CostOverview() {
       render: (v) => <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') }}>{formatINR(v)}</span>,
     },
     { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
-    { title: 'Cash in', dataIndex: 'cashIn', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
-    { title: 'Cash out', dataIndex: 'cashOut', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashOut) - toNumber(b.cashOut) },
+    { title: 'Money in', dataIndex: 'cashIn', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
+    { title: 'Money out', dataIndex: 'cashOut', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashOut) - toNumber(b.cashOut) },
     { title: 'Cost %', dataIndex: 'costPct', width: 90, align: 'right', render: (v: number | null) => (v === null ? <span className="text-muted">-</span> : `${v}%`), sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },
   ];
 
@@ -117,7 +117,7 @@ export function CostOverview() {
         </Space>
       </CardToolbar>
       <CardToolbar variant="summary" wrap gap={32}>
-        <Statistic title="Executed value" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+        <Statistic title="Work done" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
         <Statistic title="Measured (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
         <Statistic title="Cost" value={formatINR(totals.cost)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
         <Statistic title="Margin" value={formatINR(totals.margin)} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: totals.margin < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }} />
@@ -132,7 +132,7 @@ export function CostOverview() {
       <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), padding: '8px 16px 0' }}>
         {periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate, attendance at the
         trade&apos;s daily rate and the work value of approved subcontractor bills (their gangs and the material they were charged for are not counted
-        again). Executed value is approved progress at BOQ rates. Billed is the work value of approved RA bills dated in the period; cash in is what
+        again). Work done is approved progress at BOQ rates. Billed is the work done on approved RA bills dated in the period; money in is what
         clients paid into the bank in it and cash out what was paid to vendors and subcontractors.
       </Typography.Paragraph>
       <LabourRatesModal open={ratesOpen} onClose={() => setRatesOpen(false)} />

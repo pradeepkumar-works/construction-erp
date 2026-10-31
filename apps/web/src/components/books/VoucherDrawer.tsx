@@ -82,7 +82,7 @@ export function VoucherDrawer({ id, onClose }: { id: string | null; onClose: () 
               </Button>
             )}
             {v.canSubmit && (
-              <Button size="small" type="primary" icon={<SendOutlined />} loading={act.isPending} onClick={() => run(`/books/vouchers/${v.id}/submit`, (r) => `${r.voucherNo} sent for approval`)}>
+              <Button size="small" type="primary" icon={<SendOutlined />} loading={act.isPending} onClick={() => run(`/books/vouchers/${v.id}/submit`, (r) => `${r.voucherNo} submitted for approval`)}>
                 Submit for approval
               </Button>
             )}

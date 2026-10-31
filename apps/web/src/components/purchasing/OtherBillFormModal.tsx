@@ -265,7 +265,7 @@ export function OtherBillFormModal({
       allValues
       title={given ? `Edit ${given.billNo}` : TITLES[kind]}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       okDisabled={hireBlocked}
       draftKey={given || kind === 'HIRE' ? undefined : `vendor-bill-${kind.toLowerCase()}:${start?.projectId ?? 'any'}`}
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}

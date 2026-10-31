@@ -154,7 +154,7 @@ export function WorkOrderFormModal({
       form={form}
       title={order ? `Edit ${order.woNo}` : 'New work order'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       allValues
       onSubmit={(v, draft) => save.mutateAsync({ v, submit: !draft })}
       width={1100}

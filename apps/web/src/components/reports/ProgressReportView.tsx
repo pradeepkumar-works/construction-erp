@@ -51,7 +51,7 @@ export function ProgressReportView({ projectId, portal = false, picker, only }: 
             options={[
               { value: 'WEEKLY', label: 'Weekly' },
               { value: 'MONTHLY', label: 'Monthly' },
-              { value: 'CUSTOM', label: 'Custom' },
+              { value: 'CUSTOM', label: 'Custom dates' },
             ]}
           />
           )}

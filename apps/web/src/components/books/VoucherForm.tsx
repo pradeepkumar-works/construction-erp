@@ -94,7 +94,7 @@ export function VoucherForm({
       projectDefault={false}
       title={editing ? `Edit ${voucher.voucherNo}` : 'New voucher'}
       okText="Submit for approval"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       draftKey={editing || prefill ? undefined : 'book-voucher'}
       footerExtra={<Totals form={form} />}
       onSubmit={async (v, draft) => {
@@ -108,7 +108,7 @@ export function VoucherForm({
         };
         let saved = await save.mutateAsync(editing ? { method: 'put', path: `/books/vouchers/${voucher.id}`, body } : { path: '/books/vouchers', body });
         if (!draft) saved = await save.mutateAsync({ path: `/books/vouchers/${saved.id}/submit` });
-        message.success(draft ? `${saved.voucherNo} saved as a draft` : `${saved.voucherNo} sent for approval`);
+        message.success(draft ? `${saved.voucherNo} saved as a draft` : `${saved.voucherNo} submitted for approval`);
       }}
     >
       <Form form={form} layout="vertical" initialValues={{ type: initialType, date: dayjs(), lines: [{}, {}] }}>

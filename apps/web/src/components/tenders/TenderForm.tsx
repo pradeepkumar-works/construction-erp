@@ -107,7 +107,7 @@ export function TenderForm({ open, onClose, tender, onSaved }: { open: boolean; 
       width={760}
       projectDefault={false}
       title={editing ? `Edit tender · ${tender.tenderNo}` : 'New tender'}
-      okText={editing ? 'Save' : 'Record tender'}
+      okText="Save"
       draftKey={editing ? undefined : 'tender'}
       onSubmit={async (v) => {
         const body = {

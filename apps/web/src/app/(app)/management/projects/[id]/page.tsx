@@ -78,7 +78,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
     },
     {
       key: 'unbilled',
-      label: 'Done, not billed',
+      label: 'Work done, not billed',
       value: formatINRCompact(m.unbilled),
       note:
         m.unbilledDays !== null
@@ -313,7 +313,7 @@ function CostHeads({ data }: { data: PortfolioProjectDetailDto }) {
       >
         {anyBudget
           ? 'The grey track is the budget, the blue bar what is spent and red what is spent past it; the upright line is the forecast at completion.'
-          : 'This project has no cost budget yet, so the bars only compare the heads. Set one on the project’s Budget tab.'}
+          : 'This project has no cost budget yet, so the bars only compare the heads. Set one on the project’s Budget and cash flow tab.'}
       </Typography.Paragraph>
     </>
   );
@@ -436,7 +436,7 @@ function OpenItems({ data }: { data: PortfolioProjectDetailDto }) {
         },
         {
           key: 'risks',
-          label: 'Risks and delays',
+          label: 'Delays and risks',
           count: data.risks.length,
           countLabel: 'open',
           children: (

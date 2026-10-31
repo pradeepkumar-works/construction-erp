@@ -222,7 +222,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
             <Descriptions.Item label="Advanced">{rs(i.advanced)}</Descriptions.Item>
             <Descriptions.Item label="Returned">{rs(i.returned)}</Descriptions.Item>
             <Descriptions.Item label="Spent, approved">{rs(i.approvedSpend)}</Descriptions.Item>
-            <Descriptions.Item label="Awaiting approval">{rs(i.pendingSpend)}</Descriptions.Item>
+            <Descriptions.Item label="Waiting for approval">{rs(i.pendingSpend)}</Descriptions.Item>
             <Descriptions.Item label="Disallowed">{Number(i.disallowed) ? <span className="text-danger">{rs(i.disallowed)}</span> : '-'}</Descriptions.Item>
             <Descriptions.Item label="Opened">
               {formatDate(i.openedOn)}

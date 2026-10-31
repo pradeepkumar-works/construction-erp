@@ -167,7 +167,7 @@ function Dispatches({ list }: { list: ReturnType<typeof useSupplierDispatches> }
     modal.confirm({
       title: `Cancel dispatch note ${d.dispatchNo}?`,
       content: 'Only when the truck did not go. The site stops expecting it.',
-      okText: 'Cancel the note',
+      okText: 'Cancel the dispatch note',
       cancelText: 'Keep it',
       onOk: async () => {
         try {

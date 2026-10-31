@@ -49,7 +49,7 @@ export function DesignForm({ open, onClose, design }: { open: boolean; onClose: 
       width={760}
       projectDefault={false}
       title={editing ? `Edit ${design.code}` : 'New mix design'}
-      okText="Send for approval"
+      okText="Submit for approval"
       draftKey={editing ? undefined : 'rmc-design'}
       onSubmit={async (v) => {
         const body = {

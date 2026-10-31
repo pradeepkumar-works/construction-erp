@@ -745,7 +745,7 @@ function BoqTab({
               },
               {
                 key: "cost",
-                title: "Cost a unit",
+                title: "Cost per unit",
                 align: "right",
                 width: 110,
                 render: (_, i) => money(i.cost),

@@ -116,7 +116,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
       layout="modal"
       width={640}
       title={request ? `${editActionLabel(request.status)} · ${request.requestNo}` : 'Request funds'}
-      okText={editing ? 'Resubmit for approval' : 'Send for approval'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing ? undefined : 'fund-request'}
     >

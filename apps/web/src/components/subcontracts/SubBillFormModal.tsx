@@ -126,7 +126,7 @@ export function SubBillFormModal({
       allValues
       title={bill ? `Edit ${bill.label}` : wo ? `New bill on ${wo.woNo} · ${wo.vendorName}` : 'New subcontractor bill'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
     >
       <Form form={form} layout="vertical" requiredMark="optional">

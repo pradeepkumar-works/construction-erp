@@ -121,7 +121,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       onClose={onClose}
       form={form}
       title={expense ? `${editActionLabel(expense.status)} · ${expense.expenseNo}` : 'New site expense'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       layout="modal"
       width={680}
@@ -180,7 +180,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true, message: 'Choose how it was paid' }]} {...aiFlagItem(draft, 'paymentMode', paymentMode)}>
             <Select options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
-          <Form.Item name="activityId" label="Activity (optional)">
+          <Form.Item name="activityId" label="Activity">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
         </FormGrid>

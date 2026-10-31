@@ -72,7 +72,7 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
                   <div>
                     <Tooltip title={l.note ?? undefined}>
                       <AppTag tone="pending" style={{ marginInlineEnd: 0 }}>
-                        Claimed by hand
+                        Claimed over the evidence
                       </AppTag>
                     </Tooltip>
                     <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
@@ -150,7 +150,7 @@ function ClaimModal({ bill, line, onClose }: { bill: RaBillDto; line: RaBillStag
       footerExtra={
         line?.claimedByHand ? (
           <Button loading={claim.isPending} onClick={() => claim.mutateAsync({ pct: null, note: null }).then(onClose)}>
-            Back to the evidence
+            Use the evidence's %
           </Button>
         ) : null
       }
@@ -184,7 +184,7 @@ export function SlippageNotes({ lines, withheld, c }: { lines: SlippageLineDto[]
     <>
       <Typography.Paragraph type="secondary">
         {lines.length
-          ? `Behind the milestone grid at the measurements date. This bill ${net < 0 ? `releases ${formatMoney(-net, c, true)}` : `withholds ${formatMoney(net, c, true)}`}: the total below less what earlier bills withheld.`
+          ? `Behind the milestone targets at the measurements date. This bill ${net < 0 ? `releases ${formatMoney(-net, c, true)}` : `withholds ${formatMoney(net, c, true)}`}: the total below less what earlier bills withheld.`
           : net < 0
             ? `Every component is on its target, so this bill releases the ${formatMoney(-net, c, true)} earlier bills withheld.`
             : 'Every component is on its target.'}

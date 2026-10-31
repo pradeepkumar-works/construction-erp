@@ -122,8 +122,8 @@ ${PRINT_FONT_LINKS}
     <div class="kpi"><b>Physical progress</b><span>${esc(r.physical.atEndPct)}%</span><small>${gain >= 0 ? '+' : ''}${esc(gain)} points this period (from ${esc(r.physical.atStartPct)}%)</small>
       <div class="bar"><i style="width:${Math.min(100, r.physical.atEndPct)}%"></i>${r.timeElapsedPct !== null ? `<i class="t" style="width:${Math.min(100, r.timeElapsedPct)}%"></i>` : ''}</div></div>
     <div class="kpi"><b>Time elapsed</b><span>${r.timeElapsedPct === null ? '-' : `${esc(r.timeElapsedPct)}%`}</span><small>of the contract period</small></div>
-    <div class="kpi"><b>Value executed this period</b><span>${inr(r.financial.periodValue)}</span><small>measured ${inr(r.financial.measuredPeriodValue)}</small></div>
-    <div class="kpi"><b>Value executed to date</b><span>${inr(r.financial.cumulativeValue)}</span><small>${r.financial.contractPct === null ? '' : `${esc(r.financial.contractPct)}% of contract · `}measured ${inr(r.financial.measuredCumulativeValue)}</small></div>
+    <div class="kpi"><b>Value of work done this period</b><span>${inr(r.financial.periodValue)}</span><small>measured ${inr(r.financial.measuredPeriodValue)}</small></div>
+    <div class="kpi"><b>Value of work done to date</b><span>${inr(r.financial.cumulativeValue)}</span><small>${r.financial.contractPct === null ? '' : `${esc(r.financial.contractPct)}% of contract · `}measured ${inr(r.financial.measuredCumulativeValue)}</small></div>
   </div>
 
   <h2>2. Activity progress</h2>

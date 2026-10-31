@@ -30,7 +30,7 @@ const CHOICES: { value: Choice; label: string }[] = [
   { value: 'DAILY', label: 'Daily' },
   { value: 'WEEKLY', label: 'Weekly' },
   { value: 'MONTHLY', label: 'Monthly (MPR)' },
-  { value: 'CUSTOM', label: 'Any dates' },
+  { value: 'CUSTOM', label: 'Custom dates' },
 ];
 
 function Reports() {

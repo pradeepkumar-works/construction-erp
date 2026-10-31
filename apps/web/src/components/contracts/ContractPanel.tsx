@@ -94,7 +94,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Mobilisation advance">{Number(c.mobilisationAdvance) > 0 ? <span translate="no">{formatMoney(c.mobilisationAdvance, c)}</span> : 'None'}</Descriptions.Item>
         </Descriptions>
       </Section>
-      <Section title="On each bill (% of the work value)">
+      <Section title="On each bill (% of the work done this bill)">
         <Descriptions size="small" column={{ xs: 2, sm: 4, lg: 7 }} layout="vertical" bordered>
           {CONTRACT_PERCENT_FIELDS.map((k) => (
             <Descriptions.Item key={k} label={CONTRACT_PERCENT_LABELS[k]}>

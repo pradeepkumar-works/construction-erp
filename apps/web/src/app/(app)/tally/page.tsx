@@ -416,7 +416,7 @@ export default function TallyPage() {
     <div className="page-container">
       <PageHeader
         title="Tally export"
-        subtitle="Certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as TallyPrime vouchers, each sent once. Tally stays the books."
+        subtitle="Certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as TallyPrime vouchers, each sent once, for a company that keeps its books in Tally."
       />
       <Typography.Paragraph type="secondary" style={{ maxWidth: 900 }}>
         Once: set the ledger names under Ledgers, download the ledger masters and import them in TallyPrime (Import → Masters). Each month: export here and import

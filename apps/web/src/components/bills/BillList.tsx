@@ -65,7 +65,7 @@ function billColumns({ showProject, onOpen, sortOrderFor }: { showProject: boole
     ...(showProject
       ? [{ card: 'meta' as const, cardText: (r: RaBillDto) => [r.projectName, r.clientName].filter(Boolean).join(' · '), title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: RaBillDto) => <TwoLine top={<Link href={`/projects/${r.projectId}?tab=bills`}>{v}</Link>} sub={r.clientName ?? ''} /> }]
       : []),
-    { defaultFrom: 1600, title: 'Work value', dataIndex: 'grossAmount', width: 150, align: 'right', ...sort('grossAmount'), render: (v) => <span className="mono" translate="no">{formatINR(v)}</span>, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
+    { defaultFrom: 1600, title: 'Work done', dataIndex: 'grossAmount', width: 150, align: 'right', ...sort('grossAmount'), render: (v) => <span className="mono" translate="no">{formatINR(v)}</span>, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
     { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', ...sort('netPayable'), render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
     { title: 'Prepared on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     { card: 'status', title: 'Status', dataIndex: 'status', width: 150, ...sort('status'), render: (s) => <StatusTag status={s} /> },
@@ -93,7 +93,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
     sortFields: LIST_SORT_FIELDS.bills,
     fixedProject,
     columns: (sortOrderFor) => billColumns({ showProject: !fixedProject, onOpen: setOpenId, sortOrderFor }),
-    chipLabels: { stage: (v) => `With client: ${BILL_STAGE_LABELS[v as BillStage] ?? v}` },
+    chipLabels: { stage: (v) => `Client stage: ${BILL_STAGE_LABELS[v as BillStage] ?? v}` },
   });
   const { page } = frame;
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status, stage: page.filters.stage as BillStage | undefined };
@@ -138,7 +138,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
       >
         <Select<BillStage>
           allowClear
-          placeholder="Any stage with the client"
+          placeholder="Any client stage"
           aria-label="Stage with the client"
           style={{ width: 210 }}
           value={page.filters.stage as BillStage | undefined}

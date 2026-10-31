@@ -228,7 +228,7 @@ function TendersPage() {
       icon={<PlusOutlined />}
       onClick={() => setAdding(true)}
     >
-      Record tender
+      New tender
     </Button>
   ) : null;
   const stat = (

@@ -20,7 +20,7 @@ import { cellText } from '@/components/management/report-format';
 import { exportManagementReport, openManagementReportPrint } from '@/components/management/reportOutput';
 
 const isKey = (k: string | undefined): k is ManagementReportKey => !!k && (MANAGEMENT_REPORT_KEYS as readonly string[]).includes(k);
-const crumbs = [{ title: 'Management dashboard', href: '/management' }];
+const crumbs = [{ title: 'Reports', href: '/modules/reports' }];
 
 /**
  * A management report (ARCHITECTURE "Management dashboard and reports"): its period (a month, a range of dates, or today),

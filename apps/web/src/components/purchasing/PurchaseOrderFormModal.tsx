@@ -219,7 +219,7 @@ export function PurchaseOrderFormModal({
       form={form}
       title={order ? `Edit ${order.poNo}` : fromRequest ? `Purchase order for ${fromRequest}` : 'New purchase order'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       // All values, not just the rendered fields: request lines carry their item without an input for it.
       allValues
       onSubmit={(v, draft) => save.mutateAsync({ v, submit: !draft })}

@@ -46,7 +46,7 @@ export function BillPriceVariation({ bill, editable }: { bill: RaBillDto; editab
           title={() => (
             <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
               <Typography.Text type="secondary">
-                On this bill&apos;s work value of {formatINR(bill.grossAmount, true)}
+                On this bill&apos;s work done of {formatINR(bill.grossAmount, true)}
                 {bill.pvIndexMonth ? `, indices for ${formatMonth(bill.pvIndexMonth)}` : ''}
                 {bill.pvNote ? ` (${bill.pvNote})` : ''}
               </Typography.Text>
@@ -97,7 +97,7 @@ export function BillPriceVariation({ bill, editable }: { bill: RaBillDto; editab
         <Space wrap>
           <Typography.Text type="secondary">The contract has a price variation clause. Enter this bill&apos;s indices to add it.</Typography.Text>
           <Button size="small" type="primary" ghost onClick={() => setOpen(true)}>
-            Fill in indices
+            Enter indices
           </Button>
         </Space>
       )}
@@ -163,7 +163,7 @@ function IndicesModal({ open, bill, components, onClose }: { open: boolean; bill
           <Form.Item name="indexMonth" label="Indices for" rules={[{ required: true, message: 'Choose the month' }]}>
             <DatePicker picker="month" format="MMM YYYY" allowClear={false} style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="note" label="Source" extra="For example: RBI WPI, provisional">
+          <Form.Item name="note" label="Source" extra="e.g. RBI WPI, provisional">
             <Input maxLength={300} />
           </Form.Item>
         </FormGrid>

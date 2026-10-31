@@ -40,7 +40,7 @@ export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps &
       record={
         data && {
           href: `/expenses/${data.id}`,
-          title: `Site expense · ${data.expenseNo}`,
+          title: `${data.expenseNo} · ${data.description}`,
           tags: <StatusTag status={data.status} />,
           facts: [
             { key: 'desc', label: 'Expense', children: data.description },

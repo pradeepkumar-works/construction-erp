@@ -391,7 +391,7 @@ export function ChangeForm({ open, profile, onClose }: { open: boolean; profile:
       width={720}
       projectDefault={false}
       title="Change your details"
-      okText="Send for approval"
+      okText="Submit for approval"
       onSubmit={async (v) => {
         if (!profile) return;
         const body: Record<string, string | null> = {};

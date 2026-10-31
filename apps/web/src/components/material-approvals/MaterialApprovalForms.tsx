@@ -102,7 +102,7 @@ export function MaterialApprovalForm({ open, onClose, approval, onSaved }: { ope
       layout="drawer"
       width={760}
       title={approval ? `Edit ${approval.marNo}` : 'Request material approval'}
-      okText={approval ? 'Save' : 'Save draft'}
+      okText={approval ? 'Save' : 'Save as draft'}
       draftKey={approval ? undefined : 'material-approval:new'}
       onSubmit={async (v) => {
         const body = {

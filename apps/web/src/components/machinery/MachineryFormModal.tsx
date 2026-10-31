@@ -161,7 +161,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
       form={form}
       layout="drawer"
       title={log ? `${editActionLabel(log.status)} · ${log.equipmentCode}` : 'New machinery log'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={submit}
     >
       <Form form={form} layout="vertical">

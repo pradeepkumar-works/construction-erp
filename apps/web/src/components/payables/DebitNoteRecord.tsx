@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Form, Input, Table, Typography } from 'antd';
+import { Form, Input, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DebitNoteDto, DebitNoteLineDto } from '@erp/shared';
@@ -56,7 +56,7 @@ function CancelDebitNoteModal({ note, onClose }: { note: DebitNoteDto | null; on
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={!!note} onClose={onClose} form={form} layout="modal" title={`Cancel ${note?.noteNo ?? 'debit note'}`} okText="Cancel the note" onSubmit={(v) => cancel.mutateAsync(v)}>
+    <FormShell open={!!note} onClose={onClose} form={form} layout="modal" title={`Cancel ${note?.noteNo ?? 'debit note'}`} okText="Cancel debit note" cancelText="Keep it" onSubmit={(v) => cancel.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Typography.Paragraph>The note stops reducing {note?.billLabel}, and what it took off becomes payable again.</Typography.Paragraph>
         <Form.Item name="note" label="Why it is cancelled" rules={[{ required: true, whitespace: true, message: 'Say why the note is cancelled' }]}>
@@ -166,12 +166,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                 ),
               },
             ],
-            actions: (size) =>
-              raiser && !data.cancelledAt ? (
-                <Button size={size} danger disabled={data.exportedToTally} title={data.exportedToTally ? 'In a Tally export: undo that export first' : undefined} onClick={() => setCancelling(true)}>
-                  Cancel note
-                </Button>
-              ) : null,
+            more: raiser && !data.cancelledAt ? [{ key: 'cancel', label: data.exportedToTally ? 'Cancel debit note (undo its Tally export first)' : 'Cancel debit note', danger: true, disabled: data.exportedToTally, onSelect: () => setCancelling(true) }] : [],
           }
         }
       />

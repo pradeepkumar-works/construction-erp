@@ -34,7 +34,7 @@ export function PortalBills({ bills, openId, onOpen }: { bills: UseQueryResult<P
           { title: 'Bill', dataIndex: 'billLabel', width: 160 },
           { title: 'Bill date', dataIndex: 'billDate', width: 120, render: (v: string) => formatDate(v) },
           { title: 'Sent', dataIndex: 'sentDate', width: 120, render: (v: string | null) => formatDate(v) },
-          { title: 'Work value', dataIndex: 'grossAmount', align: 'right', render: (v: string) => formatINR(v) },
+          { title: 'Work done', dataIndex: 'grossAmount', align: 'right', render: (v: string) => formatINR(v) },
           { title: 'Net payable', dataIndex: 'netPayable', align: 'right', render: (v: string) => formatINR(v) },
           { title: 'Stage', dataIndex: 'stage', width: 140, render: (s: PortalBillDto['stage']) => <BillStageTag stage={s} /> },
           { title: 'Certificate', key: 'cert', width: 200, render: (_, b) => (b.certifiedDate ? `${b.certificateNo ?? ''} ${formatDate(b.certifiedDate)}`.trim() : '-') },
@@ -80,13 +80,13 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
               { key: 'date', label: 'Bill date', children: `${formatDate(data.billDate)} (measured up to ${formatDate(data.measuredUpTo)})` },
               { key: 'sent', label: 'Sent', children: formatDate(data.sentDate) },
               { key: 'cert', label: 'Certificate', children: data.certifiedDate ? `${data.certificateNo ?? '-'}, ${formatDate(data.certifiedDate)}` : '-' },
-              { key: 'gross', label: 'Work value this bill', children: formatINR(data.grossAmount) },
+              { key: 'gross', label: 'Work done this bill', children: formatINR(data.grossAmount) },
               ...(data.claimedGross && data.claimedGross !== data.grossAmount ? [{ key: 'claimed', label: 'Claimed', children: formatINR(data.claimedGross) }] : []),
               ...(data.pvLines.length ? [{ key: 'pv', label: 'Price variation', children: formatINR(data.pvAmount) }] : []),
               { key: 'gst', label: `GST ${data.gstRate}%`, children: formatINR(data.gstAmount) },
               { key: 'ded', label: 'Deductions', children: formatINR(data.totalDeductions) },
               { key: 'net', label: 'Net payable', children: <strong>{formatINR(data.netPayable)}</strong> },
-              { key: 'upto', label: 'Work value up to date', children: formatINR(data.grossUpto) },
+              { key: 'upto', label: 'Work done up to date', children: formatINR(data.grossUpto) },
             ]}
           />
           <Typography.Title level={5}>Abstract of cost</Typography.Title>
@@ -155,7 +155,7 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
     if (!bill) return;
     const items = lines.filter((l) => v.qty[l.boqItemId] != null && v.qty[l.boqItemId] !== Number(l.thisQty)).map((l) => ({ boqItemId: l.boqItemId, certifiedQty: String(v.qty[l.boqItemId]) }));
     const out = await certify.mutateAsync({ id: bill.id, date: v.date.format('YYYY-MM-DD'), certificateNo: v.certificateNo?.trim() || null, items });
-    message.success(`${out.billLabel} certified: work value ${formatINR(out.grossAmount)}`);
+    message.success(`${out.billLabel} certified: work done ${formatINR(out.grossAmount)}`);
   };
 
   return (

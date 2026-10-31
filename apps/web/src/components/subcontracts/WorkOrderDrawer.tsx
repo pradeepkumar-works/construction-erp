@@ -263,7 +263,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                         columns={[
                           { title: 'Bill', dataIndex: 'label', render: (v, b) => (billingRole ? <Link href={`/subcontract-bills/${b.id}`}>{v}</Link> : v) },
                           { title: 'Date', dataIndex: 'billDate', width: 120, render: (v) => formatDate(v) },
-                          { title: 'Work value', dataIndex: 'grossAmount', width: 150, align: 'right', render: (v) => money(v) },
+                          { title: 'Work done', dataIndex: 'grossAmount', width: 150, align: 'right', render: (v) => money(v) },
                           { title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', render: (v) => money(v) },
                           { title: 'Status', dataIndex: 'status', width: 130, render: (s) => <StatusTag status={s} /> },
                         ]}

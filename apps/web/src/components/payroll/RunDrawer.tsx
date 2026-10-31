@@ -167,7 +167,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
               </Button>
             )}
             {run.can.submit && (
-              <Button type="primary" loading={act.isPending} onClick={() => run_(`/payroll/runs/${run.id}/submit`, `${run.runNo} sent for approval`)}>
+              <Button type="primary" loading={act.isPending} onClick={() => run_(`/payroll/runs/${run.id}/submit`, `${run.runNo} submitted for approval`)}>
                 Submit for approval
               </Button>
             )}

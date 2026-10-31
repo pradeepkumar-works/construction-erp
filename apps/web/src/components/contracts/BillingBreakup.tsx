@@ -61,7 +61,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
     mutationFn: async (replace: boolean) => (await api.post<BillingBreakupDto>(`/projects/${projectId}/billing-breakup/standard`, { replace })).data,
     onSuccess: (d) => {
       saved(d);
-      message.success(`Break-up made: ${d.components.length} components from the project's structure`);
+      message.success(`Payment schedule made: ${d.components.length} components from the project's structure`);
     },
     meta: FAIL_NOTICE,
   });
@@ -74,8 +74,8 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
     onSuccess: saved,
   });
 
-  if (isLoading) return <Section title="Billing break-up" loading />;
-  if (error || !data) return <QueryError error={error ?? new Error('Billing break-up not found')} onRetry={() => refetch()} />;
+  if (isLoading) return <Section title="Payment schedule" loading />;
+  if (error || !data) return <QueryError error={error ?? new Error('Payment schedule not found')} onRetry={() => refetch()} />;
   if (!billsByStages(data.contractModel)) return null;
 
   const hasParts = (c: BillingComponentDto) => data.components.some((k) => k.parentId === c.id);
@@ -131,8 +131,8 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
 
   const standardButton = data.canEdit && !data.hasBills ? (
     data.components.length ? (
-      <Popconfirm title="Make the break-up again from the structure?" description="The components and stages there are now are replaced." okText="Make it again" onConfirm={() => standard.mutateAsync(true)}>
-        <Button loading={standard.isPending}>Make it again from the structure</Button>
+      <Popconfirm title="Rebuild the payment schedule from the structure?" description="The components and stages there are now are replaced." okText="Rebuild" onConfirm={() => standard.mutateAsync(true)}>
+        <Button loading={standard.isPending}>Rebuild from the structure</Button>
       </Popconfirm>
     ) : (
       <Button type="primary" loading={standard.isPending} onClick={() => standard.mutate(false)}>
@@ -144,7 +144,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
   return (
     <>
       <Section
-        title="Billing break-up"
+        title="Payment schedule"
         extra={
           <Space wrap>
             {standardButton}
@@ -169,7 +169,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Unit-rate items paid at">
             <span className="mono" translate="no">rate × {data.tenderFactor}</span>
           </Descriptions.Item>
-          <Descriptions.Item label="Advance recovered">
+          <Descriptions.Item label="Mobilisation advance recovered">
             {data.advanceRecoveryFromPct && data.advanceRecoveryToPct ? `From ${formatPct(data.advanceRecoveryFromPct)} to ${formatPct(data.advanceRecoveryToPct)} of the contract executed` : 'A % of each bill'}
           </Descriptions.Item>
         </Descriptions>
@@ -285,7 +285,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
       {data.components.length ? (
         <>
           <Section
-            title="Milestone grid"
+            title="Milestone targets"
             extra={
               data.canEditTerms ? (
                 <Button icon={<EditOutlined />} onClick={() => setGrid(true)}>
@@ -648,11 +648,11 @@ function TermsModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto;
         <Form.Item name="lumpSumValue" label="Lump sum the components share" extra="Empty takes the contract value. Leave out what unit-rate items are paid for.">
           <MoneyInput prefix={moneyPrefix(data)} />
         </Form.Item>
-        <Form.Item name="tenderFactor" label="Tender factor" extra="Lump sum ÷ the estimate; unit-rate items are paid at their rate × this">
+        <Form.Item name="tenderFactor" label="Tender factor (quoted ÷ estimate)" extra="Lump sum ÷ the estimate; unit-rate items are paid at their rate × this">
           <InputNumber min={0.5} max={2} step={0.0001} style={{ width: '100%' }} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="advanceRecoveryFromPct" label="Advance recovered from (%)" extra="Of the contract executed; empty recovers a % of each bill">
+          <Form.Item name="advanceRecoveryFromPct" label="Mobilisation advance recovered from (%)" extra="Of the contract executed; empty recovers a % of each bill">
             <InputNumber min={0} max={100} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
@@ -713,7 +713,7 @@ function GridModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto; 
       ).data,
     onSuccess: (d) => {
       onSaved(d);
-      message.success('Milestone grid saved');
+      message.success('Milestone targets saved');
     },
     meta: FAIL_NOTICE,
   });
@@ -724,7 +724,7 @@ function GridModal({ data, open, onClose, onSaved }: { data: BillingBreakupDto; 
       form={form}
       layout="drawer"
       width={1100}
-      title="Milestone grid"
+      title="Milestone targets"
       okText="Save"
       onSubmit={(v) => save.mutateAsync(v)}
       footerExtra={

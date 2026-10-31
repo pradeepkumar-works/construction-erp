@@ -235,7 +235,7 @@ export function VendorBillFormModal({
       allValues
       title={bill ? `Edit ${bill.billNo}` : 'Record vendor bill'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       okDisabled={!po}
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
     >
