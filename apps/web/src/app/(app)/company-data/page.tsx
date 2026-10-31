@@ -14,6 +14,7 @@ import { buildCompanyExport, type ExportProgress } from '@/lib/companyExport';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { NoAccess } from '@/components/common/NoAccess';
 import { themeFontSize } from '@/lib/theme';
 
 const bytes = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
@@ -255,7 +256,7 @@ export default function CompanyDataPage() {
     return (
       <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
         <PageHeader title="Data and privacy" />
-        <Alert type="info" title="Only an admin can export or delete company data." />
+        <NoAccess title="Only an admin can export or delete company data" />
       </div>
     );
   return (

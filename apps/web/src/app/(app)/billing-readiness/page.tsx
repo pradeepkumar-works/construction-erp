@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { App, Button, Card, Empty, Flex, Result, Statistic, Typography, theme } from 'antd';
+import { App, Button, Card, Empty, Flex, Statistic, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { MailOutlined } from '@/components/common/icons';
 import { PACE_DAYS, canViewContract, canViewLetters, type BillingReadinessRowDto, type NextBillDto } from '@erp/shared';
@@ -16,7 +16,7 @@ import { errorMessage } from '@/lib/api';
 import { DRAFT_PAGES } from '@/components/ai/drafts';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 
 /**
  * The next bill (intelligence quick win Q7): what the project could bill today (measured, approved and not measured, stages
@@ -69,7 +69,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title="Billing readiness" />
-        <Result icon={<ResultMark kind="no-access" />} title="Billing readiness is for project managers, the QS, accounts and management" />
+        <NoAccess title="Billing readiness is for project managers, the QS, accounts and management" />
       </div>
     );
   if (!user || (isLoading && !data)) return <PageSkeleton shape="list" />;

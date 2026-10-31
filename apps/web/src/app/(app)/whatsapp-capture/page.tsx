@@ -3,7 +3,7 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { App, Button, Card, Descriptions, Empty, Flex, Image, Pagination, Result, Segmented, Select, Switch, Typography, theme } from 'antd';
+import { App, Button, Card, Descriptions, Empty, Flex, Image, Pagination, Segmented, Select, Switch, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@/components/common/icons';
 import {
@@ -31,7 +31,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
 import { DRAFT_PAGES } from '@/components/ai/drafts';
-import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 
 const STATE_COLOR: Record<InboundState, string> = { RECEIVED: 'default', ANSWERED: 'blue', DRAFTED: 'gold', SAVED: 'green', DISCARDED: 'default', FAILED: 'red' };
 const PAGE_SIZE = 10;
@@ -81,7 +81,7 @@ function Capture() {
     return (
       <>
         <PageHeader title="WhatsApp entries" />
-        <Result icon={<ResultMark kind="no-access" />} title="WhatsApp entries are for company staff" />
+        <NoAccess title="WhatsApp entries are for company staff" />
       </>
     );
   if (!user || setup.isLoading || (list.isLoading && !list.data)) return <PageSkeleton shape="list" />;

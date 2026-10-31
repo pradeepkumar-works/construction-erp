@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, Result } from 'antd';
+import { Card } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
 import { canKeepBooks } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -11,7 +11,7 @@ import { DayBook } from '@/components/books/DayBook';
 import { Ledgers } from '@/components/books/Ledgers';
 import { Vouchers } from '@/components/books/Vouchers';
 import { ChartOfAccounts } from '@/components/books/ChartOfAccounts';
-import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 
 const TABS = ['day', 'cash', 'ledgers', 'vouchers', 'accounts'] as const;
 
@@ -27,7 +27,7 @@ function BooksPage() {
     <div className="page-container">
       <PageHeader title="Books" subtitle="The day book, cash and bank books and ledgers, kept from the modules' bills, receipts, payments, expenses and salaries, with vouchers accounts make by hand." />
       {!allowed ? (
-        <Result icon={<ResultMark kind="no-access" />} title="Only admin, management and accounts see the books" />
+        <NoAccess title="Only admin, management and accounts see the books" />
       ) : (
         <Card size="small">
           <AppTabs

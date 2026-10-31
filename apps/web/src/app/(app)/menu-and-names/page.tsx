@@ -10,6 +10,7 @@ import { useNavSettings, useSaveNavSettings } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ChoiceCards, MenuPicture, type Choice } from '@/components/menu/ChoiceCards';
+import { NoAccess } from '@/components/common/NoAccess';
 import { TreeIcon } from '@/components/shell/nav-icons';
 
 const LAYOUTS: Choice<NavLayout>[] = [
@@ -155,7 +156,7 @@ export default function MenuAndNamesPage() {
     <div className="page-container" style={{ maxWidth: 1080, marginLeft: 0 }}>
       <PageHeader title="Menu and names" subtitle="Where the menu sits, how it looks and what each module is called, for everyone in your company." />
       {!allowed ? (
-        <Alert type="info" title="Only an admin can change the menu." />
+        <NoAccess title="Only an admin can change the menu" />
       ) : isLoading ? (
         <PageSkeleton shape="record" header={false} />
       ) : error ? (

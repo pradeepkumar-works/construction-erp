@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Button, Empty, Flex, Result, Skeleton, theme } from 'antd';
 import { DisconnectOutlined, ReloadOutlined } from '@/components/common/icons';
 import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 import { PRODUCT_NAME } from '@erp/shared';
 import { errorMessage, errorStatus } from '@/lib/api';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -38,7 +39,7 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
   const home = <LinkButton href="/">Go to home</LinkButton>;
 
   if (status === 403)
-    return <Result icon={<ResultMark kind="no-access" />} title="You don't have access to this" subTitle={`${errorMessage(error)}. Ask your admin if you need it.`} extra={home} />;
+    return <NoAccess title="You don't have access to this" subTitle={`${errorMessage(error)}. Ask your admin if you need it.`} />;
   if (status === 404) return <Result icon={<ResultMark kind="not-found" />} title="Not found" subTitle="It may have been deleted, or the link is out of date." extra={home} />;
   if (status === 0)
     return (

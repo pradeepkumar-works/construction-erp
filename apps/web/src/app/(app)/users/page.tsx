@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Card, Result, Select, Space, Switch, Tooltip, theme } from 'antd';
+import { Alert, Button, Card, Select, Space, Switch, Tooltip, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useSearchParams } from 'next/navigation';
 import { EditOutlined, LinkOutlined, PlusOutlined } from '@/components/common/icons';
@@ -25,7 +25,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
-import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 
 const KEYS = ['roleKey', 'active'] as const;
 
@@ -139,7 +139,7 @@ export default function UsersPage() {
   if (user && !canManageUsers(user.roleKey)) {
     return (
       <div className="page-container">
-        <Result icon={<ResultMark kind="no-access" />} title="Admins only" subTitle="User management is restricted to administrators." />
+        <NoAccess title="Only an admin manages users" />
       </div>
     );
   }

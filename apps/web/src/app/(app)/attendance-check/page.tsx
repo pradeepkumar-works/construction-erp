@@ -3,7 +3,7 @@
 import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Empty, Flex, Result, Segmented, Statistic, Table, Typography, theme } from 'antd';
+import { Button, Card, Empty, Flex, Segmented, Statistic, Table, Typography, theme } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, UpOutlined } from '@/components/common/icons';
@@ -23,7 +23,7 @@ import { formatDate, formatINR, formatINRCompact, formatQty } from '@/lib/format
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 
 const KIND_COLOR: Record<AttendanceFlagKind, string> = { BILL_ABOVE: 'red', NO_PUNCH: 'volcano', HEADCOUNT_ABOVE: 'orange', DPR_GAP: 'blue' };
 type BillRow = AttendanceBillLineDto & { bill: AttendanceBillDto; first: boolean };
@@ -58,7 +58,7 @@ function AttendanceCheck() {
     return (
       <div className="page-container">
         <PageHeader title="Attendance cross-check" />
-        <Result icon={<ResultMark kind="no-access" />} title="The attendance cross-check is for HR and those who approve site work" />
+        <NoAccess title="The attendance cross-check is for HR and those who approve site work" />
       </div>
     );
   if (!user || (isLoading && !data)) return <PageSkeleton shape="list" />;

@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Card, Result } from 'antd';
+import { Card } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
 import { canManageBiometric } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { Punches } from '@/components/biometric/Punches';
 import { DeviceUsers } from '@/components/biometric/DeviceUsers';
 import { Devices } from '@/components/biometric/Devices';
-import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 
 const TABS = ['punches', 'users', 'devices'] as const;
 
@@ -25,7 +25,7 @@ function BiometricPage() {
     return (
       <div className="page-container">
         <PageHeader title="Biometric devices" />
-        <Result icon={<ResultMark kind="no-access" />} title="Only HR, management or an admin manage the biometric devices" />
+        <NoAccess title="Only HR, management or an admin manage the biometric devices" />
       </div>
     );
   return (

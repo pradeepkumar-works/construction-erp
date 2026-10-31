@@ -15,6 +15,7 @@ import { FormShell } from '@/components/form/FormShell';
 import { CompanyForm } from '@/components/group/CompanyForm';
 import { PlaceForm } from '@/components/group/PlaceForm';
 import { useAuth } from '@/lib/auth';
+import { NoAccess } from '@/components/common/NoAccess';
 import { useGroup, useMakeGroup, useSetGroupAdmin } from '@/lib/queries';
 
 function Sub({ children }: { children: React.ReactNode }) {
@@ -263,7 +264,7 @@ export default function GroupPage() {
         extra={newButton}
       />
       {!allowed ? (
-        <Result icon={<ResultMark kind="no-access" />} title="Group admins only" subTitle="Ask a group admin to give you a place in another company, or to make you an admin." />
+        <NoAccess title="Group admins only" subTitle="Ask a group admin to give you a place in another company, or to make you an admin." />
       ) : isLoading ? (
         <PageSkeleton shape="list" header={false} />
       ) : error ? (

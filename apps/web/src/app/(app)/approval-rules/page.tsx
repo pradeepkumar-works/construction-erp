@@ -13,6 +13,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useApprovalMatrix } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { NoAccess } from '@/components/common/NoAccess';
 import { themeFontSize } from '@/lib/theme';
 
 /** One cell: may approve, and the limit (null = no limit). */
@@ -182,7 +183,7 @@ export default function ApprovalRulesPage() {
     return (
       <div className="page-container">
         <PageHeader title="Approval rules" />
-        <Alert type="info" showIcon title="Only an admin can see and change the approval rules." />
+        <NoAccess title="Only an admin can see and change the approval rules" />
       </div>
     );
   }

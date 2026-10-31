@@ -4,7 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Card, Col, Result, Row, Skeleton, Table, Typography, theme } from 'antd';
+import { Card, Col, Row, Skeleton, Table, Typography, theme } from 'antd';
 import {
   HEALTH_LABELS,
   PORTFOLIO_SCHEDULE_LABELS,
@@ -21,12 +21,12 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { ResultMark } from '@/components/common/ResultMark';
 import { ChartCard } from '@/components/home/ChartCard';
 import { FigureStrip, type StripFigure } from '@/components/management/FigureStrip';
 import { BudgetTrack, MoneyPipeline, ScheduleBullet } from '@/components/management/MoneyPipeline';
 import { AttentionList } from '@/components/management/AttentionList';
 import { HEALTH_TONES } from '@/components/management/report-format';
+import { NoAccess } from '@/components/common/NoAccess';
 import { TrendTable, trendSummary } from '@/components/management/TrendTable';
 
 const TrendChart = dynamic(() => import('@/components/management/TrendChart').then((m) => m.TrendChart), {
@@ -50,7 +50,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title="Project on the dashboard" crumbs={[{ title: 'Management dashboard', href: '/management' }]} />
-        <Result icon={<ResultMark kind="no-access" />} title="The management dashboard is for management, accounts and project managers" />
+        <NoAccess title="The management dashboard is for management, accounts and project managers" />
       </div>
     );
   if (!user || (isLoading && !data)) return <PageSkeleton shape="record" />;

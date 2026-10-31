@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Result, Segmented, Tooltip, Typography, theme } from 'antd';
+import { Alert, App, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Segmented, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { DownOutlined, EyeInvisibleOutlined, PlayCircleOutlined, UndoOutlined, UpOutlined } from '@/components/common/icons';
@@ -32,7 +32,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
-import { ResultMark } from '@/components/common/ResultMark';
+import { NoAccess } from '@/components/common/NoAccess';
 
 const KIND_COLOR: Record<WarningKind, string> = { SCHEDULE: 'orange', CASH: 'red', VENDOR: 'purple', STOCK: 'gold', MACHINE: 'blue', DPR: 'cyan', MATERIAL_OVERUSE: 'magenta', FUEL_NORM: 'volcano', LOAN_EMI: 'geekblue', RATE_ABOVE: 'purple', FUEL_NO_LOG: 'volcano', IDLE_HIRE: 'blue', NOTICE_DUE: 'red', MANDAYS_ABOVE: 'volcano', PACKAGE_LATE: 'orange', OM_SERVICE: 'cyan', BOQ_OFF_CONTRACT: 'gold', TESTS_SHORT: 'cyan', CALIBRATION_DUE: 'volcano', LAB_REPORT_LATE: 'blue', DRAWING_LATE: 'orange', DESIGN_REVIEW_LATE: 'gold', COPY_RECALL_LATE: 'red', MARGIN_FADE: 'magenta', CUBE_7DAY_LOW: 'red', PURCHASE_CONTROL: 'geekblue', FUEL_TANK: 'volcano', WEIGH_SHORT: 'gold' };
 const CONFIDENCE_COLOR: Record<WarningConfidence, string> = { CHECKED: 'green', LIKELY: 'blue', CHECK_THIS: 'orange' };
@@ -66,7 +66,7 @@ export default function Page() {
     return (
       <div className="page-container">
         <PageHeader title="Watch list" />
-        <Result icon={<ResultMark kind="no-access" />} title="The watch list is for managers, stores, purchase and accounts" />
+        <NoAccess title="The watch list is for managers, stores, purchase and accounts" />
       </div>
     );
   if (isLoading || !user) return <PageSkeleton shape="list" />;

@@ -24,6 +24,7 @@ import { formatDate, formatDateTime, formatINR } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { NoAccess } from '@/components/common/NoAccess';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
 const money = (v: string | null) => (v ? <span className="mono" translate="no">{formatINR(v, true)}</span> : null);
@@ -409,7 +410,7 @@ export default function TallyPage() {
     return (
       <div className="page-container">
         <PageHeader title="Tally export" />
-        <Alert type="info" showIcon title="Only admin, management and accounts export to Tally." />
+        <NoAccess title="Only admin, management and accounts export to Tally" />
       </div>
     );
   return (

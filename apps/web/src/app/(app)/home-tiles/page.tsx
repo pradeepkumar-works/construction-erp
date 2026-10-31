@@ -4,7 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
-import { Alert, Button, Card, Empty, Flex, Form, Input, Switch, Typography, theme } from 'antd';
+import { Button, Card, Empty, Flex, Form, Input, Switch, Typography, theme } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import {
@@ -25,6 +25,7 @@ import { useDecideAccess, useHomeTiles, useSetHomeTilesSettings, useSetLauncherF
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
+import { NoAccess } from '@/components/common/NoAccess';
 import { TreeIcon } from '@/components/shell/nav-icons';
 
 type Decision = { request: AccessRequestDto; status: 'GRANTED' | 'DECLINED' };
@@ -249,7 +250,7 @@ export default function HomeTilesPage() {
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
       <PageHeader title="Home tiles" subtitle="Answer requests for access, and choose what Discover on everyone’s Home leads with." />
       {!allowed ? (
-        <Alert type="info" title="Only an admin can manage Home tiles." />
+        <NoAccess title="Only an admin can manage Home tiles" />
       ) : isLoading ? (
         <PageSkeleton shape="record" header={false} />
       ) : error ? (

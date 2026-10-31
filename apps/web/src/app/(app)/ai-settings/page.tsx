@@ -16,6 +16,7 @@ import { downloadXlsx } from '@/lib/exportExcel';
 import { useAiConversation, useAiConversations, useAiSettings, useUpdateAiSettings } from '@/lib/queries';
 import { askShortcutLabel } from '@/lib/shortcuts';
 import { PageHeader } from '@/components/common/PageHeader';
+import { NoAccess } from '@/components/common/NoAccess';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 
 function SettingsCard({ data }: { data: AiSettingsDto }) {
@@ -400,7 +401,7 @@ export default function AiSettingsPage() {
     return (
       <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
         <PageHeader title={`Ask ${PRODUCT_NAME}`} />
-        <Alert type="info" title={`Only an admin can change Ask ${PRODUCT_NAME} settings.`} />
+        <NoAccess title={`Only an admin can change Ask ${PRODUCT_NAME} settings`} />
       </div>
     );
   return (
