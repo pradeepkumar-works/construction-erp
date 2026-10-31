@@ -26,7 +26,7 @@ export default function SupplierHomePage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Supplier home"
+        title="Home"
         subtitle={data ? <span translate="no">{`${data.vendor.name} with ${data.organizationName}`}</span> : 'Your orders, invoices and payments'}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

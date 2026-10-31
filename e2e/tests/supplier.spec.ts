@@ -24,7 +24,7 @@ async function signInSupplier(page: Page) {
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/supplier$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Supplier home' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
 }
 
 /**

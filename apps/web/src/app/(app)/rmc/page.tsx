@@ -56,7 +56,7 @@ function RmcPage() {
                 attention: !!board?.late,
                 children: <Batcher />,
               },
-              { key: 'batches', label: 'Trucks and challans', children: <Batches /> },
+              { key: 'batches', label: 'Challans', children: <Batches /> },
               { key: 'designs', label: 'Mix designs', children: <MixDesigns /> },
               ...(sees ? [{ key: 'bills', label: 'Bills and money received', children: <Bills /> }] : []),
             ]}

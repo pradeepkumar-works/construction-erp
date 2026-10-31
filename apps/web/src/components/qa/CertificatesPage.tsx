@@ -83,7 +83,7 @@ export function CertificatesPage() {
       <PageHeader
         title="Test certificates"
         subtitle="GRNs of material that needs the manufacturer's test certificate (MTC) and came without one, newest first."
-        crumbs={[{ title: 'Masters', href: '/masters' }, { title: 'Test certificates' }]}
+        crumbs={[{ title: 'Quality', href: '/modules/quality' }, { title: 'Test certificates' }]}
       />
       <CategoryChooser />
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}

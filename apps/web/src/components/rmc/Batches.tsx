@@ -5,6 +5,7 @@ import { Input, Segmented, Space, Table } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { RmcBatchDto, RmcBatchStatus } from '@erp/shared';
+import { RMC_BATCH_STATUSES, RMC_BATCH_STATUS_LABELS } from '@erp/shared';
 import { useRmcBatches } from '@/lib/queries';
 import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -36,12 +37,7 @@ export function Batches() {
           aria-label="Which trucks"
           value={status}
           onChange={(v) => (setStatus(v as RmcBatchStatus | 'all'), setPage(1))}
-          options={[
-            { value: 'all', label: 'All' },
-            { value: 'DISPATCHED', label: 'In transit' },
-            { value: 'DELIVERED', label: 'Delivered' },
-            { value: 'REJECTED', label: 'Turned back' },
-          ]}
+          options={[{ value: 'all', label: 'All' }, ...RMC_BATCH_STATUSES.map((s) => ({ value: s, label: RMC_BATCH_STATUS_LABELS[s] }))]}
         />
         <PlantFilter />
         <Input.Search allowClear placeholder="Challan, truck, customer" aria-label="Search challans" onSearch={(v) => (setQ(v.trim()), setPage(1))} style={{ width: 230 }} />
