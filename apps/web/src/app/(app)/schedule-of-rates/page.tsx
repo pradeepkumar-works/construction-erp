@@ -164,7 +164,7 @@ function ScheduleOfRatesPage() {
                       <span>
                         <span
                           translate="no"
-                          style={{ display: "block", fontWeight: 500 }}
+                          style={{ display: "block", fontWeight: 500, color: token.colorText }}
                         >
                           {b.name}
                         </span>
