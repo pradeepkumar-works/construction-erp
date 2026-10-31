@@ -163,7 +163,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                 ]
               : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
-            { key: 'mr', label: 'Material request', children: data.requestNo ? <Link href={`/material-requests/${data.materialRequestId}`}>{data.requestNo}</Link> : '-' },
+            { key: 'mr', label: 'Indent', children: data.requestNo ? <Link href={`/material-requests/${data.materialRequestId}`}>{data.requestNo}</Link> : '-' },
             { key: 'deliver', label: 'Deliver by', children: data.deliveryBy ? formatDate(data.deliveryBy) : '-' },
             { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? '-' },
             { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : '-') },

@@ -250,7 +250,7 @@ function RecoverModal({ projectId, target, onClose }: { projectId: string; targe
       width={560}
       projectDefault={false}
       title={target ? `Recover ${target.item.itemName} from ${target.wo.vendorName}` : 'Recover material'}
-      okText="New debit note"
+      okText="Save recovery"
       footerExtra={
         q && r ? (
           <span className="mono" translate="no">

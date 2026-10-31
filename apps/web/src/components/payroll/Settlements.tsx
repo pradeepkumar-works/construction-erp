@@ -254,7 +254,7 @@ export function Settlements() {
                     {d.designation}
                     {d.leftOn ? `, left ${formatDate(d.leftOn)}` : ''}
                   </Typography.Text>
-                  <Button size="small" onClick={() => setPreparing({ employeeId: d.employeeId, name: d.fullName })} aria-label={`Work out ${d.fullName}'s settlement`}>
+                  <Button size="small" onClick={() => setPreparing({ employeeId: d.employeeId, name: d.fullName })} aria-label={`Prepare settlement for ${d.fullName}`}>
                     Prepare settlement
                   </Button>
                 </div>
