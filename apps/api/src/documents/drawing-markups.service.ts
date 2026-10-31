@@ -81,8 +81,8 @@ export class DrawingMarkupsService {
       rfiNo: m.rfi?.rfiNo ?? null,
       createdById: m.createdById,
       createdByName: m.createdBy.fullName,
-      createdAt: iso(m.createdAt)!,
-      updatedAt: iso(m.updatedAt)!,
+      createdAt: iso(m.createdAt),
+      updatedAt: iso(m.updatedAt),
     };
   }
 

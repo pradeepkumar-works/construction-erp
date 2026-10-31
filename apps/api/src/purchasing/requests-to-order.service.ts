@@ -73,7 +73,7 @@ function facts(r: Loaded) {
     freight: qt.freight.toString(),
     lines: qt.lines.map((l) => ({ materialRequestItemId: l.materialRequestItemId, rate: l.rate.toString(), gstRate: l.gstRate.toString() })),
   }));
-  const enquiries = r.enquiries.map((e) => ({ closesOn: dateOnly(e.closesOn)!, invited: e.tokens.length, replied: e.tokens.filter((t) => t.respondedAt).length }));
+  const enquiries = r.enquiries.map((e) => ({ closesOn: dateOnly(e.closesOn), invited: e.tokens.length, replied: e.tokens.filter((t) => t.respondedAt).length }));
   const final = r.finalisedAt && (r.finalQuotationId || r.finalSplit) ? { quotationId: r.finalQuotationId, split: r.finalSplit } : null;
   return { toOrder, quotations, enquiries, final, ranked: rankQuotations(quotations, toOrder) };
 }
@@ -149,7 +149,7 @@ export class RequestsToOrderService {
       requestNo: r.requestNo,
       projectId: r.projectId,
       projectName: r.project.name,
-      requiredDate: dateOnly(r.requiredDate)!,
+      requiredDate: dateOnly(r.requiredDate),
       priority: r.priority,
       submittedByName: r.submittedBy.fullName,
       approvedAt: iso(r.reviewedAt),

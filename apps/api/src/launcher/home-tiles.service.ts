@@ -19,7 +19,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { AccessDecisionDto, AccessRequestCreateDto, HomeTilesSettingsDto, LauncherFlagSetDto } from './launcher.dto';
 
 export const flagDto = (f: LauncherFlag): LauncherFlagDto => ({ nodeId: f.nodeId, isNew: f.isNew, newUntil: dateOnly(f.newUntil), featured: f.featured });
-export const myRequestDto = (r: AccessRequest): MyAccessRequestDto => ({ id: r.id, nodeId: r.nodeId, status: r.status, reply: r.reply, createdAt: iso(r.createdAt)!, decidedAt: iso(r.decidedAt) });
+export const myRequestDto = (r: AccessRequest): MyAccessRequestDto => ({ id: r.id, nodeId: r.nodeId, status: r.status, reply: r.reply, createdAt: iso(r.createdAt), decidedAt: iso(r.decidedAt) });
 
 const requestInclude = { user: { select: { fullName: true, role: { select: { key: true } } } }, decidedBy: { select: { fullName: true } } } as const;
 type RequestRow = AccessRequest & { user: { fullName: string; role: { key: string } }; decidedBy: { fullName: string } | null };

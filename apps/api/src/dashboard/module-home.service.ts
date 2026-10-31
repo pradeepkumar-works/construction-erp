@@ -59,7 +59,7 @@ const ZERO = new Prisma.Decimal(0);
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const count = (key: string, label: string, n: number, href: string, extra: Partial<ModuleFigureDto> = {}): ModuleFigureDto => ({ key, label, value: String(n), format: 'count', href, ...extra });
-const rupees = (key: string, label: string, v: string | D, href: string, extra: Partial<ModuleFigureDto> = {}): ModuleFigureDto => ({ key, label, value: typeof v === 'string' ? v : money(v)!, format: 'money', href, ...extra });
+const rupees = (key: string, label: string, v: string | D, href: string, extra: Partial<ModuleFigureDto> = {}): ModuleFigureDto => ({ key, label, value: typeof v === 'string' ? v : money(v), format: 'money', href, ...extra });
 
 /**
  * Module home pages (v6 item 98): for one sidebar section, its figures, what waits for the caller in it, and the caller's
@@ -113,7 +113,7 @@ export class ModuleHomeService {
     }
     const waitingRows: ModuleWaitingDto[] = [...byType.values()]
       .sort((a, b) => b.count - a.count || b.oldestDays - a.oldestDays)
-      .map((w) => ({ ...w, amount: w.amount === null ? null : money(w.amount)! }));
+      .map((w) => ({ ...w, amount: w.amount === null ? null : money(w.amount) }));
     const back = new Map<SubmissionType, number>();
     for (const s of inModule(sentBack)) back.set(s.type, (back.get(s.type) ?? 0) + 1);
 
@@ -174,7 +174,7 @@ export class ModuleHomeService {
           plannedPct: planned,
           financialPct: seesFinancial && contract?.gt(0) ? Math.round(billed.div(contract).mul(1000).toNumber()) / 10 : null,
           contractValue: seesFinancial ? p.revisedContractValue : null,
-          billed: seesFinancial ? money(billed)! : null,
+          billed: seesFinancial ? money(billed) : null,
           startDate: p.startDate,
           endDate: p.endDate,
           eotDays,

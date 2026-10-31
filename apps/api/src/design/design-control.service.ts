@@ -85,7 +85,7 @@ export class DesignControlService {
       currentRevision: r.document.currentRevisionId && r.document.currentRevisionId !== r.revisionId ? (r.document.currentRevision?.revision ?? null) : null,
       copyNo: r.copyNo,
       holder: r.holder,
-      issuedOn: dateOnly(r.issuedOn)!,
+      issuedOn: dateOnly(r.issuedOn),
       issuedByName: r.issuedBy.fullName,
       transmittalId: r.transmittalId,
       transmittalNo: r.transmittal?.transmittalNo ?? null,
@@ -151,7 +151,7 @@ export class DesignControlService {
     const rev = doc.currentRevision;
     if (!rev) throw new BadRequestException('Add the drawing’s revision to the register before issuing copies');
     if (dto.issuedOn > todayIn()) throw new BadRequestException('The day of issue cannot be after today');
-    if (dto.issuedOn < dateOnly(rev.issuedOn)!) throw new BadRequestException(`Revision ${rev.revision} came in on ${dateOnly(rev.issuedOn)}; it cannot be issued before that`);
+    if (dto.issuedOn < dateOnly(rev.issuedOn)) throw new BadRequestException(`Revision ${rev.revision} came in on ${dateOnly(rev.issuedOn)}; it cannot be issued before that`);
     if (dto.transmittalId && !(await this.prisma.transmittal.count({ where: { id: dto.transmittalId, projectId: doc.projectId } }))) throw new BadRequestException('Choose a transmittal of this project');
     const existing = await this.prisma.controlledCopy.findMany({ where: { documentId: doc.id }, select: { holder: true, copyNo: true, revisionId: true, disposedOn: true } });
     const problem = issueCopiesProblem({
@@ -203,7 +203,7 @@ export class DesignControlService {
   async dispose(user: RequestUser, id: string, dto: DisposeCopyDto): Promise<ControlledCopyDto> {
     const row = await this.copyRow(user, id);
     await this.access.assertCanManageDocuments(user, row.projectId);
-    const problem = disposeCopyProblem({ issuedOn: dateOnly(row.issuedOn)!, disposedOn: dto.disposedOn, today: todayIn(), alreadyOn: dateOnly(row.disposedOn) });
+    const problem = disposeCopyProblem({ issuedOn: dateOnly(row.issuedOn), disposedOn: dto.disposedOn, today: todayIn(), alreadyOn: dateOnly(row.disposedOn) });
     if (problem) throw new BadRequestException(problem);
     await this.prisma.controlledCopy.update({
       where: { id },
@@ -363,7 +363,7 @@ export class DesignControlService {
         projectName: r.document.project.name,
         revision: r.revision,
         status: r.status as RevisionStatus,
-        issuedOn: dateOnly(r.issuedOn)!,
+        issuedOn: dateOnly(r.issuedOn),
         previous: f.previous,
         items: revisionImpact(f),
       };

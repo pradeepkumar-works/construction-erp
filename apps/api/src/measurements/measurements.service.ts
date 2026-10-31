@@ -80,20 +80,20 @@ export class MeasurementsService {
       woNo: r.workOrder?.woNo ?? null,
       contractorName: r.workOrder?.vendor.name ?? null,
       subcontractBillId: r.subcontractBillId,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       boqItemId: r.boqItemId,
       boqItemNo: r.boqItem.itemNo,
       boqDescription: r.boqItem.description,
       unit: r.boqItem.unit,
-      rate: money(r.boqItem.rate)!,
+      rate: money(r.boqItem.rate),
       location: r.location,
       chainageFrom: r.chainageFrom,
       chainageTo: r.chainageTo,
       floor: r.floor,
       village: r.village,
       remarks: r.remarks,
-      totalQty: dec(r.totalQty)!,
-      amount: money(r.totalQty.mul(r.boqItem.rate))!,
+      totalQty: dec(r.totalQty),
+      amount: money(r.totalQty.mul(r.boqItem.rate)),
       lines: r.lines.map((l) => ({
         id: l.id,
         description: l.description,
@@ -102,7 +102,7 @@ export class MeasurementsService {
         breadth: dec(l.breadth),
         depth: dec(l.depth),
         deduct: l.deduct,
-        quantity: dec(l.quantity)!,
+        quantity: dec(l.quantity),
       })),
       status: r.status,
       submittedById: r.submittedById,
@@ -113,8 +113,8 @@ export class MeasurementsService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -193,7 +193,7 @@ export class MeasurementsService {
           continue;
         }
         for (const e of a.progressEntries)
-          entries.push({ id: e.id, date: dateOnly(e.date)!, quantity: Number(e.quantity), location: e.location, activityName: a.name, fromDpr: !!e.dailyReportId });
+          entries.push({ id: e.id, date: dateOnly(e.date), quantity: Number(e.quantity), location: e.location, activityName: a.name, fromDpr: !!e.dailyReportId });
       }
       const executed = entries.reduce((s, e) => s + e.quantity, 0);
       const measured = item.measurements.reduce((s, m) => s + Number(m.totalQty), 0);
@@ -205,12 +205,12 @@ export class MeasurementsService {
         itemNo: item.itemNo,
         description: item.description,
         unit: item.unit,
-        rate: money(item.rate)!,
-        executedQty: dec(executed)!,
-        measuredQty: dec(measured)!,
-        toMeasureQty: dec(toMeasureQty)!,
-        toMeasureAmount: money(new Prisma.Decimal(toMeasureQty).mul(item.rate))!,
-        entries: left.map((e) => ({ id: e.id, date: e.date, quantity: dec(e.quantity)!, location: e.location, activityName: e.activityName, fromDpr: e.fromDpr })),
+        rate: money(item.rate),
+        executedQty: dec(executed),
+        measuredQty: dec(measured),
+        toMeasureQty: dec(toMeasureQty),
+        toMeasureAmount: money(new Prisma.Decimal(toMeasureQty).mul(item.rate)),
+        entries: left.map((e) => ({ id: e.id, date: e.date, quantity: dec(e.quantity), location: e.location, activityName: e.activityName, fromDpr: e.fromDpr })),
         otherUnitActivities,
       });
     }

@@ -56,7 +56,7 @@ export class AiDraftsService {
   /** The project the user meant: an id from list_projects or the page, or a name or code the user wrote. */
   async project(user: RequestUser, i: Input): Promise<ProjectSummary> {
     if (typeof i.projectId === 'string' && UUID.test(i.projectId)) return this.projects.get(user, i.projectId);
-    const all = (await this.projects.list(user, { page: 1, pageSize: 100 } as never)).items;
+    const all = (await this.projects.list(user, { page: 1, pageSize: 100 })).items;
     const wanted = text(i.project, 100);
     const open = all.filter((p) => p.status === 'ACTIVE' || p.status === 'PLANNED');
     if (!wanted) {
@@ -126,7 +126,7 @@ export class AiDraftsService {
     const words = name.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3 || /\d/.test(w)).slice(0, 4);
     const seen = new Map<string, { name: string; unit: string }>();
     for (const q of words.length ? words : [name]) {
-      for (const it of (await this.stock.listItems(user, { q, page: 1, pageSize: 20 } as never)).items) if (!taken.has(it.name)) seen.set(it.id, it);
+      for (const it of (await this.stock.listItems(user, { q, page: 1, pageSize: 20 })).items) if (!taken.has(it.name)) seen.set(it.id, it);
     }
     // A tie ("bitumen emulsion" is as like "Bitumen VG-30" as "Emulsion SS-1") goes to the item kept in the unit said.
     const rank = (it: { name: string; unit: string }) => ({ it, s: itemSimilarity(name, it.name), unit: !!unit && normUnit(unit) === normUnit(it.unit) ? 1 : 0 });
@@ -187,7 +187,7 @@ export class AiDraftsService {
     const workExecuted = text(i.workExecuted, 4000);
     if (!workExecuted) throw new BadRequestException('workExecuted is required: the work done that day, from the notes');
     const d = this.when(i.date, 'date', todayIn(), flags, 'date', 'past');
-    const already = await this.dpr.list(user, { projectId: project.id, from: d, to: d, page: 1, pageSize: 1 } as never);
+    const already = await this.dpr.list(user, { projectId: project.id, from: d, to: d, page: 1, pageSize: 1 });
     if (already.total) flags.push({ field: 'date', note: `${project.name} already has a DPR for ${longDate(d)}` });
     const manpower = (Array.isArray(i.manpower) ? (i.manpower as Input[]) : [])
       .map((m) => ({ category: manpowerCategory(text(m.category, 60)), count: Math.round(num(m.count) ?? 0) }))

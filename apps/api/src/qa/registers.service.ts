@@ -298,7 +298,7 @@ export class QaRegistersService {
       history: history.map(
         (c): CalibrationDto => ({
           id: c.id,
-          calibratedOn: dateOnly(c.calibratedOn)!,
+          calibratedOn: dateOnly(c.calibratedOn),
           certificateNo: c.certificateNo,
           agency: c.agency,
           result: c.result as CalibrationResult,
@@ -421,7 +421,7 @@ export class QaRegistersService {
       .map((r) => ({
         id: r.id,
         entryNo: r.entryNo,
-        date: dateOnly(r.date)!,
+        date: dateOnly(r.date),
         projectId: r.projectId,
         projectName: r.project.name,
         supplier: r.supplier,

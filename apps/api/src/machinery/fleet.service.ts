@@ -66,14 +66,14 @@ export class FleetService {
     return {
       entryId: e.id,
       entryNo: e.entryNo,
-      date: dateOnly(e.date)!,
+      date: dateOnly(e.date),
       projectId: e.projectId,
       equipmentId: e.equipmentId,
       equipmentCode: e.equipment?.code ?? null,
       equipmentName: e.equipment?.name ?? null,
       itemName: line?.item.name ?? '',
       unit: line?.item.unit ?? '',
-      litres: dec(e.lines.reduce((s, l) => s.sub(l.quantity), ZERO))!,
+      litres: dec(e.lines.reduce((s, l) => s.sub(l.quantity), ZERO)),
       meterReading: dec(e.meterReading),
       issuedTo: e.issuedTo,
       createdByName: e.createdBy.fullName,
@@ -126,11 +126,11 @@ export class FleetService {
           itemId: i.id,
           itemName: i.name,
           unit: i.unit,
-          opening: dec(opening)!,
-          received: dec(received)!,
-          issuedToMachines: dec(toMachines)!,
-          otherOut: dec(otherOut)!,
-          closing: dec(opening.add(received).sub(toMachines).sub(otherOut))!,
+          opening: dec(opening),
+          received: dec(received),
+          issuedToMachines: dec(toMachines),
+          otherOut: dec(otherOut),
+          closing: dec(opening.add(received).sub(toMachines).sub(otherOut)),
           minLevel: dec(minOf.get(k(p.id, i.id))),
         });
       }
@@ -182,7 +182,7 @@ export class FleetService {
       // A day on site is the shift, or the hours logged when the machine ran longer (two shifts, a long pour).
       const perDay = new Map<string, Decimal>();
       for (const l of ls) {
-        const d = dateOnly(l.date)!;
+        const d = dateOnly(l.date);
         perDay.set(d, (perDay.get(d) ?? ZERO).add(l.hoursWorked).add(l.idleHours).add(l.breakdownHours));
       }
       const days = perDay.size;
@@ -201,13 +201,13 @@ export class FleetService {
         ownership: eq.ownership,
         projectName: projectsSeen.length === 1 ? projectsSeen[0] : `${projectsSeen.length} projects`,
         daysOnSite: days,
-        availableHours: dec(available)!,
-        workedHours: dec(worked)!,
-        idleHours: dec(idle)!,
-        breakdownHours: dec(breakdown)!,
+        availableHours: dec(available),
+        workedHours: dec(worked),
+        idleHours: dec(idle),
+        breakdownHours: dec(breakdown),
         utilisationPct: share(worked, available),
         availabilityPct: share(available.sub(breakdown), available),
-        fuelLitres: dec(fuel)!,
+        fuelLitres: dec(fuel),
         fuelPerHour: worked.gt(0) && fuel.gt(0) ? dec(fuel.div(worked).toDecimalPlaces(2)) : null,
         _a: available,
         _w: worked,
@@ -223,10 +223,10 @@ export class FleetService {
       return {
         category,
         machines: rs.length,
-        availableHours: dec(a)!,
-        workedHours: dec(w)!,
-        idleHours: dec(rs.reduce((s, r) => s.add(r._i), ZERO))!,
-        breakdownHours: dec(b)!,
+        availableHours: dec(a),
+        workedHours: dec(w),
+        idleHours: dec(rs.reduce((s, r) => s.add(r._i), ZERO)),
+        breakdownHours: dec(b),
         utilisationPct: share(w, a),
         availabilityPct: share(a.sub(b), a),
       };
@@ -272,7 +272,7 @@ export class FleetService {
       position: r.position,
       make: r.make,
       serialNo: r.serialNo,
-      fittedOn: dateOnly(r.fittedOn)!,
+      fittedOn: dateOnly(r.fittedOn),
       fittedMeter: dec(r.fittedMeter),
       removedOn: dateOnly(r.removedOn),
       removedMeter: dec(r.removedMeter),

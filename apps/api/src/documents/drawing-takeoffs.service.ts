@@ -73,7 +73,7 @@ export class DrawingTakeoffsService {
       metresPerPage: metresPerPage(s) ?? 0,
       aspect: s.aspect,
       setByName: s.setBy.fullName,
-      updatedAt: iso(s.updatedAt)!,
+      updatedAt: iso(s.updatedAt),
     };
   }
 
@@ -94,7 +94,7 @@ export class DrawingTakeoffsService {
       mbNo: t.measurement?.mbNo ?? null,
       createdById: t.createdById,
       createdByName: t.createdBy.fullName,
-      createdAt: iso(t.createdAt)!,
+      createdAt: iso(t.createdAt),
     };
   }
 

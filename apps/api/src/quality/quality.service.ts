@@ -124,7 +124,7 @@ export class QualityService {
       kind: r.kind,
       title: r.title,
       location: r.location,
-      sampledOn: dateOnly(r.sampledOn)!,
+      sampledOn: dateOnly(r.sampledOn),
       specification: r.specification,
       unit: r.unit,
       specMin: dec(r.specMin),
@@ -150,12 +150,12 @@ export class QualityService {
       labCharge: money(r.labCharge),
       instrumentId: r.instrumentId,
       instrumentName: r.instrument?.name ?? null,
-      outOfCalibration: !!r.instrument && testedOutOfCalibration({ lastCalibratedOn: dateOnly(r.instrument.lastCalibratedOn), nextDueOn: dateOnly(r.instrument.nextDueOn), intervalDays: r.instrument.intervalDays, lastResult: r.instrument.lastResult as CalibrationResult | null }, dateOnly(r.sampledOn)!),
+      outOfCalibration: !!r.instrument && testedOutOfCalibration({ lastCalibratedOn: dateOnly(r.instrument.lastCalibratedOn), nextDueOn: dateOnly(r.instrument.nextDueOn), intervalDays: r.instrument.intervalDays, lastResult: r.instrument.lastResult as CalibrationResult | null }, dateOnly(r.sampledOn)),
       createdById: r.createdById,
       createdByName: r.createdBy.fullName,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -382,7 +382,7 @@ export class QualityService {
     if (dto.activityId !== undefined) await this.assertActivity(cur.projectId, dto.activityId);
     if (dto.segmentIds !== undefined && !canEditTest(user, cur)) throw new ForbiddenException('Only whoever recorded the test, QA/QC or an approver can change the pipes it covers');
     await this.assertSegments(cur.projectId, dto.segmentIds);
-    const sampledOn = dto.sampledOn ?? dateOnly(cur.sampledOn)!;
+    const sampledOn = dto.sampledOn ?? dateOnly(cur.sampledOn);
     if (sampledOn > todayIn()) throw new BadRequestException('The sample date cannot be in the future');
     const specMin = dto.specMin !== undefined ? dto.specMin : dec(cur.specMin);
     const specMax = dto.specMax !== undefined ? dto.specMax : dec(cur.specMax);
@@ -505,7 +505,7 @@ export class QualityService {
       projectId: r.projectId,
       projectName: r.project.name,
       ncrNo: r.ncrNo,
-      raisedOn: dateOnly(r.raisedOn)!,
+      raisedOn: dateOnly(r.raisedOn),
       title: r.title,
       description: r.description,
       location: r.location,
@@ -536,8 +536,8 @@ export class QualityService {
       raisedByClient: r.raisedByClient,
       reworkCost: money(r.reworkCost),
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -681,7 +681,7 @@ export class QualityService {
     await this.assertLinks(cur.projectId, dto);
     if (dto.actionById !== undefined) await this.assertActionBy(user, cur.projectId, dto.actionById);
     await this.assertNcrLists(user, dto);
-    const raisedOn = dto.raisedOn ?? dateOnly(cur.raisedOn)!;
+    const raisedOn = dto.raisedOn ?? dateOnly(cur.raisedOn);
     if (raisedOn > todayIn()) throw new BadRequestException('The NCR date cannot be in the future');
     const dueDate = dto.dueDate !== undefined ? dto.dueDate : dateOnly(cur.dueDate);
     if (dueDate && dueDate < raisedOn) throw new BadRequestException('The rectify-by date is before the NCR date');

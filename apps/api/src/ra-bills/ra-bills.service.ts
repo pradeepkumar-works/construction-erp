@@ -113,15 +113,15 @@ export class RaBillsService {
     const deductions: RaBillDeductionDto[] = [];
     for (const [key, pctKey, amountKey] of PCT_DEDUCTIONS) {
       if (r[amountKey].isZero()) continue;
-      deductions.push({ key, label: BILL_DEDUCTION_LABELS[key], pct: pctStr(r[pctKey]), amount: money(r[amountKey])! });
+      deductions.push({ key, label: BILL_DEDUCTION_LABELS[key], pct: pctStr(r[pctKey]), amount: money(r[amountKey]) });
     }
     if (!r.slippageWithheld.isZero()) {
       const key: BillDeductionKey = 'slippage';
-      deductions.push({ key, label: r.slippageWithheld.gt(0) ? BILL_DEDUCTION_LABELS.slippage : 'Milestone slippage released', pct: null, amount: money(r.slippageWithheld)! });
+      deductions.push({ key, label: r.slippageWithheld.gt(0) ? BILL_DEDUCTION_LABELS.slippage : 'Milestone slippage released', pct: null, amount: money(r.slippageWithheld) });
     }
     if (!r.omPenalty.isZero()) {
       const key: BillDeductionKey = 'omPenalty';
-      deductions.push({ key, label: BILL_DEDUCTION_LABELS.omPenalty, pct: null, amount: money(r.omPenalty)! });
+      deductions.push({ key, label: BILL_DEDUCTION_LABELS.omPenalty, pct: null, amount: money(r.omPenalty) });
     }
     if (!r.obligationRecovery.isZero()) {
       const key: BillDeductionKey = 'obligations';
@@ -129,7 +129,7 @@ export class RaBillsService {
     }
     if (!r.otherDeduction.isZero()) {
       const key: BillDeductionKey = 'other';
-      deductions.push({ key, label: r.otherDeductionNote || BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction)! });
+      deductions.push({ key, label: r.otherDeductionNote || BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction) });
     }
     const p = r.project;
     return {
@@ -142,18 +142,18 @@ export class RaBillsService {
       billNo: r.billNo,
       billLabel: billLabel(r.billNo, r.isFinal, r.omYear !== null),
       isFinal: r.isFinal,
-      billDate: dateOnly(r.billDate)!,
-      measuredUpTo: dateOnly(r.measuredUpTo)!,
+      billDate: dateOnly(r.billDate),
+      measuredUpTo: dateOnly(r.measuredUpTo),
       remarks: r.remarks,
       workOrderNo: p.workOrderNo,
       agreementNo: p.agreementNo,
       agreementDate: dateOnly(p.agreementDate),
       client: p.client,
       clientName: p.client?.name ?? p.clientName,
-      grossPrevious: money(r.grossPrevious)!,
-      grossAmount: money(r.grossAmount)!,
-      grossUpto: money(r.grossUpto)!,
-      pvAmount: money(r.pvAmount)!,
+      grossPrevious: money(r.grossPrevious),
+      grossAmount: money(r.grossAmount),
+      grossUpto: money(r.grossUpto),
+      pvAmount: money(r.pvAmount),
       pvIndexMonth: dateOnly(r.pvIndexMonth),
       pvNote: r.pvNote,
       stageLines: r.stageLines.map((l) => {
@@ -166,7 +166,7 @@ export class RaBillsService {
           stageName: l.stage.name,
           trigger: l.stage.trigger,
           stagePct: pctStr(l.stage.pct),
-          stageValue: money(l.stageValue)!,
+          stageValue: money(l.stageValue),
           prevPct: pct3(l.prevPct),
           suggestedPct: pct3(l.suggestedPct),
           thisPct: pct3(l.thisPct),
@@ -174,25 +174,25 @@ export class RaBillsService {
           claimedByHand: l.claimedByHand,
           note: l.note,
           certifiedPct: l.certifiedPct === null ? null : pct3(l.certifiedPct),
-          prevAmount: money(prevAmount)!,
-          amount: money(l.amount)!,
+          prevAmount: money(prevAmount),
+          amount: money(l.amount),
           evidenceText: l.evidenceText,
         };
       }),
-      slippageWithheld: money(r.slippageWithheld)!,
+      slippageWithheld: money(r.slippageWithheld),
       slippageLines: (r.slippageLines as SlippageLineDto[] | null) ?? [],
       obligationRecovery: money(r.obligationRecovery)!,
       obligationLines: storedLines(r.obligationLines),
       om: omBillDto(r),
       tenderFactor: r.stageLines.length && r.project.tenderFactor ? r.project.tenderFactor.toFixed(6).replace(/\.?0+$/, '') : null,
-      pvLines: r.pvLines.map((l) => ({ id: l.id, name: l.name, sharePct: pctStr(l.sharePct), baseIndex: idx(l.baseIndex), currentIndex: idx(l.currentIndex), amount: money(l.amount)! })),
+      pvLines: r.pvLines.map((l) => ({ id: l.id, name: l.name, sharePct: pctStr(l.sharePct), baseIndex: idx(l.baseIndex), currentIndex: idx(l.currentIndex), amount: money(l.amount) })),
       gstRate: pctStr(r.gstRate),
-      gstAmount: money(r.gstAmount)!,
+      gstAmount: money(r.gstAmount),
       deductions,
-      otherDeduction: money(r.otherDeduction)!,
+      otherDeduction: money(r.otherDeduction),
       otherDeductionNote: r.otherDeductionNote,
-      totalDeductions: money(r.totalDeductions)!,
-      netPayable: money(r.netPayable)!,
+      totalDeductions: money(r.totalDeductions),
+      netPayable: money(r.netPayable),
       claimedGross: money(r.claimedGross),
       claimedNet: money(r.claimedNet),
       stage: r.stage,
@@ -202,10 +202,10 @@ export class RaBillsService {
       certificateNo: r.certificateNo,
       paidDate: dateOnly(r.paidDate),
       measurementCount: r._count.measurements,
-      invoiceAmount: money(invoice)!,
-      receivedAmount: money(received)!,
-      settledAmount: money(settled)!,
-      outstanding: money(Prisma.Decimal.max(invoice.sub(settled), ZERO))!,
+      invoiceAmount: money(invoice),
+      receivedAmount: money(received),
+      settledAmount: money(settled),
+      outstanding: money(Prisma.Decimal.max(invoice.sub(settled), ZERO)),
       receipts,
       items: r.items.map((i) => {
         const prevAmount = round2(i.prevQty.mul(i.rate));
@@ -217,27 +217,27 @@ export class RaBillsService {
           itemNo: i.boqItem.itemNo,
           description: i.boqItem.description,
           unit: i.boqItem.unit,
-          boqQty: dec(i.boqQty)!,
-          rate: money(i.rate)!,
-          prevQty: dec(i.prevQty)!,
-          thisQty: dec(i.thisQty)!,
-          uptoQty: dec(i.uptoQty)!,
+          boqQty: dec(i.boqQty),
+          rate: money(i.rate),
+          prevQty: dec(i.prevQty),
+          thisQty: dec(i.thisQty),
+          uptoQty: dec(i.uptoQty),
           certifiedQty: dec(i.certifiedQty),
-          prevAmount: money(prevAmount)!,
-          amount: money(i.amount)!,
-          uptoAmount: money(prevAmount.add(i.amount))!,
-          excessQty: !extraItem && excess.gt(0) ? dec(excess)! : '0',
+          prevAmount: money(prevAmount),
+          amount: money(i.amount),
+          uptoAmount: money(prevAmount.add(i.amount)),
+          excessQty: !extraItem && excess.gt(0) ? dec(excess) : '0',
           extraItem,
         };
       }),
       measurements: sheets?.map((s) => ({
         id: s.id,
         mbNo: s.mbNo,
-        date: dateOnly(s.date)!,
+        date: dateOnly(s.date),
         boqItemNo: s.boqItem.itemNo,
         unit: s.boqItem.unit,
         location: s.location,
-        totalQty: dec(s.totalQty)!,
+        totalQty: dec(s.totalQty),
         lines: s.lines.map((l) => ({
           id: l.id,
           description: l.description,
@@ -246,7 +246,7 @@ export class RaBillsService {
           breadth: dec(l.breadth),
           depth: dec(l.depth),
           deduct: l.deduct,
-          quantity: dec(l.quantity)!,
+          quantity: dec(l.quantity),
         })),
       })),
       status: r.status,
@@ -258,8 +258,8 @@ export class RaBillsService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -398,7 +398,7 @@ export class RaBillsService {
           throw new ConflictException('The final bill of this project has already been made');
         } else if (last) {
           const lastDate = await tx.raBill.findFirstOrThrow({ where: { projectId: dto.projectId, billNo: last.billNo }, select: { measuredUpTo: true } });
-          if (dateOnly(lastDate.measuredUpTo)! > measuredUpTo) throw new BadRequestException(`RA bill ${last.billNo} already took measurements up to ${dateOnly(lastDate.measuredUpTo)}`);
+          if (dateOnly(lastDate.measuredUpTo) > measuredUpTo) throw new BadRequestException(`RA bill ${last.billNo} already took measurements up to ${dateOnly(lastDate.measuredUpTo)}`);
         }
         const row = await tx.raBill.create({
           data: {
@@ -444,14 +444,14 @@ export class RaBillsService {
     await this.lifecycle.assertEditable(user, row);
     const cur = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, select: { billDate: true, measuredUpTo: true, billNo: true, projectId: true, omYear: true } });
     if (cur.omYear !== null && (dto.measuredUpTo !== undefined || dto.isFinal)) throw new BadRequestException('An O&M bill covers its period: only its date, deductions and remarks can change');
-    const billDate = dto.billDate ?? dateOnly(cur.billDate)!;
-    const measuredUpTo = dto.measuredUpTo ?? dateOnly(cur.measuredUpTo)!;
+    const billDate = dto.billDate ?? dateOnly(cur.billDate);
+    const measuredUpTo = dto.measuredUpTo ?? dateOnly(cur.measuredUpTo);
     this.checkDates(billDate, measuredUpTo);
     const data: Prisma.RaBillUncheckedUpdateInput = {};
     if (dto.billDate !== undefined) data.billDate = parseDate(dto.billDate);
     if (dto.measuredUpTo !== undefined) {
       const before = await this.prisma.raBill.findFirst({ where: { projectId: cur.projectId, billNo: cur.billNo - 1 }, select: { measuredUpTo: true } });
-      if (before && dateOnly(before.measuredUpTo)! > measuredUpTo) throw new BadRequestException(`RA bill ${cur.billNo - 1} already took measurements up to ${dateOnly(before.measuredUpTo)}`);
+      if (before && dateOnly(before.measuredUpTo) > measuredUpTo) throw new BadRequestException(`RA bill ${cur.billNo - 1} already took measurements up to ${dateOnly(before.measuredUpTo)}`);
       data.measuredUpTo = parseDate(dto.measuredUpTo);
     }
     if (dto.isFinal !== undefined) data.isFinal = dto.isFinal;
@@ -556,7 +556,7 @@ export class RaBillsService {
     const bill = await this.approvedBill(user, id);
     if (bill.stage !== 'NOT_SENT' && bill.stage !== 'SENT') throw new BadRequestException('This bill is already certified');
     checkNotFuture(dto.date, 'date sent');
-    if (dto.date < dateOnly(bill.billDate)!) throw new BadRequestException('A bill cannot be sent before its bill date');
+    if (dto.date < dateOnly(bill.billDate)) throw new BadRequestException('A bill cannot be sent before its bill date');
     await this.prisma.raBill.update({ where: { id }, data: { stage: 'SENT', sentDate: parseDate(dto.date) } });
     await this.audit.log(user, 'BILL', id, 'SENT', `Sent to the client on ${dto.date}`);
     const out = await this.get(user, id);
@@ -689,7 +689,7 @@ export class RaBillsService {
     assertNotExported(bill, 'This bill');
     if (bill.stage !== 'SENT' && bill.stage !== 'CERTIFIED') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'Record the bill as sent first');
     checkNotFuture(dto.date, 'certificate date');
-    if (bill.sentDate && dto.date < dateOnly(bill.sentDate)!) throw new BadRequestException('The certificate date cannot be before the date the bill was sent');
+    if (bill.sentDate && dto.date < dateOnly(bill.sentDate)) throw new BadRequestException('The certificate date cannot be before the date the bill was sent');
     const cut = new Map<string, Prisma.Decimal>();
     for (const c of dto.items ?? []) {
       const item = bill.items.find((i) => i.boqItemId === c.boqItemId);

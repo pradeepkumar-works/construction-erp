@@ -199,13 +199,13 @@ export class BillChecksService {
   /** The billed logs against the machine's engine hours, on the days its tracker read (item 146). */
   private async engineFacts(equipmentId: string, logs: { date: Date; hoursWorked: Prisma.Decimal; idleHours: Prisma.Decimal }[]) {
     const engine = await this.telematics.engineHoursOn(equipmentId, logs.map((l) => l.date));
-    const tracked = logs.filter((l) => engine.has(dateOnly(l.date)!));
+    const tracked = logs.filter((l) => engine.has(dateOnly(l.date)));
     if (!tracked.length) return null;
     return {
       days: tracked.length,
       loggedHours: tracked.reduce((s, l) => s + n(l.hoursWorked) + n(l.idleHours), 0),
-      engineHours: tracked.reduce((s, l) => s + engine.get(dateOnly(l.date)!)!, 0),
-      deadDays: tracked.filter((l) => n(l.hoursWorked) > 0 && engine.get(dateOnly(l.date)!)! < 0.1).map((l) => formatDay(dateOnly(l.date))),
+      engineHours: tracked.reduce((s, l) => s + engine.get(dateOnly(l.date))!, 0),
+      deadDays: tracked.filter((l) => n(l.hoursWorked) > 0 && engine.get(dateOnly(l.date))! < 0.1).map((l) => formatDay(dateOnly(l.date))),
     };
   }
 

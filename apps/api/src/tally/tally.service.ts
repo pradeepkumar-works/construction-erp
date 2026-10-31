@@ -178,12 +178,12 @@ export class TallyService {
       key: `${v.kind}:${v.sourceId}`,
       kind: v.kind,
       sourceId: v.sourceId,
-      date: dateOnly(v.date)!,
+      date: dateOnly(v.date),
       number: v.number,
       party: v.party,
       projectCode: v.projectCode,
       projectName: v.projectName,
-      amount: money(debits(v.lines))!,
+      amount: money(debits(v.lines)),
       narration: v.narration,
       entries: v.lines.map((l) => ({ ledgerKey: l.ledgerKey, ledger: l.ledger, debit: l.amount.gt(0) ? money(l.amount) : null, credit: l.amount.lt(0) ? money(l.amount.neg()) : null })),
     };
@@ -205,12 +205,12 @@ export class TallyService {
   private exportDto(r: Prisma.TallyExportGetPayload<{ include: { createdBy: { select: { fullName: true } } } }>): TallyExportDto {
     return {
       id: r.id,
-      upTo: dateOnly(r.upTo)!,
+      upTo: dateOnly(r.upTo),
       fromDate: dateOnly(r.fromDate),
       voucherCount: r.voucherCount,
       counts: r.counts as TallyExportDto['counts'],
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 

@@ -89,7 +89,7 @@ export class NotificationsService {
       entityType: (r.entityType as NotificationDto['entityType']) ?? null,
       entityId: r.entityId,
       readAt: iso(r.readAt),
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -129,7 +129,7 @@ export class NotificationsService {
   /* ---------- push tokens ---------- */
 
   private tokenDto(t: { id: string; token: string; platform: PushTokenDto['platform']; deviceName: string | null; createdAt: Date; lastSeenAt: Date }): PushTokenDto {
-    return { id: t.id, token: t.token, platform: t.platform, deviceName: t.deviceName, createdAt: iso(t.createdAt)!, lastSeenAt: iso(t.lastSeenAt)! };
+    return { id: t.id, token: t.token, platform: t.platform, deviceName: t.deviceName, createdAt: iso(t.createdAt), lastSeenAt: iso(t.lastSeenAt) };
   }
 
   async listTokens(user: RequestUser): Promise<PushTokenDto[]> {
@@ -789,11 +789,11 @@ export class NotificationsService {
   private async onDprHindrance(actor: RequestUser, dprId: string) {
     const d = await this.prisma.dailyReport.findUnique({ where: { id: dprId }, select: { date: true, issues: true, projectId: true, project: { select: { name: true, noticeDays: true, projectManagerId: true } } } });
     if (!d?.issues || !d.project.projectManagerId) return;
-    const date = dateOnly(d.date)!;
+    const date = dateOnly(d.date);
     const reading = classifyRemark(d.issues, date);
     if (reading.verdict === 'NONE' || !needsNotice(reading.party)) return;
     const start = new Date(d.date.getTime() - reading.startOffset * 86_400_000);
-    const clock = noticeClock(dateOnly(start)!, d.project.noticeDays ?? DEFAULT_NOTICE_DAYS, todayIn());
+    const clock = noticeClock(dateOnly(start), d.project.noticeDays ?? DEFAULT_NOTICE_DAYS, todayIn());
     const due = titleDate(new Date(`${clock.due}T00:00:00Z`));
     await this.handoff({
       organizationId: actor.organizationId,

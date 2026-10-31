@@ -73,8 +73,8 @@ export class ProgressService {
       activityId: r.activityId,
       activityName: r.activity.name,
       unit: r.activity.unit,
-      date: dateOnly(r.date)!,
-      quantity: dec(r.quantity)!,
+      date: dateOnly(r.date),
+      quantity: dec(r.quantity),
       remarks: r.remarks,
       location: r.location,
       chainageFrom: r.chainageFrom,
@@ -93,8 +93,8 @@ export class ProgressService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

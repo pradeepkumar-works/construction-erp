@@ -102,11 +102,11 @@ export class MaintenanceService {
         return {
           entryId: e.id,
           entryNo: e.entryNo,
-          date: dateOnly(e.date)!,
+          date: dateOnly(e.date),
           itemId: l.itemId,
           itemName: l.item.name,
           unit: l.item.unit,
-          quantity: dec(qty)!,
+          quantity: dec(qty),
           value: l.item.rate ? money(qty.mul(l.item.rate)) : null,
         };
       }),
@@ -122,17 +122,17 @@ export class MaintenanceService {
       projectName: r.project?.name ?? null,
       kind: r.kind,
       status: r.status,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       meterReading: dec(r.meterReading),
       description: r.description,
       workshop: r.workshop,
       workDone: r.workDone,
       closedDate: dateOnly(r.closedDate),
       downtimeHours: dec(r.downtimeHours),
-      labourCost: money(r.labourCost)!,
-      partsCost: money(r.partsCost)!,
-      sparesValue: money(sparesValue)!,
-      totalCost: money(r.labourCost.plus(r.partsCost).plus(sparesValue))!,
+      labourCost: money(r.labourCost),
+      partsCost: money(r.partsCost),
+      sparesValue: money(sparesValue),
+      totalCost: money(r.labourCost.plus(r.partsCost).plus(sparesValue)),
       spares,
       reportedById: r.reportedById,
       reportedByName: r.reportedBy.fullName,
@@ -140,8 +140,8 @@ export class MaintenanceService {
       vendorBillId: r.vendorBillId,
       vendorBillNo: r.vendorBill?.billNo ?? null,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -370,15 +370,15 @@ export class MaintenanceService {
       openJobs,
       openBreakdowns,
       closedThisMonth: closedDtos.length,
-      downtimeHoursThisMonth: dec(closedDtos.reduce((s, j) => s.plus(j.downtimeHours ?? 0), ZERO))!,
-      costThisMonth: money(closedDtos.reduce((s, j) => s.plus(j.totalCost), ZERO))!,
+      downtimeHoursThisMonth: dec(closedDtos.reduce((s, j) => s.plus(j.downtimeHours ?? 0), ZERO)),
+      costThisMonth: money(closedDtos.reduce((s, j) => s.plus(j.totalCost), ZERO)),
     };
   }
 
   /* ---------- documents ---------- */
 
   private docDto(r: DocRow, today = todayIn()): EquipmentDocumentDto {
-    const validTo = dateOnly(r.validTo)!;
+    const validTo = dateOnly(r.validTo);
     const e = expiryState(validTo, today)!;
     return {
       id: r.id,
@@ -394,7 +394,7 @@ export class MaintenanceService {
       state: e.state,
       daysLeft: e.daysLeft,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
