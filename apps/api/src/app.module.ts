@@ -46,6 +46,7 @@ import { AttendanceCheckModule } from './attendance-check/attendance-check.modul
 import { SafetyModule } from './safety/safety.module';
 import { PpeModule } from './ppe/ppe.module';
 import { RfisModule } from './rfis/rfis.module';
+import { ConsultantChecksModule } from './consultant-checks/consultant-checks.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
 import { MastersModule } from './masters/masters.module';
@@ -188,6 +189,7 @@ import { VitalsController } from './vitals.controller';
     SafetyModule,
     PpeModule,
     RfisModule,
+    ConsultantChecksModule,
     MaintenanceModule,
     UnitsModule,
     MastersModule,

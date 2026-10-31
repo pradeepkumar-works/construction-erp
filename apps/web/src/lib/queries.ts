@@ -418,7 +418,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -2065,6 +2065,90 @@ export function useAnswerRfiAsClient() {
   return useMutation({
     mutationFn: async ({ id, answer }: { id: string; answer: string }) => (await api.post<PortalRfiDto>(`/portal/rfis/${id}/answer`, { answer })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+/* ---------- consultant checks (item 172) ---------- */
+
+export const usePortalMeasurements = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'measurements', projectId], queryFn: async () => (await api.get<PortalMeasurementsDto>(`/portal/projects/${projectId}/measurements`)).data, enabled: !!projectId });
+
+export function useCheckMeasurement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; checkedQty: string; checkedOn?: string; note?: string | null }) => (await api.post<PortalMeasurementDto>(`/portal/measurements/${id}/check`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export const usePortalBillChecks = (billId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'bill-checks', billId], queryFn: async () => (await api.get<BillMeasureChecksDto>(`/portal/bills/${billId}/checks`)).data, enabled: !!billId });
+
+export function useSignHidden() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; qty?: string | null; note?: string | null }) => (await api.post<PortalInspectionDto>(`/portal/inspections/${id}/hidden-sign`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export function useCountersignHidden() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: string; note: string | null }) => (await api.post<PortalInspectionDto>(`/portal/inspections/${id}/hidden-countersign`, { note })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export const usePortalSiteOrders = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'site-orders', projectId], queryFn: async () => (await api.get<SiteOrderDto[]>(`/portal/projects/${projectId}/site-orders`)).data, enabled: !!projectId });
+
+export function useWriteSiteOrder(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { date?: string; instruction: string; location?: string | null; complyBy?: string | null }) => (await api.post<SiteOrderDto>(`/portal/projects/${projectId}/site-orders`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export function useDecideSiteOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, accept, note }: { id: string; accept: boolean; note: string | null }) =>
+      (await api.post<SiteOrderDto>(`/portal/site-orders/${id}/${accept ? 'close' : 'reopen'}`, { note })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export const useSiteOrders = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['site-orders', projectId], queryFn: async () => (await api.get<SiteOrderDto[]>('/site-orders', { params: { projectId } })).data, enabled: !!projectId });
+
+export function useRecordSiteOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { projectId: string; date?: string; instruction: string; location?: string | null; complyBy?: string | null; issuedByName: string; issuedByLevel?: CheckLevel | null }) =>
+      (await api.post<SiteOrderDto>('/site-orders', body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site-orders'] }),
+  });
+}
+
+export function useSiteOrderAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, action, text }: { id: string; action: 'reply' | 'close' | 'delete'; text?: string | null }) =>
+      action === 'delete' ? (await api.delete(`/site-orders/${id}`)).data : (await api.post<SiteOrderDto>(`/site-orders/${id}/${action}`, action === 'reply' ? { reply: text } : { note: text ?? null })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site-orders'] }),
+  });
+}
+
+export const useMeasurementChecks = (sheetId: string | undefined) =>
+  useQuery({ queryKey: ['measurement-checks', sheetId], queryFn: async () => (await api.get<MeasurementCheckDto[]>(`/measurements/${sheetId}/checks`)).data, enabled: !!sheetId });
+
+export function useSetMemberLevel(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, checkLevel }: { userId: string; checkLevel: CheckLevel | null }) => (await api.patch(`/projects/${projectId}/members/${userId}`, { checkLevel })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectId] }),
   });
 }
 

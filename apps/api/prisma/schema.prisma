@@ -944,6 +944,8 @@ model Organization {
   biometricCommands    BiometricCommand[]
   contractObligations  ContractObligation[]
   officialReportIssues OfficialReportIssue[]
+  measurementChecks    MeasurementCheck[]
+  siteOrders           SiteOrder[]
   integrations         IntegrationConnection[]
   connectorAgents      ConnectorAgent[]
   integrationEvents    IntegrationEvent[]
@@ -1140,190 +1142,197 @@ model User {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  savedViews            SavedView[]
-  navPins               NavPin[]
-  navVisits             NavVisit[]
-  accessRequests        AccessRequest[]            @relation("AccessRequester")
-  accessDecisions       AccessRequest[]            @relation("AccessDecider")
-  aiThreads             AiThread[]
-  billChecksAccepted    BillCheckAcceptance[]      @relation("BillCheckAcceptedBy")
-  warningsDismissed     WarningDismissal[]         @relation("WarningDismissedBy")
-  warningOutcomes       WarningOutcomeLog[]        @relation("WarningOutcomeBy")
-  warningResumes        WarningKindResume[]        @relation("WarningResumedBy")
-  warningAlerts         WarningAlert[]             @relation("WarningAlertTo")
-  aiBriefs              AiBrief[]
-  aiDocumentReads       AiDocumentRead[]
-  memberships           ProjectMember[]
-  managedProjects       Project[]                  @relation("ProjectManager")
-  baselinedProjects     Project[]                  @relation("ProjectBaselineBy")
-  projectTypesUpdated   ProjectTypeConfig[]        @relation("ProjectTypeUpdatedBy")
-  dprFormsCreated       DprFormConfig[]            @relation("DprFormCreatedBy")
-  componentKindsUpdated ComponentKind[]            @relation("ComponentKindUpdatedBy")
-  responsibleFor        Activity[]                 @relation("ActivityResponsible")
-  submittedProgress     ProgressEntry[]            @relation("ProgressSubmitter")
-  reviewedProgress      ProgressEntry[]            @relation("ProgressReviewer")
-  submittedReports      DailyReport[]              @relation("DprSubmitter")
-  reviewedReports       DailyReport[]              @relation("DprReviewer")
-  submittedRequests     MaterialRequest[]          @relation("MrSubmitter")
-  reviewedRequests      MaterialRequest[]          @relation("MrReviewer")
-  finalisedRequests     MaterialRequest[]          @relation("MrFinaliser")
-  uploadedAttachments   Attachment[]
-  auditLogs             AuditLog[]
-  notifications         Notification[]
-  pushTokens            PushToken[]
-  outboundMessages      OutboundMessage[]
-  inboundMessages       InboundMessage[]           @relation("InboundMessageFrom")
-  passwordTokens        PasswordToken[]
-  recordedAttendance    AttendanceSheet[]          @relation("AttendanceRecorder")
-  updatedAttendance     AttendanceSheet[]          @relation("AttendanceUpdater")
-  stockEntries          StockEntry[]
-  grnsChecked           StockEntry[]               @relation("GrnQcBy")
-  stockMinLevels        StockMinLevel[]
-  materialNorms         MaterialNorm[]
-  activityNorms         ActivityMaterialNorm[]
-  boqResources          BoqResource[]
-  excessRecoveries      ExcessMaterialRecovery[]
-  equipmentParts        EquipmentPart[]
-  approvalSteps         ApprovalStep[]             @relation("ApprovalStepActor")
-  enquiries             Enquiry[]                  @relation("EnquiryCreator")
-  submittedMachinery    MachineryLog[]             @relation("MachinerySubmitter")
-  reviewedMachinery     MachineryLog[]             @relation("MachineryReviewer")
-  submittedExpenses     Expense[]                  @relation("ExpenseSubmitter")
-  reviewedExpenses      Expense[]                  @relation("ExpenseReviewer")
-  submittedMeasures     MeasurementSheet[]         @relation("MeasurementSubmitter")
-  reviewedMeasures      MeasurementSheet[]         @relation("MeasurementReviewer")
-  submittedBills        RaBill[]                   @relation("BillSubmitter")
-  reviewedBills         RaBill[]                   @relation("BillReviewer")
-  receiptsRecorded      Receipt[]                  @relation("ReceiptCreator")
-  tallyExports          TallyExport[]
-  vendorPaymentsMade    VendorPayment[]            @relation("VendorPaymentCreator")
-  submittedPayRequests  PaymentRequest[]           @relation("PayRequestSubmitter")
-  reviewedPayRequests   PaymentRequest[]           @relation("PayRequestReviewer")
-  submittedChoices      SupplierChoice[]           @relation("SupplierChoiceSubmitter")
-  reviewedChoices       SupplierChoice[]           @relation("SupplierChoiceReviewer")
-  quotationsEntered     Quotation[]                @relation("QuotationCreator")
-  submittedPos          PurchaseOrder[]            @relation("PoSubmitter")
-  reviewedPos           PurchaseOrder[]            @relation("PoReviewer")
-  submittedVendorBills  VendorBill[]               @relation("VendorBillSubmitter")
-  createdDebitNotes     DebitNote[]                @relation("DebitNoteCreator")
-  cancelledDebitNotes   DebitNote[]                @relation("DebitNoteCanceller")
-  reviewedVendorBills   VendorBill[]               @relation("VendorBillReviewer")
-  submittedWorkOrders   WorkOrder[]                @relation("WorkOrderSubmitter")
-  reviewedWorkOrders    WorkOrder[]                @relation("WorkOrderReviewer")
-  submittedSubBills     SubcontractBill[]          @relation("SubBillSubmitter")
-  reviewedSubBills      SubcontractBill[]          @relation("SubBillReviewer")
-  requestedInspections  Inspection[]               @relation("InspectionRequester")
-  inspectionsDone       Inspection[]               @relation("InspectionInspector")
-  inspectionsWitnessed  Inspection[]               @relation("InspectionWitness")
-  qualityTests          QualityTest[]              @relation("TestCreator")
-  pours                 Pour[]                     @relation("PourCreator")
-  qaCalibrations        QaCalibration[]            @relation("CalibrationBy")
-  qaAudits              QaAudit[]                  @relation("QaAuditBy")
-  drawingNeeds          DrawingNeed[]              @relation("DrawingNeedBy")
-  designSubmissions     DesignSubmission[]         @relation("DesignSubmissionBy")
-  designRounds          DesignSubmissionRound[]    @relation("DesignRoundBy")
-  copiesIssued          ControlledCopy[]           @relation("ControlledCopyIssuer")
-  copiesTakenBack       ControlledCopy[]           @relation("ControlledCopyDisposer")
-  designReplies         DesignComment[]            @relation("DesignCommentReplier")
-  ncrsRaised            Ncr[]                      @relation("NcrRaiser")
-  ncrsToAct             Ncr[]                      @relation("NcrActionBy")
-  ncrsClosed            Ncr[]                      @relation("NcrCloser")
-  documentsCreated      Document[]                 @relation("DocumentCreator")
-  revisionsIssued       DocumentRevision[]         @relation("RevisionIssuer")
-  markupsMade           DrawingMarkup[]            @relation("MarkupCreator")
-  markupsResolved       DrawingMarkup[]            @relation("MarkupResolver")
-  transmittalsSent      Transmittal[]              @relation("TransmittalSender")
-  lettersRecorded       Letter[]                   @relation("LetterRecorder")
-  lettersMarkedTo       Letter[]                   @relation("LetterMarkedTo")
-  lettersToSign         Letter[]                   @relation("LetterSignatory")
-  lettersSigned         Letter[]                   @relation("LetterSigner")
-  lettersClosed         Letter[]                   @relation("LetterCloser")
-  letterMarksFrom       LetterMark[]               @relation("LetterMarkFrom")
-  letterMarksTo         LetterMark[]               @relation("LetterMarkTo")
-  variationsCreated     Variation[]                @relation("VariationCreator")
-  budgetsUpdated        ProjectBudget[]            @relation("BudgetUpdater")
-  incidentsReported     SafetyIncident[]           @relation("IncidentReporter")
-  incidentsClosed       SafetyIncident[]           @relation("IncidentCloser")
-  toolboxTalks          ToolboxTalk[]              @relation("ToolboxTalkRecorder")
-  ppeIssued             PpeIssue[]                 @relation("PpeIssuer")
-  rfisRaised            Rfi[]                      @relation("RfiRaiser")
-  rfisAnswered          Rfi[]                      @relation("RfiAnswerer")
-  rfisClosed            Rfi[]                      @relation("RfiCloser")
-  ppeClosed             PpeIssue[]                 @relation("PpeCloser")
-  permitsRequested      WorkPermit[]               @relation("PermitRequester")
-  permitsIssued         WorkPermit[]               @relation("PermitIssuer")
-  permitsClosed         WorkPermit[]               @relation("PermitCloser")
-  maintenanceReported   MaintenanceJob[]           @relation("MaintenanceReporter")
-  maintenanceClosed     MaintenanceJob[]           @relation("MaintenanceCloser")
-  employee              Employee?                  @relation("EmployeeLogin")
-  employeeEvents        EmployeeEvent[]            @relation("EmployeeEventCreator")
-  salaryStructures      SalaryStructure[]          @relation("SalaryStructureCreator")
-  staffLoans            StaffLoan[]                @relation("StaffLoanCreator")
-  payrollPrepared       PayrollRun[]               @relation("PayrollPreparer")
-  payrollApproved       PayrollRun[]               @relation("PayrollApprover")
-  payrollPaid           PayrollRun[]               @relation("PayrollPayer")
-  settlementsPrepared   FinalSettlement[]          @relation("SettlementPreparer")
-  biometricDevices      BiometricDevice[]          @relation("BiometricDeviceCreator")
-  biometricCommands     BiometricCommand[]         @relation("BiometricCommandCreator")
-  contractObligations   ContractObligation[]       @relation("ContractObligationCreator")
-  officialReportIssues  OfficialReportIssue[]      @relation("OfficialReportIssuer")
-  integrationsMade      IntegrationConnection[]    @relation("IntegrationConnectionCreator")
-  weighTicketsMade      WeighTicket[]              @relation("WeighTicketCreator")
-  connectorsMade        ConnectorAgent[]           @relation("ConnectorAgentCreator")
-  vouchersPrepared      BookVoucher[]              @relation("BookVoucherPreparer")
-  vouchersApproved      BookVoucher[]              @relation("BookVoucherApprover")
-  settlementsApproved   FinalSettlement[]          @relation("SettlementApprover")
-  staffMarked           StaffAttendance[]          @relation("StaffAttendanceMarker")
-  overtimeDecided       StaffAttendance[]          @relation("StaffOvertimeDecider")
-  workerDaysMarked      WorkerAttendance[]         @relation("WorkerAttendanceMarker")
-  imprestsHeld          Imprest[]                  @relation("ImprestHolder")
-  imprestsOpened        Imprest[]                  @relation("ImprestOpener")
-  imprestRequests       ImprestEntry[]             @relation("ImprestRequester")
-  imprestDecisions      ImprestEntry[]             @relation("ImprestDecider")
-  complianceDocs        ComplianceDoc[]
-  handoversRecorded     ProjectHandover[]
-  omStaffRecorded       OmStaffMonth[]
-  serviceLevelEntered   ServiceLevelDay[]
-  defectsReported       Defect[]                   @relation("DefectReporter")
-  defectsAssigned       Defect[]                   @relation("DefectAssignee")
-  defectsFixed          Defect[]                   @relation("DefectFixer")
-  defectsClosed         Defect[]                   @relation("DefectCloser")
-  closeoutItemsDone     CloseoutItem[]
-  leaveDecided          LeaveRequest[]             @relation("LeaveDecider")
-  leaveApplied          LeaveRequest[]             @relation("LeaveApplicant")
-  raisedRisks           Risk[]                     @relation("RiskRaiser")
-  ownedRisks            Risk[]                     @relation("RiskOwner")
-  mixDesignsApproved    MixDesign[]                @relation("MixDesignApprover")
-  mixDesignsCreated     MixDesign[]                @relation("MixDesignCreator")
-  rmcOrdersCreated      RmcOrder[]                 @relation("RmcOrderCreator")
-  rmcBatchesCreated     RmcBatch[]                 @relation("RmcBatchCreator")
-  rmcInvoicesCreated    RmcInvoice[]               @relation("RmcInvoiceCreator")
-  rmcReceiptsCreated    RmcReceipt[]               @relation("RmcReceiptCreator")
-  dispatchesCreated     SupplierDispatch[]         @relation("SupplierDispatchCreator")
-  supplierInvoicesSent  SupplierInvoice[]          @relation("SupplierInvoiceSender")
-  supplierInvoicesDone  SupplierInvoice[]          @relation("SupplierInvoiceDecider")
-  supplierChangesAsked  SupplierChangeRequest[]    @relation("SupplierChangeAsker")
-  supplierChangesDone   SupplierChangeRequest[]    @relation("SupplierChangeDecider")
-  equipmentLoans        EquipmentLoan[]            @relation("EquipmentLoanCreator")
-  loanEmisPaid          LoanEmi[]                  @relation("LoanEmiPayer")
-  sorBooksCreated       SorBook[]                  @relation("SorBookCreator")
-  scEnquiriesCreated    SubcontractEnquiry[]       @relation("ScEnquiryCreator")
-  tendersCreated        Tender[]                   @relation("TenderCreator")
-  posAccepted           PurchaseOrder[]            @relation("PoSupplierAccepter")
-  wosAccepted           WorkOrder[]                @relation("WoSupplierAccepter")
-  meetingsCreated       Meeting[]                  @relation("MeetingCreator")
-  meetingsIssued        Meeting[]                  @relation("MeetingIssuer")
-  meetingAttendances    MeetingAttendee[]          @relation("MeetingAttendeeUser")
-  meetingActionsOwned   MeetingAction[]            @relation("MeetingActionOwner")
-  meetingActionsClosed  MeetingAction[]            @relation("MeetingActionCloser")
-  materialApprovalsMade MaterialApproval[]         @relation("MaterialApprovalCreator")
-  materialRevsSent      MaterialApprovalRevision[] @relation("MaterialRevSubmitter")
-  materialRevsRecorded  MaterialApprovalRevision[] @relation("MaterialRevRecorder")
-  commentsWritten       Comment[]                  @relation("CommentAuthor")
-  commentsResolved      Comment[]                  @relation("CommentResolver")
-  approvedMakesAdded    ApprovedMake[]             @relation("ApprovedMakeCreator")
-  drawingScalesSet      DrawingScale[]             @relation("DrawingScaleSetter")
-  drawingTakeoffs       DrawingTakeoff[]           @relation("DrawingTakeoffCreator")
+  savedViews              SavedView[]
+  navPins                 NavPin[]
+  navVisits               NavVisit[]
+  accessRequests          AccessRequest[]            @relation("AccessRequester")
+  accessDecisions         AccessRequest[]            @relation("AccessDecider")
+  aiThreads               AiThread[]
+  billChecksAccepted      BillCheckAcceptance[]      @relation("BillCheckAcceptedBy")
+  warningsDismissed       WarningDismissal[]         @relation("WarningDismissedBy")
+  warningOutcomes         WarningOutcomeLog[]        @relation("WarningOutcomeBy")
+  warningResumes          WarningKindResume[]        @relation("WarningResumedBy")
+  warningAlerts           WarningAlert[]             @relation("WarningAlertTo")
+  aiBriefs                AiBrief[]
+  aiDocumentReads         AiDocumentRead[]
+  memberships             ProjectMember[]
+  managedProjects         Project[]                  @relation("ProjectManager")
+  baselinedProjects       Project[]                  @relation("ProjectBaselineBy")
+  projectTypesUpdated     ProjectTypeConfig[]        @relation("ProjectTypeUpdatedBy")
+  dprFormsCreated         DprFormConfig[]            @relation("DprFormCreatedBy")
+  componentKindsUpdated   ComponentKind[]            @relation("ComponentKindUpdatedBy")
+  responsibleFor          Activity[]                 @relation("ActivityResponsible")
+  submittedProgress       ProgressEntry[]            @relation("ProgressSubmitter")
+  reviewedProgress        ProgressEntry[]            @relation("ProgressReviewer")
+  submittedReports        DailyReport[]              @relation("DprSubmitter")
+  reviewedReports         DailyReport[]              @relation("DprReviewer")
+  submittedRequests       MaterialRequest[]          @relation("MrSubmitter")
+  reviewedRequests        MaterialRequest[]          @relation("MrReviewer")
+  finalisedRequests       MaterialRequest[]          @relation("MrFinaliser")
+  uploadedAttachments     Attachment[]
+  auditLogs               AuditLog[]
+  notifications           Notification[]
+  pushTokens              PushToken[]
+  outboundMessages        OutboundMessage[]
+  inboundMessages         InboundMessage[]           @relation("InboundMessageFrom")
+  passwordTokens          PasswordToken[]
+  recordedAttendance      AttendanceSheet[]          @relation("AttendanceRecorder")
+  updatedAttendance       AttendanceSheet[]          @relation("AttendanceUpdater")
+  stockEntries            StockEntry[]
+  grnsChecked             StockEntry[]               @relation("GrnQcBy")
+  stockMinLevels          StockMinLevel[]
+  materialNorms           MaterialNorm[]
+  activityNorms           ActivityMaterialNorm[]
+  boqResources            BoqResource[]
+  excessRecoveries        ExcessMaterialRecovery[]
+  equipmentParts          EquipmentPart[]
+  approvalSteps           ApprovalStep[]             @relation("ApprovalStepActor")
+  enquiries               Enquiry[]                  @relation("EnquiryCreator")
+  submittedMachinery      MachineryLog[]             @relation("MachinerySubmitter")
+  reviewedMachinery       MachineryLog[]             @relation("MachineryReviewer")
+  submittedExpenses       Expense[]                  @relation("ExpenseSubmitter")
+  reviewedExpenses        Expense[]                  @relation("ExpenseReviewer")
+  submittedMeasures       MeasurementSheet[]         @relation("MeasurementSubmitter")
+  reviewedMeasures        MeasurementSheet[]         @relation("MeasurementReviewer")
+  submittedBills          RaBill[]                   @relation("BillSubmitter")
+  reviewedBills           RaBill[]                   @relation("BillReviewer")
+  receiptsRecorded        Receipt[]                  @relation("ReceiptCreator")
+  tallyExports            TallyExport[]
+  vendorPaymentsMade      VendorPayment[]            @relation("VendorPaymentCreator")
+  submittedPayRequests    PaymentRequest[]           @relation("PayRequestSubmitter")
+  reviewedPayRequests     PaymentRequest[]           @relation("PayRequestReviewer")
+  submittedChoices        SupplierChoice[]           @relation("SupplierChoiceSubmitter")
+  reviewedChoices         SupplierChoice[]           @relation("SupplierChoiceReviewer")
+  quotationsEntered       Quotation[]                @relation("QuotationCreator")
+  submittedPos            PurchaseOrder[]            @relation("PoSubmitter")
+  reviewedPos             PurchaseOrder[]            @relation("PoReviewer")
+  submittedVendorBills    VendorBill[]               @relation("VendorBillSubmitter")
+  createdDebitNotes       DebitNote[]                @relation("DebitNoteCreator")
+  cancelledDebitNotes     DebitNote[]                @relation("DebitNoteCanceller")
+  reviewedVendorBills     VendorBill[]               @relation("VendorBillReviewer")
+  submittedWorkOrders     WorkOrder[]                @relation("WorkOrderSubmitter")
+  reviewedWorkOrders      WorkOrder[]                @relation("WorkOrderReviewer")
+  submittedSubBills       SubcontractBill[]          @relation("SubBillSubmitter")
+  reviewedSubBills        SubcontractBill[]          @relation("SubBillReviewer")
+  requestedInspections    Inspection[]               @relation("InspectionRequester")
+  inspectionsDone         Inspection[]               @relation("InspectionInspector")
+  inspectionsWitnessed    Inspection[]               @relation("InspectionWitness")
+  qualityTests            QualityTest[]              @relation("TestCreator")
+  pours                   Pour[]                     @relation("PourCreator")
+  qaCalibrations          QaCalibration[]            @relation("CalibrationBy")
+  qaAudits                QaAudit[]                  @relation("QaAuditBy")
+  drawingNeeds            DrawingNeed[]              @relation("DrawingNeedBy")
+  designSubmissions       DesignSubmission[]         @relation("DesignSubmissionBy")
+  designRounds            DesignSubmissionRound[]    @relation("DesignRoundBy")
+  copiesIssued            ControlledCopy[]           @relation("ControlledCopyIssuer")
+  copiesTakenBack         ControlledCopy[]           @relation("ControlledCopyDisposer")
+  designReplies           DesignComment[]            @relation("DesignCommentReplier")
+  ncrsRaised              Ncr[]                      @relation("NcrRaiser")
+  ncrsToAct               Ncr[]                      @relation("NcrActionBy")
+  ncrsClosed              Ncr[]                      @relation("NcrCloser")
+  documentsCreated        Document[]                 @relation("DocumentCreator")
+  revisionsIssued         DocumentRevision[]         @relation("RevisionIssuer")
+  markupsMade             DrawingMarkup[]            @relation("MarkupCreator")
+  markupsResolved         DrawingMarkup[]            @relation("MarkupResolver")
+  transmittalsSent        Transmittal[]              @relation("TransmittalSender")
+  lettersRecorded         Letter[]                   @relation("LetterRecorder")
+  lettersMarkedTo         Letter[]                   @relation("LetterMarkedTo")
+  lettersToSign           Letter[]                   @relation("LetterSignatory")
+  lettersSigned           Letter[]                   @relation("LetterSigner")
+  lettersClosed           Letter[]                   @relation("LetterCloser")
+  letterMarksFrom         LetterMark[]               @relation("LetterMarkFrom")
+  letterMarksTo           LetterMark[]               @relation("LetterMarkTo")
+  variationsCreated       Variation[]                @relation("VariationCreator")
+  budgetsUpdated          ProjectBudget[]            @relation("BudgetUpdater")
+  incidentsReported       SafetyIncident[]           @relation("IncidentReporter")
+  incidentsClosed         SafetyIncident[]           @relation("IncidentCloser")
+  toolboxTalks            ToolboxTalk[]              @relation("ToolboxTalkRecorder")
+  ppeIssued               PpeIssue[]                 @relation("PpeIssuer")
+  rfisRaised              Rfi[]                      @relation("RfiRaiser")
+  rfisAnswered            Rfi[]                      @relation("RfiAnswerer")
+  rfisClosed              Rfi[]                      @relation("RfiCloser")
+  ppeClosed               PpeIssue[]                 @relation("PpeCloser")
+  permitsRequested        WorkPermit[]               @relation("PermitRequester")
+  permitsIssued           WorkPermit[]               @relation("PermitIssuer")
+  permitsClosed           WorkPermit[]               @relation("PermitCloser")
+  maintenanceReported     MaintenanceJob[]           @relation("MaintenanceReporter")
+  maintenanceClosed       MaintenanceJob[]           @relation("MaintenanceCloser")
+  employee                Employee?                  @relation("EmployeeLogin")
+  employeeEvents          EmployeeEvent[]            @relation("EmployeeEventCreator")
+  salaryStructures        SalaryStructure[]          @relation("SalaryStructureCreator")
+  staffLoans              StaffLoan[]                @relation("StaffLoanCreator")
+  payrollPrepared         PayrollRun[]               @relation("PayrollPreparer")
+  payrollApproved         PayrollRun[]               @relation("PayrollApprover")
+  payrollPaid             PayrollRun[]               @relation("PayrollPayer")
+  settlementsPrepared     FinalSettlement[]          @relation("SettlementPreparer")
+  biometricDevices        BiometricDevice[]          @relation("BiometricDeviceCreator")
+  biometricCommands       BiometricCommand[]         @relation("BiometricCommandCreator")
+  contractObligations     ContractObligation[]       @relation("ContractObligationCreator")
+  officialReportIssues    OfficialReportIssue[]      @relation("OfficialReportIssuer")
+  integrationsMade        IntegrationConnection[]    @relation("IntegrationConnectionCreator")
+  weighTicketsMade        WeighTicket[]              @relation("WeighTicketCreator")
+  connectorsMade          ConnectorAgent[]           @relation("ConnectorAgentCreator")
+  vouchersPrepared        BookVoucher[]              @relation("BookVoucherPreparer")
+  vouchersApproved        BookVoucher[]              @relation("BookVoucherApprover")
+  settlementsApproved     FinalSettlement[]          @relation("SettlementApprover")
+  staffMarked             StaffAttendance[]          @relation("StaffAttendanceMarker")
+  overtimeDecided         StaffAttendance[]          @relation("StaffOvertimeDecider")
+  workerDaysMarked        WorkerAttendance[]         @relation("WorkerAttendanceMarker")
+  imprestsHeld            Imprest[]                  @relation("ImprestHolder")
+  imprestsOpened          Imprest[]                  @relation("ImprestOpener")
+  imprestRequests         ImprestEntry[]             @relation("ImprestRequester")
+  imprestDecisions        ImprestEntry[]             @relation("ImprestDecider")
+  complianceDocs          ComplianceDoc[]
+  handoversRecorded       ProjectHandover[]
+  omStaffRecorded         OmStaffMonth[]
+  serviceLevelEntered     ServiceLevelDay[]
+  defectsReported         Defect[]                   @relation("DefectReporter")
+  defectsAssigned         Defect[]                   @relation("DefectAssignee")
+  defectsFixed            Defect[]                   @relation("DefectFixer")
+  defectsClosed           Defect[]                   @relation("DefectCloser")
+  closeoutItemsDone       CloseoutItem[]
+  leaveDecided            LeaveRequest[]             @relation("LeaveDecider")
+  leaveApplied            LeaveRequest[]             @relation("LeaveApplicant")
+  raisedRisks             Risk[]                     @relation("RiskRaiser")
+  ownedRisks              Risk[]                     @relation("RiskOwner")
+  mixDesignsApproved      MixDesign[]                @relation("MixDesignApprover")
+  mixDesignsCreated       MixDesign[]                @relation("MixDesignCreator")
+  rmcOrdersCreated        RmcOrder[]                 @relation("RmcOrderCreator")
+  rmcBatchesCreated       RmcBatch[]                 @relation("RmcBatchCreator")
+  rmcInvoicesCreated      RmcInvoice[]               @relation("RmcInvoiceCreator")
+  rmcReceiptsCreated      RmcReceipt[]               @relation("RmcReceiptCreator")
+  dispatchesCreated       SupplierDispatch[]         @relation("SupplierDispatchCreator")
+  supplierInvoicesSent    SupplierInvoice[]          @relation("SupplierInvoiceSender")
+  supplierInvoicesDone    SupplierInvoice[]          @relation("SupplierInvoiceDecider")
+  supplierChangesAsked    SupplierChangeRequest[]    @relation("SupplierChangeAsker")
+  supplierChangesDone     SupplierChangeRequest[]    @relation("SupplierChangeDecider")
+  equipmentLoans          EquipmentLoan[]            @relation("EquipmentLoanCreator")
+  loanEmisPaid            LoanEmi[]                  @relation("LoanEmiPayer")
+  sorBooksCreated         SorBook[]                  @relation("SorBookCreator")
+  scEnquiriesCreated      SubcontractEnquiry[]       @relation("ScEnquiryCreator")
+  tendersCreated          Tender[]                   @relation("TenderCreator")
+  posAccepted             PurchaseOrder[]            @relation("PoSupplierAccepter")
+  wosAccepted             WorkOrder[]                @relation("WoSupplierAccepter")
+  meetingsCreated         Meeting[]                  @relation("MeetingCreator")
+  meetingsIssued          Meeting[]                  @relation("MeetingIssuer")
+  meetingAttendances      MeetingAttendee[]          @relation("MeetingAttendeeUser")
+  meetingActionsOwned     MeetingAction[]            @relation("MeetingActionOwner")
+  meetingActionsClosed    MeetingAction[]            @relation("MeetingActionCloser")
+  materialApprovalsMade   MaterialApproval[]         @relation("MaterialApprovalCreator")
+  materialRevsSent        MaterialApprovalRevision[] @relation("MaterialRevSubmitter")
+  materialRevsRecorded    MaterialApprovalRevision[] @relation("MaterialRevRecorder")
+  commentsWritten         Comment[]                  @relation("CommentAuthor")
+  commentsResolved        Comment[]                  @relation("CommentResolver")
+  approvedMakesAdded      ApprovedMake[]             @relation("ApprovedMakeCreator")
+  drawingScalesSet        DrawingScale[]             @relation("DrawingScaleSetter")
+  drawingTakeoffs         DrawingTakeoff[]           @relation("DrawingTakeoffCreator")
+  measurementChecks       MeasurementCheck[]         @relation("MeasurementChecker")
+  hiddenWorkSigned        Inspection[]               @relation("InspectionHiddenSigner")
+  hiddenWorkCountersigned Inspection[]               @relation("InspectionHiddenCountersigner")
+  siteOrdersIssued        SiteOrder[]                @relation("SiteOrderIssuer")
+  siteOrdersRecorded      SiteOrder[]                @relation("SiteOrderRecorder")
+  siteOrdersReplied       SiteOrder[]                @relation("SiteOrderReplier")
+  siteOrdersClosed        SiteOrder[]                @relation("SiteOrderCloser")
 
   @@unique([organizationId, email])
   @@index([loginId])
@@ -1559,6 +1568,8 @@ model Project {
   approvedMakes       ApprovedMake[]
   drawingTakeoffs     DrawingTakeoff[]
   contractObligations ContractObligation[]
+  measurementChecks   MeasurementCheck[]
+  siteOrders          SiteOrder[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -2224,12 +2235,14 @@ model SubcontractBillMaterial {
 }
 
 model ProjectMember {
-  id        String   @id @default(uuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id         String      @id @default(uuid())
+  projectId  String
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// A client guest's level on this project (item 172): the share of measurements they check before certifying a bill
+  checkLevel CheckLevel?
+  createdAt  DateTime    @default(now())
 
   @@unique([projectId, userId])
   @@index([userId])
@@ -2354,6 +2367,8 @@ model Activity {
   checklistTemplate   ChecklistTemplate? @relation(fields: [checklistTemplateId], references: [id], onDelete: SetNull)
   /// Hold point: progress is approved only after a passed inspection (at the same location, when the entry gives one)
   holdPoint           Boolean            @default(false)
+  /// Hidden work (item 172): covered once done, so progress waits for its inspection signed off before cover-up and countersigned
+  hiddenWork          Boolean            @default(false)
   /// The stage of pipe work this activity of a pipe zone or main stands for (item 126); its lines name a segment (a node for VALVES)
   pipeStage           PipeStage?
   sortOrder           Int                @default(0)
@@ -3583,6 +3598,7 @@ model MeasurementSheet {
   lines           MeasurementLine[]
   attachments     Attachment[]
   drawingTakeoffs DrawingTakeoff[]
+  checks          MeasurementCheck[]
 
   @@unique([organizationId, mbNo])
   @@index([projectId, status])
@@ -4702,38 +4718,51 @@ model ChecklistTemplate {
 /// Inspection request from site for an activity at a location, passed or failed by QA/QC against a checklist.
 /// A submission: SUBMITTED = requested, APPROVED = passed, REJECTED = failed, CHANGES_REQUESTED = re-inspect after rectification.
 model Inspection {
-  id             String           @id @default(uuid())
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  projectId      String
-  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  activityId     String
-  activity       Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  id                      String           @id @default(uuid())
+  organizationId          String
+  organization            Organization     @relation(fields: [organizationId], references: [id])
+  projectId               String
+  project                 Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activityId              String
+  activity                Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
   /// INS-2026-0001
-  inspectionNo   String
+  inspectionNo            String
   /// The date the work is ready for inspection
-  date           DateTime         @db.Date
-  location       String
-  remarks        String?
+  date                    DateTime         @db.Date
+  location                String
+  remarks                 String?
   /// Name of the checklist the points were copied from
-  checklistName  String?
+  checklistName           String?
   /// [{ item, result: PASS | FAIL | NA | null, remark }], copied from the template when requested and filled in by the inspector
-  checklist      Json             @default("[]")
-  status         SubmissionStatus @default(DRAFT)
-  submittedById  String
-  submittedBy    User             @relation("InspectionRequester", fields: [submittedById], references: [id])
-  submittedAt    DateTime?
-  reviewedById   String?
-  reviewedBy     User?            @relation("InspectionInspector", fields: [reviewedById], references: [id])
-  reviewedAt     DateTime?
-  reviewNote     String?
+  checklist               Json             @default("[]")
+  status                  SubmissionStatus @default(DRAFT)
+  submittedById           String
+  submittedBy             User             @relation("InspectionRequester", fields: [submittedById], references: [id])
+  submittedAt             DateTime?
+  reviewedById            String?
+  reviewedBy              User?            @relation("InspectionInspector", fields: [reviewedById], references: [id])
+  reviewedAt              DateTime?
+  reviewNote              String?
   /// The client's engineer or consultant who attended the inspection (client portal), with their remarks
-  witnessedById  String?
-  witnessedBy    User?            @relation("InspectionWitness", fields: [witnessedById], references: [id])
-  witnessedAt    DateTime?
-  witnessNote    String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  witnessedById           String?
+  witnessedBy             User?            @relation("InspectionWitness", fields: [witnessedById], references: [id])
+  witnessedAt             DateTime?
+  witnessNote             String?
+  /// Hidden work (item 172): measured and signed off before it is covered, by a client guest at their level
+  hiddenSignedById        String?
+  hiddenSignedBy          User?            @relation("InspectionHiddenSigner", fields: [hiddenSignedById], references: [id], onDelete: SetNull)
+  hiddenSignedLevel       CheckLevel?
+  hiddenSignedAt          DateTime?
+  /// The quantity measured before cover-up, in the activity's unit
+  hiddenQty               Decimal?         @db.Decimal(18, 3)
+  hiddenNote              String?
+  /// The countersign: the client's engineer or a consultant above whoever signed
+  hiddenCountersignedById String?
+  hiddenCountersignedBy   User?            @relation("InspectionHiddenCountersigner", fields: [hiddenCountersignedById], references: [id], onDelete: SetNull)
+  hiddenCountersignedAt   DateTime?
+  hiddenCountersignNote   String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
 
   attachments Attachment[]
   ncrs        Ncr[]
@@ -5871,6 +5900,21 @@ enum RfiStatus {
   ANSWERED
   CLOSED
   WITHDRAWN
+}
+
+/// A consultant engineer's level on a project (item 172), lowest first
+enum CheckLevel {
+  ASSISTANT_ENGINEER
+  RESIDENT_ENGINEER
+  DEPUTY_TEAM_LEADER
+  TEAM_LEADER
+}
+
+/// A site order book entry (item 172)
+enum SiteOrderStatus {
+  OPEN
+  REPLIED
+  CLOSED
 }
 
 enum RfiPriority {
@@ -9234,4 +9278,69 @@ model OfficialReportIssue {
 
   @@unique([projectId, kind, periodFrom, revision])
   @@index([organizationId, projectId, kind])
+}
+
+// ---------- Consultant checks (item 172) ----------
+
+/// A consultant's or client engineer's check of a measurement sheet: their own quantity against the recorded one, at their level.
+model MeasurementCheck {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sheetId        String
+  sheet          MeasurementSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  checkedById    String
+  checkedBy      User             @relation("MeasurementChecker", fields: [checkedById], references: [id])
+  /// Their level on the project when they checked
+  level          CheckLevel
+  checkedOn      DateTime         @db.Date
+  /// The sheet's total when checked, and the checker's own figure, in the BOQ item's unit
+  recordedQty    Decimal          @db.Decimal(18, 3)
+  checkedQty     Decimal          @db.Decimal(18, 3)
+  note           String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([sheetId, checkedById])
+  @@index([projectId, level])
+}
+
+/// The site order book: the engineer's written instruction, the site's compliance reply, and the engineer accepting it.
+model SiteOrder {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Its number in the project's book, from 1
+  orderNo        Int
+  date           DateTime        @db.Date
+  /// The portal user who wrote it; null when staff recorded it from the paper book
+  issuedById     String?
+  issuedBy       User?           @relation("SiteOrderIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  /// Who wrote it, as signed in the book
+  issuedByName   String
+  issuedByLevel  CheckLevel?
+  location       String?
+  instruction    String
+  complyBy       DateTime?       @db.Date
+  status         SiteOrderStatus @default(OPEN)
+  reply          String?
+  repliedById    String?
+  repliedBy      User?           @relation("SiteOrderReplier", fields: [repliedById], references: [id], onDelete: SetNull)
+  repliedOn      DateTime?       @db.Date
+  closedById     String?
+  closedBy       User?           @relation("SiteOrderCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  closedOn       DateTime?       @db.Date
+  closeNote      String?
+  /// Staff who copied it in from the paper book
+  recordedById   String?
+  recordedBy     User?           @relation("SiteOrderRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([projectId, orderNo])
+  @@index([organizationId, status])
 }

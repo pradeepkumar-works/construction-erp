@@ -368,6 +368,12 @@ and the pre-delivery checklist.
   `group-rules.ts`; keep `src/scripts/group-companies-test.ts` passing. A new company kind is a `CompanyKind` (schema +
   shared + label + Hindi) and its `COMPANY_KIND_INFO`. Reading across companies is `withoutTenant(async () => await …)`:
   a Prisma query returned unawaited from the callback runs later under the request's company, where RLS hides the rest.
+- Consultant checks (item 172, ARCHITECTURE "Consultant checks"): a client guest's level is only `ProjectMember.checkLevel`
+  read by `checkLevelOf`; check coverage is only `checkCoverage` / `sheetsToReach`, a certificate is held only by
+  `certifyCheckProblem` (through `ConsultantChecksService.assertMayCertify` in `certifyAsClient`), hidden work moves only
+  through `InspectionsService.signHidden` / `countersignHidden` (`hiddenSignProblem`, `countersignProblem`) and holds progress
+  only by `hiddenWorkCleared`, and a site order moves only through `SiteOrdersService` (`siteOrderState`,
+  `@erp/shared/consultant-checks.ts`). Keep `src/scripts/consultant-checks-test.ts` passing.
 - Official progress reports (item 174, `apps/api/src/official-reports`, ARCHITECTURE "Official progress reports"): the daily,
   weekly and monthly reports for the client are one `OfficialReportDto` from `OfficialReportsService.build`, drawn by the
   page, Print, PDF, Word and Excel in `components/reports/official/` (never a second set of figures); periods, numbers

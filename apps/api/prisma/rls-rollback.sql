@@ -665,5 +665,11 @@ DROP POLICY IF EXISTS tenant_isolation ON "ContractObligation";
 ALTER TABLE "OfficialReportIssue" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "OfficialReportIssue" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "OfficialReportIssue";
+ALTER TABLE "MeasurementCheck" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "MeasurementCheck" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "MeasurementCheck";
+ALTER TABLE "SiteOrder" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SiteOrder" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SiteOrder";
 
 DROP FUNCTION IF EXISTS app_current_org();

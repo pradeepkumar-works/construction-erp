@@ -4,8 +4,8 @@ import React from 'react';
 import { Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { MeasurementSheetDto } from '@erp/shared';
-import { sectorLocation } from '@erp/shared';
-import { useMeasurement } from '@/lib/queries';
+import { CHECK_LEVEL_LABELS, CHECK_OUTCOME_LABELS, sectorLocation } from '@erp/shared';
+import { useMeasurement, useMeasurementChecks } from '@/lib/queries';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -28,6 +28,7 @@ interface RecordProps {
 /** A measurement book sheet, in a drawer from a list or as its own page at `/measurements/<id>`. */
 export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { data, isLoading, error, refetch } = useMeasurement(id ?? undefined);
+  const checks = useMeasurementChecks(data?.status === 'APPROVED' ? data.id : undefined);
   return (
     <RecordFrame
       mode={mode}
@@ -89,6 +90,39 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
               ),
             },
             ...(data.remarks ? [{ key: 'remarks', title: 'Remarks', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</div> }] : []),
+            // The client's and consultant's checks of the sheet from their portal (item 172).
+            ...(checks.data?.length
+              ? [
+                  {
+                    key: 'checks',
+                    title: "Client's checks",
+                    count: checks.data.length,
+                    children: (
+                      <Table
+                        rowKey="id"
+                        size="small"
+                        pagination={false}
+                        dataSource={checks.data}
+                        columns={[
+                          { title: 'By', key: 'by', render: (_, c) => `${c.checkedByName}, ${CHECK_LEVEL_LABELS[c.level].toLowerCase()}` },
+                          { title: 'On', dataIndex: 'checkedOn', width: 110, render: (v: string) => formatDate(v) },
+                          { title: 'Found', dataIndex: 'checkedQty', align: 'right', width: 110, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
+                          {
+                            title: 'Result',
+                            key: 'outcome',
+                            render: (_, c) => (
+                              <span>
+                                <AppTag tone={c.outcome === 'AGREED' ? 'success' : c.outcome === 'LESS' ? 'danger' : 'pending'}>{CHECK_OUTCOME_LABELS[c.outcome]}</AppTag>
+                                {c.note ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.note}</div> : null}
+                              </span>
+                            ),
+                          },
+                        ]}
+                      />
+                    ),
+                  },
+                ]
+              : []),
             {
               key: 'photos',
               title: 'Photos and sketches',
