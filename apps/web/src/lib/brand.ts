@@ -61,11 +61,11 @@ export const BRAND = {
     accentSoft: '#EEF4FD',
     /** A chosen table row or option: a step deeper than `accentSoft`, so it still shows under the pointer's hover. */
     accentChosen: '#E2ECFB',
-    /** Series colours in charts, beside the primary blue (cost heads: expenses, machinery, labour, subcontract). */
-    chartViolet: '#7C3AED',
-    chartAmber: '#D97706',
-    chartTeal: '#0F766E',
-    chartPink: '#BE185D',
+    /** Cost heads in every chart and bar: material in the primary blue, two hues, then two slates that read on white and on night. */
+    costSubcontract: '#0F766E',
+    costLabour: '#D97706',
+    costMachinery: '#64748B',
+    costExpenses: '#94A3B8',
     /** The management trend's billed, received and cost lines, on white and on the night surface (checked for colour-blind
      *  separation with the dataviz palette check). */
     trendBilled: '#1E63D6',
