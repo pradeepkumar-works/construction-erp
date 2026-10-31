@@ -15,6 +15,7 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useProjectScope } from '@/lib/project-scope';
 import { ExportButton } from '@/components/common/ExportButton';
+import { unitLabel } from '@erp/shared';
 
 const MARK: Record<StaffAttendanceStatus, { text: string; color: string }> = {
   PRESENT: { text: 'P', color: themeColor('colorSuccessText') },
@@ -90,13 +91,13 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       </div>
     ) },
     { title: 'Man-days', dataIndex: 'manDays', width: 100, align: 'right' },
-    { title: 'Approved progress', dataIndex: 'quantity', width: 160, align: 'right', render: (v, r) => `${formatQty(v)} ${r.unit}` },
+    { title: 'Approved progress', dataIndex: 'quantity', width: 160, align: 'right', render: (v, r) => `${formatQty(v)} ${unitLabel(r.unit)}` },
     {
       title: <Tooltip title="Approved progress over the man-days the roll call put on the activity">Output per man-day</Tooltip>,
       dataIndex: 'outputPerManDay',
       width: 170,
       align: 'right',
-      render: (v, r) => (v === null || Number(r.quantity) === 0 ? <span className="text-muted">no progress approved</span> : `${formatQty(v)} ${r.unit}`),
+      render: (v, r) => (v === null || Number(r.quantity) === 0 ? <span className="text-muted">no progress approved</span> : `${formatQty(v)} ${unitLabel(r.unit)}`),
     },
   ];
 

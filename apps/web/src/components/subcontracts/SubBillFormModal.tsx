@@ -15,6 +15,7 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
+import { unitLabel } from '@erp/shared';
 
 interface FormValues {
   workOrderId: string;
@@ -167,7 +168,7 @@ export function SubBillFormModal({
                 title="BOQ items are billed as measured"
                 description={
                   <span>
-                    {boqLines.map((l) => `${l.itemNo}: ${formatQty(l.measuredQty)} of ${formatQty(l.quantity)} ${l.unit} measured, ${formatQty(billedElsewhere(l))} billed before`).join(' · ')}. Only approved measurements tagged to {wo.woNo} count.
+                    {boqLines.map((l) => `${l.itemNo}: ${formatQty(l.measuredQty)} of ${formatQty(l.quantity)} ${unitLabel(l.unit)} measured, ${formatQty(billedElsewhere(l))} billed before`).join(' · ')}. Only approved measurements tagged to {wo.woNo} count.
                   </span>
                 }
               />

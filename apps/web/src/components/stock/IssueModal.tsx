@@ -7,7 +7,7 @@ import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
-import { MAX_PAGE_SIZE, canViewWorkOrders } from '@erp/shared';
+import { MAX_PAGE_SIZE, canViewWorkOrders, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useStructure, useWorkOrders } from '@/lib/queries';
@@ -160,7 +160,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                           loading={stock.isLoading}
                           options={items.map((i) => ({
                             value: i.itemId,
-                            label: `${i.itemName} (${formatQty(i.balance)} ${i.unit} in stock)`,
+                            label: `${i.itemName} (${formatQty(i.balance)} ${unitLabel(i.unit)} in stock)`,
                             disabled: chosen.has(i.itemId) && i.itemId !== itemId,
                           }))}
                         />
@@ -172,7 +172,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                           { required: true, message: 'Enter the quantity' },
                           {
                             validator: (_, v) =>
-                              !v || !row || Number(v) <= Number(row.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(row.balance)} ${row.unit} in stock`)),
+                              !v || !row || Number(v) <= Number(row.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(row.balance)} ${unitLabel(row.unit)} in stock`)),
                           },
                         ]}
                       >

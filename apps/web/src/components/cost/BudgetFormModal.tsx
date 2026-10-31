@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, InputNumber, Space, Table, Tooltip, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BudgetBoqItemDto, CostHead, ProjectBudgetDto } from '@erp/shared';
-import { COST_HEADS, COST_HEAD_LABELS } from '@erp/shared';
+import { COST_HEADS, COST_HEAD_LABELS, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
@@ -140,7 +140,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
             columns={[
               { title: 'Item', dataIndex: 'itemNo', width: 70, className: 'mono' },
               { title: 'Description', dataIndex: 'description', ellipsis: true },
-              { title: 'Qty', dataIndex: 'qty', width: 120, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },
+              { title: 'Qty', dataIndex: 'qty', width: 120, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${unitLabel(r.unit)}`}</span> },
               { title: 'Rate', dataIndex: 'rate', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
               {
                 title: 'Budget rate',

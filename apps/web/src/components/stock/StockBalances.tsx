@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { EditOutlined, WarningOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockBalanceSortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';
+import { LIST_SORT_FIELDS, canManageStore, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -35,7 +35,7 @@ function MinLevelEditor({ row }: { row: StockBalanceDto }) {
   const save = useMutation({
     mutationFn: async (minQty: string | null) => (await api.put<StockBalanceDto>('/stock/min-levels', { projectId: row.projectId, itemId: row.itemId, minQty })).data,
     onSuccess: (r) => {
-      message.success(r.minQty ? `Minimum for ${r.itemName} set to ${formatQty(r.minQty)} ${r.unit}` : `Minimum for ${r.itemName} removed`);
+      message.success(r.minQty ? `Minimum for ${r.itemName} set to ${formatQty(r.minQty)} ${unitLabel(r.unit)}` : `Minimum for ${r.itemName} removed`);
       qc.invalidateQueries({ queryKey: ['stock'] });
       setOpen(false);
     },
@@ -142,11 +142,11 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
           width: 140,
           ...sort('balance'),
           card: 'amount',
-          cardText: (r) => `${formatQty(r.balance)} ${r.unit}${r.low ? ', below minimum' : ''}`,
+          cardText: (r) => `${formatQty(r.balance)} ${unitLabel(r.unit)}${r.low ? ', below minimum' : ''}`,
           render: (v: string, r) => (
             <Space size={4}>
               {r.low ? (
-                <Tooltip title={`Below the minimum of ${formatQty(r.minQty)} ${r.unit}`}>
+                <Tooltip title={`Below the minimum of ${formatQty(r.minQty)} ${unitLabel(r.unit)}`}>
                   <WarningOutlined style={{ color: themeColor('volcano7') }} />
                 </Tooltip>
               ) : null}

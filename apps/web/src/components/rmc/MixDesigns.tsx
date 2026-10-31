@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
 import { CheckOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import type { MixDesignDto } from '@erp/shared';
-import { canApproveMixDesign, canRunRmcPlant } from '@erp/shared';
+import { canApproveMixDesign, canRunRmcPlant, unitLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useMixDesigns, useRmcAction } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
@@ -61,7 +61,7 @@ export function MixDesigns() {
                 dataSource={d.lines}
                 columns={[
                   { title: 'Material', dataIndex: 'itemName' },
-                  { title: 'Per m³', key: 'q', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.quantity)} ${l.unit}`}</span> },
+                  { title: 'Per m³', key: 'q', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.quantity)} ${unitLabel(l.unit)}`}</span> },
                 ]}
               />
             ),

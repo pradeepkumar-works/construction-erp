@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import type { UseQueryResult } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { PortalBillDto, RaBillItemDto } from '@erp/shared';
-import { isGuest } from '@erp/shared';
+import { isGuest, unitLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCertifyAsClient, usePortalBill } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
@@ -178,7 +178,7 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
           columns={[
             { title: 'Item', dataIndex: 'itemNo', width: 70 },
             { title: 'Description', dataIndex: 'description', ellipsis: true },
-            { title: 'Claimed', key: 'c', align: 'right', width: 130, render: (_, l) => `${formatQty(l.thisQty)} ${l.unit}` },
+            { title: 'Claimed', key: 'c', align: 'right', width: 130, render: (_, l) => `${formatQty(l.thisQty)} ${unitLabel(l.unit)}` },
             {
               title: 'Certified',
               key: 'q',

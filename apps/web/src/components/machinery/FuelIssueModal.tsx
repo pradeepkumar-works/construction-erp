@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Alert, App, Form, Input, Select } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
-import { MAX_PAGE_SIZE, fuelNormText, meterUnit } from '@erp/shared';
+import { MAX_PAGE_SIZE, fuelNormText, meterUnit, unitLabel } from '@erp/shared';
 import { useEquipment, useFuelIssue, useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -96,7 +96,7 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
               placeholder={scope ? 'Fuel in the store' : 'Choose the project first'}
               disabled={!scope}
               loading={fuel.isLoading}
-              options={fuels.map((f) => ({ value: f.itemId, label: `${f.itemName} (${formatQty(f.balance)} ${f.unit} in stock)` }))}
+              options={fuels.map((f) => ({ value: f.itemId, label: `${f.itemName} (${formatQty(f.balance)} ${unitLabel(f.unit)} in stock)` }))}
             />
           </Form.Item>
           <Form.Item
@@ -105,7 +105,7 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
             rules={[
               { required: true, message: 'Enter how much went in' },
               { validator: (_, v) => (!v || Number(v) > 0 ? Promise.resolve() : Promise.reject(new Error('Enter more than zero'))) },
-              { validator: (_, v) => (!v || !stock || Number(v) <= Number(stock.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(stock.balance)} ${stock.unit} in stock`))) },
+              { validator: (_, v) => (!v || !stock || Number(v) <= Number(stock.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(stock.balance)} ${unitLabel(stock.unit)} in stock`))) },
             ]}
           >
             <QuantityInput unit={stock?.unit ?? 'Ltr'} />

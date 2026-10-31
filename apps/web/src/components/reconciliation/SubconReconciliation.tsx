@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined } from '@/components/common/icons';
 import type { ExcessRecoveryDto, ReconciliationStatus, SubconMaterialDto, SubconMaterialLineDto, SubconReconciliationDto } from '@erp/shared';
-import { SUBMISSION_STATUS_LABELS } from '@erp/shared';
+import { SUBMISSION_STATUS_LABELS, unitLabel } from '@erp/shared';
 import { useCancelRecovery, useRecoverExcess, useSubconReconciliation } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
@@ -276,7 +276,7 @@ function RecoverModal({ projectId, target, onClose }: { projectId: string; targe
               label="Quantity"
               rules={[
                 { required: true, message: 'Enter the quantity to recover' },
-                { type: 'number', min: 0.001, max: most, message: `Enter up to ${formatQty(String(most))} ${target.item.unit}` },
+                { type: 'number', min: 0.001, max: most, message: `Enter up to ${formatQty(String(most))} ${unitLabel(target.item.unit)}` },
               ]}
             >
               <QuantityInput unit={target.item.unit} />

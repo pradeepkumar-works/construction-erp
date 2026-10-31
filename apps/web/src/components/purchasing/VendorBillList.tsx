@@ -6,7 +6,7 @@ import { Button, Dropdown, Select, Space, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, PlusOutlined } from '@/components/common/icons';
 import type { VendorBillDto, VendorBillKind, VendorBillSortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, VENDOR_BILL_KINDS, VENDOR_BILL_KIND_LABELS, canRecordVendorBill } from '@erp/shared';
+import { LIST_SORT_FIELDS, MATCH_STATE_LABELS, VENDOR_BILL_KINDS, VENDOR_BILL_KIND_LABELS, canRecordVendorBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useVendorBills, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -143,10 +143,10 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
     sortFields: LIST_SORT_FIELDS.vendorBills,
     fixedProject,
     columns: (sortOrderFor) => vendorBillColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
-    moreViews: [{ key: 'exceptions', label: 'Does not match', filters: { exceptions: '1' } }],
+    moreViews: [{ key: 'exceptions', label: MATCH_STATE_LABELS.DOES_NOT_MATCH, filters: { exceptions: '1' } }],
     chipLabels: {
       vendorId: () => `Vendor: ${vendorName ?? 'one vendor'}`,
-      exceptions: () => 'Does not match',
+      exceptions: () => MATCH_STATE_LABELS.DOES_NOT_MATCH,
       kind: (v) => VENDOR_BILL_KIND_LABELS[v as VendorBillKind] ?? 'One kind',
     },
   });

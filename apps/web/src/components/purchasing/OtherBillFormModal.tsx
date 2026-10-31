@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ExpenseCategory, VendorBillDto, VendorBillKind } from '@erp/shared';
-import { EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, GST_RATES, HIRE_FUEL_BY_LABELS, VENDOR_BILL_KIND_LABELS } from '@erp/shared';
+import { EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, GST_RATES, HIRE_FUEL_BY_LABELS, VENDOR_BILL_KIND_LABELS, unitLabel } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useBillableJobs, useEquipment, useHirePreview, useProjects, useVendorBill } from '@/lib/queries';
@@ -197,7 +197,7 @@ export function OtherBillFormModal({
     const out: string[] = [];
     if (kind === 'HIRE' && p) {
       const unit = RATE_WORD[p.rateUnit];
-      if (toNumber(hireQuantity) > toNumber(p.hireQuantity)) out.push(`${formatQty(hireQuantity)} ${unit}s billed, ${formatQty(p.hireQuantity)} in the approved logs`);
+      if (toNumber(hireQuantity) > toNumber(p.hireQuantity)) out.push(`${formatQty(hireQuantity)} ${unitLabel(unit)}s billed, ${formatQty(p.hireQuantity)} in the approved logs`);
       if (p.rate && toNumber(hireRate) > toNumber(p.rate)) out.push(`Hire rate above the agreed ${formatINR(p.rate, true)} ${EQUIPMENT_RATE_UNIT_LABELS[p.rateUnit]}`);
       if (p.pendingLogs) out.push(`${p.pendingLogs} log${p.pendingLogs === 1 ? ' of the month is' : 's of the month are'} not approved yet and not billed`);
       if (fuelLitres > 0 && !toNumber(fuelRate)) out.push(`${formatQty(fuelLitres)} litres of diesel we issued are not recovered: enter the diesel rate`);
@@ -365,7 +365,7 @@ export function OtherBillFormModal({
                   style={{ marginBottom: 12 }}
                   columns={[
                     { title: 'Line', dataIndex: 'label' },
-                    { title: 'Quantity', key: 'qty', width: 140, align: 'right', render: (_, l) => `${formatQty(l.quantity)} ${l.unit}` },
+                    { title: 'Quantity', key: 'qty', width: 140, align: 'right', render: (_, l) => `${formatQty(l.quantity)} ${unitLabel(l.unit)}` },
                     { title: 'Rate', dataIndex: 'rate', width: 130, align: 'right', render: (v: number) => money(v) },
                     { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: number) => <strong>{money(v)}</strong> },
                   ]}

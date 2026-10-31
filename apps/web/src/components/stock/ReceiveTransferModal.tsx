@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { formatDate, formatQty } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
+import { unitLabel } from '@erp/shared';
 
 /** Receive a transfer at the project it was sent to: the same items and quantities come into stock there. */
 export function ReceiveTransferModal({ open, onClose, transfer }: { open: boolean; onClose: () => void; transfer: StockEntryDto }) {
@@ -41,7 +42,7 @@ export function ReceiveTransferModal({ open, onClose, transfer }: { open: boolea
         style={{ marginBottom: 12 }}
         columns={[
           { title: 'Item', dataIndex: 'itemName' },
-          { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 140, render: (v: string, r) => `${formatQty(String(-Number(v)))} ${r.unit}` },
+          { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 140, render: (v: string, r) => `${formatQty(String(-Number(v)))} ${unitLabel(r.unit)}` },
         ]}
       />
       <Form form={form} layout="vertical">

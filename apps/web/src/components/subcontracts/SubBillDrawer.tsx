@@ -6,7 +6,7 @@ import { Alert, App, Button, Divider, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -112,7 +112,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   showIcon
                   style={{ marginBottom: 12 }}
                   title="Billed beyond the work order"
-                  description={excess.map((l) => `${l.itemNo ?? l.description}: ${formatQty(l.uptoQty)} against ${formatQty(l.woQty)} ${l.unit} ordered`).join(' · ')}
+                  description={excess.map((l) => `${l.itemNo ?? l.description}: ${formatQty(l.uptoQty)} against ${formatQty(l.woQty)} ${unitLabel(l.unit)} ordered`).join(' · ')}
                 />
               )}
             </>

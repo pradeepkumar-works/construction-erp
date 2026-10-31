@@ -8,7 +8,7 @@ import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { EquipmentDto, EquipmentPartDto, EquipmentPartKind } from '@erp/shared';
-import { EQUIPMENT_PART_KINDS, EQUIPMENT_PART_KIND_LABELS } from '@erp/shared';
+import { EQUIPMENT_PART_KINDS, EQUIPMENT_PART_KIND_LABELS, unitLabel } from '@erp/shared';
 import { useEquipmentParts, useSaveEquipmentPart } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
@@ -209,7 +209,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
           <Typography.Paragraph type="secondary" style={small}>
             {machine?.name}. Latest {unit === 'km' ? 'odometer' : 'hour meter'} reading:{' '}
             <span className="mono" translate="no">
-              {data.currentMeter === null ? 'none yet' : `${formatQty(data.currentMeter)} ${unit}`}
+              {data.currentMeter === null ? 'none yet' : `${formatQty(data.currentMeter)} ${unitLabel(unit)}`}
             </span>
             . Life runs from fitting to removal, or to that reading while a part is still on.
           </Typography.Paragraph>

@@ -295,7 +295,7 @@ export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
 /** Common units used in BOQ / activities. Free text is still allowed. */
 export const COMMON_UNITS = ['Cum', 'Sqm', 'Rmt', 'MT', 'Nos', 'Kg', 'Ltr', 'LS', 'Km', '%'];
 /** A unit as people read it: the stored code "Cum" shows as m³. */
-export const unitLabel = (unit: string) => (unit.trim().toLowerCase() === 'cum' ? 'm³' : unit);
+export const unitLabel = (unit: string | null | undefined) => (unit?.trim().toLowerCase() === 'cum' ? 'm³' : (unit ?? ''));
 
 /** Manpower categories used in DPR manpower summary. */
 export const MANPOWER_CATEGORIES = ['Mason', 'Carpenter', 'Bar Bender', 'Helper', 'Operator', 'Driver', 'Electrician', 'Plumber', 'Supervisor', 'Other'];

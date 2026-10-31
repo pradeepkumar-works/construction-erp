@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto, VendorBillKind } from '@erp/shared';
-import { GST_RATES, readNumber, readText } from '@erp/shared';
+import { GST_RATES, readNumber, readText, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { usePurchaseOrder, usePurchaseOrders } from '@/lib/queries';
@@ -134,7 +134,7 @@ export function VendorBillFormModal({
       const v = lines[l.id];
       if (!v || !toNumber(v.quantity)) continue;
       const open = toNumber(l.receivedQty) - billedElsewhere(l);
-      if (toNumber(v.quantity) > open + 1e-9) out.push(`${l.itemName}: ${formatQty(v.quantity)} ${l.unit} billed, ${formatQty(Math.max(0, open))} received and not yet billed`);
+      if (toNumber(v.quantity) > open + 1e-9) out.push(`${l.itemName}: ${formatQty(v.quantity)} ${unitLabel(l.unit)} billed, ${formatQty(Math.max(0, open))} received and not yet billed`);
       if (toNumber(v.rate) > toNumber(l.rate)) out.push(`${l.itemName}: rate above the PO's ${formatINR(l.rate, true)}`);
       if (toNumber(v.gstRate) !== toNumber(l.gstRate)) out.push(`${l.itemName}: GST ${v.gstRate}% where the PO has ${l.gstRate}%`);
     }
@@ -327,7 +327,7 @@ export function VendorBillFormModal({
                     );
                   },
                 },
-                { title: 'Ordered', dataIndex: 'quantity', width: 100, align: 'right', render: (v, l) => `${formatQty(v)} ${l.unit}` },
+                { title: 'Ordered', dataIndex: 'quantity', width: 100, align: 'right', render: (v, l) => `${formatQty(v)} ${unitLabel(l.unit)}` },
                 { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => formatQty(v) },
                 { title: 'Billed before', key: 'billed', width: 100, align: 'right', render: (_, l) => formatQty(billedElsewhere(l)) },
                 {

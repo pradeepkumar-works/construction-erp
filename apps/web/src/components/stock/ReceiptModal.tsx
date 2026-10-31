@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto, WeighTicketDto } from '@erp/shared';
-import { MATERIAL_PRIORITY_LABELS, itemSimilarity, kgToUnit, matchLines, readNumber, readText } from '@erp/shared';
+import { MATERIAL_PRIORITY_LABELS, itemSimilarity, kgToUnit, matchLines, readNumber, readText, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useReceivable, useReceivableOrders } from '@/lib/queries';
@@ -117,7 +117,7 @@ export function ReceiptModal({
         date: dayjs(weighTicket.second?.at ?? weighTicket.first.at),
         remarks: [
           `Weighed on ${weighTicket.ticketNo}: net ${formatQty(weighTicket.netQty ?? weighTicket.netKg)} ${weighTicket.netQty !== null ? weighTicket.unit : 'kg'}${typed ? ' (a weight typed)' : ''}`,
-          s?.short ? `${formatQty(kgToUnit(s.shortKg, weighTicket.unit) ?? s.shortKg)} ${weighTicket.unit} short of the challan's ${formatQty(weighTicket.challanQty)}` : null,
+          s?.short ? `${formatQty(kgToUnit(s.shortKg, weighTicket.unit) ?? s.shortKg)} ${unitLabel(weighTicket.unit)} short of the challan's ${formatQty(weighTicket.challanQty)}` : null,
         ]
           .filter(Boolean)
           .join(', '),
@@ -314,7 +314,7 @@ export function ReceiptModal({
                   );
                 },
               },
-              { title: request.kind === 'PO' ? 'Ordered' : 'Requested', dataIndex: 'due', align: 'right', width: 100, render: (v, l) => `${formatQty(v)} ${l.unit}` },
+              { title: request.kind === 'PO' ? 'Ordered' : 'Requested', dataIndex: 'due', align: 'right', width: 100, render: (v, l) => `${formatQty(v)} ${unitLabel(l.unit)}` },
               { title: 'Received', dataIndex: 'received', align: 'right', width: 100, render: (v) => formatQty(v) },
               {
                 title: 'Receiving now',

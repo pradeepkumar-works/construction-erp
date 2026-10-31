@@ -19,6 +19,7 @@ import {
   type SupplierOrderDto,
   type SupplierProfileDto,
   type SupplierProfileField,
+  unitLabel,
 } from '@erp/shared';
 import { useSupplierAction, useSupplierOrders } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
@@ -221,7 +222,7 @@ export function DispatchForm({ open, orderId, onClose }: { open: boolean; orderI
             scroll={{ x: 560 }}
             columns={[
               { title: 'Item', dataIndex: 'itemName' },
-              { title: 'Ordered', dataIndex: 'quantity', align: 'right', width: 110, render: (v: string, l) => <span translate="no">{`${formatQty(v)} ${l.unit}`}</span> },
+              { title: 'Ordered', dataIndex: 'quantity', align: 'right', width: 110, render: (v: string, l) => <span translate="no">{`${formatQty(v)} ${unitLabel(l.unit)}`}</span> },
               { title: 'Left to send', dataIndex: 'toSend', align: 'right', width: 110, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
               {
                 title: 'Sending now',

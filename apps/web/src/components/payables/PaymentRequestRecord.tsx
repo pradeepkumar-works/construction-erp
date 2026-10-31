@@ -6,7 +6,7 @@ import { Button, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PaymentRequestDto, VendorPaymentDto } from '@erp/shared';
-import { FUND_PURPOSE_LABELS, MSME_CATEGORY_LABELS, PAYMENT_REQUEST_KIND_LABELS, RECEIPT_MODE_LABELS, canEditSubmission, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
+import { FUND_PURPOSE_LABELS, MSME_CATEGORY_LABELS, PAID_STATE_LABELS, PAYMENT_REQUEST_KIND_LABELS, RELEASE_STATE_LABELS, RECEIPT_MODE_LABELS, canEditSubmission, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -57,20 +57,20 @@ export const requestReleases = (r: Pick<PaymentRequestDto, 'kind' | 'imprestId'>
 /** How much of an approved request is paid (or, a fund request into an imprest, released). */
 export function RequestPaidTag({ request }: { request: Pick<PaymentRequestDto, 'status' | 'paidAmount' | 'paidDate' | 'kind' | 'imprestId'> }) {
   if (request.status !== 'APPROVED') return null;
-  const released = requestReleases(request);
+  const words = requestReleases(request) ? RELEASE_STATE_LABELS : PAID_STATE_LABELS;
   if (request.paidDate)
     return (
       <AppTag tone="success" style={{ margin: 0 }}>
-        {released ? 'Released' : 'Paid'}
+        {words.PAID}
       </AppTag>
     );
   if (toNumber(request.paidAmount) > 0)
     return (
       <AppTag tone="pending" style={{ margin: 0 }}>
-        {released ? 'Part released' : 'Part paid'}
+        {words.PART}
       </AppTag>
     );
-  return <AppTag style={{ margin: 0 }}>{released ? 'To release' : 'To pay'}</AppTag>;
+  return <AppTag style={{ margin: 0 }}>{words.UNPAID}</AppTag>;
 }
 
 interface RecordProps {

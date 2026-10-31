@@ -6,7 +6,7 @@ import { Alert, App, Button, Card, Input, Modal, Progress, Skeleton, Space, Tabl
 import { AppTag } from '@/components/common/AppTag';
 import { CustomerServiceOutlined, DeleteOutlined, DownloadOutlined, StopOutlined, UndoOutlined } from '@/components/common/icons';
 import type { CompanyLogEntryDto } from '@erp/shared';
-import { DELETION_GRACE_DAYS, PRODUCT_NAME, SUPPORT_ACCESS_DAYS, canManageCompanyData } from '@erp/shared';
+import { COMPANY_LOG_LABELS, DELETION_GRACE_DAYS, PRODUCT_NAME, SUPPORT_ACCESS_DAYS, canManageCompanyData } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useCancelCompanyDeletion, useCompanyDeletion, useCompanyExportManifest, useCompanyLog, useRequestCompanyDeletion, useSetSupportAccess, useSupportAccess } from '@/lib/queries';
@@ -209,20 +209,6 @@ function SupportAccessCard() {
   );
 }
 
-const LOG_LABELS: Record<string, string> = {
-  EXPORTED: 'Data exported',
-  DELETION_REQUESTED: 'Deletion requested',
-  DELETION_CANCELLED: 'Deletion cancelled',
-  SUPPORT_ACCESS_GRANTED: 'Support allowed',
-  SUPPORT_ACCESS_REVOKED: 'Support withdrawn',
-  SUPPORT_VIEW: 'Support visit',
-  SUSPENDED: 'Suspended',
-  UNSUSPENDED: 'Suspension lifted',
-  SUBSCRIPTION_PAID: 'Subscription paid',
-  TRIAL_CHANGED: 'Trial changed',
-  AI_SETTINGS: 'Ask Nirmaan settings',
-};
-
 function CompanyLogCard() {
   const { data, isLoading, error, refetch } = useCompanyLog();
   return (
@@ -238,7 +224,7 @@ function CompanyLogCard() {
         scroll={{ x: 640 }}
         columns={[
           { title: 'When', dataIndex: 'createdAt', width: 170, render: (v: string) => formatDateTime(v) },
-          { title: 'Action', dataIndex: 'action', width: 160, render: (a: string) => LOG_LABELS[a] ?? 'Other' },
+          { title: 'Action', dataIndex: 'action', width: 160, render: (a: string) => COMPANY_LOG_LABELS[a] ?? 'Other' },
           { title: 'By', dataIndex: 'actorName', width: 180 },
           { title: 'Detail', dataIndex: 'note', render: (v: string | null) => v ?? NO_VALUE },
         ]}

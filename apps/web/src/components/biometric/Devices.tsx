@@ -6,7 +6,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { BiometricDeviceDto, BiometricProtocol } from '@erp/shared';
-import { BIOMETRIC_PROTOCOLS, BIOMETRIC_PROTOCOL_LABELS } from '@erp/shared';
+import { BIOMETRIC_PROTOCOLS, BIOMETRIC_PROTOCOL_LABELS, BIOMETRIC_PROTOCOL_SHORT_LABELS } from '@erp/shared';
 import { API_ORIGIN, API_URL, errorMessage } from '@/lib/api';
 import { useBiometricAction, useBiometricDevices } from '@/lib/queries';
 import { formatDateTime, NO_VALUE } from '@/lib/format';
@@ -150,7 +150,7 @@ export function Devices() {
 
   const columns: TableProps<BiometricDeviceDto>['columns'] = [
     { title: 'Device', key: 'name', width: 220, render: (_, d) => <span>{d.name}{d.model ? <Typography.Text type="secondary">{` · ${d.model}`}</Typography.Text> : null}</span> },
-    { title: 'Sends', dataIndex: 'protocol', width: 120, render: (v: BiometricProtocol) => ({ ADMS: 'ADMS', WEBHOOK: 'Webhook', FILE: 'Files' })[v] },
+    { title: 'Sends', dataIndex: 'protocol', width: 120, render: (v: BiometricProtocol) => BIOMETRIC_PROTOCOL_SHORT_LABELS[v] },
     { title: 'Serial number', dataIndex: 'serialNo', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
     { title: 'Last heard', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null, d) => (d.protocol === 'FILE' ? NO_VALUE : ago(v)) },

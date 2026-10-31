@@ -11,6 +11,7 @@ import { formatDateTime, formatQty, NO_VALUE } from '@/lib/format';
 import { LinkButton } from '@/components/common/LinkButton';
 import { BatchStatusTag, M3 } from './rmcUi';
 import { DeliveryForm } from './BatchForms';
+import { unitLabel } from '@erp/shared';
 
 const variance = (v: number | null) => (v === null ? NO_VALUE : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
 
@@ -106,8 +107,8 @@ export function BatchDrawer({ id, onClose }: { id: string | null; onClose: () =>
             scroll={{ x: 520 }}
             columns={[
               { title: 'Material', dataIndex: 'itemName' },
-              { title: 'Design', key: 'd', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.designQty)} ${l.unit}`}</span> },
-              { title: 'Weighed', key: 'a', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.actualQty)} ${l.unit}`}</span> },
+              { title: 'Design', key: 'd', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.designQty)} ${unitLabel(l.unit)}`}</span> },
+              { title: 'Weighed', key: 'a', align: 'right', render: (_, l) => <span translate="no">{`${formatQty(l.actualQty)} ${unitLabel(l.unit)}`}</span> },
               {
                 title: 'Variance',
                 dataIndex: 'variancePct',

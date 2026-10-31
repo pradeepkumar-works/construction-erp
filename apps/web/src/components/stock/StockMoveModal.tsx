@@ -7,7 +7,7 @@ import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
-import { MAX_PAGE_SIZE } from '@erp/shared';
+import { MAX_PAGE_SIZE, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useStockDestinations } from '@/lib/queries';
@@ -187,7 +187,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                           loading={stock.isLoading}
                           options={items.map((i) => ({
                             value: i.itemId,
-                            label: move === 'site' ? `${i.itemName} (${formatQty(i.issued)} ${i.unit} issued)` : `${i.itemName} (${formatQty(i.balance)} ${i.unit} in stock)`,
+                            label: move === 'site' ? `${i.itemName} (${formatQty(i.issued)} ${unitLabel(i.unit)} issued)` : `${i.itemName} (${formatQty(i.balance)} ${unitLabel(i.unit)} in stock)`,
                             disabled: chosen.has(i.itemId) && i.itemId !== itemId,
                           }))}
                         />
@@ -201,7 +201,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                             validator: (_, v) =>
                               !v || !row || Number(v) <= Number(limitOf(row))
                                 ? Promise.resolve()
-                                : Promise.reject(new Error(move === 'site' ? `Only ${formatQty(row.issued)} ${row.unit} issued` : `Only ${formatQty(row.balance)} ${row.unit} in stock`)),
+                                : Promise.reject(new Error(move === 'site' ? `Only ${formatQty(row.issued)} ${unitLabel(row.unit)} issued` : `Only ${formatQty(row.balance)} ${unitLabel(row.unit)} in stock`)),
                           },
                         ]}
                       >

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, Button, Col, Empty, Progress, Row, Skeleton, Statistic, Table, Typography } from 'antd';
 import { EditOutlined } from '@/components/common/icons';
 import type { BudgetBoqItemDto, BudgetHeadDto } from '@erp/shared';
-import { COST_HEAD_LABELS, canSetBudget } from '@erp/shared';
+import { COST_HEAD_LABELS, canSetBudget, unitLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProjectBudget } from '@/lib/queries';
 import { formatDateTime, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
@@ -197,7 +197,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               columns={[
                 { title: 'Item', dataIndex: 'itemNo', width: 70, className: 'mono' },
                 { title: 'Description', dataIndex: 'description', ellipsis: true },
-                { title: 'Qty', dataIndex: 'qty', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },
+                { title: 'Qty', dataIndex: 'qty', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${unitLabel(r.unit)}`}</span> },
                 { title: 'Rate', dataIndex: 'rate', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
                 { title: 'Budget rate', dataIndex: 'budgetRate', width: 140, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatINR(v, true)}</span>) },
                 {

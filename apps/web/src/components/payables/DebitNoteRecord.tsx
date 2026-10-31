@@ -6,7 +6,7 @@ import { Form, Input, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DebitNoteDto, DebitNoteLineDto } from '@erp/shared';
-import { DEBIT_NOTE_REASON_LABELS, canRaiseDebitNote } from '@erp/shared';
+import { DEBIT_NOTE_REASON_LABELS, canRaiseDebitNote, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -145,7 +145,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                     scroll={{ x: 640 }}
                     columns={[
                       { title: 'What for', dataIndex: 'description' },
-                      { title: 'Quantity', key: 'qty', width: 120, align: 'right', render: (_, l) => (l.quantity ? `${formatQty(l.quantity)} ${l.unit ?? ''}` : NO_VALUE) },
+                      { title: 'Quantity', key: 'qty', width: 120, align: 'right', render: (_, l) => (l.quantity ? `${formatQty(l.quantity)} ${unitLabel(l.unit ?? '')}` : NO_VALUE) },
                       { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v: string | null) => (v ? money(v) : NO_VALUE) },
                       { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => formatPct(v) },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => money(v, true) },

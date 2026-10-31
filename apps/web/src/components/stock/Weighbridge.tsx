@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Dropdown, Empty, Flex, Form, Input, InputNumber, Radio, Select, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import type { ShortCheck, WeighingDto, WeighTicketDto } from '@erp/shared';
-import { canKeepStock, canManageIntegrations, kgToUnit, shortSupply, weighNet, WEIGH_SHORT_TOLERANCE_KG, WEIGH_SHORT_TOLERANCE_PCT } from '@erp/shared';
+import { canKeepStock, canManageIntegrations, kgToUnit, shortSupply, weighNet, WEIGH_SHORT_TOLERANCE_KG, WEIGH_SHORT_TOLERANCE_PCT, unitLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProjects, useReceivableOrders, useWeighbridge, useWeighTicket, type WeightInput } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
@@ -218,7 +218,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
     <div>
       {kg(t.netKg)}
       <div className="text-muted" style={small} translate="no">
-        {t.netQty !== null && t.unit ? `${formatQty(t.netQty)} ${t.unit}, ` : ''}
+        {t.netQty !== null && t.unit ? `${formatQty(t.netQty)} ${unitLabel(t.unit)}, ` : ''}
         {`${formatQty(t.grossKg)} less ${formatQty(t.tareKg)}`}
       </div>
     </div>
@@ -239,7 +239,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
       key: 'challan',
       width: 120,
       align: 'right',
-      render: (_, t) => (t.challanQty !== null ? <span className="mono" translate="no">{`${formatQty(t.challanQty)} ${t.unit ?? ''}`}</span> : <span className="text-muted">{NO_VALUE}</span>),
+      render: (_, t) => (t.challanQty !== null ? <span className="mono" translate="no">{`${formatQty(t.challanQty)} ${unitLabel(t.unit ?? '')}`}</span> : <span className="text-muted">{NO_VALUE}</span>),
     },
     {
       title: 'Check',
@@ -294,7 +294,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
             <Button size="small" type="link" style={{ paddingInline: 0 }} onClick={() => setGrn(t.stockEntryId)}>
               <span translate="no">{t.grnNo}</span>
             </Button>
-            {t.grnAboveNetKg !== null ? <AppTag tone="danger">{`GRN ${formatQty(t.grnQty)} ${t.unit}, above the net weight`}</AppTag> : shortTag(t.short, t.unit)}
+            {t.grnAboveNetKg !== null ? <AppTag tone="danger">{`GRN ${formatQty(t.grnQty)} ${unitLabel(t.unit)}, above the net weight`}</AppTag> : shortTag(t.short, t.unit)}
           </Space>
         ),
     },
@@ -534,7 +534,7 @@ function TicketForm({
               <Select
                 options={po.lines.map((l) => ({
                   value: l.purchaseOrderLineId,
-                  label: `${l.itemName} (${formatQty(l.pending)} ${l.unit} to come)`,
+                  label: `${l.itemName} (${formatQty(l.pending)} ${unitLabel(l.unit)} to come)`,
                 }))}
               />
             </Form.Item>
@@ -639,7 +639,7 @@ function SecondWeightForm({ open, onClose, ticket, weighing, weighings }: { open
       footerExtra={
         net ? (
           <span translate="no">
-            {`Net ${formatQty(net.netKg)} kg${ticket.unit && kgToUnit(net.netKg, ticket.unit) !== null ? ` (${formatQty(kgToUnit(net.netKg, ticket.unit))} ${ticket.unit})` : ''}`}
+            {`Net ${formatQty(net.netKg)} kg${ticket.unit && kgToUnit(net.netKg, ticket.unit) !== null ? ` (${formatQty(kgToUnit(net.netKg, ticket.unit))} ${unitLabel(ticket.unit)})` : ''}`}
           </span>
         ) : undefined
       }

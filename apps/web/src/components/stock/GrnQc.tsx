@@ -6,7 +6,7 @@ import { Alert, App, Form, Input, Segmented, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { GrnQcStatus, StockEntryDto, StockLineDto } from '@erp/shared';
-import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS, certificateNeeded } from '@erp/shared';
+import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS, certificateNeeded, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { formatDate, formatQty, inSentence } from '@/lib/format';
@@ -102,7 +102,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
             dataSource={entry.lines}
             columns={[
               { title: 'Item', dataIndex: 'itemName' },
-              { title: 'Received', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => `${formatQty(v)} ${l.unit}` },
+              { title: 'Received', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => `${formatQty(v)} ${unitLabel(l.unit)}` },
               {
                 title: 'Rejected',
                 key: 'rejected',

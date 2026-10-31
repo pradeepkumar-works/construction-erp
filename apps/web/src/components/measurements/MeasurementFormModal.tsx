@@ -7,7 +7,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { AttachmentDto, MeasurementSheetDto } from '@erp/shared';
-import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
+import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal, unitLabel } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
@@ -157,7 +157,7 @@ export function MeasurementFormModal({
               name="boqItemId"
               label="BOQ item"
               rules={[{ required: true, message: 'Choose the BOQ item' }]}
-              extra={item ? `BOQ qty ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · waiting for approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
+              extra={item ? `BOQ qty ${formatQty(contractQty)} ${unitLabel(item.unit)} · measured ${formatQty(item.measuredQty)} · waiting for approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
             >
               <Select
                 showSearch={{ optionFilterProp: 'label' }}

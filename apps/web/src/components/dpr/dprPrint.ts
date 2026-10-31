@@ -1,5 +1,5 @@
 import type { DailyReportDto, DprBuiltInKey, DprFormDef, DprLineDto } from '@erp/shared';
-import { PIPE_STAGE_LABELS, SEGMENT_STAGES, SUBMISSION_STATUS_LABELS, STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, dprLabel, dprShows, filledExtra, lineLocation, materialUsed, linesSummary, ownFieldsOf, pipelineSummary } from '@erp/shared';
+import { PIPE_STAGE_LABELS, SEGMENT_STAGES, SUBMISSION_STATUS_LABELS, STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, dprLabel, dprShows, filledExtra, lineLocation, materialUsed, linesSummary, ownFieldsOf, pipelineSummary, unitLabel } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
@@ -31,7 +31,7 @@ function workTable(lines: DprLineDto[], def: DprFormDef): string {
   const crew = lines
     .filter((l) => l.labour.length || l.machines.length || l.materials.length)
     .map((l) => {
-      const parts = [l.labour.map((m) => `${m.category} ${m.count}`).join(', '), l.machines.map((m) => `${m.name} ${m.hours} h`).join(', '), l.materials.map((m) => `${m.itemName} ${formatQty(m.quantity)} ${m.unit}`).join(', ')];
+      const parts = [l.labour.map((m) => `${m.category} ${m.count}`).join(', '), l.machines.map((m) => `${m.name} ${m.hours} h`).join(', '), l.materials.map((m) => `${m.itemName} ${formatQty(m.quantity)} ${unitLabel(m.unit)}`).join(', ')];
       return `<tr><td class="num">${lines.indexOf(l) + 1}</td><td>${esc(parts[0] || '-')}</td><td>${esc(parts[1] || '-')}</td><td>${esc(parts[2] || '-')}</td></tr>`;
     })
     .join('');

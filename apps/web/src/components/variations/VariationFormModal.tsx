@@ -6,7 +6,7 @@ import { App, Button, Form, Input, Select, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, BoqItemDto, VariationCause, VariationDto } from '@erp/shared';
-import { VARIATION_CAUSES, VARIATION_CAUSE_LABELS, isUnapprovedExtra } from '@erp/shared';
+import { VARIATION_CAUSES, VARIATION_CAUSE_LABELS, isUnapprovedExtra, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useBoq } from '@/lib/queries';
@@ -186,7 +186,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
                         <Form.Item
                           name={[f.name, 'qty']}
                           label={isNew || extra ? 'Quantity' : 'Quantity added (− to omit)'}
-                          extra={b ? `BOQ quantity ${formatQty(b.revisedQty ?? b.originalQty)} ${b.unit}` : undefined}
+                          extra={b ? `BOQ quantity ${formatQty(b.revisedQty ?? b.originalQty)} ${unitLabel(b.unit)}` : undefined}
                           rules={[{ required: true, message: 'Enter the quantity' }, { validator: async (_, v) => (v === 0 ? Promise.reject(new Error('Enter a quantity other than 0')) : undefined) }]}
                         >
                           {/* A BOQ item's change can be negative (an omission). */}

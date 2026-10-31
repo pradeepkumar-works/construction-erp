@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorBillDto, VendorBillLineDto, VendorBillSourceDto } from '@erp/shared';
-import { EXPENSE_CATEGORY_LABELS, MSME_CATEGORY_LABELS, VENDOR_BILL_KIND_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
+import { EXPENSE_CATEGORY_LABELS, MATCH_STATE_LABELS, MSME_CATEGORY_LABELS, VENDOR_BILL_KIND_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -34,11 +34,11 @@ const money = (v: string | number) => <span className="mono" translate="no">{for
 export const MatchTag = ({ matched, po = true }: { matched: boolean; po?: boolean }) =>
   matched ? (
     <AppTag tone="success" style={{ margin: 0 }}>
-      {po ? 'Matches' : 'Checked'}
+      {po ? MATCH_STATE_LABELS.MATCHES : MATCH_STATE_LABELS.CHECKED}
     </AppTag>
   ) : (
     <AppTag tone="danger" style={{ margin: 0 }}>
-      Does not match
+      {MATCH_STATE_LABELS.DOES_NOT_MATCH}
     </AppTag>
   );
 

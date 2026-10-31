@@ -8,7 +8,7 @@ import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaintenanceJobDto } from '@erp/shared';
-import { MAX_PAGE_SIZE, canManageMaintenance } from '@erp/shared';
+import { MAX_PAGE_SIZE, canManageMaintenance, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -217,7 +217,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                 { title: 'Fuel issue', dataIndex: 'entryNo', width: 130, className: 'mono' },
                 { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
                 { title: 'Spare', dataIndex: 'itemName' },
-                { title: 'Qty', key: 'q', width: 100, align: 'right', render: (_, r) => `${formatQty(r.quantity)} ${r.unit}` },
+                { title: 'Qty', key: 'q', width: 100, align: 'right', render: (_, r) => `${formatQty(r.quantity)} ${unitLabel(r.unit)}` },
                 { title: 'Value', dataIndex: 'value', width: 110, align: 'right', render: (v) => (v ? formatINR(v) : NO_VALUE) },
               ]}
             />
@@ -287,7 +287,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                           placeholder="Spare or lubricant"
                           loading={stock.isLoading}
                           aria-label="Spare"
-                          options={items.map((i) => ({ value: i.itemId, label: `${i.itemName} (${formatQty(i.balance)} ${i.unit} in stock)`, disabled: chosen.has(i.itemId) && i.itemId !== itemId }))}
+                          options={items.map((i) => ({ value: i.itemId, label: `${i.itemName} (${formatQty(i.balance)} ${unitLabel(i.unit)} in stock)`, disabled: chosen.has(i.itemId) && i.itemId !== itemId }))}
                         />
                       </Form.Item>
                       <Form.Item name={[f.name, 'quantity']} style={{ flex: 1, marginBottom: 0 }} rules={[{ required: true, message: 'Enter the quantity' }]}>

@@ -7,7 +7,7 @@ import { DownloadOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockCountResultDto } from '@erp/shared';
-import { MAX_PAGE_SIZE } from '@erp/shared';
+import { MAX_PAGE_SIZE, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useStockBalances } from '@/lib/queries';
@@ -140,7 +140,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
           locale={{ emptyText: projectId ? 'Nothing has moved at this project yet' : 'Choose a project' }}
           columns={[
             { title: 'Item', dataIndex: 'itemName', render: (v, r) => <span>{v}{r.category ? <span className="text-muted"> · {r.category}</span> : null}</span> },
-            { title: 'Book balance', dataIndex: 'balance', width: 150, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },
+            { title: 'Book balance', dataIndex: 'balance', width: 150, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${unitLabel(r.unit)}`}</span> },
             {
               title: 'Counted',
               key: 'counted',

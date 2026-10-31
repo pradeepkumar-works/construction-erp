@@ -11,6 +11,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DEFAULT_OM_BENCHMARKS,
   OM_BENCHMARK_INFO,
+  OM_CHEMICAL_STATE_LABELS,
+  OM_PERIOD_STATUS_LABELS,
   omLimitText,
   omRuleText,
   type ItemDto,
@@ -23,6 +25,7 @@ import {
   type ProjectDetail,
   type RaBillDto,
   type ServiceLevelDayDto,
+  unitLabel,
 } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
@@ -53,9 +56,7 @@ type View = (typeof VIEWS)[number];
 const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
 const small = { fontSize: themeFontSize('fontSizeSM') };
 const PERIOD_COLORS: Record<OmPeriodStatus, string> = { FUTURE: 'default', RUNNING: 'blue', DUE: 'orange', BILLED: 'green' };
-const PERIOD_LABELS: Record<OmPeriodStatus, string> = { FUTURE: 'Not started', RUNNING: 'Running', DUE: 'Due to bill', BILLED: 'Billed' };
 const CHEMICAL_COLORS: Record<OmChemicalRowDto['status'], string> = { OVER: 'red', UNDER: 'orange', WITHIN: 'green', NO_WATER: 'default' };
-const CHEMICAL_LABELS: Record<OmChemicalRowDto['status'], string> = { OVER: 'Over the norm', UNDER: 'Under the norm', WITHIN: 'Within the norm', NO_WATER: 'No water logged' };
 const num = (v: string | number | null) => (v === null || v === '' ? '-' : <span translate="no">{formatQty(v)}</span>);
 const shiftMonth = (m: string, n: number) => dayjs(`${m}-01`).add(n, 'month').format('YYYY-MM');
 const toStr = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
@@ -469,7 +470,7 @@ function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
           { key: 's', title: 'Staff short', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.staffDeduction) ? `− ${formatINR(p.staffDeduction)}` : '-'}</span> },
           { key: 'pen', title: 'Penalties', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.penalty) ? `− ${formatINR(p.penalty)}` : '-'}</span> },
           { key: 'n', title: 'Net', width: 130, align: 'right', render: (_, p) => <Typography.Text strong translate="no">{formatINR(p.net)}</Typography.Text> },
-          { key: 'st', title: 'Status', width: 120, render: (_, p) => <AppTag color={PERIOD_COLORS[p.status]}>{PERIOD_LABELS[p.status]}</AppTag> },
+          { key: 'st', title: 'Status', width: 120, render: (_, p) => <AppTag color={PERIOD_COLORS[p.status]}>{OM_PERIOD_STATUS_LABELS[p.status]}</AppTag> },
           {
             key: 'bill',
             title: 'Bill',
@@ -618,15 +619,15 @@ function Chemicals({ data }: { data: OmDto }) {
         locale={{ emptyText: 'The contract sets no chemical norms' }}
         columns={[
           { key: 'i', title: 'Chemical', render: (_, r) => r.itemName },
-          { key: 'n', title: 'Norm per ML', width: 130, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.perMl)} ${r.unit}`}</span> },
+          { key: 'n', title: 'Norm per ML', width: 130, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.perMl)} ${unitLabel(r.unit)}`}</span> },
           { key: 'w', title: 'Water produced', width: 140, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.producedMl)} ML`}</span> },
-          { key: 'q', title: 'Norm', width: 120, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.normQty)} ${r.unit}`}</span> },
-          { key: 'c', title: 'Used', width: 120, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.consumedQty)} ${r.unit}`}</span> },
+          { key: 'q', title: 'Norm', width: 120, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.normQty)} ${unitLabel(r.unit)}`}</span> },
+          { key: 'c', title: 'Used', width: 120, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.consumedQty)} ${unitLabel(r.unit)}`}</span> },
           {
             key: 's',
             title: 'Against the norm',
             width: 190,
-            render: (_, r) => <AppTag color={CHEMICAL_COLORS[r.status]}>{r.variancePct === null ? CHEMICAL_LABELS[r.status] : `${CHEMICAL_LABELS[r.status]} (${r.variancePct > 0 ? '+' : ''}${formatPct(r.variancePct)})`}</AppTag>,
+            render: (_, r) => <AppTag color={CHEMICAL_COLORS[r.status]}>{r.variancePct === null ? OM_CHEMICAL_STATE_LABELS[r.status] : `${OM_CHEMICAL_STATE_LABELS[r.status]} (${r.variancePct > 0 ? '+' : ''}${formatPct(r.variancePct)})`}</AppTag>,
           },
         ]}
       />

@@ -16,7 +16,7 @@ import type {
   StructureItemDto,
   StructureLineDto,
 } from '@erp/shared';
-import { ISSUE_WORK_DAYS, KIT_STATUS_LABELS, PIPE_FLAG_HINTS, PIPE_FLAG_LABELS, RECONCILIATION_STATUS_LABELS, RECON_EXCEPTION_LABELS, USE_ISSUE_DAYS } from '@erp/shared';
+import { ISSUE_WORK_DAYS, KIT_STATUS_LABELS, PIPE_FLAG_HINTS, PIPE_FLAG_LABELS, RECONCILIATION_STATUS_LABELS, RECON_EXCEPTION_LABELS, USE_ISSUE_DAYS, unitLabel } from '@erp/shared';
 import { useKitRecon, usePipeRecon, useReconExceptions, useStructureRecon } from '@/lib/queries';
 import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
@@ -139,7 +139,7 @@ export function StructureView({ projectId }: { projectId: string }) {
   ];
   const lineColumns = (unit: string): TableProps<StructureLineDto>['columns'] => [
     { title: 'Activity', dataIndex: 'activityName', ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}>{v}</Tooltip> },
-    { title: 'Placed', dataIndex: 'placedQty', width: 160, align: 'right', render: (v: string, l) => <span className="mono" translate="no">{`${formatQty(v)} of ${formatQty(l.plannedQty)} ${l.unit}`}</span> },
+    { title: 'Placed', dataIndex: 'placedQty', width: 160, align: 'right', render: (v: string, l) => <span className="mono" translate="no">{`${formatQty(v)} of ${formatQty(l.plannedQty)} ${unitLabel(l.unit)}`}</span> },
     { title: 'Norm', dataIndex: 'qtyPerUnit', width: 160, align: 'right', render: (v: string, l) => <span className="mono" translate="no">{`${v} ${unit} / ${l.unit}`}</span> },
     { title: 'Used', dataIndex: 'usedQty', width: 120, align: 'right', render: (v: string) => qty(v, unit) },
     {
@@ -152,7 +152,7 @@ export function StructureView({ projectId }: { projectId: string }) {
           <span className="text-muted">{NO_VALUE}</span>
         ) : (
           <span className="mono" translate="no" style={{ color: toNumber(v) > toNumber(l.qtyPerUnit) * (1 + toNumber(l.wastagePct) / 100) ? RED : undefined }}>
-            {`${formatQty(v)} ${unit} / ${l.unit}`}
+            {`${formatQty(v)} ${unitLabel(unit)} / ${l.unit}`}
           </span>
         ),
     },

@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { ImportOutlined, MailOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewCost, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, PO_RECEIPT_STATE_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewCost, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -37,8 +37,8 @@ const money = (v: string | number) => <span className="mono" translate="no" styl
 /** Tag for where an approved order stands: open, fully received or closed short. */
 export function PoStateTag({ order }: { order: Pick<PurchaseOrderDto, 'status' | 'closedAt' | 'open'> }) {
   if (order.status !== 'APPROVED') return null;
-  if (order.closedAt) return <AppTag style={{ margin: 0 }}>Closed</AppTag>;
-  return order.open ? <AppTag tone="info" style={{ margin: 0 }}>Open</AppTag> : <AppTag tone="success" style={{ margin: 0 }}>Received</AppTag>;
+  if (order.closedAt) return <AppTag style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.CLOSED}</AppTag>;
+  return order.open ? <AppTag tone="info" style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.OPEN}</AppTag> : <AppTag tone="success" style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.RECEIVED}</AppTag>;
 }
 
 interface RecordProps {

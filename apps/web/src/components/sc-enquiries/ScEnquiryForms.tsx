@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
-import { GST_RATES, SC_ENQUIRY_STATUS_LABELS, rankLabel, type ScEnquiryDetailDto, type ScEnquiryStatus, type ScQuoteDto } from '@erp/shared';
+import { GST_RATES, SC_ENQUIRY_STATUS_LABELS, rankLabel, type ScEnquiryDetailDto, type ScEnquiryStatus, type ScQuoteDto, unitLabel } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useBoq, useProjects, useScEnquiryAction, useVendorsPage } from '@/lib/queries';
 import { formatINR, toNumber, NO_VALUE, formatQty } from '@/lib/format';
@@ -359,7 +359,7 @@ export function QuoteDrawer({ enquiry, quote, onClose }: { enquiry: ScEnquiryDet
                     <span translate="no">{it.itemNo ? `${it.itemNo} ` : ''}</span>
                     {it.description}
                     <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }} translate="no">
-                      {`${formatQty(it.quantity)} ${it.unit}${it.clientRate ? ` · client ${formatINR(it.clientRate)}` : ''}`}
+                      {`${formatQty(it.quantity)} ${unitLabel(it.unit)}${it.clientRate ? ` · client ${formatINR(it.clientRate)}` : ''}`}
                     </Typography.Text>
                   </div>
                 ) : null;

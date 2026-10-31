@@ -6,7 +6,7 @@ import { Alert, Button, Col, Empty, Row, Skeleton, Statistic, Table, Typography 
 import { AppTabs } from '@/components/common/AppTabs';
 import { TeamOutlined } from '@/components/common/icons';
 import type { ProjectCostDto } from '@erp/shared';
-import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
+import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS, unitLabel } from '@erp/shared';
 import { useProjectCost } from '@/lib/queries';
 import { formatINR, formatPct, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -145,7 +145,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                       scroll={{ x: 640 }}
                       columns={[
                         { title: 'Item', dataIndex: 'name' },
-                        { title: 'Issued', dataIndex: 'quantity', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },
+                        { title: 'Issued', dataIndex: 'quantity', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${unitLabel(r.unit)}`}</span> },
                         { title: 'Rate', dataIndex: 'rate', width: 170, align: 'right', render: (v, r) => rateOrDash(v, `/ ${r.unit}`) },
                         { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: money },
                       ]}

@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaterialRequestDto, MaterialRequestItemDto, QuotationDto } from '@erp/shared';
-import { GST_RATES, lastRateKey } from '@erp/shared';
+import { GST_RATES, lastRateKey, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useLastRates } from '@/lib/queries';
@@ -125,7 +125,7 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
             dataSource={request.items}
             columns={[
               { title: 'Item', dataIndex: 'itemName', render: (v, i) => <div>{v}{i.specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{i.specification}</div>}</div> },
-              { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, i) => `${formatQty(v)} ${i.unit}` },
+              { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, i) => `${formatQty(v)} ${unitLabel(i.unit)}` },
               {
                 title: 'Rate (per unit, before GST)',
                 key: 'rate',

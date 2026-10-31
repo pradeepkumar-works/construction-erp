@@ -4,6 +4,7 @@ import React from 'react';
 import { Descriptions, Progress, Table } from 'antd';
 import type { PortalActivityDto, PortalProjectDetailDto } from '@erp/shared';
 import { formatDate, formatINR, formatQty, progressStatus, NO_VALUE } from '@/lib/format';
+import { unitLabel } from '@erp/shared';
 
 /** The project at a glance and approved progress by activity. */
 export function PortalOverview({ project: p }: { project: PortalProjectDetailDto }) {
@@ -37,7 +38,7 @@ export function PortalOverview({ project: p }: { project: PortalProjectDetailDto
         columns={[
           { title: 'Activity', dataIndex: 'name' },
           { title: 'Agreed programme', key: 'planned', width: 240, render: (_, a) => (a.plannedStart && a.plannedEnd ? `${formatDate(a.plannedStart)} to ${formatDate(a.plannedEnd)}` : NO_VALUE) },
-          { title: 'Quantity', key: 'qty', align: 'right', width: 220, render: (_, a) => `${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${a.unit}` },
+          { title: 'Quantity', key: 'qty', align: 'right', width: 220, render: (_, a) => `${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${unitLabel(a.unit)}` },
           { title: 'Done', dataIndex: 'pct', width: 180, render: (v: number) => <Progress percent={v} size="small" status={progressStatus(v)} style={{ margin: 0 }} aria-label={`${v}% done`} /> },
         ]}
       />

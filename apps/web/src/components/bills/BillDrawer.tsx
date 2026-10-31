@@ -8,7 +8,7 @@ import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, RaBillDto, RaBillItemDto, RaBillStageLineDto, ReceiptDto } from '@erp/shared';
-import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign } from '@erp/shared';
+import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -178,7 +178,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   type="warning"
                   showIcon
                   style={{ marginBottom: 12 }}
-                  title={`Left out until the client approves a variation: ${data.heldExtraItems.map((i) => `${i.itemNo} ${i.description} (${formatQty(i.qty)} ${i.unit} measured)`).join('; ')}`}
+                  title={`Left out until the client approves a variation: ${data.heldExtraItems.map((i) => `${i.itemNo} ${i.description} (${formatQty(i.qty)} ${unitLabel(i.unit)} measured)`).join('; ')}`}
                   description={<Link href={`/projects/${data.projectId}?tab=variations`}>Open the project&apos;s variations</Link>}
                 />
               ) : null}

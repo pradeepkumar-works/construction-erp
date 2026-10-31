@@ -34,6 +34,7 @@ import {
   type DprWorkOptionsDto,
   type MachineryLine,
   type ManpowerLine,
+  unitLabel,
 } from '@erp/shared';
 import { formatQty } from '@/lib/format';
 import { FormGrid } from '@/components/form/FormShell';
@@ -232,7 +233,7 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
                         <span translate="no">{componentLabel(a)}</span> ·{' '}
                       </>
                     )}
-                    <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${a.unit}`}</span> done
+                    <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${unitLabel(a.unit)}`}</span> done
                     {a.holdPoint ? (
                       <AppTag tone="pending" style={{ marginInlineStart: 6 }}>
                         Hold point

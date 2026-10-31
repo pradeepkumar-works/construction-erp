@@ -13,6 +13,7 @@ import { QueryError, PageSkeleton } from '@/components/common/QueryState';
 import { BatchStatusTag, M3, PlantFilter, m3, usePlantScope } from './rmcUi';
 import { DispatchForm } from './BatchForms';
 import { useRmcDrawers } from './Drawers';
+import { unitLabel } from '@erp/shared';
 
 /** The plant's day: the orders to pour and what each has had, the trucks sent, by grade, and the store against what is left to pour. */
 export function DayView() {
@@ -137,8 +138,8 @@ export function DayView() {
             locale={{ emptyText: 'Nothing left to pour' }}
             columns={[
               { title: 'Material', dataIndex: 'itemName' },
-              { title: 'Needed', key: 'n', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.needed)} ${m.unit}`}</span> },
-              { title: 'In the store', key: 'i', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.inStock)} ${m.unit}`}</span> },
+              { title: 'Needed', key: 'n', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.needed)} ${unitLabel(m.unit)}`}</span> },
+              { title: 'In the store', key: 'i', align: 'right', render: (_, m) => <span translate="no">{`${formatQty(m.inStock)} ${unitLabel(m.unit)}`}</span> },
               { title: '', dataIndex: 'short', width: 110, render: (s: boolean) => (s ? <AppTag tone="danger">Short</AppTag> : <AppTag tone="success">Enough</AppTag>) },
             ]}
           />

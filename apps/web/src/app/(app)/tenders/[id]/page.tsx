@@ -26,6 +26,7 @@ import {
   type TenderDetailDto,
   type TenderItemDto,
   type TenderStatus,
+  unitLabel,
 } from "@erp/shared";
 import { useNotify } from "@/lib/notify";
 import { useTender, useTenderAction } from "@/lib/queries";
@@ -733,7 +734,7 @@ function BoqTab({
                 align: "right",
                 width: 110,
                 render: (_, i) => (
-                  <span translate="no">{`${formatQty(i.qty)} ${i.unit}`}</span>
+                  <span translate="no">{`${formatQty(i.qty)} ${unitLabel(i.unit)}`}</span>
                 ),
               },
               {

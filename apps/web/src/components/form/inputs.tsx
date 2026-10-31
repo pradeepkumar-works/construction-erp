@@ -4,7 +4,7 @@ import React from 'react';
 import { InputNumber } from 'antd';
 import type { InputNumberProps } from 'antd';
 import type { Rule } from 'antd/es/form';
-import { GSTIN_PATTERN, IFSC_PATTERN, PAN_PATTERN } from '@erp/shared';
+import { GSTIN_PATTERN, IFSC_PATTERN, PAN_PATTERN, unitLabel } from '@erp/shared';
 
 const grouped = (precision: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: precision });
 const MONEY = grouped(2);
@@ -35,7 +35,7 @@ export function MoneyInput({ style, ...rest }: NumberProps) {
   );
 }
 
-/** A quantity with its unit after it (12.500 Cum), the number keypad on phones, and no spinner. */
+/** A quantity with its unit after it (12.500 m³), the number keypad on phones, and no spinner. */
 export function QuantityInput({ unit, style, ...rest }: NumberProps & { unit?: string | null }) {
   return (
     <InputNumber<number>
@@ -43,7 +43,7 @@ export function QuantityInput({ unit, style, ...rest }: NumberProps & { unit?: s
       precision={3}
       controls={false}
       inputMode="decimal"
-      suffix={unit || undefined}
+      suffix={unitLabel(unit) || undefined}
       formatter={(v, info) => (info.userTyping ? info.input : v === undefined || v === null || (v as unknown) === '' ? '' : QTY.format(Number(v)))}
       parser={parse}
       style={{ width: '100%', ...style }}

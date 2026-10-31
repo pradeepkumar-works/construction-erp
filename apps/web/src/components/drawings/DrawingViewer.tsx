@@ -45,6 +45,7 @@ import {
   takeoffLine,
   takeoffProblem,
   takeoffValue,
+  unitLabel,
 } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { BRAND } from '@/lib/brand';
@@ -1086,7 +1087,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         onClose={() => setToBoqOf(null)}
         onSubmit={async (v) => {
           await toBoq.mutateAsync({ ids: (toBoqOf ?? []).map((t) => t.id), boqItemId: v.boqItemId, field: v.field, factor: v.factor });
-          message.success(`${v.item.itemNo}'s ${v.field === 'ORIGINAL' ? 'original' : 'revised'} quantity is now ${formatQty(v.qty)} ${v.item.unit}`);
+          message.success(`${v.item.itemNo}'s ${v.field === 'ORIGINAL' ? 'original' : 'revised'} quantity is now ${formatQty(v.qty)} ${unitLabel(v.item.unit)}`);
           setChosen(new Set());
         }}
       />

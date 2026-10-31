@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { DeliveryState, ProcurementStatusLineDto, ProcurementStatusRowDto } from '@erp/shared';
-import { DELIVERY_STATE_LABELS } from '@erp/shared';
+import { DELIVERY_STATE_LABELS, unitLabel } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { useProcurementStatus } from '@/lib/queries';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
@@ -174,7 +174,7 @@ export function ProcurementStatusPanel() {
               dataSource={r.lines}
               columns={[
                 { title: 'Item', dataIndex: 'itemName' },
-                { title: 'Ordered', dataIndex: 'ordered', align: 'right', width: 120, render: (v: string, l) => `${formatQty(v)} ${l.unit}` },
+                { title: 'Ordered', dataIndex: 'ordered', align: 'right', width: 120, render: (v: string, l) => `${formatQty(v)} ${unitLabel(l.unit)}` },
                 { title: 'Received', dataIndex: 'received', align: 'right', width: 120, render: (v: string) => formatQty(v) },
                 { title: 'Pending', dataIndex: 'pending', align: 'right', width: 120, render: (v: string) => (Number(v) > 0 ? <Typography.Text type="warning">{formatQty(v)}</Typography.Text> : NO_VALUE) },
                 { title: 'Pending value', dataIndex: 'pendingValue', align: 'right', width: 140, render: (v: string) => (Number(v) ? formatINR(v) : NO_VALUE) },

@@ -9,6 +9,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, QuantityInput } from '@/components/form/inputs';
 import { themeColor } from '@/lib/theme';
 import { m3 } from './rmcUi';
+import { unitLabel } from '@erp/shared';
 
 interface DispatchValues {
   quantity: number;
@@ -109,7 +110,7 @@ export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | nul
               dataSource={design.lines}
               columns={[
                 { title: 'Material', dataIndex: 'itemName' },
-                { title: 'At the design', key: 'design', align: 'right', width: 150, render: (_, l) => <span translate="no">{`${formatQty(Number(l.quantity) * qty)} ${l.unit}`}</span> },
+                { title: 'At the design', key: 'design', align: 'right', width: 150, render: (_, l) => <span translate="no">{`${formatQty(Number(l.quantity) * qty)} ${unitLabel(l.unit)}`}</span> },
                 {
                   title: 'Weighed',
                   key: 'weighed',

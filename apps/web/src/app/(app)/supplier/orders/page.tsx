@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AcceptForm, DispatchForm } from '@/components/supplier/SupplierForms';
 import { AcceptedTag, DispatchStatusTag, Money } from '@/components/supplier/supplierUi';
+import { unitLabel } from '@erp/shared';
 
 /** The supplier's orders (purchase and work orders) to accept and send against, and the dispatch notes sent. */
 export default function SupplierOrdersPage() {
@@ -143,7 +144,7 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
             scroll={{ x: 720 }}
             columns={[
               { title: 'Item', dataIndex: 'itemName', render: (v: string, l) => (l.specification ? `${v} (${l.specification})` : v) },
-              { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => <span translate="no">{`${formatQty(v)} ${l.unit}`}</span> },
+              { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => <span translate="no">{`${formatQty(v)} ${unitLabel(l.unit)}`}</span> },
               { title: 'Rate', dataIndex: 'rate', align: 'right', width: 120, render: (v: string) => <Money value={v} /> },
               ...(o.kind === 'PO'
                 ? [
@@ -198,7 +199,7 @@ function Dispatches({ list }: { list: ReturnType<typeof useSupplierDispatches> }
             title: 'What',
             key: 'lines',
             render: (_, d) => (
-              <Typography.Text translate="no">{d.lines.map((l) => `${l.itemName} ${formatQty(l.quantity)} ${l.unit}`).join(', ')}</Typography.Text>
+              <Typography.Text translate="no">{d.lines.map((l) => `${l.itemName} ${formatQty(l.quantity)} ${unitLabel(l.unit)}`).join(', ')}</Typography.Text>
             ),
           },
           { title: 'Status', dataIndex: 'status', width: 120, render: (s: SupplierDispatchDto['status'], d) => (d.grn ? <span><DispatchStatusTag status={s} /> <span translate="no">{d.grn.entryNo}</span></span> : <DispatchStatusTag status={s} />) },
