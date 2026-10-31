@@ -68,13 +68,19 @@ function lifecycleOf(l: LetterDto): Lifecycle {
       ],
     };
   }
-  const stage = l.status === 'DRAFT' ? 0 : l.status === 'AWAITING_APPROVAL' ? 1 : l.deliveredOn ? 4 : l.dispatchedOn ? 3 : 2;
+  // Item 169: a letter that waits for head office's seal shows it as a stage of its own between signing and issue
+  const seal = l.needsSeal || !!l.signedAt;
+  const signed = l.signedAt ?? l.approvedAt;
+  const waiting = l.status === 'AWAITING_APPROVAL' ? (l.signedAt ? 2 : 1) : 0;
+  const after = seal ? 1 : 0;
+  const stage = l.status === 'DRAFT' ? 0 : waiting || (l.deliveredOn ? 4 + after : l.dispatchedOn ? 3 + after : 2 + after);
   return {
     current: stage,
-    status: l.status === 'DRAFT' && l.returnNote ? 'error' : stage === 4 ? 'finish' : 'process',
+    status: l.status === 'DRAFT' && l.returnNote ? 'error' : stage === 4 + after ? 'finish' : 'process',
     items: [
       { title: l.returnNote && l.status === 'DRAFT' ? 'Returned' : 'Drafted', content: l.createdByName },
-      { title: 'Signed', content: l.approvedAt ? `${l.signatoryName ?? ''}, ${formatDate(l.approvedAt.slice(0, 10))}` : (l.signatoryName ?? undefined) },
+      { title: 'Signed', content: signed ? `${l.signedByName ?? l.signatoryName ?? ''}, ${formatDate(signed.slice(0, 10))}` : (l.signatoryName ?? undefined) },
+      ...(seal ? [{ title: 'Sealed at head office', content: l.approvedAt && l.signedAt ? formatDate(l.approvedAt.slice(0, 10)) : l.signedAt ? 'Waiting for a director' : undefined }] : []),
       { title: 'Issued', content: l.letterNo ?? undefined },
       { title: 'Dispatched', content: l.dispatchedOn ? `${l.mode ? LETTER_MODE_LABELS[l.mode] : ''} ${formatDate(l.dispatchedOn)}`.trim() : undefined },
       { title: 'Delivered', content: l.deliveredOn ? formatDate(l.deliveredOn) : undefined },
@@ -100,7 +106,8 @@ function storyOf(l: LetterDto): { key: string; at: string; text: React.ReactNode
       ),
     });
   if (l.sentForApprovalAt) out.push({ key: 'sent', at: l.sentForApprovalAt, text: `Sent to ${l.signatoryName ?? 'the signatory'} for approval` });
-  if (l.approvedAt) out.push({ key: 'approved', at: l.approvedAt, text: `Signed by ${l.signatoryName ?? 'the signatory'} and numbered ${l.letterNo ?? ''}` });
+  if (l.signedAt) out.push({ key: 'signed', at: l.signedAt, text: `Signed by ${l.signedByName ?? l.signatoryName ?? 'the signatory'}; sent to head office for the seal` });
+  if (l.approvedAt) out.push({ key: 'approved', at: l.approvedAt, text: l.signedAt ? `Sealed at head office and numbered ${l.letterNo ?? ''}` : `Signed by ${l.signatoryName ?? 'the signatory'} and numbered ${l.letterNo ?? ''}` });
   if (l.dispatchedOn) out.push({ key: 'dispatched', at: `${l.dispatchedOn}T23:59:00`, text: `Dispatched by ${l.mode ? LETTER_MODE_LABELS[l.mode].toLowerCase() : 'hand'}${l.docketNo ? `, ${l.docketNo}` : ''}` });
   if (l.deliveredOn) out.push({ key: 'delivered', at: `${l.deliveredOn}T23:59:30`, text: `Delivered${l.deliveryProof ? `: ${l.deliveryProof}` : ''}` });
   if (l.closedAt) out.push({ key: 'closed', at: l.closedAt, text: `Closed by ${l.closedByName ?? ''}${l.closedNote ? `: ${l.closedNote}` : ''}` });
@@ -258,8 +265,8 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
       <>
         {c.sign ? (
           <>
-            <Button size={size} type="primary" loading={post.isPending} onClick={() => run('approve', (l) => `Signed: ${l.letterNo}`)}>
-              Approve and number
+            <Button size={size} type="primary" loading={post.isPending} onClick={() => run('approve', (l) => (l.letterNo ? `Signed: ${l.letterNo}` : 'Signed; sent to head office for the seal'))}>
+              {data.signedAt ? 'Seal and number' : data.needsSeal ? 'Sign and send to head office' : 'Approve and number'}
             </Button>
             <Button size={size} onClick={() => start('return')}>
               Return with changes
@@ -382,7 +389,8 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
                   },
                 ]
               : []),
-            ...(!isIn ? [{ key: 'sign', label: 'Signed by', children: data.signatoryName ?? 'Not chosen yet' }] : []),
+            ...(!isIn ? [{ key: 'sign', label: 'Signed by', children: data.signedByName ?? data.signatoryName ?? 'Not chosen yet' }] : []),
+            ...(!isIn && (data.needsSeal || data.signedAt) ? [{ key: 'seal', label: 'Seal at head office', children: data.signedAt && data.letterNo ? 'Sealed' : data.signedAt ? 'Waiting for a director' : 'After it is signed' }] : []),
             ...(!isIn && data.dispatchedOn ? [{ key: 'dispatched', label: 'Dispatched', children: formatDate(data.dispatchedOn) }] : []),
             ...(!isIn && data.status === 'ISSUED' && (data.deliveredOn || isContractualCategory(data.category))
               ? [{ key: 'delivered', label: 'Delivered', children: data.deliveredOn ? `${formatDate(data.deliveredOn)}${data.deliveryProof ? `: ${data.deliveryProof}` : ''}` : <span className="text-danger">No proof yet</span> }]

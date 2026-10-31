@@ -96,3 +96,35 @@
   line-height: 22px;
   text-align: center;
 }
+
+/* A pipeline's stages (item 168): each stage's count in the display face, in the order the work moves. */
+.stages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr));
+  gap: var(--ant-margin-xs);
+  margin: 0 0 var(--ant-margin-sm);
+  padding: 0;
+  list-style: none;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--ant-padding-xs) var(--ant-padding-sm);
+  border-radius: var(--ant-border-radius);
+  background: var(--ant-color-fill-quaternary);
+}
+
+.stageCount {
+  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
+  font-stretch: 88%;
+  font-size: var(--ant-font-size-heading-4);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stageLabel {
+  color: var(--ant-color-text-secondary);
+  font-size: var(--ant-font-size-sm);
+}

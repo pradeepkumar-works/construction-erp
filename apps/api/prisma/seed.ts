@@ -28,7 +28,7 @@ import { seedBiometricCommands } from './seed-biometric-commands';
 import { seedDemoGroup, seedGroupCompanies } from './seed-group';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
-import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, type MarkupPoint, type PpeKind, type TakeoffKind } from '@erp/shared';
+import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -246,6 +246,7 @@ async function main() {
     await seedProjectTypes(prisma, org.id);
     await seedComments(org.id);
     await seedGroupCompanies(prisma, org.id, passwordHash);
+    await seedVerticals(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -478,6 +479,7 @@ async function main() {
   await seedProjectTypes(prisma, org.id);
   await seedComments(org.id);
   await seedGroupCompanies(prisma, org.id, passwordHash);
+  await seedVerticals(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -1961,6 +1963,18 @@ async function seedCostRates(organizationId: string) {
   for (const [name, rate] of Object.entries(ITEM_RATES)) await prisma.item.updateMany({ where: { organizationId, name, rate: null }, data: { rate: D(rate) } });
   if ((await prisma.labourRate.count({ where: { organizationId } })) === 0)
     await prisma.labourRate.createMany({ data: LABOUR_RATES.map(([category, dailyRate]) => ({ organizationId, category, dailyRate: D(dailyRate) })) });
+}
+
+// Verticals (item 167): each demo project takes its kind's, and a tender the one its title reads as (only where none is set).
+async function seedVerticals(organizationId: string) {
+  for (const [type, code] of Object.entries(VERTICAL_OF_TYPE))
+    await prisma.project.updateMany({ where: { organizationId, type: type as ProjectType, verticalCode: null }, data: { verticalCode: code } });
+  const tenders = await prisma.tender.findMany({ where: { organizationId, verticalCode: null }, select: { id: true, title: true } });
+  for (const t of tenders) {
+    const title = t.title.toLowerCase();
+    const code = /road|bridge|culvert/.test(title) ? 'roads-and-bridges' : /water|pipe|sewer|drain/.test(title) ? 'water' : /canal|irrigation|check dam/.test(title) ? 'irrigation' : /wall|build|homes|school|hostel|block/.test(title) ? 'buildings' : null;
+    if (code) await prisma.tender.update({ where: { id: t.id }, data: { verticalCode: code } });
+  }
 }
 
 main()

@@ -51,6 +51,8 @@ export const NAV: Record<string, string> = {
   'Snags, completion, defect liability and close-out.': 'स्नैग, पूरा होना, दोष दायित्व और समापन।',
   'Project types': 'प्रोजेक्ट प्रकार',
   "Each type's components, their activities and the activities a new project starts with.": 'हर प्रकार के घटक, उनकी गतिविधियाँ और नए प्रोजेक्ट की शुरुआती गतिविधियाँ।',
+  Verticals: 'वर्टिकल',
+  "The company's business lines, such as water, buildings and roads; each project and tender belongs to one.": 'कंपनी के कारोबार के क्षेत्र, जैसे जल, भवन और सड़क; हर प्रोजेक्ट और टेंडर किसी एक का होता है।',
   'Daily reports': 'दैनिक रिपोर्ट',
   'The day at each site: work, labour, machines, weather, hold-ups.': 'हर साइट का दिन: काम, मज़दूर, मशीनें, मौसम, रुकावटें।',
   'Labour attendance': 'मज़दूर हाज़िरी',

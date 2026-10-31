@@ -81,6 +81,30 @@ export function letterNeedsApproval(rule: LetterApprovalRule, category: string |
   return isContractualCategory(category);
 }
 
+/** Who seals a letter at head office (L2, item 169): the directors. A director who signs at L1 has sealed it already. */
+export const LETTER_SEAL_ROLES = ['ADMIN', 'MANAGEMENT'] as const;
+export const maySealLetters = (role: string) => (LETTER_SEAL_ROLES as readonly string[]).includes(role);
+
+const RULE_REACH: Record<LetterApprovalRule, number> = { NONE: 0, CONTRACTUAL: 1, ALL: 2 };
+
+/**
+ * Whether a letter its signatory has just approved (L1) waits for head office's seal (L2) before it is numbered: the
+ * company's second rule asks for it for the category, and the signatory is not a director.
+ */
+export function letterNeedsSeal(secondRule: LetterApprovalRule, category: string | null | undefined, signerRole: string): boolean {
+  return letterNeedsApproval(secondRule, category) && !maySealLetters(signerRole);
+}
+
+/** The second approval reaches no letter the first does not: a seal comes after a signature. */
+export function letterRulesProblem(first: LetterApprovalRule, second: LetterApprovalRule): string | null {
+  if (RULE_REACH[second] <= RULE_REACH[first]) return null;
+  return first === 'NONE' ? 'Letters need no signature, so none can wait for head office. Ask for a signature first.' : 'Head office can seal only letters that are signed first. Choose the same letters or fewer.';
+}
+
+/** Where a letter waiting for approval stands: with its signatory (L1) or at head office (L2). */
+export const letterApprovalStage = (l: { status: LetterStatus; signedAt: string | null }): 'SIGN' | 'SEAL' | null =>
+  l.status !== 'AWAITING_APPROVAL' ? null : l.signedAt ? 'SEAL' : 'SIGN';
+
 /* ---------- numbering ---------- */
 
 /** P07/OUT/26-27/042; head office HO/IN/26-27/015. */
@@ -265,6 +289,8 @@ export interface LetterSeriesDto {
 
 export interface LetterSettingsDto {
   approval: LetterApprovalRule;
+  /** Item 169: which signed letters then wait for a director's seal at head office before they are numbered */
+  seal: LetterApprovalRule;
   series: LetterSeriesDto[];
   /** Projects and head office without a series of their own yet (one is made with the defaults on their first letter) */
   pattern: string;

@@ -136,8 +136,9 @@ and the pre-delivery checklist.
   read through `MastersService.entriesFor`, never a fixed array of a form's own. Keep `src/scripts/masters-test.ts` passing.
 - Correspondence (item 136, `apps/api/src/correspondence`, ARCHITECTURE "Correspondence"): a letter's number comes only from
   its series through `formatLetterNo` (`@erp/shared/correspondence.ts`), an outward letter waits for its signatory only by
-  `letterNeedsApproval`, and a received letter comes in only through `CorrespondenceService.recordInward` (the form and the
-  email inbox). Keep `src/scripts/correspondence-test.ts` passing.
+  `letterNeedsApproval`, and for the head office seal (item 169) only by `letterNeedsSeal` (`letterRulesProblem` keeps the
+  second rule within the first), and a received letter comes in only through `CorrespondenceService.recordInward` (the form
+  and the email inbox). Keep `src/scripts/correspondence-test.ts` passing.
 - QA/QC (item 137, `apps/api/src/qa`, ARCHITECTURE "QA/QC"): test types are `STANDARD_TEST_TYPES` overlaid by the company's
   rows by code (`testTypesOf`), never seeded; what a quality plan line owes is only `testsOwed` (IS 456 sampling by
   `is456Samples`), over approved DPR lines and receipts; a pour's card is an `Inspection` made through
@@ -162,7 +163,14 @@ and the pre-delivery checklist.
 - Menu and names (ARCHITECTURE "Menu and names"): the company's menu (sidebar or top bar, its look, the module set and names)
   is pure in `@erp/shared/nav-menu.ts` (`navMenuFor`, `navMenuPlace`, `navSettingsOf`) and drawn by `components/shell/TopBar.tsx`
   over `components/shell/menu.ts`; a new page of the tree also gets a place in `DEPARTMENT_MODULES`. Keep
-  `src/scripts/nav-menu-test.ts` passing.
+  `src/scripts/nav-menu-test.ts` passing. A department's screen (item 168, ARCHITECTURE "Department screens") shows the area
+  modules' figures picked by `DEPARTMENT_FIGURES` and pipelines (`DEPARTMENT_PIPELINES`, `pipelineOf` in
+  `@erp/shared/department-home.ts`) read through the modules' own list services in `DepartmentHomeService`, never a query of
+  its own; a new pipeline is a `PIPELINE_KEYS` key with its stages and a branch there. Keep `src/scripts/department-home-test.ts` passing.
+- Verticals (item 167, ARCHITECTURE "Verticals"): a vertical is a code of the `vertical` master on `Project.verticalCode` and
+  `Tender.verticalCode`, checked by `verticalProblem`, a new project's from `verticalOfType`; filtering is `inVertical` and
+  grouping `byVertical` (`@erp/shared/verticals.ts`), never a type check of a screen's own. The header's vertical is
+  `useVerticalScope()` beside the project scope. Keep `src/scripts/verticals-test.ts` passing.
 - Home (`app/(app)/page.tsx`) is the launcher (`components/launcher/HomeLauncher.tsx`, ARCHITECTURE "Launcher Home"): search over
   the navigation tree, Pinned, Recent and the module tiles. Pins and visits are the user's (`apps/api/src/launcher`, `NavPin`,
   `NavVisit`), never localStorage; a tile's menu comes from `usePins(user).tileMenu`, and a tile badge is a key of
@@ -188,6 +196,8 @@ and the pre-delivery checklist.
   which raises each draft order through its own `create`; where an order is delivered with no address of its own is
   `siteDeliveryAddress` over `Project.siteAddress`, and a link sent by hand goes through `whatsAppShareUrl`
   (`@erp/shared/messaging.ts`), never a `wa.me` string of a screen's own. Keep `src/scripts/purchase-award-test.ts` passing.
+  An indent's check against the store and the BOQ (item 170, ARCHITECTURE "Indent checks") is `StockService.indentCheck` over
+  the pure `boqAllowance` / `indentLineCheck` (`@erp/shared/indent-check.ts`); keep `src/scripts/indent-check-test.ts` passing.
 - Activities and the BOQ (ARCHITECTURE "Linking activities to BOQ items"): which BOQ item an activity is offered is
   `boqLinkSuggestions` over `nameMatch` (`@erp/shared/boq-links.ts`), never a match of a screen's own; the user keeps the
   offers and `PlanningService.linkBoq` sets `boqItemId` (taking the item's unit and quantity only where the activity has

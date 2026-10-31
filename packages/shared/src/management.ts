@@ -107,6 +107,8 @@ export interface PortfolioProjectDto {
   code: string;
   name: string;
   type: string;
+  /** Its vertical (item 167), a code of the `vertical` master */
+  verticalCode: string | null;
   status: string;
   clientName: string | null;
   projectManagerName: string | null;
@@ -175,9 +177,29 @@ export interface AttentionItemDto {
   text: string;
 }
 
+/** The portfolio's money for one vertical (item 167), its projects added up. */
+export interface PortfolioVerticalDto {
+  /** null for the projects with no vertical */
+  code: string | null;
+  name: string;
+  projects: number;
+  contractValue: string;
+  orderBook: string;
+  workDone: string;
+  billed: string;
+  outstanding: string;
+  cost: string;
+  margin: string;
+  marginPct: number | null;
+}
+
 export interface PortfolioDto {
   asOf: string;
+  /** The vertical it is limited to (`?vertical=`), else null */
+  vertical: string | null;
   totals: PortfolioTotalsDto;
+  /** The same money by vertical (`byVertical`): one entry per vertical with projects */
+  verticals: PortfolioVerticalDto[];
   projects: PortfolioProjectDto[];
   approvals: ApprovalAgeingDto;
   months: PortfolioMonthDto[];
@@ -266,6 +288,8 @@ export interface ManagementReportDto {
   to: string;
   /** The project it is limited to, else null for every project the reader sees */
   projectName: string | null;
+  /** The vertical it is limited to (item 167), by name, else null */
+  verticalName: string | null;
   generatedAt: string;
   /** The paragraph the report opens with, written from its own figures (the Monthly MIS, intelligence quick win Q9) */
   commentary?: string | null;

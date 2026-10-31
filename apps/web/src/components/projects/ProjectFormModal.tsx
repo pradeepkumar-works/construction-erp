@@ -6,11 +6,11 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { AimOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { BreakdownPick, ContractModel, ProjectDetail, ProjectStatus, ProjectType, ProjectTypeDto } from '@erp/shared';
-import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, MAX_COMPONENT_COUNT, STANDARD_TERMS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, defaultPicks, readNumber, readText, typeCodeOf, workOrderEnd } from '@erp/shared';
+import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, MAX_COMPONENT_COUNT, STANDARD_TERMS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, defaultPicks, readNumber, readText, typeCodeOf, verticalOfType, workOrderEnd } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivityTemplates, useNextProjectCode, useProjectTypes } from '@/lib/queries';
+import { useActivityTemplates, useMasterList, useNextProjectCode, useProjectTypes } from '@/lib/queries';
 import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { useAuth } from '@/lib/auth';
@@ -26,6 +26,8 @@ interface FormValues {
   name: string;
   /** A project type's code (item 134), or `kind:PLANT` / `kind:STORE` for the built-in kinds that have no type */
   typeChoice: string;
+  /** Its vertical (item 167), a code of the vertical master */
+  verticalCode?: string | null;
   /** New projects: how many of each top-level component of the type's starting breakdown (0 leaves it out) */
   breakdown?: Record<string, number | null>;
   status?: ProjectStatus;
@@ -99,6 +101,10 @@ export function ProjectFormModal({
   const mayCreate = !!user && (MANAGER_ROLES as readonly string[]).includes(user.roleKey);
   const { data: nextCode } = useNextProjectCode(type as ProjectType | undefined, open && !isEdit && mayCreate);
   const filledCode = useRef<string | null>(null);
+  // The company's verticals (item 167); a new project's type fills its usual one, and `filledVertical` keeps what we
+  // filled, so a vertical chosen by hand stays when the type changes.
+  const { data: verticals } = useMasterList('vertical', false, open);
+  const filledVertical = useRef<string | null>(null);
   // The saved project, handed to `onSaved` once the form has closed (e.g. to open it).
   const saved = useRef<string | null>(null);
   // A work order or LoA read to fill a new project (finding 10 of the October review).
@@ -135,6 +141,7 @@ export function ProjectFormModal({
         code: project.code,
         name: project.name,
         typeChoice: project.type === 'PLANT' || project.type === 'STORE' ? kindChoice(project.type) : (project.typeCode ?? typeCodeOf(project) ?? undefined),
+        verticalCode: project.verticalCode,
         status: project.status,
         contractModel: project.contractModel,
         clientId: project.clientId,
@@ -154,6 +161,7 @@ export function ProjectFormModal({
     } else {
       form.resetFields();
       filledCode.current = null;
+      filledVertical.current = null;
       typeFilled.current = {};
       // A project manager making a project manages it, or would not see it once made.
       form.setFieldsValue({
@@ -181,6 +189,15 @@ export function ProjectFormModal({
   }, [open, isEdit, typeKey, form]);
 
   useEffect(() => {
+    if (!open || isEdit || !type || !verticals) return;
+    const now = form.getFieldValue('verticalCode') ?? null;
+    if (now && now !== filledVertical.current) return;
+    const next = verticalOfType(type, verticals.entries);
+    form.setFieldValue('verticalCode', next);
+    filledVertical.current = next;
+  }, [open, isEdit, type, verticals, form]);
+
+  useEffect(() => {
     if (!open || isEdit || !nextCode?.code) return;
     const typed = form.getFieldValue('code');
     if (typed && typed !== filledCode.current) return;
@@ -197,6 +214,7 @@ export function ProjectFormModal({
           const t = typeOfChoice(values.typeChoice, types);
           return { type: t.type, typeCode: t.def?.code ?? null };
         })(),
+        verticalCode: values.verticalCode || null,
         status: values.status,
         contractModel: values.contractModel,
         // Without a client from the master an older free-text client name is left as it is.
@@ -284,7 +302,7 @@ export function ProjectFormModal({
               <Input placeholder="Highway widening Km 12 to Km 28" />
             </Form.Item>
           </FormGrid>
-          <FormGrid cols={3}>
+          <FormGrid cols={2}>
             <Form.Item name="typeChoice" label="Type" rules={[{ required: true, message: 'Choose the type, e.g. Road' }]} extra={typeDef?.description || undefined}>
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
@@ -293,6 +311,14 @@ export function ProjectFormModal({
                   ...(types ?? []).filter((t) => t.active || t.code === typeChoice).map((t) => ({ value: t.code, label: t.name })),
                   ...KIND_CHOICES.map((k) => ({ value: kindChoice(k), label: PROJECT_TYPE_LABELS[k] })),
                 ]}
+              />
+            </Form.Item>
+            <Form.Item name="verticalCode" label="Vertical" extra="The business line it reports under. Keep the list in Masters › Verticals.">
+              <Select
+                allowClear
+                placeholder="No vertical"
+                loading={!verticals}
+                options={(verticals?.entries ?? []).filter((e) => e.isActive || e.code === project?.verticalCode).map((e) => ({ value: e.code, label: e.name }))}
               />
             </Form.Item>
             <Form.Item name="status" label="Status">

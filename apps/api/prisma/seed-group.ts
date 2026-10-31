@@ -177,6 +177,7 @@ export async function seedGroupCompanies(prisma: PrismaClient, demoOrgId: string
 
   const buildcon = await ensureCompany(prisma, groupId, BUILDCON, passwordHash);
   await seedBuildcon(prisma, buildcon, woNo);
+  await addBuildconDelays(prisma, buildcon);
 
   const design = await ensureCompany(prisma, groupId, DESIGN, passwordHash);
   await seedDesign(prisma, design);
@@ -1175,6 +1176,63 @@ async function seedBuildcon(prisma: PrismaClient, co: Co, woNo: string | null) {
   await addBill(prisma, co, 'BC-2026-01', { billNo: 2, upTo: 20, billAgo: 17, sentAgo: 15, remarks: 'Plinth to first floor slab, Block A' }, people);
   await addBill(prisma, co, 'BC-2026-02', { billNo: 1, upTo: 14, billAgo: 10, sentAgo: 9, remarks: 'Conduiting and plumbing to date' }, people);
   await mirrorBill(prisma, co.id, 'BC-2026-01', 'DEMOLAB', 'LAB-03', 1, true, 12);
+}
+
+interface DelaySeed {
+  projectCode: string;
+  title: string;
+  category: 'DESIGN' | 'WEATHER' | 'CLIENT';
+  party: 'CLIENT' | 'FORCE_MAJEURE';
+  /** days ago; no end while it still holds work up */
+  start: number;
+  end?: number;
+  /** days of extension of time granted; none while the claim waits */
+  granted?: number;
+  mitigation: string;
+}
+
+const BUILDCON_DELAYS: DelaySeed[] = [
+  {
+    projectCode: 'BC-2026-01', title: 'Raft redesigned after the second soil report', category: 'DESIGN', party: 'CLIENT', start: 150, end: 128, granted: 21,
+    mitigation: 'Excavation held at 2.4 m; raft drawings revision R1 issued by Nilachal Architects. Extension of 21 days granted by the Board.',
+  },
+  {
+    projectCode: 'BC-2026-01', title: 'Heavy rain flooded the raft excavation', category: 'WEATHER', party: 'FORCE_MAJEURE', start: 118, end: 109, granted: 7,
+    mitigation: 'Dewatering pumps run round the clock; PCC restarted once the pit was dry. Extension of 7 days granted.',
+  },
+  {
+    projectCode: 'BC-2026-01', title: 'Lift shaft and machine room drawings awaited from the architect', category: 'DESIGN', party: 'CLIENT', start: 12,
+    mitigation: 'Block A lift walls left at the second floor; reminder letter sent and extension of time claimed.',
+  },
+  {
+    projectCode: 'BC-2026-02', title: 'Slab cut-outs for sprinkler drops not left by the main contractor', category: 'CLIENT', party: 'CLIENT', start: 8,
+    mitigation: 'Core cutting asked of Demo Infra Projects for ward 4; sprinkler gang moved to the first floor mains. Extension of time claimed.',
+  },
+];
+
+/**
+ * Delays in Demo Buildcon's delay register with the extensions of time they earned, so the contract's revised completion
+ * and Progress by project's EOT have something to show. Added by title, so a database seeded before them gets them too.
+ */
+async function addBuildconDelays(prisma: PrismaClient, co: Co) {
+  const last = await prisma.risk.findFirst({ where: { organizationId: co.id, riskNo: { startsWith: `RISK-${year}-` } }, orderBy: { riskNo: 'desc' }, select: { riskNo: true } });
+  let counter = last ? parseInt(last.riskNo.slice(10), 10) : 0;
+  for (const d of BUILDCON_DELAYS) {
+    const project = await prisma.project.findFirst({ where: { organizationId: co.id, code: d.projectCode }, select: { id: true, projectManagerId: true } });
+    if (!project?.projectManagerId) continue;
+    if (await prisma.risk.count({ where: { projectId: project.id, kind: 'DELAY', title: d.title } })) continue;
+    counter += 1;
+    const closed = d.end !== undefined;
+    const risk = await prisma.risk.create({
+      data: {
+        organizationId: co.id, projectId: project.id, riskNo: `RISK-${year}-${String(counter).padStart(4, '0')}`, kind: 'DELAY', category: d.category, title: d.title,
+        ownerId: project.projectManagerId, probability: 5, impact: 3, score: 15, mitigation: d.mitigation, status: closed ? 'CLOSED' : 'OPEN',
+        delayStart: day(-d.start), delayEnd: closed ? day(-d.end!) : null, daysLost: closed ? d.start - d.end! : null, responsibleParty: d.party,
+        eotClaimed: true, eotGrantedDays: d.granted ?? null, closedAt: closed ? day(-d.end!) : null, raisedById: project.projectManagerId, createdAt: day(-d.start),
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId: co.id, entityType: 'RISK', entityId: risk.id, action: 'CREATED', actorId: project.projectManagerId, createdAt: day(-d.start) } });
+  }
 }
 
 // ---------------------------------------------------------------------------------------------------------------

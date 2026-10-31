@@ -1,11 +1,14 @@
 import type { ProjectStatus } from './enums';
+import { revisedCompletion } from './contract';
 import { BEHIND_TOLERANCE_PCT } from './schedule';
 
 /**
  * Progress by project (ARCHITECTURE "Progress by project"): the Projects module's screen shows every contract project the
  * caller sees with its physical progress (the work breakdown's `rollUp`, against the share planned by today) and its
  * financial progress (approved RA bills, work value before GST and price variation, against the revised contract value),
- * side by side on one 0–100 scale. The portfolio figures and the notes beside a project are pure here.
+ * side by side on one 0–100 scale, and its contract dates (start, completion, extensions of time and the revised
+ * completion) against the schedule's finish. The portfolio figures, the notes beside a project and the contract time are
+ * pure here.
  */
 
 /** Billing this many points behind or ahead of the work done is worth a word. */
@@ -26,6 +29,25 @@ export interface ProjectProgressDto {
   contractValue: string | null;
   /** Approved RA bills to date, work value before GST and price variation, for roles that see bills; null otherwise */
   billed: string | null;
+  /** The contract's start date */
+  startDate: string | null;
+  /** The contract's completion date, before any extension of time */
+  endDate: string | null;
+  /** Days of extension of time granted in the delay register, and in how many delays */
+  eotDays: number;
+  eotCount: number;
+  /** Delays with an extension of time claimed and not yet granted */
+  eotPending: number;
+  /** The completion date with the extensions granted (`revisedCompletion`) */
+  revisedEndDate: string | null;
+  /** The schedule's planned finish: the latest activity end or milestone due date; null without dated activities */
+  planFinish: string | null;
+  /** The date of completion on the handover certificate; null until handed over */
+  completedOn: string | null;
+  /** Contract time gone, start to revised completion, % (over 100 once past it); null without both dates */
+  timeUsedPct: number | null;
+  /** Days to the revised completion date, negative once past it; null once handed over or without a date */
+  daysLeft: number | null;
 }
 
 export interface ModuleProgressDto {
@@ -41,6 +63,26 @@ export interface ModuleProgressDto {
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
+const DAY_MS = 86_400_000;
+/** Days from a to b, both YYYY-MM-DD; negative when b is before a. */
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / DAY_MS);
+
+/**
+ * Where a project stands against its contract time: the completion date with the extensions of time granted, the share
+ * of the time from start to that date gone by today (or by the handover, once handed over), and the days left to it
+ * (negative once past it, none once handed over).
+ */
+export function contractTime(
+  p: { startDate: string | null; endDate: string | null; eotDays: number; completedOn: string | null },
+  today: string,
+): { revisedEndDate: string | null; timeUsedPct: number | null; daysLeft: number | null } {
+  const revisedEndDate = revisedCompletion(p.endDate, p.eotDays);
+  if (!revisedEndDate) return { revisedEndDate, timeUsedPct: null, daysLeft: null };
+  const upTo = p.completedOn ?? today;
+  const span = p.startDate ? daysBetween(p.startDate, revisedEndDate) : 0;
+  const timeUsedPct = p.startDate && span > 0 ? round1(Math.max(0, (daysBetween(p.startDate, upTo) / span) * 100)) : null;
+  return { revisedEndDate, timeUsedPct, daysLeft: p.completedOn ? null : daysBetween(today, revisedEndDate) };
+}
 
 /**
  * The projects' figures together. Physical progress weighs each project by its contract value when every project has
