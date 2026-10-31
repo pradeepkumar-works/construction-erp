@@ -11,13 +11,13 @@ import { searchShortcut } from './Sidebar';
 /** Users who have seen the tour on this browser (their ids), or "*" for every user. */
 export const PREF_TOUR = 'nirmaan.tour.seen';
 
-/** The element a step points at: shell parts carry `data-tour`. */
 /** Who has seen the tour, ignoring anything unreadable in storage. */
 const seenBy = (): string[] | '*' => {
   const v = readPref<unknown>(PREF_TOUR, []);
   return v === '*' ? '*' : Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
 };
 
+/** The element a step points at: shell parts carry `data-tour`. */
 const at = (name: string) => () => document.querySelector<HTMLElement>(`[data-tour="${name}"]`);
 
 interface Step {

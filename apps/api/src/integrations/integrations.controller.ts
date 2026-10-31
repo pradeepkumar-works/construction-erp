@@ -47,7 +47,7 @@ export class IntegrationsController {
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
   @ApiOperation({
-    summary: "Reads every makers' feed that is due (item 146) and removes machine readings past 90 days. Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the daily digest runs it too. Auth: Authorization: Bearer <CRON_SECRET>.",
+    summary: "Reads every makers' feed that is due and removes machine readings past 90 days. Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the daily digest runs it too. Auth: Authorization: Bearer <CRON_SECRET>.",
   })
   @Get('jobs/machine-feeds')
   pollFeeds() {

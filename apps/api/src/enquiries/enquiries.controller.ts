@@ -20,7 +20,7 @@ export class EnquiriesController {
 
   @ApiOperation({
     summary: 'Send an enquiry to vendors',
-    description: 'v5 item 95. One-time link per vendor to a page where they type rates, GST, freight and delivery days; emailed when the vendor has an email. The answer carries the links (only here) to pass on by hand.',
+    description: 'One-time link per vendor to a page where they type rates, GST, freight and delivery days; emailed when the vendor has an email. The answer carries the links (only here) to pass on by hand.',
   })
   @Post()
   create(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateEnquiryDto, @Headers('origin') origin?: string) {

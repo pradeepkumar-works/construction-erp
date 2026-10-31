@@ -10,7 +10,7 @@ import { CancelDebitNoteDto, CreateDebitNoteDto, ListDebitNotesQuery } from './p
 export class DebitNotesController {
   constructor(private notes: DebitNotesService) {}
 
-  @ApiOperation({ summary: 'Debit notes (paged)', description: 'What was taken off approved vendor and subcontract bills (v5 item 91). Cancelled notes only with includeCancelled.' })
+  @ApiOperation({ summary: 'Debit notes (paged)', description: 'What was taken off approved vendor and subcontract bills. Cancelled notes only with includeCancelled.' })
   @Get()
   list(@CurrentUser() user: RequestUser, @Query() q: ListDebitNotesQuery) {
     return this.notes.list(user, q);

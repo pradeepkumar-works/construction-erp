@@ -348,12 +348,12 @@ export const NAV_PIN_KINDS = ['NODE', 'PROJECT'] as const;
 export type NavPinKind = (typeof NAV_PIN_KINDS)[number];
 export const NAV_VISIT_KINDS = ['NODE', 'PROJECT', 'RECORD'] as const;
 export type NavVisitKind = (typeof NAV_VISIT_KINDS)[number];
-/** Launcher phase 3: someone asks for a module their role cannot open; an admin grants it (by changing the role or
- *  turning the module on) or declines it. */
 /** What a company does (group companies, phase 1): sets the modules a new company of a group starts with. */
 export const COMPANY_KINDS = ['CONSTRUCTION', 'CONSULTANCY', 'QUALITY_LAB', 'PLANT', 'HOLDING'] as const;
 export type CompanyKind = (typeof COMPANY_KINDS)[number];
 
+/** Someone asks for a module their role cannot open; an admin grants it (by changing the role or
+ *  turning the module on) or declines it. */
 export const ACCESS_REQUEST_STATUSES = ['OPEN', 'GRANTED', 'DECLINED'] as const;
 export type AccessRequestStatus = (typeof ACCESS_REQUEST_STATUSES)[number];
 

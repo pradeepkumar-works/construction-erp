@@ -310,7 +310,6 @@ export class TendersService {
     };
   }
 
-  /** The company's labour rates by trade and machine rates by category (the average hourly rate of its machines). */
   /**
    * Bid intelligence (intelligence quick win Q4): the company's past openings of the same client and kind of work, each
    * priced through `price` like the register, with where L1 landed against the SOR (or the estimate) and our place; the
@@ -360,6 +359,7 @@ export class TendersService {
     return { tenderId: t.id, kind, quotedPct, openings, level: bidLevel(openings, quotedPct) };
   }
 
+  /** The company's labour rates by trade and machine rates by category (the average hourly rate of its machines). */
   private async rates(organizationId: string) {
     const [labour, machines] = await Promise.all([
       this.prisma.labourRate.findMany({ where: { organizationId }, select: { category: true, dailyRate: true } }),

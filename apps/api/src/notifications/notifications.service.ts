@@ -472,7 +472,6 @@ export class NotificationsService {
     }
   }
 
-  /** Tell the author how the review went. */
   /** An approved purchase or work order goes to the supplier's portal logins to accept (v6 item 105). */
   private async onOrderApproved(actor: RequestUser, type: 'PURCHASE_ORDER' | 'WORK_ORDER', id: string, projectName: string) {
     const order =
@@ -494,6 +493,7 @@ export class NotificationsService {
     if (logins.length) await this.notify({ organizationId, userIds: logins.map((u) => u.id), type: 'SUPPLIER', ...n });
   }
 
+  /** Tell the author how the review went. */
   async onReviewed(actor: RequestUser, type: SubmissionType, id: string, status: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED', note?: string | null) {
     try {
       const s = await this.describeSubmission(type, id);

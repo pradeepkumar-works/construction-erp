@@ -286,7 +286,6 @@ export class ReconciliationService {
     };
   }
 
-  /** Add a norm, or change the one the BOQ item already has for that store item. */
   /**
    * What adopting the standard norms library would do to a project (finding 16 of the October review): the BOQ items
    * the library recognises, the norms they would get, and the store items it would have to add. Nothing is written.
@@ -377,6 +376,7 @@ export class ReconciliationService {
     return { boqItems: take.length, norms, newItems: added, skipped };
   }
 
+  /** Add a norm, or change the one the BOQ item already has for that store item. */
   async save(user: RequestUser, projectId: string, dto: SaveMaterialNormDto): Promise<MaterialNormDto> {
     await this.assertEdit(user, projectId);
     const [boq, item] = await Promise.all([

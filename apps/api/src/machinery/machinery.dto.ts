@@ -43,7 +43,7 @@ export class CreateEquipmentDto {
   @IsNumberString()
   rate?: string | null;
   @ApiPropertyOptional({ enum: EQUIPMENT_RATE_UNITS, default: 'HOUR' }) @IsOptional() @IsIn(EQUIPMENT_RATE_UNITS as unknown as string[]) rateUnit?: EquipmentRateUnit;
-  @ApiPropertyOptional({ example: '200', description: 'Hire terms (v5 item 91): hours paid for a month even if it worked less; null = none' })
+  @ApiPropertyOptional({ example: '200', description: 'Hire terms: hours paid for a month even if it worked less; null = none' })
   @IsOptional()
   @num()
   @ValidateIf((_, v) => v !== null)
@@ -76,7 +76,7 @@ export class CreateEquipmentDto {
   @IsDateString()
   lastServiceDate?: string | null;
   @ApiPropertyOptional({ example: '2150' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() lastServiceMeter?: string | null;
-  @ApiPropertyOptional({ example: '4.5', description: 'Fuel norm (v5 item 93) in `fuelNormUnit`; null = none' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() fuelNorm?: string | null;
+  @ApiPropertyOptional({ example: '4.5', description: 'Fuel norm in `fuelNormUnit`; null = none' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() fuelNorm?: string | null;
   @ApiPropertyOptional({ enum: FUEL_NORM_UNITS }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(FUEL_NORM_UNITS as unknown as string[]) fuelNormUnit?: FuelNormUnit | null;
   @ApiPropertyOptional({ example: '15', description: 'How far the average may stray from the norm, %; null = the default 15' })
   @IsOptional()
@@ -84,7 +84,7 @@ export class CreateEquipmentDto {
   @ValidateIf((_, v) => v !== null)
   @IsNumberString()
   fuelTolerancePct?: string | null;
-  @ApiPropertyOptional({ example: '300', description: "The fuel tank's size in litres (item 147); null = not known" })
+  @ApiPropertyOptional({ example: '300', description: "The fuel tank's size in litres; null = not known" })
   @IsOptional()
   @num()
   @ValidateIf((_, v) => v !== null)
