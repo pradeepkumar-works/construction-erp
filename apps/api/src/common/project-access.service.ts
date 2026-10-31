@@ -44,12 +44,10 @@ export class ProjectAccessService {
     return project;
   }
 
-  /** Whether another user of the company (a risk's owner, an NCR's assignee, an imprest's holder) sees the project. */
   async userSeesProject(u: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>, projectId: string) {
     return (await this.prisma.project.count({ where: { id: projectId, ...this.projectWhere(u) } })) > 0;
   }
 
-  /** The visibility rule from the users' side: company-wide roles, the project's manager and its members. */
   seesProjectWhere(projectId: string): Prisma.UserWhereInput {
     return {
       OR: [

@@ -27,9 +27,8 @@ export const isSupplier = (role: RoleKey) => role === 'SUPPLIER';
 /** Roles allowed to approve / reject site submissions (within their accessible projects). */
 export const APPROVER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
-/** Roles allowed to edit a project's BOQ, activities and plan. */
 export const PROJECT_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
-/** Open a project, change its details and keep its team: the project editors but the QS, who keeps the BOQ and plan only. */
+// The QS keeps the BOQ and plan, not the project or its team.
 export const PROJECT_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 /** Freeze a project's schedule baseline: the project's managers, not the planners who keep the plan current. */
 export const BASELINE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
@@ -115,7 +114,6 @@ export const GETTING_STARTED_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
 export const COMPANY_TODAY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER', 'PROJECT_MANAGER'];
 
 export const isCompanyWide = (role: RoleKey) => COMPANY_WIDE_ROLES.includes(role);
-/** The company's directors: admins and management. */
 export const isDirector = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
 /** Issue an official progress report to the client (item 174): it takes a revision and is kept as issued. */
@@ -165,9 +163,8 @@ export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
 export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
 /** Changing or deleting a view someone else shared with the company (owners always can). */
 export const canManageSharedViews = (role: RoleKey) => role === 'ADMIN';
-/** Remove anyone's comment (authors always can). */
+// Authors can always remove their own.
 export const canRemoveAnyComment = (role: RoleKey) => role === 'ADMIN';
-/** Make a group of companies with this company as its first (its maker runs the group). */
 export const canMakeGroup = (role: RoleKey) => role === 'ADMIN';
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
 export const seesCompanyToday = (role: RoleKey) => COMPANY_TODAY_ROLES.includes(role);
