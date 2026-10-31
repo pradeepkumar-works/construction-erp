@@ -8,6 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos } from '../../src/forms/edit';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -65,9 +66,36 @@ export default function RiskFormScreen() {
   const [saved, setSaved] = useState<RiskDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft(
+    editId ? null : 'risk',
+    { kind, projectId, title, category, activityId, description, delayStart, resumed, delayEnd, party, probability, impact, mitigation, ownerId, dueIn, photos },
+    (d) => {
+      setKind(d.kind);
+      setProjectId(d.projectId);
+      setTitle(d.title);
+      setCategory(d.category);
+      setActivityId(d.activityId);
+      setDescription(d.description);
+      setDelayStart(d.delayStart);
+      setResumed(d.resumed);
+      setDelayEnd(d.delayEnd);
+      setParty(d.party);
+      setProbability(d.probability);
+      setImpact(d.impact);
+      setMitigation(d.mitigation);
+      setOwnerId(d.ownerId);
+      setDueIn(d.dueIn);
+      setPhotos(restorePhotos(d.photos));
+    },
+  );
+  useLeaveGuard(draft, { keepsDraft: !editId, busy });
+
   useEffect(() => {
-    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [editId, projects.options, projectId]);
+    if (!editId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [editId, projects.options, projectId, draft]);
 
   useEffect(() => {
     const r = existing.data;
@@ -90,6 +118,8 @@ export default function RiskFormScreen() {
     setStatus(r.status);
     setClosureNote(r.closureNote ?? '');
     setPhotos(attachmentsToPhotos(r.attachments));
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
@@ -117,7 +147,7 @@ export default function RiskFormScreen() {
     if (!title.trim()) e.title = t(isDelay ? 'Say what is holding up work' : 'Say what might happen');
     if (!category) e.category = t('Choose a category');
     if (isDelay) {
-      if (!isIsoDate(delayStart) || delayStart > today()) e.delayStart = t('Enter a date up to today');
+      if (!isIsoDate(delayStart) || delayStart > today()) e.delayStart = t('Choose a date up to today');
       if (resumed && (!isIsoDate(delayEnd) || delayEnd < delayStart || delayEnd > today())) e.delayEnd = t('Enter a date between the start and today');
     }
     if (editId && status === 'CLOSED' && !closureNote.trim()) e.closureNote = t('Say how it was resolved');
@@ -167,6 +197,7 @@ export default function RiskFormScreen() {
             subtitle: `${projectName} · ${formatDate(today())}`,
           }),
         );
+        draft.clear();
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -174,6 +205,7 @@ export default function RiskFormScreen() {
       }
       try {
         setSaved(await api.post<RiskDto>('/risks', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -195,13 +227,31 @@ export default function RiskFormScreen() {
     setMitigation('');
     setPhotos([]);
     setErrors({});
+    draft.settle();
+  };
+  const startOver = () => {
+    setTitle('');
+    setCategory(null);
+    setActivityId(null);
+    setDescription('');
+    setDelayStart(today());
+    setResumed(false);
+    setDelayEnd(today());
+    setParty(null);
+    setProbability(kind === 'RISK' ? '3' : '5');
+    setImpact('3');
+    setMitigation('');
+    setOwnerId(null);
+    setDueIn(null);
+    setPhotos([]);
+    setErrors({});
   };
 
   if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (saved) {
     return (
       <SubmitSuccess
-        title={t(editId ? 'Entry updated' : isDelay ? 'Delay recorded' : 'Risk raised')}
+        title={t(editId ? 'Entry updated' : isDelay ? 'Delay recorded' : 'Risk saved')}
         subtitle={`${saved.riskNo}: ${saved.title}.${!editId && (isDelay || level === 'HIGH') ? ` ${t('The project manager has been told.')}` : ''}`}
         detailHref={`/risk/${saved.id}`}
         onAnother={editId ? undefined : reset}
@@ -215,6 +265,7 @@ export default function RiskFormScreen() {
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: editId ? t('Update {no}', { no: existing.data?.riskNo ?? '' }) : t(isDelay ? 'Record delay' : 'New risk') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
@@ -280,7 +331,7 @@ export default function RiskFormScreen() {
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={t(editId ? 'Save' : isDelay ? 'Record delay' : 'Raise risk')} icon="send" onPress={submit} loading={busy} />
+      <Button title={t(editId ? 'Save' : isDelay ? 'Record delay' : 'New risk')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

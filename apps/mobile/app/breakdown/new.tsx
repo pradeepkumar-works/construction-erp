@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { EquipmentDto, MaintenanceJobDto, Paginated } from '@erp/shared';
@@ -8,17 +8,18 @@ import { errorMessage } from '../../src/api/client';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
-import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSuccess } from '../../src/forms/common';
-import { useOffline } from '../../src/offline';
+import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos } from '../../src/forms/common';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
+import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, fontSize, spacing } from '../../src/theme';
-import { isIsoDate, today } from '../../src/utils/format';
+import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
 const NUM = /^\d+(\.\d+)?$/;
 
 /**
  * Report a machine that has broken down at site (v4 item 42). The store manager and the project manager are told at
- * once and keep the job card on the web. Needs a connection, since the point is to get the machine looked at now.
+ * once and keep the job card on the web. Without a signal it waits in the outbox and goes as soon as there is one.
  */
 export default function BreakdownScreen() {
   const params = useLocalSearchParams<{ equipmentId?: string; projectId?: string }>();
@@ -26,7 +27,9 @@ export default function BreakdownScreen() {
   const t = useT();
   const field = useFieldChain();
   const errorSummary = useErrorSummary();
-  const { online } = useOffline();
+  const { online, enqueue, newId } = useOffline();
+  // One id for a direct send and the outbox, so a report that timed out but arrived is never made twice.
+  const clientId = useRef(newId());
   const fleet = useFetch<Paginated<EquipmentDto>>((a) => a.get('/equipment', { pageSize: MAX_PAGE_SIZE }), [], { refetchOnFocus: false, cacheKey: 'equipment:v1' });
 
   const [equipmentId, setEquipmentId] = useState<string | null>(params.equipmentId ?? null);
@@ -38,6 +41,16 @@ export default function BreakdownScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<MaintenanceJobDto | null>(null);
+  const [queued, setQueued] = useState<OutboxItem | null>(null);
+
+  const draft = useFormDraft('breakdown', { equipmentId, date, meter, description, photos }, (d) => {
+    setEquipmentId(d.equipmentId);
+    setDate(d.date);
+    setMeter(d.meter);
+    setDescription(d.description);
+    setPhotos(restorePhotos(d.photos));
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
 
   // Machines at the project first (when opened from one), then the rest of the fleet; machines in the yard last.
   const options = useMemo<SelectOption[]>(() => {
@@ -49,11 +62,11 @@ export default function BreakdownScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!equipmentId) e.equipmentId = t('Choose the machine');
-    if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
+    if (!isIsoDate(date) || date > today()) e.date = t('Choose a date up to today');
     if (meter.trim() && !NUM.test(meter.trim())) e.meter = t('Enter the meter reading as a number');
     if (!description.trim()) e.description = t('Say what broke down');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
-    else if (photosFailed(photos) || photosQueued(photos)) e.photos = t('Photos need a connection; remove them or try again');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     setErrors(e);
     errorSummary.report(e);
     return Object.keys(e).length === 0;
@@ -64,16 +77,23 @@ export default function BreakdownScreen() {
     if (!validate()) return;
     setBusy(true);
     try {
-      setSaved(
-        await api.post<MaintenanceJobDto>('/maintenance/jobs', {
-          equipmentId,
-          kind: 'BREAKDOWN',
-          date,
-          meterReading: meter.trim() || null,
-          description: description.trim(),
-          attachmentIds: attachmentIds(photos),
-        }),
-      );
+      const body = { equipmentId, kind: 'BREAKDOWN', date, meterReading: meter.trim() || null, description: description.trim() };
+      const queueIt = async () => {
+        const code = fleet.data?.items.find((e) => e.id === equipmentId)?.code ?? t('Machine');
+        setQueued(await enqueue({ id: clientId.current, type: 'BREAKDOWN', payload: body, photos: toOutboxPhotos(photos), title: `${t('Breakdown')} · ${code}`, subtitle: formatDate(date) }));
+        draft.clear();
+      };
+      if (!online || photosQueued(photos)) {
+        await queueIt();
+        return;
+      }
+      try {
+        setSaved(await api.post<MaintenanceJobDto>('/maintenance/jobs', { id: clientId.current, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
+      } catch (e) {
+        if (!isOfflineError(e)) throw e;
+        await queueIt();
+      }
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -82,14 +102,25 @@ export default function BreakdownScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setSaved(null);
+    setQueued(null);
     setEquipmentId(null);
     setMeter('');
     setDescription('');
     setPhotos([]);
     setErrors({});
   };
+  const startOver = () => {
+    setEquipmentId(params.equipmentId ?? null);
+    setDate(today());
+    setMeter('');
+    setDescription('');
+    setPhotos([]);
+    setErrors({});
+  };
 
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (saved)
     return (
       <SubmitSuccess
@@ -104,8 +135,9 @@ export default function BreakdownScreen() {
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t('Report breakdown') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
-      <ErrorBanner message={submitError ?? (online ? null : t('You are offline. A breakdown is sent straight away, so it needs a connection.'))} />
+      <ErrorBanner message={submitError} />
       <Card>
         <Select label={t('Machine')} required value={equipmentId} options={options} onChange={setEquipmentId} placeholder={t('Choose the machine')} error={errors.equipmentId} />
         <DatePicker label={t('Stopped on')} required value={date} onChange={setDate} error={errors.date} />
@@ -116,7 +148,7 @@ export default function BreakdownScreen() {
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={t('Report breakdown')} icon="send" onPress={submit} loading={busy} disabled={!online} />
+      <Button title={t('Report breakdown')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

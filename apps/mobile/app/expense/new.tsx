@@ -8,6 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
@@ -52,9 +53,29 @@ export default function NewExpenseScreen() {
   const [created, setCreated] = useState<ExpenseDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft(editId ? null : 'expense', { projectId, date, category, description, vendor, gstin, billNo, amount, gstRate, paymentMode, activityId, remarks, photos }, (d) => {
+    setProjectId(d.projectId);
+    setDate(d.date);
+    setCategory(d.category);
+    setDescription(d.description);
+    setVendor(d.vendor);
+    setGstin(d.gstin);
+    setBillNo(d.billNo);
+    setAmount(d.amount);
+    setGstRate(d.gstRate);
+    setPaymentMode(d.paymentMode);
+    setActivityId(d.activityId);
+    setRemarks(d.remarks);
+    setPhotos(restorePhotos(d.photos));
+  });
+  useLeaveGuard(draft, { keepsDraft: !editId, busy });
+
   useEffect(() => {
-    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [editId, projects.options, projectId]);
+    if (!editId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [editId, projects.options, projectId, draft]);
 
   useEffect(() => {
     const e = existing.data;
@@ -72,6 +93,8 @@ export default function NewExpenseScreen() {
     setActivityId(e.activityId);
     setRemarks(e.remarks ?? '');
     setPhotos(attachmentsToPhotos(e.attachments));
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
@@ -84,9 +107,9 @@ export default function NewExpenseScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!category) e.category = t('Choose a category');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     if (!description.trim()) e.description = t('Say what it was for');
-    if (!MONEY.test(amount.trim()) || Number(amount) <= 0) e.amount = t('Enter the amount before GST, e.g. 2400 or 2400.50');
+    if (!MONEY.test(amount.trim()) || Number(amount) <= 0) e.amount = t('Enter the taxable value, e.g. 2400 or 2400.50');
     if (gstin.trim() && !GSTIN_PATTERN.test(gstin.trim().toUpperCase())) e.gstin = t('Enter the 15-character GSTIN, or leave it blank');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
@@ -132,6 +155,7 @@ export default function NewExpenseScreen() {
             subtitle: `${projectName} · ${formatDate(date)}`,
           }),
         );
+        draft.clear();
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -139,6 +163,7 @@ export default function NewExpenseScreen() {
       }
       try {
         setCreated(await api.post<ExpenseDto>('/expenses', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -163,6 +188,22 @@ export default function NewExpenseScreen() {
     setRemarks('');
     setPhotos([]);
     setErrors({});
+    draft.settle();
+  };
+  const startOver = () => {
+    setDate(today());
+    setCategory(null);
+    setDescription('');
+    setVendor('');
+    setGstin('');
+    setBillNo('');
+    setAmount('');
+    setGstRate('0');
+    setPaymentMode('CASH');
+    setActivityId(null);
+    setRemarks('');
+    setPhotos([]);
+    setErrors({});
   };
 
   if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
@@ -183,6 +224,7 @@ export default function NewExpenseScreen() {
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: editId ? t('Edit site expense') : t('New site expense') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
@@ -193,8 +235,8 @@ export default function NewExpenseScreen() {
         <DatePicker label={t('Bill date')} required value={date} onChange={setDate} error={errors.date} />
       </Card>
       <Card title={t('Amount')}>
-        <Input {...field()} label={t('Amount before GST (₹)')} required value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder={t('e.g. 2400')} error={errors.amount} style={styles.bigInput} />
-        <Chips label={t('GST rate')} value={gstRate} onChange={(v) => setGstRate(v ?? '0')} clearable={false} options={GST_RATES.map((r) => ({ value: String(r), label: `${r}%` }))} />
+        <Input {...field()} label={t('Taxable value (₹)')} required value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder={t('e.g. 2400')} error={errors.amount} style={styles.bigInput} />
+        <Chips label={t('GST %')} value={gstRate} onChange={(v) => setGstRate(v ?? '0')} clearable={false} options={GST_RATES.map((r) => ({ value: String(r), label: `${r}%` }))} />
         <View style={styles.totalBox}>
           <Text style={typography.caption}>GST {rupees(gst)}</Text>
           <Text style={styles.total}>{rupees(total)}</Text>

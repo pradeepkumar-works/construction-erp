@@ -13,6 +13,7 @@ import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useFieldChain } from '../../src/forms/keyboard';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 
 /** Raise an RFI from site: what you found, a photo of it, and when the answer is needed (works offline through the outbox). */
 export default function RaiseRfiScreen() {
@@ -41,9 +42,25 @@ export default function RaiseRfiScreen() {
   const [saved, setSaved] = useState<RfiDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft('rfi', { projectId, subject, question, proposal, location, priority, replyBy, replyTouched, photos }, (d) => {
+    setProjectId(d.projectId);
+    setSubject(d.subject);
+    setQuestion(d.question);
+    setProposal(d.proposal);
+    setLocation(d.location);
+    setPriority(d.priority);
+    setReplyBy(d.replyBy);
+    setReplyTouched(d.replyTouched);
+    setPhotos(restorePhotos(d.photos));
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
+
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [projects.options, projectId, draft]);
 
   const pickPriority = (p: RfiPriority) => {
     setPriority(p);
@@ -73,6 +90,7 @@ export default function RaiseRfiScreen() {
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(await enqueue({ id: clientId.current, type: 'RFI', payload: body, photos: toOutboxPhotos(photos), title: `${t('RFI')} · ${subject.trim()}`, subtitle: `${projectName} · ${t('answer by {date}', { date: formatDate(replyBy) })}` }));
+        draft.clear();
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -80,6 +98,7 @@ export default function RaiseRfiScreen() {
       }
       try {
         setSaved(await api.post<RfiDto>('/rfis', { id: clientId.current, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -105,13 +124,25 @@ export default function RaiseRfiScreen() {
     setPhotos([]);
     setErrors({});
   };
+  const startOver = () => {
+    setSubject('');
+    setQuestion('');
+    setProposal('');
+    setLocation('');
+    setPriority('NORMAL');
+    setReplyBy(rfiReplyBy(today(), 'NORMAL'));
+    setReplyTouched(false);
+    setPhotos([]);
+    setErrors({});
+  };
 
   if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
-  if (saved) return <SubmitSuccess title={t('RFI raised')} subtitle={t('{no} sent to {to}. You will be told when it is answered.', { no: saved.rfiNo, to: saved.toParty })} detailHref={`/rfi/${saved.id}`} onAnother={reset} />;
+  if (saved) return <SubmitSuccess title={t('RFI sent')} subtitle={t('{no} sent to {to}. You will be told when it is answered.', { no: saved.rfiNo, to: saved.toParty })} detailHref={`/rfi/${saved.id}`} onAnother={reset} />;
   if (projects.loading && !projects.data) return <Loading />;
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
@@ -147,7 +178,7 @@ export default function RaiseRfiScreen() {
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={t('New RFI')} icon="send" onPress={submit} loading={busy} />
+      <Button title={t('Send RFI')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

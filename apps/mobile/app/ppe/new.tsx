@@ -15,6 +15,7 @@ import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useFieldChain } from '../../src/forms/keyboard';
+import { DraftNotice, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 
 type Show = 'missing' | 'present' | 'all';
 const LABEL_TO_KIND = new Map(PPE_KINDS.map((k) => [PPE_KIND_LABELS[k], k] as const));
@@ -44,9 +45,22 @@ export default function IssuePpeScreen() {
   const [saved, setSaved] = useState<PpeIssueResultDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft('ppe-issue', { projectId, kinds, workerIds, date, size, note }, (d) => {
+    setProjectId(d.projectId);
+    setKinds(d.kinds);
+    setWorkerIds(d.workerIds);
+    setDate(d.date);
+    setSize(d.size);
+    setNote(d.note);
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
+
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [projects.options, projectId, draft]);
 
   const register = useFetch<PpeRegisterDto>((a) => a.get(`/ppe/projects/${projectId}/register`), [projectId], { enabled: !!projectId, cacheKey: `ppe-register:${projectId ?? ''}` });
   const reg = register.data && register.data.projectId === projectId ? register.data : null;
@@ -68,7 +82,7 @@ export default function IssuePpeScreen() {
     if (!projectId) e.projectId = t('Choose a project');
     if (!ticked.length) e.kinds = t('Tick at least one item');
     if (!workerIds.length) e.workers = t('Choose at least one worker');
-    if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
+    if (!isIsoDate(date) || date > today()) e.date = t('Choose a date up to today');
     setErrors(e);
     errorSummary.report(e);
     return Object.keys(e).length === 0;
@@ -84,6 +98,7 @@ export default function IssuePpeScreen() {
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(await enqueue({ id: clientId.current, type: 'PPE_ISSUE', payload: body, photos: [], title: `${t('PPE')} · ${items}`, subtitle: `${projectName} · ${formatDate(date)} · ${t('{n} workers', { n: workerIds.length })}` }));
+        draft.clear();
       };
       if (!online) {
         await queueIt();
@@ -91,6 +106,7 @@ export default function IssuePpeScreen() {
       }
       try {
         setSaved(await api.post<PpeIssueResultDto>('/ppe/issues', { id: clientId.current, ...body }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -112,6 +128,14 @@ export default function IssuePpeScreen() {
     setErrors({});
     register.refresh();
   };
+  const startOver = () => {
+    setKinds(null);
+    setWorkerIds([]);
+    setDate(today());
+    setSize('');
+    setNote('');
+    setErrors({});
+  };
 
   if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (saved)
@@ -127,6 +151,7 @@ export default function IssuePpeScreen() {
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef} refreshing={register.refreshing} onRefresh={register.refresh}>
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? (reg ? null : register.error)} />
       <Card>
@@ -165,9 +190,9 @@ export default function IssuePpeScreen() {
               clearable={false}
               onChange={(v) => v && setShow(v)}
               options={[
-                { value: 'missing', label: t('Missing kit ({n})', { n: reg.counts.missingAny }) },
-                { value: 'present', label: t('On site, missing ({n})', { n: reg.counts.presentMissing }) },
-                { value: 'all', label: t('All ({n})', { n: reg.counts.workers }) },
+                { value: 'missing', label: t('Missing kit · {n}', { n: reg.counts.missingAny }) },
+                { value: 'present', label: t('On site, missing · {n}', { n: reg.counts.presentMissing }) },
+                { value: 'all', label: t('All · {n}', { n: reg.counts.workers }) },
               ]}
             />
             {shown.length ? (

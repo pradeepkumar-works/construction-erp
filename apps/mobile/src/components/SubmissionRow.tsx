@@ -1,13 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View, type AccessibilityActionEvent, type AccessibilityActionInfo, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { SubmissionStatus, SubmissionType } from '@erp/shared';
+import type { SubmissionStatus } from '@erp/shared';
+import type { OutboxType } from '../offline/types';
 import { colors, radius, spacing, typography } from '../theme';
 import { StatusBadge } from './StatusBadge';
 import { Touchable } from './Touchable';
 
-/** Submissions plus attendance sheets, register entries and safety records (which can also sit in the outbox). */
-export type EntryType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT' | 'PPE_ISSUE' | 'RFI' | 'FUEL_ISSUE';
+/** Submissions plus the other entries that can sit in the outbox. */
+export type EntryType = OutboxType;
 
 export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   PROGRESS: 'trending-up',
@@ -31,30 +32,10 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   PPE_ISSUE: 'shield-half',
   RFI: 'help-circle',
   FUEL_ISSUE: 'water',
-};
-
-export const TYPE_SHORT: Record<EntryType, string> = {
-  PROGRESS: 'Progress',
-  DPR: 'DPR',
-  MATERIAL_REQUEST: 'Material',
-  MACHINERY: 'Machinery',
-  EXPENSE: 'Expense',
-  MEASUREMENT: 'Measurement',
-  BILL: 'RA bill',
-  PURCHASE_ORDER: 'PO',
-  VENDOR_BILL: 'Vendor bill',
-  WORK_ORDER: 'Work order',
-  SUBCONTRACT_BILL: 'Sub bill',
-  PAYMENT_REQUEST: 'Payment request',
-  INSPECTION: 'Inspection',
-  ATTENDANCE: 'Attendance',
-  RISK: 'Delay / risk',
-  SAFETY_INCIDENT: 'Incident',
-  TOOLBOX_TALK: 'Toolbox talk',
-  WORK_PERMIT: 'Permit',
-  PPE_ISSUE: 'PPE',
-  RFI: 'RFI',
-  FUEL_ISSUE: 'Fuel',
+  STOCK_RECEIPT: 'download',
+  STOCK_ISSUE: 'arrow-up-circle',
+  DEFECT: 'construct-outline',
+  BREAKDOWN: 'build',
 };
 
 interface Props {

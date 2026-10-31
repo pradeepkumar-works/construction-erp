@@ -7,6 +7,7 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
@@ -42,6 +43,17 @@ export default function RequestInspectionScreen() {
   const [created, setCreated] = useState<InspectionDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft(editId ? null : 'inspection', { projectId, activityId, checklistId, date, location, remarks, photos }, (d) => {
+    setProjectId(d.projectId);
+    setActivityId(d.activityId);
+    setChecklistId(d.checklistId);
+    setDate(d.date);
+    setLocation(d.location);
+    setRemarks(d.remarks);
+    setPhotos(restorePhotos(d.photos));
+  });
+  useLeaveGuard(draft, { keepsDraft: !editId, busy });
+
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
   const checklists = useFetch<ChecklistTemplateDto[]>((a) => a.get('/inspections/checklists'), [], { refetchOnFocus: false, cacheKey: 'checklists' });
   const activityOptions = useMemo<SelectOption[]>(
@@ -53,8 +65,11 @@ export default function RequestInspectionScreen() {
   const checklistBefore = editId ? ((checklists.data ?? []).find((c) => c.name === existing.data?.checklistName)?.id ?? '') : null;
 
   useEffect(() => {
-    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [editId, projects.options, projectId]);
+    if (!editId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [editId, projects.options, projectId, draft]);
 
   useEffect(() => {
     const x = existing.data;
@@ -65,17 +80,22 @@ export default function RequestInspectionScreen() {
     setLocation(x.location);
     setRemarks(x.remarks ?? '');
     setPhotos(attachmentsToPhotos(x.attachments));
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   useEffect(() => {
-    if (checklistBefore !== null) setChecklistId(checklistBefore);
+    if (checklistBefore === null) return;
+    setChecklistId(checklistBefore);
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checklistBefore]);
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!activityId) e.activityId = t('Choose the activity');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     if (!location.trim()) e.location = t('Say where, e.g. First floor slab, bays 1 to 4');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
@@ -109,6 +129,7 @@ export default function RequestInspectionScreen() {
             subtitle: `${projectName} · ${formatDate(date)}`,
           }),
         );
+        draft.clear();
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -116,6 +137,7 @@ export default function RequestInspectionScreen() {
       }
       try {
         setCreated(await api.post<InspectionDto>('/inspections', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -131,6 +153,16 @@ export default function RequestInspectionScreen() {
     clientId.current = newId();
     setCreated(null);
     setQueued(null);
+    setLocation('');
+    setRemarks('');
+    setPhotos([]);
+    setErrors({});
+    draft.settle();
+  };
+  const startOver = () => {
+    setActivityId(null);
+    setChecklistId('');
+    setDate(today());
     setLocation('');
     setRemarks('');
     setPhotos([]);
@@ -155,6 +187,7 @@ export default function RequestInspectionScreen() {
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t(editId ? 'Edit inspection request' : 'Request inspection') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? activities.error} />
       <ReviewerNote entry={existing.data} />

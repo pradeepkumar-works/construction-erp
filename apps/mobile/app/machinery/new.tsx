@@ -10,6 +10,7 @@ import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -54,9 +55,35 @@ export default function NewMachineryLogScreen() {
   const [created, setCreated] = useState<MachineryLogDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft(
+    editId ? null : 'machinery-log',
+    { projectId, equipmentId, date, worked, idle, down, breakdownNote, meterStart, meterEnd, diesel, operator, activityId, workDone, remarks, photos },
+    (d) => {
+      setProjectId(d.projectId);
+      setEquipmentId(d.equipmentId);
+      setDate(d.date);
+      setWorked(d.worked);
+      setIdle(d.idle);
+      setDown(d.down);
+      setBreakdownNote(d.breakdownNote);
+      setMeterStart(d.meterStart);
+      setMeterEnd(d.meterEnd);
+      setDiesel(d.diesel);
+      setOperator(d.operator);
+      setActivityId(d.activityId);
+      setWorkDone(d.workDone);
+      setRemarks(d.remarks);
+      setPhotos(restorePhotos(d.photos));
+    },
+  );
+  useLeaveGuard(draft, { keepsDraft: !editId, busy });
+
   useEffect(() => {
-    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [editId, projects.options, projectId]);
+    if (!editId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [editId, projects.options, projectId, draft]);
 
   useEffect(() => {
     const e = existing.data;
@@ -77,6 +104,8 @@ export default function NewMachineryLogScreen() {
     setWorkDone(e.workDone ?? '');
     setRemarks(e.remarks ?? '');
     setPhotos(attachmentsToPhotos(e.attachments));
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
@@ -101,7 +130,7 @@ export default function NewMachineryLogScreen() {
   const filled = useRef<Record<string, string>>({});
   useEffect(() => {
     if (editId) return;
-    const draft = day ? engineLogDraft(day) : null;
+    const engine = day ? engineLogDraft(day) : null;
     const fill = (key: string, set: React.Dispatch<React.SetStateAction<string>>, v: number | null | undefined) =>
       set((cur) => {
         if (cur && filled.current[key] !== cur) return cur;
@@ -109,10 +138,10 @@ export default function NewMachineryLogScreen() {
         filled.current[key] = next;
         return next;
       });
-    fill('worked', setWorked, draft?.hoursWorked);
-    fill('idle', setIdle, draft && draft.idleHours > 0 ? draft.idleHours : null);
-    fill('meterStart', setMeterStart, draft?.meterStart);
-    fill('meterEnd', setMeterEnd, draft?.meterEnd);
+    fill('worked', setWorked, engine?.hoursWorked);
+    fill('idle', setIdle, engine && engine.idleHours > 0 ? engine.idleHours : null);
+    fill('meterStart', setMeterStart, engine?.meterStart);
+    fill('meterEnd', setMeterEnd, engine?.meterEnd);
   }, [day, editId]);
   const above = day ? hoursAboveEngine(Number(worked || 0) + Number(idle || 0), Number(day.engineHours)) : null;
 
@@ -125,13 +154,13 @@ export default function NewMachineryLogScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!equipmentId) e.equipmentId = t('Choose a machine');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
     if (!NUM.test(worked.trim())) e.worked = t('Enter the hours worked (0 if it did not work)');
     const numbers = [
       ['idle', idle, t('Enter the idle hours as a number')],
       ['down', down, t('Enter the breakdown hours as a number')],
-      ['meterStart', meterStart, t('Enter the meter start as a number')],
-      ['meterEnd', meterEnd, t('Enter the meter end as a number')],
+      ['meterStart', meterStart, t('Enter the hour meter start as a number')],
+      ['meterEnd', meterEnd, t('Enter the hour meter end as a number')],
       ['diesel', diesel, t('Enter the diesel litres as a number')],
     ] as const;
     for (const [k, v, message] of numbers) if (v.trim() && !NUM.test(v.trim())) e[k] = message;
@@ -186,6 +215,7 @@ export default function NewMachineryLogScreen() {
             subtitle: `${projectName} · ${formatDate(date)}`,
           }),
         );
+        draft.clear();
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -193,6 +223,7 @@ export default function NewMachineryLogScreen() {
       }
       try {
         setCreated(await api.post<MachineryLogDto>('/machinery-logs', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -221,6 +252,24 @@ export default function NewMachineryLogScreen() {
     setRemarks('');
     setPhotos([]);
     setErrors({});
+    draft.settle();
+  };
+  const startOver = () => {
+    setEquipmentId(params.equipmentId ?? null);
+    setDate(today());
+    setWorked('');
+    setIdle('');
+    setDown('');
+    setBreakdownNote('');
+    setMeterStart('');
+    setMeterEnd('');
+    setDiesel('');
+    setOperator('');
+    setActivityId(null);
+    setWorkDone('');
+    setRemarks('');
+    setPhotos([]);
+    setErrors({});
   };
 
   if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
@@ -241,6 +290,7 @@ export default function NewMachineryLogScreen() {
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: editId ? t('Edit machinery log') : t('New machinery log') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? fleet.error} />
       <ReviewerNote entry={existing.data} />
@@ -260,13 +310,13 @@ export default function NewMachineryLogScreen() {
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         <View style={styles.row}>
           <View style={styles.cell}>
-            <Input {...field()} label={t('Worked (h)')} required value={worked} onChangeText={setWorked} keyboardType="decimal-pad" placeholder="8" error={errors.worked} style={styles.bigInput} />
+            <Input {...field()} label={t('Hours worked')} required value={worked} onChangeText={setWorked} keyboardType="decimal-pad" placeholder="8" error={errors.worked} style={styles.bigInput} />
           </View>
           <View style={styles.cell}>
-            <Input {...field()} label={t('Idle (h)')} value={idle} onChangeText={setIdle} keyboardType="decimal-pad" placeholder="0" error={errors.idle} />
+            <Input {...field()} label={t('Idle hours')} value={idle} onChangeText={setIdle} keyboardType="decimal-pad" placeholder="0" error={errors.idle} />
           </View>
           <View style={styles.cell}>
-            <Input {...field()} label={t('Breakdown (h)')} value={down} onChangeText={setDown} keyboardType="decimal-pad" placeholder="0" error={errors.down} />
+            <Input {...field()} label={t('Breakdown hours')} value={down} onChangeText={setDown} keyboardType="decimal-pad" placeholder="0" error={errors.down} />
           </View>
         </View>
         {day ? (
@@ -280,10 +330,10 @@ export default function NewMachineryLogScreen() {
       <Card title={t('Meter and diesel')}>
         <View style={styles.row}>
           <View style={styles.cell}>
-            <Input {...field()} label={t('Meter start')} value={meterStart} onChangeText={setMeterStart} keyboardType="decimal-pad" error={errors.meterStart} />
+            <Input {...field()} label={t('Hour meter start')} value={meterStart} onChangeText={setMeterStart} keyboardType="decimal-pad" error={errors.meterStart} />
           </View>
           <View style={styles.cell}>
-            <Input {...field()} label={t('Meter end')} value={meterEnd} onChangeText={setMeterEnd} keyboardType="decimal-pad" error={errors.meterEnd} />
+            <Input {...field()} label={t('Hour meter end')} value={meterEnd} onChangeText={setMeterEnd} keyboardType="decimal-pad" error={errors.meterEnd} />
           </View>
         </View>
         <Input {...field()} label={t('Diesel filled (litres)')} value={diesel} onChangeText={setDiesel} keyboardType="decimal-pad" placeholder={t('e.g. 60')} error={errors.diesel} />

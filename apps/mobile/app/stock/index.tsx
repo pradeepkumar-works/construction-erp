@@ -77,12 +77,12 @@ export default function StockScreen() {
         />
         {keeper ? (
           <View style={styles.actions}>
-            <Button title={t('Receive')} icon="download-outline" onPress={() => router.push(`/stock/receive${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.flex} disabled={!online} />
-            <Button title={t('Issue')} icon="arrow-up-circle-outline" variant="secondary" onPress={() => router.push(`/stock/issue${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.flex} disabled={!online} />
+            <Button title={t('Receive')} icon="download-outline" onPress={() => router.push(`/stock/receive${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.flex} />
+            <Button title={t('Issue')} icon="arrow-up-circle-outline" variant="secondary" onPress={() => router.push(`/stock/issue${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.flex} />
           </View>
         ) : null}
         {keeper ? <Button title={t('Fuel issue')} icon="water-outline" variant="secondary" onPress={() => router.push(`/stock/fuel${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.fuel} /> : null}
-        {keeper && !online ? <Text style={[typography.caption, styles.offline]}>{t('Receipts and issues need a connection: the stock must be checked on the server. A fuel issue is kept on this phone and sent later.')}</Text> : null}
+        {keeper && !online ? <Text style={[typography.caption, styles.offline]}>{t('No signal: receipts and issues are kept on this phone and the stock is checked when they reach the office.')}</Text> : null}
       </Card>
       {projectId && rows.length ? (
         <SectionTitle title={rows.length === 1 ? t('{n} item', { n: 1 }) : t('{n} items', { n: rows.length })} right={lowCount && filter === 'all' ? <Text style={styles.lowText}>{t('{n} low', { n: lowCount })}</Text> : null} />
@@ -150,7 +150,7 @@ const BalanceRow = memo(function BalanceRow({ row: r, t }: { row: StockBalanceDt
           <Text style={typography.bodyStrong}>{r.itemName}</Text>
           <Text style={typography.caption}>
             {t('In {in} · out {out}', { in: fmtQty(r.received), out: fmtQty(r.issued) })}
-            {Number(r.adjusted) !== 0 ? ` · ${t('adj {n}', { n: fmtQty(r.adjusted) })}` : ''}
+            {Number(r.adjusted) !== 0 ? ` · ${t('adjusted {n}', { n: fmtQty(r.adjusted) })}` : ''}
             {r.minQty ? ` · ${t('min {n}', { n: fmtQty(r.minQty) })}` : ''}
           </Text>
         </View>

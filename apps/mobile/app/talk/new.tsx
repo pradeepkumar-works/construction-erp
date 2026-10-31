@@ -15,6 +15,7 @@ import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useFieldChain } from '../../src/forms/keyboard';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 
 const OTHER = '__other';
 /** English labels; shown through t(). The value of a listed topic is the English text the API stores. */
@@ -53,9 +54,27 @@ export default function TalkFormScreen() {
   const [saved, setSaved] = useState<ToolboxTalkDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft('toolbox-talk', { projectId, date, topic, otherTopic, conductedBy, contractor, count, attendees, duration, notes, photos }, (d) => {
+    setProjectId(d.projectId);
+    setDate(d.date);
+    setTopic(d.topic);
+    setOtherTopic(d.otherTopic);
+    setConductedBy(d.conductedBy);
+    setContractor(d.contractor);
+    setCount(d.count);
+    setAttendees(d.attendees);
+    setDuration(d.duration);
+    setNotes(d.notes);
+    setPhotos(restorePhotos(d.photos));
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
+
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [projects.options, projectId, draft]);
 
   const subject = topic === OTHER ? otherTopic.trim() : (topic ?? '');
 
@@ -73,7 +92,7 @@ export default function TalkFormScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
-    if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
+    if (!isIsoDate(date) || date > today()) e.date = t('Choose a date up to today');
     if (!subject) e.topic = t(topic === OTHER ? 'Type the topic' : 'Pick a topic');
     if (!conductedBy.trim()) e.conductedBy = t('Enter who gave the talk');
     if (!(Number(count) >= 1) || !Number.isInteger(Number(count))) e.count = t('Enter how many attended');
@@ -104,6 +123,7 @@ export default function TalkFormScreen() {
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(await enqueue({ id: clientId.current, type: 'TOOLBOX_TALK', payload: body, photos: toOutboxPhotos(photos), title: `${t('Toolbox talk')} · ${t(subject)}`, subtitle: `${projectName} · ${formatDate(date)} · ${t('{n} attended', { n: count })}` }));
+        draft.clear();
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -111,6 +131,7 @@ export default function TalkFormScreen() {
       }
       try {
         setSaved(await api.post<ToolboxTalkDto>('/safety/talks', { id: clientId.current, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -135,13 +156,27 @@ export default function TalkFormScreen() {
     setPhotos([]);
     setErrors({});
   };
+  const startOver = () => {
+    setDate(today());
+    setTopic(null);
+    setOtherTopic('');
+    setConductedBy(user?.fullName ?? '');
+    setContractor('');
+    setCount('');
+    setAttendees('');
+    setDuration('15');
+    setNotes('');
+    setPhotos([]);
+    setErrors({});
+  };
 
   if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
-  if (saved) return <SubmitSuccess title={t('Toolbox talk saved')} subtitle={`${saved.talkNo}: ${t(saved.topic)}, ${t('{n} attended', { n: saved.attendeeCount })}.`} detailHref={`/safety?projectId=${saved.projectId}&show=talks`} onAnother={reset} />;
+  if (saved) return <SubmitSuccess title={t('Toolbox talk recorded')} subtitle={`${saved.talkNo}: ${t(saved.topic)}, ${t('{n} attended', { n: saved.attendeeCount })}.`} detailHref={`/safety?projectId=${saved.projectId}&show=talks`} onAnother={reset} />;
   if (projects.loading && !projects.data) return <Loading />;
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       {projectId ? <TodaysTalk projectId={projectId} onUse={takeTalk} /> : null}
@@ -163,7 +198,7 @@ export default function TalkFormScreen() {
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={t('Save talk')} icon="send" onPress={submit} loading={busy} />
+      <Button title={t('Record toolbox talk')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

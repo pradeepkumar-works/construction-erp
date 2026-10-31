@@ -2,8 +2,24 @@ import type { SubmissionType } from '@erp/shared';
 
 export type OutboxStatus = 'PENDING' | 'SYNCING' | 'FAILED';
 
-/** What an outbox entry creates: one of the approval submissions, a day's attendance sheet, a delay / risk register entry or a safety record. */
-export type OutboxType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT' | 'PPE_ISSUE' | 'RFI' | 'FUEL_ISSUE';
+/**
+ * What an outbox entry creates: one of the approval submissions, a day's attendance sheet, a delay or risk, a safety
+ * record, an RFI, a snag, a breakdown, or a store's receipt, issue or fuel issue (the stock is checked when it arrives).
+ */
+export type OutboxType =
+  | SubmissionType
+  | 'ATTENDANCE'
+  | 'RISK'
+  | 'SAFETY_INCIDENT'
+  | 'TOOLBOX_TALK'
+  | 'WORK_PERMIT'
+  | 'PPE_ISSUE'
+  | 'RFI'
+  | 'FUEL_ISSUE'
+  | 'STOCK_RECEIPT'
+  | 'STOCK_ISSUE'
+  | 'DEFECT'
+  | 'BREAKDOWN';
 
 export interface OutboxPhoto {
   /** Local file URI (copied into the app's document directory so it survives cache clean-ups). */
@@ -55,6 +71,10 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   PPE_ISSUE: '/ppe/issues',
   RFI: '/rfis',
   FUEL_ISSUE: '/stock/fuel-issues',
+  STOCK_RECEIPT: '/stock/receipts',
+  STOCK_ISSUE: '/stock/issues',
+  DEFECT: '/defects',
+  BREAKDOWN: '/maintenance/jobs',
 };
 
 export const OUTBOX_DETAIL: Record<SubmissionType, string> = {

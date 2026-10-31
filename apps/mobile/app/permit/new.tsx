@@ -14,6 +14,7 @@ import { isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useFieldChain } from '../../src/forms/keyboard';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const at = (date: string, time: string) => new Date(`${date}T${time}:00`);
@@ -52,9 +53,30 @@ export default function PermitFormScreen() {
   const [saved, setSaved] = useState<WorkPermitDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
 
+  const draft = useFormDraft('permit', { projectId, type, location, description, fromDate, fromTime, toDate, toTime, contractor, workerCount, workers, ticked, other, photos }, (d) => {
+    setProjectId(d.projectId);
+    setType(d.type);
+    setLocation(d.location);
+    setDescription(d.description);
+    setFromDate(d.fromDate);
+    setFromTime(d.fromTime);
+    setToDate(d.toDate);
+    setToTime(d.toTime);
+    setContractor(d.contractor);
+    setWorkerCount(d.workerCount);
+    setWorkers(d.workers);
+    setTicked(d.ticked);
+    setOther(d.other);
+    setPhotos(restorePhotos(d.photos));
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
+
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [projects.options, projectId, draft]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -104,6 +126,7 @@ export default function PermitFormScreen() {
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(await enqueue({ id: clientId.current, type: 'WORK_PERMIT', payload: body, photos: toOutboxPhotos(photos), title: `${t('Permit')} · ${t(WORK_PERMIT_TYPE_LABELS[type])} · ${location.trim()}`, subtitle: `${projectName} · ${permitWindow(body, t)}` }));
+        draft.clear();
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -111,6 +134,7 @@ export default function PermitFormScreen() {
       }
       try {
         setSaved(await api.post<WorkPermitDto>('/safety/permits', { id: clientId.current, ...body, attachmentIds: attachmentIds(photos) }));
+        draft.clear();
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -134,13 +158,30 @@ export default function PermitFormScreen() {
     setPhotos([]);
     setErrors({});
   };
+  const startOver = () => {
+    setType(null);
+    setLocation('');
+    setDescription('');
+    setFromDate(today());
+    setFromTime(nextHour());
+    setToDate(today());
+    setToTime('18:00');
+    setContractor('');
+    setWorkerCount('');
+    setWorkers('');
+    setTicked([]);
+    setOther('');
+    setPhotos([]);
+    setErrors({});
+  };
 
   if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
-  if (saved) return <SubmitSuccess title={t('Permit asked for')} subtitle={`${saved.permitNo}. ${t('The safety officer has been told; do not start until it is issued.')}`} detailHref={`/permit/${saved.id}`} onAnother={reset} />;
+  if (saved) return <SubmitSuccess title={t('Permit requested')} subtitle={`${saved.permitNo}. ${t('The safety officer has been told; do not start until it is issued.')}`} detailHref={`/permit/${saved.id}`} onAnother={reset} />;
   if (projects.loading && !projects.data) return <Loading />;
 
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
@@ -154,7 +195,7 @@ export default function PermitFormScreen() {
             setType(v);
             setTicked([]);
           }}
-          placeholder={t('Hot work, height...')}
+          placeholder={t('Hot work, height…')}
           error={errors.type}
         />
         <Input {...field()} label={t('Where')} required value={location} onChangeText={setLocation} maxLength={200} error={errors.location} />

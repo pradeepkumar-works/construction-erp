@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { canKeepStock, canViewWorkOrders, type ActivityDto, type AttendanceSuggestionsDto, type Paginated, type StockBalanceDto, type StockEntryDto, type WorkOrderDto } from '@erp/shared';
@@ -6,12 +6,13 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Input, Loading, Screen, Select, IconButton } from '../../src/components';
-import { SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { DraftNotice, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
-import { useOffline } from '../../src/offline';
+import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, fontSize, spacing, touch, typography } from '../../src/theme';
-import { fmtQty, isIsoDate, today } from '../../src/utils/format';
+import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
 const QTY = /^\d+(\.\d{1,3})?$/;
@@ -23,7 +24,10 @@ interface Row {
   quantity: string;
 }
 
-/** Issue slip: material handed out at site, limited to what the project has in stock. Needs a connection. */
+/**
+ * Issue slip: material handed out at site, limited to the stock on hand this phone last saw. Without a signal it waits
+ * in the outbox and the stock is checked when it reaches the office.
+ */
 export default function IssueScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const { user } = useAuth();
@@ -31,7 +35,9 @@ export default function IssueScreen() {
   const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const api = useApi();
-  const { online } = useOffline();
+  const { online, enqueue, newId } = useOffline();
+  // One id for a direct send and the outbox, so a slip that timed out but arrived is never saved twice.
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [date, setDate] = useState(today());
@@ -44,14 +50,31 @@ export default function IssueScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<StockEntryDto | null>(null);
+  const [queued, setQueued] = useState<OutboxItem | null>(null);
+
+  const draft = useFormDraft('stock-issue', { projectId, date, issuedTo, workOrderId, activityId, rows, remarks }, (d) => {
+    setProjectId(d.projectId);
+    setDate(d.date);
+    setIssuedTo(d.issuedTo);
+    setWorkOrderId(d.workOrderId);
+    setActivityId(d.activityId);
+    setRows(d.rows);
+    setRemarks(d.remarks);
+  });
+  useLeaveGuard(draft, { keepsDraft: true, busy });
 
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      if (!draft.restoredAt) draft.settle();
+    }
+  }, [projects.options, projectId, draft]);
 
+  // Kept on the phone, so a slip can be made without a signal.
   const stock = useFetch<Paginated<StockBalanceDto>>((a) => a.get('/stock/balances', { projectId: projectId!, inStock: true, pageSize: 500, sortBy: 'item' }), [projectId], {
     enabled: !!projectId,
     refetchOnFocus: false,
+    cacheKey: projectId ? `stock-in-hand:${projectId}` : undefined,
   });
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: projectId ? `activities:${projectId}` : undefined });
   const suggestions = useFetch<AttendanceSuggestionsDto>((a) => a.get('/attendance/suggestions', { projectId: projectId! }), [projectId], {
@@ -72,8 +95,8 @@ export default function IssueScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
-    if (!isIsoDate(date)) e.date = t('Enter a valid date');
-    else if (date > today()) e.date = t('Enter a date up to today');
+    if (!isIsoDate(date)) e.date = t('Pick the date from the calendar');
+    else if (date > today()) e.date = t('Choose a date up to today');
     if (!issuedTo.trim()) e.issuedTo = t('Enter who took the material');
     const used = rows.filter((r) => r.itemId || r.quantity.trim());
     if (!used.length) e.lines = t('Add at least one item');
@@ -94,7 +117,24 @@ export default function IssueScreen() {
     setBusy(true);
     try {
       const lines = rows.filter((r) => r.itemId && r.quantity.trim()).map((r) => ({ itemId: r.itemId, quantity: r.quantity.trim() }));
-      setSaved(await api.post<StockEntryDto>('/stock/issues', { projectId, date, issuedTo: issuedTo.trim(), workOrderId: workOrderId || undefined, activityId, remarks: remarks.trim() || null, lines }));
+      const body = { projectId, date, issuedTo: issuedTo.trim(), workOrderId: workOrderId || undefined, activityId, remarks: remarks.trim() || null, lines };
+      const queueIt = async () => {
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
+        const what = lines.map((l) => byId.get(l.itemId!)?.itemName).filter(Boolean).join(', ');
+        setQueued(await enqueue({ id: clientId.current, type: 'STOCK_ISSUE', payload: body, photos: [], title: `${t('Issue')} · ${what} · ${issuedTo.trim()}`, subtitle: `${projectName} · ${formatDate(date)}` }));
+        draft.clear();
+      };
+      if (!online) {
+        await queueIt();
+        return;
+      }
+      try {
+        setSaved(await api.post<StockEntryDto>('/stock/issues', { id: clientId.current, ...body }));
+        draft.clear();
+      } catch (e) {
+        if (!isOfflineError(e)) throw e;
+        await queueIt();
+      }
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -102,17 +142,32 @@ export default function IssueScreen() {
     }
   };
 
+  const another = () => {
+    clientId.current = newId();
+    setSaved(null);
+    setQueued(null);
+    setRows([{ key: newKey(), itemId: null, quantity: '' }]);
+    setRemarks('');
+    setErrors({});
+    stock.reload();
+  };
+  const startOver = () => {
+    setDate(today());
+    setIssuedTo('');
+    setWorkOrderId('');
+    setActivityId(null);
+    setRows([{ key: newKey(), itemId: null, quantity: '' }]);
+    setRemarks('');
+    setErrors({});
+  };
+
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={another} />;
   if (saved) {
     return (
       <SubmitSuccess
         title={t('{no} saved', { no: saved.entryNo })}
         subtitle={t('{lines} issued to {name}.', { lines: saved.lines.map((l) => `${l.itemName} ${fmtQty(Math.abs(Number(l.quantity)))} ${l.unit}`).join(', '), name: saved.issuedTo })}
-        onAnother={() => {
-          setSaved(null);
-          setRows([{ key: newKey(), itemId: null, quantity: '' }]);
-          setRemarks('');
-          stock.reload();
-        }}
+        onAnother={another}
       />
     );
   }
@@ -125,8 +180,9 @@ export default function IssueScreen() {
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t('Issue material') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
       <ErrorSummary errors={errors} />
-      <ErrorBanner message={submitError ?? projects.error ?? (online ? stock.error : t('You are offline. Issuing material needs a connection.'))} />
+      <ErrorBanner message={submitError ?? projects.error ?? (online ? stock.error : null)} />
       <Card>
         <Select
           label={t('Project')}
@@ -197,7 +253,7 @@ export default function IssueScreen() {
         <Button title={t('Add item')} variant="ghost" size="sm" icon="add" onPress={() => setRows((rs) => [...rs, { key: newKey(), itemId: null, quantity: '' }])} disabled={!projectId} />
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
       </Card>
-      <Button title={t('Save issue')} icon="checkmark" onPress={save} loading={busy} disabled={!online} />
+      <Button title={t('Save issue')} icon="checkmark" onPress={save} loading={busy} />
     </Screen>
   );
 }
