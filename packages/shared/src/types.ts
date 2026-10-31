@@ -182,6 +182,8 @@ export interface ProjectSummary {
   /** Its project type (item 134), the company's or a standard one; null for a store or plant */
   typeCode: string | null;
   typeName: string | null;
+  /** Its vertical (item 167), a code of the `vertical` master; null when it has none */
+  verticalCode: string | null;
   /** Where its work is located, and whether it has a pipe network, from its type (`projectFeatures`) */
   locations: WorkLocation[];
   pipeNetwork: boolean;
@@ -2997,6 +2999,11 @@ export interface LetterDto {
   signatoryId: string | null;
   signatoryName: string | null;
   sentForApprovalAt: string | null;
+  /** Item 169: when its signatory approved it, where it then waits for head office's seal (L2); null before */
+  signedAt: string | null;
+  signedByName: string | null;
+  /** The letter waits for head office's seal after its signature (the company's rule, for its category) */
+  needsSeal: boolean;
   approvedAt: string | null;
   returnNote: string | null;
   docketNo: string | null;

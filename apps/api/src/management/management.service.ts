@@ -13,7 +13,10 @@ import {
   type PortfolioProjectDetailDto,
   type PortfolioProjectDto,
   type PortfolioTotalsDto,
+  type PortfolioVerticalDto,
   type ProjectSummary,
+  byVertical,
+  inVertical,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -21,6 +24,7 @@ import { SubmissionLifecycleService } from '../common/submission-lifecycle.servi
 import { dateOnly, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { ProjectsService } from '../projects/projects.service';
+import { MastersService } from '../masters/masters.service';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { invoiceOf, RECEIPT_SUMS, settlement } from '../receivables/bill-settlement';
 import { BudgetService } from '../cost/budget.service';
@@ -54,6 +58,7 @@ export class ManagementService {
     private cost: CostService,
     private lifecycle: SubmissionLifecycleService,
     private cash: CashForecastService,
+    private masters: MastersService,
   ) {}
 
   assertSee(user: RequestUser) {
@@ -62,15 +67,38 @@ export class ManagementService {
 
   /** The contract projects the caller sees, as the project list has them: a store or yard and an RMC plant have no
    *  contract, schedule or client bills. */
-  async contractProjects(user: RequestUser, projectId?: string): Promise<ProjectSummary[]> {
+  async contractProjects(user: RequestUser, projectId?: string, vertical?: string): Promise<ProjectSummary[]> {
     const all = await this.projects.listAll(user);
-    return all.filter((p) => p.type !== 'STORE' && p.type !== 'PLANT' && (!projectId || p.id === projectId));
+    return all.filter((p) => p.type !== 'STORE' && p.type !== 'PLANT' && (!projectId || p.id === projectId) && inVertical(p.verticalCode, vertical));
   }
 
-  async portfolio(user: RequestUser): Promise<PortfolioDto> {
+  /** The portfolio's money by vertical (item 167), in the master's order. */
+  private async byVertical(organizationId: string, rows: PortfolioProjectDto[]): Promise<PortfolioVerticalDto[]> {
+    const verticals = await this.masters.entriesFor(organizationId, 'vertical');
+    return byVertical(rows, (r) => r.verticalCode, verticals).map((g) => {
+      const sum = (k: keyof PortfolioProjectDto['money']) => g.rows.reduce((s, r) => s + N(r.money[k] as string | null), 0);
+      const workDone = sum('workDone');
+      const margin = sum('margin');
+      return {
+        code: g.code,
+        name: g.name,
+        projects: g.rows.length,
+        contractValue: m(sum('contractValue')),
+        orderBook: m(g.rows.reduce((s, r) => s + (r.money.contractValue ? Math.max(0, N(r.money.contractValue) - N(r.money.billed)) : 0), 0)),
+        workDone: m(workDone),
+        billed: m(sum('billed')),
+        outstanding: m(sum('outstanding')),
+        cost: m(sum('cost')),
+        margin: m(margin),
+        marginPct: pctOf(margin, workDone),
+      };
+    });
+  }
+
+  async portfolio(user: RequestUser, vertical?: string): Promise<PortfolioDto> {
     this.assertSee(user);
     const today = todayIn();
-    const projects = await this.contractProjects(user);
+    const projects = await this.contractProjects(user, undefined, vertical);
     const ids = projects.map((p) => p.id);
     const months = lastMonths(today, 12);
     const [{ rows, pending }, trend, forecast] = await Promise.all([
@@ -108,7 +136,9 @@ export class ManagementService {
       .sort(byUrgency);
     return {
       asOf: today,
+      vertical: vertical || null,
       totals,
+      verticals: await this.byVertical(user.organizationId, rows),
       projects: rows,
       approvals: approvalAgeing(pending, today),
       months: trend,
@@ -297,6 +327,7 @@ export class ManagementService {
           code: p.code,
           name: p.name,
           type: p.type,
+          verticalCode: p.verticalCode,
           status: p.status,
           clientName: e?.client?.name ?? p.clientName,
           projectManagerName: p.projectManagerName,

@@ -24,7 +24,7 @@ test('a signed-out visitor is sent to the login page', async ({ page }) => {
 
 test('the product page is open to visitors and leads to the demo', async ({ page }) => {
   await page.goto('/welcome');
-  await expect(page.getByRole('heading', { level: 1, name: 'From site to Tally.' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'The ERP that reads your sites' })).toBeVisible();
   await page.getByRole('link', { name: 'Try the demo' }).first().click();
   await expect(page).toHaveURL(/\/login/);
 });
@@ -40,14 +40,22 @@ test('a signed-out visit to the bare domain shows the product page, and its modu
 
 test("the product page works out a running bill on the demo highway's terms", async ({ page }) => {
   await page.goto('/welcome');
-  const value = page.getByLabel('Value of work measured this bill, in rupees');
-  const pays = page.getByRole('row', { name: /The client pays/ });
-  // The day's WMM: 6,36,400 plus 18% GST, less 20% in retention, advance, TDS, GST TDS and cess.
-  await expect(pays).toContainText('6,23,672');
+  const value = page.getByLabel('Value of work measured, in rupees');
+  const pays = page.locator('#money .lw-figure-number');
+  // 25 lakh plus 18% GST, less 20% in retention, advance, TDS, GST TDS and cess.
   await value.fill('25 lakh');
   await expect(pays).toContainText('24,50,000');
-  await page.getByRole('button', { name: /GSB laying/ }).click();
-  await expect(value).toHaveValue('6,46,800');
+  await value.fill('1.2 cr');
+  await expect(pays).toContainText('1,17,60,000');
   await value.fill('next week');
   await expect(page.getByText('Type a value of work, such as 6,36,400 or 25 lakh, to see the bill.')).toBeVisible();
+});
+
+test('the product page answers from the demo and opens the demo as the chosen person', async ({ page }) => {
+  await page.goto('/welcome');
+  await page.getByRole('button', { name: 'Which delay notices are due?' }).click();
+  await expect(page.getByText('RISK-2026-0008', { exact: false }).first()).toBeVisible();
+  await page.getByLabel('Demo account').selectOption('qs');
+  await page.getByRole('button', { name: 'Open the demo today' }).click();
+  await expect(page).toHaveURL(/\/login\?demo=qs/);
 });

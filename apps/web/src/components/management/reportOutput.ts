@@ -74,7 +74,7 @@ export function buildManagementReportHtml(r: ManagementReportDto, organizationNa
   ${PRINT_BRAND_CSS}
 </style></head><body>
   <div class="head">
-    <div><div class="brand">${esc(organizationName)}</div><h1>${esc(r.title)}</h1>${r.projectName ? `<div class="org">${esc(r.projectName)}</div>` : '<div class="org">Every contract project</div>'}</div>
+    <div><div class="brand">${esc(organizationName)}</div><h1>${esc(r.title)}</h1><div class="org">${esc(r.projectName ?? (r.verticalName ? `Every project in ${r.verticalName}` : 'Every contract project'))}</div></div>
     <div class="period"><b>${esc(r.period)}</b>Made ${esc(formatDateTime(r.generatedAt))}</div>
   </div>
   ${r.commentary ? `<p class="commentary">${esc(r.commentary)}</p>` : ''}
@@ -103,7 +103,7 @@ export async function exportManagementReport(r: ManagementReportDto) {
   const summaryRows: Row[] = [
     { a: 'Report', b: r.title },
     { a: 'Period', b: r.period },
-    { a: 'Projects', b: r.projectName ?? 'Every contract project' },
+    { a: 'Projects', b: r.projectName ?? (r.verticalName ? `Every project in ${r.verticalName}` : 'Every contract project') },
     { a: 'Made', b: formatDateTime(r.generatedAt) },
     ...(r.commentary ? [{ a: '', b: '' }, { a: r.commentary, b: '' }] : []),
     { a: '', b: '' },

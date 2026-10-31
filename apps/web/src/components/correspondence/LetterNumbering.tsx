@@ -10,6 +10,7 @@ import {
   HEAD_OFFICE_PREFIX,
   LETTER_APPROVAL_RULES,
   LETTER_APPROVAL_RULE_LABELS,
+  letterRulesProblem,
   LETTER_DIRECTION_LABELS,
   LETTER_NUMBER_PATTERN,
   formatLetterNo,
@@ -116,7 +117,7 @@ export function LetterNumbering() {
   const { data: categories } = useMasterList('letter-category');
   const [editing, setEditing] = useState<LetterSeriesDto | 'new' | null>(null);
   const saveRule = useMutation({
-    mutationFn: async (approval: LetterApprovalRule) => (await api.put<LetterSettingsDto>('/letters/settings', { approval })).data,
+    mutationFn: async (rules: { approval: LetterApprovalRule; seal: LetterApprovalRule }) => (await api.put<LetterSettingsDto>('/letters/settings', rules)).data,
     onSuccess: (s) => {
       qc.setQueryData(['letters', 'settings'], s);
       notify.success('Approval rule saved');
@@ -133,7 +134,7 @@ export function LetterNumbering() {
     <div className="page-container">
       <PageHeader
         title="Numbering and approval"
-        subtitle="Each project and head office numbers its letters in and out in its own series, starting again each financial year. Choose which outward letters wait for their signatory before they get a number."
+        subtitle="Each project and head office numbers its letters in and out in its own series, starting again each financial year. Choose which outward letters wait for their signatory, and then for head office, before they get a number."
         extra={
           manage ? (
             <Button icon={<PlusOutlined />} onClick={() => setEditing('new')}>
@@ -147,7 +148,7 @@ export function LetterNumbering() {
           <Radio.Group
             value={data.approval}
             disabled={!manage || saveRule.isPending}
-            onChange={(e) => saveRule.mutate(e.target.value)}
+            onChange={(e) => saveRule.mutate({ approval: e.target.value, seal: letterRulesProblem(e.target.value, data.seal) ? e.target.value : data.seal })}
             aria-label="Approval before numbering"
             options={LETTER_APPROVAL_RULES.map((r) => ({ value: r, label: LETTER_APPROVAL_RULE_LABELS[r] }))}
             orientation="vertical"
@@ -155,6 +156,19 @@ export function LetterNumbering() {
           <Typography.Paragraph type="secondary" style={{ marginTop: token.marginSM, marginBottom: 0 }}>
             Contractual letters are those in the categories {contractual}. Once sent, they also need proof of delivery.
           </Typography.Paragraph>
+        </Card>
+        <Card title="Seal at head office" size="small">
+          <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+            After its signatory approves it, a letter can wait for a director at head office before it gets a number. A letter a director signs needs no seal.
+          </Typography.Paragraph>
+          <Radio.Group
+            value={data.seal}
+            disabled={!manage || saveRule.isPending}
+            onChange={(e) => saveRule.mutate({ approval: data.approval, seal: e.target.value })}
+            aria-label="Seal at head office"
+            options={LETTER_APPROVAL_RULES.map((r) => ({ value: r, label: r === 'NONE' ? 'None: numbered when signed' : LETTER_APPROVAL_RULE_LABELS[r], disabled: !!letterRulesProblem(data.approval, r) }))}
+            orientation="vertical"
+          />
         </Card>
         <Card title="Series" size="small">
           <Table<LetterSeriesDto>

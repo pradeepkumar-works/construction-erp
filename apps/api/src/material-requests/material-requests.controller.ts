@@ -52,6 +52,15 @@ export class MaterialRequestsController {
   }
 
   @ApiOperation({
+    summary: 'Check a request against the site store and the BOQ',
+    description: 'Item 170. Each line against what its site holds and what the BOQ allows for the item (the project norms over the whole BOQ, less issued, held and asked for by requests waiting). Advice for the approver; it never blocks.',
+  })
+  @Get(':id/check')
+  async check(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.stock.indentCheck(user, await this.mr.get(user, id));
+  }
+
+  @ApiOperation({
     summary: 'Meet request lines from stock',
     description: "v5 item 95. From the request's own site: an issue to whoever raised it. From another site: a transfer to the request's site. Each line at most what it still needs and what the site holds; store keepers of the sending site.",
   })

@@ -915,9 +915,33 @@ drones, sensors and the rest when a customer asks. The machine and site devices 
 165. **Reading `.mpp` schedules** (M).
 166. **Client collections by link or UPI** (M).
 
-## Official progress reports (item 170)
+## From a client's screens (items 167 to 170)
 
-170. ~~**Daily, weekly and monthly progress reports for the client** (M).~~ Done: Reports › Progress reports makes the
+Asked by Pradeep on 30 Oct 2026: a client contact sketched how they expect the product (eight rough screens: procurement,
+quality, design, correspondence, projects, stores, accounts, HR). The analysis is the Claude Doc on those screens; most of
+what they show is in Nirmaan already. These four were missing or thin, built as one round.
+
+167. ~~**Verticals** (M).~~ Done: a `vertical` master (water, buildings, irrigation, roads and bridges by default), a
+     vertical on each project (a new one takes its kind's, `verticalOfType`) and tender, the header's switcher grouping the
+     projects by vertical with a whole vertical to choose, the Projects list's filter and column, and the management
+     dashboard and reports narrowed to a vertical or added up by it (the MIS's By vertical). A head of a vertical seeing
+     only theirs waits. ARCHITECTURE "Verticals".
+168. ~~**Department screens with figures and pipelines** (M).~~ Done: a department's screen opens with the area modules'
+     figures picked for it (`DEPARTMENT_FIGURES`) and the work in flight through it from the modules' own services:
+     indents from approval through quotations and the order to the last delivery, deliveries to receive, letters to sign,
+     seal or reply to. Departments in the top bar is a company setting (Admin › Menu and names), for this client's
+     company. ARCHITECTURE "Department screens".
+169. ~~**Letters sealed at head office** (S).~~ Done: a second level on outward letters (`Organization.letterSeal`): after
+     the project's signatory signs, the letters the rule names wait for a director (admin or management) to seal and
+     number them; set per category in Letter numbering. ARCHITECTURE "Correspondence".
+170. ~~**Indents checked against the store and the BOQ** (S).~~ Done: each line of a material request shows the site's
+     store, what the BOQ allows of the item from the project's norms, what was issued and what other requests ask for,
+     and flags a line past the BOQ or one the store already covers, for the approver (`GET /material-requests/:id/check`).
+     ARCHITECTURE "Indent checks".
+
+## Official progress reports (item 174)
+
+174. ~~**Daily, weekly and monthly progress reports for the client** (M).~~ Done: Reports › Progress reports makes the
      daily, weekly and monthly progress report (MPR) of a project in the company's own design, laid out after the
      reports a PIU and its consultant ask for on a water supply scheme: the contract box, progress by component with
      its weight and status in words, the activities as per the approved programme, the work done entry by entry with

@@ -114,7 +114,7 @@ export const COMPANY_TODAY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_
 
 export const isCompanyWide = (role: RoleKey) => COMPANY_WIDE_ROLES.includes(role);
 export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
-/** Issue an official progress report to the client (item 170): it takes a revision and is kept as issued. */
+/** Issue an official progress report to the client (item 174): it takes a revision and is kept as issued. */
 export const canIssueOfficialReport = (role: RoleKey) => APPROVER_ROLES.includes(role);
 export const canRequestInspection = (role: RoleKey) => INSPECTION_REQUEST_ROLES.includes(role);
 export const canManageChecklists = (role: RoleKey) => CHECKLIST_ADMIN_ROLES.includes(role);

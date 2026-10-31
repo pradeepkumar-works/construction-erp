@@ -6,7 +6,7 @@ import { cellText, isNegative, isNumeric } from '@/components/management/report-
 import { controlFacts, factText, footNote, issueLine, WIDE_COLUMNS } from './official-format';
 
 /**
- * An official progress report as an A4 HTML page (item 170): the page's preview and Print. The document control strip
+ * An official progress report as an A4 HTML page (item 174): the page's preview and Print. The document control strip
  * (organisation, title, document number, revision, date) heads it, the facts box follows, then the numbered chapters
  * and the signature boxes; a monthly report opens on a cover with its contents. PDF, Word and Excel draw the same
  * `OfficialReportDto` in `officialPdf.ts`, `officialDocx.ts` and `officialExcel.ts`.

@@ -333,7 +333,12 @@ Letters in and out for every project and for head office (`CorrespondenceService
 - **Sent.** A draft (from a template, `fillLetterTemplate`, or Ask's `draft_letter`) is issued at once, or, where
   `letterNeedsApproval(rule, category)` (by default the contractual categories: notice, claim, extension of time,
   hindrance, reply to show cause), sent to its signatory (the project's manager or a director, `people`), who approves
-  it (numbered and dated then) or returns it with what to change. It prints on the letterhead (`GET /letters/:id/print`),
+  it (numbered and dated then) or returns it with what to change. A company can ask for a second level
+  (`Organization.letterSeal`, item 169, set beside the first in Letter numbering; `letterRulesProblem` keeps it within
+  the first): the letters it names (`letterNeedsSeal`) wait, once signed (`signedAt`, `signedById`), for a director
+  (`LETTER_SEAL_ROLES`: admin, management) to seal them, and only the seal numbers and dates them. A director's own
+  signature is the seal. The signed letter tells the directors (`To seal: …`, with an email), sits in their To sign, and
+  sending it back clears the signature. `letterApprovalStage` says which of the two it waits for. It prints on the letterhead (`GET /letters/:id/print`),
   and the desk records dispatch and delivery; a contractual letter issued with no delivery date shows "no proof"
   (`proofMissing`). An "already sent" letter is numbered at once.
 - **Who.** `canViewLetters` (admin, management, PM, QS, document controller) keep the registers of their projects;
@@ -343,6 +348,42 @@ Letters in and out for every project and for head office (`CorrespondenceService
   (`LetterRecord`), the address book, numbering and templates pages, letter categories at `/masters/letter-category`, a
   project's Documents › Letters, Search's Letters, My work's "Letters for you". Phone: `app/letters.tsx` (marked to you,
   to sign) and `app/letter/[id].tsx` (close, approve, return).
+
+### Department screens (item 168)
+
+A department's screen (`DepartmentHome`) opens, under what waits for the user, with `DepartmentPanel` over
+`GET /dashboard/departments/:key?projectId` (`DepartmentHomeService`, `DepartmentHomeDto`):
+
+- **Figures.** The area modules' own (`ModuleHomeService.figures`), picked per department by `DEPARTMENT_FIGURES` and
+  `departmentFigures` (`@erp/shared/department-home.ts`, at most six): purchase shows requests to approve and orders to
+  receive, the store its stock and late deliveries, accounts its books and what clients owe. Project management keeps the
+  Projects figures and progress by project it had.
+- **Pipelines** (`DEPARTMENT_PIPELINES`): the work in flight through the department, read from the modules' own services
+  so their rights hold. Indents (purchase): material requests waiting for approval (`MaterialRequestsService.list`), the
+  approved ones still to order at their order stage (`RequestsToOrderService.rows`) and orders still to arrive
+  (`PurchaseOrdersService.status`). Deliveries (store): the last of those. Letters (correspondence): outward letters to
+  sign or seal and letters our reply is due on (`CorrespondenceService.list`). Each shows its count at every stage
+  (`pipelineStages`) and the eight most urgent (`byPipelineUrgency`: late first, then the soonest due), with a link to the
+  whole list. A pipeline the role cannot read (`canPurchase`, `canViewPurchaseOrders`, `canViewLetters`) is left out.
+  Tested in `src/scripts/department-home-test.ts` (CI flows).
+
+### Verticals (item 167)
+
+A vertical is a business line (water, buildings, irrigation, roads and bridges): an entry of the `vertical` master
+(`MASTER_LIST_DEFS.vertical`, Masters › Verticals, kept by code). `Project.verticalCode` and `Tender.verticalCode` hold
+one, or none; `verticalProblem` keeps it to an entry switched on. A new project with none named takes its built-in kind's
+(`verticalOfType` over `VERTICAL_OF_TYPE`, which the migration used for the projects there were); a tender won passes its
+vertical to the project. Rules are pure in `@erp/shared/verticals.ts`, tested in `src/scripts/verticals-test.ts`.
+
+- **The header.** Where projects have verticals, the project switcher groups them by vertical and offers each whole
+  vertical (`useVerticalScope` in `src/lib/project-scope.tsx`, remembered per user and browser beside the project). A
+  vertical narrows the projects offered there, the Projects list (`GET /projects?vertical=`), the management dashboard
+  (`GET /management/portfolio?vertical=`) and its reports (`?vertical=`, `ManagementReportDto.verticalName`; receivables,
+  payables and stock are read by project and say they cover every vertical). Other lists follow the header's project.
+- **Grouped.** `byVertical` puts rows in the master's order with none last: the portfolio's `verticals` (the dashboard's
+  By vertical) and the Monthly MIS's By vertical section, over every vertical.
+- **Later.** A head of a vertical who sees only its projects needs project access to read the vertical, in
+  `ProjectAccessService`; not yet.
 
 ### QA/QC (item 137)
 
@@ -756,6 +797,18 @@ Lists carry at most `COMPANY_TODAY_ROWS` rows. The phone (`src/components/Compan
 work on Home for these roles, in an order per role (accounts lead with money to pay); a tile opens its list in a
 `BottomSheet`, and a row opens its record through `phoneRoute` where the phone has a screen for it. The answer is kept
 under the `company-today` cache key, so the tiles show offline with the last figures.
+
+### Indent checks (item 170)
+
+Before a project manager decides on a material request, its record (`MrDrawer`, Store and BOQ checks) reads
+`GET /material-requests/:id/check` (`StockService.indentCheck`, `IndentCheckDto`). Per line, matched to the item master as
+`requestStock` does: what the request's own site holds, what the whole BOQ allows of the item from the project's norms
+(`boqAllowance`: each `MaterialNorm` over its BOQ item's revised or original quantity with its wastage, an activity's own
+`ActivityMaterialNorm` over its planned quantity taken out of its BOQ item's first, as `normSource` reads them), what was
+issued less returned, and what other requests waiting for approval ask for. `indentLineCheck` gives what is left of the
+allowance and the notes (the store covers it all or part, past the BOQ, no norm, others waiting); `indentLineFlagged`
+(past the BOQ, or the store already has it all) counts the lines to look at. Advice only: a request over the BOQ can be
+approved. Pure in `@erp/shared/indent-check.ts`, tested in `src/scripts/indent-check-test.ts` (CI flows).
 
 ### Small purchase items (v5 item 95)
 
@@ -3602,7 +3655,8 @@ export; the client portal and the phone app show the amount.
   billed, received and cost, the cash forecast's headline, and every reason worst first); `GET
   /api/management/projects/:id` (`PortfolioProjectDetailDto`: cost by head against budget and forecast, months with work
   done, client bills open, entries waiting, risks and open orders); `GET /api/management/reports/:key?month|from&to&projectId`
-  (`ManagementReportDto`: figures, sections of typed columns with totals and row links, and notes). The keys are
+  (`ManagementReportDto`: figures, sections of typed columns with totals and row links, and notes; `?vertical=` narrows the
+  portfolio and the reports, see "Verticals"). The keys are
   `MANAGEMENT_REPORT_KEYS` in `packages/shared/src/management.ts`: Monthly MIS (a month), Project profit and loss,
   Procurement spend and Labour and attendance (a range, the financial year by default), and Work in progress,
   Receivables ageing, Payables ageing, Stock position and Approvals waiting (as of today).
@@ -3618,7 +3672,7 @@ export; the client portal and the phone app show the amount.
 
 ## Official progress reports
 
-Item 170. The reports a contractor sends the client and its consultant every day, week and month, in the company's own
+Item 174. The reports a contractor sends the client and its consultant every day, week and month, in the company's own
 design. `apps/api/src/official-reports`, web `components/reports/official/`, page `/reports` (Daily, Weekly, Monthly
 (MPR), and Any dates for the older progress report).
 

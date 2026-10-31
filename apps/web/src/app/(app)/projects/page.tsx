@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, Progress, Select, theme } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
-import { LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canEditProjects } from '@erp/shared';
-import { useProjectsPage, LIST_START } from '@/lib/queries';
+import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canEditProjects, isGuest } from '@erp/shared';
+import { useMasterList, useProjectsPage, LIST_START } from '@/lib/queries';
+import { useVerticalScope } from '@/lib/project-scope';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PROJECT_EXPORT } from '@/lib/exportColumns';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -31,7 +32,7 @@ function Sub({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
 
-function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'descend' | null): ListColumn<ProjectSummary>[] {
+function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'descend' | null, verticalName: (code: string | null) => string | null): ListColumn<ProjectSummary>[] {
   const sort = (key: ProjectSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key) });
   return [
     {
@@ -51,6 +52,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
       ),
     },
     { card: 'meta', cardText: (p) => [p.code, p.clientName, p.location].filter(Boolean).join(' · '), title: 'Type', dataIndex: 'type', width: 150, defaultFrom: 1600, render: (t, p) => <ProjectTypeTag type={t} name={p.typeName} />, ...sort('type') },
+    { key: 'verticalCode', title: 'Vertical', label: 'Vertical', dataIndex: 'verticalCode', width: 130, defaultFrom: 1600, render: (v: string | null) => verticalName(v) ?? <Sub>None</Sub> },
     { card: 'status', title: 'Status', dataIndex: 'status', width: 110, render: (s) => <ProjectStatusTag status={s} />, ...sort('status') },
     { key: 'projectManagerName', title: 'PM', label: 'Project manager', dataIndex: 'projectManagerName', width: 140, defaultFrom: 1400, render: (v) => v ?? <Sub>Unassigned</Sub> },
     {
@@ -84,6 +86,10 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
 export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  // The header's vertical (item 167) narrows the list; the filter here is the same choice.
+  const [vertical, setVertical] = useVerticalScope();
+  const { data: verticals } = useMasterList('vertical', false, !!user && !isGuest(user.roleKey));
+  const verticalName = (code: string | null) => (code ? (verticals?.entries.find((e) => e.code === code)?.name ?? code) : null);
   const frame = useListFrame<ProjectSortField, ProjectSummary>({
     list: 'projects',
     keys: KEYS,
@@ -92,7 +98,7 @@ export default function ProjectsPage() {
     sortOrder: LIST_START['/projects'].sortOrder,
     sortFields: LIST_SORT_FIELDS.projects,
     projectScoped: false,
-    columns: projectColumns,
+    columns: (sortOrderFor) => projectColumns(sortOrderFor, verticalName),
     moreViews: [
       { key: 'active', label: 'Active', filters: { status: 'ACTIVE' } },
       { key: 'planned', label: 'Planned', filters: { status: 'PLANNED' } },
@@ -105,12 +111,12 @@ export default function ProjectsPage() {
   const { page } = frame;
   const status = page.filters.status as ProjectStatus | undefined;
   const type = page.filters.type as ProjectType | undefined;
-  const filters = { ...page.params, mine: undefined, from: undefined, to: undefined, status, type };
+  const filters = { ...page.params, mine: undefined, from: undefined, to: undefined, status, type, vertical };
   const { data, isLoading, isFetching, error, refetch } = useProjectsPage(filters);
   const [createOpen, setCreateOpen] = useState(false);
 
   const canCreate = user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
-  const filtered = !!(type || status || page.params.q);
+  const filtered = !!(type || status || vertical || page.params.q);
   const exportRows = async () => {
     const rows = await fetchAllPages<ProjectSummary>('/projects', filters);
     await downloadXlsx(exportFileName('projects'), 'Projects', PROJECT_EXPORT, rows);
@@ -152,6 +158,17 @@ export default function ProjectsPage() {
             style={{ width: 180 }}
             options={PROJECT_TYPES.map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))}
           />
+          {verticals && (
+            <Select<string>
+              allowClear
+              placeholder="All verticals"
+              aria-label="Vertical"
+              value={vertical}
+              onChange={(v) => setVertical(v)}
+              style={{ width: 170 }}
+              options={[...verticals.entries.filter((e) => e.isActive || e.code === vertical).map((e) => ({ value: e.code, label: e.name })), { value: NO_VERTICAL, label: 'No vertical' }]}
+            />
+          )}
           <Select<ProjectStatus>
             allowClear
             placeholder="All statuses"

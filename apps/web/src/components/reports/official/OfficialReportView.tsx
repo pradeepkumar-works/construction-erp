@@ -34,7 +34,7 @@ const FORMAT_WORDS: Record<Format, string> = {
 };
 
 /**
- * The official daily, weekly and monthly progress reports of one project (item 170): pick the day, week or month, read
+ * The official daily, weekly and monthly progress reports of one project (item 174): pick the day, week or month, read
  * the report as it will print, download it as PDF, Word or Excel, and issue it to the client, which keeps that copy
  * with its number and revision in the register beside it.
  */

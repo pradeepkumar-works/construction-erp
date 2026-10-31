@@ -4,7 +4,7 @@ import { cellExcel, cellText } from '@/components/management/report-format';
 import { controlFacts, factText, footNote } from './official-format';
 
 /**
- * An official progress report as a workbook (item 170): a Report sheet with the control strip, the facts, the figures and
+ * An official progress report as a workbook (item 174): a Report sheet with the control strip, the facts, the figures and
  * the text, and a sheet for each table with numbers kept as numbers, so the client's engineer can add them up.
  */
 

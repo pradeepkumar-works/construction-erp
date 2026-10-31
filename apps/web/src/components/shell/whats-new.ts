@@ -10,11 +10,22 @@ export interface WhatsNew {
 export const WHATS_NEW: WhatsNew[] = [
   {
     id: '2027-09-official-reports',
-    date: '2027-09-27',
+    date: '2027-10-04',
     title: 'Daily, weekly and monthly reports for the client',
     points: [
       'Reports, Progress reports makes a project’s daily, weekly and monthly progress report (MPR) in your company’s design: the contract box, progress by component, the work done with its location, observations, crew and machines, hindrances, next period’s plan and photographs. The MPR adds the programme, milestones, bills, drawings, meetings, quality and safety.',
       'Download it as PDF, Word or Excel. Issue to client keeps the copy with its number and revision, so the one you sent can be downloaded again.',
+    ],
+  },
+  {
+    id: '2027-09-verticals-departments',
+    date: '2027-09-27',
+    title: 'Verticals, department screens, the head office seal and indent checks',
+    points: [
+      'Projects and tenders have a vertical (water, buildings, irrigation, roads and bridges; keep the list in Masters › Verticals). The project switcher groups projects by vertical and can show one whole vertical, which narrows the Projects list and the management dashboard and reports. The dashboard and the Monthly MIS add up By vertical.',
+      'A department’s screen opens with its figures and the work in flight: indents from approval through quotations and the order to the last delivery, deliveries to receive, and letters to sign, seal or reply to.',
+      'Outward letters can wait for a second signature: in Letter numbering, Seal at head office names the letters a director seals after the project signs. Only the seal numbers them.',
+      'A material request shows the approver, line by line, what the site’s store holds, what the BOQ allows from the project’s norms, what was issued and what other requests ask for, and flags lines past the BOQ or already in the store.',
     ],
   },
   {
