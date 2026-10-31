@@ -44,7 +44,8 @@ interface Props {
   subtitle?: string;
   meta?: string;
   status?: SubmissionStatus;
-  onPress: () => void;
+  /** Left out for a row that opens nothing: no press state, no chevron. */
+  onPress?: () => void;
   style?: ViewStyle;
   /** Extra screen-reader actions (e.g. Approve on a row that also swipes). */
   accessibilityActions?: AccessibilityActionInfo[];
@@ -52,15 +53,8 @@ interface Props {
 }
 
 export function SubmissionRow({ type, title, subtitle, meta, status, onPress, style, accessibilityActions, onAccessibilityAction }: Props) {
-  return (
-    <Touchable
-      onPress={onPress}
-      style={[styles.row, style]}
-      pressedStyle={styles.pressed}
-      accessibilityRole="button"
-      accessibilityActions={accessibilityActions}
-      onAccessibilityAction={onAccessibilityAction}
-    >
+  const body = (
+    <>
       <View style={styles.iconWrap}>
         <Ionicons name={TYPE_ICON[type]} size={22} color={colors.primary} />
       </View>
@@ -78,6 +72,25 @@ export function SubmissionRow({ type, title, subtitle, meta, status, onPress, st
           {meta ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.meta}>{meta}</Text> : null}
         </View>
       </View>
+    </>
+  );
+  if (!onPress) {
+    return (
+      <View style={[styles.row, style]} accessible accessibilityActions={accessibilityActions} onAccessibilityAction={onAccessibilityAction}>
+        {body}
+      </View>
+    );
+  }
+  return (
+    <Touchable
+      onPress={onPress}
+      style={[styles.row, style]}
+      pressedStyle={styles.pressed}
+      accessibilityRole="button"
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
+    >
+      {body}
       <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
     </Touchable>
   );

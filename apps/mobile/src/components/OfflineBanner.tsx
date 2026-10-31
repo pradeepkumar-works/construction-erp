@@ -16,7 +16,7 @@ export function OfflineBanner() {
   const parts: string[] = [];
   if (!online) parts.push(t('Offline'));
   if (pendingCount) parts.push(syncing ? t('{n} waiting to send (sending…)', { n: pendingCount }) : t('{n} waiting to send', { n: pendingCount }));
-  if (failedCount) parts.push(t('{n} need attention', { n: failedCount }));
+  if (failedCount) parts.push(t('{n} refused', { n: failedCount }));
   const tone = failedCount ? colors.danger : colors.warning;
   return (
     <Touchable onPress={() => router.push('/outbox')} style={[styles.banner, { borderColor: tone }]} accessibilityRole="button" accessibilityLabel={parts.join(', ')} accessibilityHint={t('Opens the outbox')}>
