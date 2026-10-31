@@ -355,6 +355,7 @@ export const NAV: Record<string, string> = {
   Unpin: 'पिन हटाएँ',
   'Pin to Home': 'होम पर पिन करें',
   'This page opens on the web. Ask your admin for the web address': 'यह पेज वेब पर खुलता है। वेब का पता अपने एडमिन से पूछें',
+  'This page is on the web only. Open {webUrl} on a computer.': 'यह पेज सिर्फ़ वेब पर है। कंप्यूटर पर {webUrl} खोलें।',
   'Choose the project. The page opens on the web.': 'प्रोजेक्ट चुनें। पेज वेब पर खुलेगा।',
   'Pinned is full ({n}). Unpin one first': 'पिन की जगह भर गई ({n})। पहले एक पिन हटाएँ',
   'Pinned {name} to Home': '{name} होम पर पिन हुआ',
