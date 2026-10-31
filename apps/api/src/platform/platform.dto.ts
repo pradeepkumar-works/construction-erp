@@ -18,7 +18,7 @@ export class TrialDto {
 }
 
 export class ModuleTierDto {
-  @ApiPropertyOptional({ enum: MODULE_TIERS, nullable: true, description: "The plan's module set (v6 item 117); null for every module" })
+  @ApiPropertyOptional({ enum: MODULE_TIERS, nullable: true, description: "The plan's module set; null for every module" })
   @IsOptional()
   @IsIn(MODULE_TIERS)
   tier: ModuleTier | null;

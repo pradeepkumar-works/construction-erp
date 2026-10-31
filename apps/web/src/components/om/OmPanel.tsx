@@ -26,7 +26,7 @@ import {
 } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useOm } from '@/lib/queries';
+import { useOm, WATCH_LIST_KEY } from '@/lib/queries';
 import { useUrlParam, useUrlTab } from '@/lib/url-state';
 import { formatDate, formatINR, formatMonth, formatPct, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
@@ -151,7 +151,7 @@ function useOmSave<V>(projectId: string, call: (v: V) => Promise<OmDto>) {
     mutationFn: call,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['om', projectId] });
-      qc.invalidateQueries({ queryKey: ['warnings'] });
+      qc.invalidateQueries({ queryKey: WATCH_LIST_KEY });
     },
     meta: FAIL_NOTICE,
   });

@@ -35,6 +35,7 @@ type FormValues = {
   ldRatePct?: number | null;
   ldPeriod?: LdPeriod;
   ldCapPct?: number | null;
+  securityDepositCapPct?: number | null;
 } & Partial<Record<ContractPercentField, number | null>>;
 
 const PCT_HELP: Record<ContractPercentField, string> = {
@@ -80,6 +81,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       ldRatePct: Number(contract.ldRatePct),
       ldPeriod: contract.ldPeriod,
       ldCapPct: Number(contract.ldCapPct),
+      securityDepositCapPct: contract.securityDepositCapPct !== null ? Number(contract.securityDepositCapPct) : null,
       ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, Number(contract[k])])),
     });
   }, [open, contract, form]);
@@ -106,6 +108,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
         ldRatePct: String(v.ldRatePct ?? 0),
         ldPeriod: v.ldPeriod ?? 'WEEK',
         ldCapPct: String(v.ldCapPct ?? 0),
+        securityDepositCapPct: v.securityDepositCapPct ? String(v.securityDepositCapPct) : null,
         ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, String(v[k] ?? 0)])),
       };
       return (await api.put<ProjectContractDto>(`/projects/${contract.projectId}/contract`, body)).data;
@@ -183,6 +186,15 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                   <InputNumber<number> style={{ width: '100%' }} min={0} max={k === 'gstRate' ? MAX_GST_RATE : 100} />
                 </Form.Item>
               ))}
+            </FormGrid>
+            <FormGrid cols={3}>
+              <Form.Item
+                name="securityDepositCapPct"
+                label="Security deposit stops at (% of contract value)"
+                tooltip="Where the contract takes the deposit from each bill only up to a share of the contract value (or of the work billed, if larger). Leave empty for no cap."
+              >
+                <InputNumber<number> style={{ width: '100%' }} min={0.01} max={100} step={0.5} suffix="%" />
+              </Form.Item>
             </FormGrid>
             <FormGrid cols={3}>
               <Form.Item name="mobilisationAdvance" label="Mobilisation advance" tooltip="Advance received from the client; recovered from bills at the advance recovery %">

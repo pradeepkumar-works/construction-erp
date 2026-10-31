@@ -88,7 +88,6 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
     onSuccess: (s) => {
       qc.setQueryData(['handover', projectId], s);
       qc.invalidateQueries({ queryKey: ['projects'] });
-      qc.invalidateQueries({ queryKey: ['project', projectId] });
     },
     meta: FAIL_NOTICE,
   });

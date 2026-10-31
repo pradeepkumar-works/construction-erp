@@ -15,7 +15,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { StatusTag } from '@/components/common/StatusTag';
-import { EmptyArt } from '@/components/common/EmptyArt';
+import { EmptyLine } from '@/components/common/EmptyArt';
 import { DateRangeFilter } from '@/components/list/DateRangeFilter';
 import { RecordLink } from '@/components/record/RecordLink';
 import type { SubmissionStatus } from '@erp/shared';
@@ -151,14 +151,14 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
   ];
 
   const empty = (
-    <EmptyArt art="entries" size="small" title="No engine hours yet">
+    <EmptyLine title="No engine hours yet">
       <p style={{ margin: '4px 0 8px' }}>
         {data?.unmatchedDevices
           ? `${data.unmatchedDevices} tracker${data.unmatchedDevices === 1 ? ' is' : 's are'} not matched to a machine yet. Match them in Admin, Connections, Devices.`
           : "Connect the fleet's GPS trackers or a machine maker's feed in Admin, Connections, and each machine's engine hours show here by the day."}
       </p>
       {admin ? <LinkButton href="/connections?tab=devices">Open connections</LinkButton> : null}
-    </EmptyArt>
+    </EmptyLine>
   );
 
   return (

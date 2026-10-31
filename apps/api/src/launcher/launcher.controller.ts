@@ -14,7 +14,7 @@ export class LauncherController {
     private tiles: HomeTilesService,
   ) {}
 
-  @ApiOperation({ summary: 'Pins and Recent for Home', description: 'Launcher phase 2: your pins in order and the places you opened last, with project names as they are now.' })
+  @ApiOperation({ summary: 'Pins and Recent for Home', description: 'Your pins in order and the places you opened last, with project names as they are now.' })
   @Get()
   get(@CurrentUser() user: RequestUser) {
     return this.launcher.get(user);
@@ -56,7 +56,7 @@ export class LauncherController {
     return this.launcher.import(user, dto);
   }
 
-  @ApiOperation({ summary: 'Ask for a module', description: 'Launcher phase 3: from Discover, for a module your role cannot open. The company admins are told.' })
+  @ApiOperation({ summary: 'Ask for a module', description: 'From Discover, for a module your role cannot open. The company admins are told.' })
   @Post('access-requests')
   requestAccess(@CurrentUser() user: RequestUser, @Body() dto: AccessRequestCreateDto) {
     return this.tiles.request(user, dto);

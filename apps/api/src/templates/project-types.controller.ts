@@ -12,7 +12,7 @@ import { ImportFileDto, ImportPickDto, NewComponentKindDto, NewProjectTypeDto, S
 export class ProjectTypesController {
   constructor(private types: ProjectTypesService, private forms: DprFormsService, private bundles: TypeBundleService) {}
 
-  @ApiOperation({ summary: "The company's project types (item 134)", description: 'The standard types (or the company’s copies of them) and its own, each with its starting breakdown, loose activities and how many projects use it.' })
+  @ApiOperation({ summary: "The company's project types", description: 'The standard types (or the company’s copies of them) and its own, each with its starting breakdown, loose activities and how many projects use it.' })
   @Get('project-types')
   list(@CurrentUser() user: RequestUser) {
     return this.types.list(user);
@@ -71,7 +71,7 @@ export class ProjectTypesController {
     return done;
   }
 
-  @ApiOperation({ summary: "A project type's DPR form (item 134 part 2)", description: 'The form new reports are made on (its latest saved version, else the standard form of the type), every saved version with how many reports it holds, and whether the company records progress only through DPRs.' })
+  @ApiOperation({ summary: "A project type's DPR form", description: 'The form new reports are made on (its latest saved version, else the standard form of the type), every saved version with how many reports it holds, and whether the company records progress only through DPRs.' })
   @Get('project-types/:code/dpr-form')
   dprForm(@CurrentUser() user: RequestUser, @Param('code') code: string) {
     return this.forms.versions(user, code);
@@ -89,7 +89,7 @@ export class ProjectTypesController {
     return this.forms.reset(user, code);
   }
 
-  @ApiOperation({ summary: "The company's component kinds (item 134)", description: 'The built-in kinds (or the company’s copies) and its own, with how many components were laid out from each.' })
+  @ApiOperation({ summary: "The company's component kinds", description: 'The built-in kinds (or the company’s copies) and its own, with how many components were laid out from each.' })
   @Get('component-kinds')
   kinds(@CurrentUser() user: RequestUser) {
     return this.types.listKinds(user);

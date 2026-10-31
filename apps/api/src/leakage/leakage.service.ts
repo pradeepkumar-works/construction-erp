@@ -195,7 +195,7 @@ export class LeakageService {
     const out: LeakageFlag[] = [];
     for (const l of lines) {
       const po = l.purchaseOrder;
-      const poDate = dateOnly(po.poDate)!;
+      const poDate = dateOnly(po.poDate);
       const hit = rateAboveOthers({ rate: n(l.rate), projectId: po.projectId, poDate }, (quotes.get(lastRateKey(l.itemName, l.unit)) ?? []).filter((q) => q.purchaseOrderId !== po.id));
       if (!hit) continue;
       const p = byId.get(po.projectId)!;
@@ -259,7 +259,7 @@ export class LeakageService {
     const logged = new Set(logs.map((l) => `${l.equipmentId}|${dateOnly(l.date)}`));
     const machine = new Map(issues.map((i) => [i.equipmentId!, { ...i.equipment!, projectId: i.projectId }]));
     for (const d of fuelWithoutLog(
-      issues.map((e) => ({ equipmentId: e.equipmentId!, date: dateOnly(e.date)!, litres: -e.lines.reduce((s, l) => s + n(l.quantity), 0), entryId: e.id, entryNo: e.entryNo })),
+      issues.map((e) => ({ equipmentId: e.equipmentId!, date: dateOnly(e.date), litres: -e.lines.reduce((s, l) => s + n(l.quantity), 0), entryId: e.id, entryNo: e.entryNo })),
       logged,
     )) {
       const eq = machine.get(d.equipmentId)!;
@@ -299,9 +299,9 @@ export class LeakageService {
       const litresOf = (l: (typeof ls)[number]) => (l.dieselLitres ? n(l.dieselLitres) : (issued.get(`${id}|${dateOnly(l.date)}`)?.litres ?? 0));
       const kmOf = (l: (typeof ls)[number]) => (l.meterStart && l.meterEnd ? n(l.meterEnd) - n(l.meterStart) : null);
       const sent = ls.filter((l) => l.status === 'SUBMITTED' || l.status === 'APPROVED');
-      const f = fuelNormCheck(sent.map((l) => ({ date: dateOnly(l.date)!, hoursWorked: n(l.hoursWorked), km: kmOf(l), litres: litresOf(l) })), norm, unit, tolerance, to);
+      const f = fuelNormCheck(sent.map((l) => ({ date: dateOnly(l.date), hoursWorked: n(l.hoursWorked), km: kmOf(l), litres: litresOf(l) })), norm, unit, tolerance, to);
       if (!f || !f.thirsty) continue;
-      const used = sent.filter((l) => dateOnly(l.date)! >= f.from && dateOnly(l.date)! <= f.to);
+      const used = sent.filter((l) => dateOnly(l.date) >= f.from && dateOnly(l.date) <= f.to);
       const litres = used.reduce((s, l) => s + litresOf(l), 0);
       const use = unit === 'KM_PER_LITRE' ? used.reduce((s, l) => s + (kmOf(l) ?? 0), 0) : used.reduce((s, l) => s + n(l.hoursWorked), 0);
       const extra = Math.max(0, unit === 'KM_PER_LITRE' ? litres - use / norm : litres - use * norm);
@@ -356,7 +356,7 @@ export class LeakageService {
       const p = byId.get(ls[0].projectId)!;
       // Two logs on a day (shifts) are one day
       const perDay = new Map<string, number>();
-      for (const l of ls) perDay.set(dateOnly(l.date)!, (perDay.get(dateOnly(l.date)!) ?? 0) + n(l.hoursWorked));
+      for (const l of ls) perDay.set(dateOnly(l.date), (perDay.get(dateOnly(l.date)) ?? 0) + n(l.hoursWorked));
       const h = idleHire({ rateUnit: eq.rateUnit, rate: eq.rate ? n(eq.rate) : null, minHours: eq.hireMinHours ? n(eq.hireMinHours) : null }, [...perDay].map(([date, worked]) => ({ date, worked })), month, to);
       if (!h) continue;
       const value = seeValues ? h.paidIdle : null;

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, Progress, Select, theme } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
-import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canEditProjects, isGuest } from '@erp/shared';
+import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canManageProjects, isGuest } from '@erp/shared';
 import { useMasterList, useProjectsPage, LIST_START } from '@/lib/queries';
 import { useVerticalScope } from '@/lib/project-scope';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -115,7 +115,7 @@ export default function ProjectsPage() {
   const { data, isLoading, isFetching, error, refetch } = useProjectsPage(filters);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const canCreate = user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
+  const canCreate = user && canManageProjects(user.roleKey);
   const filtered = !!(type || status || vertical || page.params.q);
   const exportRows = async () => {
     const rows = await fetchAllPages<ProjectSummary>('/projects', filters);

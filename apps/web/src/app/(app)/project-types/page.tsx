@@ -7,7 +7,7 @@ import { App, Button, Card, Typography, theme } from 'antd';
 import { PROJECT_TYPE_LABELS, WORK_ELEMENT_TYPE_LABELS, canManageTemplates, type ComponentKindDto, type ProjectTypeDto } from '@erp/shared';
 import { DownloadOutlined, ImportOutlined, PlusOutlined } from '@/components/common/icons';
 import { AppTabs } from '@/components/common/AppTabs';
-import { EmptyArt } from '@/components/common/EmptyArt';
+import { EmptyLine } from '@/components/common/EmptyArt';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
@@ -66,7 +66,7 @@ function TypesTab({ types }: { types: ProjectTypeDto[] }) {
       table={{ pagination: false }}
       onOpen={(code) => router.push(`/project-types/${code}`)}
       scrollX={900}
-      emptyText={<EmptyArt art="entries" size="small" title="No project types yet" />}
+      emptyText={<EmptyLine title="No project types yet" />}
     />
   );
 }
@@ -116,7 +116,7 @@ function KindsTab({ kinds, onOpen }: { kinds: ComponentKindDto[]; onOpen: (k: Co
           if (k) onOpen(k);
         }}
         scrollX={900}
-        emptyText={<EmptyArt art="entries" size="small" title="No component kinds yet" />}
+        emptyText={<EmptyLine title="No component kinds yet" />}
       />
     </>
   );

@@ -105,7 +105,7 @@ export class HindranceService {
     for (const r of reports) {
       const remark = (r.issues ?? '').trim();
       if (!remark || (r.hindrance && (r.hindrance.remark === remark || r.hindrance.decision !== 'PENDING'))) continue;
-      const date = dateOnly(r.date)!;
+      const date = dateOnly(r.date);
       let reading = classifyRemark(remark, date);
       let source: HindranceSource = 'RULES';
       if (reading.verdict === 'UNSURE' && modelReads < MODEL_READS_PER_LOAD) {
@@ -180,12 +180,12 @@ export class HindranceService {
         projectId: r.projectId,
         projectCode: p.code,
         projectName: p.name,
-        reportDate: dateOnly(r.dailyReport.date)!,
+        reportDate: dateOnly(r.dailyReport.date),
         remark: r.remark,
         title: r.title ?? r.remark.slice(0, 80),
         category,
         party: r.party,
-        delayStart: dateOnly(r.delayStart) ?? dateOnly(r.dailyReport.date)!,
+        delayStart: dateOnly(r.delayStart) ?? dateOnly(r.dailyReport.date),
         matched: r.matched,
         source: r.source as HindranceSource,
         openDelay: same ? { id: same.id, riskNo: same.riskNo, title: same.title } : null,
@@ -226,7 +226,7 @@ export class HindranceService {
       risk = await this.risks.get(user, dto.riskId);
       if (risk.projectId !== check.projectId || risk.kind !== 'DELAY') throw new BadRequestException('Choose an open delay on the same project');
     } else {
-      const reportDate = dateOnly(check.dailyReport.date)!;
+      const reportDate = dateOnly(check.dailyReport.date);
       risk = await this.risks.create(user, {
         projectId: check.projectId,
         kind: 'DELAY',
@@ -293,7 +293,7 @@ export class HindranceService {
     const days = noticeDays ?? DEFAULT_NOTICE_DAYS;
     const source = noticeDays !== null ? 'Set on the contract' : `${DEFAULT_NOTICE_DAYS} days assumed: set the contract’s notice period on its Contract tab`;
     return delays.map((d) => {
-      const start = dateOnly(d.delayStart) ?? dateOnly(d.createdAt)!;
+      const start = dateOnly(d.delayStart) ?? dateOnly(d.createdAt);
       const clock = noticeClock(start, days, today);
       const out = d.letters.find((l) => l.direction === 'OUT');
       const notice: NoticeClockDto = {
@@ -302,7 +302,7 @@ export class HindranceService {
         noticeDays: days,
         due: clock.due,
         daysLeft: clock.daysLeft,
-        noticeSent: out ? { letterId: out.id, letterNo: out.letterNo ?? '', letterDate: dateOnly(out.letterDate)! } : null,
+        noticeSent: out ? { letterId: out.id, letterNo: out.letterNo ?? '', letterDate: dateOnly(out.letterDate) } : null,
         source,
       };
       return { d, start, notice };
@@ -339,7 +339,7 @@ export class HindranceService {
       delayStart: risk.delayStart,
       delayEnd: risk.delayEnd,
       today,
-      remarks: d.hindrances.map((h) => ({ date: dateOnly(h.dailyReport.date)!, text: h.remark })).sort((a, b) => a.date.localeCompare(b.date)),
+      remarks: d.hindrances.map((h) => ({ date: dateOnly(h.dailyReport.date), text: h.remark })).sort((a, b) => a.date.localeCompare(b.date)),
       photos,
       clause: found ? { no: found.clause, docNo: found.docNo, days: found.days } : null,
       noticeDays: notice.noticeDays,
@@ -383,8 +383,8 @@ export class HindranceService {
         eotClaimed: d.eotClaimed,
         eotGrantedDays: d.eotGrantedDays,
         notice,
-        letters: d.letters.map((l) => ({ letterNo: l.letterNo ?? '', letterDate: dateOnly(l.letterDate)!, direction: l.direction, subject: l.subject })),
-        remarks: d.hindrances.map((h) => ({ reportDate: dateOnly(h.dailyReport.date)!, remark: h.remark })).sort((a, b) => a.reportDate.localeCompare(b.reportDate)),
+        letters: d.letters.map((l) => ({ letterNo: l.letterNo ?? '', letterDate: dateOnly(l.letterDate), direction: l.direction, subject: l.subject })),
+        remarks: d.hindrances.map((h) => ({ reportDate: dateOnly(h.dailyReport.date), remark: h.remark })).sort((a, b) => a.reportDate.localeCompare(b.reportDate)),
       };
     });
     return {

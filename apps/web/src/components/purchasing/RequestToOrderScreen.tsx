@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { App, Button, Card, Col, Empty, Flex, Form, Grid, Input, Row, Space, Statistic, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { CheckCircleOutlined, DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@/components/common/icons';
+import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleFilled, DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@/components/common/icons';
 import type { ComparativeStatementDto, EnquiryDto, MaterialRequestDto, MaterialRequestItemDto, QuotationDto, RankedQuote, RequestToOrderDto } from '@erp/shared';
-import { ORDER_STAGES, awardLowestPerItem, canPurchase, enquiryOpen, finaliseProblem, lastRateKey, rankLabel, type OrderStage } from '@erp/shared';
+import { awardLowestPerItem, canPurchase, enquiryOpen, finaliseProblem, lastRateKey, rankLabel, type OrderStage } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -33,7 +33,9 @@ import { StageTag } from './RequestsToOrderList';
 const STEPS = ['enquiries', 'quotations', 'finalise', 'orders'] as const;
 type Step = (typeof STEPS)[number];
 /** The step a request opens on: the one its stage waits on. */
-const STEP_OF: Record<OrderStage, Step> = { TO_ENQUIRE: 'enquiries', AWAITING_QUOTES: 'enquiries', TO_FINALISE: 'finalise', READY: 'orders' };
+const STEP_OF: Record<OrderStage, Step> = { TO_ENQUIRE: 'enquiries', AWAITING_QUOTES: 'enquiries', TO_FINALISE: 'finalise', AWAITING_APPROVAL: 'finalise', READY: 'orders' };
+/** Where each stage sits on the four-step bar: a choice waiting for approval is still on Finalise L1. */
+const BAR_AT: Record<OrderStage, number> = { TO_ENQUIRE: 0, AWAITING_QUOTES: 1, TO_FINALISE: 2, AWAITING_APPROVAL: 2, READY: 3 };
 
 function Muted({ children }: { children: React.ReactNode }) {
   return <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{children}</div>;
@@ -60,7 +62,7 @@ export function RequestToOrderScreen({ id }: { id: string }) {
     );
   const request = mr.data;
   const buyer = !!user && canPurchase(user.roleKey);
-  const at = ORDER_STAGES.indexOf(r.stage);
+  const at = BAR_AT[r.stage];
   const done = r.itemsLeft === 0;
 
   return (
@@ -86,7 +88,14 @@ export function RequestToOrderScreen({ id }: { id: string }) {
           items={[
             { title: 'Enquiry', content: r.enquiry ? `${r.enquiry.replied} of ${r.enquiry.invited} replied` : 'Not sent' },
             { title: 'Quotations', content: `${r.quotations} in` },
-            { title: 'Finalise L1', content: r.final ? (r.final.split ? 'Split per item' : (r.final.vendorName ?? 'Finalised')) : r.l1 ? `L1 ${r.l1.vendorName}` : 'Waiting for quotes' },
+            {
+              title: 'Finalise L1',
+              content: r.final
+                ? `${r.final.split ? 'Split per item' : (r.final.vendorName ?? 'Finalised')}${r.stage === 'AWAITING_APPROVAL' ? ', waiting for approval' : r.final.approval?.status === 'APPROVED' ? ', approved' : ''}`
+                : r.l1
+                  ? `L1 ${r.l1.vendorName}`
+                  : 'Waiting for quotes',
+            },
             { title: 'Purchase order', content: done ? 'Everything ordered' : r.orders ? `${r.orders} raised, ${r.itemsLeft} item${r.itemsLeft === 1 ? '' : 's'} left` : 'To raise' },
           ]}
         />
@@ -98,7 +107,7 @@ export function RequestToOrderScreen({ id }: { id: string }) {
           items={[
             { key: 'enquiries', label: '1. Enquiry', children: <EnquiryStep request={request} row={r} buyer={buyer} onNext={() => setTab('quotations')} /> },
             { key: 'quotations', label: '2. Quotations', count: r.quotations, countLabel: r.quotations === 1 ? 'quotation' : 'quotations', children: <QuotationsStep request={request} cs={cs.data} loading={cs.isLoading} buyer={buyer} onNext={() => setTab('finalise')} /> },
-            { key: 'finalise', label: '3. Finalise L1', attention: r.stage === 'TO_FINALISE', children: <FinaliseStep request={request} row={r} cs={cs.data} buyer={buyer} onNext={() => setTab('orders')} /> },
+            { key: 'finalise', label: r.needsApproval ? '3. Finalise and approve' : '3. Finalise L1', attention: r.stage === 'TO_FINALISE', children: <FinaliseStep request={request} row={r} cs={cs.data} buyer={buyer} onNext={() => setTab('orders')} /> },
             { key: 'orders', label: '4. Purchase order', count: r.orders || undefined, countLabel: r.orders === 1 ? 'order' : 'orders', attention: r.stage === 'READY', children: <OrdersStep request={request} row={r} cs={cs.data} buyer={buyer} onFinalise={() => setTab('finalise')} /> },
           ]}
         />
@@ -327,7 +336,11 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
   const pct = (a: number, b: number) => (b ? `${(((a - b) / b) * 100).toFixed(1)}%` : '');
 
   const pick = async (body: { quotationId?: string; split?: boolean; reason?: string | null }, what: string) => {
-    await finalise.mutateAsync(body);
+    const after = await finalise.mutateAsync(body);
+    if (after.stage === 'AWAITING_APPROVAL') {
+      message.success(`Finalised: ${what}. It is sent for approval; raise the order once it is approved.`);
+      return;
+    }
     message.success(`Finalised: ${what}. Raise the order next.`);
     onNext();
   };
@@ -337,35 +350,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
 
   return (
     <>
-      {row.final ? (
-        <Flex
-          align="center"
-          justify="space-between"
-          wrap
-          gap={token.marginSM}
-          style={{ padding: token.paddingSM, marginBottom: token.margin, background: token.colorSuccessBg, borderRadius: token.borderRadius }}
-        >
-          <Flex align="center" gap={token.marginXS}>
-            <CheckCircleOutlined style={{ color: token.colorSuccessText }} aria-hidden />
-            <Typography.Text>
-              <strong>Finalised: {row.final.split ? 'the lowest per item, split between vendors' : <span translate="no">{row.final.vendorName ?? 'a quotation since deleted'}</span>}</strong>
-              {row.final.rank ? ` (${rankLabel(row.final.rank)} when chosen)` : ''}
-              {row.final.byName ? `, by ${row.final.byName}` : ''}
-              {row.final.at ? ` on ${formatDateTime(row.final.at)}` : ''}.{row.final.reason ? ` Why: ${row.final.reason}` : ''}
-            </Typography.Text>
-          </Flex>
-          {buyer ? (
-            <Space wrap>
-              <Button loading={reopen.isPending} onClick={() => reopen.mutate()}>
-                Reopen
-              </Button>
-              <Button type="primary" icon={<ShoppingCartOutlined />} onClick={onNext}>
-                Raise the order
-              </Button>
-            </Space>
-          ) : null}
-        </Flex>
-      ) : null}
+      {row.final ? <FinalNotice row={row} buyer={buyer} reopening={reopen.isPending} onReopen={() => reopen.mutate()} onNext={onNext} /> : null}
 
       <Row gutter={[token.margin, token.margin]} style={{ marginBottom: token.margin }}>
         <Col xs={12} lg={6}>
@@ -488,6 +473,62 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
   );
 }
 
+/**
+ * What was finalised, and where its approval stands when the company has orders wait for an approved choice: waiting
+ * (the order waits too), approved (raise it) or rejected and sent back (finalise again, the ranking is below).
+ */
+function FinalNotice({ row, buyer, reopening, onReopen, onNext }: { row: RequestToOrderDto; buyer: boolean; reopening: boolean; onReopen: () => void; onNext: () => void }) {
+  const { token } = theme.useToken();
+  const final = row.final!;
+  const approval = final.approval;
+  const waiting = row.stage === 'AWAITING_APPROVAL';
+  const refused = approval?.status === 'REJECTED' || approval?.status === 'CHANGES_REQUESTED';
+  const tone = refused
+    ? { bg: token.colorErrorBg, fg: token.colorErrorText }
+    : waiting
+      ? { bg: token.colorWarningBg, fg: token.colorWarningText }
+      : { bg: token.colorSuccessBg, fg: token.colorSuccessText };
+  const chosen = final.split ? 'the lowest per item, split between vendors' : <span translate="no">{final.vendorName ?? 'a quotation since deleted'}</span>;
+  return (
+    <Flex align="center" justify="space-between" wrap gap={token.marginSM} style={{ padding: token.paddingSM, marginBottom: token.margin, background: tone.bg, borderRadius: token.borderRadius }}>
+      <Flex align="flex-start" gap={token.marginXS} style={{ minWidth: 0, flex: '1 1 320px' }}>
+        {refused ? (
+          <CloseCircleFilled style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+        ) : waiting ? (
+          <ClockCircleOutlined style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+        ) : (
+          <CheckCircleOutlined style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+        )}
+        <Typography.Text>
+          <strong>
+            {refused ? (approval!.status === 'REJECTED' ? 'Choice rejected: ' : 'Choice sent back: ') : waiting ? 'Waiting for approval: ' : 'Finalised: '}
+            {chosen}
+          </strong>
+          {final.rank ? ` (${rankLabel(final.rank)} when chosen)` : ''}
+          {final.byName ? `, by ${final.byName}` : ''}
+          {final.at ? ` on ${formatDateTime(final.at)}` : ''}.{final.reason ? ` Why: ${final.reason}` : ''}
+          {approval?.status === 'APPROVED' && approval.reviewedByName ? ` Approved by ${approval.reviewedByName}${approval.reviewedAt ? ` on ${formatDateTime(approval.reviewedAt)}` : ''}.` : ''}
+          {refused ? ` ${approval!.reviewedByName ?? 'The approver'}${approval!.reviewNote ? ` wrote: ${approval!.reviewNote}` : ' gave no note'}. Finalise again from the ranking below.` : ''}
+          {waiting ? ' The order can be raised once the approver agrees.' : ''}
+        </Typography.Text>
+      </Flex>
+      <Space wrap>
+        {approval ? <LinkButton href={`/supplier-choices/${approval.choiceId}`}>Open the choice</LinkButton> : null}
+        {buyer && !refused ? (
+          <Button loading={reopening} onClick={onReopen}>
+            Reopen
+          </Button>
+        ) : null}
+        {buyer && row.stage === 'READY' ? (
+          <Button type="primary" icon={<ShoppingCartOutlined />} onClick={onNext}>
+            Raise the order
+          </Button>
+        ) : null}
+      </Space>
+    </Flex>
+  );
+}
+
 /** Finalising a quotation other than L1 asks why; the reason goes on the order as why this vendor. */
 function ChooseInsteadModal({ choice, ranked, onClose, onSubmit }: { choice: RankedQuote | null; ranked: RankedQuote[]; onClose: () => void; onSubmit: (reason: string) => Promise<void> }) {
   const [form] = Form.useForm<{ reason: string }>();
@@ -545,7 +586,11 @@ function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: Material
               ? row.final!.split
                 ? 'The split is finalised: one draft order per vendor, each for the items it quoted lowest.'
                 : `${row.final!.vendorName} is finalised. The order starts from their quotation for what is still to order.`
-              : 'Finalise L1 first, so the order is raised on the supplier you chose.'}
+              : row.stage === 'AWAITING_APPROVAL'
+                ? 'The supplier choice is waiting for approval. The order is raised once it is approved.'
+                : row.needsApproval
+                  ? 'Finalise L1 and have it approved first: orders here are raised only on an approved supplier choice.'
+                  : 'Finalise L1 first, so the order is raised on the supplier you chose.'}
         </Typography.Text>
         {buyer && left ? (
           <Space wrap>
@@ -559,10 +604,10 @@ function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: Material
               </Button>
             ) : (
               <Button type="primary" onClick={onFinalise}>
-                Go to Finalise L1
+                {row.stage === 'AWAITING_APPROVAL' ? 'See the choice' : 'Go to Finalise L1'}
               </Button>
             )}
-            <Button onClick={() => setStart(poStartFrom(request, null))}>Raise PO without a quotation</Button>
+            {row.needsApproval ? null : <Button onClick={() => setStart(poStartFrom(request, null))}>Raise PO without a quotation</Button>}
           </Space>
         ) : null}
       </Flex>

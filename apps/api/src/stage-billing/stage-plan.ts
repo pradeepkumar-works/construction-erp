@@ -186,7 +186,7 @@ export async function stagePlan(tx: Db, bill: { id: string; projectId: string; b
   const components = await tx.billingComponent.findMany({ where: { projectId: bill.projectId }, include: { stages: { select: { ...EVIDENCE_STAGE_SELECT, pct: true, sortOrder: true, componentId: true }, orderBy: { sortOrder: 'asc' } } } });
   if (!components.length) return null;
   components.sort(compareCodes);
-  const upTo = dateOnly(bill.measuredUpTo)!;
+  const upTo = dateOnly(bill.measuredUpTo);
   const lumpSum = project.lumpSumValue ?? project.contractValue ?? ZERO;
   const shares = componentShares(lumpSum, components);
   const leaves = components.filter((c) => c.basis === 'STAGES' && !components.some((k) => k.parentId === c.id));
@@ -274,7 +274,7 @@ export async function stagePlan(tx: Db, bill: { id: string; projectId: string; b
           code: c.code,
           name: c.name,
           value,
-          targetPct: targetAt(targets.filter((t) => t.componentId === c.id).map((t) => ({ month: dateOnly(t.month)!, pct: num(t.cumulativePct) })), upTo),
+          targetPct: targetAt(targets.filter((t) => t.componentId === c.id).map((t) => ({ month: dateOnly(t.month), pct: num(t.cumulativePct) })), upTo),
           actualPct: value.gt(0) ? billed.mul(100).div(value).toNumber() : 0,
         };
       }),
@@ -287,7 +287,7 @@ export async function stagePlan(tx: Db, bill: { id: string; projectId: string; b
     lines,
     stageAmount,
     stagePrevious,
-    slippageLines: slip.lines.map((l) => ({ ...l, withheld: money(l.withheld)! })),
+    slippageLines: slip.lines.map((l) => ({ ...l, withheld: money(l.withheld) })),
     slippageWithheld: slip.total.sub(withheldBefore._sum.slippageWithheld ?? ZERO),
     lumpSumBoqItemIds,
     unitRateBoqItemIds,

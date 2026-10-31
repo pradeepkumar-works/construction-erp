@@ -99,6 +99,17 @@ export default function ApprovalRulesPage() {
     meta: FAIL_NOTICE,
   });
 
+  // Orders only on an approved supplier choice: Finalise L1 goes to an approver before the purchase order.
+  const choiceRule = useMutation({
+    mutationFn: async (ordersNeedApprovedChoice: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { ordersNeedApprovedChoice })).data,
+    onSuccess: (m) => {
+      qc.setQueryData(['approval-rules'], (old: ApprovalMatrixDto | undefined) => (old ? { ...old, ordersNeedApprovedChoice: m.ordersNeedApprovedChoice } : m));
+      void qc.invalidateQueries({ queryKey: ['quotations'] });
+      message.success(m.ordersNeedApprovedChoice ? 'Orders now wait for an approved supplier choice' : 'Purchase can order as soon as L1 is finalised');
+    },
+    meta: FAIL_NOTICE,
+  });
+
   // Progress from the DPR only: progress is recorded as the DPR's work lines.
   const dprRule = useMutation({
     mutationFn: async (progressFromDpr: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { progressFromDpr })).data,
@@ -264,6 +275,21 @@ export default function ApprovalRulesPage() {
               </Typography.Text>
               <Typography.Paragraph type="secondary" id="pay-request-rule-note" style={{ margin: 0 }}>
                 Accounts pays a bill only against a payment request approved under the {SUBMISSION_TYPE_LABELS.PAYMENT_REQUEST} column above. Off, accounts can also pay any approved bill directly. Advances always need a request.
+              </Typography.Paragraph>
+            </div>
+          </Flex>
+        </Card>
+      ) : null}
+      {data ? (
+        <Card size="small" style={{ marginTop: 16 }}>
+          <Flex gap={12} align="flex-start">
+            <Switch checked={data.ordersNeedApprovedChoice} loading={choiceRule.isPending} onChange={(v) => choiceRule.mutate(v)} aria-labelledby="choice-rule" aria-describedby="choice-rule-note" />
+            <div>
+              <Typography.Text strong id="choice-rule">
+                Orders wait for an approved supplier choice
+              </Typography.Text>
+              <Typography.Paragraph type="secondary" id="choice-rule-note" style={{ margin: 0 }}>
+                When purchase finalises L1 (or chooses another supplier, with a reason) under Requests to order, the choice goes for approval under the {SUBMISSION_TYPE_LABELS.SUPPLIER_CHOICE} column above, and the order on a material request can be raised only on the approved supplier. Off, purchase orders as soon as it finalises.
               </Typography.Paragraph>
             </div>
           </Flex>

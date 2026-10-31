@@ -7,6 +7,7 @@ import type { CashWeekDto, CostHeadsDto, EarnedValuePointDto, HomeTrendsDto } fr
 import { useAppearance, useReducedMotion } from '@/lib/appearance';
 import { formatINRCompact, formatPct, toNumber, RUPEE } from '@/lib/format';
 import { COST_HEADS, monthLabel } from './chartData';
+import { HEAD_COLORS } from '@/components/cost/CostBar';
 
 /**
  * The home page's charts, drawn with @ant-design/plots and coloured from the antd tokens, so light
@@ -51,7 +52,6 @@ export function SCurveChart({ data }: { data: HomeTrendsDto['sCurve'] }) {
       scale={{ color: { domain: ['Planned', 'Actual'], range: [token.colorTextQuaternary, token.colorPrimary] }, y: { domainMin: 0 } }}
       axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatPct(v) } }}
       style={{ lineWidth: 2.5, lineDash: (d: { series: string }[]) => (d[0]?.series === 'Planned' ? [6, 4] : [0, 0]) }}
-      point={{ shapeField: 'circle', sizeField: 2 }}
       tooltip={{ channel: 'y', valueFormatter: (v: number) => formatPct(v) }}
     />
   );
@@ -74,10 +74,9 @@ export function EarnedValueChart({ data }: { data: EarnedValuePointDto[] }) {
       xField="month"
       yField="amount"
       colorField="series"
-      scale={{ color: { domain: [...series], range: [token.colorTextQuaternary, token.colorPrimary, token.colorWarning] }, y: { domainMin: 0 } }}
+      scale={{ color: { domain: [...series], range: [token.colorTextQuaternary, token.colorPrimary, token.colorText] }, y: { domainMin: 0 } }}
       axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatINRCompact(v).replace(RUPEE, '₹') } }}
       style={{ lineWidth: 2.5, lineDash: (d: { series: string }[]) => (d[0]?.series === series[0] ? [6, 4] : [0, 0]) }}
-      point={{ shapeField: 'circle', sizeField: 2 }}
       tooltip={{ channel: 'y', valueFormatter: (v: number) => formatINRCompact(v) }}
     />
   );
@@ -101,10 +100,9 @@ export function CashForecastChart({ weeks }: { weeks: CashWeekDto[] }) {
       xField="week"
       yField="amount"
       colorField="series"
-      scale={{ color: { domain: [...series], range: [token.colorError, token.colorPrimary, token.colorSuccess] }, y: { nice: true } }}
+      scale={{ color: { domain: [...series], range: [token.colorTextQuaternary, token.colorPrimary, token.colorTextQuaternary] }, y: { nice: true } }}
       axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatINRCompact(v).replace(RUPEE, '₹') } }}
       style={{ lineWidth: (d: { series: string }[]) => (d[0]?.series === series[1] ? 2.5 : 1.5), lineDash: (d: { series: string }[]) => (d[0]?.series === series[1] ? [0, 0] : [6, 4]) }}
-      point={{ shapeField: 'circle', sizeField: 2 }}
       annotations={[{ type: 'lineY', yField: 0, style: { stroke: token.colorTextQuaternary, lineWidth: 1 } }]}
       tooltip={{ channel: 'y', valueFormatter: (v: number) => formatINRCompact(v) }}
     />
@@ -127,7 +125,7 @@ export function CashFlowChart({ months, cashIn, cashOut }: { months: string[]; c
       yField="amount"
       colorField="series"
       group
-      scale={{ color: { domain: ['Received', 'Paid'], range: [token.colorSuccess, token.colorWarning] } }}
+      scale={{ color: { domain: ['Received', 'Paid'], range: [token.colorPrimary, token.colorTextQuaternary] } }}
       axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatINRCompact(v).replace(RUPEE, '₹') } }}
       style={{ radiusTopLeft: 3, radiusTopRight: 3, maxWidth: 28 }}
       tooltip={{ channel: 'y', valueFormatter: (v: number) => formatINRCompact(v) }}
@@ -150,8 +148,8 @@ export function CostByHeadChart({ heads }: { heads: CostHeadsDto }) {
       data={rows}
       angleField="amount"
       colorField="head"
-      innerRadius={0.62}
-      scale={{ color: { domain: COST_HEADS.map(([, l]) => l), range: [token.blue, token.purple, token.gold, token.cyan, token.magenta] } }}
+      innerRadius={0.78}
+      scale={{ color: { domain: COST_HEADS.map(([, l]) => l), range: COST_HEADS.map(([k]) => HEAD_COLORS[k]) } }}
       legend={{ color: { itemLabelFill: token.colorText, position: side ? ('right' as const) : ('bottom' as const) } }}
       label={false}
       tooltip={{ field: 'amount', valueFormatter: (v: number) => formatINRCompact(v) }}

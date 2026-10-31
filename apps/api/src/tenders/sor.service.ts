@@ -20,7 +20,7 @@ export const sorItemDto = (r: ItemRow): SorItemDto => ({
   chapter: r.chapter,
   description: r.description,
   unit: r.unit,
-  rate: money(r.rate)!,
+  rate: money(r.rate),
 });
 
 /**
@@ -52,7 +52,7 @@ export class SorService {
   async books(user: RequestUser): Promise<SorBookDto[]> {
     this.assertView(user);
     const rows = await this.prisma.sorBook.findMany({ where: { organizationId: user.organizationId }, include: { _count: { select: { items: true, tenders: true } } }, orderBy: [{ kind: 'asc' }, { name: 'asc' }] });
-    return rows.map((b) => ({ id: b.id, name: b.name, kind: b.kind, edition: b.edition, region: b.region, note: b.note, itemCount: b._count.items, tenderCount: b._count.tenders, updatedAt: iso(b.updatedAt)! }));
+    return rows.map((b) => ({ id: b.id, name: b.name, kind: b.kind, edition: b.edition, region: b.region, note: b.note, itemCount: b._count.items, tenderCount: b._count.tenders, updatedAt: iso(b.updatedAt) }));
   }
 
   async createBook(user: RequestUser, dto: SorBookInput): Promise<SorBookDto> {
@@ -60,7 +60,7 @@ export class SorService {
     try {
       const b = await this.prisma.sorBook.create({ data: { organizationId: user.organizationId, name: dto.name, kind: dto.kind, edition: dto.edition ?? null, region: dto.region ?? null, note: dto.note ?? null, createdById: user.id } });
       await this.audit.log(user, 'SOR_BOOK', b.id, 'CREATED', b.name);
-      return { id: b.id, name: b.name, kind: b.kind, edition: b.edition, region: b.region, note: b.note, itemCount: 0, tenderCount: 0, updatedAt: iso(b.updatedAt)! };
+      return { id: b.id, name: b.name, kind: b.kind, edition: b.edition, region: b.region, note: b.note, itemCount: 0, tenderCount: 0, updatedAt: iso(b.updatedAt) };
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`There is already a schedule called ${dto.name}`);
       throw e;

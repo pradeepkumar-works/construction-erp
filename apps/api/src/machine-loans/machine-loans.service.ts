@@ -33,9 +33,9 @@ const termsOf = (l: { amount: Prisma.Decimal; ratePct: Prisma.Decimal; tenureMon
   ratePct: l.ratePct,
   tenureMonths: l.tenureMonths,
   emi: l.emi,
-  firstEmiDate: dateOnly(l.firstEmiDate)!,
+  firstEmiDate: dateOnly(l.firstEmiDate),
 });
-const emiState = (e: LoanRow['emis'][number]) => ({ no: e.no, dueDate: dateOnly(e.dueDate)!, principal: e.principal, interest: e.interest, emi: e.emi, paidOn: dateOnly(e.paidOn) });
+const emiState = (e: LoanRow['emis'][number]) => ({ no: e.no, dueDate: dateOnly(e.dueDate), principal: e.principal, interest: e.interest, emi: e.emi, paidOn: dateOnly(e.paidOn) });
 const rowData = (organizationId: string, loanId: string, r: ScheduleRow): Prisma.LoanEmiCreateManyInput => ({
   organizationId,
   loanId,
@@ -72,26 +72,26 @@ export class MachineLoansService {
       lenderName: r.lenderName,
       vendorId: r.vendorId,
       loanNo: r.loanNo,
-      sanctionDate: dateOnly(r.sanctionDate)!,
-      amount: money(r.amount)!,
+      sanctionDate: dateOnly(r.sanctionDate),
+      amount: money(r.amount),
       ratePct: r.ratePct.toFixed(2),
       tenureMonths: r.tenureMonths,
-      emi: money(r.emi)!,
-      firstEmiDate: dateOnly(r.firstEmiDate)!,
+      emi: money(r.emi),
+      firstEmiDate: dateOnly(r.firstEmiDate),
       disbursal: r.disbursal,
       status: r.status,
       closedOn: dateOnly(r.closedOn),
       note: r.note,
       emisPaid: p.emisPaid,
       emiCount: r.emis.length,
-      principalRepaid: money(p.principalRepaid)!,
-      interestPaid: money(p.interestPaid)!,
-      outstanding: money(p.outstanding)!,
+      principalRepaid: money(p.principalRepaid),
+      interestPaid: money(p.interestPaid),
+      outstanding: money(p.outstanding),
       overdueCount: p.overdueCount,
-      overdueAmount: money(p.overdueAmount)!,
-      nextDue: p.next ? { no: p.next.no, dueDate: p.next.dueDate, emi: money(D(p.next.emi))!, stage: p.next.stage } : null,
+      overdueAmount: money(p.overdueAmount),
+      nextDue: p.next ? { no: p.next.no, dueDate: p.next.dueDate, emi: money(D(p.next.emi)), stage: p.next.stage } : null,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -125,14 +125,14 @@ export class MachineLoansService {
       items: rows.filter((x) => !q.status || x.r.status === q.status).map((x) => x.dto),
       summary: {
         loans: running.length,
-        outstanding: money(sum((p) => p.outstanding))!,
+        outstanding: money(sum((p) => p.outstanding)),
         overdueCount: running.reduce((s, x) => s + x.p.overdueCount, 0),
-        overdueAmount: money(sum((p) => p.overdueAmount))!,
-        dueIn30: money(sum((p) => p.dueIn30))!,
-        interestThisYear: money(sum((p) => p.interestThisYear, rows))!,
+        overdueAmount: money(sum((p) => p.overdueAmount)),
+        dueIn30: money(sum((p) => p.dueIn30)),
+        interestThisYear: money(sum((p) => p.interestThisYear, rows)),
         lenders: [...lenders.values()]
           .sort((a, b) => b.o.cmp(a.o))
-          .map(({ o, d, s, ...l }) => ({ ...l, outstanding: money(o)!, overdueAmount: money(d)!, dueIn30: money(s)! })),
+          .map(({ o, d, s, ...l }) => ({ ...l, outstanding: money(o), overdueAmount: money(d), dueIn30: money(s) })),
       },
     };
   }
@@ -154,13 +154,13 @@ export class MachineLoansService {
     const emis: LoanEmiDto[] = r.emis.map((e) => ({
       id: e.id,
       no: e.no,
-      dueDate: dateOnly(e.dueDate)!,
-      opening: money(e.opening)!,
-      principal: money(e.principal)!,
-      interest: money(e.interest)!,
-      emi: money(e.emi)!,
-      closing: money(e.closing)!,
-      stage: emiStage({ dueDate: dateOnly(e.dueDate)!, paidOn: dateOnly(e.paidOn) }, today),
+      dueDate: dateOnly(e.dueDate),
+      opening: money(e.opening),
+      principal: money(e.principal),
+      interest: money(e.interest),
+      emi: money(e.emi),
+      closing: money(e.closing),
+      stage: emiStage({ dueDate: dateOnly(e.dueDate), paidOn: dateOnly(e.paidOn) }, today),
       paidOn: dateOnly(e.paidOn),
       mode: e.mode,
       reference: e.reference,
@@ -169,7 +169,7 @@ export class MachineLoansService {
     return {
       ...this.toDto(r, today),
       emis,
-      interestToCome: money(p.interestToCome)!,
+      interestToCome: money(p.interestToCome),
       hoursWorked: worked.toFixed(2),
       interestPerHour: money(interestPerHour(p.interestPaid, worked)),
       canManage: true,
@@ -183,9 +183,9 @@ export class MachineLoansService {
     const problem = termsProblem(terms);
     const rows = problem ? [] : schedule(terms);
     return {
-      emi: money(q.emi ? D(q.emi) : emiFor(q.amount, q.ratePct, q.tenureMonths))!,
-      totalInterest: money(rows.reduce((s, r) => s.add(r.interest), D(0)))!,
-      rows: rows.map((r) => ({ no: r.no, dueDate: r.dueDate, principal: money(r.principal)!, interest: money(r.interest)!, emi: money(r.emi)!, closing: money(r.closing)! })),
+      emi: money(q.emi ? D(q.emi) : emiFor(q.amount, q.ratePct, q.tenureMonths)),
+      totalInterest: money(rows.reduce((s, r) => s.add(r.interest), D(0))),
+      rows: rows.map((r) => ({ no: r.no, dueDate: r.dueDate, principal: money(r.principal), interest: money(r.interest), emi: money(r.emi), closing: money(r.closing) })),
       problem,
     };
   }
@@ -261,14 +261,14 @@ export class MachineLoansService {
     }
     if (dto.equipmentId) await this.assertEquipment(user, dto.equipmentId);
     if (dto.vendorId !== undefined) await this.assertVendor(user, dto.vendorId);
-    const sanctionDate = dto.sanctionDate ?? dateOnly(r.sanctionDate)!;
+    const sanctionDate = dto.sanctionDate ?? dateOnly(r.sanctionDate);
     const terms: LoanTerms = {
       amount: dto.amount ?? r.amount,
       ratePct: dto.ratePct ?? r.ratePct,
       tenureMonths: dto.tenureMonths ?? r.tenureMonths,
       // A change to the amount, rate or tenure works the EMI out again unless one is given.
       emi: dto.emi !== undefined ? dto.emi : dto.amount !== undefined || dto.ratePct !== undefined || dto.tenureMonths !== undefined ? null : r.emi,
-      firstEmiDate: dto.firstEmiDate ?? dateOnly(r.firstEmiDate)!,
+      firstEmiDate: dto.firstEmiDate ?? dateOnly(r.firstEmiDate),
     };
     if (termsChange) {
       const problem = termsProblem({ ...terms, sanctionDate });
@@ -331,7 +331,7 @@ export class MachineLoansService {
       const states = r.emis.map(emiState);
       const no = dto.no ?? states.find((e) => !e.paidOn)?.no;
       if (!no) throw new BadRequestException('Every EMI of this loan is paid');
-      const problem = payProblem(states, no, dto.paidOn, dateOnly(r.sanctionDate)!, today);
+      const problem = payProblem(states, no, dto.paidOn, dateOnly(r.sanctionDate), today);
       if (problem) throw new BadRequestException(problem);
       await tx.loanEmi.update({ where: { loanId_no: { loanId: r.id, no } }, data: { paidOn: parseDate(dto.paidOn), mode: dto.mode ?? 'BANK', reference: dto.reference || null, paidById: user.id } });
       if (!states.some((e) => !e.paidOn && e.no !== no)) await tx.equipmentLoan.update({ where: { id: r.id }, data: { status: 'CLOSED', closedOn: parseDate(dto.paidOn) } });
@@ -351,7 +351,7 @@ export class MachineLoansService {
       const r = await this.row(user, id, tx);
       if (r.status === 'CLOSED') throw new BadRequestException('This loan is repaid');
       const next = r.emis.find((e) => !e.paidOn)!;
-      const problem = payProblem(r.emis.map(emiState), next.no, dto.paidOn, dateOnly(r.sanctionDate)!, today);
+      const problem = payProblem(r.emis.map(emiState), next.no, dto.paidOn, dateOnly(r.sanctionDate), today);
       if (problem) throw new BadRequestException(problem);
       const f = foreclosure(next, dto.interest);
       await tx.loanEmi.deleteMany({ where: { loanId: r.id, no: { gt: next.no } } });

@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import type { Paginated, SwitchableModule } from '@erp/shared';
-import { EXPENSE_CATEGORIES, MATERIAL_PRIORITIES, PAYMENT_MODES, PROJECT_STATUSES, SUBMISSION_STATUSES, WEATHER_OPTIONS, canSubmitExpense, canViewContract, canViewCost, canViewLetters, canViewPurchaseOrders, canViewReconciliation, submissionHref } from '@erp/shared';
+import { EXPENSE_CATEGORIES, MATERIAL_PRIORITIES, PAYMENT_MODES, PROJECT_STATUSES, REVISION_STATUSES, RISK_STATUSES, SAFETY_INCIDENT_STATUSES, SUBMISSION_STATUSES, VARIATION_STATUSES, WEATHER_OPTIONS, canSubmitExpense, canViewContract, canViewCost, canViewLetters, canViewPurchaseOrders, canViewReconciliation, submissionHref } from '@erp/shared';
 import type { AiDraftDto } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
@@ -56,16 +56,53 @@ interface Tool {
   run: (user: RequestUser, input: Input) => Promise<unknown>;
 }
 
+/** list_records' query once the model's input is checked. */
+interface ListArgs {
+  projectId?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+  q?: string;
+  page: number;
+  pageSize: number;
+}
+
 /** A kind of record the assistant can list and open: its own list and detail methods, and its page on the web. */
 interface RecordKind {
   label: string;
   /** The module it belongs to, refused while the company has it off (v6 item 117) */
   module?: SwitchableModule;
-  list: (user: RequestUser, q: Input) => Promise<Paginated<{ id: string }>>;
+  list: (user: RequestUser, q: ListArgs) => Promise<Paginated<{ id: string }>>;
   get: (user: RequestUser, id: string) => Promise<{ id: string }>;
   href: (id: string) => string;
-  /** Statuses the list filters on, for the tool description */
-  statuses?: readonly string[];
+}
+
+/** What a kind's list is called with: the status narrowed to the kind's own values. */
+type KindArgs<S extends string> = Omit<ListArgs, 'status'> & { status?: S };
+/** `true` only when the list's DTO declares every one of these fields. */
+type Declares<Q, K extends string> = [K] extends [keyof Q] ? true : false;
+/** `projectId`, or a status the kind lists, missing from the DTO: a required `never` field no kind can fill, so it does not compile. */
+type Fits<Q, S> = (Declares<Q, 'projectId'> extends true ? unknown : { projectIdNotInDto: never }) & ([S] extends [never] ? unknown : Declares<Q, 'status'> extends true ? unknown : { statusNotInDto: never });
+
+const isOneOf = <S extends string>(v: string, values: readonly S[]): v is S => values.some((x) => x === v);
+
+/**
+ * A kind, typed against its list's own DTO. The call is in-process, past the ValidationPipe, so a field the DTO does not
+ * declare would be dropped without a word: `statuses` must be the DTO's status values, `dated: true` compiles only when it
+ * declares `from` and `to`, `Fits` covers `projectId`, and the model's status or dates for a kind without them are refused.
+ */
+function recordKind<S extends string = never, L extends (user: RequestUser, q: KindArgs<S>) => Promise<Paginated<{ id: string }>> = never>(
+  k: Omit<RecordKind, 'list'> & { list: L; statuses?: readonly S[]; dated?: Declares<Parameters<L>[1], 'from' | 'to'> } & Fits<Parameters<L>[1], S>,
+): RecordKind {
+  const { statuses, dated, ...kind } = k;
+  return {
+    ...kind,
+    list: (user, { status, from, to, ...rest }) => {
+      if (status !== undefined && !(statuses && isOneOf(status, statuses))) throw new BadRequestException(statuses ? `status must be one of ${statuses.join(', ')}` : 'This kind has no status to filter on; leave status out');
+      if ((from || to) && !dated) throw new BadRequestException('This kind has no date to filter on; leave from and to out');
+      return k.list(user, { ...rest, status, from, to });
+    },
+  };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -92,6 +129,11 @@ const optStatus = (v: unknown) => {
   if (v === undefined || v === null || v === '') return undefined;
   if (typeof v !== 'string' || !STATUS.test(v)) throw new BadRequestException('status must be one of the listed values');
   return v;
+};
+const optProjectStatus = (v: unknown) => {
+  const s = optStatus(v);
+  if (s === undefined || isOneOf(s, PROJECT_STATUSES)) return s;
+  throw new BadRequestException(`status must be one of ${PROJECT_STATUSES.join(', ')}`);
 };
 const optText = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 100) : undefined);
 const optPage = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 50 ? v : 1);
@@ -156,35 +198,34 @@ export class AiToolsService {
     drafts: AiDraftsService,
     documentText: DocumentTextService,
   ) {
-    const any = <T>(f: T) => f as never;
     this.kinds = {
-      dpr: { label: 'Daily progress reports', list: any(dpr.list.bind(dpr)), get: any(dpr.get.bind(dpr)), href: (id) => `/dpr/${id}`, statuses: SUBMISSION_STATUSES },
-      progress: { label: 'Progress entries (quantities done against activities)', list: any(progress.list.bind(progress)), get: any(progress.get.bind(progress)), href: (id) => `/progress/${id}`, statuses: SUBMISSION_STATUSES },
-      material_request: { label: 'Material requests (indents)', list: any(mrs.list.bind(mrs)), get: any(mrs.get.bind(mrs)), href: (id) => `/material-requests/${id}`, statuses: SUBMISSION_STATUSES },
-      purchase_order: { label: 'Purchase orders', list: any(pos.list.bind(pos)), get: any(pos.get.bind(pos)), href: (id) => `/purchase-orders/${id}`, statuses: SUBMISSION_STATUSES },
-      vendor_bill: { label: 'Vendor (supplier) bills', list: any(vendorBills.list.bind(vendorBills)), get: any(vendorBills.get.bind(vendorBills)), href: (id) => `/vendor-bills/${id}`, statuses: SUBMISSION_STATUSES },
-      work_order: { label: 'Subcontract work orders', list: any(workOrders.list.bind(workOrders)), get: any(workOrders.get.bind(workOrders)), href: (id) => `/work-orders/${id}`, statuses: SUBMISSION_STATUSES },
-      subcontract_bill: { label: 'Subcontractor bills', list: any(subBills.list.bind(subBills)), get: any(subBills.get.bind(subBills)), href: (id) => `/subcontract-bills/${id}`, statuses: SUBMISSION_STATUSES },
-      ra_bill: { label: 'RA bills to the client', list: any(raBills.list.bind(raBills)), get: any(raBills.get.bind(raBills)), href: (id) => `/bills/${id}`, statuses: SUBMISSION_STATUSES },
-      measurement: { label: 'Measurement book entries', list: any(measurements.list.bind(measurements)), get: any(measurements.get.bind(measurements)), href: (id) => `/measurements/${id}`, statuses: SUBMISSION_STATUSES },
-      expense: { label: 'Site expenses', list: any(expenses.list.bind(expenses)), get: any(expenses.get.bind(expenses)), href: (id) => `/expenses/${id}`, statuses: SUBMISSION_STATUSES },
-      inspection: { label: 'Quality inspections', list: any(inspections.list.bind(inspections)), get: any(inspections.get.bind(inspections)), href: (id) => `/inspections/${id}`, statuses: SUBMISSION_STATUSES },
-      machinery_log: { label: 'Machinery day logs (hours, idle, breakdown, diesel)', list: any(machinery.list.bind(machinery)), get: any(machinery.get.bind(machinery)), href: (id) => `/machinery/${id}`, statuses: SUBMISSION_STATUSES },
-      risk: { label: 'Delays and risks register', list: any(risks.list.bind(risks)), get: any(risks.get.bind(risks)), href: (id) => `/risks?id=${id}` },
-      variation: { label: 'Variations (extra items, changes to the contract)', list: any(variations.list.bind(variations)), get: any(variations.get.bind(variations)), href: (id) => `/variations?id=${id}` },
-      safety_incident: { label: 'Safety incidents and near misses', module: 'safety', list: any(safety.listIncidents.bind(safety)), get: any(safety.getIncident.bind(safety)), href: (id) => `/safety?tab=incidents&id=${id}` },
-      document: { label: 'Document register (drawings, specifications)', list: any(documents.listDocuments.bind(documents)), get: any(documents.getDocument.bind(documents)), href: (id) => `/documents?id=${id}` },
-      attendance: { label: 'Daily labour attendance sheets', list: any(attendance.list.bind(attendance)), get: any(attendance.get.bind(attendance)), href: () => '/attendance', statuses: SUBMISSION_STATUSES },
-      receipt: { label: 'Receipts from clients', list: any(receivables.list.bind(receivables)), get: any(receivables.get.bind(receivables)), href: () => '/receivables' },
-      vendor_payment: { label: 'Payments to vendors and subcontractors (bills and advances)', list: any(payables.list.bind(payables)), get: any(payables.get.bind(payables)), href: () => '/payables' },
-      payment_request: {
+      dpr: recordKind({ label: 'Daily progress reports', list: dpr.list.bind(dpr), get: dpr.get.bind(dpr), href: (id) => `/dpr/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      progress: recordKind({ label: 'Progress entries (quantities done against activities)', list: progress.list.bind(progress), get: progress.get.bind(progress), href: (id) => `/progress/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      material_request: recordKind({ label: 'Material requests (indents)', list: mrs.list.bind(mrs), get: mrs.get.bind(mrs), href: (id) => `/material-requests/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      purchase_order: recordKind({ label: 'Purchase orders', list: pos.list.bind(pos), get: pos.get.bind(pos), href: (id) => `/purchase-orders/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      vendor_bill: recordKind({ label: 'Vendor (supplier) bills', list: vendorBills.list.bind(vendorBills), get: vendorBills.get.bind(vendorBills), href: (id) => `/vendor-bills/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      work_order: recordKind({ label: 'Subcontract work orders', list: workOrders.list.bind(workOrders), get: workOrders.get.bind(workOrders), href: (id) => `/work-orders/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      subcontract_bill: recordKind({ label: 'Subcontractor bills', list: subBills.list.bind(subBills), get: subBills.get.bind(subBills), href: (id) => `/subcontract-bills/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      ra_bill: recordKind({ label: 'RA bills to the client', list: raBills.list.bind(raBills), get: raBills.get.bind(raBills), href: (id) => `/bills/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      measurement: recordKind({ label: 'Measurement book entries', list: measurements.list.bind(measurements), get: measurements.get.bind(measurements), href: (id) => `/measurements/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      expense: recordKind({ label: 'Site expenses', list: expenses.list.bind(expenses), get: expenses.get.bind(expenses), href: (id) => `/expenses/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      inspection: recordKind({ label: 'Quality inspections', list: inspections.list.bind(inspections), get: inspections.get.bind(inspections), href: (id) => `/inspections/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      machinery_log: recordKind({ label: 'Machinery day logs (hours, idle, breakdown, diesel)', list: machinery.list.bind(machinery), get: machinery.get.bind(machinery), href: (id) => `/machinery/${id}`, statuses: SUBMISSION_STATUSES, dated: true }),
+      risk: recordKind({ label: 'Delays and risks register', list: risks.list.bind(risks), get: risks.get.bind(risks), href: (id) => `/risks?id=${id}`, statuses: RISK_STATUSES }),
+      variation: recordKind({ label: 'Variations (extra items, changes to the contract)', list: variations.list.bind(variations), get: variations.get.bind(variations), href: (id) => `/variations?id=${id}`, statuses: VARIATION_STATUSES }),
+      safety_incident: recordKind({ label: 'Safety incidents and near misses', module: 'safety', list: safety.listIncidents.bind(safety), get: safety.getIncident.bind(safety), href: (id) => `/safety?tab=incidents&id=${id}`, statuses: SAFETY_INCIDENT_STATUSES, dated: true }),
+      document: recordKind({ label: 'Document register (drawings, specifications)', list: documents.listDocuments.bind(documents), get: documents.getDocument.bind(documents), href: (id) => `/documents?id=${id}`, statuses: REVISION_STATUSES }),
+      attendance: recordKind({ label: 'Daily labour attendance sheets', list: attendance.list.bind(attendance), get: attendance.get.bind(attendance), href: () => '/attendance', dated: true }),
+      receipt: recordKind({ label: 'Receipts from clients', list: receivables.list.bind(receivables), get: receivables.get.bind(receivables), href: () => '/receivables', dated: true }),
+      vendor_payment: recordKind({ label: 'Payments to vendors and subcontractors (bills and advances)', list: payables.list.bind(payables), get: payables.get.bind(payables), href: () => '/payables', dated: true }),
+      payment_request: recordKind({
         label: 'Payment requests (asking for a bill to be paid, or an advance on a PO or work order, before accounts pays)',
-        list: any(paymentRequests.list.bind(paymentRequests)),
-        get: any(paymentRequests.get.bind(paymentRequests)),
+        list: paymentRequests.list.bind(paymentRequests),
+        get: paymentRequests.get.bind(paymentRequests),
         href: (id) => `/payment-requests/${id}`,
         statuses: SUBMISSION_STATUSES,
-      },
-      stock_entry: { label: 'Stock entries (GRN receipts, issues, transfers, returns)', list: any(stock.list.bind(stock)), get: any(stock.get.bind(stock)), href: () => '/stock' },
+      }),
+      stock_entry: recordKind({ label: 'Stock entries (GRN receipts, issues, transfers, returns)', list: stock.list.bind(stock), get: stock.get.bind(stock), href: () => '/stock', dated: true }),
     };
     const kindNames = Object.keys(this.kinds);
     const kindHelp = kindNames.map((k) => `${k}: ${this.kinds[k].label}`).join('; ');
@@ -226,7 +267,7 @@ export class AiToolsService {
           description: 'Projects the user can see, with client, value, dates, status and progress. Call this first to get project ids.',
           input_schema: { type: 'object', properties: { q: { type: 'string', description: 'Part of a project name, code, client or place' }, status: { type: 'string', enum: [...PROJECT_STATUSES] } } },
         },
-        run: async (user, i) => this.withHrefs(await projects.list(user, { q: optText(i.q), status: optStatus(i.status) as never, page: 1, pageSize: 50 }), (id) => `/projects/${id}`),
+        run: async (user, i) => this.withHrefs(await projects.list(user, { q: optText(i.q), status: optProjectStatus(i.status), page: 1, pageSize: 50 }), (id) => `/projects/${id}`),
       },
       {
         def: {
@@ -385,7 +426,7 @@ export class AiToolsService {
       },
       {
         def: { name: 'expenses_summary', description: 'Site expense totals by status and category for a period.', input_schema: { type: 'object', properties: { projectId: projectIdProp, from: fromProp, to: toProp } } },
-        run: (user, i) => expenses.summary(user, { projectId: optUuid(i.projectId, 'projectId'), from: optDate(i.from, 'from'), to: optDate(i.to, 'to') } as never),
+        run: (user, i) => expenses.summary(user, { projectId: optUuid(i.projectId, 'projectId'), from: optDate(i.from, 'from'), to: optDate(i.to, 'to') }),
       },
       {
         def: { name: 'receivables_summary', description: 'What clients owe on RA bills: billed, received, outstanding, retention held, ageing, per project.', input_schema: { type: 'object', properties: { projectId: projectIdProp } } },
@@ -598,19 +639,8 @@ export class AiToolsService {
 
   private async listRecords(user: RequestUser, i: Input) {
     const kind = this.kind(user, i.kind);
-    const status = optStatus(i.status);
-    if (status && kind.statuses && !kind.statuses.includes(status)) throw new BadRequestException(`status must be one of ${kind.statuses.join(', ')}`);
-    const q = {
-      projectId: optUuid(i.projectId, 'projectId'),
-      status,
-      from: optDate(i.from, 'from'),
-      to: optDate(i.to, 'to'),
-      q: optText(i.q),
-      page: optPage(i.page),
-      pageSize: PAGE,
-    };
-    const page = await kind.list(user, q);
-    return this.withHrefs(page, kind.href);
+    const q = { projectId: optUuid(i.projectId, 'projectId'), status: optStatus(i.status), from: optDate(i.from, 'from'), to: optDate(i.to, 'to'), q: optText(i.q), page: optPage(i.page), pageSize: PAGE };
+    return this.withHrefs(await kind.list(user, q), kind.href);
   }
 
   private withHrefs<T extends { id: string }>(page: Paginated<T>, href: (id: string) => string) {

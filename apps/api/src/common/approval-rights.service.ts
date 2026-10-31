@@ -120,6 +120,8 @@ export class ApprovalRightsService {
         return this.prisma.inspection;
       case 'PAYMENT_REQUEST':
         return this.prisma.paymentRequest;
+      case 'SUPPLIER_CHOICE':
+        return this.prisma.supplierChoice;
     }
   }
 
@@ -173,6 +175,10 @@ export class ApprovalRightsService {
       case 'PAYMENT_REQUEST': {
         const r = await this.prisma.paymentRequest.findUnique({ where: { id }, select: { amount: true } });
         return r?.amount ?? null;
+      }
+      case 'SUPPLIER_CHOICE': {
+        const c = await this.prisma.supplierChoice.findUnique({ where: { id }, select: { amount: true } });
+        return c?.amount ?? null;
       }
       default:
         return null;

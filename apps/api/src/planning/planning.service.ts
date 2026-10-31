@@ -52,15 +52,15 @@ export class PlanningService {
         itemNo: i.itemNo,
         description: i.description,
         unit: i.unit,
-        rate: money(i.rate)!,
-        originalQty: dec(i.originalQty)!,
+        rate: money(i.rate),
+        originalQty: dec(i.originalQty),
         revisedQty: dec(i.revisedQty),
-        executedQty: dec(executed)!,
-        balanceQty: dec(effectiveQty.sub(executed))!,
-        amount: money(i.rate.mul(effectiveQty))!,
-        measuredQty: dec(measured)!,
-        measuredAmount: money(i.rate.mul(measured))!,
-        pendingMeasuredQty: dec(pendingMeasured)!,
+        executedQty: dec(executed),
+        balanceQty: dec(effectiveQty.sub(executed)),
+        amount: money(i.rate.mul(effectiveQty)),
+        measuredQty: dec(measured),
+        measuredAmount: money(i.rate.mul(measured)),
+        pendingMeasuredQty: dec(pendingMeasured),
         sortOrder: i.sortOrder,
         section: i.section,
         workElementId: i.workElementId,
@@ -183,8 +183,8 @@ export class PlanningService {
       boqItemNo: a.boqItem?.itemNo ?? null,
       name: a.name,
       unit: a.unit,
-      plannedQty: dec(a.plannedQty)!,
-      executedQty: dec(executed)!,
+      plannedQty: dec(a.plannedQty),
+      executedQty: dec(executed),
       progressPct,
       plannedStart: dateOnly(a.plannedStart),
       plannedEnd: dateOnly(a.plannedEnd),
@@ -195,6 +195,7 @@ export class PlanningService {
       checklistTemplateId: a.checklistTemplateId,
       checklistName: a.checklistTemplate?.name ?? null,
       holdPoint: a.holdPoint,
+      hiddenWork: a.hiddenWork,
       baselineStart: dateOnly(a.baselineStart),
       baselineEnd: dateOnly(a.baselineEnd),
       workElementId: a.workElementId,
@@ -237,8 +238,8 @@ export class PlanningService {
       this.prisma.boqItem.findMany({ where: { projectId }, select: { id: true, itemNo: true, description: true, section: true, unit: true, originalQty: true, revisedQty: true, _count: { select: { activities: true } } }, orderBy: { sortOrder: 'asc' } }),
     ]);
     return boqLinkSuggestions(
-      activities.map((a) => ({ id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty)!, boqItemId: a.boqItemId })),
-      items.map((i) => ({ id: i.id, itemNo: i.itemNo, description: i.description, section: i.section, unit: i.unit, quantity: dec(i.revisedQty ?? i.originalQty)!, linked: i._count.activities })),
+      activities.map((a) => ({ id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty), boqItemId: a.boqItemId })),
+      items.map((i) => ({ id: i.id, itemNo: i.itemNo, description: i.description, section: i.section, unit: i.unit, quantity: dec(i.revisedQty ?? i.originalQty), linked: i._count.activities })),
     );
   }
 
@@ -327,6 +328,7 @@ export class PlanningService {
         responsibleId: dto.responsibleId ?? null,
         checklistTemplateId: dto.checklistTemplateId ?? null,
         holdPoint: dto.holdPoint ?? false,
+        hiddenWork: dto.hiddenWork ?? false,
         sortOrder: dto.sortOrder ?? 0,
         ...links,
       },
@@ -351,6 +353,7 @@ export class PlanningService {
     if (dto.responsibleId !== undefined) data.responsibleId = dto.responsibleId;
     if (dto.checklistTemplateId !== undefined) data.checklistTemplateId = dto.checklistTemplateId;
     if (dto.holdPoint !== undefined) data.holdPoint = dto.holdPoint;
+    if (dto.hiddenWork !== undefined) data.hiddenWork = dto.hiddenWork;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     await this.prisma.$transaction(async (tx) => {
       await tx.activity.update({ where: { id }, data });

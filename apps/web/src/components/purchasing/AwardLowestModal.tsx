@@ -69,7 +69,6 @@ export function AwardLowestModal({
       message.success(`${orders.length} draft order${orders.length === 1 ? '' : 's'} raised: ${orders.map((o) => o.poNo).join(', ')}`);
       qc.invalidateQueries({ queryKey: ['purchase-orders'] });
       qc.invalidateQueries({ queryKey: ['material-requests'] });
-      qc.invalidateQueries({ queryKey: ['comparative', request.id] });
       qc.invalidateQueries({ queryKey: ['quotations'] });
       onRaised?.(orders);
       onClose();

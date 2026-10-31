@@ -73,8 +73,8 @@ function cover(r: OfficialReportDto) {
   </section>`;
 }
 
-/** On a phone a chapter whose tables are wider than the screen scrolls sideways, so it becomes a Tab stop to scroll it from the keyboard. */
-const SCROLL_STOPS_SCRIPT = `<script>(function(){function f(){document.querySelectorAll('section').forEach(function(s){if(s.scrollWidth>s.clientWidth+1)s.tabIndex=0;else s.removeAttribute('tabindex');});}f();addEventListener('load',f);addEventListener('resize',f);})();</script>`;
+/** A chapter starts as a Tab stop, so a phone can scroll a wide table from the keyboard before this runs; it stays one only while it overflows. */
+const SCROLL_STOPS_SCRIPT = `<script>(function(){function f(){document.querySelectorAll('section').forEach(function(s){if(s.scrollWidth>s.clientWidth+1)s.tabIndex=0;else s.removeAttribute('tabindex');});}f();addEventListener('load',f);addEventListener('resize',f);if(document.fonts)document.fonts.ready.then(f);})();</script>`;
 
 export function buildOfficialReportHtml(r: OfficialReportDto, autoPrint = false): string {
   const wide = r.chapters.some((c) => c.blocks.some((b) => b.type === 'table' && b.columns.length > WIDE_COLUMNS));
@@ -158,7 +158,7 @@ export function buildOfficialReportHtml(r: OfficialReportDto, autoPrint = false)
     <table class="control"><tbody>${control.map((f) => `<tr><th>${esc(f.label)}</th><td translate="no">${esc(factText(f))}</td></tr>`).join('')}</tbody></table>
   </div>
   ${facts(r.header)}
-  ${r.chapters.map((c, i) => `<section aria-labelledby="ch${i}"><h2 id="ch${i}">${esc(c.title)}</h2>${c.blocks.map(block).join('')}</section>`).join('')}
+  ${r.chapters.map((c, i) => `<section aria-labelledby="ch${i}" tabindex="0"><h2 id="ch${i}">${esc(c.title)}</h2>${c.blocks.map(block).join('')}</section>`).join('')}
   <div class="sign">${r.signatures.map((s) => `<div><b>${esc(s.name ?? '')}&nbsp;</b>${esc(s.role)}</div>`).join('')}</div>
   ${brandFooter(esc(footNote(r)))}
   ${autoPrint ? AUTO_PRINT_SCRIPT : ''}
