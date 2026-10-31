@@ -418,7 +418,7 @@ import type {
   ApplyUpdatesResultDto,
   ImportRowDto,
   ProjectUpdatesDto,
-  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, } from '@erp/shared';
+  TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
@@ -2151,6 +2151,99 @@ export function useSetMemberLevel(projectId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectId] }),
   });
 }
+
+/* ---------- programme and EOT (item 173) ---------- */
+
+export const useProgramme = (projectId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['programme', projectId], queryFn: async () => (await api.get<ProgrammeRegisterDto>(`/projects/${projectId}/programme`)).data, enabled: !!projectId && enabled });
+
+export const useEots = (projectId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['eot', projectId], queryFn: async () => (await api.get<EotRegisterDto>(`/projects/${projectId}/eot`)).data, enabled: !!projectId && enabled });
+
+export interface EotOptions {
+  delays: (EotDelayDto & { responsibleParty: DelayParty | null })[];
+  variations: { id: string; label: string; title: string; status: VariationStatus; value: string; suggestedDays: number }[];
+  contractDays: number | null;
+}
+export const useEotOptions = (projectId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['eot', projectId, 'options'], queryFn: async () => (await api.get<EotOptions>(`/projects/${projectId}/eot/options`)).data, enabled: !!projectId && enabled });
+
+/** Programme and EOT changes move the delay register, the obligations, the contract's completion and the watch list. */
+const programmeKeys = [['programme'], ['eot'], ['risks'], ['contract'], ['watch-list'], ['portal']];
+const invalidateProgramme = (qc: ReturnType<typeof useQueryClient>) => Promise.all(programmeKeys.map((queryKey) => qc.invalidateQueries({ queryKey })));
+
+export function useSubmitProgramme(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { submittedOn?: string; letterRef?: string | null; note?: string | null }) => (await api.post<ProgrammeSubmissionDto>(`/projects/${projectId}/programme`, body)).data,
+    onSuccess: () => invalidateProgramme(qc),
+  });
+}
+
+export function useProgrammeInterval(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (days: number | null) => (await api.patch<ProgrammeRegisterDto>(`/projects/${projectId}/programme/interval`, { days })).data,
+    onSuccess: () => invalidateProgramme(qc),
+  });
+}
+
+/** The Engineer's answer to a revision: from the portal as themselves, or staff recording their letter. */
+export function useDecideProgramme(portal = false) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; decision: 'APPROVED' | 'RETURNED'; decidedOn?: string; note?: string | null; decidedByName?: string | null }) =>
+      (await api.post<ProgrammeSubmissionDto>(`${portal ? '/portal' : ''}/programme/${id}/decide`, body)).data,
+    onSuccess: () => invalidateProgramme(qc),
+  });
+}
+
+export function useDeleteProgramme() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: async (id: string) => (await api.delete(`/programme/${id}`)).data, onSuccess: () => invalidateProgramme(qc) });
+}
+
+export function useApplyEot(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { basis: EotBasis; appliedOn?: string; daysClaimed: number; grounds: string; letterRef?: string | null; delayIds?: string[]; variationId?: string | null }) =>
+      (await api.post<EotApplicationDto>(`/projects/${projectId}/eot`, body)).data,
+    onSuccess: () => invalidateProgramme(qc),
+  });
+}
+
+/** Forwarded by the Engineer: from the portal as themselves, or staff recording their letter. */
+export function useForwardEot(portal = false) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; forwardedOn?: string; recommendedDays?: number | null; note?: string | null; forwardedByName?: string | null }) =>
+      (await api.post<EotApplicationDto>(`${portal ? '/portal' : ''}/eot/${id}/forward`, body)).data,
+    onSuccess: () => invalidateProgramme(qc),
+  });
+}
+
+export function useDecideEot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; decidedOn?: string; grantedDays: number; decisionRef?: string | null; note?: string | null }) => (await api.post<EotApplicationDto>(`/eot/${id}/decide`, body)).data,
+    onSuccess: () => invalidateProgramme(qc),
+  });
+}
+
+export function useEotAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: 'withdraw' | 'undo-decision' }) => (await api.post<EotApplicationDto>(`/eot/${id}/${action}`)).data,
+    onSuccess: () => invalidateProgramme(qc),
+  });
+}
+
+export const usePortalProgramme = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['portal', 'programme', projectId],
+    queryFn: async () => (await api.get<{ programme: ProgrammeRegisterDto; eot: EotRegisterDto }>(`/portal/projects/${projectId}/programme`)).data,
+    enabled: !!projectId,
+  });
 
 /* ---------- staff and leave ---------- */
 

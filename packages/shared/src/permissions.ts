@@ -84,6 +84,10 @@ export const NCR_ROLES: RoleKey[] = CHECKLIST_ADMIN_ROLES;
  * from the portal.
  */
 export const SITE_ORDER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QA_QC_ENGINEER', 'QUANTITY_SURVEYOR', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+/** Programme and EOT (item 173): who sends programme revisions and records the Engineer's answer from a letter. */
+export const PROGRAMME_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'TEAM_LEADER'];
+/** Who applies for an extension of time and records the authority's decision: the contract's own people. */
+export const EOT_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
 /** Keep the document register: add drawings and revisions, send transmittals. Everyone on a project reads it. */
 export const DOCUMENT_CONTROL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER', 'DOCUMENT_CONTROLLER'];
@@ -126,6 +130,10 @@ export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
 export const canIssueOfficialReport = (role: RoleKey) => APPROVER_ROLES.includes(role);
 export const canRequestInspection = (role: RoleKey) => INSPECTION_REQUEST_ROLES.includes(role);
 export const canKeepSiteOrders = (role: RoleKey) => SITE_ORDER_ROLES.includes(role);
+export const canKeepProgramme = (role: RoleKey) => PROGRAMME_ROLES.includes(role);
+export const canApplyEot = (role: RoleKey) => EOT_ROLES.includes(role);
+/** The project's Programme and EOT tab: the planners and whoever sees the contract terms. */
+export const canViewProgramme = (role: RoleKey) => canKeepProgramme(role) || canViewContract(role);
 export const canManageChecklists = (role: RoleKey) => CHECKLIST_ADMIN_ROLES.includes(role);
 export const canRecordTest = (role: RoleKey) => QUALITY_TEST_ROLES.includes(role);
 export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);

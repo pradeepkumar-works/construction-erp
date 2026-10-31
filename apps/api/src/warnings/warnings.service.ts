@@ -45,6 +45,8 @@ import { AuditService } from '../common/audit.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { TelematicsService } from '../telematics/telematics.service';
 import { WeighbridgeService } from '../weighbridge/weighbridge.service';
+import { ProgrammeService } from '../programme/programme.service';
+import { EotService } from '../programme/eot.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { dateOnly, parseDate } from '../common/serialize';
 import { PrismaService } from '../prisma/prisma.service';
@@ -194,6 +196,8 @@ export class WarningsService {
     private approvalRights: ApprovalRightsService,
     private telematics: TelematicsService,
     private weighbridge: WeighbridgeService,
+    private programme: ProgrammeService,
+    private eot: EotService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -341,6 +345,9 @@ export class WarningsService {
         if (k === 'PURCHASE_CONTROL') return this.purchaseControls(user, projects, today);
         if (k === 'FUEL_TANK') return this.fuelTank(projects, today);
         if (k === 'WEIGH_SHORT') return this.weighShort(projects, today);
+        // Programme and EOT (item 173): through their own services.
+        if (k === 'PROGRAMME_DUE') return this.programmeDue(active, today);
+        if (k === 'EOT_OVERDUE') return this.eotOverdue(projects, today);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -1766,5 +1773,61 @@ export class WarningsService {
         projectName: null,
       },
     ];
+  }
+
+  /**
+   * Programme and EOT (item 173): a project whose first programme or next update is due within a week or past due, from
+   * the programme register's own watch. The key carries the day and the state, so a dismissal holds until it moves on.
+   */
+  private async programmeDue(projects: Project[], today: string): Promise<Draft[]> {
+    const watches = await this.programme.watchFor(projects.map((p) => p.id), today);
+    const out: Draft[] = [];
+    for (const p of projects) {
+      const w = watches.get(p.id);
+      if (!w || !w.nextDue || (w.state !== 'DUE_SOON' && w.state !== 'OVERDUE')) continue;
+      const what = w.first ? 'The first programme' : `The programme update after ${w.lastLabel}`;
+      const when = w.state === 'OVERDUE' ? `${plural(w.daysLate ?? 0, 'day')} overdue` : w.daysLeft === 0 ? 'due today' : `due in ${plural(w.daysLeft ?? 0, 'day')}`;
+      out.push({
+        key: `programme:${p.id}:${w.nextDue}:${w.state}`,
+        kind: 'PROGRAMME_DUE',
+        title: `${what} for ${p.code} is ${when}`,
+        detail: `${p.name}: the contract wants ${w.first ? 'the programme' : `an updated programme every ${plural(w.intervalDays, 'day')}`} by ${day(w.nextDue)}${w.first && w.withholdPct ? `, and ${w.withholdPct}% of the contract value is held back on bills while it is late` : ''}.`,
+        action: w.state === 'OVERDUE' ? 'Send the revision to the Engineer today' : `Send the revision by ${day(w.nextDue)}`,
+        impact: { text: w.state === 'OVERDUE' ? `${plural(w.daysLate ?? 0, 'day')} late` : `${plural(w.daysLeft ?? 0, 'day')} left`, inr: null, days: w.daysLate ?? 0 },
+        working: [
+          w.first ? `The first programme is due ${day(w.nextDue)}, from the contract's programme obligation` : `${w.lastLabel} went to the Engineer; the next is due ${plural(w.intervalDays, 'day')} later, ${day(w.nextDue)}`,
+          'Shown from a week before the day until a revision is sent',
+        ],
+        facts: [{ label: 'Due', value: day(w.nextDue) }],
+        links: [{ label: 'Programme and EOT', href: `/projects/${p.id}?tab=programme` }],
+        projectId: p.id,
+        projectName: p.name,
+      });
+    }
+    return out;
+  }
+
+  /** Extension of time applications past the 30 days the authority has to decide them (item 173). */
+  private async eotOverdue(projects: Project[], today: string): Promise<Draft[]> {
+    const apps = await this.eot.overdue(projects.map((p) => p.id), today);
+    return apps.map((a) => {
+      const late = Math.max(0, daysBetween(a.decisionDue, today));
+      return {
+        key: `eot:${a.id}:${a.decisionDue}`,
+        kind: 'EOT_OVERDUE' as const,
+        title: `${a.label} for ${a.projectName} is ${plural(late, 'day')} past its decision`,
+        detail: `${plural(a.daysClaimed, 'day')} were claimed on ${day(a.appliedOn)}; the contract has the authority decide within 30 days, by ${day(a.decisionDue)}.`,
+        action: a.status === 'SENT' ? 'Ask the Engineer to forward it, in writing' : 'Write to the authority for its decision',
+        impact: { text: `${plural(a.daysClaimed, 'day')} of extension undecided`, inr: null, days: a.daysClaimed },
+        working: [`Applied ${day(a.appliedOn)}; decision due ${day(a.decisionDue)}`, a.forwardedOn ? `Forwarded by the Engineer on ${day(a.forwardedOn)}` : 'Not forwarded by the Engineer yet'],
+        facts: [
+          { label: 'Days claimed', value: String(a.daysClaimed) },
+          { label: 'Decision due', value: day(a.decisionDue) },
+        ],
+        links: [{ label: a.label, href: `/projects/${a.projectId}?tab=programme&eot=${a.id}` }],
+        projectId: a.projectId,
+        projectName: a.projectName,
+      };
+    });
   }
 }

@@ -16,6 +16,7 @@ import {
   type RiskSummaryDto,
   type RoleKey,
   type SortOrder,
+  eotLabel,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -324,6 +325,17 @@ export class RisksService {
     if (dto.activityId !== undefined) await this.assertActivity(current.projectId, dto.activityId);
     if (dto.ownerId !== undefined) await this.assertOwner(user, current.projectId, dto.ownerId);
     const kind = dto.kind ?? current.kind;
+    // A delay claimed in an EOT application (item 173) takes its extension from the application's decision.
+    if (current.eotApplicationId) {
+      const touches =
+        (dto.kind !== undefined && dto.kind !== current.kind) ||
+        (dto.eotGrantedDays !== undefined && dto.eotGrantedDays !== current.eotGrantedDays) ||
+        (dto.eotClaimed !== undefined && dto.eotClaimed !== current.eotClaimed);
+      if (touches) {
+        const app = await this.prisma.eotApplication.findUnique({ where: { id: current.eotApplicationId }, select: { appNo: true } });
+        throw new BadRequestException(`${app ? eotLabel(app.appNo) : 'Its EOT application'} sets this delay's extension: change it on the project's Programme and EOT tab`);
+      }
+    }
     const data: Prisma.RiskUncheckedUpdateInput = {};
     if (dto.kind !== undefined) data.kind = dto.kind;
     if (dto.category !== undefined) data.category = dto.category;

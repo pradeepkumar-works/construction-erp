@@ -946,6 +946,8 @@ model Organization {
   officialReportIssues OfficialReportIssue[]
   measurementChecks    MeasurementCheck[]
   siteOrders           SiteOrder[]
+  programmeSubmissions ProgrammeSubmission[]
+  eotApplications      EotApplication[]
   integrations         IntegrationConnection[]
   connectorAgents      ConnectorAgent[]
   integrationEvents    IntegrationEvent[]
@@ -1332,6 +1334,11 @@ model User {
   siteOrdersIssued        SiteOrder[]                @relation("SiteOrderIssuer")
   siteOrdersRecorded      SiteOrder[]                @relation("SiteOrderRecorder")
   siteOrdersReplied       SiteOrder[]                @relation("SiteOrderReplier")
+  programmesSubmitted     ProgrammeSubmission[]      @relation("ProgrammeSubmitter")
+  programmesDecided       ProgrammeSubmission[]      @relation("ProgrammeDecider")
+  eotsApplied             EotApplication[]           @relation("EotApplicant")
+  eotsForwarded           EotApplication[]           @relation("EotForwarder")
+  eotsDecided             EotApplication[]           @relation("EotDecider")
   siteOrdersClosed        SiteOrder[]                @relation("SiteOrderCloser")
 
   @@unique([organizationId, email])
@@ -1560,16 +1567,20 @@ model Project {
   workPermits        WorkPermit[]
   maintenanceJobs    MaintenanceJob[]
 
-  pvComponents        PriceVariationComponent[]
-  meetings            Meeting[]
-  meetingActions      MeetingAction[]
-  materialApprovals   MaterialApproval[]
-  comments            Comment[]
-  approvedMakes       ApprovedMake[]
-  drawingTakeoffs     DrawingTakeoff[]
-  contractObligations ContractObligation[]
-  measurementChecks   MeasurementCheck[]
-  siteOrders          SiteOrder[]
+  pvComponents         PriceVariationComponent[]
+  meetings             Meeting[]
+  meetingActions       MeetingAction[]
+  materialApprovals    MaterialApproval[]
+  comments             Comment[]
+  approvedMakes        ApprovedMake[]
+  drawingTakeoffs      DrawingTakeoff[]
+  contractObligations  ContractObligation[]
+  measurementChecks    MeasurementCheck[]
+  siteOrders           SiteOrder[]
+  programmeSubmissions ProgrammeSubmission[]
+  eotApplications      EotApplication[]
+  /// Days between programme updates as the contract sets them (item 173); null for PROGRAMME_UPDATE_DAYS
+  programmeUpdateDays  Int?
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -3541,6 +3552,9 @@ model Risk {
 
   attachments      Attachment[]
   letters          Letter[]
+  /// The EOT application that claims this delay (item 173); its decision writes eotGrantedDays
+  eotApplicationId String?
+  eotApplication   EotApplication?   @relation("EotDelays", fields: [eotApplicationId], references: [id], onDelete: SetNull)
   hindrances       HindranceCheck[]
   rfis             Rfi[]
   clientInput      Milestone?
@@ -5791,10 +5805,11 @@ model Variation {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  lines          VariationLine[]
-  attachments    Attachment[]
-  rfis           Rfi[]
-  meetingActions MeetingAction[]
+  eotApplications EotApplication[]
+  lines           VariationLine[]
+  attachments     Attachment[]
+  rfis            Rfi[]
+  meetingActions  MeetingAction[]
 
   @@unique([projectId, varNo])
   @@index([organizationId, status])
@@ -9342,5 +9357,98 @@ model SiteOrder {
   updatedAt      DateTime        @updatedAt
 
   @@unique([projectId, orderNo])
+  @@index([organizationId, status])
+}
+
+/// Programme and EOT (item 173): a programme revision with the Engineer
+enum ProgrammeStatus {
+  SUBMITTED
+  APPROVED
+  RETURNED
+}
+
+/// What an extension of time is claimed for (item 173)
+enum EotBasis {
+  DELAY
+  VARIATION
+}
+
+/// An EOT application's step (item 173)
+enum EotStatus {
+  SENT
+  FORWARDED
+  DECIDED
+  WITHDRAWN
+}
+
+/// A revision of the construction programme as it went to the Engineer, with what it showed and their answer (item 173).
+model ProgrammeSubmission {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 0 for the first programme, then each update or revision
+  revision       Int
+  submittedOn    DateTime        @db.Date
+  submittedById  String
+  submittedBy    User            @relation("ProgrammeSubmitter", fields: [submittedById], references: [id])
+  letterRef      String?
+  note           String?
+  /// The plan when it went: its activities and the last planned finish
+  activityCount  Int             @default(0)
+  plannedFinish  DateTime?       @db.Date
+  status         ProgrammeStatus @default(SUBMITTED)
+  decidedOn      DateTime?       @db.Date
+  /// The guest who answered in the portal, or the staff member who recorded the Engineer's letter
+  decidedById    String?
+  decidedBy      User?           @relation("ProgrammeDecider", fields: [decidedById], references: [id])
+  /// The Engineer as named on their letter, when recorded by staff
+  decidedByName  String?
+  decisionNote   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([projectId, revision])
+  @@index([organizationId, status])
+}
+
+/// An application for an extension of time (item 173): sent, forwarded by the Engineer, decided by the competent authority.
+model EotApplication {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  appNo           Int
+  basis           EotBasis
+  appliedOn       DateTime     @db.Date
+  daysClaimed     Int
+  grounds         String
+  letterRef       String?
+  /// For added work: the variation, and the delay entry made for the days granted
+  variationId     String?
+  variation       Variation?   @relation(fields: [variationId], references: [id], onDelete: Restrict)
+  /// The delays claimed for, and for a variation the entry made for its decision
+  delays          Risk[]       @relation("EotDelays")
+  status          EotStatus    @default(SENT)
+  forwardedOn     DateTime?    @db.Date
+  forwardedById   String?
+  forwardedBy     User?        @relation("EotForwarder", fields: [forwardedById], references: [id])
+  forwardedByName String?
+  recommendedDays Int?
+  forwardNote     String?
+  decidedOn       DateTime?    @db.Date
+  grantedDays     Int?
+  decisionRef     String?
+  decisionNote    String?
+  decidedById     String?
+  decidedBy       User?        @relation("EotDecider", fields: [decidedById], references: [id])
+  createdById     String
+  createdBy       User         @relation("EotApplicant", fields: [createdById], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([projectId, appNo])
   @@index([organizationId, status])
 }

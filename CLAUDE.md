@@ -374,6 +374,12 @@ and the pre-delivery checklist.
   through `InspectionsService.signHidden` / `countersignHidden` (`hiddenSignProblem`, `countersignProblem`) and holds progress
   only by `hiddenWorkCleared`, and a site order moves only through `SiteOrdersService` (`siteOrderState`,
   `@erp/shared/consultant-checks.ts`). Keep `src/scripts/consultant-checks-test.ts` passing.
+- Programme and EOT (item 173, `apps/api/src/programme`, ARCHITECTURE "Programme and EOT"): a revision goes only through
+  `ProgrammeService.submit` and is answered only through `decide` (`programmeSubmitProblem`, `programmeDecisionProblem`); the
+  next one is due only by `programmeWatch` and the programme obligation is met only by `programmeMetOn`. An EOT application
+  moves only through `EotService` (`eotApplyProblem`, `eotForwardProblem`, `eotDecisionProblem`, `eotState`), time for a
+  variation is `variationEotDays`, and the days granted reach `Risk.eotGrantedDays` only by `allocateGranted` in
+  `EotService.decide` (`@erp/shared/programme-eot.ts`). Keep `src/scripts/programme-eot-test.ts` passing.
 - Official progress reports (item 174, `apps/api/src/official-reports`, ARCHITECTURE "Official progress reports"): the daily,
   weekly and monthly reports for the client are one `OfficialReportDto` from `OfficialReportsService.build`, drawn by the
   page, Print, PDF, Word and Excel in `components/reports/official/` (never a second set of figures); periods, numbers

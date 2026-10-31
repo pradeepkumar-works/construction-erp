@@ -16,6 +16,7 @@ import { seedTownStock } from './seed-stock';
 import { seedTownBilling } from './seed-billing';
 import { seedEpc } from './seed-epc';
 import { seedConsultantChecks } from './seed-consultant-checks';
+import { seedProgramme } from './seed-programme';
 import { seedOm } from './seed-om';
 import { seedCorrespondence } from './seed-correspondence';
 import { seedQa } from './seed-qa';
@@ -1931,6 +1932,7 @@ async function modulesPass(organizationId: string, passwordHash: string) {
   await seedGroupModules(prisma, organizationId);
   await seedVerticals(organizationId);
   await seedConsultantChecks(prisma, organizationId);
+  await seedProgramme(prisma, organizationId);
 }
 
 main()
