@@ -1752,7 +1752,7 @@ export function useCopyAction<T = unknown>() {
     meta: FAIL_NOTICE,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['documents'] });
-      void qc.invalidateQueries({ queryKey: ['watch-list'] });
+      void qc.invalidateQueries({ queryKey: WATCH_LIST_KEY });
     },
   });
 }
@@ -4092,7 +4092,7 @@ export function useDecideHindrance() {
       v.dismiss ? (await api.post<{ ok: true }>(`/hindrances/${v.id}/dismiss`)).data : (await api.post<RiskDto>(`/hindrances/${v.id}/record`, clean({ riskId: v.riskId, category: v.category, party: v.party }))).data,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['risks'] });
-      void qc.invalidateQueries({ queryKey: ['watch-list'] });
+      void qc.invalidateQueries({ queryKey: WATCH_LIST_KEY });
     },
     meta: FAIL_NOTICE,
   });
@@ -4112,8 +4112,10 @@ export const useNoticePeriod = (projectId: string | undefined, enabled = true) =
 /** The delay register for an extension-of-time claim, fetched when printed. */
 export const useDelayRegister = () => useMutation({ mutationFn: async (projectId: string) => (await api.get<DelayRegisterDto>(`/hindrances/register/${projectId}`)).data });
 
+export const WATCH_LIST_KEY = ['watch-list'] as const;
+
 export const useWatchList = (enabled = true) =>
-  useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
+  useQuery({ queryKey: WATCH_LIST_KEY, queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
 
 /** The headline of each check with a page of its own, for the watch list's Other checks (intelligence quick win Q0). */
 export const useInsights = (enabled = true) =>
@@ -4126,7 +4128,7 @@ export function useDismissWarning() {
     mutationFn: async (v: { key: string; outcome?: WarningOutcome; reason?: string; restore?: boolean }) =>
       (await api.post<WatchListDto>(`/warnings/${v.restore ? 'restore' : 'dismiss'}`, v.restore ? { key: v.key } : { key: v.key, outcome: v.outcome, reason: v.reason || undefined })).data,
     onSuccess: (d) => {
-      qc.setQueryData(['watch-list'], d);
+      qc.setQueryData(WATCH_LIST_KEY, d);
       void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
     },
   });
@@ -4138,7 +4140,7 @@ export function useResumeWarningKind() {
   return useMutation({
     mutationFn: async (kind: WarningKind) => (await api.post<WatchListDto>('/warnings/resume', { kind })).data,
     onSuccess: (d) => {
-      qc.setQueryData(['watch-list'], d);
+      qc.setQueryData(WATCH_LIST_KEY, d);
       void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
     },
   });
