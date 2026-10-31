@@ -352,8 +352,6 @@ export type NavVisitKind = (typeof NAV_VISIT_KINDS)[number];
 export const COMPANY_KINDS = ['CONSTRUCTION', 'CONSULTANCY', 'QUALITY_LAB', 'PLANT', 'HOLDING'] as const;
 export type CompanyKind = (typeof COMPANY_KINDS)[number];
 
-/** Someone asks for a module their role cannot open; an admin grants it (by changing the role or
- *  turning the module on) or declines it. */
 export const ACCESS_REQUEST_STATUSES = ['OPEN', 'GRANTED', 'DECLINED'] as const;
 export type AccessRequestStatus = (typeof ACCESS_REQUEST_STATUSES)[number];
 

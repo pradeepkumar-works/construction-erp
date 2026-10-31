@@ -493,7 +493,6 @@ export class NotificationsService {
     if (logins.length) await this.notify({ organizationId, userIds: logins.map((u) => u.id), type: 'SUPPLIER', ...n });
   }
 
-  /** Tell the author how the review went. */
   async onReviewed(actor: RequestUser, type: SubmissionType, id: string, status: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED', note?: string | null) {
     try {
       const s = await this.describeSubmission(type, id);

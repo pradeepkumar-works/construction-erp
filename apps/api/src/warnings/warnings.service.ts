@@ -145,7 +145,6 @@ export const rupees = (v: number) => {
 const qty = (v: number) => (Math.abs(v) > 0 && Math.abs(v) < 1 ? Number(v.toPrecision(2)) : Math.round(v * 10) / 10).toLocaleString('en-IN');
 /** With the year: a completion date is often next year or later. */
 const dayYear = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-/** 2026-10-23 → "23 Oct". */
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 

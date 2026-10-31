@@ -2744,7 +2744,6 @@ export const useRateCheck = (items: { itemName: string; unit: string }[], projec
   });
 };
 
-/** The last approved orders of items (`name|unit` each), keyed by `lastRateKey`. */
 export const useLastRates = (items: { itemName: string; unit: string }[], enabled = true, excludePoId?: string) => {
   const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
   return useQuery({

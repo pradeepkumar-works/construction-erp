@@ -96,7 +96,6 @@ export const LETTER_HEAD_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'DOCUMENT_CO
 /** Who signs an outward letter, and so approves it before it is numbered: the project manager on their projects, directors anywhere. */
 export const LETTER_SIGNATORY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
-/** Roles that see contract terms and bills: approvers, the QS who prepares bills, and accounts. */
 export const BILLING_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'ACCOUNTS_MANAGER'];
 
 /** Roles that change the client master and a project's contract terms. */
@@ -143,7 +142,6 @@ export const canViewPayroll = (role: RoleKey) => PAYROLL_ROLES.includes(role);
 export const canViewEmployeePrivate = (role: RoleKey) => PAYROLL_ROLES.includes(role);
 /** Biometric devices (v6 item 101): register them, match their user numbers and import punch files: staff admins. */
 export const canManageBiometric = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role);
-/** Payroll: HR sets salaries and prepares the run, management approves it, accounts pays it. */
 export const canRunPayroll = (role: RoleKey) => role === 'ADMIN' || role === 'HR_MANAGER';
 export const canApprovePayroll = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 export const canPayPayroll = (role: RoleKey) => role === 'ADMIN' || role === 'ACCOUNTS_MANAGER';
@@ -251,10 +249,6 @@ export const canActOnNcr = (user: SubmissionActor, n: { actionById: string | nul
 /** Change or delete a test: whoever recorded it, QA/QC and approvers. */
 export const canEditTest = (user: SubmissionActor, t: { createdById: string }): boolean => t.createdById === user.id || NCR_ROLES.includes(user.roleKey);
 
-/**
- * Edit or close a register entry: approvers, the person who raised it and its owner.
- * Deleting one (a wrong entry, not a closed one) is for approvers only.
- */
 export const canEditRisk = (user: SubmissionActor, r: { raisedById: string; ownerId: string | null }): boolean =>
   canApprove(user.roleKey) || r.raisedById === user.id || r.ownerId === user.id;
 

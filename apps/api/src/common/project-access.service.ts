@@ -223,7 +223,6 @@ export class ProjectAccessService {
     if (!canViewMessageLog(user.roleKey)) throw new ForbiddenException('Only management or an admin can see the message log');
   }
 
-  /** Staff master and holidays: staff admins (admin, management, HR). */
   assertCanManageStaff(user: RequestUser) {
     if (!canManageStaff(user.roleKey)) throw new ForbiddenException('Only HR, management or an admin can change staff records');
   }
@@ -278,7 +277,6 @@ export class ProjectAccessService {
     return [...new Set([...(p.projectManagerId ? [p.projectManagerId] : []), ...p.members.map((m) => m.userId)])];
   }
 
-  /** Who looks after quality on a project: whoever passes its inspections (QA/QC by default, per the approval matrix). */
   async qualityWatchers(organizationId: string, projectId: string, { onProjectOnly = false } = {}) {
     const users = await this.approversForProject(organizationId, projectId, 'INSPECTION');
     if (!onProjectOnly) return users;

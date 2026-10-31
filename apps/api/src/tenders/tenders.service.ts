@@ -359,7 +359,6 @@ export class TendersService {
     return { tenderId: t.id, kind, quotedPct, openings, level: bidLevel(openings, quotedPct) };
   }
 
-  /** The company's labour rates by trade and machine rates by category (the average hourly rate of its machines). */
   private async rates(organizationId: string) {
     const [labour, machines] = await Promise.all([
       this.prisma.labourRate.findMany({ where: { organizationId }, select: { category: true, dailyRate: true } }),

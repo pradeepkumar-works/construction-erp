@@ -17,7 +17,6 @@ const seenBy = (): string[] | '*' => {
   return v === '*' ? '*' : Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
 };
 
-/** The element a step points at: shell parts carry `data-tour`. */
 const at = (name: string) => () => document.querySelector<HTMLElement>(`[data-tour="${name}"]`);
 
 interface Step {
