@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -8,7 +9,7 @@ import type { AttachmentDto, InspectionDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivities, useChecklists, useProjects } from '@/lib/queries';
+import { useActivities, useChecklists } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -30,7 +31,6 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const { data: checklists } = useChecklists();
   const editing = !!inspection;
   const fixedProject = inspection?.projectId ?? projectId;
@@ -96,13 +96,13 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
       <Form form={form} layout="vertical">
         {inspection?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Note from ${inspection.reviewedByName ?? 'the inspector'}`} description={inspection.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ activityId: undefined })} />
+          <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ activityId: undefined })} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity' }]} extra={activity?.holdPoint ? 'Hold point: its progress is approved after this passes.' : undefined}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Select activity"
+              placeholder="Choose the activity"
               disabled={!selectedProject}
               options={(activities ?? []).map((a) => ({ value: a.id, label: a.holdPoint ? `${a.name} (hold point)` : a.name }))}
               onChange={(id) => form.setFieldValue('checklistTemplateId', activities?.find((a) => a.id === id)?.checklistTemplateId ?? null)}

@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useRef } from 'react';
 import { App, Checkbox, Form, Input, Segmented, Select, Space, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -126,7 +127,7 @@ export function RfiFormModal({
         <FormSection title="Question">
           {!fixedProject ? (
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} placeholder="Choose the project" />
+              <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
             </Form.Item>
           ) : null}
           <Form.Item name="subject" label="Subject" rules={[{ required: true, whitespace: true, message: 'Say in a line what the question is about' }]}>

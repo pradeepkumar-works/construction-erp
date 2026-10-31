@@ -125,7 +125,7 @@ export function LetterForm({
 
   const contactOptions = useMemo(() => (contacts ?? []).map((c) => ({ value: contactLine(c), label: contactLine(c), id: c.id })), [contacts]);
   const projectOptions = useMemo(
-    () => [...(head || chosen === HEAD_OFFICE ? [{ value: HEAD_OFFICE, label: 'Head office (no project)' }] : []), ...(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))],
+    () => [...(head || chosen === HEAD_OFFICE ? [{ value: HEAD_OFFICE, label: 'Head office (no project)' }] : []), ...(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))],
     [projects, head, chosen],
   );
   const letterOptions = useMemo(
@@ -266,7 +266,7 @@ export function LetterForm({
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project, or head office' }]} hidden={!!fixedProject}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Select project"
+              placeholder="Choose the project"
               options={projectOptions}
               onChange={() => form.setFieldsValue({ inReplyToId: null, riskId: null, signatoryId: null, markToId: null })}
             />

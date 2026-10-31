@@ -73,7 +73,7 @@ function SeriesDialog({ editing, onClose }: { editing: LetterSeriesDto | 'new' |
             <Form.Item name="projectId" label="For" rules={[{ required: true, message: 'Choose the project, or head office' }]}>
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
-                options={[{ value: HO, label: 'Head office' }, ...(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))]}
+                options={[{ value: HO, label: 'Head office' }, ...(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))]}
                 onChange={(v) => form.setFieldValue('prefix', v === HO ? HEAD_OFFICE_PREFIX : letterPrefixOf(projects?.find((p) => p.id === v)?.code ?? ''))}
               />
             </Form.Item>

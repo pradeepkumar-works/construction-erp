@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { App, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -9,7 +10,6 @@ import type { AttachmentDto, WorkPermitDto, WorkPermitType } from '@erp/shared';
 import { PERMIT_MAX_DAYS, PERMIT_PRECAUTIONS, WORK_PERMIT_TYPES, WORK_PERMIT_TYPE_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 
@@ -45,7 +45,6 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: projects } = useProjects();
   const type = Form.useWatch('type', form);
 
   useEffect(() => {
@@ -101,7 +100,7 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
       <Form form={form} layout="vertical">
         <FormSection title="Permit">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!permit}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="type" label="Work" rules={[{ required: true, message: 'Pick the kind of work' }]}>

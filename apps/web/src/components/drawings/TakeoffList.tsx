@@ -477,7 +477,7 @@ export function TakeoffBoqForm({
           .
         </Typography.Paragraph>
         <Form.Item name="boqItemId" label="BOQ item" rules={[{ required: true, message: 'Choose the BOQ item' }]}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select BOQ item" options={options} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the BOQ item" options={options} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="field" label="Quantity to set">

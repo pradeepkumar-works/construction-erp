@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { App, Form, Input, InputNumber, Select, TimePicker } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -9,7 +10,6 @@ import type { AttachmentDto, SafetyIncidentDto, SafetyIncidentType } from '@erp/
 import { INJURY_TYPES, SAFETY_INCIDENT_TYPES, SAFETY_INCIDENT_TYPE_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 
@@ -35,7 +35,6 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: projects } = useProjects();
   const type = Form.useWatch('type', form);
   const injury = !!type && INJURY_TYPES.includes(type);
   const editing = !!incident;
@@ -107,7 +106,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
       <Form form={form} layout="vertical">
         <FormSection title="The incident">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || editing}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
           </Form.Item>
           <FormGrid cols={3}>
             <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Choose the type' }]}>

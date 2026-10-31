@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, InputNumber, Select } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -10,7 +11,7 @@ import { QuantityInput } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivities, useDprWorkOptions, useProjects } from '@/lib/queries';
+import { useActivities, useDprWorkOptions } from '@/lib/queries';
 import { LinkButton } from '@/components/common/LinkButton';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -38,7 +39,6 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
@@ -133,7 +133,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+          <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity' }]} {...aiFlagItem(draft, 'activityId', selectedActivity)}>
@@ -141,7 +141,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
               showSearch={{ optionFilterProp: 'label' }}
               loading={actLoading}
               disabled={!selectedProject}
-              placeholder={selectedProject ? 'Select activity' : 'Select a project first'}
+              placeholder={selectedProject ? 'Choose the activity' : 'Choose the project first'}
               options={(activities ?? []).filter((a) => !a.isSummary).map((a) => ({ value: a.id, label: `${a.name} (${a.unit})` }))}
             />
           </Form.Item>

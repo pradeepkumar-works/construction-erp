@@ -185,8 +185,8 @@ export function TestFormModal({ open, onClose, projectId, test, prefill }: { ope
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Select project"
-              options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+              placeholder="Choose the project"
+              options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
               onChange={() => form.setFieldsValue({ activityId: undefined })}
             />
           </Form.Item>

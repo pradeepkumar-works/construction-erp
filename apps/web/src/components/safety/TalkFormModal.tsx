@@ -1,7 +1,8 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
-import { App, AutoComplete, Form, Input, InputNumber, Select } from 'antd';
+import { App, AutoComplete, Form, Input, InputNumber } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +11,6 @@ import { TOOLBOX_TOPICS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
@@ -48,7 +48,6 @@ export function TalkFormModal({
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { user } = useAuth();
-  const { data: projects } = useProjects();
 
   useEffect(() => {
     if (!open) return;
@@ -103,7 +102,7 @@ export function TalkFormModal({
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={680} title={talk ? `Change ${talk.talkNo}` : 'Record toolbox talk'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!talk || !!prefill}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'What was it about?' }]}>
           <AutoComplete options={TOOLBOX_TOPICS.map((t) => ({ value: t }))} showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} placeholder="Pick or type a topic" />

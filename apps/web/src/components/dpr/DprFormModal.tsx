@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AutoComplete, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -9,7 +10,7 @@ import { STANDARD_DPR_FORM, WEATHER_LABELS, WEATHER_OPTIONS, dprLabel, dprMissin
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useAttendanceDay, useDpr, useDprList, useDprWorkOptions, useProjects } from '@/lib/queries';
+import { useAttendanceDay, useDpr, useDprList, useDprWorkOptions } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -46,7 +47,6 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
   const draft = entry ? null : prefill;
@@ -249,7 +249,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         )}
         <FormSection title="The day">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
           </Form.Item>
           <FormGrid cols={3}>
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the report' }]} {...aiFlagItem(draft, 'date', watchedDate)}>

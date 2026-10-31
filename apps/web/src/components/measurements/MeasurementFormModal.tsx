@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { Alert, Button, Checkbox, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -10,7 +11,7 @@ import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useBoq, useProjects, useWorkOrders } from '@/lib/queries';
+import { useBoq, useWorkOrders } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -74,7 +75,6 @@ export function MeasurementFormModal({
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!sheet;
   const fixedProject = sheet?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
@@ -150,7 +150,7 @@ export function MeasurementFormModal({
         {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
         <FormSection title="What and where">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
+            <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item
@@ -161,7 +161,7 @@ export function MeasurementFormModal({
             >
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
-                placeholder="Select BOQ item"
+                placeholder="Choose the BOQ item"
                 disabled={!selectedProject}
                 options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description} (${b.unit})` }))}
                 onChange={() => form.setFieldValue('workOrderId', undefined)}
