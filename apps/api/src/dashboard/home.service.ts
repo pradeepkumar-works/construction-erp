@@ -32,6 +32,7 @@ import {
   canRaiseNcr,
   QA_AUDIT_KIND_LABELS,
   isCompanyWide,
+  isDirector,
   isGuest,
   seesCompanyToday,
   submissionHref,
@@ -135,7 +136,7 @@ export class HomeService {
     const rights = await this.rights.rightsFor(user.organizationId, role);
     const seesDue = canViewPurchaseOrders(role) && (canPurchase(role) || canKeepStock(role));
     const matches = canRecordVendorBill(role) && canViewPayables(role);
-    const checks = canCheckGrn(role) && role !== 'ADMIN' && role !== 'MANAGEMENT';
+    const checks = canCheckGrn(role) && !isDirector(role);
     const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch, actions, toOrder, orders, staff, unmatched, unchecked, toDebit, incoming, letters, findings] = await Promise.all([
       rights.length ? this.lifecycle.pending(user) : null,
       canApprove(role) || submitsDpr(role) ? this.dprsMissing(user, today) : null,

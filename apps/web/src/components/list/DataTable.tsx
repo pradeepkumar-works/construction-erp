@@ -22,7 +22,7 @@ import {
 import { readPref, writePref } from "@/lib/prefs";
 import { useStickyTop } from "@/lib/sticky";
 import { useSingleKeys } from "@/lib/shortcuts";
-import { EmptyArt } from "@/components/common/EmptyArt";
+import { EmptyLine } from "@/components/common/EmptyArt";
 import { HOVER_INTENT_MS, usePrefetch } from "@/lib/prefetch";
 import { useIsPhone, useWidthsReached } from "@/lib/screen";
 import { ListCards, type CardRole } from "./ListCards";
@@ -250,7 +250,7 @@ export function DataTable<T extends { id: string }>({
     </Typography.Text>
   ) : (
     <div>
-      {emptyText ?? <EmptyArt art="entries" title="Nothing here yet" />}
+      {emptyText ?? <EmptyLine title="Nothing here yet" />}
       {emptyNext ? (
         <div
           style={{ marginTop: -token.marginXS, paddingBottom: token.padding }}

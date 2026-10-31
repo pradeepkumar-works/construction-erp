@@ -6,7 +6,6 @@ import {
   canHoldImprest,
   canManageImprest,
   imprestFigures,
-  isCompanyWide,
   type RoleKey,
   type ImprestDetailDto,
   type ImprestDto,
@@ -201,11 +200,7 @@ export class ImprestService {
     const holder = await this.prisma.user.findFirst({ where: { id: dto.holderId, organizationId: user.organizationId, isActive: true }, select: { id: true, fullName: true, role: { select: { key: true } } } });
     if (!holder) throw new BadRequestException('That person is not an active user of your company');
     if (!canHoldImprest(holder.role.key as RoleKey)) throw new BadRequestException(`${holder.fullName} does not pay site expenses, so cannot hold an imprest`);
-    const onProject = await this.prisma.project.findFirst({
-      where: { id: dto.projectId, organizationId: user.organizationId, ...(isCompanyWide(holder.role.key as RoleKey) ? {} : { OR: [{ projectManagerId: holder.id }, { members: { some: { userId: holder.id } } }] }) },
-      select: { id: true },
-    });
-    if (!onProject) throw new BadRequestException(`${holder.fullName} is not on this project's team`);
+    if (!(await this.access.userSeesProject({ id: holder.id, organizationId: user.organizationId, roleKey: holder.role.key as RoleKey }, dto.projectId))) throw new BadRequestException(`${holder.fullName} is not on this project's team`);
     const existing = await this.prisma.imprest.findUnique({ where: { projectId_holderId: { projectId: dto.projectId, holderId: dto.holderId } }, select: { id: true, isActive: true } });
     if (existing?.isActive) throw new ConflictException(`${holder.fullName} already holds an imprest at this project`);
     const today = todayIn();

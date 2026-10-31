@@ -1,5 +1,5 @@
 import type { CompanyKind, RoleKey } from './enums';
-import { isGuest } from './permissions';
+import { canMakeGroup, isGuest } from './permissions';
 import type { SwitchableModule } from './module-switches';
 
 /**
@@ -51,7 +51,7 @@ export interface AuthGroupDto {
 }
 
 /** Who may open Group companies: the group's admins, and a company's admin before it has a group (to make one). */
-export const canSeeGroupCompanies = (u: { roleKey: RoleKey; group?: AuthGroupDto }) => (u.group ? u.group.admin : u.roleKey === 'ADMIN');
+export const canSeeGroupCompanies = (u: { roleKey: RoleKey; group?: AuthGroupDto }) => (u.group ? u.group.admin : canMakeGroup(u.roleKey));
 
 /** Roles a person can be given in a sister company from Group companies: staff roles. Guests and suppliers are invited from the company's own pages. */
 export const isGroupPlaceRole = (role: RoleKey) => !isGuest(role);

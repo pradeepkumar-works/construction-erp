@@ -15,7 +15,7 @@ export class ApprovalRuleItemDto {
   @Matches(/^\d{1,16}(\.\d{1,2})?$/, { message: 'maxAmount must be a rupee amount with up to 2 decimals' })
   maxAmount?: string | null;
 
-  @ApiPropertyOptional({ example: 2, description: 'v5 item 94: 1 (the default) is the first approval; 2 and 3 are further approvals of the same entry' })
+  @ApiPropertyOptional({ example: 2, description: '1 (the default) is the first approval; 2 and 3 are further approvals of the same entry' })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -57,11 +57,11 @@ export class SaveApprovalRulesDto {
   @Type(() => ApprovalRuleItemDto)
   rules?: ApprovalRuleItemDto[];
 
-  @ApiPropertyOptional({ description: 'Accounts pays a bill only against an approved payment request (v5 item 90)' }) @IsOptional() @IsBoolean() paymentsNeedRequest?: boolean;
+  @ApiPropertyOptional({ description: 'Accounts pays a bill only against an approved payment request' }) @IsOptional() @IsBoolean() paymentsNeedRequest?: boolean;
 
-  @ApiPropertyOptional({ description: 'Progress is recorded only as DPR work lines (item 127)' }) @IsOptional() @IsBoolean() progressFromDpr?: boolean;
+  @ApiPropertyOptional({ description: 'Progress is recorded only as DPR work lines' }) @IsOptional() @IsBoolean() progressFromDpr?: boolean;
 
-  @ApiPropertyOptional({ type: [ApprovalEscalationItemDto], description: 'Reminders and escalation per type (v5 item 94), the whole list; types left out have neither. Left out: they stay as they are.' })
+  @ApiPropertyOptional({ type: [ApprovalEscalationItemDto], description: 'Reminders and escalation per type, the whole list; types left out have neither. Left out: they stay as they are.' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(SUBMISSION_TYPES.length)

@@ -6,7 +6,7 @@ import { COMPANY_KIND_LABELS, canSeeGroupCompanies, type GroupCompanyDto, type G
 import { EditOutlined, PlusOutlined, UserAddOutlined } from '@/components/common/icons';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
-import { EmptyArt } from '@/components/common/EmptyArt';
+import { EmptyLine } from '@/components/common/EmptyArt';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ResultMark } from '@/components/common/ResultMark';
@@ -86,7 +86,7 @@ function CompaniesTab({ group, onEdit }: { group: GroupDto; onEdit: (c: GroupCom
         if (c) onEdit(c);
       }}
       scrollX={900}
-      emptyText={<EmptyArt art="entries" size="small" title="No companies yet" />}
+      emptyText={<EmptyLine title="No companies yet" />}
     />
   );
 }
@@ -185,7 +185,7 @@ function PeopleTab({ group, myEmail, onGive }: { group: GroupDto; myEmail: strin
         }}
         table={{ pagination: rows.length > 50 ? { pageSize: 50, showSizeChanger: false } : false }}
         scrollX={900}
-        emptyText={<EmptyArt art="entries" size="small" title="No people yet" />}
+        emptyText={<EmptyLine title="No people yet" />}
       />
     </>
   );

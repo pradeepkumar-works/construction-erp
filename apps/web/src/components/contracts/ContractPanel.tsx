@@ -15,6 +15,7 @@ import { ContractFormModal } from './ContractFormModal';
 import { LdExposureCard } from './LdExposure';
 import { PriceVariationCard } from './PriceVariation';
 import { BillingBreakup } from './BillingBreakup';
+import { ObligationsCard } from './Obligations';
 import { themeFontSize } from '@/lib/theme';
 import { Section, SectionStack } from '@/components/common/Section';
 
@@ -99,10 +100,12 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           {CONTRACT_PERCENT_FIELDS.map((k) => (
             <Descriptions.Item key={k} label={CONTRACT_PERCENT_LABELS[k]}>
               {c[k]}%
+              {k === 'securityDepositPct' && c.securityDepositCapPct !== null && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>up to {c.securityDepositCapPct}% of the contract</div>}
             </Descriptions.Item>
           ))}
         </Descriptions>
       </Section>
+      <ObligationsCard projectId={projectId} />
       <BillingBreakup projectId={projectId} />
       <Section title="Extensions of time" extra={<Link href={`/projects/${projectId}?tab=risks`}>Delay register</Link>}>
         <Table<ContractExtensionDto>
