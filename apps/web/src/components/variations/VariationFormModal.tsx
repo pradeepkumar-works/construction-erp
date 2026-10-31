@@ -112,7 +112,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
       return variation ? (await api.patch<VariationDto>(`/variations/${variation.id}`, body)).data : (await api.post<VariationDto>('/variations', { projectId: v.projectId, ...body })).data;
     },
     onSuccess: (v) => {
-      message.success(editing ? `${v.label} updated` : `${v.label} prepared`);
+      message.success(editing ? `${v.label} updated` : `${v.label} saved as a draft`);
       qc.invalidateQueries({ queryKey: ['variations'] });
       onSaved?.(v);
     },
