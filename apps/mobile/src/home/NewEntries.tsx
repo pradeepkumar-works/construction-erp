@@ -20,7 +20,7 @@ export function NewEntries() {
     <View style={styles.row}>
       <Entry icon="trending-up" label={t('Progress')} onPress={() => router.push('/progress/new')} />
       <Entry icon="document-text-outline" label="DPR" onPress={() => router.push('/dpr/new')} />
-      <Entry icon="cube-outline" label={t('Material')} onPress={() => router.push('/material-request/new')} />
+      <Entry icon="cube-outline" label={t('Indent')} onPress={() => router.push('/material-request/new')} />
       {user && canRecordAttendance(user.roleKey) ? <Entry icon="people-outline" label={t('Attendance')} onPress={() => router.push('/attendance')} /> : null}
       {user && canKeepStock(user.roleKey) && !canRecordAttendance(user.roleKey) ? <Entry icon="file-tray-stacked-outline" label={t('Stock')} onPress={() => router.push('/stock')} /> : null}
     </View>

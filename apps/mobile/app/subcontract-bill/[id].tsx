@@ -49,7 +49,7 @@ export default function SubcontractBillScreen() {
         <KeyValue label={t('Their invoice')} value={data.invoiceNo} />
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={t('Work ({n})', { n: data.lines.length })}>
+      <Card title={t('Work')} count={data.lines.length}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>

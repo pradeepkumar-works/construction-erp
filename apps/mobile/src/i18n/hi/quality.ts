@@ -76,7 +76,7 @@ export const QUALITY: Record<string, string> = {
   'Progress is approved after this passes': 'इसके पास होने के बाद प्रगति मंज़ूर होगी',
   'Own points': 'अपने पॉइंट',
   None: 'कोई नहीं',
-  'Checklist ({n} points)': 'चेकलिस्ट ({n} पॉइंट)',
+  'Checklist · {n} points': 'चेकलिस्ट · {n} पॉइंट',
   'Checklist · {pass} OK, {fail} not OK': 'चेकलिस्ट · {pass} ठीक, {fail} ठीक नहीं',
 
   // Tests

@@ -37,7 +37,7 @@ export default function MeasurementScreen() {
         {data.woNo ? <KeyValue label={t('Done by')} value={`${data.contractorName ?? ''} (${data.woNo})`} /> : null}
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={t('Measurements ({n})', { n: data.lines.length })}>
+      <Card title={t('Measurements')} count={data.lines.length}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>

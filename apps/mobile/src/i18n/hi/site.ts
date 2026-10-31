@@ -199,7 +199,7 @@ export const SITE: Record<string, string> = {
   'A blank size counts as 1': 'खाली नाप 1 गिना जाता है',
   'Photos or sketch': 'फ़ोटो या स्केच',
   '{amount} at {rate} / {unit}': '{rate} / {unit} की दर से {amount}',
-  'Measurements ({n})': 'नाप ({n})',
+  Measurements: 'नाप',
   deduct: 'घटाव',
 
   // Site expense
@@ -418,7 +418,7 @@ export const SITE: Record<string, string> = {
   'Comments need a connection.': 'टिप्पणी के लिए इंटरनेट चाहिए।',
   'Open {file}': '{file} खोलें',
   'Comments, clouds and arrows on PDF and CAD drawings are added on the web. They are listed below.': 'PDF और CAD ड्रॉइंग पर टिप्पणी, क्लाउड और तीर वेब पर लगते हैं। वे नीचे दिखते हैं।',
-  'Marks ({n} open)': 'निशान ({n} खुले)',
+  'Marks · {n} open': 'निशान · {n} खुले',
   'No marks on this drawing yet.': 'इस ड्रॉइंग पर अभी कोई निशान नहीं।',
   'from Rev {rev}': 'रिव {rev} से',
   'page {n}': 'पेज {n}',
@@ -542,4 +542,5 @@ export const SITE: Record<string, string> = {
   'Next day plan': 'अगले दिन की योजना',
   'Send RFI': 'RFI भेजें',
   GRN: 'GRN (माल आवक नोट)',
+  'Machinery logs': 'मशीनरी लॉग',
 };

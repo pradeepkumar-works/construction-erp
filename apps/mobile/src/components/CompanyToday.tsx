@@ -185,7 +185,7 @@ export function CompanyTodayPanel({ data, loading }: { data: CompanyTodayDto | n
           tone: p.ordersLate > 0 ? 'error' : 'normal',
           summary: [
             t(p.ordersOpen === 1 ? '{n} order to come, {amount}' : '{n} orders to come, {amount}', { n: p.ordersOpen, amount: money(p.ordersOpenValue) }),
-            t(p.requestsToOrder === 1 ? '{n} request still to order' : '{n} requests still to order', { n: p.requestsToOrder }),
+            t(p.requestsToOrder === 1 ? '{n} indent still to order' : '{n} indents still to order', { n: p.requestsToOrder }),
             t('{n} GRNs today · {c} awaiting QA/QC', { n: p.grnsToday, c: p.grnsAwaitingCheck }),
           ],
           rows: p.rows.map((r, i) => ({

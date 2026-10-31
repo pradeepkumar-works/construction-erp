@@ -153,7 +153,7 @@ export default function InspectionScreen() {
       {inspector ? (
         <Inspect data={data} onDone={setData} />
       ) : data.checklist.length ? (
-        <Card title={counts.open === counts.total ? t('Checklist ({n} points)', { n: counts.total }) : t('Checklist · {pass} OK, {fail} not OK', { pass: counts.pass, fail: counts.fail })}>
+        <Card title={counts.open === counts.total ? t('Checklist · {n} points', { n: counts.total }) : t('Checklist · {pass} OK, {fail} not OK', { pass: counts.pass, fail: counts.fail })}>
           {data.checklist.map((c, i) => (
             <View key={i} style={styles.row}>
               <View style={styles.flex}>

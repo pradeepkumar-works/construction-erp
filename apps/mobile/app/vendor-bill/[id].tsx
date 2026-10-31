@@ -57,7 +57,7 @@ export default function VendorBillScreen() {
         <KeyValue label={t('Payable')} value={rupees(data.payable)} />
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={t('Items ({n})', { n: data.lines.length })}>
+      <Card title={t('Items')} count={data.lines.length}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>

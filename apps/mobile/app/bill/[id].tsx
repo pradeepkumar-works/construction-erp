@@ -41,7 +41,7 @@ export default function BillScreen() {
         {data.status === 'APPROVED' ? <KeyValue label={t('With client')} value={t(BILL_STAGE_LABELS[data.stage])} /> : null}
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={t('Abstract ({n} items)', { n: data.items.length })}>
+      <Card title={t('Abstract')} right={<Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{data.items.length === 1 ? t('1 item') : t('{n} items', { n: data.items.length })}</Text>}>
         {data.items.map((i) => (
           <View key={i.id} style={styles.line}>
             <View style={{ flex: 1 }}>

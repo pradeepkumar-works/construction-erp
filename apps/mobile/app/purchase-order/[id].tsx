@@ -45,7 +45,7 @@ export default function PurchaseOrderScreen() {
         {data.selectionReason ? <KeyValue label={t('Why this vendor')} value={data.selectionReason} multiline /> : null}
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={t('Items ({n})', { n: data.lines.length })}>
+      <Card title={t('Items')} count={data.lines.length}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>

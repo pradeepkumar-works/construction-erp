@@ -16,11 +16,11 @@ type T = (en: string, vars?: TranslateVars) => string;
 const SEGMENTS: { type: SubmissionType; label: string }[] = [
   { type: 'PROGRESS', label: 'Progress' },
   { type: 'DPR', label: 'DPR' },
-  { type: 'MATERIAL_REQUEST', label: 'Material' },
-  { type: 'MACHINERY', label: 'Machines' },
+  { type: 'MATERIAL_REQUEST', label: 'Indents' },
+  { type: 'MACHINERY', label: 'Machinery logs' },
   { type: 'EXPENSE', label: 'Expenses' },
-  { type: 'MEASUREMENT', label: 'MB' },
-  { type: 'INSPECTION', label: 'QA/QC' },
+  { type: 'MEASUREMENT', label: 'Measurements' },
+  { type: 'INSPECTION', label: 'Inspections' },
 ];
 
 type Row = { id: string; title: string; subtitle: string; status: ProgressEntryDto['status']; createdAt: string };
@@ -156,7 +156,7 @@ export default function SubmissionsScreen() {
             data && data.length < total ? (
               <View style={styles.footer}>
                 {moreError ? <ErrorBannerText text={moreError} /> : null}
-                <Button title={t('Load more ({shown} of {total})', { shown: data.length, total })} variant="ghost" loading={moreBusy} onPress={() => void loadMore()} />
+                <Button title={t('Load more · {shown} of {total}', { shown: data.length, total })} variant="ghost" loading={moreBusy} onPress={() => void loadMore()} />
               </View>
             ) : null
           }

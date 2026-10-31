@@ -70,7 +70,7 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
   const images = attachments.filter((a) => a.mimeType.startsWith('image/'));
   const files = attachments.filter((a) => !a.mimeType.startsWith('image/'));
   return (
-    <Card title={t('Photos ({n})', { n: attachments.length })}>
+    <Card title={files.length ? t('Photos and files') : t('Photos')} count={attachments.length}>
       <View style={styles.grid}>
         {images.map((a, i) => {
           const taken = takenAtFromName(a.fileName);

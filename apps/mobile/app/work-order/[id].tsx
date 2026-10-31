@@ -42,7 +42,7 @@ export default function WorkOrderScreen() {
         <KeyValue label={t('Terms')} value={data.terms} multiline />
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={t('Scope ({n})', { n: data.lines.length })}>
+      <Card title={t('Scope')} count={data.lines.length}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>
@@ -60,7 +60,7 @@ export default function WorkOrderScreen() {
         ))}
       </Card>
       {data.bills && data.bills.length > 0 ? (
-        <Card title={t('Bills ({n})', { n: data.bills.length })}>
+        <Card title={t('Bills')} count={data.bills.length}>
           {data.bills.map((b) => (
             <View key={b.id} style={styles.line}>
               <View style={{ flex: 1 }}>

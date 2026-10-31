@@ -242,7 +242,7 @@ export default function DrawingScreen() {
       )}
 
       <ErrorBanner message={error ?? marks.error} />
-      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.h3, styles.gap]}>{t('Marks ({n} open)', { n: open })}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.h3, styles.gap]}>{t('Marks · {n} open', { n: open })}</Text>
       {!listed.length ? (
         <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No marks on this drawing yet.')}</Text>
       ) : (
