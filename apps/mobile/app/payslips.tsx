@@ -62,11 +62,11 @@ function Payslip({ slip: p, expanded, onToggle }: { slip: PayslipDto; expanded: 
           {lines('EARNING').map((l) => (
             <KeyValue key={l.id} label={name(l)} value={formatMoney(l.amount)} />
           ))}
-          <KeyValue label={t('Gross')} value={<Text style={typography.bodyStrong}>{formatMoney(p.gross)}</Text>} />
+          <KeyValue label={t('Gross')} value={<Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{formatMoney(p.gross)}</Text>} />
           <Divider />
           <SectionTitle title={t('Deductions')} />
-          {lines('DEDUCTION').length ? lines('DEDUCTION').map((l) => <KeyValue key={l.id} label={name(l)} value={formatMoney(l.amount)} />) : <Text style={typography.caption}>{t('None')}</Text>}
-          <KeyValue label={t('Total deductions')} value={<Text style={typography.bodyStrong}>{formatMoney(p.deductions)}</Text>} />
+          {lines('DEDUCTION').length ? lines('DEDUCTION').map((l) => <KeyValue key={l.id} label={name(l)} value={formatMoney(l.amount)} />) : <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('None')}</Text>}
+          <KeyValue label={t('Total deductions')} value={<Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{formatMoney(p.deductions)}</Text>} />
           {lines('EMPLOYER').length ? (
             <>
               <Divider />

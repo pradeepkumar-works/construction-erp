@@ -8,7 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, PhotoChecks, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
 import { INCIDENT_TONE } from '../../src/components/safetyTone';
-import { colors, spacing, typography, toneIcon } from '../../src/theme';
+import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -55,10 +55,10 @@ export default function IncidentScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.incidentNo} · {data.projectName}
         </Text>
-        <Text style={typography.h2}>{data.location}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.location}</Text>
         <View style={styles.pills}>
           <Pill text={t(SAFETY_INCIDENT_TYPE_LABELS[data.type])} {...tone} />
           <Pill text={t(SAFETY_INCIDENT_STATUS_LABELS[data.status])} {...(data.status === 'OPEN' ? { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.open } : { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.closed })} />

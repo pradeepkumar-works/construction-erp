@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportDefect, canRaiseRfi, canReportSafety, canRequestInspection, canSubmitExpense, pathIsOff } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen, SectionTitle, Touchable } from '../../src/components';
-import { colors, radius, shadow, spacing, typography } from '../../src/theme';
+import { colors, maxFontScale, radius, shadow, spacing, typography } from '../../src/theme';
 import { useT } from '../../src/i18n/LanguageContext';
 
 type Form = { href: string; icon: React.ComponentProps<typeof Ionicons>['name']; tone: string; title: string; text: string };
@@ -68,7 +68,7 @@ export default function SubmitHub() {
     .filter((g) => g.forms.length);
   return (
     <Screen>
-      <Text style={typography.caption}>{t('Choose what to record. Entries that need approval go to the approver set for your project.')}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Choose what to record. Entries that need approval go to the approver set for your project.')}</Text>
       {groups.map((g) => (
         <View key={g.title} style={styles.group}>
           <SectionTitle title={t(g.title)} />
@@ -79,8 +79,8 @@ export default function SubmitHub() {
                   <Ionicons name={f.icon} size={28} color={colors.onTile} />
                 </View>
                 <View style={styles.body}>
-                  <Text style={typography.h3}>{t(f.title)}</Text>
-                  <Text style={[typography.caption, styles.text]}>{t(f.text)}</Text>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.h3}>{t(f.title)}</Text>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.text]}>{t(f.text)}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
               </Touchable>

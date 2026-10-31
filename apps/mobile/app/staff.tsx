@@ -25,7 +25,7 @@ import type { TranslateVars } from '../src/i18n/translate';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, ReasonSheet, Screen, SectionTitle, useSnackbar } from '../src/components';
 import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { ErrorSummary, useErrorSummary } from '../src/forms/errors';
-import { colors, fontSize, spacing, toneIcon, typography, type Tone } from '../src/theme';
+import { colors, fontSize, maxFontScale, spacing, type Tone, toneIcon, typography } from '../src/theme';
 import { formatDate, formatTime, isIsoDate, today } from '../src/utils/format';
 import { metres } from '../src/utils/location';
 import { useFaceMark } from '../src/home/faceMark';
@@ -54,16 +54,16 @@ function LeaveRow({ l, mine, busy, onCancel, onApprove, onReject }: { l: LeaveRe
   return (
     <View style={styles.row}>
       <View style={styles.rowHead}>
-        <Text style={typography.bodyStrong}>{mine ? t(LEAVE_TYPE_LABELS[l.type]) : l.employeeName}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{mine ? t(LEAVE_TYPE_LABELS[l.type]) : l.employeeName}</Text>
         <Pill text={t(LEAVE_STATUS_LABELS[l.status])} {...STATUS_TONE[l.status]} />
       </View>
-      <Text style={typography.caption}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
         {mine ? '' : `${t(LEAVE_TYPE_LABELS[l.type])} · `}
         {span(l, t)} · {days(l.days, t)}
       </Text>
-      <Text style={typography.caption}>{l.reason}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{l.reason}</Text>
       {l.decidedByName ? (
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {t('{status} by {name}', { status: t(LEAVE_STATUS_LABELS[l.status]), name: l.decidedByName })}
           {l.decisionNote ? `: ${l.decisionNote}` : ''}
         </Text>
@@ -98,13 +98,13 @@ function OvertimeRow({ a, busy, onApprove, onReject }: { a: StaffAttendanceDto; 
   return (
     <View style={styles.row}>
       <View style={styles.rowHead}>
-        <Text style={typography.bodyStrong}>{a.employeeName}</Text>
-        <Text style={typography.bodyStrong}>{t('{h} h', { h: a.overtimeHours ?? '0' })}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{a.employeeName}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{t('{h} h', { h: a.overtimeHours ?? '0' })}</Text>
       </View>
-      <Text style={typography.caption}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
         {formatDate(a.date)} · {a.checkIn ? t('In {in} · Out {out}', { in: clock(a.checkIn), out: clock(a.checkOut) }) : t('In the register')}
       </Text>
-      {a.projectName ? <Text style={typography.caption}>{a.projectName}</Text> : null}
+      {a.projectName ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{a.projectName}</Text> : null}
       <View style={styles.pills}>
         <PlacePill place={a.checkInPlace} />
       </View>
@@ -228,23 +228,23 @@ export default function StaffScreen() {
       <ErrorBanner message={error} />
       {!data.employee ? (
         <Card>
-          <Text style={typography.body}>{t('Your login is not linked to a staff record. Ask HR to link it, then you can mark in and apply for leave here.')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{t('Your login is not linked to a staff record. Ask HR to link it, then you can mark in and apply for leave here.')}</Text>
         </Card>
       ) : (
         <>
           <Card title={t('Today, {date}', { date: formatDate(today()) })}>
             {data.todayOff && !day ? (
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {data.todayOff === 'Sunday' ? t('Weekly off.') : t('Holiday: {name}.', { name: data.todayOff })} {t('Working today earns a comp-off.')}
               </Text>
             ) : null}
             {day ? (
               <>
-                <Text style={typography.bodyStrong}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>
                   {t(STAFF_ATTENDANCE_LABELS[day.status])}
                   {day.projectName ? ` ${t('at {project}', { project: day.projectName })}` : ''}
                 </Text>
-                <Text style={typography.caption}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                   {t('In {in} · Out {out}', { in: clock(day.checkIn), out: clock(day.checkOut) })}
                   {day.overtimeHours && Number(day.overtimeHours) > 0 ? ` · ${t('Overtime {h} h', { h: day.overtimeHours })}` : ''}
                 </Text>
@@ -254,13 +254,13 @@ export default function StaffScreen() {
                     <Pill text={t('Overtime: {status}', { status: t(OVERTIME_STATUS_LABELS[day.overtimeStatus]).toLowerCase() })} {...OVERTIME_TONE[day.overtimeStatus]} />
                   ) : null}
                 </View>
-                {day.overtimeStatus === 'PENDING' ? <Text style={typography.caption}>{t('Overtime is paid once your manager approves it.')}</Text> : null}
+                {day.overtimeStatus === 'PENDING' ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Overtime is paid once your manager approves it.')}</Text> : null}
               </>
             ) : (
-              <Text style={typography.caption}>{t('Not marked in yet.')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Not marked in yet.')}</Text>
             )}
             {!day?.checkIn && data.site ? (
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {t(data.site.strict ? 'Mark in records your location: you must be within {distance} of {site}.' : 'Mark in records your location: it is flagged if you are more than {distance} from {site}.', {
                   distance: metres(data.site.radiusM),
                   site: data.site.projectName,
@@ -282,12 +282,12 @@ export default function StaffScreen() {
                 .filter((b) => b.entitled !== null)
                 .map((b) => (
                   <View key={b.type} style={styles.balance}>
-                    <Text style={typography.h2}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>
                       {b.left}
-                      <Text style={typography.caption}> / {b.entitled}</Text>
+                      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}> / {b.entitled}</Text>
                     </Text>
-                    <Text style={typography.caption}>{t(LEAVE_TYPE_LABELS[b.type])}</Text>
-                    {b.pending ? <Text style={typography.caption}>{t('{n} waiting', { n: b.pending })}</Text> : null}
+                    <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t(LEAVE_TYPE_LABELS[b.type])}</Text>
+                    {b.pending ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('{n} waiting', { n: b.pending })}</Text> : null}
                   </View>
                 ))}
             </View>
@@ -297,7 +297,7 @@ export default function StaffScreen() {
           {applying ? (
             <Card title={t('Apply for leave')}>
               <Chips label={t('Leave')} required value={type} clearable={false} onChange={setType} options={LEAVE_TYPES.map((x) => ({ value: x, label: t(LEAVE_TYPE_LABELS[x]) }))} />
-              {formErrors.type ? <Text style={styles.err}>{formErrors.type}</Text> : null}
+              {formErrors.type ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{formErrors.type}</Text> : null}
               <DatePicker
                 label={t('From')}
                 required
@@ -312,7 +312,7 @@ export default function StaffScreen() {
               {from === to ? <Chips value={halfDay ? 'HALF' : 'FULL'} clearable={false} onChange={(v) => setHalfDay(v === 'HALF')} options={[{ value: 'FULL', label: t('Full day') }, { value: 'HALF', label: t('Half day') }]} /> : null}
               <Input label={t('Reason')} required value={reason} onChangeText={setReason} error={formErrors.reason} maxLength={500} multiline />
               {taking !== null ? (
-                <Text style={[typography.caption, (taking === 0 || (balance?.left != null && balance.left < taking)) && styles.errText]}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, (taking === 0 || (balance?.left != null && balance.left < taking)) && styles.errText]}>
                   {taking === 0 ? t('Those days are Sundays or holidays.') : t('Takes {days} (Sundays and holidays not counted).', { days: days(taking, t) })}
                   {balance && balance.left !== null ? ` ${t('{days} left.', { days: days(balance.left, t) })}` : ''}
                 </Text>
@@ -384,8 +384,8 @@ export default function StaffScreen() {
         <Card title={t('Coming holidays')}>
           {data.holidays.map((h) => (
             <View key={h.id} style={styles.holiday}>
-              <Text style={typography.body}>{h.name}</Text>
-              <Text style={typography.caption}>{formatDate(h.date)}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{h.name}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{formatDate(h.date)}</Text>
             </View>
           ))}
         </Card>

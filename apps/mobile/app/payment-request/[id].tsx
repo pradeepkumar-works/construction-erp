@@ -42,7 +42,7 @@ export default function PaymentRequestScreen() {
           <Text style={styles.total} maxFontSizeMultiplier={maxFontScale}>
             {formatMoney(data.amount)}
           </Text>
-          <Text style={typography.caption}>{data.neededBy ? t('Needed by {date}', { date: formatDate(data.neededBy) }) : t('To pay')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{data.neededBy ? t('Needed by {date}', { date: formatDate(data.neededBy) }) : t('To pay')}</Text>
         </View>
         {fund ? (
           <>

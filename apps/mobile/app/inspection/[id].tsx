@@ -8,7 +8,7 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { AttachmentGallery, Button, Card, Chips, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Screen, SubmissionHeader, SubmitterActions, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
-import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { useFieldChain } from '../../src/forms/keyboard';
@@ -80,7 +80,7 @@ function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: Inspection
         <Card title={`${t('Checklist')} · ${open ? t('{open} of {total} to check', { open, total: points.length }) : failed ? t('{n} not OK', { n: failed }) : t('all checked')}`}>
           {data.checklist.map((c, i) => (
             <View key={i} style={styles.point}>
-              <Text style={styles.pointText}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.pointText}>
                 {i + 1}. {c.item}
               </Text>
               <Chips<InspectionResult>
@@ -113,8 +113,8 @@ function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: Inspection
       <Modal visible={!!pending} transparent animationType="fade" onRequestClose={() => !busy && setPending(null)}>
         <View style={styles.backdrop}>
           <View style={styles.sheet}>
-            <Text style={typography.h2}>{meta ? t(meta.label) : null}</Text>
-            <Text style={[typography.caption, styles.sheetSub]}>{meta ? t(meta.hint) : null}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{meta ? t(meta.label) : null}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.sheetSub]}>{meta ? t(meta.hint) : null}</Text>
             <Input value={note} onChangeText={setNote} placeholder={t(pending === 'APPROVE' || failed ? 'Note (optional)' : 'Say what is wrong')} accessibilityLabel={pending === 'APPROVE' || failed ? t('Note for the requester (optional)') : t('What is wrong')} multiline autoFocus />
             <ErrorBanner message={error} />
             <View style={styles.sheetBtns}>
@@ -157,14 +157,14 @@ export default function InspectionScreen() {
           {data.checklist.map((c, i) => (
             <View key={i} style={styles.row}>
               <View style={styles.flex}>
-                <Text style={styles.pointText}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={styles.pointText}>
                   {i + 1}. {c.item}
                 </Text>
-                {c.remark ? <Text style={typography.caption}>{c.remark}</Text> : null}
+                {c.remark ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{c.remark}</Text> : null}
               </View>
               {c.result ? (
                 <View style={[styles.result, { backgroundColor: RESULT_TONE[c.result].bg }]}>
-                  <Text style={[styles.resultText, { color: RESULT_TONE[c.result].fg }]}>{t(INSPECTION_RESULT_LABELS[c.result])}</Text>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={[styles.resultText, { color: RESULT_TONE[c.result].fg }]}>{t(INSPECTION_RESULT_LABELS[c.result])}</Text>
                 </View>
               ) : null}
             </View>

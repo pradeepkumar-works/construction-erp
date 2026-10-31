@@ -15,7 +15,7 @@ import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useSectorInputs, type SectorDraft } from '../../src/forms/sector';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 import { MeasureFromProgress, type ProgressPrefill } from '../../src/forms/MeasureFromProgress';
@@ -316,7 +316,7 @@ export default function NewMeasurementScreen() {
             setWorkOrderId('');
           }} placeholder={projectId ? t('Choose BOQ item') : t('Choose a project first')} disabled={!projectId} error={errors.boqItemId} emptyText={t('No BOQ items in this project')} />
         {item ? (
-          <Text style={[typography.caption, styles.boqInfo]}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.boqInfo]}>
             {t('Contract {contract} {unit} · measured {measured} · awaiting approval {pending}', {
               contract: fmtQty(item.revisedQty ?? item.originalQty),
               unit: item.unit,
@@ -337,7 +337,7 @@ export default function NewMeasurementScreen() {
         return (
           <Card key={l.key}>
             <View style={styles.lineHead}>
-              <Text style={typography.label}>{t('Line {n}', { n: i + 1 })}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{t('Line {n}', { n: i + 1 })}</Text>
               {lines.length > 1 ? (
                 <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} accessibilityLabel={t('Remove line {n}', { n: i + 1 })} />
               ) : null}
@@ -355,10 +355,10 @@ export default function NewMeasurementScreen() {
                 <Input {...field()} key={k} label={label} accessibilityLabel={t(name, { n: i + 1 })} value={l[k]} onChangeText={(v) => setLine(l.key, { [k]: v })} keyboardType="decimal-pad" containerStyle={styles.dim} />
               ))}
             </View>
-            {errors[`n${l.key}`] ? <Text style={styles.err}>{errors[`n${l.key}`]}</Text> : null}
+            {errors[`n${l.key}`] ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors[`n${l.key}`]}</Text> : null}
             <View style={styles.lineFoot}>
               <Chips value={l.deduct ? 'D' : 'A'} onChange={(v) => setLine(l.key, { deduct: v === 'D' })} clearable={false} options={[{ value: 'A', label: t('Add') }, { value: 'D', label: t('Deduct') }]} />
-              <Text style={[styles.lineQty, qty < 0 && { color: colors.danger }]}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={[styles.lineQty, qty < 0 && { color: colors.danger }]}>
                 {fmtQty(qty)} {unit}
               </Text>
             </View>
@@ -367,15 +367,15 @@ export default function NewMeasurementScreen() {
       })}
       <Button title={t('Add line')} variant="ghost" icon="add" onPress={() => setLines((ls) => [...ls, blankLine()])} />
       <View style={styles.totalBox}>
-        <Text style={typography.caption}>{t('Total (blank sizes count as 1)')}</Text>
-        <Text style={styles.total}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Total (blank sizes count as 1)')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>
           {fmtQty(total)} {unit}
         </Text>
       </View>
-      {errors.total ? <Text style={styles.err}>{errors.total}</Text> : null}
+      {errors.total ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.total}</Text> : null}
       <Card title={t('Photos or sketch')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Card>
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />

@@ -7,7 +7,7 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen, useSnackbar } from '../../src/components';
 import { LETTER_STATUS_TONE } from '../../src/components/letterTone';
-import { colors, spacing, toneIcon, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -49,10 +49,10 @@ export default function LetterScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.letterNo ?? t('Draft')} · {data.projectName ?? t('Head office')}
         </Text>
-        <Text style={typography.h2}>{data.subject}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.subject}</Text>
         <View style={styles.pills}>
           <Pill text={t(LETTER_STATUS_LABELS[data.status])} fg={tone.fg} bg={tone.bg} icon={tone.icon} />
           {data.priority === 'URGENT' ? <Pill text={t('Urgent')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.warning} /> : null}
@@ -76,7 +76,7 @@ export default function LetterScreen() {
       {data.marks.length ? (
         <Card title={t('Marked')}>
           {data.marks.map((m) => (
-            <Text key={m.id} style={[typography.body, styles.gap]}>
+            <Text maxFontSizeMultiplier={maxFontScale} key={m.id} style={[typography.body, styles.gap]}>
               {t('{from} to {to}', { from: m.fromName, to: m.toName })} · {t(LETTER_ACTION_LABELS[m.action])}
               {m.note ? `: ${m.note}` : ''}
             </Text>
@@ -85,7 +85,7 @@ export default function LetterScreen() {
       ) : null}
       {(isIn ? data.summary : data.body) ? (
         <Card title={t(isIn ? 'Gist' : 'Letter text')}>
-          <Text style={typography.body}>{isIn ? data.summary : data.body}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>{isIn ? data.summary : data.body}</Text>
         </Card>
       ) : null}
       {isIn && data.status === 'OPEN' && data.can.close ? (

@@ -11,7 +11,7 @@ import { DraftNotice, useFormDraft, useLeaveGuard } from '../../src/forms/draft'
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing, touch, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, touch, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
@@ -218,7 +218,7 @@ export default function IssueScreen() {
       </Card>
 
       <Card title={t('Items')}>
-        {projectId && !stock.loading && !items.length ? <Text style={typography.caption}>{t('Nothing is in stock at this project yet.')}</Text> : null}
+        {projectId && !stock.loading && !items.length ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Nothing is in stock at this project yet.')}</Text> : null}
         {rows.map((r) => {
           const item = r.itemId ? byId.get(r.itemId) : undefined;
           return (
@@ -237,7 +237,7 @@ export default function IssueScreen() {
                   keyboardType="decimal-pad"
                   placeholder={t('Quantity')}
                   accessibilityLabel={item ? t('Quantity of {item} to issue', { item: item.itemName }) : t('Quantity to issue')}
-                  right={item ? <Text style={typography.caption}>{item.unit}</Text> : undefined}
+                  right={item ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{item.unit}</Text> : undefined}
                   hint={item ? t('{qty} {unit} in stock', { qty: fmtQty(item.balance), unit: item.unit }) : undefined}
                   error={errors[r.key]}
                   containerStyle={styles.qty}
@@ -249,7 +249,7 @@ export default function IssueScreen() {
             </View>
           );
         })}
-        {errors.lines ? <Text style={styles.err}>{errors.lines}</Text> : null}
+        {errors.lines ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.lines}</Text> : null}
         <Button title={t('Add item')} variant="ghost" size="sm" icon="add" onPress={() => setRows((rs) => [...rs, { key: newKey(), itemId: null, quantity: '' }])} disabled={!projectId} />
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
       </Card>

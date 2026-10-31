@@ -11,7 +11,7 @@ import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../s
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
@@ -219,14 +219,14 @@ export default function RequestInspectionScreen() {
           error={errors.activityId}
           emptyText={t('No activities in this project')}
         />
-        {activity?.holdPoint ? <Text style={[typography.caption, styles.hold]}>{t('Hold point: its progress is approved after this inspection passes.')}</Text> : null}
+        {activity?.holdPoint ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.hold]}>{t('Hold point: its progress is approved after this inspection passes.')}</Text> : null}
         <Input {...field()} label={t('Location')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, grid, floor or zone')} error={errors.location} />
         <DatePicker label={t('Ready on')} required value={date} onChange={setDate} error={errors.date} />
         <Select label={t('Checklist')} value={checklistId} options={checklistOptions} onChange={(v) => setChecklistId(v ?? '')} placeholder={t('No checklist')} />
       </Card>
       <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Card>
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} placeholder={t('What is ready, anything the inspector should know')} multiline />

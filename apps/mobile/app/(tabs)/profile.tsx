@@ -37,10 +37,10 @@ export default function ProfileScreen() {
     <Screen>
       <View style={styles.hero}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.avatarText}>{initials}</Text>
         </View>
-        <Text style={typography.h2}>{user.fullName}</Text>
-        <Text style={typography.caption}>{t(ROLE_LABELS[user.roleKey] ?? user.roleName)}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{user.fullName}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t(ROLE_LABELS[user.roleKey] ?? user.roleName)}</Text>
       </View>
       <Card title={t('Account')}>
         <KeyValue label={t('Email')} value={user.email} />
@@ -52,12 +52,12 @@ export default function ProfileScreen() {
       <CompanyCard />
       <Card title={t('Notifications')}>
         <KeyValue label={t('Push to this device')} value={t(push ? (push.status === 'ready' ? 'On' : push.status === 'off' ? 'Off' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…')} />
-        {push && push.status !== 'ready' && push.reason ? <Text style={typography.caption}>{t(push.reason)}</Text> : null}
+        {push && push.status !== 'ready' && push.reason ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t(push.reason)}</Text> : null}
         {push?.status === 'off' ? <Button title={t('Turn on notifications')} icon="notifications-outline" variant="secondary" onPress={askForPush} style={styles.pushBtn} /> : null}
         {push?.status === 'denied' && Platform.OS !== 'web' ? (
           <Button title={t('Open phone settings')} icon="settings-outline" variant="secondary" onPress={() => void Linking.openSettings()} style={styles.pushBtn} />
         ) : null}
-        <Text style={typography.caption}>{t('Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.')}</Text>
       </Card>
       <MessagingCard />
       <LanguageCard />
@@ -66,15 +66,15 @@ export default function ProfileScreen() {
         <Card title={t('Connection')}>
           <View style={styles.apiRow}>
             <Ionicons name="server-outline" size={18} color={colors.textMuted} />
-            <Text style={styles.api} selectable>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.api} selectable>
               {API_URL}
             </Text>
           </View>
-          <Text style={typography.caption}>{t('Set EXPO_PUBLIC_API_URL before starting Expo to point the app at another server.')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Set EXPO_PUBLIC_API_URL before starting Expo to point the app at another server.')}</Text>
         </Card>
       ) : null}
       <Button title={t('Sign out')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
-      <Text style={[typography.caption, styles.version]}>{t('App version {version}', { version: Constants.expoConfig?.version ?? '-' })}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.version]}>{t('App version {version}', { version: Constants.expoConfig?.version ?? '-' })}</Text>
     </Screen>
   );
 }
@@ -124,11 +124,11 @@ function LanguageCard() {
             accessibilityRole="radio"
             accessibilityState={{ selected: active, disabled: !l.available }}
           >
-            <Text style={active ? typography.bodyStrong : typography.body}>{l.label}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={active ? typography.bodyStrong : typography.body}>{l.label}</Text>
             {active ? (
               <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
             ) : !l.available ? (
-              <Text style={typography.caption}>{t('Coming soon')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Coming soon')}</Text>
             ) : (
               <Ionicons name="ellipse-outline" size={22} color={colors.borderStrong} />
             )}
@@ -167,12 +167,12 @@ function AppearanceCard() {
         const active = o.value === choice;
         return (
           <Touchable key={o.value} onPress={() => pick(o.value)} style={styles.choiceRow} accessibilityRole="radio" accessibilityState={{ selected: active }}>
-            <Text style={active ? typography.bodyStrong : typography.body}>{t(o.label)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={active ? typography.bodyStrong : typography.body}>{t(o.label)}</Text>
             <Ionicons name={active ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={active ? colors.primary : colors.borderStrong} />
           </Touchable>
         );
       })}
-      <Text style={[typography.caption, styles.note]}>{t('The app restarts in the new colours. Anything you were typing is kept as a draft.')}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.note]}>{t('The app restarts in the new colours. Anything you were typing is kept as a draft.')}</Text>
     </Card>
   );
 }

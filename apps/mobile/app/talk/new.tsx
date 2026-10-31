@@ -10,7 +10,7 @@ import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, PhotoPick
 import { TodaysTalk } from '../../src/components/TodaysTalk';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
@@ -196,7 +196,7 @@ export default function TalkFormScreen() {
       </Card>
       <Card title={t('Photo of the talk or signed sheet')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={t('Record toolbox talk')} icon="send" onPress={submit} loading={busy} />
     </Screen>

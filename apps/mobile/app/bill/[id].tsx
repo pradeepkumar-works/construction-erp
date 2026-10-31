@@ -6,7 +6,7 @@ import { BILL_STAGE_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
 const rupees = (v: string) => formatMoney(v);
@@ -27,8 +27,8 @@ export default function BillScreen() {
       <SubmissionHeader item={data} title={data.billLabel} subtitle={t('{date} · measurements up to {upto}', { date: formatDate(data.billDate), upto: formatDate(data.measuredUpTo) })} />
       <Card>
         <View style={styles.box}>
-          <Text style={styles.total}>{rupees(data.netPayable)}</Text>
-          <Text style={typography.caption}>{t('net payable')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{rupees(data.netPayable)}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('net payable')}</Text>
         </View>
         <KeyValue label={t('Client')} value={data.clientName} />
         <KeyValue label={t('Work in this bill')} value={rupees(data.grossAmount)} />
@@ -45,15 +45,15 @@ export default function BillScreen() {
         {data.items.map((i) => (
           <View key={i.id} style={styles.line}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.lineTitle} numberOfLines={2}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.lineTitle} numberOfLines={2}>
                 {i.itemNo} · {i.description}
               </Text>
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {t('{qty} {unit} this bill · {upto} up to date', { qty: fmtQty(i.thisQty), unit: i.unit, upto: fmtQty(i.uptoQty) })}
-                {Number(i.excessQty) > 0 ? <Text style={{ color: colors.danger }}> · {t('{qty} over BOQ', { qty: fmtQty(i.excessQty) })}</Text> : null}
+                {Number(i.excessQty) > 0 ? <Text maxFontSizeMultiplier={maxFontScale} style={{ color: colors.danger }}> · {t('{qty} over BOQ', { qty: fmtQty(i.excessQty) })}</Text> : null}
               </Text>
             </View>
-            <Text style={styles.amount}>{rupees(i.amount)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.amount}>{rupees(i.amount)}</Text>
           </View>
         ))}
       </Card>

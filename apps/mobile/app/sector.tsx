@@ -6,7 +6,7 @@ import { formatChainage, sectorStepOf } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
 import { useT } from '../src/i18n/LanguageContext';
 import { Card, EmptyState, ErrorState, Loading, ProgressBar, Screen } from '../src/components';
-import { colors, radius, spacing, statusTone, typography } from '../src/theme';
+import { colors, maxFontScale, radius, spacing, statusTone, typography } from '../src/theme';
 import { fmtQty } from '../src/utils/format';
 
 /** Progress where it happened: along the road, floor by floor, or village by village with the pipe stages. */
@@ -45,10 +45,10 @@ function Strip({ layers, start, end, main }: { layers: ChainageLayer[]; start: n
       {layers.map((l) => (
         <View key={l.activityId} style={styles.layer}>
           <View style={styles.layerHead}>
-            <Text style={[typography.bodyStrong, styles.flex]} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.bodyStrong, styles.flex]} numberOfLines={1}>
               {l.name}
             </Text>
-            <Text style={typography.bodyStrong}>{!l.coveredM && !l.pendingM && l.segments.length ? t(l.segments.length === 1 ? '{n} place' : '{n} places', { n: l.segments.length }) : `${Math.round((l.coveredM / length) * 100)}%`}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{!l.coveredM && !l.pendingM && l.segments.length ? t(l.segments.length === 1 ? '{n} place' : '{n} places', { n: l.segments.length }) : `${Math.round((l.coveredM / length) * 100)}%`}</Text>
           </View>
           <View style={styles.track}>
             {l.segments.map((s) => {
@@ -64,13 +64,13 @@ function Strip({ layers, start, end, main }: { layers: ChainageLayer[]; start: n
               );
             })}
           </View>
-          <Text style={typography.caption}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
             {t('{km} km done', { km: (l.coveredM / 1000).toFixed(2) })}
             {l.pendingM ? `, ${t('{km} km waiting', { km: (l.pendingM / 1000).toFixed(2) })}` : ''} · {t('{done} of {planned} {unit}', { done: fmtQty(l.executedQty), planned: fmtQty(l.plannedQty), unit: l.unit })}
           </Text>
         </View>
       ))}
-      <Text style={typography.caption}>{t('Green approved, orange waiting for approval.')}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Green approved, orange waiting for approval.')}</Text>
     </Card>
   );
 }
@@ -90,18 +90,18 @@ function Matrix({ matrix }: { matrix: SectorMatrix }) {
                 const a = names.get(c.activityId);
                 return (
                   <View key={c.activityId} style={styles.cell}>
-                    <Text style={[typography.body, styles.flex]} numberOfLines={1}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.flex]} numberOfLines={1}>
                       {a?.name}
                     </Text>
-                    <Text style={[typography.bodyStrong, { color: colors.success }]}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={[typography.bodyStrong, { color: colors.success }]}>
                       {fmtQty(c.approvedQty)} {a?.unit}
                     </Text>
-                    {Number(c.pendingQty) ? <Text style={[typography.caption, { color: colors.warning }]}> +{fmtQty(c.pendingQty)}</Text> : null}
+                    {Number(c.pendingQty) ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, { color: colors.warning }]}> +{fmtQty(c.pendingQty)}</Text> : null}
                   </View>
                 );
               })
             ) : (
-              <Text style={typography.caption}>{t('Nothing yet')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Nothing yet')}</Text>
             )}
           </Card>
         );
@@ -126,8 +126,8 @@ function Pipeline({ stages, villages }: { stages: PipelineStages; villages: { vi
         {STAGES.map((s) => (
           <View key={s.key} style={styles.stage}>
             <View style={styles.layerHead}>
-              <Text style={[typography.body, styles.flex]}>{t(s.label)}</Text>
-              <Text style={typography.bodyStrong}>{fmtQty(stages[s.key])}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.flex]}>{t(s.label)}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{fmtQty(stages[s.key])}</Text>
             </View>
             <ProgressBar value={(Number(stages[s.key]) / top) * 100} showLabel={false} color={s.key === 'testedM' ? colors.success : colors.primary} />
           </View>
@@ -137,8 +137,8 @@ function Pipeline({ stages, villages }: { stages: PipelineStages; villages: { vi
         <Card title={t('Villages')}>
           {villages.map((v) => (
             <View key={v.village} style={styles.cell}>
-              <Text style={[typography.body, styles.flex]}>{v.village}</Text>
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.flex]}>{v.village}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {t('laid {laid} · tested {tested}', { laid: fmtQty(v.laidM), tested: fmtQty(v.testedM) })}
               </Text>
             </View>

@@ -9,7 +9,7 @@ import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, Se
 import { useProjectOptions } from '../../src/forms/common';
 import { useT } from '../../src/i18n/LanguageContext';
 import { useOffline } from '../../src/offline';
-import { colors, fontSize, spacing, toneIcon, typography, type Tone } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, type Tone, toneIcon, typography } from '../../src/theme';
 import type { TranslateVars } from '../../src/i18n/translate';
 import { formatDate, fmtQty } from '../../src/utils/format';
 
@@ -82,10 +82,10 @@ export default function StockScreen() {
           </View>
         ) : null}
         {keeper ? <Button title={t('Fuel issue')} icon="water-outline" variant="secondary" onPress={() => router.push(`/stock/fuel${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.fuel} /> : null}
-        {keeper && !online ? <Text style={[typography.caption, styles.offline]}>{t('No signal: receipts and issues are kept on this phone and the stock is checked when they reach the office.')}</Text> : null}
+        {keeper && !online ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.offline]}>{t('No signal: receipts and issues are kept on this phone and the stock is checked when they reach the office.')}</Text> : null}
       </Card>
       {projectId && rows.length ? (
-        <SectionTitle title={rows.length === 1 ? t('{n} item', { n: 1 }) : t('{n} items', { n: rows.length })} right={lowCount && filter === 'all' ? <Text style={styles.lowText}>{t('{n} low', { n: lowCount })}</Text> : null} />
+        <SectionTitle title={rows.length === 1 ? t('{n} item', { n: 1 }) : t('{n} items', { n: rows.length })} right={lowCount && filter === 'all' ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.lowText}>{t('{n} low', { n: lowCount })}</Text> : null} />
       ) : null}
     </>
   );
@@ -109,15 +109,15 @@ export default function StockScreen() {
         {entries.data.items.map((e) => (
           <Card key={e.id}>
             <View style={styles.entryHead}>
-              <Text style={typography.bodyStrong}>{e.entryNo}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{e.entryNo}</Text>
               <Pill text={t(STOCK_ENTRY_TYPE_LABELS[e.type])} {...TYPE_TONE[e.type]} />
             </View>
-            <Text style={typography.caption}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
               {formatDate(e.date)} · {e.createdByName}
               {e.type === 'RECEIPT' && e.requestNo ? ` · ${e.requestNo}` : ''}
               {(e.type === 'ISSUE' || e.type === 'TRANSFER_OUT') && e.issuedTo ? ` · ${t('to {name}', { name: e.issuedTo })}` : ''}
             </Text>
-            <Text style={[typography.body, styles.lines]}>{e.lines.map((l) => `${l.itemName} ${Number(l.quantity) > 0 ? '+' : ''}${fmtQty(l.quantity)} ${l.unit}`).join('\n')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.lines]}>{e.lines.map((l) => `${l.itemName} ${Number(l.quantity) > 0 ? '+' : ''}${fmtQty(l.quantity)} ${l.unit}`).join('\n')}</Text>
           </Card>
         ))}
       </>
@@ -147,21 +147,21 @@ const BalanceRow = memo(function BalanceRow({ row: r, t }: { row: StockBalanceDt
     <Card>
       <View style={styles.itemRow}>
         <View style={styles.flex}>
-          <Text style={typography.bodyStrong}>{r.itemName}</Text>
-          <Text style={typography.caption}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{r.itemName}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
             {t('In {in} · out {out}', { in: fmtQty(r.received), out: fmtQty(r.issued) })}
             {Number(r.adjusted) !== 0 ? ` · ${t('adjusted {n}', { n: fmtQty(r.adjusted) })}` : ''}
             {r.minQty ? ` · ${t('min {n}', { n: fmtQty(r.minQty) })}` : ''}
           </Text>
         </View>
         <View style={styles.balance}>
-          <Text style={[styles.balanceValue, r.low && styles.lowText]}>
-            {fmtQty(r.balance)} <Text style={styles.unit}>{r.unit}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[styles.balanceValue, r.low && styles.lowText]}>
+            {fmtQty(r.balance)} <Text maxFontSizeMultiplier={maxFontScale} style={styles.unit}>{r.unit}</Text>
           </Text>
           {r.low ? (
             <View style={styles.lowTag}>
               <Ionicons name={toneIcon.warning} size={14} color={colors.danger} />
-              <Text style={styles.lowTagText}>{t('Low')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.lowTagText}>{t('Low')}</Text>
             </View>
           ) : null}
         </View>

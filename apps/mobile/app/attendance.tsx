@@ -24,7 +24,7 @@ import { OutboxRefusal, useOutboxEntry } from '../src/forms/edit';
 import { ErrorSummary, useErrorSummary } from '../src/forms/errors';
 import { useT } from '../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../src/offline';
-import { colors, fontSize, radius, spacing, touch, typography } from '../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../src/theme';
 import { formatDate, isIsoDate, today } from '../src/utils/format';
 import { useFieldChain } from '../src/forms/keyboard';
 
@@ -291,11 +291,11 @@ export default function AttendanceScreen() {
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
-        {validDay && day.loading ? <Text style={typography.caption}>{t('Checking this day…')}</Text> : null}
+        {validDay && day.loading ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Checking this day…')}</Text> : null}
         {sheet && refused ? (
-          <Text style={typography.caption}>{t('{name} has already recorded this day. Saving replaces that sheet with the figures below.', { name: sheet.recordedByName })}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('{name} has already recorded this day. Saving replaces that sheet with the figures below.', { name: sheet.recordedByName })}</Text>
         ) : sheet ? (
-          <Text style={typography.caption}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
             {sheet.updatedByName
               ? t('Recorded by {name}, last changed by {editor}. Saving updates this sheet.', { name: sheet.recordedByName, editor: sheet.updatedByName })
               : t('Recorded by {name}. Saving updates this sheet.', { name: sheet.recordedByName })}
@@ -336,7 +336,7 @@ export default function AttendanceScreen() {
               ) : null}
             </View>
           ))}
-          {errors[`r-${g.key}`] ? <Text style={styles.err}>{errors[`r-${g.key}`]}</Text> : null}
+          {errors[`r-${g.key}`] ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors[`r-${g.key}`]}</Text> : null}
           {!readOnly ? <Button title={t('Add trade')} variant="ghost" size="sm" icon="add" onPress={() => updateGroup(g.key, { rows: [...g.rows, emptyRow()] })} /> : null}
         </Card>
       ))}
@@ -351,20 +351,20 @@ export default function AttendanceScreen() {
         />
       ) : null}
 
-      <Card title={t('Total')} right={<Text style={styles.total}>{t('{n} workers', { n: total })}</Text>}>
+      <Card title={t('Total')} right={<Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{t('{n} workers', { n: total })}</Text>}>
         {byTrade.length ? (
           <View style={styles.tags}>
             {byTrade.map((m) => (
               <View key={m.category} style={styles.tag}>
-                <Text style={styles.tagText}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={styles.tagText}>
                   {t(m.category)} {m.count}
                 </Text>
               </View>
             ))}
           </View>
         ) : null}
-        <Text style={[typography.caption, styles.hint]}>{t("These totals fill the manpower of this day's DPR.")}</Text>
-        {errors.lines ? <Text style={styles.err}>{errors.lines}</Text> : null}
+        <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.hint]}>{t("These totals fill the manpower of this day's DPR.")}</Text>
+        {errors.lines ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.lines}</Text> : null}
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('e.g. Holiday, rain stopped work at 3 pm')} containerStyle={styles.last} editable={!readOnly} />
       </Card>
       {!readOnly ? <Button title={sheet ? t('Update attendance') : t('Save attendance')} icon="checkmark" onPress={save} loading={busy} disabled={validDay && day.loading} /> : null}
@@ -376,7 +376,7 @@ function Notice({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: st
   return (
     <View style={styles.notice}>
       <Ionicons name={icon} size={18} color={colors.text} />
-      <Text style={[typography.caption, styles.noticeText]}>{text}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.noticeText]}>{text}</Text>
     </View>
   );
 }

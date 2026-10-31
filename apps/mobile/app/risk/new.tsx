@@ -10,7 +10,7 @@ import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSucce
 import { attachmentsToPhotos } from '../../src/forms/edit';
 import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
@@ -294,7 +294,7 @@ export default function RiskFormScreen() {
           <DatePicker label={t('Held up since')} required value={delayStart} onChange={setDelayStart} error={errors.delayStart} />
           <Chips label={t('Work')} value={resumed ? 'yes' : 'no'} clearable={false} onChange={(v) => setResumed(v === 'yes')} options={[{ value: 'no', label: t('Still held up') }, { value: 'yes', label: t('Has resumed') }]} />
           {resumed ? <DatePicker label={t('Resumed on')} required value={delayEnd} onChange={setDelayEnd} error={errors.delayEnd} /> : null}
-          {days !== null ? <Text style={styles.days}>{days === 1 ? t(resumed ? '1 day lost' : '1 day lost so far') : t(resumed ? '{n} days lost' : '{n} days lost so far', { n: days })}</Text> : null}
+          {days !== null ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.days}>{days === 1 ? t(resumed ? '1 day lost' : '1 day lost so far') : t(resumed ? '{n} days lost' : '{n} days lost so far', { n: days })}</Text> : null}
           <Chips label={t('Caused by')} value={party} onChange={setParty} options={DELAY_PARTIES.map((p) => ({ value: p, label: t(DELAY_PARTY_LABELS[p]) }))} />
         </Card>
       ) : null}
@@ -302,8 +302,8 @@ export default function RiskFormScreen() {
         <Chips label={t('Probability (1 very low to 5 very high)')} value={probability} clearable={false} onChange={(v) => setProbability(v ?? '3')} options={RATINGS} />
         <Chips label={t('Impact on time / cost')} value={impact} clearable={false} onChange={(v) => setImpact(v ?? '3')} options={RATINGS} />
         <View style={[styles.scoreBox, { borderColor: LEVEL_TONE[level] }]}>
-          <Text style={typography.caption}>{t('Score')}</Text>
-          <Text style={[styles.score, { color: LEVEL_TONE[level] }]}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Score')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[styles.score, { color: LEVEL_TONE[level] }]}>
             {score} · {t(RISK_LEVEL_LABELS[level])}
           </Text>
         </View>
@@ -329,7 +329,7 @@ export default function RiskFormScreen() {
       ) : null}
       <Card title={t('Photos / letters')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={t(editId ? 'Save' : isDelay ? 'Record delay' : 'New risk')} icon="send" onPress={submit} loading={busy} />
     </Screen>

@@ -182,5 +182,5 @@ const styles = StyleSheet.create({
 });
 
 function ErrorBannerText({ text }: { text: string }) {
-  return <Text style={styles.moreError}>{text}</Text>;
+  return <Text maxFontSizeMultiplier={maxFontScale} style={styles.moreError}>{text}</Text>;
 }

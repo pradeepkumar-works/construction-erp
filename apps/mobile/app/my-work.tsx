@@ -99,7 +99,7 @@ export default function MyWorkScreen() {
         <ErrorState message={error} onRetry={reload} />
       ) : data && derived && derived.dprToday.length ? (
         <>
-          <SectionTitle title={t('Today on site')} right={<Text style={typography.caption}>{formatDate(today())}</Text>} />
+          <SectionTitle title={t('Today on site')} right={<Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{formatDate(today())}</Text>} />
           <View style={styles.today}>
             {derived.dprToday.map(({ project, dpr, queued }, i) => (
               <TodayRow key={project.id} first={i === 0} project={project} dpr={dpr} queued={queued} draft={draft && draft.projectId === project.id && draft.date === today() ? draft : null} />
@@ -182,7 +182,7 @@ function TodayRow({ project, dpr, queued, draft, first }: { project: ProjectSumm
           {steps.map((s, i) => (
             <View key={s.label} style={styles.step} accessibilityLabel={`${s.label}, ${s.note}${s.done ? `, ${t('done')}` : ''}`}>
               <View style={[styles.dot, s.done ? styles.dotDone : i === at ? styles.dotNow : null]}>
-                {s.done ? <Ionicons name="checkmark" size={16} color={colors.textOnPrimary} /> : <Text style={[styles.dotText, i === at && { color: colors.primary }]}>{i + 1}</Text>}
+                {s.done ? <Ionicons name="checkmark" size={16} color={colors.textOnPrimary} /> : <Text maxFontSizeMultiplier={maxFontScale} style={[styles.dotText, i === at && { color: colors.primary }]}>{i + 1}</Text>}
               </View>
               <View style={styles.flex}>
                 <Text style={typography.body} maxFontSizeMultiplier={maxFontScale}>

@@ -6,7 +6,7 @@ import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, type ProjectSummary } from 
 import { useFetch } from '../../src/api/hooks';
 import { fetchProjects } from '../../src/api/lists';
 import { Card, EmptyState, ErrorState, Loading, Pill, ProgressBar, Screen } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { useT } from '../../src/i18n/LanguageContext';
 
 export default function ProjectsScreen() {
@@ -28,11 +28,11 @@ export default function ProjectsScreen() {
         renderItem={({ item }) => (
           <Card onPress={() => router.push(`/project/${item.id}`)}>
             <View style={styles.top}>
-              <Text style={styles.code}>{item.code}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.code}>{item.code}</Text>
               <Pill text={t(PROJECT_STATUS_LABELS[item.status])} fg={item.status === 'ACTIVE' ? colors.success : colors.neutral} bg={item.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} icon={item.status === 'ACTIVE' ? 'play-circle-outline' : 'pause-circle-outline'} />
             </View>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={typography.caption}>{t(PROJECT_TYPE_LABELS[item.type])}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.name}>{item.name}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t(PROJECT_TYPE_LABELS[item.type])}</Text>
             <View style={styles.bar}>
               <ProgressBar value={item.physicalProgressPct} />
             </View>
@@ -40,7 +40,7 @@ export default function ProjectsScreen() {
               {item.clientName ? (
                 <View style={styles.meta}>
                   <Ionicons name="briefcase-outline" size={14} color={colors.textMuted} />
-                  <Text style={styles.metaText} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={styles.metaText} numberOfLines={1}>
                     {item.clientName}
                   </Text>
                 </View>
@@ -48,14 +48,14 @@ export default function ProjectsScreen() {
               {item.location ? (
                 <View style={styles.meta}>
                   <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-                  <Text style={styles.metaText} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={styles.metaText} numberOfLines={1}>
                     {item.location}
                   </Text>
                 </View>
               ) : null}
             </View>
             {item.pendingApprovals > 0 ? (
-              <Text style={styles.pending}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.pending}>
                 {item.pendingApprovals === 1 ? t('1 pending approval') : t('{n} pending approvals', { n: item.pendingApprovals })}
               </Text>
             ) : null}

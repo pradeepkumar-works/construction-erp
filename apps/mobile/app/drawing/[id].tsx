@@ -171,17 +171,17 @@ export default function DrawingScreen() {
       }}
     >
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {d.docNo} · {d.projectName}
         </Text>
-        <Text style={typography.h2}>{d.title}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{d.title}</Text>
         {rev ? (
           <View style={styles.pills}>
             <Pill text={t('Rev {rev}', { rev: rev.revision })} fg={colors.text} bg={colors.neutralSoft} />
             <Pill text={t(REVISION_STATUS_LABELS[rev.status])} fg={buildable ? colors.success : colors.warning} bg={buildable ? colors.successSoft : colors.warningSoft} icon={buildable ? toneIcon.done : toneIcon.warning} />
           </View>
         ) : null}
-        {rev && !buildable ? <Text style={styles.warn}>{t(rev.status === 'AS_BUILT' ? 'As-built record' : 'Not for construction')}</Text> : null}
+        {rev && !buildable ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.warn}>{t(rev.status === 'AS_BUILT' ? 'As-built record' : 'Not for construction')}</Text> : null}
       </View>
 
       {!rev || !rev.attachments.length ? (
@@ -229,22 +229,22 @@ export default function DrawingScreen() {
             <Button title={t(adding ? 'Cancel' : 'Add a comment')} size="sm" variant="secondary" icon={adding ? 'close' : 'chatbox-ellipses-outline'} disabled={!online} onPress={() => (setAdding((a) => !a), setDraft(null))} style={styles.flex} />
             <Button title={t('Full screen')} size="sm" variant="secondary" icon="expand-outline" onPress={() => void openFile(file)} style={styles.flex} />
           </View>
-          {adding && !draft ? <Text style={[typography.caption, styles.gap]}>{t('Tap the drawing where the comment goes')}</Text> : null}
-          {!online ? <Text style={[typography.caption, styles.gap]}>{t('Comments need a connection.')}</Text> : null}
+          {adding && !draft ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t('Tap the drawing where the comment goes')}</Text> : null}
+          {!online ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t('Comments need a connection.')}</Text> : null}
         </Card>
       ) : (
         <Card>
           {rev.attachments.map((a) => (
             <Button key={a.id} title={t('Open {file}', { file: a.fileName })} variant="secondary" icon={drawingFileKind(a) === 'pdf' ? 'document-text-outline' : 'download-outline'} onPress={() => void openFile(a)} style={styles.gapBottom} />
           ))}
-          <Text style={typography.caption}>{t('Comments, clouds and arrows on PDF and CAD drawings are added on the web. They are listed below.')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Comments, clouds and arrows on PDF and CAD drawings are added on the web. They are listed below.')}</Text>
         </Card>
       )}
 
       <ErrorBanner message={error ?? marks.error} />
-      <Text style={[typography.h3, styles.gap]}>{t('Marks ({n} open)', { n: open })}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.h3, styles.gap]}>{t('Marks ({n} open)', { n: open })}</Text>
       {!listed.length ? (
-        <Text style={typography.caption}>{t('No marks on this drawing yet.')}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No marks on this drawing yet.')}</Text>
       ) : (
         listed.map((m) => (
           <Touchable key={m.id} accessibilityRole="button" onPress={() => setActionsFor(m)} style={styles.mark}>
@@ -269,7 +269,7 @@ export default function DrawingScreen() {
           </Touchable>
         ))
       )}
-      {marks.fromCache ? <Text style={[typography.caption, styles.gap]}>{t('Showing the list saved on this phone.')}</Text> : null}
+      {marks.fromCache ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t('Showing the list saved on this phone.')}</Text> : null}
 
       <BottomSheet visible={!!draft} onClose={() => setDraft(null)} title={t('Comment on the drawing')}>
         <Input label={t('Comment')} value={note} onChangeText={setNote} multiline placeholder={t('What to check or change')} error={error ?? undefined} maxLength={1000} />
@@ -279,7 +279,7 @@ export default function DrawingScreen() {
         {actionsFor && actions(actionsFor).length ? (
           <SheetActions actions={actions(actionsFor)} onClose={() => setActionsFor(null)} />
         ) : (
-          <Text style={typography.caption}>{t(online ? 'Only whoever made this mark, or document control, can change it.' : 'Marks change with a connection.')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t(online ? 'Only whoever made this mark, or document control, can change it.' : 'Marks change with a connection.')}</Text>
         )}
       </BottomSheet>
       <Modal visible={zoomed && !!file} transparent animationType="fade" onRequestClose={() => setZoomed(false)}>

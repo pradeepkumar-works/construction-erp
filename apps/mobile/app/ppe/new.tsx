@@ -10,7 +10,7 @@ import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Input, Loadin
 import { Checklist } from '../../src/components/safetyTone';
 import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, radius, spacing, touch, typography } from '../../src/theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
@@ -177,12 +177,12 @@ export default function IssuePpeScreen() {
           {reg.counts.presentMissing ? (
             <View style={styles.alert} accessibilityRole="alert">
               <Ionicons name="warning" size={20} color={colors.danger} />
-              <Text style={[typography.body, styles.flex, { color: colors.danger }]}>{t('{n} on site today without the required kit', { n: reg.counts.presentMissing })}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.flex, { color: colors.danger }]}>{t('{n} on site today without the required kit', { n: reg.counts.presentMissing })}</Text>
             </View>
           ) : null}
           <Card title={t('Kit')}>
             <Checklist items={PPE_KINDS.map((k) => PPE_KIND_LABELS[k])} value={ticked.map((k) => PPE_KIND_LABELS[k])} onChange={(labels) => setKinds(labels.map((l) => LABEL_TO_KIND.get(l)!).filter(Boolean))} />
-            {errors.kinds ? <Text style={styles.err}>{errors.kinds}</Text> : null}
+            {errors.kinds ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.kinds}</Text> : null}
           </Card>
           <Card title={t('Workers')}>
             <Chips
@@ -206,8 +206,8 @@ export default function IssuePpeScreen() {
                 <Touchable key={w.workerId} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={`${w.name}, ${w.trade}`} onPress={() => toggle(w.workerId)} style={styles.row}>
                   <Ionicons name={on ? 'checkbox' : 'square-outline'} size={24} color={on ? colors.success : colors.textMuted} />
                   <View style={styles.flex}>
-                    <Text style={typography.bodyStrong}>{w.name}</Text>
-                    <Text style={typography.caption}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{w.name}</Text>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                       {w.workerNo} · {t(w.trade)}
                       {w.presentToday ? ` · ${t('On site')}` : ''}
                     </Text>
@@ -222,7 +222,7 @@ export default function IssuePpeScreen() {
                 </Touchable>
               );
             })}
-            {errors.workers ? <Text style={styles.err}>{errors.workers}</Text> : null}
+            {errors.workers ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.workers}</Text> : null}
           </Card>
           <Card>
             <Input {...field()} label={t('Size')} value={size} onChangeText={setSize} maxLength={20} placeholder={t('When one size suits everyone, e.g. 9 or L')} />

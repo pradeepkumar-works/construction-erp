@@ -32,7 +32,7 @@ import { useLanguage, useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { draftFor } from '../../src/ai/ask';
 import { AskDraftNotice } from '../../src/ai/AskDraftNotice';
-import { colors, fontSize, spacing, touch, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, touch, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 import { DprLinesEditor, copiedRow, lineRowFrom, linesPayload, linesProblem, type DprLineRow } from '../../src/forms/dprLines';
@@ -450,19 +450,19 @@ export default function NewDprScreen() {
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         {shows('weather') ? <Chips label={L('weather')} required={dprRequires(def, 'weather')} value={weather} options={weatherChips} onChange={setWeather} /> : null}
-        {errors.weather ? <Text style={styles.err}>{errors.weather}</Text> : null}
+        {errors.weather ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.weather}</Text> : null}
         {shows('siteCondition') ? (
           <Input {...field()} label={L('siteCondition')} required={dprRequires(def, 'siteCondition')} value={siteCondition} onChangeText={setSiteCondition} placeholder={t('e.g. Workable, waterlogged at Km 16')} error={errors.siteCondition} containerStyle={ownDay.length ? undefined : styles.last} />
         ) : null}
         <OwnFieldInputs fields={ownDay} values={extra} onChange={setExtra} />
-        {errors.extra ? <Text style={styles.err}>{errors.extra}</Text> : null}
+        {errors.extra ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.extra}</Text> : null}
       </Card>
 
       {shows('manpower') ? (
-        <Card title={L('manpower')} right={<Text style={styles.total}>{t('Total {n}', { n: totalManpower })}</Text>}>
+        <Card title={L('manpower')} right={<Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{t('Total {n}', { n: totalManpower })}</Text>}>
           {attendance ? (
             filledFrom === attendance.id && !manpowerEdited ? (
-              <Text style={styles.fromAttendance}>{attendance.text}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.fromAttendance}>{attendance.text}</Text>
             ) : (
               <Button title={t('Use attendance figures')} variant="ghost" size="sm" icon="people-outline" onPress={() => applyAttendance(attendance)} />
             )
@@ -488,7 +488,7 @@ export default function NewDprScreen() {
               />
             </View>
           ))}
-          {errors.manpower ? <Text style={styles.err}>{errors.manpower}</Text> : null}
+          {errors.manpower ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.manpower}</Text> : null}
           <Button
             title={t('Add category')}
             variant="ghost"
@@ -524,7 +524,7 @@ export default function NewDprScreen() {
               <RemoveBtn onPress={() => setMachinery((rows) => rows.filter((x) => x.key !== r.key))} />
             </View>
           ))}
-          {errors.machinery ? <Text style={styles.err}>{errors.machinery}</Text> : null}
+          {errors.machinery ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.machinery}</Text> : null}
           <Button title={t('Add machine')} variant="ghost" size="sm" icon="add" onPress={() => setMachinery((rows) => [...rows, { key: newKey(), name: '', hours: '' }])} />
         </Card>
       ) : null}
@@ -558,7 +558,7 @@ export default function NewDprScreen() {
           <Input {...field({ multiline: true })} label={L('nextDayPlan')} required={dprRequires(def, 'nextDayPlan')} value={nextDayPlan} onChangeText={setNextDayPlan} multiline placeholder={t('Planned activities for tomorrow')} error={errors.nextDayPlan} />
         ) : null}
         {shows('photos') ? <PhotoPicker label={def.minPhotos ? `${L('photos')} (${t('at least {n}', { n: def.minPhotos })})` : undefined} photos={photos} onChange={setPhotos} /> : null}
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={editId ? t('Resubmit DPR for approval') : t('Submit DPR for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>

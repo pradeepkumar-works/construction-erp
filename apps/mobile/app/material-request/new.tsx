@@ -11,7 +11,7 @@ import { DraftNotice, useFormDraft, useLeaveGuard } from '../../src/forms/draft'
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 import { ItemNameField, useItemMaster } from '../../src/forms/ItemNameField';
@@ -185,7 +185,7 @@ export default function NewMaterialRequestScreen() {
         {items.map((r, i) => (
           <View key={r.key} style={styles.item}>
             <View style={styles.itemHead}>
-              <Text style={typography.label}>{t('Item {n}', { n: i + 1 })}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{t('Item {n}', { n: i + 1 })}</Text>
               {items.length > 1 ? (
                 <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={() => setItems((rows) => rows.filter((x) => x.key !== r.key))} accessibilityLabel={t('Remove item {n}', { n: i + 1 })} style={styles.remove} />
               ) : null}
@@ -209,7 +209,7 @@ export default function NewMaterialRequestScreen() {
             </View>
           </View>
         ))}
-        {errors.items ? <Text style={styles.err}>{errors.items}</Text> : null}
+        {errors.items ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.items}</Text> : null}
         <Button title={t('Add item')} variant="ghost" size="sm" icon="add" onPress={() => setItems((rows) => [...rows, emptyItem()])} />
       </Card>
 

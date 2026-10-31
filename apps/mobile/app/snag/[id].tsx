@@ -9,7 +9,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, PhotoChecks, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, Screen, type LocalPhoto } from '../../src/components';
 import { DEFECT_STATUS_TONE, DEFECT_TONE } from '../../src/components/defectTone';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
-import { colors, spacing, typography, toneIcon } from '../../src/theme';
+import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate, formatDateTime, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -63,10 +63,10 @@ export default function SnagScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.defectNo} · {data.projectName}
         </Text>
-        <Text style={typography.h2}>{data.title}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.title}</Text>
         <View style={styles.pills}>
           <Pill text={t(DEFECT_PHASE_LABELS[data.phase])} fg={colors.neutral} bg={colors.neutralSoft} />
           <Pill text={t('{priority} priority', { priority: t(DEFECT_PRIORITY_LABELS[data.priority]) })} {...DEFECT_TONE[data.priority]} />

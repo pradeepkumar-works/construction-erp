@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { STANDARD_DPR_FORM, WEATHER_LABELS, crewCheck, dprActivityLabel, filledExtra, groupLines, lineLocation, ownFieldLabel, ownFieldsOf, type DailyReportDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, PhotoChecks, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { formatDate, fmtQty } from '../../src/utils/format';
 import { useLanguage, useT } from '../../src/i18n/LanguageContext';
 
@@ -31,28 +31,28 @@ export default function DprDetailScreen() {
           <KeyValue key={x.field.key} label={ownFieldLabel(x.field, language)} value={x.text === 'Yes' || x.text === 'No' ? t(x.text) : x.text} />
         ))}
       </Card>
-      <Card title={t('Manpower')} right={<Text style={styles.total}>{t('Total {n}', { n: data.totalManpower })}</Text>}>
-        {data.manpower.length === 0 ? <Text style={typography.caption}>{t('No manpower recorded')}</Text> : data.manpower.map((m, i) => <KeyValue key={`${m.category}-${i}`} label={t(m.category)} value={String(m.count)} />)}
+      <Card title={t('Manpower')} right={<Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{t('Total {n}', { n: data.totalManpower })}</Text>}>
+        {data.manpower.length === 0 ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No manpower recorded')}</Text> : data.manpower.map((m, i) => <KeyValue key={`${m.category}-${i}`} label={t(m.category)} value={String(m.count)} />)}
       </Card>
       <Card title={t('Machinery')}>
-        {data.machinery.length === 0 ? <Text style={typography.caption}>{t('No machinery recorded')}</Text> : data.machinery.map((m, i) => <KeyValue key={`${m.name}-${i}`} label={m.name} value={t('{h} h', { h: m.hours })} />)}
+        {data.machinery.length === 0 ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('No machinery recorded')}</Text> : data.machinery.map((m, i) => <KeyValue key={`${m.name}-${i}`} label={m.name} value={t('{h} h', { h: m.hours })} />)}
       </Card>
       {data.lines?.length ? (
         <Card title={t('Work done')}>
           {groupLines(data.lines).map((g) => (
             <View key={g.key} style={styles.group}>
-              <Text style={typography.label}>{g.label === 'Outside the breakdown' ? t('Outside the breakdown') : g.label}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{g.label === 'Outside the breakdown' ? t('Outside the breakdown') : g.label}</Text>
               {g.lines.map((l) => (
                 <View key={l.id} style={styles.line}>
-                  <Text style={typography.bodyStrong}>{dprActivityLabel({ name: l.activityName, parentActivityName: l.parentActivityName })}</Text>
-                  {lineLocation(l) ? <Text style={typography.caption}>{lineLocation(l)}</Text> : null}
-                  <Text style={typography.body}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{dprActivityLabel({ name: l.activityName, parentActivityName: l.parentActivityName })}</Text>
+                  {lineLocation(l) ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{lineLocation(l)}</Text> : null}
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>
                     {t('Today {q} {unit} · {cum} of {scope} ({pct}%)', { q: fmtQty(l.quantity), unit: l.unit, cum: fmtQty(l.cumulative), scope: fmtQty(l.scope), pct: l.pct ?? 0 })}
                   </Text>
-                  {l.labour.length ? <Text style={typography.caption}>{l.labour.map((m) => `${t(m.category)} ${m.count}`).join(', ')}</Text> : null}
-                  {l.materials.length ? <Text style={typography.caption}>{l.materials.map((m) => `${m.itemName} ${fmtQty(m.quantity)} ${m.unit}`).join(', ')}</Text> : null}
+                  {l.labour.length ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{l.labour.map((m) => `${t(m.category)} ${m.count}`).join(', ')}</Text> : null}
+                  {l.materials.length ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{l.materials.map((m) => `${m.itemName} ${fmtQty(m.quantity)} ${m.unit}`).join(', ')}</Text> : null}
                   {filledExtra(ownFieldsOf(def, 'LINE'), l.extra).length ? (
-                    <Text style={typography.caption}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                       {filledExtra(ownFieldsOf(def, 'LINE'), l.extra)
                         .map((x) => `${ownFieldLabel(x.field, language)}: ${x.text === 'Yes' || x.text === 'No' ? t(x.text) : x.text}`)
                         .join(', ')}
@@ -66,7 +66,7 @@ export default function DprDetailScreen() {
           {(() => {
             const c = crewCheck(data.lines!, data.manpower);
             return c.headCount !== null && c.difference ? (
-              <Text style={styles.muted}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.muted}>
                 {c.difference > 0 ? t('{on} of the {n} on site are on a work line; {off} on none', { on: c.onLines, n: c.headCount, off: c.difference }) : t('The work lines name {on} people, {more} more than the {n} on site', { on: c.onLines, more: -c.difference, n: c.headCount })}
               </Text>
             ) : null;
@@ -92,8 +92,8 @@ export default function DprDetailScreen() {
 function Block({ label, value }: { label: string; value: string | null }) {
   return (
     <View style={styles.block}>
-      <Text style={typography.label}>{label}</Text>
-      <Text style={[typography.body, !value && styles.muted]}>{value || '—'}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.label}>{label}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, !value && styles.muted]}>{value || '—'}</Text>
     </View>
   );
 }

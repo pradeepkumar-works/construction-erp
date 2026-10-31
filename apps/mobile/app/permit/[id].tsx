@@ -8,7 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
 import { Checklist, permitStatus, permitWindow } from '../../src/components/safetyTone';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -57,10 +57,10 @@ export default function PermitScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.permitNo} · {data.projectName}
         </Text>
-        <Text style={typography.h2}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>
           {t(WORK_PERMIT_TYPE_LABELS[data.type])} · {data.location}
         </Text>
         <View style={styles.pills}>
@@ -80,12 +80,12 @@ export default function PermitScreen() {
       <Card title={t('Precautions')}>
         {data.precautions.length ? (
           data.precautions.map((p) => (
-            <Text key={p} style={[typography.body, styles.precaution]}>
+            <Text maxFontSizeMultiplier={maxFontScale} key={p} style={[typography.body, styles.precaution]}>
               ✓ {t(p)}
             </Text>
           ))
         ) : (
-          <Text style={typography.caption}>{t('None ticked')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('None ticked')}</Text>
         )}
       </Card>
       <AttachmentGallery attachments={data.attachments} />

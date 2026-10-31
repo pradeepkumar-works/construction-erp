@@ -6,7 +6,7 @@ import { MSME_CATEGORY_LABELS, SUBMISSION_STATUS_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
 const rupees = (v: string | number) => formatMoney(v);
@@ -28,8 +28,8 @@ export default function WorkOrderScreen() {
       <SubmissionHeader item={data} title={`${data.woNo} · ${data.vendorName}`} subtitle={`${data.title} · ${formatDate(data.woDate)}`} />
       <Card>
         <View style={styles.box}>
-          <Text style={styles.total}>{rupees(data.value)}</Text>
-          <Text style={typography.caption}>{approved ? t(data.closedAt ? '{pct}% billed · closed' : '{pct}% billed', { pct: data.billedPct }) : t('before GST')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{rupees(data.value)}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{approved ? t(data.closedAt ? '{pct}% billed · closed' : '{pct}% billed', { pct: data.billedPct }) : t('before GST')}</Text>
         </View>
         <KeyValue label={t('PAN')} value={data.vendorPan} />
         <KeyValue label={t('MSME')} value={data.vendorMsme ? t(MSME_CATEGORY_LABELS[data.vendorMsme]) : null} />
@@ -46,16 +46,16 @@ export default function WorkOrderScreen() {
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.lineTitle} numberOfLines={2}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.lineTitle} numberOfLines={2}>
                 {l.itemNo ? `${l.itemNo} ` : ''}
                 {l.description}
               </Text>
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)}
                 {approved ? ` · ${l.boqItemId ? t('{measured} measured, {billed} billed', { measured: fmtQty(l.measuredQty), billed: fmtQty(l.billedQty) }) : t('{billed} billed', { billed: fmtQty(l.billedQty) })}` : ''}
               </Text>
             </View>
-            <Text style={styles.amount}>{rupees(l.amount)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.amount}>{rupees(l.amount)}</Text>
           </View>
         ))}
       </Card>
@@ -64,12 +64,12 @@ export default function WorkOrderScreen() {
           {data.bills.map((b) => (
             <View key={b.id} style={styles.line}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.lineTitle}>{b.label}</Text>
-                <Text style={typography.caption}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={styles.lineTitle}>{b.label}</Text>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                   {formatDate(b.billDate)} · {t(SUBMISSION_STATUS_LABELS[b.status]).toLowerCase()}
                 </Text>
               </View>
-              <Text style={styles.amount}>{rupees(b.netPayable)}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.amount}>{rupees(b.netPayable)}</Text>
             </View>
           ))}
         </Card>

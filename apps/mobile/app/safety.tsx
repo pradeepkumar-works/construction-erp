@@ -9,7 +9,7 @@ import { useFetch } from '../src/api/hooks';
 import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Stat, Touchable } from '../src/components';
 import { INCIDENT_TONE, permitStatus, permitWindow } from '../src/components/safetyTone';
 import { useProjectOptions } from '../src/forms/common';
-import { colors, radius, spacing, touch, typography, toneIcon } from '../src/theme';
+import { colors, maxFontScale, radius, spacing, toneIcon, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -69,8 +69,8 @@ export default function SafetyScreen() {
       {s ? (
         <>
           <View style={[styles.banner, { backgroundColor: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? colors.dangerSoft : colors.successSoft }]}>
-            <Text style={[styles.bannerValue, { color: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? colors.danger : colors.success }]}>{s.daysSinceLostTime ?? t('No')}</Text>
-            <Text style={typography.caption}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[styles.bannerValue, { color: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? colors.danger : colors.success }]}>{s.daysSinceLostTime ?? t('No')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
               {t(s.daysSinceLostTime === null ? 'lost-time injury recorded' : s.daysSinceLostTime === 1 ? 'day without a lost-time injury' : 'days without a lost-time injury')}
               {s.lastLostTimeDate ? ` (${t('last {date}', { date: formatDate(s.lastLostTimeDate) })})` : ''}
             </Text>
@@ -155,13 +155,13 @@ function Row({ icon, title, sub, meta, onPress, children }: { icon: keyof typeof
         <Ionicons name={icon} size={20} color={colors.primary} />
       </View>
       <View style={styles.flex}>
-        <Text style={typography.bodyStrong} numberOfLines={2}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong} numberOfLines={2}>
           {title}
         </Text>
-        <Text style={typography.caption} numberOfLines={1}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
           {sub}
         </Text>
-        <Text style={typography.caption} numberOfLines={1}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={1}>
           {meta}
         </Text>
       </View>

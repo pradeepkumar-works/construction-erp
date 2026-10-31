@@ -9,7 +9,7 @@ import { useProjectOptions } from '../src/forms/common';
 import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { useT } from '../src/i18n/LanguageContext';
 import { isOfflineError } from '../src/offline';
-import { colors, spacing, typography } from '../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../src/theme';
 import type { TranslateVars } from '../src/i18n/translate';
 import { isIsoDate, today } from '../src/utils/format';
 
@@ -142,7 +142,7 @@ export default function RollCallScreen() {
       <DraftNotice draft={draft} onStartOver={startOver} />
       {notice ? (
         <Card>
-          <Text style={typography.caption}>{notice}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{notice}</Text>
         </Card>
       ) : null}
       <Select label={t('Project')} value={projectId} options={projects.options} onChange={setProjectId} searchable />
@@ -158,11 +158,11 @@ export default function RollCallScreen() {
       <ErrorBanner message={error ?? roll.error} />
       {locked ? (
         <Card>
-          <Text style={typography.caption}>{t('Payroll for this month is approved, so its roll call can no longer change.')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Payroll for this month is approved, so its roll call can no longer change.')}</Text>
         </Card>
       ) : null}
       {roll.data ? (
-        <Text style={[typography.caption, styles.summary]}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.summary]}>
           {t('{total} on the roll · {present} present · {half} half day · {absent} absent · {unmarked} not marked · {md} man-days', {
             total: rows.length,
             present: count('PRESENT'),
@@ -225,8 +225,8 @@ const RollRow = memo(function RollRow({
   const present = !!m?.status && m.status !== 'ABSENT';
   return (
     <View style={styles.row}>
-      <Text style={typography.bodyStrong}>{r.name}</Text>
-      <Text style={typography.caption}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{r.name}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
         {r.workerNo} · {r.trade} · {r.contractor}
         {r.activityName ? ` · ${r.activityName}` : ''}
       </Text>

@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { MeasurementSheetDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -26,10 +26,10 @@ export default function MeasurementScreen() {
       <SubmissionHeader item={data} title={`${data.boqItemNo} · ${data.boqDescription}`} subtitle={`${data.mbNo} · ${formatDate(data.date)}`} />
       <Card>
         <View style={styles.box}>
-          <Text style={styles.total}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>
             {fmtQty(data.totalQty)} {data.unit}
           </Text>
-          <Text style={typography.caption}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
             {t('{amount} at {rate} / {unit}', { amount: rupees(data.amount), rate: rupees(data.rate), unit: data.unit })}
           </Text>
         </View>
@@ -41,13 +41,13 @@ export default function MeasurementScreen() {
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.lineTitle}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.lineTitle}>
                 {l.description}
-                {l.deduct ? <Text style={{ color: colors.danger }}> · {t('deduct')}</Text> : null}
+                {l.deduct ? <Text maxFontSizeMultiplier={maxFontScale} style={{ color: colors.danger }}> · {t('deduct')}</Text> : null}
               </Text>
-              <Text style={typography.caption}>{factors(l)}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{factors(l)}</Text>
             </View>
-            <Text style={[styles.qty, l.deduct && { color: colors.danger }]}>{fmtQty(l.quantity)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[styles.qty, l.deduct && { color: colors.danger }]}>{fmtQty(l.quantity)}</Text>
           </View>
         ))}
       </Card>

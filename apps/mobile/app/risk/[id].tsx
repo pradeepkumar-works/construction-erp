@@ -8,7 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
 import { LEVEL_TONE, RISK_STATUS_TONE } from '../../src/components/riskTone';
-import { colors, spacing, typography, toneIcon } from '../../src/theme';
+import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -48,10 +48,10 @@ export default function RiskScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.riskNo} · {t(RISK_KIND_LABELS[data.kind])} · {data.projectName}
         </Text>
-        <Text style={typography.h2}>{data.title}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.title}</Text>
         <View style={styles.pills}>
           <Pill text={t(RISK_STATUS_LABELS[data.status])} {...RISK_STATUS_TONE[data.status]} />
           <Pill text={`${t('Score {n}', { n: data.score })} · ${t(RISK_LEVEL_LABELS[level])}`} {...LEVEL_TONE[level]} />
@@ -62,8 +62,8 @@ export default function RiskScreen() {
       {data.kind === 'DELAY' ? (
         <Card title={t('Delay')}>
           <View style={styles.daysBox}>
-            <Text style={styles.days}>{data.daysLost ?? 0}</Text>
-            <Text style={typography.caption}>{data.daysLost === 1 ? t(data.delayEnd ? 'day lost' : 'day lost so far') : t(data.delayEnd ? 'days lost' : 'days lost so far')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.days}>{data.daysLost ?? 0}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{data.daysLost === 1 ? t(data.delayEnd ? 'day lost' : 'day lost so far') : t(data.delayEnd ? 'days lost' : 'days lost so far')}</Text>
           </View>
           <KeyValue label={t('Held up since')} value={formatDate(data.delayStart)} />
           <KeyValue label={t('Resumed on')} value={data.delayEnd ? formatDate(data.delayEnd) : t('Still held up')} />
@@ -86,7 +86,7 @@ export default function RiskScreen() {
       {mayEdit ? (
         closing ? (
           <Card title={t('Close this entry')}>
-            {data.kind === 'DELAY' && !data.delayEnd ? <Text style={[typography.caption, styles.gap]}>{t('The delay will be recorded as ending today.')}</Text> : null}
+            {data.kind === 'DELAY' && !data.delayEnd ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t('The delay will be recorded as ending today.')}</Text> : null}
             <Input label={t('How was it resolved')} required value={note} onChangeText={setNote} multiline />
             <Button title={t('Close entry')} icon="checkmark-circle" onPress={() => change({ status: 'CLOSED', closureNote: note.trim() })} loading={busy} disabled={!note.trim()} />
             <Button title={t('Cancel')} variant="ghost" onPress={() => setClosing(false)} />

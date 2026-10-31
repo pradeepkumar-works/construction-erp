@@ -10,7 +10,7 @@ import { approvedLine, canQuickReview, reviewSubmission } from '../../src/api/re
 import { Button, EmptyState, ErrorBanner, ErrorState, Input, Loading, Screen, SubmissionRow, useSnackbar, Touchable } from '../../src/components';
 import { BottomSheet } from '../../src/components/BottomSheet';
 import { useNotifications } from '../../src/notifications/NotificationsContext';
-import { colors, fontSize, radius, spacing, touch, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../../src/theme';
 import { formatMoney, timeAgo } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -84,7 +84,7 @@ export default function ApprovalsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
         ListHeaderComponent={
           data && data.length ? (
-            <Text style={styles.summary}>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.summary}>
               {data.length === 1 ? t('1 item waiting for your review') : t('{n} items waiting for your review', { n: data.length })}
               {' · '}
               {t('Swipe left to approve')}
@@ -94,8 +94,8 @@ export default function ApprovalsScreen() {
         ListEmptyComponent={<EmptyState title={t('All caught up')} subtitle={t('Nothing is waiting for your approval.')} icon="checkmark-done-circle-outline" art="approved" />}
         renderSectionHeader={({ section }) => (
           <View style={styles.header}>
-            <Text style={typography.h3}>{section.title}</Text>
-            <Text style={typography.caption}>{section.data.length}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.h3}>{section.title}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{section.data.length}</Text>
           </View>
         )}
         renderItem={({ item }) => (
@@ -150,7 +150,7 @@ function SwipeRow({ item, onOpen, onApprove, onSwipeOpen }: { item: PendingAppro
           {onApprove ? (
             <Touchable onPress={onApprove} accessibilityRole="button" accessibilityLabel={t('Approve')} style={[styles.action, styles.approve]}>
               <Ionicons name="checkmark-circle" size={24} color={colors.textOnPrimary} />
-              <Text style={styles.actionText}>{t('Approve')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.actionText}>{t('Approve')}</Text>
             </Touchable>
           ) : null}
           <Touchable
@@ -163,7 +163,7 @@ function SwipeRow({ item, onOpen, onApprove, onSwipeOpen }: { item: PendingAppro
             style={[styles.action, styles.openAction]}
           >
             <Ionicons name="open-outline" size={22} color={colors.textOnPrimary} />
-            <Text style={styles.actionText}>{t('Open entry')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.actionText}>{t('Open entry')}</Text>
           </Touchable>
         </View>
       )}

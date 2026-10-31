@@ -12,7 +12,7 @@ import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../s
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, typography } from '../../src/theme';
 import { formatDate, formatMoney, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
@@ -238,15 +238,15 @@ export default function NewExpenseScreen() {
         <Input {...field()} label={t('Taxable value (₹)')} required value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder={t('e.g. 2400')} error={errors.amount} style={styles.bigInput} />
         <Chips label={t('GST %')} value={gstRate} onChange={(v) => setGstRate(v ?? '0')} clearable={false} options={GST_RATES.map((r) => ({ value: String(r), label: `${r}%` }))} />
         <View style={styles.totalBox}>
-          <Text style={typography.caption}>GST {rupees(gst)}</Text>
-          <Text style={styles.total}>{rupees(total)}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>GST {rupees(gst)}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{rupees(total)}</Text>
         </View>
         <Chips label={t('Paid by')} value={paymentMode} onChange={(v) => setPaymentMode(v ?? 'CASH')} clearable={false} options={PAYMENT_MODES.map((m) => ({ value: m, label: t(PAYMENT_MODE_LABELS[m]).replace(/ \(.*\)$/, '') }))} />
       </Card>
       <Card title={t('Bill photo')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
-        {!photos.length ? <Text style={typography.caption}>{t('Take a photo of the bill; the PM may send it back without one.')}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
+        {!photos.length ? <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('Take a photo of the bill; the PM may send it back without one.')}</Text> : null}
       </Card>
       <Card title={t('Bill details (optional)')}>
         <Input {...field()} label={t('Vendor')} value={vendor} onChangeText={setVendor} />

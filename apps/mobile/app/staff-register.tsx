@@ -7,7 +7,7 @@ import { useT } from '../src/i18n/LanguageContext';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Loading, Screen, Select, useSnackbar } from '../src/components';
 import { useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { useProjectOptions } from '../src/forms/common';
-import { colors, spacing, typography } from '../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../src/theme';
 import { formatTime, isIsoDate, today } from '../src/utils/format';
 
 /**
@@ -64,8 +64,8 @@ export default function StaffRegisterScreen() {
 
   const row = (r: StaffRegisterRowDto) => (
     <View key={r.employee.id} style={styles.row}>
-      <Text style={typography.bodyStrong}>{r.employee.fullName}</Text>
-      <Text style={typography.caption}>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{r.employee.fullName}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
         {r.employee.designation}
         {r.leave ? ` · ${t(LEAVE_TYPE_LABELS[r.leave.type])}${r.leave.halfDay ? ` · ${t('Half day')}` : ''}${r.leave.status === 'PENDING' ? ` · ${t(LEAVE_STATUS_LABELS.PENDING)}` : ''}` : ''}
         {r.attendance?.checkIn ? ` · ${t('checked in {time}', { time: formatTime(r.attendance.checkIn) })}` : ''}
@@ -81,7 +81,7 @@ export default function StaffRegisterScreen() {
       <ErrorBanner message={error ?? reg.error} />
       {reg.data && (reg.data.holiday || reg.data.weeklyOff) ? (
         <Card>
-          <Text style={typography.caption}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
             {reg.data.holiday ? t('Holiday: {name}.', { name: reg.data.holiday }) : t('Weekly off.')} {t('Anyone marked present earns a comp-off.')}
           </Text>
         </Card>

@@ -6,7 +6,7 @@ import { EQUIPMENT_OWNERSHIP_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 
 export default function MachineryLogScreen() {
@@ -26,16 +26,16 @@ export default function MachineryLogScreen() {
       <Card>
         <View style={styles.hours}>
           <View style={styles.hourBox}>
-            <Text style={styles.big}>{fmtQty(data.hoursWorked)}</Text>
-            <Text style={typography.caption}>{t('worked (h)')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.big}>{fmtQty(data.hoursWorked)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('worked (h)')}</Text>
           </View>
           <View style={styles.hourBox}>
-            <Text style={[styles.big, styles.muted]}>{fmtQty(data.idleHours)}</Text>
-            <Text style={typography.caption}>{t('idle (h)')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[styles.big, styles.muted]}>{fmtQty(data.idleHours)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('idle (h)')}</Text>
           </View>
           <View style={styles.hourBox}>
-            <Text style={[styles.big, down > 0 && styles.danger]}>{fmtQty(data.breakdownHours)}</Text>
-            <Text style={typography.caption}>{t('breakdown (h)')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[styles.big, down > 0 && styles.danger]}>{fmtQty(data.breakdownHours)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('breakdown (h)')}</Text>
           </View>
         </View>
         {data.breakdownNote ? <KeyValue label={t('Breakdown')} value={data.breakdownNote} multiline /> : null}

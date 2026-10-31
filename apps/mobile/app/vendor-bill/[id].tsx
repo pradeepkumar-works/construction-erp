@@ -7,7 +7,7 @@ import { VENDOR_BILL_KIND_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
 const rupees = (v: string) => formatMoney(v);
@@ -32,15 +32,15 @@ export default function VendorBillScreen() {
       <SubmissionHeader item={data} title={`${data.billNo} · ${data.vendorName}`} subtitle={t('Invoice {invoice} of {date} · {po}', { invoice: data.invoiceNo, date: formatDate(data.invoiceDate), po: data.poNo ?? t(VENDOR_BILL_KIND_LABELS[data.kind]) })} />
       <Card>
         <View style={styles.box}>
-          <Text style={styles.total}>{rupees(data.total)}</Text>
-          <Text style={typography.caption}>{t('due {date}', { date: formatDate(data.dueDate) })}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{rupees(data.total)}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('due {date}', { date: formatDate(data.dueDate) })}</Text>
         </View>
         <View style={[styles.match, { backgroundColor: data.matched ? colors.successSoft : colors.dangerSoft }]}>
           <Ionicons name={data.matched ? 'checkmark-circle' : 'alert-circle'} size={18} color={data.matched ? colors.success : colors.danger} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.matchTitle, { color: data.matched ? colors.success : colors.danger }]}>{data.matched ? (withPo ? t('Matches the PO and what was received') : t('No exceptions')) : withPo ? t('Does not match') : t('Has exceptions')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[styles.matchTitle, { color: data.matched ? colors.success : colors.danger }]}>{data.matched ? (withPo ? t('Matches the PO and what was received') : t('No exceptions')) : withPo ? t('Does not match') : t('Has exceptions')}</Text>
             {data.exceptions.map((e) => (
-              <Text key={e} style={styles.exception}>
+              <Text maxFontSizeMultiplier={maxFontScale} key={e} style={styles.exception}>
                 {e}
               </Text>
             ))}
@@ -61,15 +61,15 @@ export default function VendorBillScreen() {
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.lineTitle} numberOfLines={2}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.lineTitle} numberOfLines={2}>
                 {l.itemName}
               </Text>
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)}
                 {l.poRate !== null ? ` (PO ${rupees(l.poRate)}) · ${t('{qty} received', { qty: fmtQty(l.receivedQty ?? '0') })}` : ''}
               </Text>
             </View>
-            <Text style={styles.amount}>{rupees(l.amount)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.amount}>{rupees(l.amount)}</Text>
           </View>
         ))}
       </Card>

@@ -7,7 +7,7 @@ import { errorMessage } from '../src/api/client';
 import { Button, Card, EmptyState, ErrorBanner, Input, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle, useSnackbar } from '../src/components';
 import { useAuth } from '../src/auth/AuthContext';
 import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
-import { colors, spacing, typography, toneIcon } from '../src/theme';
+import { colors, maxFontScale, spacing, toneIcon, typography } from '../src/theme';
 import { formatDate, formatMoney } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 import { useFieldChain } from '../src/forms/keyboard';
@@ -73,8 +73,8 @@ function ImprestCard({ imprest: i, onChanged }: { imprest: ImprestDto; onChanged
   return (
     <Card style={styles.card}>
       <SectionTitle title={i.holderId === user?.id ? i.projectName : `${i.projectName} · ${i.holderName}`} />
-      <Text style={[typography.h2, i.low ? { color: colors.danger } : null]}>{rupees(i.cashInHand)}</Text>
-      <Text style={typography.caption}>{t('in hand of a {float} float', { float: rupees(i.floatAmount) })}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[typography.h2, i.low ? { color: colors.danger } : null]}>{rupees(i.cashInHand)}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('in hand of a {float} float', { float: rupees(i.floatAmount) })}</Text>
       <ProgressBar value={pct} showLabel={false} color={i.low ? colors.danger : undefined} />
       <View style={styles.kv}>
         <KeyValue label={t('Spent, approved')} value={rupees(i.approvedSpend)} />
@@ -86,7 +86,7 @@ function ImprestCard({ imprest: i, onChanged }: { imprest: ImprestDto; onChanged
       {i.openRequest ? (
         <View style={styles.request}>
           <Pill text={t(IMPREST_ENTRY_STATUS_LABELS[i.openRequest.status])} fg={colors.warning} bg={colors.warningSoft} icon={toneIcon.waiting} />
-          <Text style={typography.body}>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.body}>
             {t('{kind}: {amount} on {date}', { kind: t(IMPREST_ENTRY_KIND_LABELS[i.openRequest.kind]), amount: rupees(i.openRequest.amount), date: formatDate(i.openRequest.date) })}
             {i.openRequest.reason ? `. ${i.openRequest.reason}` : ''}
           </Text>

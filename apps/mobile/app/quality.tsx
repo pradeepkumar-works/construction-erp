@@ -6,7 +6,7 @@ import { useFetch } from '../src/api/hooks';
 import { useT } from '../src/i18n/LanguageContext';
 import { Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Touchable } from '../src/components';
 import { NCR_STATUS_TONE, SEVERITY_TONE, TEST_RESULT_TONE } from '../src/components/qualityTone';
-import { colors, fontSize, radius, spacing, touch, typography } from '../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 
 type Show = 'ncrs' | 'tests';
@@ -49,13 +49,13 @@ export default function QualityScreen() {
             {ncrs.data!.items.map((n) => (
               <Touchable key={n.id} accessibilityRole="button" onPress={() => router.push(`/ncr/${n.id}`)} style={styles.row}>
                 <View style={styles.flex}>
-                  <Text style={typography.caption}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                     {n.ncrNo} · {n.projectName}
                   </Text>
-                  <Text style={styles.title} numberOfLines={2}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={styles.title} numberOfLines={2}>
                     {n.title}
                   </Text>
-                  <Text style={[typography.caption, n.overdue && styles.overdue]} numberOfLines={1}>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, n.overdue && styles.overdue]} numberOfLines={1}>
                     {[n.location, n.dueDate ? t('rectify by {date}', { date: formatDate(n.dueDate) }) : null, n.actionByName].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
@@ -75,13 +75,13 @@ export default function QualityScreen() {
           {tests.data!.items.map((x) => (
             <Touchable key={x.id} accessibilityRole="button" onPress={() => router.push(`/test/${x.id}`)} style={styles.row}>
               <View style={styles.flex}>
-                <Text style={typography.caption}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                   {x.testNo} · {t(TEST_KIND_LABELS[x.kind])}
                 </Text>
-                <Text style={styles.title} numberOfLines={2}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={styles.title} numberOfLines={2}>
                   {x.title}
                 </Text>
-                <Text style={[typography.caption, x.overdue && styles.overdue]} numberOfLines={1}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, x.overdue && styles.overdue]} numberOfLines={1}>
                   {x.nextDueOn ? t(x.overdue ? 'Result overdue since {date}' : 'Next result due {date}', { date: formatDate(x.nextDueOn) }) : t('Sampled {date}', { date: formatDate(x.sampledOn) })}
                 </Text>
               </View>

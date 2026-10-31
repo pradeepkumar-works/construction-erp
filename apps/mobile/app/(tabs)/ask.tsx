@@ -119,7 +119,7 @@ export default function AskScreen() {
               <Text style={styles.introTitle} maxFontSizeMultiplier={maxFontScale}>
                 {t('Ask {name}', { name: PRODUCT_NAME })}
               </Text>
-              <Text style={styles.introText}>{t('Ask about your projects in Hindi, English or Hinglish. Type, or tap the microphone on your keyboard and speak. It only reads; nothing is saved until you send a form yourself.')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.introText}>{t('Ask about your projects in Hindi, English or Hinglish. Type, or tap the microphone on your keyboard and speak. It only reads; nothing is saved until you send a form yourself.')}</Text>
             </View>
             <Touchable onPress={dictate} disabled={!online} style={[styles.dictateTile, !online && styles.disabled]} accessibilityRole="button" accessibilityLabel={t("Dictate today's DPR")}>
               <Ionicons name="mic" size={26} color={colors.onBrand} />
@@ -149,7 +149,7 @@ export default function AskScreen() {
             {turns.map((x) =>
               x.role === 'user' ? (
                 <View key={x.key} style={styles.userBubble}>
-                  <Text style={styles.userText}>{x.text}</Text>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={styles.userText}>{x.text}</Text>
                 </View>
               ) : (
                 <Answer key={x.key} turn={x} onOpenDraft={(d, i) => router.push(`/dpr/new?fromAsk=${encodeURIComponent(keepDraft(`${x.message?.id ?? x.key}:${i}`, d))}` as never)} />
@@ -163,14 +163,14 @@ export default function AskScreen() {
         {!online ? (
           <View style={styles.offline} accessibilityLiveRegion="polite">
             <Ionicons name="cloud-offline-outline" size={20} color={colors.warning} />
-            <Text style={styles.offlineText}>{t('Ask needs a connection. Your DPRs and other entries still save on this phone and send later.')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.offlineText}>{t('Ask needs a connection. Your DPRs and other entries still save on this phone and send later.')}</Text>
           </View>
         ) : null}
         {dictating ? (
           <View style={styles.dictating}>
             <View style={styles.dictatingHead}>
               <Ionicons name="mic" size={18} color={colors.primary} />
-              <Text style={styles.dictatingText}>{t("Today's DPR: tap the microphone on your keyboard and say what was done.")}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.dictatingText}>{t("Today's DPR: tap the microphone on your keyboard and say what was done.")}</Text>
               <IconButton icon="close" size={20} color={colors.textMuted} onPress={() => setDictating(false)} accessibilityLabel={t('Cancel')} />
             </View>
             {projects.options.length > 1 ? <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} /> : null}
@@ -218,11 +218,11 @@ function Answer({ turn, onOpenDraft }: { turn: Turn; onOpenDraft: (d: AiDraftDto
       {turn.status ? (
         <View style={styles.status} accessibilityLiveRegion="polite">
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.statusText}>{turn.status}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.statusText}>{turn.status}</Text>
         </View>
       ) : null}
-      {turn.error ? <Text style={styles.error}>{turn.error}</Text> : null}
-      {m?.unverified.length ? <Text style={styles.caption}>{m.unverified.some((u) => u.startsWith('“')) ? t('Check these in the records before relying on them: {list}', { list: m.unverified.join(', ') }) : t('Check these figures before relying on them: {list}', { list: m.unverified.join(', ') })}</Text> : null}
+      {turn.error ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.error}>{turn.error}</Text> : null}
+      {m?.unverified.length ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.caption}>{m.unverified.some((u) => u.startsWith('“')) ? t('Check these in the records before relying on them: {list}', { list: m.unverified.join(', ') }) : t('Check these figures before relying on them: {list}', { list: m.unverified.join(', ') })}</Text> : null}
       {links.length ? (
         <View style={styles.chips}>
           {links.map((c) => (
@@ -239,12 +239,12 @@ function Answer({ turn, onOpenDraft }: { turn: Turn; onOpenDraft: (d: AiDraftDto
           <Text style={styles.draftKind} maxFontSizeMultiplier={maxFontScale}>
             {t('{kind}, not sent', { kind: t(AI_DRAFT_LABELS[d.kind]) })}
           </Text>
-          <Text style={styles.draftTitle}>{d.title}</Text>
-          {d.flags.length ? <Text style={styles.caption}>{d.flags.length === 1 ? t('1 thing to check when you open it') : t('{n} things to check when you open it', { n: d.flags.length })}</Text> : null}
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.draftTitle}>{d.title}</Text>
+          {d.flags.length ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.caption}>{d.flags.length === 1 ? t('1 thing to check when you open it') : t('{n} things to check when you open it', { n: d.flags.length })}</Text> : null}
           {d.kind === 'dpr' ? (
             <Button title={t('Open DPR form')} icon="document-text-outline" size="sm" onPress={() => onOpenDraft(d, i)} />
           ) : (
-            <Text style={styles.caption}>{t('Open this conversation in Ask {name} on the web to finish it there.', { name: PRODUCT_NAME })}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.caption}>{t('Open this conversation in Ask {name} on the web to finish it there.', { name: PRODUCT_NAME })}</Text>
           )}
         </View>
       ))}

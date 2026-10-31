@@ -9,7 +9,7 @@ import { Button, Card, DatePicker, ErrorBanner, Input, TimePicker, Loading, Phot
 import { Checklist, permitWindow } from '../../src/components/safetyTone';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
@@ -213,12 +213,12 @@ export default function PermitFormScreen() {
         <Input {...field()} label={t('Names')} value={workers} onChangeText={setWorkers} placeholder={t('Optional')} maxLength={2000} />
       </Card>
       <Card title={t('Precautions in place')}>
-        {type ? <Checklist items={PERMIT_PRECAUTIONS[type]} value={ticked} onChange={setTicked} /> : <Text style={[typography.caption, styles.gap]}>{t('Pick the kind of work to see its precautions.')}</Text>}
+        {type ? <Checklist items={PERMIT_PRECAUTIONS[type]} value={ticked} onChange={setTicked} /> : <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.gap]}>{t('Pick the kind of work to see its precautions.')}</Text>}
         <Input {...field({ multiline: true })} label={t('Other precautions')} value={other} onChangeText={setOther} multiline maxLength={2000} placeholder={t('One per line')} />
       </Card>
       <Card title={t('Photos / drawings')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={t('Request permit')} icon="send" onPress={submit} loading={busy} />
     </Screen>

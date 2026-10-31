@@ -6,7 +6,7 @@ import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, canManageWorkers, canRecord
 import { useAuth } from '../../src/auth/AuthContext';
 import { useFetch } from '../../src/api/hooks';
 import { Button, Card, EmptyState, ErrorState, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle, Stat } from '../../src/components';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ScheduleStatus } from '../../src/components/ScheduleStatus';
@@ -38,11 +38,11 @@ export default function ProjectScreen() {
       <Stack.Screen options={{ title: project.code }} />
       <Card>
         <View style={styles.top}>
-          <Text style={styles.code}>{project.code}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.code}>{project.code}</Text>
           <Pill text={t(PROJECT_STATUS_LABELS[project.status])} fg={project.status === 'ACTIVE' ? colors.success : colors.neutral} bg={project.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} icon={project.status === 'ACTIVE' ? 'play-circle-outline' : 'pause-circle-outline'} />
         </View>
-        <Text style={typography.h2}>{project.name}</Text>
-        <Text style={typography.caption}>{project.typeName && project.typeName !== PROJECT_TYPE_LABELS[project.type] ? project.typeName : t(PROJECT_TYPE_LABELS[project.type])}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{project.name}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{project.typeName && project.typeName !== PROJECT_TYPE_LABELS[project.type] ? project.typeName : t(PROJECT_TYPE_LABELS[project.type])}</Text>
         <ScheduleStatus project={project} />
         <View style={styles.bar}>
           <ProgressBar value={project.physicalProgressPct} height={12} />
@@ -81,7 +81,7 @@ export default function ProjectScreen() {
         <Button title={t('Safety')} icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
 
-      <SectionTitle title={t('Activities')} right={<Text style={typography.caption}>{t('planned / executed')}</Text>} />
+      <SectionTitle title={t('Activities')} right={<Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('planned / executed')}</Text>} />
       {activities.length === 0 ? (
         <EmptyState title={t('No activities')} subtitle={t('Activities are set up by the planning team on the web.')} icon="list-outline" />
       ) : (
@@ -89,11 +89,11 @@ export default function ProjectScreen() {
           <Card key={a.id}>
             <View style={styles.actTop}>
               <View style={styles.flex}>
-                <Text style={typography.bodyStrong}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>
                   {a.boqItemNo ? `${a.boqItemNo} · ` : ''}
                   {a.name}
                 </Text>
-                <Text style={typography.caption}>
+                <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                   {a.isSummary ? t('Made of {n} parts', { n: activities.filter((p) => p.parentActivityId === a.id).length }) : `${fmtQty(a.plannedQty)} / ${fmtQty(a.executedQty)} ${a.unit}`}
                   {a.plannedEnd ? ` · ${t('due {date}', { date: formatDate(a.plannedEnd) })}` : ''}
                 </Text>
@@ -101,7 +101,7 @@ export default function ProjectScreen() {
               {a.isDelayed ? (
                 <View style={styles.delayed}>
                   <Ionicons name="warning" size={14} color={colors.danger} />
-                  <Text style={styles.delayedText}>{t('Delayed')}</Text>
+                  <Text maxFontSizeMultiplier={maxFontScale} style={styles.delayedText}>{t('Delayed')}</Text>
                 </View>
               ) : null}
             </View>

@@ -13,7 +13,7 @@ import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useSectorInputs, type SectorDraft } from '../../src/forms/sector';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
@@ -269,9 +269,9 @@ export default function NewProgressScreen() {
         />
         {activity ? (
           <View style={styles.activityInfo}>
-            <Text style={typography.caption}>
-              {t('Unit')} <Text style={styles.strong}>{activity.unit}</Text> · {t('Planned qty')} <Text style={styles.strong}>{fmtQty(activity.plannedQty)}</Text> · {t('Executed')} <Text style={styles.strong}>{fmtQty(activity.executedQty)}</Text> · {t('Balance')}{' '}
-              <Text style={styles.strong}>{fmtQty(Math.max(0, Number(activity.plannedQty) - Number(activity.executedQty)))}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
+              {t('Unit')} <Text maxFontSizeMultiplier={maxFontScale} style={styles.strong}>{activity.unit}</Text> · {t('Planned qty')} <Text maxFontSizeMultiplier={maxFontScale} style={styles.strong}>{fmtQty(activity.plannedQty)}</Text> · {t('Executed')} <Text maxFontSizeMultiplier={maxFontScale} style={styles.strong}>{fmtQty(activity.executedQty)}</Text> · {t('Balance')}{' '}
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.strong}>{fmtQty(Math.max(0, Number(activity.plannedQty) - Number(activity.executedQty)))}</Text>
             </Text>
           </View>
         ) : null}
@@ -294,7 +294,7 @@ export default function NewProgressScreen() {
         <Input {...field()} label={t('Machinery used')} value={machinery} onChangeText={setMachinery} placeholder={t('e.g. Grader, Roller')} />
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('Anything the PM should know')} />
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>

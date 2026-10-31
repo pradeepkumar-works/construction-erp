@@ -188,7 +188,7 @@ export default function ReportSnagScreen() {
       </Card>
       <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
         {ai.data?.enabled && photoId ? (
           <>
             <Button title={t('Describe from photo')} icon="sparkles-outline" variant="secondary" size="sm" onPress={describe} loading={describing} disabled={!online} />

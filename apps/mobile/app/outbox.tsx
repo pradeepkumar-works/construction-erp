@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, EmptyState, Screen, SubmissionRow } from '../src/components';
 import { OUTBOX_FIX_PATH, useOffline, type OutboxItem } from '../src/offline';
-import { colors, fontSize, spacing, typography } from '../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../src/theme';
 import { formatDateTime, timeAgo } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -40,14 +40,14 @@ export default function OutboxScreen() {
           <Card>
             <View style={styles.head}>
               <Ionicons name={online ? 'cloud-done-outline' : 'cloud-offline-outline'} size={22} color={online ? colors.success : colors.warning} />
-              <Text style={[typography.bodyStrong, styles.flex]}>{online ? (syncing ? t('Sending queued entries…') : t('Online')) : t('Offline: entries will send when the connection is back')}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={[typography.bodyStrong, styles.flex]}>{online ? (syncing ? t('Sending queued entries…') : t('Online')) : t('Offline: entries will send when the connection is back')}</Text>
             </View>
             {items.length ? (
-              <Text style={[typography.body, styles.count]} accessibilityLiveRegion="polite">
+              <Text maxFontSizeMultiplier={maxFontScale} style={[typography.body, styles.count]} accessibilityLiveRegion="polite">
                 {[pendingCount ? t('{n} waiting to send', { n: pendingCount }) : null, failedCount ? t('{n} need attention', { n: failedCount }) : null].filter(Boolean).join(' · ')}
               </Text>
             ) : null}
-            <Text style={[typography.caption, styles.synced]}>{lastSyncedAt ? t('Last sent {when}', { when: formatDateTime(lastSyncedAt) }) : t('Nothing sent from this phone yet')}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.synced]}>{lastSyncedAt ? t('Last sent {when}', { when: formatDateTime(lastSyncedAt) }) : t('Nothing sent from this phone yet')}</Text>
             {items.length ? <Button title={t('Send now')} icon="cloud-upload-outline" variant="secondary" onPress={() => void sync()} disabled={!online || syncing} /> : null}
           </Card>
         }
@@ -57,7 +57,7 @@ export default function OutboxScreen() {
             <SubmissionRow type={item.type} title={item.title} subtitle={item.subtitle} meta={`${t(STATUS_TEXT[item.status])} · ${t('saved {ago}', { ago: timeAgo(item.createdAt) })}`} onPress={() => (item.status === 'FAILED' ? fix(item) : undefined)} />
             {item.status === 'FAILED' ? (
               <View style={styles.failed}>
-                <Text style={styles.error}>{item.error}</Text>
+                <Text maxFontSizeMultiplier={maxFontScale} style={styles.error}>{item.error}</Text>
                 <View style={styles.actions}>
                   {OUTBOX_FIX_PATH[item.type] ? <Button title={t('Fix and send')} size="sm" icon="create-outline" onPress={() => fix(item)} /> : null}
                   <Button title={t('Send again')} size="sm" variant="secondary" icon="refresh" onPress={() => void retry(item.id)} />

@@ -9,7 +9,7 @@ import { useOffline } from '../src/offline';
 import { canSaveOffline, saveProjectFiles, savedFileIds } from '../src/offline/drawings';
 import { useProjectOptions } from '../src/forms/common';
 import { Button, EmptyState, ErrorBanner, Input, Loading, Pill, Screen, SectionTitle, Select, Touchable } from '../src/components';
-import { colors, fontSize, radius, spacing, toneIcon, touch, typography } from '../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, toneIcon, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -90,7 +90,7 @@ export default function DocumentsScreen() {
       {canSaveOffline && files.length ? (
         <View style={styles.offline}>
           <Ionicons name={missing ? 'cloud-download-outline' : 'checkmark-circle'} size={20} color={missing ? colors.textMuted : colors.success} />
-          <Text style={[typography.caption, styles.flex]}>{missing ? t('{saved} of {total} drawings saved on this phone', { saved: files.length - missing, total: files.length }) : t('All current drawings saved on this phone')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.flex]}>{missing ? t('{saved} of {total} drawings saved on this phone', { saved: files.length - missing, total: files.length }) : t('All current drawings saved on this phone')}</Text>
           {missing ? <Button title={saving ?? t('Save offline')} size="sm" variant="secondary" icon="download-outline" loading={!!saving} disabled={!online || !!saving} onPress={() => void saveAll()} /> : null}
         </View>
       ) : null}
@@ -110,19 +110,19 @@ export default function DocumentsScreen() {
               return (
                 <Touchable key={d.id} accessibilityRole="button" onPress={() => router.push(`/drawing/${d.id}`)} style={styles.row}>
                   <View style={styles.flex}>
-                    <Text style={typography.caption}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                       {d.docNo} · {t('Rev {rev}', { rev: cur.revision })} · {formatDate(cur.issuedOn)}
                     </Text>
-                    <Text style={styles.title} numberOfLines={2}>
+                    <Text maxFontSizeMultiplier={maxFontScale} style={styles.title} numberOfLines={2}>
                       {d.title}
                     </Text>
-                    {!buildable ? <Text style={styles.warn}>{t(cur.status === 'AS_BUILT' ? 'As-built record' : 'Not for construction')}</Text> : null}
+                    {!buildable ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.warn}>{t(cur.status === 'AS_BUILT' ? 'As-built record' : 'Not for construction')}</Text> : null}
                     {cur.remarks ? (
-                      <Text style={typography.caption} numberOfLines={2}>
+                      <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption} numberOfLines={2}>
                         {cur.remarks}
                       </Text>
                     ) : null}
-                    {d.openMarkups ? <Text style={styles.marks}>{d.openMarkups === 1 ? t('1 open mark') : t('{n} open marks', { n: d.openMarkups })}</Text> : null}
+                    {d.openMarkups ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.marks}>{d.openMarkups === 1 ? t('1 open mark') : t('{n} open marks', { n: d.openMarkups })}</Text> : null}
                   </View>
                   <View style={styles.side}>
                     <Pill text={t(REVISION_STATUS_LABELS[cur.status])} fg={buildable ? colors.success : colors.warning} bg={buildable ? colors.successSoft : colors.warningSoft} icon={buildable ? toneIcon.done : toneIcon.warning} />
@@ -134,7 +134,7 @@ export default function DocumentsScreen() {
           </View>
         ))
       )}
-      {docs.fromCache ? <Text style={[typography.caption, styles.center]}>{t('Showing the list saved on this phone.')}</Text> : null}
+      {docs.fromCache ? <Text maxFontSizeMultiplier={maxFontScale} style={[typography.caption, styles.center]}>{t('Showing the list saved on this phone.')}</Text> : null}
     </Screen>
   );
 }

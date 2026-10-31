@@ -11,7 +11,7 @@ import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, Phot
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos } from '../../src/forms/common';
 import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
@@ -146,7 +146,7 @@ export default function BreakdownScreen() {
       </Card>
       <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Button title={t('Report breakdown')} icon="send" onPress={submit} loading={busy} />
     </Screen>

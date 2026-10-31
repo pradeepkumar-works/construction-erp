@@ -8,7 +8,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
 import { OrderBudget, OrderQuotes } from '../../src/components/OrderDecision';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
 const rupees = (v: string) => formatMoney(v);
@@ -30,8 +30,8 @@ export default function PurchaseOrderScreen() {
       <SubmissionHeader item={data} title={`${data.poNo} · ${data.vendorName}`} subtitle={`${formatDate(data.poDate)}${data.requestNo ? ` · ${t('for {request}', { request: data.requestNo })}` : ''}`} />
       <Card>
         <View style={styles.box}>
-          <Text style={styles.total}>{rupees(data.total)}</Text>
-          <Text style={typography.caption}>{t('order total with GST and freight')}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={styles.total}>{rupees(data.total)}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{t('order total with GST and freight')}</Text>
         </View>
         <KeyValue label={t('Vendor')} value={data.vendorName} />
         <KeyValue label={t('GSTIN')} value={data.vendorGstin} />
@@ -49,15 +49,15 @@ export default function PurchaseOrderScreen() {
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.lineTitle} numberOfLines={2}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={styles.lineTitle} numberOfLines={2}>
                 {l.itemName}
               </Text>
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)} + {l.gstRate}% GST
                 {Number(l.receivedQty) > 0 ? ` · ${t('{qty} received', { qty: fmtQty(l.receivedQty) })}` : ''}
               </Text>
             </View>
-            <Text style={styles.amount}>{rupees(l.amount)}</Text>
+            <Text maxFontSizeMultiplier={maxFontScale} style={styles.amount}>{rupees(l.amount)}</Text>
           </View>
         ))}
       </Card>

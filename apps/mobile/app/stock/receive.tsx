@@ -12,7 +12,7 @@ import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import type { TranslateVars } from '../../src/i18n/translate';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
 
@@ -265,8 +265,8 @@ export default function ReceiveScreen() {
         <Card title={t('Quantities received')}>
           {request.lines.map((l) => (
             <View key={l.id} style={styles.line}>
-              <Text style={typography.bodyStrong}>{l.itemName}</Text>
-              <Text style={typography.caption}>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.bodyStrong}>{l.itemName}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
                 {request.kind === 'PO'
                   ? t('Ordered {due} · received {received} · pending {pending} {unit}', { due: fmtQty(l.due), received: fmtQty(l.received), pending: fmtQty(l.pending), unit: l.unit })
                   : t('Requested {due} · received {received} · pending {pending} {unit}', { due: fmtQty(l.due), received: fmtQty(l.received), pending: fmtQty(l.pending), unit: l.unit })}
@@ -278,16 +278,16 @@ export default function ReceiveScreen() {
                   keyboardType="decimal-pad"
                   placeholder={`0 ${l.unit}`}
                   accessibilityLabel={t('Quantity of {item} received, in {unit}', { item: l.itemName, unit: l.unit })}
-                  right={<Text style={typography.caption}>{l.unit}</Text>}
+                  right={<Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>{l.unit}</Text>}
                   error={errors[l.id]}
                   containerStyle={styles.qty}
                 />
               ) : (
-                <Text style={styles.done}>{t('Fully received')}</Text>
+                <Text maxFontSizeMultiplier={maxFontScale} style={styles.done}>{t('Fully received')}</Text>
               )}
             </View>
           ))}
-          {errors.lines ? <Text style={styles.err}>{errors.lines}</Text> : null}
+          {errors.lines ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.lines}</Text> : null}
         </Card>
       ) : null}
 
@@ -300,7 +300,7 @@ export default function ReceiveScreen() {
         <Input {...field()} label={t('Challan / invoice no.')} value={challanNo} onChangeText={setChallanNo} />
         <Input {...field()} label={t('Vehicle no.')} value={vehicleNo} onChangeText={setVehicleNo} autoCapitalize="characters" />
         <PhotoPicker label={t('Challan photo')} photos={photos} onChange={setPhotos} max={4} />
-        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.err}>{errors.photos}</Text> : null}
         <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
       </Card>
       <Button title={t('Save GRN')} icon="checkmark" onPress={save} loading={busy} disabled={!request} />

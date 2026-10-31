@@ -9,7 +9,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, Screen, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
 import { NCR_STATUS_TONE, SEVERITY_TONE } from '../../src/components/qualityTone';
-import { colors, spacing, typography, toneIcon } from '../../src/theme';
+import { colors, maxFontScale, spacing, toneIcon, typography } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -59,10 +59,10 @@ export default function NcrScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
-        <Text style={typography.caption}>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.ncrNo} · {data.projectName}
         </Text>
-        <Text style={typography.h2}>{data.title}</Text>
+        <Text maxFontSizeMultiplier={maxFontScale} style={typography.h2}>{data.title}</Text>
         <View style={styles.pills}>
           <Pill text={t(NCR_STATUS_LABELS[data.status])} {...NCR_STATUS_TONE[data.status]} />
           <Pill text={t(NCR_SEVERITY_LABELS[data.severity])} {...SEVERITY_TONE[data.severity]} />
