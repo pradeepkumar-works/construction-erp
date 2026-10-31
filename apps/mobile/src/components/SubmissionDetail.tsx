@@ -175,7 +175,7 @@ const DETAIL_API: Record<SubmissionType, string> = {
 
 /**
  * Approve / request changes / reject with an optional note, for whoever decides a SUBMITTED entry at the level it waits
- * at (v5 item 94, the API's stage). Everyone else sees whose queue it is in, since when, and why they cannot decide it.
+ * at (the API's stage). Everyone else sees whose queue it is in, since when, and why they cannot decide it.
  */
 export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed }: { type: SubmissionType; item: T; onReviewed: (updated: T) => void }) {
   const { user } = useAuth();
@@ -281,7 +281,7 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   );
 }
 
-/** Where a waiting entry stands (v5 item 94): its level, whose queue it is in and since when, and why this user cannot decide it. */
+/** Where a waiting entry stands: its level, whose queue it is in and since when, and why this user cannot decide it. */
 function StageCard({ stage }: { stage: ApprovalStageDto }) {
   const t = useT();
   const who = stage.waitingWith.map((r) => t(r)).join(', ');

@@ -3,7 +3,7 @@ import { ownFieldLabel, type DprOwnField } from '@erp/shared';
 import { Chips, DatePicker, Input, Select, TimePicker } from '../components';
 import { useLanguage, useT } from '../i18n/LanguageContext';
 
-/** The values of the company's own DPR fields (item 134 part 2) as the phone holds them: text, by key. */
+/** The values of the company's own DPR fields as the phone holds them: text, by key. */
 export type OwnValues = Record<string, string>;
 
 /** The values as the API takes them: blank ones left out; the API reads numbers and yes / no from the text. */

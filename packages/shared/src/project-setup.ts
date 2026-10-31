@@ -3,7 +3,7 @@ import { sectorKinds } from './sector';
 import { canFreezeBaseline, canViewContract, canViewCost, canViewReconciliation } from './permissions';
 
 /**
- * Setting up a new project (finding 6 of the October review): the steps a project needs before the site starts
+ * Setting up a new project: the steps a project needs before the site starts
  * entering work, each ticked from the records themselves; the standard contract terms a new project starts with; and
  * the check that the BOQ adds up to roughly the contract value. Pure, tested in `apps/api/src/scripts/project-setup-test.ts`.
  */
@@ -108,7 +108,7 @@ const STEP_ACCESS: Partial<Record<SetupStepKey, (role: RoleKey) => boolean>> = {
 
 export interface ProjectSetupFacts {
   type: ProjectType;
-  /** Where its type locates work (item 134); the built-in kind's places when left out */
+  /** Where its type locates work; the built-in kind's places when left out */
   locations?: WorkLocation[];
   contractModel: ContractModel;
   /** People on the project besides its project manager */
@@ -161,7 +161,7 @@ export function setupShown(f: { type: ProjectType; status: string; physicalProgr
 
 /**
  * The sector view a project sets up: villages where its type locates work by village, else floors, else chainage
- * (item 134: from its type's places; a road or a sewer line chainage, a building floors, water supply villages).
+ * (from its type's places; a road or a sewer line chainage, a building floors, water supply villages).
  */
 export const sectorStepOf = (p: ProjectType | { type: ProjectType; locations?: WorkLocation[] | null }): 'chainage' | 'floors' | 'villages' | null => {
   const k = sectorKinds(p);

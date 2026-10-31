@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openProjectTab, projectTabs, signIn } from './helpers';
 
-/** Billing: the client master and a project's contract terms (v3 item 17). */
+/** Billing: the client master and a project's contract terms. */
 test('the project manager sees the client master and the road contract', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/clients');

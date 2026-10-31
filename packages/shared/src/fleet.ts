@@ -1,7 +1,7 @@
 import type { EquipmentOwnership, EquipmentPartKind, FuelNormUnit } from './enums';
 
 /**
- * Fuel and fleet use (v5 item 93): fuel issued from the store into machines, each site's daily fuel position, a fuel
+ * Fuel and fleet use: fuel issued from the store into machines, each site's daily fuel position, a fuel
  * norm per machine checked against its logs, utilisation over a period, and the tyres and batteries on each machine.
  */
 

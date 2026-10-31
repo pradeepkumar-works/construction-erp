@@ -1,5 +1,5 @@
 /**
- * When a site photo was taken (UX item 88), kept in its file name: `site-20261018-143205-1.jpg`. The upload API stores
+ * When a site photo was taken, kept in its file name: `site-20261018-143205-1.jpg`. The upload API stores
  * the name with the attachment, so the time travels with the photo through the outbox, onto the server and to the web,
  * without a new field; re-encoding the photo (`shrinkPhoto`) would drop the camera's own EXIF time.
  */

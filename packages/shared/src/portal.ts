@@ -2,7 +2,7 @@ import type { ProjectStatus, ProjectType } from './enums';
 import type { DailyReportDto, InspectionDto, RaBillDto } from './types';
 
 /**
- * The client portal (v3 item 32): what the client's engineer or consultant sees of a project they are a member of.
+ * The client portal: what the client's engineer or consultant sees of a project they are a member of.
  * Approved work only; RA bills once sent to the client; inspections once requested.
  */
 export interface PortalProjectDto {

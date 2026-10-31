@@ -3,7 +3,7 @@ import type { DailyReportDto, DprFormVersionsDto } from '../../packages/shared/s
 import { API_URL, api, apiToken, chooseOption, formPanel, PASSWORD, settle, signIn } from './helpers';
 
 /**
- * The DPR form per project type (item 134 part 2, ARCHITECTURE "DPR form per project type"): an admin adds a field of
+ * The DPR form per project type (ARCHITECTURE "DPR form per project type"): an admin adds a field of
  * the company's own to the road's form, the site's report asks for it and refuses to go without it, the record shows
  * it, and the report keeps its version when the form goes back to standard. A fresh company keeps the demo data as it is.
  */

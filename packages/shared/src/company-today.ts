@@ -1,7 +1,7 @@
 import type { SubmissionType } from './enums';
 
 /**
- * Management view on the phone (v5 item 96): `GET /dashboard/company-today`, the company's day at a glance for owners,
+ * Management view on the phone: `GET /dashboard/company-today`, the company's day at a glance for owners,
  * directors, accounts and project managers. Each part is left out for a role that may not see its module, and covers
  * only the projects the caller sees.
  */

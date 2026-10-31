@@ -20,7 +20,7 @@ async function signInGuest(page: Page, email: string) {
 }
 
 /**
- * Client portal (v3 item 32): the client's engineer on the road project is told a bill was sent, certifies it with a cut
+ * Client portal: the client's engineer on the road project is told a bill was sent, certifies it with a cut
  * in the portal, and the QS hears of it; then they record attending an inspection the site requested. The rest of the
  * app stays closed to them.
  */

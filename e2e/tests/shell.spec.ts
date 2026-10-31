@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { chooseOption, signIn, formPanel, menuSettled, openNewMenu } from './helpers';
 
-/** The header (UI roadmap item 54): project switcher, + New, favourites, recent pages in Search, Help. */
+/** The header: project switcher, + New, favourites, recent pages in Search, Help. */
 test('the project picked in the header filters every list and is kept after a reload', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   const switcher = page.getByRole('combobox', { name: 'Project', exact: true });
@@ -57,7 +57,7 @@ test('a page pinned to Home is under Pinned, and the last pages opened lead Sear
   await expect(page.getByRole('heading', { name: 'Daily reports' })).toBeVisible();
   await page.goto('/attendance');
   await expect(page.getByRole('heading', { name: 'Attendance', level: 1 })).toBeVisible();
-  // Recent is no longer a sidebar section (UX item 87): Search shows it before anything is typed, newest first, without
+  // Recent is no longer a sidebar section: Search shows it before anything is typed, newest first, without
   // the page that is open.
   await expect(nav.getByRole('button', { name: 'Recent', exact: true })).toHaveCount(0);
   await page.keyboard.press('Control+k');

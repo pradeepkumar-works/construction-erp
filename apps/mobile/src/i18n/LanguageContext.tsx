@@ -6,7 +6,7 @@ import { setFormatLanguage } from '../utils/format';
 import { kvGet, kvSet } from '../utils/kv';
 
 /**
- * The app's display language. The first launch follows the phone's own language when the app has it (UX item 80), so
+ * The app's display language. The first launch follows the phone's own language when the app has it, so
  * a phone set to Hindi opens in Hindi; a user switches on the intro, the sign-in screen or under Profile, and the
  * choice is kept on this phone.
  */
@@ -14,7 +14,7 @@ export type LanguageCode = 'en' | 'hi';
 
 export const DEFAULT_LANGUAGE: LanguageCode = 'en';
 
-/** `available: false` languages are listed as coming soon until their translations ship. Hindi shipped in v4 item 49. */
+/** `available: false` languages are listed as coming soon until their translations ship. */
 export const LANGUAGES: { code: LanguageCode; label: string; available: boolean }[] = [
   { code: 'en', label: 'English', available: true },
   { code: 'hi', label: 'हिन्दी (Hindi)', available: true },

@@ -7,7 +7,7 @@ type Ncr = { id: string; ncrNo: string; raisedByClient: boolean; severity: strin
 type Report = { rows: { projectId: string; audits: number; findingsOpen: number }[]; totals: { audits: number } };
 
 /**
- * QA/QC part 3 (item 137): QA/QC records a client's visit with two findings; a visit from outside must say who came;
+ * QA/QC part 3: QA/QC records a client's visit with two findings; a visit from outside must say who came;
  * one finding is closed with what was done and the other becomes an NCR raised by the client, after which the audit is
  * kept; a site engineer cannot record one; the month's report counts it; the pages open.
  */

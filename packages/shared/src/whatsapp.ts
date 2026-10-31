@@ -4,7 +4,7 @@ import type { WhatsAppProvider } from './messaging';
 import { canUseAi } from './ai';
 
 /**
- * WhatsApp and voice capture (AI item 120): a site person sends a text, a photo with a caption or a voice note to the
+ * WhatsApp and voice capture: a site person sends a text, a photo with a caption or a voice note to the
  * company's WhatsApp number; Ask Nirmaan drafts the record it describes and replies with it, and the sender saves it in
  * their own name with one tap (Save), or opens it in the app to change it. Nothing is saved without that tap.
  */
@@ -79,7 +79,7 @@ export interface CaptureStatsDto {
   discarded: number;
 }
 export const CAPTURE_STATS_DAYS = 30;
-/** The go-live bar (AI strategy, item 120): at least this share of decided drafts saved without a change. */
+/** The go-live bar (AI strategy): at least this share of decided drafts saved without a change. */
 export const CAPTURE_GO_LIVE_SHARE = 0.7;
 
 export interface CaptureListDto {

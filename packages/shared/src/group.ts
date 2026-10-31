@@ -3,7 +3,7 @@ import { isGuest } from './permissions';
 import type { SwitchableModule } from './module-switches';
 
 /**
- * Group companies (phase 1, ARCHITECTURE "Group companies"). A parent company's group holds companies that each stay a
+ * Group companies (ARCHITECTURE "Group companies"). A parent company's group holds companies that each stay a
  * full company (own data, roles, books and menu). A person signs in once and moves between the companies they have a
  * place in with the company switcher; the group's admins make companies and give people places in them.
  */

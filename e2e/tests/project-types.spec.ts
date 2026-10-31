@@ -5,7 +5,7 @@ type TypeDto = { code: string; name: string; standard: boolean; edited: boolean;
 type Structure = { elements: { code: string; name: string; kindCode: string | null; elementType: string; level: string }[] };
 
 /**
- * Project types (item 134, ARCHITECTURE "Project types"): a company starts with the standard types and kinds, makes a
+ * Project types (ARCHITECTURE "Project types"): a company starts with the standard types and kinds, makes a
  * type of its own with a starting breakdown, and a new project of that type lays the breakdown out at the counts picked.
  * The demo company's own Bridge type shows its kinds and activities. A fresh company keeps the demo data as it is.
  */

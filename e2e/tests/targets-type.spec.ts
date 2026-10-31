@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import { measureTargets, setAppearance, settle, signIn } from './helpers';
 
 /**
- * Targets and type (UX item 82), in comfortable and compact density: every control at least 24 px (or spaced as WCAG
- * 2.5.8 allows) and no text below 12 px, as `measureTargets` in helpers.ts defines them. The route walk (item 89) runs
+ * Targets and type, in comfortable and compact density: every control at least 24 px (or spaced as WCAG
+ * 2.5.8 allows) and no text below 12 px, as `measureTargets` in helpers.ts defines them. The route walk runs
  * the same check on every sidebar page, at 44 px on a touch screen.
  */
 test.use({ contextOptions: { reducedMotion: 'reduce' } });

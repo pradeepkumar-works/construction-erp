@@ -7,7 +7,7 @@ type MyWork = Partial<Record<'toOrder' | 'dueThisWeek' | 'staffToDecide' | 'cert
 const myWork = async (email: string) => api<MyWork>(await apiToken(email), '/dashboard/my-work');
 
 /**
- * My work queues (finding 8 of the October review): each desk sees the list it works through, purchase what is left to
+ * My work queues: each desk sees the list it works through, purchase what is left to
  * order, the store what is due this week, HR the leave and overtime to decide, accounts the certified bills and the
  * goods with no bill yet; and Home leads with the most pressing of them.
  */

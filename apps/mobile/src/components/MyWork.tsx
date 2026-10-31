@@ -126,7 +126,7 @@ interface Row {
 }
 
 /**
- * The home tab's "My work" (UI roadmap item 66): one card per kind of work that has something in it, in the order
+ * The home tab's "My work": one card per kind of work that has something in it, in the order
  * the user's role leads with, each with its count and up to three items. `GET /dashboard/my-work` only returns what
  * the role may see.
  */

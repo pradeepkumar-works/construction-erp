@@ -1,4 +1,4 @@
-/** The lists that keep saved views (UI roadmap item 55). The key is the list page's path without the slash. */
+/** The lists that keep saved views. The key is the list page's path without the slash. */
 export const SAVED_VIEW_LISTS = ['dpr', 'progress', 'material-requests', 'requests-to-order', 'purchase-orders', 'bills', 'machinery', 'expenses', 'measurements', 'vendor-bills', 'work-orders', 'subcontract-bills', 'inspections', 'projects', 'clients', 'vendors', 'users', 'risks', 'variations', 'inward-letters', 'outward-letters'] as const;
 export type SavedViewList = (typeof SAVED_VIEW_LISTS)[number];
 

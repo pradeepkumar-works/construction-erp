@@ -1,7 +1,7 @@
 import type { ComparativeStatementDto } from './types';
 
 /**
- * Award the lowest rate per item (finding 12 of the October review). The comparative statement marks the cheapest
+ * Award the lowest rate per item. The comparative statement marks the cheapest
  * landed rate for each line, but a purchase order is raised on one quotation, so splitting a request between the
  * winners meant raising each order by hand. These rules turn a comparative statement into one draft order per
  * winning vendor, and say what the split saves against buying everything from the cheapest single quotation.
@@ -146,7 +146,7 @@ function singleVendorFor(cs: ComparativeStatementDto, orders: AwardOrder[]): Awa
 export const isSplitWorthwhile = (plan: AwardPlan) => plan.orders.length > 1;
 
 /**
- * Where a delivery goes when the order says nothing (finding 12 of the October review): the project's site address,
+ * Where a delivery goes when the order says nothing: the project's site address,
  * else the place it is in. The purchase order, the enquiry a supplier sees and the order's form all read it from here.
  */
 export function siteDeliveryAddress(project: { siteAddress?: string | null; location?: string | null } | null | undefined): string | null {

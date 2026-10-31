@@ -1,7 +1,7 @@
 import type { NotificationType } from './enums';
 import { NOTIFICATION_TYPES } from './enums';
 
-/** The notifications drawer's tabs (UI roadmap item 63): what happened to you, what waits on your decision, what falls due. */
+/** The notifications drawer's tabs: what happened to you, what waits on your decision, what falls due. */
 export const NOTIFICATION_TABS = ['FOR_ME', 'APPROVALS', 'REMINDERS'] as const;
 export type NotificationTab = (typeof NOTIFICATION_TABS)[number];
 

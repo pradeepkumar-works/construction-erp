@@ -1,5 +1,5 @@
 /**
- * Subcontract enquiries (v6 item 111): chosen BOQ items (or the enquiry's own items) sent to several subcontractors,
+ * Subcontract enquiries: chosen BOQ items (or the enquiry's own items) sent to several subcontractors,
  * their rates compared item by item and in total in a comparative statement, and the chosen quote made a work order.
  */
 export const SC_ENQUIRY_STATUSES = ['OPEN', 'AWARDED', 'CANCELLED'] as const;

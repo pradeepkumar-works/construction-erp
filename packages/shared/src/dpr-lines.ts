@@ -1,5 +1,5 @@
 /**
- * DPR work lines (item 127, ARCHITECTURE "Structured DPR"). A DPR's work is a list of lines, each against an activity
+ * DPR work lines (ARCHITECTURE "Structured DPR"). A DPR's work is a list of lines, each against an activity
  * or sub-activity of the work breakdown, with its location, crew, machines and material. Each line is a progress entry
  * of the DPR: it is submitted, approved and sent back with the DPR. The arithmetic here is pure, so the API, the web
  * and the phone agree on it.
@@ -23,7 +23,7 @@ export interface DprLineDto {
   /** The activity this is a sub-activity of ("Staging lift 4"), else null */
   parentActivityName: string | null;
   unit: string;
-  /** The component and sub-component the activity sits in (item 125), else null */
+  /** The component and sub-component the activity sits in, else null */
   componentCode: string | null;
   componentName: string | null;
   subComponentCode: string | null;
@@ -40,7 +40,7 @@ export interface DprLineDto {
   workOrderId: string | null;
   workOrderNo: string | null;
   remarks: string | null;
-  /** The pipe stage the activity stands for (item 126), and the segment or valve node the line was on */
+  /** The pipe stage the activity stands for, and the segment or valve node the line was on */
   pipeStage: PipeStage | null;
   pipeSegmentId: string | null;
   /** "P-27, J-12 to J-13" */
@@ -58,7 +58,7 @@ export interface DprLineDto {
   pct: number | null;
   /** scope − cumulative (negative when the work ran over the scope) */
   balance: string;
-  /** The line's values of the form's own fields (item 134), by key */
+  /** The line's values of the form's own fields, by key */
   extra: DprExtra;
   /** The line's photo, when the form asks for one */
   attachments: AttachmentDto[];
@@ -79,16 +79,16 @@ export interface DprLineInput {
   materials?: { itemId: string; quantity: string }[];
   workOrderId?: string | null;
   remarks?: string | null;
-  /** On a pipe stage activity (item 126): the segment worked on, and the valve fixed or the end the work started from */
+  /** On a pipe stage activity: the segment worked on, and the valve fixed or the end the work started from */
   pipeSegmentId?: string | null;
   pipeNodeId?: string | null;
-  /** Values of the form's own line fields (item 134), by key */
+  /** Values of the form's own line fields, by key */
   extra?: Record<string, unknown>;
   /** The line's photos (uploaded attachments) */
   attachmentIds?: string[];
 }
 
-/** Material one unit of the activity uses: its own norm (item 128), else its BOQ item's reconciliation norm (v5 item 92). */
+/** Material one unit of the activity uses: its own norm, else its BOQ item's reconciliation norm. */
 export interface DprNormDto {
   itemId: string;
   itemName: string;
@@ -113,7 +113,7 @@ export interface DprActivityOptionDto {
   lookAhead: boolean;
   holdPoint: boolean;
   norms: DprNormDto[];
-  /** The pipe stage the activity stands for (item 126): its lines name a segment of `zoneId` (a valve node for VALVES) */
+  /** The pipe stage the activity stands for: its lines name a segment of `zoneId` (a valve node for VALVES) */
   pipeStage: PipeStage | null;
   zoneId: string | null;
 }
@@ -147,10 +147,10 @@ export interface DprWorkOptionsDto {
   workOrders: { id: string; woNo: string; title: string; vendorName: string }[];
   /** The company records progress only as DPR work lines */
   progressFromDpr: boolean;
-  /** Proposed pipe segments and valve points of the project's zones and mains (item 126) */
+  /** Proposed pipe segments and valve points of the project's zones and mains */
   segments: DprSegmentOptionDto[];
   valves: DprValveOptionDto[];
-  /** The DPR form of the project's type (item 134), the version a new report is made on */
+  /** The DPR form of the project's type, the version a new report is made on */
   form: DprFormDto;
   /** Where the project's work is located, for a line's chainage, floor or village */
   sector: { locations: WorkLocation[]; chainageStart: number | null; chainageEnd: number | null; floors: string[]; villages: string[] };
@@ -288,8 +288,6 @@ export function dprLineProblem(l: { activityId?: string | null; quantity?: strin
   if (q <= 0) return `Line ${n}: the quantity must be more than 0`;
   return null;
 }
-
-/* ---------- picking a line's activity: component, then sub-component, then activity (web and phone) ---------- */
 
 type PickActivity = Pick<DprActivityOptionDto, 'componentCode' | 'componentName' | 'subComponentCode' | 'subComponentName'>;
 /** The pick of an activity outside the breakdown, and of activities on a component itself rather than a sub-component. */

@@ -12,7 +12,7 @@ const daysAgo = (n: number) => {
 };
 
 /**
- * Design and drawings part 1 (item 138): the document controller adds a drawing the client's consultant owes, now late;
+ * Design and drawings part 1: the document controller adds a drawing the client's consultant owes, now late;
  * the reminder drafts an outward letter that names it; the document controller cannot raise a delay, the project manager
  * records it in the risk register, after which the line is kept; the next number follows the project's scheme; a site
  * engineer cannot add to the schedule; the pages open.

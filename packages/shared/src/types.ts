@@ -79,21 +79,21 @@ export interface AuthUser {
   support?: { staffName: string; expiresAt: string };
   /** The company's subscription, only when billing is switched on for this server */
   billing?: BillingStateDto;
-  /** Ask Nirmaan is switched on for the company and set up on this server (AI roadmap item 67) */
+  /** Ask Nirmaan is switched on for the company and set up on this server */
   ai?: boolean;
-  /** A supplier-portal login (v6 item 105): the vendor it acts for */
+  /** A supplier-portal login: the vendor it acts for */
   vendor?: { id: string; name: string };
-  /** The modules the company does not use (v6 item 117): turned off by an admin or left out of its plan. Empty when all are on. */
+  /** The modules the company does not use: turned off by an admin or left out of its plan. Empty when all are on. */
   modulesOff?: SwitchableModule[];
   /** Menu and names: the company's menu, when it chose anything other than the default (`DEFAULT_NAV_SETTINGS`). */
   navigation?: NavSettingsDto;
   /** The look this person chose for themselves (used when the company lets people choose) */
   ownLook?: NavLook;
-  /** Group companies (phase 1): the companies the person can switch to, when there are two or more */
+  /** Group companies: the companies the person can switch to, when there are two or more */
   companies?: CompanyChoiceDto[];
   /** The group the company belongs to, if any */
   group?: AuthGroupDto;
-  /** The kind of company (group companies, phase 1) */
+  /** The kind of company (group companies) */
   companyKind?: CompanyKind;
 }
 
@@ -179,16 +179,16 @@ export interface ProjectSummary {
   name: string;
   /** The built-in kind of its type */
   type: ProjectType;
-  /** Its project type (item 134), the company's or a standard one; null for a store or plant */
+  /** Its project type, the company's or a standard one; null for a store or plant */
   typeCode: string | null;
   typeName: string | null;
-  /** Its vertical (item 167), a code of the `vertical` master; null when it has none */
+  /** Its vertical, a code of the `vertical` master; null when it has none */
   verticalCode: string | null;
   /** Where its work is located, and whether it has a pipe network, from its type (`projectFeatures`) */
   locations: WorkLocation[];
   pipeNetwork: boolean;
   status: ProjectStatus;
-  /** Item rate, lump sum or EPC (item 125) */
+  /** Item rate, lump sum or EPC */
   contractModel: ContractModel;
   clientName: string | null;
   location: string | null;
@@ -211,19 +211,19 @@ export interface ProjectDetail extends ProjectSummary {
   consultantName: string | null;
   workOrderNo: string | null;
   description: string | null;
-  /** Sector settings (v4 item 41): road / pipeline length in metres, building floors bottom up, water supply villages */
+  /** Sector settings: road / pipeline length in metres, building floors bottom up, water supply villages */
   chainageStart: number | null;
   chainageEnd: number | null;
   floors: string[];
   villages: string[];
-  /** Attendance extras (v5 item 97): the site's location for GPS check-in (decimal degrees as strings) */
+  /** Attendance extras: the site's location for GPS check-in (decimal degrees as strings) */
   siteLat: string | null;
   siteLng: string | null;
   /** Check-in radius in metres; null = the default 300 */
   siteRadiusM: number | null;
   /** Refuse a check-in from outside the radius, or without a position */
   siteCheckInStrict: boolean;
-  /** The completion date on the handover certificate (item 131's O&M starts after it); null before handover */
+  /** The completion date on the handover certificate (O&M starts after it); null before handover */
   handedOverOn: string | null;
   members: ProjectMemberDto[];
   createdAt: string;
@@ -249,7 +249,7 @@ export interface BoqItemDto {
   /** Measurements waiting for approval. */
   pendingMeasuredQty: string;
   sortOrder: number;
-  /** Bill section or cost centre (item 125) */
+  /** Bill section or cost centre */
   section: string | null;
   workElementId: string | null;
   /** Code and name of its component, e.g. "8.1 OHT 650 KL" */
@@ -282,7 +282,7 @@ export interface ActivityDto {
   /** Planned dates when the baseline was frozen; null if added after it */
   baselineStart: string | null;
   baselineEnd: string | null;
-  /** Work breakdown (item 125): its component, the activity it is part of, and its share of that, % */
+  /** Work breakdown: its component, the activity it is part of, and its share of that, % */
   workElementId: string | null;
   workElementName: string | null;
   parentActivityId: string | null;
@@ -331,7 +331,7 @@ export interface ProgressEntryDto extends SubmissionBase {
   chainageTo: number | null;
   floor: string | null;
   village: string | null;
-  /** The DPR this entry is a work line of (item 127): it is changed, submitted and approved there */
+  /** The DPR this entry is a work line of: it is changed, submitted and approved there */
   dailyReportId: string | null;
 }
 
@@ -358,13 +358,13 @@ export interface DailyReportDto extends SubmissionBase {
   issues: string | null;
   nextDayPlan: string | null;
   totalManpower: number;
-  /** Work lines (item 127) */
+  /** Work lines */
   lineCount: number;
   /** The work lines with their figures; on the single report (GET /dpr/:id), not in lists */
   lines?: DprLineDto[];
-  /** The version of its type's DPR form it was made on (item 134); null for the type's standard form */
+  /** The version of its type's DPR form it was made on; null for the type's standard form */
   formId: string | null;
-  /** The project's type (item 134): with `formId` null, the report was made on this type's standard form */
+  /** The project's type: with `formId` null, the report was made on this type's standard form */
   typeCode: string | null;
   /** Values of the form's own fields for the day, by key */
   extra: DprExtra;
@@ -382,7 +382,7 @@ export interface MaterialRequestItemDto {
   receivedQty: string;
   /** Quantity on purchase orders that are not rejected ("0" when none); a closed order counts what it received */
   orderedQty: string;
-  /** Met from stock (v5 item 95): issued at this site or transferred from another ("0" when none) */
+  /** Met from stock: issued at this site or transferred from another ("0" when none) */
   coveredQty: string;
   /** Still to be ordered: requested less what orders hold, what was received without an order and what stock met */
   toOrderQty: string;
@@ -406,7 +406,7 @@ export interface PendingApprovalDto {
   submittedAt: string;
   /** Rupees the approval limit is checked against (see APPROVAL_AMOUNT_BASIS); null for types without an amount. */
   amount: string | null;
-  /** v5 item 94: the level waiting and the levels it needs (left out when it needs one) */
+  /** The level waiting and the levels it needs (left out when it needs one) */
   level?: number;
   levels?: number;
   /** In this queue because it waited past its escalation time */
@@ -420,7 +420,7 @@ export interface ReviewedItemDto extends PendingApprovalDto {
   reviewedAt: string;
 }
 
-/** What a decision did (v5 item 94): below its last level an approval leaves the entry SUBMITTED for the next level. */
+/** What a decision did: below its last level an approval leaves the entry SUBMITTED for the next level. */
 export interface ReviewResultDto {
   ok: true;
   status: SubmissionStatus;
@@ -429,7 +429,7 @@ export interface ReviewResultDto {
   levels: number;
 }
 
-/** One of the caller's own entries waiting for approval, and whose queue it is in (v5 item 94, Waiting with others). */
+/** One of the caller's own entries waiting for approval, and whose queue it is in (Waiting with others). */
 export interface WaitingEntryDto extends PendingApprovalDto {
   level: number;
   levels: number;
@@ -456,7 +456,7 @@ export interface CompanyDashboard {
   projectsByType: { type: ProjectType; count: number }[];
   pendingApprovals: number;
   delayedActivities: number;
-  /** Activities whose planned finish has passed, finished or not: what `delayedActivities` is out of (UX item 85) */
+  /** Activities whose planned finish has passed, finished or not: what `delayedActivities` is out of */
   dueActivities?: number;
   dprsToday: number;
   /** Only for roles that see bills */
@@ -492,7 +492,7 @@ export interface MyWorkCard {
   /** The most urgent few */
   items: MyWorkItem[];
   /**
-   * How pressing the card is, in days (UX item 85): how long its most pressing entry is overdue, late or past its mark
+   * How pressing the card is, in days: how long its most pressing entry is overdue, late or past its mark
    * (0 when it is due today, negative while it is still ahead); null when nothing waits. My work puts the highest first.
    */
   urgencyDays?: number | null;
@@ -504,20 +504,20 @@ export interface MyWorkCard {
 }
 
 /**
- * The home page's My work (UI roadmap item 59): only what the caller's role can act on or see; a card is missing when
+ * The home page's My work: only what the caller's role can act on or see; a card is missing when
  * the role has no business with it, and present with count 0 when there is simply nothing to do.
  */
 export interface MyWorkDto {
   approvals?: { type: SubmissionType; count: number }[];
-  /** Days the oldest entry waiting for the caller's approval has waited (UX item 85); null when none waits */
+  /** Days the oldest entry waiting for the caller's approval has waited; null when none waits */
   approvalsWaitingDays?: number | null;
   /** Active projects with no daily report for today */
   dprsMissing?: MyWorkCard;
-  /** Early warnings not dismissed (AI item 73): finishes slipping, a cash gap, stock running out… */
+  /** Early warnings not dismissed: finishes slipping, a cash gap, stock running out… */
   watchList?: MyWorkCard;
   /** The caller's own entries rejected or sent back for changes */
   sentBack?: MyWorkCard;
-  /** The caller's own entries waiting for someone's approval, longest first, with whose queue (v5 item 94) */
+  /** The caller's own entries waiting for someone's approval, longest first, with whose queue */
   waitingWithOthers?: MyWorkCard;
   /** Sent RA bills not fully received, oldest first */
   receivables?: MyWorkCard;
@@ -529,9 +529,9 @@ export interface MyWorkDto {
   lateDeliveries?: MyWorkCard;
   /** Items below their minimum level in a store */
   lowStock?: MyWorkCard;
-  /** The caller's open actions from meeting minutes (v6 item 112), overdue first */
+  /** The caller's open actions from meeting minutes, overdue first */
   meetingActions?: MyWorkCard;
-  /** Purchase: approved material requests with something left to order, by the day they are needed (finding 8 of the October review) */
+  /** Purchase: approved material requests with something left to order, by the day they are needed */
   toOrder?: MyWorkCard;
   /** Store and purchase: open orders due in the next 7 days, soonest first */
   dueThisWeek?: MyWorkCard;
@@ -547,13 +547,13 @@ export interface MyWorkDto {
   toDebit?: MyWorkCard;
   /** Store: material another site or store sent here that is still on the road, oldest first */
   transfersToReceive?: MyWorkCard;
-  /** Letters marked to the caller and not acted on, and drafts waiting for their signature (Correspondence, item 136) */
+  /** Letters marked to the caller and not acted on, and drafts waiting for their signature (Correspondence) */
   letters?: MyWorkCard;
-  /** QA/QC and the managers: audit and visit findings still open with no NCR raised, most overdue first (item 137) */
+  /** QA/QC and the managers: audit and visit findings still open with no NCR raised, most overdue first */
   findingsToClose?: MyWorkCard;
 }
 
-/** Month by month, oldest first, for the home page's KPI trends and charts (UI roadmap item 59). */
+/** Month by month, oldest first, for the home page's KPI trends and charts. */
 export interface HomeTrendsDto {
   /** YYYY-MM, the last six months including this one */
   months: string[];
@@ -584,7 +584,7 @@ export interface ProjectDashboard {
   project: ProjectSummary;
   physicalProgressPct: number;
   /**
-   * Share of the work planned to be done by today, weighted as physical progress is (UX item 85), over the activities
+   * Share of the work planned to be done by today, weighted as physical progress is, over the activities
    * with planned dates; null when none has dates.
    */
   plannedProgressPct?: number | null;
@@ -702,7 +702,7 @@ export interface AttendanceSuggestionsDto {
   categories: string[];
 }
 
-/* ---------- stock ---------- */
+// Stock
 
 export interface ItemDto {
   id: string;
@@ -711,9 +711,9 @@ export interface ItemDto {
   category: string | null;
   /** Standard rate per unit used to value issues in the cost view. */
   rate: string | null;
-  /** Fuel (v5 item 93): issued to machines and counted in the daily fuel position */
+  /** Fuel: issued to machines and counted in the daily fuel position */
   isFuel?: boolean;
-  /** Pipe (item 128): the size it lays as when the name does not say it, and kg per metre for pipe bought by weight */
+  /** Pipe: the size it lays as when the name does not say it, and kg per metre for pipe bought by weight */
   pipeDiameterMm?: number | null;
   pipeMaterial?: PipeMaterial | null;
   kgPerMetre?: string | null;
@@ -758,7 +758,7 @@ export interface StockEntryDto {
   issuedTo: string | null;
   activityId: string | null;
   activityName: string | null;
-  /** Issues and returns (item 128): the component or pipe zone the material went to, "9.2 Zone 2" */
+  /** Issues and returns: the component or pipe zone the material went to, "9.2 Zone 2" */
   workElementId?: string | null;
   workElementLabel?: string | null;
   /** Issues to a subcontractor: their work order, and the bill that recovered the material */
@@ -775,9 +775,9 @@ export interface StockEntryDto {
   transferOutNo: string | null;
   fromProjectName: string | null;
   remarks: string | null;
-  /** Adjustments: why (v5 item 92); null on adjustments made before reasons were asked */
+  /** Adjustments: why; null on adjustments made before reasons were asked */
   adjustmentReason?: StockAdjustmentReason | null;
-  /** Fuel issues (v5 item 93): the machine fuelled and its meter then */
+  /** Fuel issues: the machine fuelled and its meter then */
   equipmentId?: string | null;
   equipmentCode?: string | null;
   meterReading?: string | null;
@@ -786,7 +786,7 @@ export interface StockEntryDto {
   qcAt?: string | null;
   qcByName?: string | null;
   qcNote?: string | null;
-  /** Receipts: the maker's test certificate for the lot (item 137 part 2) */
+  /** Receipts: the maker's test certificate for the lot */
   mtcNo?: string | null;
   mtcDate?: string | null;
   lines: StockLineDto[];
@@ -873,7 +873,7 @@ export interface ReceivableRequestDto {
   lines: ReceivableLineDto[];
 }
 
-/* ---------- machinery ---------- */
+// Machinery
 
 export interface EquipmentDto {
   id: string;
@@ -888,7 +888,7 @@ export interface EquipmentDto {
   /** Only returned to roles that manage equipment (rates are commercial); null otherwise. */
   rate: string | null;
   rateUnit: EquipmentRateUnit;
-  /** Hire terms of a hired machine (v5 item 91): hours paid for a month at least, who fuels it, operator included */
+  /** Hire terms of a hired machine: hours paid for a month at least, who fuels it, operator included */
   hireMinHours: string | null;
   hireFuelBy: HireFuelBy | null;
   hireOperator: boolean | null;
@@ -902,13 +902,13 @@ export interface EquipmentDto {
   serviceIntervalDays: number | null;
   lastServiceDate: string | null;
   lastServiceMeter: string | null;
-  /** Fuel norm (v5 item 93): litres an hour, or km a litre, and the % the average may stray; null when not set */
+  /** Fuel norm: litres an hour, or km a litre, and the % the average may stray; null when not set */
   fuelNorm?: string | null;
   fuelNormUnit?: FuelNormUnit | null;
   fuelTolerancePct?: string | null;
-  /** The fuel tank's size in litres (item 147), so a sensor's % reads as litres */
+  /** The fuel tank's size in litres, so a sensor's % reads as litres */
   fuelTankLitres?: string | null;
-  /** Its running loan (v6 item 108), for those who keep machine loans */
+  /** Its running loan, for those who keep machine loans */
   loan?: { id: string; lenderName: string } | null;
   createdAt: string;
 }
@@ -923,7 +923,7 @@ export interface MachineryLogDto extends SubmissionBase {
   idleHours: string;
   breakdownHours: string;
   dieselLitres: string | null;
-  /** Fuel issued from the store to this machine on the day (v5 item 93), to set beside the litres typed */
+  /** Fuel issued from the store to this machine on the day, to set beside the litres typed */
   fuelIssuedLitres?: string | null;
   meterStart: string | null;
   meterEnd: string | null;
@@ -933,14 +933,14 @@ export interface MachineryLogDto extends SubmissionBase {
   workDone: string | null;
   breakdownNote: string | null;
   remarks: string | null;
-  /** The hire bill that billed it (v5 item 91); a billed log is locked */
+  /** The hire bill that billed it; a billed log is locked */
   vendorBillId: string | null;
   vendorBillNo: string | null;
-  /** What the machine's tracker or maker's feed gave for the day (item 146), on the single log */
+  /** What the machine's tracker or maker's feed gave for the day, on the single log */
   engine?: MachineEngineDto | null;
 }
 
-/* ---------- measurement book ---------- */
+// Measurement book
 
 export interface MeasurementLineDto {
   id: string;
@@ -982,7 +982,7 @@ export interface MeasurementSheetDto extends SubmissionBase {
   lines: MeasurementLineDto[];
 }
 
-/* ---------- site expenses ---------- */
+// Site expenses
 
 export interface ExpenseDto extends SubmissionBase {
   expenseNo: string;
@@ -1025,7 +1025,7 @@ export interface Paginated<T> {
   pageSize: number;
 }
 
-/* ---------- project cost ---------- */
+// Project cost
 
 export interface LabourRateDto {
   id: string;
@@ -1105,7 +1105,7 @@ export interface ProjectCostDto extends ProjectCostSummaryDto {
   subcontractByOrder: { workOrderId: string; woNo: string; vendorName: string; bills: number; amount: string }[];
 }
 
-/* ---------- budget and forecast ---------- */
+// Budget and forecast
 
 /** One cost head: budget, actual to date, the budget earned by the work done, and the forecast at completion. */
 export interface BudgetHeadDto {
@@ -1220,7 +1220,7 @@ export interface CashFlowDto {
   projectsWithoutEndDate: { projectId: string; projectCode: string }[];
 }
 
-/* ---------- progress report ---------- */
+// Progress report
 
 export interface ReportActivityRowDto {
   id: string;
@@ -1271,7 +1271,7 @@ export interface ProgressReportDto {
   from: string;
   to: string;
   generatedAt: string;
-  /** A Monday-to-Sunday week's summary paragraph, written overnight by Ask Nirmaan (AI item 74); null otherwise. */
+  /** A Monday-to-Sunday week's summary paragraph, written overnight by Ask Nirmaan; null otherwise. */
   narrative: ProgressNarrativeDto | null;
   physical: { atStartPct: number; atEndPct: number };
   /** Share of the contract period elapsed at the end of the report period; null without both dates. */
@@ -1294,7 +1294,7 @@ export interface ProgressReportDto {
   photos: { url: string; caption: string }[];
 }
 
-/* ---------- delay and risk register ---------- */
+// Delay and risk register
 
 export interface RiskDto {
   id: string;
@@ -1364,12 +1364,12 @@ export interface DelaySuggestionDto {
   daysLate: number;
 }
 
-/* ---------- activity templates ---------- */
+// Activity templates
 
 export interface ActivityTemplateDto {
   /** The type's built-in kind */
   projectType: ProjectType;
-  /** The project type (item 134) the list belongs to */
+  /** The project type the list belongs to */
   typeCode: string;
   typeName: string;
   /** True while the organisation has not saved its own list for this type (the built-in one is shown). */
@@ -1384,14 +1384,14 @@ export interface ApplyTemplateResultDto {
   skipped: string[];
 }
 
-/* ---------- approval matrix ---------- */
+// Approval matrix
 
 export interface ApprovalRuleDto {
   roleKey: RoleKey;
   type: SubmissionType;
   /** null = no limit */
   maxAmount: string | null;
-  /** v5 item 94: 1 (the matrix) when left out; 2 or 3 for a higher level */
+  /** 1 (the matrix) when left out; 2 or 3 for a higher level */
   level?: number;
   /** Higher levels: the amount from which this level applies; null = always */
   minAmount?: string | null;
@@ -1402,15 +1402,15 @@ export interface ApprovalMatrixDto {
   custom: boolean;
   roles: { roleKey: RoleKey; roleName: string; users: number }[];
   rules: ApprovalRuleDto[];
-  /** Accounts pays a bill only against an approved payment request (v5 item 90) */
+  /** Accounts pays a bill only against an approved payment request */
   paymentsNeedRequest: boolean;
-  /** Progress is recorded only as DPR work lines (item 127) */
+  /** Progress is recorded only as DPR work lines */
   progressFromDpr: boolean;
-  /** Reminders and escalation per submission type (v5 item 94); types left out have neither */
+  /** Reminders and escalation per submission type; types left out have neither */
   escalations: ApprovalEscalationDto[];
 }
 
-/* ---------- clients and contracts ---------- */
+// Clients and contracts
 
 export interface VendorDto {
   id: string;
@@ -1493,7 +1493,7 @@ export interface ContractExtensionDto {
 }
 
 /** A project's contract with its client: what RA bills are built on. Percentages are of the work value. */
-/** One component of a contract's price variation formula (v4 item 50). */
+/** One component of a contract's price variation formula. */
 export interface PriceVariationComponentDto {
   id: string;
   name: string;
@@ -1552,14 +1552,14 @@ export interface ProjectContractDto {
   ldCapPct: string;
   /** Exposure to liquidated damages; null without a contract value and completion date */
   ld: LdExposureDto | null;
-  /** The contract currency (item 130): amounts here are rupees, kept at `exchangeRate` rupees to one unit */
+  /** The contract currency: amounts here are rupees, kept at `exchangeRate` rupees to one unit */
   currency: string;
   exchangeRate: string | null;
   updatedAt: string;
 }
 
 /**
- * A project's exposure to liquidated damages (v4 item 50): how late it is against the completion date after the
+ * A project's exposure to liquidated damages: how late it is against the completion date after the
  * extensions of time granted, and the LD that gives at the contract's rate, up to its cap.
  */
 export interface LdExposureDto {
@@ -1596,7 +1596,7 @@ export interface LdExposureDto {
   capReached: boolean;
 }
 
-/* ---------- RA bills ---------- */
+// RA bills
 
 export interface RaBillItemDto {
   id: string;
@@ -1657,7 +1657,7 @@ export interface RaBillPvLineDto {
 
 export interface RaBillDto extends SubmissionBase {
   billNo: number;
-  /** The contract currency (item 130): the bill's amounts are rupees, kept at `exchangeRate` rupees to one unit */
+  /** The contract currency: the bill's amounts are rupees, kept at `exchangeRate` rupees to one unit */
   currency: string;
   exchangeRate: string | null;
   /**
@@ -1684,7 +1684,7 @@ export interface RaBillDto extends SubmissionBase {
   grossAmount: string;
   grossUpto: string;
   /**
-   * Price variation on this bill's work value (v4 item 50): work value × Σ share × (current − base) / base over the
+   * Price variation on this bill's work value: work value × Σ share × (current − base) / base over the
    * contract's components. Negative when the indices fell. GST and the deductions are on work value + price variation.
    */
   pvAmount: string;
@@ -1692,12 +1692,12 @@ export interface RaBillDto extends SubmissionBase {
   pvIndexMonth: string | null;
   pvNote: string | null;
   pvLines: RaBillPvLineDto[];
-  /** Lump-sum projects billing by stages (item 129): one line per payment stage, the milestone slippage withheld (negative
+  /** Lump-sum projects billing by stages: one line per payment stage, the milestone slippage withheld (negative
    * when released) and the components behind it, and the tender factor the unit-rate items are priced with */
   stageLines: RaBillStageLineDto[];
   slippageWithheld: string;
   slippageLines: SlippageLineDto[];
-  /** An O&M bill (item 131): the period, the instalment and what was taken off it; null on a works bill */
+  /** An O&M bill: the period, the instalment and what was taken off it; null on a works bill */
   om: OmBillDto | null;
   tenderFactor: string | null;
   gstRate: string;
@@ -1733,7 +1733,7 @@ export interface RaBillDto extends SubmissionBase {
   receipts?: ReceiptDto[];
 }
 
-/* ---------- Receivables ---------- */
+// Receivables
 
 export type ReceiptDeductionKey = 'tds' | 'gstTds' | 'retention' | 'securityDeposit' | 'advanceRecovery' | 'labourCess' | 'other';
 
@@ -1752,7 +1752,7 @@ export interface ReceiptDto {
   receiptDate: string;
   /** Credited to the bank; on a project in another currency, the client's payment at the contract rate */
   amount: string;
-  /** The project's contract currency and rate, and this receipt's rate on the day (item 130) */
+  /** The project's contract currency and rate, and this receipt's rate on the day */
   currency: string;
   contractRate: string | null;
   exchangeRate: string | null;
@@ -1840,7 +1840,7 @@ export interface ReceivablesDto {
   openBills: OpenBillDto[];
 }
 
-/* ---------- purchasing (v3 item 21) ---------- */
+// Purchasing
 
 export interface QuotationLineDto {
   materialRequestItemId: string;
@@ -1876,13 +1876,13 @@ export interface QuotationDto {
   total: string;
   /** Lines of the request it has no rate for */
   missingLines: number;
-  /** Typed by the supplier on an enquiry link (v5 item 95) */
+  /** Typed by the supplier on an enquiry link */
   fromSupplier: boolean;
   createdByName: string;
   createdAt: string;
 }
 
-/** A day's approved work still to measure (finding 14 of the October review), as the measure-from-progress list shows it. */
+/** A day's approved work still to measure, as the measure-from-progress list shows it. */
 export interface ToMeasureEntryDto {
   id: string;
   date: string;
@@ -1934,7 +1934,7 @@ export interface ComparativeStatementDto {
   }[];
   /** The quotation with the lowest total among those quoting every line */
   lowestQuotationId: string | null;
-  /** Each quoting vendor's deliveries over the last year (intelligence quick win Q5), for the scorecard */
+  /** Each quoting vendor's deliveries over the last year, for the scorecard */
   vendorRecords: VendorRecordDto[];
 }
 
@@ -1943,7 +1943,7 @@ export interface PurchaseOrderLineDto {
   materialRequestItemId: string | null;
   itemName: string;
   specification: string | null;
-  /** The make ordered (v6 item 113) */
+  /** The make ordered */
   make: string | null;
   unit: string;
   quantity: string;
@@ -1956,7 +1956,7 @@ export interface PurchaseOrderLineDto {
   /** On vendor bills against this line that are not rejected */
   billedQty: string;
   /**
-   * On the order's own record only (item 121): another site paid less for this item in the 30 days before the order;
+   * On the order's own record only: another site paid less for this item in the 30 days before the order;
    * null when nobody did, absent in lists.
    */
   rateCheck?: PoLineRateCheckDto | null;
@@ -1983,7 +1983,7 @@ export interface PurchaseOrderDto extends SubmissionBase {
   remarks: string | null;
   closedAt: string | null;
   closeNote: string | null;
-  /** Accepted by the supplier on the supplier portal (v6 item 105), with their remark */
+  /** Accepted by the supplier on the supplier portal, with their remark */
   supplierAcceptedAt: string | null;
   supplierAcceptedBy: string | null;
   supplierNote: string | null;
@@ -2003,7 +2003,7 @@ export interface PurchaseOrderDto extends SubmissionBase {
   bills?: { id: string; billNo: string; invoiceNo: string; invoiceDate: string; total: string; status: SubmissionStatus; matched: boolean }[];
   /** Only on GET /purchase-orders/:id: the supplier's dispatch notes (supplier portal) */
   dispatches?: { id: string; dispatchNo: string; date: string; vehicleNo: string | null; status: SupplierDispatchStatus; grnNo: string | null }[];
-  /** Advances paid against the order (v5 item 90) */
+  /** Advances paid against the order */
   advancePaid: string;
   /** Advances asked for on requests that are not rejected; an advance request may go up to total less this */
   advanceRequested: string;
@@ -2021,13 +2021,13 @@ export interface ReceivableOrderDto {
   vendorName: string;
   deliveryBy: string | null;
   lines: { purchaseOrderLineId: string; itemName: string; specification: string | null; unit: string; ordered: string; received: string; pending: string }[];
-  /** The supplier's dispatch notes still on the way (supplier portal, v6 item 105): a GRN can be filled from one */
+  /** The supplier's dispatch notes still on the way (supplier portal): a GRN can be filled from one */
   dispatches: { id: string; dispatchNo: string; date: string; vehicleNo: string | null; lines: { purchaseOrderLineId: string; quantity: string }[] }[];
 }
 
 export interface VendorBillLineDto {
   id: string;
-  /** PO bills: the PO line billed; null on hire, service and other bills (v5 item 91) */
+  /** PO bills: the PO line billed; null on hire, service and other bills */
   purchaseOrderLineId: string | null;
   /** The PO line's item, or the line's own description */
   itemName: string;
@@ -2043,11 +2043,11 @@ export interface VendorBillLineDto {
   receivedQty: string | null;
   /** Billed on the vendor's other bills against this line (not rejected) */
   billedElsewhere: string | null;
-  /** Hire bills: 0 the hire line, 1 the minimum-hours top-up, 10 on the lines typed in (v5 item 91) */
+  /** Hire bills: 0 the hire line, 1 the minimum-hours top-up, 10 on the lines typed in */
   sortOrder: number;
 }
 
-/** A machine log or job card billed on a hire or service bill (v5 item 91). */
+/** A machine log or job card billed on a hire or service bill. */
 export interface VendorBillSourceDto {
   id: string;
   /** The log's date, or the job's number */
@@ -2066,7 +2066,7 @@ export interface VendorBillDto extends SubmissionBase {
   vendorName: string;
   vendorGstin: string | null;
   vendorMsme: MsmeCategory | null;
-  /** What the bill is against (v5 item 91) */
+  /** What the bill is against */
   kind: VendorBillKind;
   /** PO bills only */
   purchaseOrderId: string | null;
@@ -2097,7 +2097,7 @@ export interface VendorBillDto extends SubmissionBase {
   exceptions: string[];
   remarks: string | null;
   lines: VendorBillLineDto[];
-  /** Advance paid on the PO taken off this bill (v5 item 90) */
+  /** Advance paid on the PO taken off this bill */
   advanceAdjusted: string;
   /** What the bill asks to be paid: total less advanceAdjusted, fuel recovered and debit notes */
   payable: string;
@@ -2112,7 +2112,7 @@ export interface VendorBillDto extends SubmissionBase {
   paidDate: string | null;
 }
 
-/* ---------- subcontractor work orders and bills (v3 item 22) ---------- */
+// Subcontractor work orders and bills
 
 export interface WorkOrderLineDto {
   id: string;
@@ -2147,7 +2147,7 @@ export interface WorkOrderDto extends SubmissionBase {
   advanceRecoveryPct: string;
   /** Advance recovered on their bills so far (not rejected) */
   advanceRecovered: string;
-  /** Advances paid against the order (v5 item 90); once any is paid, recovery is capped at this instead of advanceAmount */
+  /** Advances paid against the order; once any is paid, recovery is capped at this instead of advanceAmount */
   advancePaid: string;
   /** Advances asked for on requests that are not rejected */
   advanceRequested: string;
@@ -2159,7 +2159,7 @@ export interface WorkOrderDto extends SubmissionBase {
   remarks: string | null;
   closedAt: string | null;
   closeNote: string | null;
-  /** Accepted by the supplier on the supplier portal (v6 item 105), with their remark */
+  /** Accepted by the supplier on the supplier portal, with their remark */
   supplierAcceptedAt: string | null;
   supplierAcceptedBy: string | null;
   supplierNote: string | null;
@@ -2236,14 +2236,14 @@ export interface SubcontractBillDto extends SubmissionBase {
   advanceRecoveryPct: string;
   tdsPct: string;
   materialRecovery: string;
-  /** Material used beyond the norm and its wastage, from the reconciliation (v5 item 92) */
+  /** Material used beyond the norm and its wastage, from the reconciliation */
   excessRecovery: string;
   otherDeduction: string;
   otherDeductionNote: string | null;
   deductions: SubcontractBillDeductionDto[];
   totalDeductions: string;
   netPayable: string;
-  /** Debit notes against it that are not cancelled (v5 item 91) */
+  /** Debit notes against it that are not cancelled */
   debitNoteAmount: string;
   /** Settled by payments (paid plus deducted at payment) */
   paidAmount: string;
@@ -2277,11 +2277,11 @@ export interface WorkOrderMarginDto {
   workOrders: { id: string; woNo: string; vendorName: string; quantity: string; rate: string }[];
 }
 
-/* ---------- payables (v3 item 23) ---------- */
+// Payables
 
 export type PayableBillType = 'VENDOR_BILL' | 'SUBCONTRACT_BILL';
 
-/** A request to pay a bill or release an advance (v5 item 90), approved through the matrix before accounts pays. */
+/** A request to pay a bill or release an advance, approved through the matrix before accounts pays. */
 export interface PaymentRequestDto extends SubmissionBase {
   /** PR-2026-0001 */
   requestNo: string;
@@ -2291,7 +2291,7 @@ export interface PaymentRequestDto extends SubmissionBase {
   vendorId: string | null;
   vendorName: string | null;
   vendorMsme: MsmeCategory | null;
-  /** A fund request (v6 item 107): what for, the imprest it tops up (with its holder), and the site that asked when not the project */
+  /** A fund request: what for, the imprest it tops up (with its holder), and the site that asked when not the project */
   purpose: FundPurpose | null;
   imprestId: string | null;
   imprestHolderName: string | null;
@@ -2338,7 +2338,7 @@ export interface DebitNoteLineDto {
 }
 
 /**
- * What we take off an approved vendor or subcontract bill (v5 item 91): DN-2026-0001. Not approved separately (it is
+ * What we take off an approved vendor or subcontract bill: DN-2026-0001. Not approved separately (it is
  * raised by those who record bills); a cancelled note no longer reduces the bill.
  */
 export interface DebitNoteDto {
@@ -2375,7 +2375,7 @@ export interface DebitNoteDto {
   lines: DebitNoteLineDto[];
 }
 
-/** What a hire bill for one machine, project and month would hold (GET /vendor-bills/hire-preview, v5 item 91). */
+/** What a hire bill for one machine, project and month would hold (GET /vendor-bills/hire-preview). */
 export interface HireBillPreviewDto {
   equipmentId: string;
   equipmentCode: string;
@@ -2406,7 +2406,7 @@ export interface HireBillPreviewDto {
   existingBill: { id: string; billNo: string } | null;
 }
 
-/** A closed job card a workshop can bill (GET /vendor-bills/billable-jobs, v5 item 91). */
+/** A closed job card a workshop can bill (GET /vendor-bills/billable-jobs). */
 export interface BillableJobDto {
   id: string;
   jobNo: string;
@@ -2439,7 +2439,7 @@ export interface VendorPaymentDto {
   projectName: string;
   vendorId: string;
   vendorName: string;
-  /** null for an advance (v5 item 90), which is paid against the order */
+  /** null for an advance, which is paid against the order */
   billType: PayableBillType | null;
   vendorBillId: string | null;
   subcontractBillId: string | null;
@@ -2490,7 +2490,7 @@ export interface PayableTotalsDto {
   retentionHeld: string;
   /** TDS deducted: on subcontractor bills and at payment */
   tdsDeducted: string;
-  /** Advances paid against orders not yet taken off their bills (v5 item 90) */
+  /** Advances paid against orders not yet taken off their bills */
   advanceOutstanding: string;
 }
 
@@ -2528,7 +2528,7 @@ export interface PayableBillDto {
   daysToDue: number;
   /** A micro or small enterprise whose bill is due within 7 days or overdue */
   msmeFlag: boolean;
-  /** The latest payment request on it that is open (v5 item 90) */
+  /** The latest payment request on it that is open */
   request: BillRequestDto | null;
 }
 
@@ -2543,7 +2543,7 @@ export interface PayablesDto {
   paymentsNeedRequest: boolean;
 }
 
-// ----- Tally export -----
+// Tally export
 
 export interface TallyEntryDto {
   ledgerKey: string;
@@ -2621,7 +2621,7 @@ export interface TallySettingsDto {
   ledgers: TallyLedgerRowDto[];
 }
 
-// ----- GST registers -----
+// GST registers
 
 /** GSTR-1 section an RA bill falls in: B2B to a registered client, B2CS (small, unregistered) otherwise. */
 export type GstOutwardSection = 'B2B' | 'B2CS';
@@ -2648,7 +2648,7 @@ export interface GstOutwardRowDto {
   invoiceValue: string;
 }
 
-/** DEBIT_NOTE rows are negative: a note against a bill reverses its input tax (v5 item 91). */
+/** DEBIT_NOTE rows are negative: a note against a bill reverses its input tax. */
 export type GstInwardSource = 'VENDOR_BILL' | 'SUBCONTRACT_BILL' | 'EXPENSE' | 'DEBIT_NOTE';
 
 /** A purchase with GST, one row per invoice and rate, laid out like GSTR-2B. */
@@ -2697,7 +2697,7 @@ export interface GstRegistersDto {
   warnings: string[];
 }
 
-/* ---------- Quality ---------- */
+// Quality
 
 export interface ChecklistTemplateDto {
   id: string;
@@ -2761,12 +2761,12 @@ export interface QualityTestDto {
   openNcrs: number;
   /** Pipe lengths this test covers (a hydraulic test of P-12 to P-15); a pass marks their TEST stage done */
   segments: { id: string; code: string; label: string }[];
-  /** The test type it was taken as, the plan line it counts under and the pour its cubes came from (item 137) */
+  /** The test type it was taken as, the plan line it counts under and the pour its cubes came from */
   testTypeCode: string | null;
   planLineId: string | null;
   pourId: string | null;
   pourNo: string | null;
-  /** Sent out (item 137 part 2): the lab, the day it went, its report number and day, and the charge */
+  /** Sent out: the lab, the day it went, its report number and day, and the charge */
   labId: string | null;
   labName: string | null;
   sentOn: string | null;
@@ -2817,7 +2817,7 @@ export interface NcrDto {
   closedByName: string | null;
   closedAt: string | null;
   closureNote: string | null;
-  /** Item 137 part 2: the NCR category and root cause (master codes), raised by the client or TPI, and what putting it right cost */
+  /** The NCR category and root cause (master codes), raised by the client or TPI, and what putting it right cost */
   category: string | null;
   rootCause: string | null;
   raisedByClient: boolean;
@@ -2837,7 +2837,7 @@ export interface QualitySummaryDto {
   ncrsOverdue: number;
 }
 
-/* ---------- document register ---------- */
+// Document register
 
 /** One revision of a drawing or document with its files. */
 export interface DocumentRevisionDto {
@@ -2870,7 +2870,7 @@ export interface DocumentDto {
   /** The current revision, null until the first one is added */
   current: DocumentRevisionDto | null;
   revisionCount: number;
-  /** Marks on its drawings not yet resolved (item 109) */
+  /** Marks on its drawings not yet resolved */
   openMarkups: number;
   createdById: string;
   createdByName: string;
@@ -2923,7 +2923,7 @@ export interface LetterRefDto {
   subject: string;
 }
 
-/** Where a search inside the filed documents found its words (Ask the contract, AI item 75). */
+/** Where a search inside the filed documents found its words (Ask the contract). */
 export interface DocumentSearchHitDto {
   source: 'DOCUMENT' | 'LETTER';
   projectId: string;
@@ -2999,7 +2999,7 @@ export interface LetterDto {
   signatoryId: string | null;
   signatoryName: string | null;
   sentForApprovalAt: string | null;
-  /** Item 169: when its signatory approved it, where it then waits for head office's seal (L2); null before */
+  /** When its signatory approved it, where it then waits for head office's seal (L2); null before */
   signedAt: string | null;
   signedByName: string | null;
   /** The letter waits for head office's seal after its signature (the company's rule, for its category) */
@@ -3046,7 +3046,7 @@ export interface DocumentSummaryDto {
   lettersOverdue: number | null;
 }
 
-/* ---------- staff and leave (v3 item 29) ---------- */
+// Staff and leave
 
 export interface EmployeeDto {
   id: string;
@@ -3064,7 +3064,7 @@ export interface EmployeeDto {
   joinedOn: string | null;
   leftOn: string | null;
   isActive: boolean;
-  /** HR records (v6 item 99): terms of employment, shown to whoever sees the staff record */
+  /** HR records: terms of employment, shown to whoever sees the staff record */
   employmentType: EmploymentType | null;
   grade: string | null;
   reportingToId: string | null;
@@ -3090,7 +3090,7 @@ export interface StaffAttendanceDto {
   checkOut: string | null;
   /** Decimal(4,1) as a string */
   overtimeHours: string | null;
-  /** Attendance extras (v5 item 97): overtime waits for a decision; payroll pays approved overtime only */
+  /** Attendance extras: overtime waits for a decision; payroll pays approved overtime only */
   overtimeStatus: OvertimeStatus | null;
   overtimeDecidedByName: string | null;
   overtimeNote: string | null;
@@ -3180,7 +3180,7 @@ export interface MyStaffDto {
   balances: LeaveBalanceDto[];
   leave: LeaveRequestDto[];
   holidays: HolidayDto[];
-  /** Attendance extras (v5 item 97): the site check-in is measured against (their posting); null when it has no location */
+  /** Attendance extras: the site check-in is measured against (their posting); null when it has no location */
   site: CheckInSiteDto | null;
   /** Days present this month so far, a half day counting half (the phone's Home shows it) */
   monthPresent: string;
@@ -3200,14 +3200,14 @@ export interface CheckInSiteDto {
 export interface StaffSummaryDto {
   /** Leave requests waiting on the caller */
   leaveToDecide: number;
-  /** Attendance extras (v5 item 97): days of overtime waiting on the caller */
+  /** Attendance extras: days of overtime waiting on the caller */
   overtimeToDecide: number;
   /** Active employees the caller can see (null when they cannot see the staff list) */
   employees: number | null;
   onLeaveToday: number | null;
 }
 
-/* ---------- payroll inputs (v3 item 30) ---------- */
+// Payroll inputs
 
 /** One employee's month, as the payroll provider needs it. Days are numbers (halves allowed). */
 export interface PayrollRowDto {
@@ -3233,7 +3233,7 @@ export interface PayrollRowDto {
   notMarked: number;
   /** Sundays and holidays worked (comp-off earned) */
   offDaysWorked: number;
-  /** Approved overtime only (v5 item 97) */
+  /** Approved overtime only */
   overtimeHours: number;
   /** Overtime still waiting for a decision; not paid until approved */
   overtimePendingHours: number;

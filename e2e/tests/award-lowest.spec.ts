@@ -8,7 +8,7 @@ type Mr = { id: string; requestNo: string; items: { id: string; itemName: string
 type Po = { id: string; poNo: string; status: string; vendorName: string; deliveryAddress: string | null; lines: { itemName: string; quantity: string; rate: string }[] };
 
 /**
- * Award the lowest rate per item (finding 12 of the October review): the comparative statement marks the cheapest rate
+ * Award the lowest rate per item: the comparative statement marks the cheapest rate
  * for each item, but an order goes to one vendor, so the buyer used to raise each one by hand. One button now splits
  * the request between the winners, and the orders take the project's own delivery address.
  */

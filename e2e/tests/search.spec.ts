@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
 
-/** Search everything (UI roadmap item 62): records by number or name, recent records and actions in Ctrl K. */
+/** Search everything: records by number or name, recent records and actions in Ctrl K. */
 
 type Page<T> = { items: T[] };
 type SearchResult = { hits: { kind: string; title: string; href: string }[] };

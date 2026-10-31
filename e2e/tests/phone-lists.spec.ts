@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { newestFirst, pageOverflow, signIn } from './helpers';
 
-// UX item 84: lists on a phone are cards with their filters in a drawer, a record keeps its actions in reach, the header
+// Lists on a phone are cards with their filters in a drawer, a record keeps its actions in reach, the header
 // fits; on a laptop the DPR list fits without sideways scroll; the finance pages, tabs and the Approvals filters live in
 // the URL so a reload keeps them.
 

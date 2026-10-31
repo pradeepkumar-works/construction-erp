@@ -12,7 +12,7 @@ export interface OutboxPhoto {
   type: string;
   /** Set once the photo has been uploaded; a retry never uploads it again. */
   attachmentId?: string;
-  /** A DPR work line's photo (item 134 part 2): the line's id, so the send puts it on that line */
+  /** A DPR work line's photo: the line's id, so the send puts it on that line */
   line?: string;
 }
 
@@ -74,7 +74,7 @@ export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
 };
 
 /**
- * Phone forms that can open an entry the server refused, so it is corrected and sent again (UX item 80). The form reads
+ * Phone forms that can open an entry the server refused, so it is corrected and sent again. The form reads
  * the entry by its `outboxId` param, keeps its id (so a retry never makes a second entry) and replaces it when sent.
  */
 export const OUTBOX_FIX_PATH: Partial<Record<OutboxType, string>> = {

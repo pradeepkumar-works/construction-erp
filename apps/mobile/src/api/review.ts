@@ -26,7 +26,7 @@ export const canQuickReview = (type: SubmissionType) => type !== 'INSPECTION';
 export const MIN_REASON_LENGTH = 5;
 
 /**
- * What is wrong with the note for this decision (English, the `t()` key), or null (UX item 88): Approve stays one tap
+ * What is wrong with the note for this decision (English, the `t()` key), or null: Approve stays one tap
  * with an optional note; Reject says why and Send back says what needs changing, so the submitter knows what to fix.
  */
 export function reviewNoteProblem(decision: ReviewDecision, note: string | undefined): string | null {
@@ -36,7 +36,7 @@ export function reviewNoteProblem(decision: ReviewDecision, note: string | undef
 
 /**
  * Approve, send back or reject an entry, with a note for the submitter (required to reject or send back). Used by the
- * record screens and the Approvals tab. With approval levels (v5 item 94) an approval below the last level leaves the
+ * record screens and the Approvals tab. With approval levels an approval below the last level leaves the
  * entry SUBMITTED for the next one: the result says which level was decided.
  */
 export function reviewSubmission(api: Api, type: SubmissionType, id: string, decision: ReviewDecision, note?: string) {

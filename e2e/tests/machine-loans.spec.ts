@@ -15,7 +15,7 @@ const post = (token: string, path: string, body: unknown = {}) =>
   fetch(`${API_URL}${path}`, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 /**
- * Machine finance (v6 item 108): accounts record a loan on an owned machine from Machine loans (the form works the EMI
+ * Machine finance: accounts record a loan on an owned machine from Machine loans (the form works the EMI
  * out), record the first EMI paid from the loan's page, and the payment reaches the Tally export as principal to the
  * loan and interest to finance costs.
  */

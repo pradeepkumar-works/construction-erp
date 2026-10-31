@@ -1,9 +1,7 @@
 /**
- * Small items of v4 item 48: the unit master, financial years for report filters, and the procurement status report
+ * The unit master, financial years for report filters, and the procurement status report
  * (pending deliveries).
  */
-
-/* ---------- unit master ---------- */
 
 /** Units a company starts with; it can add its own and switch any off. */
 export const DEFAULT_UNITS: { code: string; name: string }[] = [
@@ -42,8 +40,6 @@ export interface UnitDto {
   itemCount: number;
 }
 
-/* ---------- financial years (April to March) ---------- */
-
 export interface FinancialYear {
   /** e.g. FY 2026-27 */
   label: string;
@@ -66,8 +62,6 @@ export function recentFinancialYears(today: string, count = 3): FinancialYear[] 
   const start = Number(current.from.slice(0, 4));
   return Array.from({ length: count }, (_, i) => financialYearOf(`${start - i}-04-01`));
 }
-
-/* ---------- procurement status ---------- */
 
 /** Where an approved purchase order stands on delivery. */
 export type DeliveryState = 'NOT_STARTED' | 'PARTLY_RECEIVED' | 'RECEIVED' | 'CLOSED';

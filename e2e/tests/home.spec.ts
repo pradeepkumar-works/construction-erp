@@ -38,7 +38,7 @@ const MANAGER_ORDER: (CardKey | 'approvals')[] = ['approvals', 'watchList', 'mee
 const monthName = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
 
 /**
- * Home dashboards by role (UI roadmap item 59): the page leads with what waits for the user (My work), then the KPI
+ * Home dashboards by role: the page leads with what waits for the user (My work), then the KPI
  * tiles and charts their role cares about. The API leaves out what a role cannot see, so the page cannot show it.
  */
 test('accounts lead with money due and see cash flow', async ({ page }) => {
@@ -78,7 +78,7 @@ test('a project manager sees approvals, missing DPRs and the progress curve', as
   if (work.dprsMissing!.count > 0) await expect(section(page, 'DPRs not filed today')).toBeVisible();
   else await expect(page.getByText(/^Nothing else waiting: .*\bDPRs\b/)).toBeVisible();
   await expect(page.getByText(/^Work done in [A-Z][a-z]{2,3}$/)).toBeVisible();
-  // The approvals tile gave way to progress against plan (UX item 85): done against planned, not a lone number.
+  // The approvals tile gave way to progress against plan: done against planned, not a lone number.
   await expect(page.getByText('Progress against plan', { exact: true })).toBeVisible();
   await expect(page.locator('.kpi-card').filter({ hasText: 'Progress against plan' })).toContainText(/\d+(\.\d)?% planned by now/);
   await expect(page.getByRole('img', { name: /^Planned against actual progress\. / })).toBeVisible();

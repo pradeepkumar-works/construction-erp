@@ -75,7 +75,7 @@ export default function SubmitHub() {
     ...(user && canRaiseRisk(user.roleKey) ? [RISK] : []),
     ...(user && canReportSafety(user.roleKey) ? [SAFETY] : []),
     ...(user && canReportDefect(user.roleKey) ? [SNAGS] : []),
-    // Nothing from a module the company has turned off (v6 item 117).
+    // Nothing from a module the company has turned off.
   ].filter((f) => !pathIsOff(f.href, user?.modulesOff));
   return (
     <Screen>

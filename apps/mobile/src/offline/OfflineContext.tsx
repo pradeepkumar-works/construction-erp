@@ -126,7 +126,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         await save({ ...item });
       }
       const ids = (list: OutboxPhoto[]) => list.map((p) => p.attachmentId).filter((x): x is string => !!x);
-      // A DPR line's photos go on the line they were taken for (item 134 part 2); the rest on the entry.
+      // A DPR line's photos go on the line they were taken for; the rest on the entry.
       const lines = item.payload.lines as { id?: string }[] | undefined;
       const payload =
         Array.isArray(lines) && photos.some((p) => p.line)
@@ -185,7 +185,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     } finally {
       syncRunning.current = false;
       setSyncing(false);
-      // Entries saved offline went out by themselves: say so (UX item 80), and say when one was refused.
+      // Entries saved offline went out by themselves: say so, and say when one was refused.
       const tr = tRef.current;
       if (refused) snackbar.show(refused === 1 ? tr('1 entry was not accepted. Open the outbox to fix it.') : tr('{n} entries were not accepted. Open the outbox to fix them.', { n: refused }), { tone: 'error' });
       else if (sent) snackbar.show(sent === 1 ? tr('1 entry from the outbox was sent') : tr('{n} entries from the outbox were sent', { n: sent }));

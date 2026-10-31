@@ -9,7 +9,7 @@ type Invoice = { id: string; invoiceNo: string; quantity: string; taxable: strin
 type Page<T> = { items: T[]; total: number };
 
 /**
- * RMC (v6 item 104): a quote is accepted, the plant sends a truck from the day (its materials leave the store), the site
+ * RMC: a quote is accepted, the plant sends a truck from the day (its materials leave the store), the site
  * receives it, accounts bill the challan with GST, and a role without RMC is refused.
  */
 test('a quote becomes an order, a truck goes from the day, and its challan is billed with GST', async ({ page }) => {

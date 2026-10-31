@@ -1,7 +1,7 @@
 import type { StatementLine } from './statements';
 
 /**
- * Books of account (v6 item 102): the chart of accounts, vouchers (posted by the modules or made by accounts with
+ * Books of account: the chart of accounts, vouchers (posted by the modules or made by accounts with
  * approval), and the day book, cash and bank books and ledgers built from them. The posting rules are the API's
  * posting service, shared with the Tally export; this holds the groups, labels and the shapes the screens use.
  */

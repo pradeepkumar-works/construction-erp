@@ -8,7 +8,7 @@ type Pair = { amount: string; previous: string };
 type Bank = { booksBalance: string; notPresented: string; bankOnlyWithdrawals: string; statementBalance: string | null; difference: string | null; statement: { id: string; description: string; bookLineId: string | null }[] };
 
 /**
- * Financial statements (v6 item 103): the trial balance and balance sheet balance and profit and loss adds up; a bank
+ * Financial statements: the trial balance and balance sheet balance and profit and loss adds up; a bank
  * statement imported on the page matches what agrees, a bank charge becomes a voucher and is matched by hand, and the
  * reconciliation comes to nothing; a voucher in the locked period is refused.
  */

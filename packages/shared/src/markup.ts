@@ -1,5 +1,5 @@
 /**
- * Drawing markup (item 109): marks people put on a revision's file in the drawing viewer, a pin with a comment, a
+ * Drawing markup: marks people put on a revision's file in the drawing viewer, a pin with a comment, a
  * cloud or box round a change, an arrow, a line of text or a freehand mark. Each is numbered on its document (M1, M2…),
  * stays OPEN until someone resolves it, and an open one is carried forward onto later revisions until resolved.
  *

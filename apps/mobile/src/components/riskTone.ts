@@ -1,7 +1,7 @@
 import type { RiskLevel, RiskStatus } from '@erp/shared';
 import { colors, toneIcon, type Tone } from '../theme';
 
-/** Each level and status with a shape as well as a colour (UX item 88). */
+/** Each level and status with a shape as well as a colour. */
 export const LEVEL_TONE: Record<RiskLevel, Tone> = {
   LOW: { fg: colors.success, bg: colors.successSoft, icon: 'arrow-down-circle-outline' },
   MEDIUM: { fg: colors.warning, bg: colors.warningSoft, icon: 'remove-circle-outline' },

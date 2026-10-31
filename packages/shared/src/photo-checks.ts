@@ -1,5 +1,5 @@
 /**
- * Site photo checks (AI item 76): a short caption for each photo on a DPR, a progress entry, a safety incident or a
+ * Site photo checks: a short caption for each photo on a DPR, a progress entry, a safety incident or a
  * snag, and flags such as workers without helmets or a photo that shows other work than the entry says. Advisory only:
  * a flag never blocks a submission, and a project's safety officer can switch the flags off.
  */

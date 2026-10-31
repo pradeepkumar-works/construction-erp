@@ -1,5 +1,5 @@
 /**
- * Machine telematics (item 146, ARCHITECTURE "Machine telematics"). A machine's tracker or its maker's feed sends its
+ * Machine telematics (ARCHITECTURE "Machine telematics"). A machine's tracker or its maker's feed sends its
  * hour meter, ignition, fuel and position; the API's `telematics-rules.ts` reads them and rolls each machine's day up.
  * This holds what the screens share: how far from its site a machine may be, when a log's hours are above the
  * engine's, and the shapes.
@@ -54,7 +54,7 @@ export interface MachineDayDto extends MachineEngineDto {
   log: { id: string; status: string; hoursWorked: string; idleHours: string } | null;
   /** The log's hours above the engine's beyond ENGINE_HOURS_TOLERANCE */
   hoursAbove: number | null;
-  /** The tank, for a machine whose tracker reads its fuel level (item 147) */
+  /** The tank, for a machine whose tracker reads its fuel level */
   fuel: MachineFuelDto | null;
 }
 
@@ -82,8 +82,6 @@ export function engineLogDraft(e: Pick<MachineEngineDto, 'engineHours' | 'idleHo
     meterEnd: e.meterEnd === null ? null : Number(e.meterEnd),
   };
 }
-
-/* ---------- fuel in the tank (item 147) ---------- */
 
 /** A rise or fall of the tank counts as a refill or a drain from this many litres. */
 export const FUEL_EVENT_MIN_LITRES = 20;

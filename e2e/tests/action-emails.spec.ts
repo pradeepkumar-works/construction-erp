@@ -12,7 +12,7 @@ type Notification = { title: string; body: string; type: string; entityId: strin
 const today = () => new Date().toISOString().slice(0, 10);
 
 /**
- * Finding 18 of the October review: a supplier's bill that misses its order is purchase's and the project manager's to
+ * A supplier's bill that misses its order is purchase's and the project manager's to
  * settle, not the approver's alone. Accounts records a bill for more than the store received and submits it; purchase
  * is told what the mismatch is, with the bill to open.
  */

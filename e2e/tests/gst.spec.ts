@@ -15,7 +15,7 @@ const months = () => {
   return { from: iso(start), to: iso(new Date(Date.UTC(d.getFullYear(), d.getMonth() + 1, 0))), fromMonth: iso(start).slice(0, 7), toMonth: iso(d).slice(0, 7) };
 };
 
-/** GST registers (v3 item 25): approved RA bills as outward supplies and purchases as input tax, with the GSTR-1 workbook. */
+/** GST registers: approved RA bills as outward supplies and purchases as input tax, with the GSTR-1 workbook. */
 test('GST registers show outward supplies and input tax, and download as Excel', async ({ page }) => {
   const accounts = await apiToken('accounts@demo.com');
   const { from, to, fromMonth, toMonth } = months();

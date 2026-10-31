@@ -1,4 +1,4 @@
-/** Clients and contract terms shared by the API and the clients (v3 item 17). */
+/** Clients and contract terms shared by the API and the clients. */
 
 /** 10-character PAN: five letters, four digits, a letter. */
 export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
@@ -10,7 +10,7 @@ export const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 export const UDYAM_PATTERN = /^UDYAM-[A-Z]{2}-[0-9]{2}-[0-9]{7}$/;
 
 /**
- * The PAN inside a GSTIN (finding 17 of the October review: the state filled itself but the PAN was typed again):
+ * The PAN inside a GSTIN (the state filled itself but the PAN was typed again):
  * characters 3 to 12 of a well-formed GSTIN are the holder's PAN. Null when there is no GSTIN to read it from.
  */
 export function panFromGstin(gstin: string | null | undefined): string | null {
@@ -56,7 +56,7 @@ export function revisedCompletion(endDate: string | null, extensionDays: number)
 }
 
 /** "RA bill 3", or "RA bill 7 (final)". */
-/** "RA bill 3", "RA bill 7 (final)", or "O&M bill 9" for an instalment of the O&M contract (item 131). */
+/** "RA bill 3", "RA bill 7 (final)", or "O&M bill 9" for an instalment of the O&M contract. */
 export const billLabel = (billNo: number, isFinal: boolean, om = false): string => (om ? `O&M bill ${billNo}` : `RA bill ${billNo}${isFinal ? ' (final)' : ''}`);
 
 /** The deductions on an RA bill, in the order the bill shows them. */

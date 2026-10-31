@@ -37,7 +37,7 @@ const centre = (m: DrawingMarkupDto) => {
 };
 
 /**
- * A drawing on the phone (item 109): its current revision, the file to open (saved on the phone or online), and the
+ * A drawing on the phone: its current revision, the file to open (saved on the phone or online), and the
  * marks made on it in the office or on site, with the open ones carried from earlier revisions. On a photo or scanned
  * drawing the marks show as numbered dots and a tap adds a comment pin; PDFs and CAD files are marked up on the web.
  */

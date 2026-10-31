@@ -17,7 +17,7 @@ export default function SectorScreen() {
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
-  // The project's places (its type's, item 134) as the project screen named them; the type's own when opened without.
+  // The project's places (its type's) as the project screen named them; the type's own when opened without.
   const step = kind ?? sectorStepOf(data.type);
   const title = step === 'chainage' ? t('Progress by chainage') : step === 'floors' ? t('Progress by floor') : t('Villages & pipeline');
   const empty = !data.pipeline && !data.strip?.length && !data.matrix?.rows.length;

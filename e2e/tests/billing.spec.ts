@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 import { API_URL, PASSWORD, api, apiToken, signIn } from './helpers';
 
 /*
- * Plans and billing (v3 item 34). The e2e API runs with billing on (test Razorpay keys, ₹1,500 per active project per
+ * Plans and billing. The e2e API runs with billing on (test Razorpay keys, ₹1,500 per active project per
  * month, a seller GSTIN in Odisha) and RAZORPAY_API_URL pointing at the fake orders endpoint started here. Checkout is
  * replaced by a stand-in that answers the way Razorpay's does, signed with the test key secret.
  */
