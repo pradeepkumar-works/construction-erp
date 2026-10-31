@@ -374,7 +374,7 @@ export function PapersPanel() {
         emptyAction={newDriverButton}
       />
 
-      <FormShell open={!!docEditing} onClose={() => setDocEditing(null)} form={docForm} layout="modal" title={docEditing === 'new' ? 'New paper' : 'Change paper'} okText="Save" onSubmit={(v) => saveDoc.mutateAsync(v)}>
+      <FormShell open={!!docEditing} onClose={() => setDocEditing(null)} form={docForm} layout="modal" title={docEditing === 'new' ? 'New paper' : 'Edit paper'} okText="Save" onSubmit={(v) => saveDoc.mutateAsync(v)}>
         <Form form={docForm} layout="vertical">
           <FormGrid cols={2}>
             <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Choose the machine' }]}>
@@ -404,7 +404,7 @@ export function PapersPanel() {
         </Form>
       </FormShell>
 
-      <FormShell open={!!drvEditing} onClose={() => setDrvEditing(null)} form={drvForm} layout="modal" title={drvEditing === 'new' ? 'New driver' : 'Change driver'} okText="Save" onSubmit={(v) => saveDriver.mutateAsync(v)} width={600}>
+      <FormShell open={!!drvEditing} onClose={() => setDrvEditing(null)} form={drvForm} layout="modal" title={drvEditing === 'new' ? 'New driver' : 'Edit driver'} okText="Save" onSubmit={(v) => saveDriver.mutateAsync(v)} width={600}>
         <Form form={drvForm} layout="vertical">
           <FormGrid cols={2}>
             <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name' }]}>

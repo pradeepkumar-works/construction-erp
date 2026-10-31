@@ -61,7 +61,7 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
       record={
         data && {
           href: `/machinery/${data.id}`,
-          title: `Machinery log · ${data.equipmentCode}`,
+          title: `${formatDate(data.date)} · ${data.equipmentCode}`,
           tags: <StatusTag status={data.status} />,
           facts: [
             { key: 'eq', label: 'Equipment', children: `${data.equipmentCode} ${data.equipmentName} (${inSentence(EQUIPMENT_OWNERSHIP_LABELS[data.ownership])})` },
@@ -70,8 +70,8 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
             { key: 'worked', label: 'Hours worked', children: h(data.hoursWorked) },
             { key: 'idle', label: 'Idle', children: h(data.idleHours) },
             { key: 'down', label: 'Breakdown', children: h(data.breakdownHours) },
-            { key: 'diesel', label: 'Diesel', children: data.dieselLitres === null ? '-' : `${formatQty(data.dieselLitres)} L` },
-            ...(data.fuelIssuedLitres ? [{ key: 'fuel', label: 'Fuel issued', children: `${formatQty(data.fuelIssuedLitres)} L from the store` }] : []),
+            { key: 'diesel', label: 'Fuel filled', children: data.dieselLitres === null ? '-' : `${formatQty(data.dieselLitres)} L` },
+            ...(data.fuelIssuedLitres ? [{ key: 'fuel', label: 'Fuel issue', children: `${formatQty(data.fuelIssuedLitres)} L from the store` }] : []),
             {
               key: 'meter',
               label: 'Hour meter',

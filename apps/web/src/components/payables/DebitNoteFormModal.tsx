@@ -142,8 +142,8 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
       layout="modal"
       width={920}
       allValues
-      title={target ? `Raise debit note · ${target.label}` : grn ? `Raise debit note · ${grn.entryNo}` : 'Raise debit note'}
-      okText="Raise debit note"
+      title={target ? `New debit note · ${target.label}` : grn ? `New debit note · ${grn.entryNo}` : 'New debit note'}
+      okText="Save debit note"
       okDisabled={!target || over > 1}
       onSubmit={(v) => save.mutateAsync(v)}
       footerExtra={

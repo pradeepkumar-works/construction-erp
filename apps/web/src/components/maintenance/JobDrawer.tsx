@@ -214,7 +214,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
               className="spares-table"
               dataSource={j.spares}
               columns={[
-                { title: 'Slip', dataIndex: 'entryNo', width: 130, className: 'mono' },
+                { title: 'Fuel issue', dataIndex: 'entryNo', width: 130, className: 'mono' },
                 { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
                 { title: 'Spare', dataIndex: 'itemName' },
                 { title: 'Qty', key: 'q', width: 100, align: 'right', render: (_, r) => `${formatQty(r.quantity)} ${r.unit}` },
@@ -249,7 +249,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
               <QuantityInput />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="workDone" label="Work done" rules={[{ required: true, whitespace: true, message: 'What was done?' }]}>
+          <Form.Item name="workDone" label="Work done" rules={[{ required: true, whitespace: true, message: 'Enter what was done' }]}>
             <Input.TextArea rows={3} maxLength={2000} />
           </Form.Item>
           <FormGrid cols={3}>

@@ -72,7 +72,7 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
       layout="drawer"
       width={760}
       projectDefault={false}
-      title={editing ? `Change ${order.orderNo}` : 'New quote'}
+      title={editing ? `Edit ${order.orderNo}` : 'New quote'}
       okText={editing ? 'Save' : 'Save quote'}
       draftKey={editing ? undefined : 'rmc-order'}
       footerExtra={value ? <Typography.Text type="secondary" translate="no">{`Worth ${formatINR(value, true)} before GST`}</Typography.Text> : null}

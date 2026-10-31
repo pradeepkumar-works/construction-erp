@@ -429,7 +429,7 @@ function ComponentModal({ data, component, onClose, onSaved }: { data: BillingBr
   });
   const parents = data.components.filter((c) => !c.parentId && c.basis === 'STAGES' && c.id !== editing?.id && !c.stages.length);
   return (
-    <FormShell open={!!component} onClose={onClose} form={form} layout="modal" title={editing ? `Change ${editing.code} ${editing.name}` : 'Add component'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={!!component} onClose={onClose} form={form} layout="modal" title={editing ? `Edit ${editing.code} ${editing.name}` : 'Add component'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical" requiredMark="optional">
         <FormGrid cols={2}>
           <Form.Item name="code" label="Code" rules={[{ required: true, whitespace: true, message: 'Give it a code, e.g. 8.4' }]}>
@@ -543,7 +543,7 @@ function StageModal({ projectId, epc, target, onClose, onSaved }: { projectId: s
       form={form}
       layout="modal"
       width={640}
-      title={target ? `${s ? 'Change stage' : 'Add stage'} of ${target.component.code} ${target.component.name}` : ''}
+      title={target ? `${s ? 'Edit stage' : 'Add stage'} of ${target.component.code} ${target.component.name}` : ''}
       okText="Save"
       onSubmit={(v) => save.mutateAsync(v)}
     >

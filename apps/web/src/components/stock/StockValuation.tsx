@@ -34,7 +34,7 @@ export function StockValuation({ projectId }: { projectId?: string }) {
     { title: 'Item', dataIndex: 'itemName', render: (v, r) => <span>{v}{r.category ? <span className="text-muted"> · {r.category}</span> : null}</span> },
     ...(projectId ? [] : [{ title: 'Project', dataIndex: 'projectName', width: 220, ellipsis: true, render: (v: string, r: StockValuationRowDto) => <Link href={`/projects/${r.projectId}?tab=stock`}>{v}</Link> }]),
     { title: 'Balance', dataIndex: 'balance', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },
-    { title: 'Rate', dataIndex: 'rate', width: 120, align: 'right', render: (v: string | null) => (v === null ? <Typography.Text type="warning">no rate</Typography.Text> : <span className="mono" translate="no">{formatINR(v, true)}</span>) },
+    { title: 'Rate', dataIndex: 'rate', width: 120, align: 'right', render: (v: string | null) => (v === null ? <Typography.Text type="warning">No rate</Typography.Text> : <span className="mono" translate="no">{formatINR(v, true)}</span>) },
     { title: 'Value', dataIndex: 'value', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v)}</span> },
     ...STOCK_AGEING_BUCKETS.map((b, i) => ({
       title: b,

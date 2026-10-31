@@ -99,7 +99,7 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
               { key: 'pd', label: 'Pour on', children: formatDate(o.pourDate) },
               ...(o.status === 'QUOTED' ? [{ key: 'vu', label: 'Quote valid until', children: formatDate(o.validUntil) }] : []),
               { key: 'dl', label: 'Delivered', children: <M3 value={o.delivered} /> },
-              { key: 'ow', label: 'On the way', children: <M3 value={o.onTheWay} /> },
+              { key: 'ow', label: 'In transit', children: <M3 value={o.onTheWay} /> },
               ...(o.clientId ? [{ key: 'ub', label: 'Delivered, not billed', children: <M3 value={o.unbilled} /> }] : []),
             ]}
           />

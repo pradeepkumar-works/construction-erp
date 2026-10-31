@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Progress, Space, theme } from 'antd';
+import { Button, Progress, Space, theme } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { WorkOrderDto, WorkOrderSortField, VendorKind } from '@erp/shared';
 import { LIST_SORT_FIELDS, canIssueWorkOrder } from '@erp/shared';
@@ -172,9 +172,6 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
           onChange={(v) => page.setFilter('vendorId', v)}
         />
         <DateRangeFilter {...frame.dateRange} />
-        <Checkbox checked={!!filters.open} onChange={(e) => page.setFilter('open', e.target.checked ? '1' : undefined)}>
-          Open orders only
-        </Checkbox>
       </ListToolbar>
       <DataTable<WorkOrderDto>
         columns={frame.columns}

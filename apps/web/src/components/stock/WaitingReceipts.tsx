@@ -31,14 +31,14 @@ const WORDS: Record<ReceiptWait, { search: string; empty: string; intro: string;
   BILL: {
     search: 'Search goods received',
     empty: "Nothing waiting. Every receipt against an order has the supplier's bill.",
-    intro: `Goods received against an order in the last ${RECEIPT_BILL_WITHIN_DAYS} days whose order has no supplier bill yet, oldest first. Record the bill when it comes; it starts from what was received at the order's rates.`,
-    action: 'Record bill',
+    intro: `Goods received against an order in the last ${RECEIPT_BILL_WITHIN_DAYS} days whose order has no vendor bill yet, oldest first. Record the bill when it comes; it starts from what was received at the order's rates.`,
+    action: 'Record vendor bill',
   },
   DEBIT_NOTE: {
     search: 'Search rejected and returned material',
     empty: 'Nothing to raise. Every rejection and return has its debit note.',
-    intro: "Material QA/QC rejected or the store sent back to the supplier, with no debit note yet. The note takes it off the supplier's bill.",
-    action: 'Raise debit note',
+    intro: "Material QA/QC rejected or the store sent back to the vendor, with no debit note yet. The note takes it off the vendor's bill.",
+    action: 'New debit note',
   },
 };
 

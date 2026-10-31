@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Dropdown, Select, Space, theme } from 'antd';
+import { Button, Dropdown, Select, Space, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, PlusOutlined } from '@/components/common/icons';
 import type { VendorBillDto, VendorBillKind, VendorBillSortField } from '@erp/shared';
@@ -143,10 +143,10 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
     sortFields: LIST_SORT_FIELDS.vendorBills,
     fixedProject,
     columns: (sortOrderFor) => vendorBillColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
-    moreViews: [{ key: 'exceptions', label: 'With exceptions', filters: { exceptions: '1' } }],
+    moreViews: [{ key: 'exceptions', label: 'Does not match', filters: { exceptions: '1' } }],
     chipLabels: {
       vendorId: () => `Vendor: ${vendorName ?? 'one vendor'}`,
-      exceptions: () => 'With exceptions',
+      exceptions: () => 'Does not match',
       kind: (v) => VENDOR_BILL_KIND_LABELS[v as VendorBillKind] ?? 'One kind',
     },
   });
@@ -218,9 +218,6 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
           options={VENDOR_BILL_KINDS.map((k) => ({ value: k, label: VENDOR_BILL_KIND_LABELS[k] }))}
         />
         <DateRangeFilter {...frame.dateRange} placeholder={['Invoices from', 'To']} />
-        <Checkbox checked={!!filters.exceptions} onChange={(e) => page.setFilter('exceptions', e.target.checked ? '1' : undefined)}>
-          With exceptions
-        </Checkbox>
       </ListToolbar>
       <DataTable<VendorBillDto>
         columns={frame.columns}

@@ -34,11 +34,11 @@ const money = (v: string | number) => <span className="mono" translate="no">{for
 export const MatchTag = ({ matched, po = true }: { matched: boolean; po?: boolean }) =>
   matched ? (
     <AppTag tone="success" style={{ margin: 0 }}>
-      {po ? 'Matches PO' : 'Checked'}
+      {po ? 'Matches' : 'Checked'}
     </AppTag>
   ) : (
     <AppTag tone="danger" style={{ margin: 0 }}>
-      Exceptions
+      Does not match
     </AppTag>
   );
 
@@ -163,7 +163,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 </span>
               ),
             },
-            ...(fuel > 0 ? [{ key: 'fuel', label: 'Diesel recovered', children: <span>{money(data.fuelRecovery)} <span className="text-muted">for {formatQty(data.fuelLitres)} L at {formatINR(data.fuelRate, true)}</span></span> }] : []),
+            ...(fuel > 0 ? [{ key: 'fuel', label: 'Fuel recovered', children: <span>{money(data.fuelRecovery)} <span className="text-muted">for {formatQty(data.fuelLitres)} L at {formatINR(data.fuelRate, true)}</span></span> }] : []),
             ...(debited > 0 ? [{ key: 'debit', label: 'Debit notes', children: money(data.debitNoteAmount) }] : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
@@ -365,7 +365,7 @@ function BillSources({ kind, rows }: { kind: VendorBillDto['kind']; rows: Vendor
       scroll={{ x: 560 }}
       columns={[
         {
-          title: hire ? 'Log of' : 'Job card',
+          title: hire ? 'Machine' : 'Job card',
           dataIndex: 'label',
           width: 140,
           render: (v: string, r) =>

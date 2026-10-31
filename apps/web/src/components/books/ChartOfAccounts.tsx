@@ -48,7 +48,7 @@ function AccountForm({ open, onClose, account }: { open: boolean; onClose: () =>
       layout="modal"
       width={600}
       projectDefault={false}
-      title={account ? `Change ${account.name}` : 'New account'}
+      title={account ? `Edit ${account.name}` : 'New account'}
       okText={account ? 'Save account' : 'Add account'}
       onSubmit={async (v) => {
         const statementLine = v.statementLine && statementLineFits(v.statementLine, ACCOUNT_GROUP_NATURE[v.group]) ? v.statementLine : null;

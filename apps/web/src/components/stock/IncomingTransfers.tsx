@@ -23,7 +23,7 @@ export function IncomingTransfers({ projectId }: { projectId?: string }) {
         showIcon
         style={{ margin: 12 }}
         className="incoming-transfers"
-        title={`${data.length} transfer${data.length === 1 ? '' : 's'} on the way`}
+        title={`${data.length} transfer${data.length === 1 ? '' : 's'} in transit`}
         description={
           <Space orientation="vertical" size={4} style={{ width: '100%' }}>
             {data.map((t) => (

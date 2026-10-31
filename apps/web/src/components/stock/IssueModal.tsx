@@ -105,7 +105,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
               />
             </Form.Item>
           )}
-          <Form.Item name="issuedTo" label="Issued to" rules={[{ required: !workOrderId, whitespace: true, message: 'Who took the material?' }]}>
+          <Form.Item name="issuedTo" label="Issued to" rules={[{ required: !workOrderId, whitespace: true, message: 'Enter who took the material' }]}>
             <AutoComplete
               placeholder="Contractor, gang or person"
               options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))}

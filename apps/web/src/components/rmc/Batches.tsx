@@ -38,7 +38,7 @@ export function Batches() {
           onChange={(v) => (setStatus(v as RmcBatchStatus | 'all'), setPage(1))}
           options={[
             { value: 'all', label: 'All' },
-            { value: 'DISPATCHED', label: 'On the way' },
+            { value: 'DISPATCHED', label: 'In transit' },
             { value: 'DELIVERED', label: 'Delivered' },
             { value: 'REJECTED', label: 'Turned back' },
           ]}

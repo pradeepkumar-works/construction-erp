@@ -117,7 +117,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
     ...(keeper
       ? [
           {
-            title: 'Put it on',
+            title: 'For',
             key: 'use',
             width: 260,
             render: (_: unknown, w: WeighingDto) => {
@@ -162,7 +162,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
         trigger={['click']}
         menu={{
           items: [
-            { key: 'edit', label: 'Change truck, order or challan' },
+            { key: 'edit', label: 'Edit truck, order or challan' },
             { key: 'cancel', label: 'Cancel the ticket', danger: true },
           ],
           onClick: ({ key }) => setOpened(key === 'edit' ? { kind: 'edit', ticket: t } : { kind: 'cancel', ticket: t }),
@@ -187,7 +187,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
 
   const openColumns: TableProps<WeighTicketDto>['columns'] = [
     { title: 'Ticket', key: 'ticket', width: 150, render: (_, t) => truck(t) },
-    { title: 'Brings', key: 'order', render: (_, t) => order(t) },
+    { title: 'Contents', key: 'order', render: (_, t) => order(t) },
     {
       title: 'First weight',
       key: 'first',
@@ -226,7 +226,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
 
   const weighedColumns: TableProps<WeighTicketDto>['columns'] = [
     { title: 'Ticket', key: 'ticket', width: 150, render: (_, t) => truck(t) },
-    { title: 'Brings', key: 'order', render: (_, t) => order(t) },
+    { title: 'Contents', key: 'order', render: (_, t) => order(t) },
     {
       title: 'Net weight',
       key: 'net',
@@ -256,8 +256,8 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
             render: (_: unknown, t: WeighTicketDto) => (
               <Space size={4}>
                 {t.purchaseOrderId && t.purchaseOrderLineId ? (
-                  <Button size="small" type="primary" onClick={() => setOpened({ kind: 'grn', ticket: t })} aria-label={`Make the GRN for ${t.ticketNo}`}>
-                    Make the GRN
+                  <Button size="small" type="primary" onClick={() => setOpened({ kind: 'grn', ticket: t })} aria-label={`Receive material (GRN) for ${t.ticketNo}`}>
+                    Receive material (GRN)
                   </Button>
                 ) : (
                   <Button size="small" onClick={() => setOpened({ kind: 'edit', ticket: t })} aria-label={`Add the order to ${t.ticketNo}`}>
@@ -274,7 +274,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
 
   const doneColumns: TableProps<WeighTicketDto>['columns'] = [
     { title: 'Ticket', key: 'ticket', width: 150, render: (_, t) => truck(t) },
-    { title: 'Brings', key: 'order', render: (_, t) => order(t) },
+    { title: 'Contents', key: 'order', render: (_, t) => order(t) },
     {
       title: 'Net weight',
       key: 'net',
@@ -305,7 +305,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
       <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: 12 }}>
         <Typography.Text type="secondary" style={small}>
           {data.bridges
-            ? `${data.bridges} weighbridge${data.bridges === 1 ? '' : 's'} read by the Connector. Weights come in within a minute.`
+            ? `${data.bridges} weighbridge${data.bridges === 1 ? '' : 's'} read from the weighbridge on site. Weights come in within a minute.`
             : 'No weighbridge is connected: type each truck’s weights from the indicator.'}{' '}
           {!data.bridges && admin ? (
             <LinkButton size="small" type="link" href="/connections" style={{ paddingInline: 0 }}>
@@ -327,7 +327,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
         </Section>
       ) : null}
       {data.weighed.length ? (
-        <Section style={{ marginTop: 16 }} title="Weighed, GRN to make">
+        <Section style={{ marginTop: 16 }} title="Weighed, no GRN yet">
           <Table<WeighTicketDto> rowKey="id" size="small" pagination={false} dataSource={data.weighed} scroll={{ x: 1000 }} columns={weighedColumns} />
           <Typography.Paragraph type="secondary" style={{ ...small, marginTop: 8, marginBottom: 0 }}>
             {`The GRN is drafted at the net weight. A load is short when it weighs less than its challan by more than ${WEIGH_SHORT_TOLERANCE_PCT}% or ${WEIGH_SHORT_TOLERANCE_KG} kg, whichever is more.`}
@@ -469,7 +469,7 @@ function TicketForm({
       layout="modal"
       width={640}
       title={ticket ? `Ticket ${ticket.ticketNo}` : 'Weigh a truck'}
-      okText={ticket ? 'Save ticket' : 'Make the ticket'}
+      okText="Save ticket"
       onSubmit={submit}
     >
       <Form form={form} layout="vertical">
@@ -499,7 +499,7 @@ function TicketForm({
         <FormGrid cols={2}>
           <Form.Item
             name="vehicleNo"
-            label="Truck number"
+            label="Vehicle no."
             rules={[
               {
                 required: true,

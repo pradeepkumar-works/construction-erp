@@ -216,7 +216,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
             <Form.Item name="meterEnd" label="Hour meter end">
               <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
-            <Form.Item name="dieselLitres" label="Diesel filled">
+            <Form.Item name="dieselLitres" label="Fuel filled">
               <QuantityInput unit="L" />
             </Form.Item>
           </FormGrid>

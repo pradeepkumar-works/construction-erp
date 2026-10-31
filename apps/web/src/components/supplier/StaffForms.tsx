@@ -21,7 +21,7 @@ export function ReturnInvoiceForm({ invoice, onClose }: { invoice: SupplierInvoi
       width={520}
       projectDefault={false}
       title={invoice ? `Return invoice ${invoice.invoiceNo}` : 'Return the invoice'}
-      okText="Return to supplier"
+      okText="Return to vendor"
       onSubmit={async (v) => {
         if (!invoice) return;
         await send.mutateAsync({ path: `/supplier-portal/invoices/${invoice.id}/return`, body: { note: v.note.trim() } });

@@ -132,7 +132,7 @@ export function VendorFormModal({
       onClose={onClose}
       form={form}
       title={vendor ? `Edit ${vendor.name}` : 'New vendor'}
-      okText={vendor ? 'Save changes' : 'Add vendor'}
+      okText="Save vendor"
       onSubmit={(v) => save.mutateAsync(v)}
       layout="drawer"
       width={720}
@@ -149,7 +149,7 @@ export function VendorFormModal({
             <Input placeholder="Maa Tarini Traders" maxLength={200} />
           </Form.Item>
           <Form.Item name="kinds" label="Supplies">
-            <Select mode="multiple" placeholder="What they do for you" options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
+            <Select mode="multiple" placeholder="Materials or services they supply" options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>

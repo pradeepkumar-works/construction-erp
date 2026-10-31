@@ -42,7 +42,7 @@ const COPY: Record<StockMove, { title: string; ok: string; path: string; help: s
     path: '/stock/transfers',
     help: 'The material leaves this store now and shows as in transit until the site or store it goes to receives it.',
   },
-  vendor: { title: 'Return to supplier', ok: 'Save return', path: '/stock/vendor-returns', help: 'The material leaves stock. Raise the debit note on the supplier separately.' },
+  vendor: { title: 'Return to vendor', ok: 'Save return', path: '/stock/vendor-returns', help: 'The material leaves stock. Make the debit note on the vendor separately.' },
   site: {
     title: 'Return from site',
     ok: 'Save return',
@@ -135,13 +135,13 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {move === 'vendor' && (
-            <Form.Item name="supplier" label="Supplier" rules={[{ required: true, whitespace: true, message: 'Who does it go back to?' }]}>
+            <Form.Item name="supplier" label="Vendor" rules={[{ required: true, whitespace: true, message: 'Enter who it goes back to' }]}>
               <VendorPicker kind="SUPPLIER" />
             </Form.Item>
           )}
           {move === 'site' && (
             <>
-              <Form.Item name="issuedTo" label="Returned by" rules={[{ required: true, whitespace: true, message: 'Who brought it back?' }]}>
+              <Form.Item name="issuedTo" label="Returned by" rules={[{ required: true, whitespace: true, message: 'Enter who brought it back' }]}>
                 <AutoComplete
                   placeholder="Contractor, gang or person"
                   options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))}
@@ -218,7 +218,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
             )}
           </Form.List>
         </Form.Item>
-        <Form.Item name="remarks" label={move === 'vendor' ? 'Reason' : 'Remarks'} rules={move === 'vendor' ? [{ required: true, whitespace: true, min: 3, message: 'Why is it going back?' }] : []}>
+        <Form.Item name="remarks" label={move === 'vendor' ? 'Reason' : 'Remarks'} rules={move === 'vendor' ? [{ required: true, whitespace: true, min: 3, message: 'Enter why it is going back' }] : []}>
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>

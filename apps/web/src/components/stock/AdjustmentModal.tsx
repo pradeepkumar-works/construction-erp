@@ -140,7 +140,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                                 ? !v || !bal || Number(bal.balance) + Number(v) >= 0
                                   ? Promise.resolve()
                                   : Promise.reject(new Error(`Only ${formatQty(bal.balance)} in stock`))
-                                : Promise.reject(new Error('Not zero')),
+                                : Promise.reject(new Error('Enter a quantity other than zero')),
                           },
                         ]}
                       >

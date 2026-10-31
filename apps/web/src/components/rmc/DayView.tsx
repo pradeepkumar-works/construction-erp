@@ -46,7 +46,7 @@ export function DayView() {
             </Col>
             <Col xs={12} md={6}>
               <Card size="small">
-                <Statistic title="Trucks" value={trucks} suffix={onTheWay ? <Typography.Text type="secondary" style={{ fontSize: 14 }}>{`${onTheWay} on the way`}</Typography.Text> : null} />
+                <Statistic title="Trucks" value={trucks} suffix={onTheWay ? <Typography.Text type="secondary" style={{ fontSize: 14 }}>{`${onTheWay} in transit`}</Typography.Text> : null} />
               </Card>
             </Col>
             <Col xs={12} md={6}>

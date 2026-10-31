@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Progress, Space, theme } from 'antd';
+import { Button, Progress, Space, theme } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { PurchaseOrderDto, PurchaseOrderSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPurchase } from '@erp/shared';
@@ -154,9 +154,6 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
       >
         <VendorSelect allowClear placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={page.filters.vendorId} onChange={(v) => page.setFilter('vendorId', v)} />
         <DateRangeFilter {...frame.dateRange} />
-        <Checkbox checked={page.filters.open === '1'} onChange={(e) => page.setFilter('open', e.target.checked ? '1' : undefined)}>
-          Open orders only
-        </Checkbox>
       </ListToolbar>
       <DataTable<PurchaseOrderDto>
         columns={frame.columns}

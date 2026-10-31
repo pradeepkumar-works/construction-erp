@@ -148,7 +148,7 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
               ...(o.kind === 'PO'
                 ? [
                     { title: 'Received', dataIndex: 'received', align: 'right' as const, width: 100, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
-                    { title: 'On the way', dataIndex: 'onTheWay', align: 'right' as const, width: 100, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
+                    { title: 'In transit', dataIndex: 'onTheWay', align: 'right' as const, width: 100, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
                     { title: 'Left to send', dataIndex: 'toSend', align: 'right' as const, width: 110, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
                   ]
                 : [{ title: 'Amount', dataIndex: 'amount', align: 'right' as const, width: 140, render: (v: string) => <Money value={v} /> }]),

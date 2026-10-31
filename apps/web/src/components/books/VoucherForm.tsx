@@ -92,7 +92,7 @@ export function VoucherForm({
       layout="drawer"
       width={860}
       projectDefault={false}
-      title={editing ? `Change ${voucher.voucherNo}` : 'New voucher'}
+      title={editing ? `Edit ${voucher.voucherNo}` : 'New voucher'}
       okText="Submit for approval"
       secondaryText="Save draft"
       draftKey={editing || prefill ? undefined : 'book-voucher'}

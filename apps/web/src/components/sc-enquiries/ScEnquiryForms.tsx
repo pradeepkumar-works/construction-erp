@@ -89,7 +89,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
       layout="drawer"
       width={980}
       title={enquiry ? `Edit ${enquiry.enquiryNo}` : 'New subcontract enquiry'}
-      okText={enquiry ? 'Save' : 'Create enquiry'}
+      okText="Save enquiry"
       allValues
       draftKey={enquiry ? undefined : 'sc-enquiry:new'}
       onSubmit={async (v) => {

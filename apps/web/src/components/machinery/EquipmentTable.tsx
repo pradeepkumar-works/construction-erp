@@ -205,7 +205,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           ),
         },
         { title: 'Category', dataIndex: 'category', width: 130, ...sort('category'), render: (v: string | null) => v ?? <Sub>-</Sub> },
-        { title: 'Owned / hired', dataIndex: 'ownership', width: 120, ...sort('ownership'), render: (o: EquipmentOwnership) => <OwnershipTag ownership={o} /> },
+        { title: 'Owned or hired', dataIndex: 'ownership', width: 120, ...sort('ownership'), render: (o: EquipmentOwnership) => <OwnershipTag ownership={o} /> },
         ...(fixedProject ? [] : [{ title: 'Deployed at', dataIndex: 'projectName', width: 240, ellipsis: true, ...sort('project'), render: (v: string | null) => v ?? <Sub>Yard / unassigned</Sub> } satisfies ListColumn<EquipmentDto>]),
         ...(mayManage
           ? [{ title: 'Rate', key: 'rate', width: 150, align: 'right' as const, render: (_: unknown, r: EquipmentDto) => (r.rate === null ? '-' : `${formatINR(r.rate)} ${EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit]}`) } satisfies ListColumn<EquipmentDto>]
@@ -343,7 +343,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           </FormSection>
           <FormSection title="Ownership and rate">
             <FormGrid cols={2}>
-              <Form.Item name="ownership" label="Owned / hired" rules={[{ required: true, message: 'Choose owned or hired' }]}>
+              <Form.Item name="ownership" label="Owned or hired" rules={[{ required: true, message: 'Choose owned or hired' }]}>
                 <Select options={EQUIPMENT_OWNERSHIPS.map((o) => ({ value: o, label: EQUIPMENT_OWNERSHIP_LABELS[o] }))} />
               </Form.Item>
               <Form.Item name="supplier" label="Hire agency" hidden={formOwnership !== 'HIRED'}>
@@ -363,7 +363,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 <Form.Item name="hireMinHours" label="Minimum hours a month" extra="Paid for even if not worked">
                   <QuantityInput unit="hour" />
                 </Form.Item>
-                <Form.Item name="hireFuelBy" label="Diesel">
+                <Form.Item name="hireFuelBy" label="Fuel">
                   <Select allowClear placeholder="Not agreed" options={HIRE_FUEL_BY.map((f) => ({ value: f, label: HIRE_FUEL_BY_LABELS[f] }))} />
                 </Form.Item>
                 <Form.Item name="hireOperator" label="Operator">

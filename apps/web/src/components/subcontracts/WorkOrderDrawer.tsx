@@ -295,7 +295,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
               <ReviewActions type="work_order" id={data.id} status={data.status} amount={data.value} size={size} />
               {data.open && billingRole && !openBill && !finalBilled ? (
                 <Button size={size} type="primary" icon={<FileAddOutlined />} onClick={() => setBilling(true)}>
-                  Prepare bill
+                  New subcontractor bill
                 </Button>
               ) : null}
               {data.open && issuer ? (

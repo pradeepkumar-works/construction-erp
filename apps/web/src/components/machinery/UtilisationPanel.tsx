@@ -86,7 +86,7 @@ export function UtilisationPanel({ projectId: fixedProject }: { projectId?: stri
         </div>
       ),
     },
-    { title: 'Owned / hired', dataIndex: 'ownership', width: 110, render: (o: UtilisationRowDto['ownership']) => <OwnershipTag ownership={o} /> },
+    { title: 'Owned or hired', dataIndex: 'ownership', width: 110, render: (o: UtilisationRowDto['ownership']) => <OwnershipTag ownership={o} /> },
     { title: 'Days', dataIndex: 'daysOnSite', width: 70, align: 'right' },
     { title: 'Worked', dataIndex: 'workedHours', width: 100, align: 'right', render: hours },
     { title: 'Idle', dataIndex: 'idleHours', width: 90, align: 'right', render: hours },
@@ -94,7 +94,7 @@ export function UtilisationPanel({ projectId: fixedProject }: { projectId?: stri
     { title: 'Utilisation', dataIndex: 'utilisationPct', width: 120, render: (v: number | null, r) => <Share pct={v} label={`Utilisation of ${r.code}`} /> },
     { title: 'Availability', dataIndex: 'availabilityPct', width: 120, render: (v: number | null, r) => <Share pct={v} label={`Availability of ${r.code}`} /> },
     {
-      title: 'Fuel an hour',
+      title: 'Litres an hour',
       dataIndex: 'fuelPerHour',
       width: 110,
       align: 'right',

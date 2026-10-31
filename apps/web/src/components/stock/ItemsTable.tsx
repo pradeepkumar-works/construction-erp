@@ -116,7 +116,7 @@ export function ItemsTable() {
         { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">-</Typography.Text>) },
         {
           key: 'rate',
-          title: 'Rate (₹)',
+          title: 'Rate',
           label: 'Rate',
           dataIndex: 'rate',
           width: 130,
@@ -213,7 +213,7 @@ export function ItemsTable() {
           <Form.Item name="rate" label="Standard rate per unit" extra="Values material issued in the project cost view.">
             <MoneyInput />
           </Form.Item>
-          <Form.Item name="isFuel" valuePropName="checked" extra="Fuel goes into machines with Fuel issue, and shows in Machinery > Fuel.">
+          <Form.Item name="isFuel" valuePropName="checked" extra="Fuel goes into machines with a fuel issue, and shows in Machinery › Fuel.">
             <Checkbox>Fuel (diesel, petrol)</Checkbox>
           </Form.Item>
           <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>

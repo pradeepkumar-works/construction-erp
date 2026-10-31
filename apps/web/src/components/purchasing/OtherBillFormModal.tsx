@@ -64,7 +64,7 @@ function invoiceLine(i: { invoiceNo?: string; amount?: string; gstAmount?: strin
   return { description: i.notes?.trim() || `Invoice ${i.invoiceNo ?? ''}`.trim(), unit: 'LS', quantity: 1, rate: base, gstRate };
 }
 
-const TITLES: Record<OtherBillKind, string> = { HIRE: 'Record hire bill', SERVICE: 'Record workshop bill', OTHER: 'Record service bill' };
+const TITLES: Record<OtherBillKind, string> = { HIRE: `Record vendor bill · ${VENDOR_BILL_KIND_LABELS.HIRE}`, SERVICE: `Record vendor bill · ${VENDOR_BILL_KIND_LABELS.SERVICE}`, OTHER: `Record vendor bill · ${VENDOR_BILL_KIND_LABELS.OTHER}` };
 
 /**
  * A vendor bill without a purchase order (v5 item 91): a hired machine's month from its approved logs, a workshop's
@@ -296,7 +296,7 @@ export function OtherBillFormModal({
                 </Form.Item>
               </FormGrid>
             ) : (
-              <Form.Item name="vendorId" label={kind === 'SERVICE' ? 'Workshop' : 'Vendor'} rules={[{ required: true, message: 'Choose the vendor from the master' }]}>
+              <Form.Item name="vendorId" label={kind === 'SERVICE' ? 'Workshop' : 'Vendor'} rules={[{ required: true, message: 'Choose the vendor' }]}>
                 <VendorSelect prefer={['SERVICE']} disabled={!!bill} />
               </Form.Item>
             )}
@@ -328,12 +328,12 @@ export function OtherBillFormModal({
             ) : (
               <>
                 {p.existingBill ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`${p.equipmentCode} for ${dayjs(p.month).format('MMMM YYYY')} is already billed on ${p.existingBill.billNo}`} /> : null}
-                {!p.vendorId ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`Link ${p.equipmentCode} to its hire agency in the vendor master first (Machinery, ${p.equipmentCode}, Edit)`} /> : null}
+                {!p.vendorId ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={`Link ${p.equipmentCode} to its hire agency first, in Machinery › ${p.equipmentCode} › Edit`} /> : null}
                 <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {[
                     p.vendorName,
                     `${p.logs.length} approved log${p.logs.length === 1 ? '' : 's'}: ${p.workedDays} days, ${formatQty(p.workedHours)} hours worked`,
-                    p.rate ? `${formatINR(p.rate, true)} ${EQUIPMENT_RATE_UNIT_LABELS[p.rateUnit]}` : 'no rate in the machine master',
+                    p.rate ? `${formatINR(p.rate, true)} ${EQUIPMENT_RATE_UNIT_LABELS[p.rateUnit]}` : 'No rate in the machine master',
                     p.hireMinHours ? `at least ${formatQty(p.hireMinHours)} hours a month` : null,
                     p.hireFuelBy ? HIRE_FUEL_BY_LABELS[p.hireFuelBy] : null,
                     p.hireOperator === true ? 'operator included' : p.hireOperator === false ? 'operator ours' : null,
@@ -352,7 +352,7 @@ export function OtherBillFormModal({
                     <Select options={GST_RATES.map((r) => ({ value: r, label: `${r}%` }))} />
                   </Form.Item>
                   {fuelLitres > 0 ? (
-                    <Form.Item name="fuelRate" label="Diesel rate to recover" extra={`${formatQty(fuelLitres)} L we issued: ${formatINR(fuelRecovery, true)}`}>
+                    <Form.Item name="fuelRate" label="Fuel rate to recover" extra={`${formatQty(fuelLitres)} L we issued: ${formatINR(fuelRecovery, true)}`}>
                       <MoneyInput />
                     </Form.Item>
                   ) : null}

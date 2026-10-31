@@ -55,7 +55,7 @@ export function machineryColumns({
     { card: 'amount', cardText: (r) => `${formatQty(r.hoursWorked)} h`, title: 'Hours', width: 150, ...sort('hoursWorked'), render: (_, r) => <HoursCell log={r} />, total: (rows) => `${formatQty(sum(rows.map((r) => r.hoursWorked)))} h` },
     {
       key: 'diesel',
-      title: 'Diesel',
+      title: 'Fuel',
       dataIndex: 'dieselLitres',
       width: 100,
       align: 'right',

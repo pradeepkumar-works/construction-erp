@@ -112,7 +112,7 @@ export function FuelTanks({ date, projectId, canIssue }: { date: string; project
         </div>
       ),
     },
-    { title: 'On slips', key: 'slips', width: 100, align: 'right', render: (_, d) => L(d.fuel.slipLitres) },
+    { title: 'On fuel issues', key: 'slips', width: 100, align: 'right', render: (_, d) => L(d.fuel.slipLitres) },
     {
       title: 'Drained',
       key: 'drained',
@@ -126,7 +126,7 @@ export function FuelTanks({ date, projectId, canIssue }: { date: string; project
       ),
     },
     {
-      title: 'Burnt',
+      title: 'Fuel used',
       key: 'burnt',
       width: 130,
       align: 'right',

@@ -46,7 +46,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
       exportFileName(`fuel-${data.date}`),
       'Fuel issues',
       [
-        { header: 'Slip', value: (r) => r.entryNo, width: 16 },
+        { header: 'Fuel issue', value: (r) => r.entryNo, width: 16 },
         { header: 'Machine', value: (r) => [r.equipmentCode, r.equipmentName].filter(Boolean).join(' '), width: 32 },
         { header: 'Fuel', value: (r) => r.itemName },
         { header: 'Quantity', value: (r) => toNumber(r.litres) },
@@ -104,7 +104,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
   ];
 
   const issueColumns: TableProps<FuelIssueDto>['columns'] = [
-    { title: 'Slip', dataIndex: 'entryNo', width: 130, className: 'mono' },
+    { title: 'Fuel issue', dataIndex: 'entryNo', width: 130, className: 'mono' },
     {
       title: 'Machine',
       key: 'machine',
@@ -144,7 +144,7 @@ export function FuelPanel({ projectId: fixedProject }: { projectId?: string }) {
           </Button>
           {data?.canIssue ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setIssuing(true)}>
-              Fuel issue
+              Record fuel issue
             </Button>
           ) : null}
         </Space>

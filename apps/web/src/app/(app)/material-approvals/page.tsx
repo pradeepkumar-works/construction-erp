@@ -225,7 +225,7 @@ function MaterialApprovalsPage() {
 
   const newButton = canRaise ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-      Request approval
+      Request material approval
     </Button>
   ) : null;
   const addMakeButton = canManage ? (

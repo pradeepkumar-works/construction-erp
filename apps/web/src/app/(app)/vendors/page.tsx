@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
+import { Button, Card, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
@@ -64,13 +64,13 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
     sortFields: LIST_SORT_FIELDS.vendors,
     projectScoped: false,
     moreViews: [
-      { key: 'suppliers', label: 'Suppliers', filters: { kind: 'SUPPLIER' } },
+      { key: 'suppliers', label: 'Material suppliers', filters: { kind: 'SUPPLIER' } },
       { key: 'subcontractors', label: 'Subcontractors', filters: { kind: 'SUBCONTRACTOR' } },
       { key: 'hire', label: 'Hire agencies', filters: { kind: 'HIRE_AGENCY' } },
       { key: 'inactive', label: 'Including inactive', filters: { inactive: '1' } },
     ],
     chipLabels: {
-      kind: (v) => `Supplies: ${VENDOR_KIND_LABELS[v as VendorKind] ?? v}`,
+      kind: (v) => `Vendor kind: ${VENDOR_KIND_LABELS[v as VendorKind] ?? v}`,
       msme: (v) => `MSME: ${MSME_CATEGORY_LABELS[v as MsmeCategory] ?? v}`,
       inactive: () => 'Including inactive',
     },
@@ -202,11 +202,8 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar filters={frame.filterState} projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" searchLabel="Search vendors" extra={<ExportButton onExport={exportRows} />}>
-        <Select<VendorKind> allowClear placeholder="Supplies anything" aria-label="Supplies" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
-        <Select<MsmeCategory> allowClear placeholder="MSME or not" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
-        <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>
-          Show inactive
-        </Checkbox>
+        <Select<VendorKind> allowClear placeholder="Any vendor kind" aria-label="Vendor kind" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
+        <Select<MsmeCategory> allowClear placeholder="Any MSME status" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
       </ListToolbar>
       <DataTable<VendorDto>
         columns={frame.columns}

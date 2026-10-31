@@ -68,7 +68,7 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
 
   const unit = meterUnit(machine?.fuelNormUnit);
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={640} title="Fuel issue" okText="Save fuel issue" onSubmit={submit}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={640} title="Record fuel issue" okText="Save fuel issue" onSubmit={submit}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select

@@ -116,7 +116,7 @@ export function EngineHoursPanel({ projectId: fixedProject }: { projectId?: stri
           </Space>
         ) : mayLog && Number(d.engineHours) > 0 ? (
           <Button size="small" onClick={() => setPrefill({ projectId: d.projectId, equipmentId: d.equipmentId, equipmentLabel: `${d.equipmentCode} - ${d.equipmentName}`, date: d.date })} aria-label={`Make the log for ${d.equipmentCode} on ${formatDate(d.date)}`}>
-            Make the log
+            New machinery log
           </Button>
         ) : (
           <span className="text-muted">{Number(d.engineHours) > 0 ? 'No log' : 'Did not run'}</span>
