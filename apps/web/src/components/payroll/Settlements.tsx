@@ -90,7 +90,7 @@ function PayModal({ s, onClose }: { s: FinalSettlementDto | null; onClose: () =>
       }}
     >
       <Form form={form} layout="vertical" initialValues={{ paidOn: dayjs() }}>
-        <Form.Item name="paidOn" label={s && Number(s.net) < 0 ? 'Received on' : 'Paid on'} rules={[{ required: true, message: 'Pick the day it was settled' }]}>
+        <Form.Item name="paidOn" label={s && Number(s.net) < 0 ? 'Received on' : 'Paid on'} rules={[{ required: true, message: 'Choose the day it was settled' }]}>
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item name="paymentRef" label="Bank reference (optional)">

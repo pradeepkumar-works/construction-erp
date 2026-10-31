@@ -249,7 +249,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
             <Form.Item name="serialNo" label="Serial no." hidden={off}>
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item name="fittedOn" label="Fitted on" rules={[{ required: true, message: 'Pick the date it was fitted' }]} hidden={off}>
+            <Form.Item name="fittedOn" label="Fitted on" rules={[{ required: true, message: 'Choose the date it was fitted' }]} hidden={off}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="fittedMeter" label={`Meter when fitted (${unit})`} hidden={off}>
@@ -262,7 +262,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
             ) : null}
             {showRemoval ? (
               <>
-                <Form.Item name="removedOn" label="Came off on" rules={[{ required: off, message: 'Pick the date it came off' }]}>
+                <Form.Item name="removedOn" label="Came off on" rules={[{ required: off, message: 'Choose the date it came off' }]}>
                   <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
                 </Form.Item>
                 <Form.Item name="removedMeter" label={`Meter when it came off (${unit})`}>

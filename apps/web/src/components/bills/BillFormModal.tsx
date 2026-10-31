@@ -100,10 +100,10 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
           project&apos;s contract terms (GST, retention, advance recovery, TDS and cess). Measurements approved later are picked up when the bill is submitted.
         </Typography.Paragraph>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
+          <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item
@@ -112,7 +112,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
             label="Measurements up to"
             dependencies={['billDate']}
             rules={[
-              { required: true, message: 'Pick the date measurements go up to' },
+              { required: true, message: 'Choose the date measurements go up to' },
               ({ getFieldValue }) => ({
                 validator: async (_, v: dayjs.Dayjs | undefined) => {
                   const bd = getFieldValue('billDate') as dayjs.Dayjs | undefined;

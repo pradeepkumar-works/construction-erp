@@ -399,7 +399,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           </FormSection>
           <FormSection title="Deployment and service">
             <Form.Item name="projectId" label="Deployed at">
-              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
             <FormGrid cols={3}>
               <Form.Item name="serviceIntervalHours" label="Service every (hours)" tooltip="Working hours from the daily logs; leave blank for no hour schedule">

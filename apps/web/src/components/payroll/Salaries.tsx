@@ -94,7 +94,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
             <Form.Item name="employeeId" label="Employee" rules={[{ required: true, message: 'Choose the employee' }]}>
               <Select disabled={!!from} showSearch={{ optionFilterProp: 'label' }} options={(staff?.items ?? []).map((e) => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))} />
             </Form.Item>
-            <Form.Item name="effectiveFrom" label="From" rules={[{ required: true, message: 'Pick the first day it applies' }]} extra="Usually the 1st of a month">
+            <Form.Item name="effectiveFrom" label="From" rules={[{ required: true, message: 'Choose the first day it applies' }]} extra="Usually the 1st of a month">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>

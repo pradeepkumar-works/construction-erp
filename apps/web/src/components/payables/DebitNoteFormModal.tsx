@@ -175,7 +175,7 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
           <Form.Item name="reason" label="Reason" rules={[{ required: true, message: 'Choose the reason' }]}>
             <Select showSearch={{ optionFilterProp: 'label' }} options={DEBIT_NOTE_REASONS.map((r) => ({ value: r, label: DEBIT_NOTE_REASON_LABELS[r] }))} />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the note' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date of the note' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!target && d.isBefore(dayjs(target.billDate), 'day'))} />
           </Form.Item>
         </FormGrid>

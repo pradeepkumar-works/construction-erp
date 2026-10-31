@@ -67,7 +67,7 @@ export function DesignForm({ open, onClose, design }: { open: boolean; onClose: 
       <Form form={form} layout="vertical" initialValues={{ grade: 'M25', lines: [{}, {}, {}] }}>
         <FormGrid cols={2}>
           <Form.Item name="plantId" label="Plant" rules={[{ required: true, message: 'Choose the plant' }]}>
-            <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
           </Form.Item>
           <Form.Item name="code" label="Code" rules={[{ required: true, whitespace: true, message: 'Enter a code, e.g. M25-OPC-02' }]}>
             <Input maxLength={40} placeholder="M25-OPC-02" {...CODE_INPUT} />

@@ -82,7 +82,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search request no., items, people"
-        searchLabel="Search material requests"
+        searchLabel="Search indents"
         extra={
           <>
             <ExportButton onExport={exportRows} />
@@ -106,7 +106,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         empty={frame.empty}
         failed={!!error}
         scrollX={fixedProject ? 1180 : 1400}
-        emptyText={<EmptyArt art="entries" title="No material requests here yet" />}
+        emptyText={<EmptyArt art="entries" title="No indents here yet" />}
         emptyAction={newButton}
       />
       <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />

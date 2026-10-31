@@ -160,7 +160,7 @@ function IndicesModal({ open, bill, components, onClose }: { open: boolean; bill
     >
       <Form form={form} layout="vertical" className="bill-pv-form" requiredMark="optional">
         <FormGrid cols={2}>
-          <Form.Item name="indexMonth" label="Indices for" rules={[{ required: true, message: 'Pick the month' }]}>
+          <Form.Item name="indexMonth" label="Indices for" rules={[{ required: true, message: 'Choose the month' }]}>
             <DatePicker picker="month" format="MMM YYYY" allowClear={false} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="note" label="Source" extra="For example: RBI WPI, provisional">

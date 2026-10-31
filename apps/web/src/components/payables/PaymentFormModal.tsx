@@ -182,7 +182,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
           </Typography.Paragraph>
         )}
         <FormGrid cols={3}>
-          <Form.Item name="paymentDate" label="Paid on" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="paymentDate" label="Paid on" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="amount" label="Amount paid" rules={[{ required: true, message: 'Enter the amount' }]}>

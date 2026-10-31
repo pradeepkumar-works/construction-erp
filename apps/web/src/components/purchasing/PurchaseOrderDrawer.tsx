@@ -290,7 +290,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               ? [
                   {
                     key: 'dispatches',
-                    title: 'Dispatch notes from the supplier',
+                    title: 'Dispatch notes from the vendor',
                     count: data.dispatches.length,
                     children: (
                       <Table
@@ -304,7 +304,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                           { title: 'Sent', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
                           { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
                           {
-                            title: 'State',
+                            title: 'Status',
                             dataIndex: 'status',
                             width: 180,
                             render: (st: SupplierDispatchStatus, d: { grnNo: string | null }) => (
@@ -361,7 +361,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                           { title: 'Bill', dataIndex: 'billNo', width: 140, render: (v, b) => <Link href={`/vendor-bills/${b.id}`} className="mono">{v}</Link> },
                           { title: 'Invoice', dataIndex: 'invoiceNo', render: (v, b) => `${v}, ${formatDate(b.invoiceDate)}` },
                           { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => money(v) },
-                          { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <AppTag tone="success">Matches</AppTag> : <AppTag tone="danger">Exceptions</AppTag>) },
+                          { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <AppTag tone="success">Matches</AppTag> : <AppTag tone="danger">Does not match</AppTag>) },
                           { title: 'Status', dataIndex: 'status', width: 130, render: (st) => <StatusTag status={st} /> },
                         ]}
                       />
@@ -373,7 +373,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               ? [{ key: 'advances', title: 'Advance requests', children: <TargetRequests approved target={{ kind: 'PO_ADVANCE', purchaseOrderId: data.id, label: data.poNo, vendorName: data.vendorName }} base={String(toNumber(data.total) - toNumber(data.advanceRequested))} /> }]
               : []),
             // What the approver needs to decide it (finding 15 of the October review): who else quoted, and the budget.
-            ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the request', children: <OrderQuotes order={data} /> }] : []),
+            ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the indent', children: <OrderQuotes order={data} /> }] : []),
             ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', title: 'Against the budget', children: <OrderBudget order={data} /> }] : []),
             { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],
@@ -395,7 +395,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               <ReviewActions type="purchase_order" id={data.id} status={data.status} amount={data.total} size={size} />
               {data.open && user && canKeepStock(user.roleKey) ? (
                 <Button size={size} type="primary" icon={<ImportOutlined />} onClick={() => setReceiving(true)}>
-                  Receive material
+                  Receive material (GRN)
                 </Button>
               ) : null}
               {approved && user && canRecordVendorBill(user.roleKey) ? (
@@ -405,32 +405,36 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               ) : null}
               {approved && !data.closedAt && buyer ? (
                 <Button size={size} icon={<MailOutlined />} loading={emailAgain.isPending} onClick={() => emailAgain.mutate()}>
-                  {data.supplierEmailedAt ? 'Email vendor again' : 'Email to vendor'}
-                </Button>
-              ) : null}
-              {data.open && buyer ? (
-                <Button
-                  size={size}
-                  onClick={() => {
-                    closeForm.resetFields();
-                    setClosing(true);
-                  }}
-                >
-                  Close short
+                  Email vendor
                 </Button>
               ) : null}
             </>
           ),
           // Delete is a tap from Approve no longer (finding 15 of the October review).
-          more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `purchase order ${data.poNo}`, onConfirm: () => remove.mutateAsync() }) }] : [],
+          more: [
+            ...(data.open && buyer
+              ? [
+                  {
+                    key: 'close',
+                    label: 'Close short',
+                    danger: true,
+                    onSelect: () => {
+                      closeForm.resetFields();
+                      setClosing(true);
+                    },
+                  },
+                ]
+              : []),
+            ...(editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `purchase order ${data.poNo}`, onConfirm: () => remove.mutateAsync() }) }] : []),
+          ],
         }
       }
     >
-      <FormShell open={closing} onClose={() => setClosing(false)} form={closeForm} layout="modal" title={data ? `Close ${data.poNo} short` : 'Close order'} okText="Close order" onSubmit={(v) => close.mutateAsync(v.note)}>
-        <Typography.Paragraph type="secondary">Nothing more can be received against it, and what was not received can be ordered again. What was received can still be billed.</Typography.Paragraph>
+      <FormShell open={closing} onClose={() => setClosing(false)} form={closeForm} layout="modal" title={data ? `Close ${data.poNo} short?` : 'Close short'} okText="Close short" onSubmit={(v) => close.mutateAsync(v.note)}>
+        <Typography.Paragraph type="secondary">The rest will not be received: nothing more can be received against it, and what was not received can be ordered again. What was received can still be billed.</Typography.Paragraph>
         <Form form={closeForm} layout="vertical">
-          <Form.Item name="note" label="Why" rules={[{ required: true, whitespace: true, message: 'Say why the balance is not needed' }]}>
-            <Input.TextArea rows={2} maxLength={500} placeholder="Balance not required; vendor informed" />
+          <Form.Item name="note" label="Why" rules={[{ required: true, whitespace: true, message: 'Enter why the balance is not needed' }]}>
+            <Input.TextArea rows={2} maxLength={500} placeholder="e.g. Balance not required; vendor informed" />
           </Form.Item>
         </Form>
       </FormShell>

@@ -66,7 +66,7 @@ export function AwardLowestModal({
   const award = useMutation({
     mutationFn: async () => (await api.post<PurchaseOrderDto[]>(`/material-requests/${request.id}/award-lowest`, {})).data,
     onSuccess: (orders) => {
-      message.success(`${orders.length} draft order${orders.length === 1 ? '' : 's'} raised: ${orders.map((o) => o.poNo).join(', ')}`);
+      message.success(`${orders.length} draft order${orders.length === 1 ? '' : 's'} made: ${orders.map((o) => o.poNo).join(', ')}`);
       qc.invalidateQueries({ queryKey: ['purchase-orders'] });
       qc.invalidateQueries({ queryKey: ['material-requests'] });
       qc.invalidateQueries({ queryKey: ['comparative', request.id] });
@@ -81,8 +81,8 @@ export function AwardLowestModal({
     <Modal
       open={open}
       onCancel={onClose}
-      title={`Award the lowest rate per item on ${request.requestNo}`}
-      okText={plan.orders.length === 1 ? 'Raise 1 draft order' : `Raise ${plan.orders.length} draft orders`}
+      title={`Finalise L1 per item on ${request.requestNo}`}
+      okText={plan.orders.length === 1 ? 'Make 1 draft order' : `Make ${plan.orders.length} draft orders`}
       okButtonProps={{ disabled: !plan.orders.length }}
       confirmLoading={award.isPending}
       onOk={() => award.mutate()}
@@ -156,7 +156,7 @@ export function AwardLowestModal({
               description={
                 plan.saving > 0
                   ? `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}.`
-                  : `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}: the split pays freight to each vendor. Raise that one order instead if it suits you.`
+                  : `The whole lot from ${plan.singleVendor.vendorName} comes to ${formatINR(plan.singleVendor.total, true)}: L1 per item pays freight to each vendor. Make that one order instead if it suits you.`
               }
             />
           ) : null}
@@ -170,8 +170,8 @@ export function AwardLowestModal({
         <Alert
           type="info"
           showIcon
-          title="Nothing to award"
-          description="Everything on this request is ordered, or no quotation prices what is left. Record a quotation, or raise the order by hand."
+          title="Nothing to order"
+          description="Everything on this indent is ordered, or no quotation prices what is left. Record a quotation, or make the order by hand."
         />
       )}
     </Modal>

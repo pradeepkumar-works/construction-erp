@@ -55,7 +55,7 @@ function LoanForm({ open, onClose }: { open: boolean; onClose: () => void }) {
           <Form.Item name="kind" label="What">
             <Select options={STAFF_LOAN_KINDS.map((k) => ({ value: k, label: STAFF_LOAN_KIND_LABELS[k] }))} />
           </Form.Item>
-          <Form.Item name="issuedOn" label="Given on" rules={[{ required: true, message: 'Pick the day it was given' }]}>
+          <Form.Item name="issuedOn" label="Given on" rules={[{ required: true, message: 'Choose the day it was given' }]}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Enter the amount given' }]}>

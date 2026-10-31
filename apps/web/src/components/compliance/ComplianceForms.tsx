@@ -231,7 +231,7 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
               <Form.Item name="issuedOn" label="Starts on">
                 <DatePicker style={{ width: '100%' }} allowClear={false} />
               </Form.Item>
-              <Form.Item name="expiresOn" label="Valid to" rules={[{ required: true, message: 'Pick the new expiry date' }]}>
+              <Form.Item name="expiresOn" label="Valid to" rules={[{ required: true, message: 'Choose the new expiry date' }]}>
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
               {guarantee ? (

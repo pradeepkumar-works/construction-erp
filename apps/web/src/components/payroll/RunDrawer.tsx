@@ -44,7 +44,7 @@ function StepModal({ run, step, onClose }: { run: PayrollRunDetailDto; step: 'se
       <Form form={form} layout="vertical" initialValues={{ paidOn: dayjs() }}>
         {step === 'pay' ? (
           <>
-            <Form.Item name="paidOn" label="Paid on" rules={[{ required: true, message: 'Pick the day the bank paid it' }]}>
+            <Form.Item name="paidOn" label="Paid on" rules={[{ required: true, message: 'Choose the day the bank paid it' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="paymentRef" label="Bank reference (optional)">

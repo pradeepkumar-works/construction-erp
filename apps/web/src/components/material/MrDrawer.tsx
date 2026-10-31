@@ -57,15 +57,15 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
       open={open}
       onClose={onClose}
       drawerSize={purchasing ? 960 : 680}
-      kind="Material request"
-      list={{ href: '/material-requests', label: 'Material requests' }}
+      kind="Indent"
+      list={{ href: '/material-requests', label: 'Indents' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
       record={
         data && {
           href: `/material-requests/${data.id}`,
-          title: `Material request · ${data.requestNo}`,
+          title: `${data.requestNo} · ${data.projectName}`,
           tags: (
             <>
               <StatusTag status={data.status} />
@@ -77,10 +77,9 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
             </>
           ),
           facts: [
-            { key: 'no', label: 'Request no.', children: data.requestNo },
             { key: 'priority', label: 'Priority', children: <PriorityTag priority={data.priority} /> },
             { key: 'req', label: 'Required by', children: formatDate(data.requiredDate) },
-            { key: 'count', label: 'Line items', children: data.items.length },
+            { key: 'count', label: 'Items', children: data.items.length },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],
@@ -163,7 +162,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
               ) : null}
               {mayReceive ? (
                 <Button type="primary" size={size} icon={<ImportOutlined />} onClick={() => setReceiving(true)}>
-                  Receive material
+                  Receive material (GRN)
                 </Button>
               ) : null}
               <EditResubmitButton entry={data} onEdit={onEdit} size={size} />

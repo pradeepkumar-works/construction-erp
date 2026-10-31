@@ -83,13 +83,13 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Select project"
+            placeholder="Choose the project"
             onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined, workElementId: undefined, workOrderId: undefined })}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {(wos.data?.items.length ?? 0) > 0 && (
@@ -152,10 +152,10 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                   const row = items.find((i) => i.itemId === itemId);
                   return (
                     <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
+                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Choose an item' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
-                          placeholder={scope ? 'Item' : 'Pick the project first'}
+                          placeholder={scope ? 'Item' : 'Choose the project first'}
                           disabled={!scope}
                           loading={stock.isLoading}
                           options={items.map((i) => ({

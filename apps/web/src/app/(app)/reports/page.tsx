@@ -57,7 +57,7 @@ function Reports() {
       aria-label="Project"
       value={projectId}
       onChange={setProjectId}
-      options={(projects ?? []).filter((p) => p.type !== 'STORE' && p.type !== 'PLANT').map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+      options={(projects ?? []).filter((p) => p.type !== 'STORE' && p.type !== 'PLANT').map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
     />
   );
 

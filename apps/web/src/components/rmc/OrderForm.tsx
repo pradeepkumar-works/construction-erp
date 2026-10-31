@@ -97,9 +97,9 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
       <Form form={form} layout="vertical" initialValues={{ date: dayjs(), for: 'client' }}>
         <FormGrid cols={2}>
           <Form.Item name="plantId" label="Plant" rules={[{ required: true, message: 'Choose the plant' }]}>
-            <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ mixDesignId: undefined })} />
+            <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} onChange={() => form.setFieldsValue({ mixDesignId: undefined })} />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
@@ -115,7 +115,7 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
         <FormGrid cols={2}>
           {who === 'site' ? (
             <Form.Item name="projectId" label="Site" rules={[{ required: true, message: 'Choose the site the plant supplies' }]} extra="Supplied at cost, with no GST bill">
-              <ProjectSelect allowClear={false} placeholder="Choose a project" disabled={editing} />
+              <ProjectSelect allowClear={false} placeholder="Choose the project" disabled={editing} />
             </Form.Item>
           ) : (
             <Form.Item name="clientId" label="Customer" rules={[{ required: true, message: 'Choose the customer' }]} extra="Add a new customer in Masters, Clients">

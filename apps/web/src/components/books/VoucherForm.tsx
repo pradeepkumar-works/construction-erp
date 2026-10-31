@@ -116,7 +116,7 @@ export function VoucherForm({
           <Segmented disabled={editing} options={MANUAL_VOUCHER_TYPES.map((t) => ({ value: t, label: BOOK_VOUCHER_TYPE_LABELS[t] }))} />
         </Form.Item>
         <FormGrid cols={3}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the voucher date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the voucher date' }]}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="reference" label="Reference" extra="Cheque, UTR or bill number">

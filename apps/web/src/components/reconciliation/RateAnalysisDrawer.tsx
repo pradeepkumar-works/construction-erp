@@ -378,7 +378,7 @@ function CopyModal({
         <Form.Item name="sourceProjectId" label="From project">
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             onChange={() => form.setFieldValue('fromBoqItemId', undefined)}
           />
         </Form.Item>

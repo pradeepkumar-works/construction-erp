@@ -14,7 +14,7 @@ function PurchaseOrdersPage() {
   const tab = search.get('tab') === 'status' ? 'status' : 'orders';
   return (
     <div className="page-container">
-      <PageHeader title="Purchase orders" subtitle="Orders on vendors from approved material requests and their quotations, through approval, receipt at site (GRN) and the vendor's bill." />
+      <PageHeader title="Purchase orders" subtitle="Orders on vendors from approved indents and their quotations, through approval, receipt at site (GRN) and the vendor's bill." />
       <Card size="small">
         <AppTabs
           activeKey={tab}

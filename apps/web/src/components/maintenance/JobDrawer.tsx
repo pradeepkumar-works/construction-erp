@@ -239,7 +239,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
         <Form form={closeForm} layout="vertical">
           {j?.kind === 'SERVICE' ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Closing a service restarts the machine's service schedule from this date." /> : null}
           <FormGrid cols={3}>
-            <Form.Item name="closedDate" label="Back in work on" rules={[{ required: true, message: 'Pick the date' }]}>
+            <Form.Item name="closedDate" label="Back in work on" rules={[{ required: true, message: 'Choose the date' }]}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!j && d.isBefore(dayjs(j.date), 'day'))} allowClear={false} />
             </Form.Item>
             <Form.Item name="downtimeHours" label="Working hours lost">
@@ -269,7 +269,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
       <FormShell open={issuing} onClose={() => setIssuing(false)} form={spareForm} layout="modal" title={`Issue spares for ${j?.jobNo ?? ''}`} okText="Issue" onSubmit={(v) => spares.mutateAsync(v)} width={620}>
         <Form form={spareForm} layout="vertical">
           <Typography.Paragraph type="secondary">From the store at {j?.projectName}. The issue slip is linked to this job card.</Typography.Paragraph>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} style={{ maxWidth: 220 }}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]} style={{ maxWidth: 220 }}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           {!stock.isLoading && !items.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Nothing is in stock at this project." /> : null}
@@ -281,7 +281,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                   const row = items.find((i) => i.itemId === itemId);
                   return (
                     <div key={f.key} data-line-label={`Spare ${f.name + 1}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick a spare' }]}>
+                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Choose a spare' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
                           placeholder="Spare or lubricant"

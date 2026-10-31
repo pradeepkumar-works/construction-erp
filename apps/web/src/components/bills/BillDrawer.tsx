@@ -129,7 +129,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const stageAt = data ? (['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const).indexOf(data.stage) : 0;
 
   const dateItem = (
-    <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Pick the date' }]}>
+    <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Choose the date' }]}>
       <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
     </Form.Item>
   );

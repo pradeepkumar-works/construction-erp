@@ -131,7 +131,7 @@ export function ClientFormModal({ open, client, initialName, onClose, onSaved }:
                 allowClear
                 showSearch={{ optionFilterProp: 'label' }}
                 disabled={!!fromGstin}
-                placeholder="Select"
+                placeholder="Choose the state"
                 options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))}
               />
             </Form.Item>

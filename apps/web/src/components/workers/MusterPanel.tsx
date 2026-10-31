@@ -103,7 +103,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
   return (
     <div className="muster-panel">
       <CardToolbar wrap gap={8} align="center">
-        {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Pick a project" allowClear={false} /> : null}
+        {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Choose the project" allowClear={false} /> : null}
         <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format="MMM YYYY" allowClear={false} aria-label="Month" />
         <div style={{ flex: 1 }} />
         {m ? (
@@ -118,7 +118,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       {muster.error ? <QueryError error={muster.error} onRetry={() => muster.refetch()} /> : null}
       {!projectId ? (
         <div className="text-muted" style={{ padding: 16 }}>
-          Pick a project to see its muster roll.
+          Choose a project to see its muster roll.
         </div>
       ) : (
         <>

@@ -172,7 +172,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         empty={frame.empty}
         failed={!!error}
         scrollX={fixedProject ? 1050 : 1250}
-        emptyText={<EmptyArt art="entries" title={buyer ? 'No purchase orders yet. Raise one from an approved material request, or with New purchase order.' : 'No purchase orders yet'} />}
+        emptyText={<EmptyArt art="entries" title={buyer ? 'No purchase orders yet. Make one from an approved indent, or with New purchase order.' : 'No purchase orders yet'} />}
         emptyAction={newButton}
       />
       <PurchaseOrderDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />

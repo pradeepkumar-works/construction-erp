@@ -131,13 +131,13 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       <Form form={form} layout="vertical">
         {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Choose the category' }]} {...aiFlagItem(draft, 'category', category)}>
-            <Select placeholder="Select" options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: EXPENSE_CATEGORY_LABELS[c] }))} />
+            <Select placeholder="Choose the category" options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: EXPENSE_CATEGORY_LABELS[c] }))} />
           </Form.Item>
-          <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
+          <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>

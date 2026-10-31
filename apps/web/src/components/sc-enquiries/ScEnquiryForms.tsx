@@ -121,7 +121,7 @@ export function ScEnquiryForm({ open, enquiry, onClose, onSaved }: { open: boole
                 showSearch={{ optionFilterProp: 'label' }}
                 disabled={!!enquiry}
                 onChange={() => form.setFieldValue('items', [{}])}
-                options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+                options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
               />
             </Form.Item>
             <Form.Item name="closesOn" label="Last day to quote">

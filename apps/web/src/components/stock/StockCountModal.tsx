@@ -113,13 +113,13 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
-                placeholder="Select project"
+                placeholder="Choose the project"
                 onChange={() => form.setFieldValue('counts', {})}
-                options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+                options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
               />
             </Form.Item>
           )}
-          <Form.Item name="date" label="Counted on" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Counted on" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           <Form.Item name="remarks" label="Remarks">
@@ -137,7 +137,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
           pagination={false}
           dataSource={rows}
           scroll={{ y: 380, x: 700 }}
-          locale={{ emptyText: projectId ? 'Nothing has moved at this project yet' : 'Pick a project' }}
+          locale={{ emptyText: projectId ? 'Nothing has moved at this project yet' : 'Choose a project' }}
           columns={[
             { title: 'Item', dataIndex: 'itemName', render: (v, r) => <span>{v}{r.category ? <span className="text-muted"> · {r.category}</span> : null}</span> },
             { title: 'Book balance', dataIndex: 'balance', width: 150, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },

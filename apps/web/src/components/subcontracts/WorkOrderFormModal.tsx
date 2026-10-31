@@ -167,13 +167,13 @@ export function WorkOrderFormModal({
               showSearch={{ optionFilterProp: 'label' }}
               disabled={!!order || !!fixedProject}
               onChange={() => form.setFieldValue('lines', [{}])}
-              options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+              options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             />
           </Form.Item>
           <Form.Item
             name="vendorId"
             label="Subcontractor"
-            rules={[{ required: true, message: 'Pick the subcontractor from the vendor master' }]}
+            rules={[{ required: true, message: 'Choose the subcontractor from the vendor master' }]}
             extra={
               vendor
                 ? [vendor.pan ? `PAN ${vendor.pan}` : 'No PAN: TDS is 20% under section 206AA', vendor.gstin ? `GSTIN ${vendor.gstin}` : 'Not GST registered', vendor.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory] : null]
@@ -184,7 +184,7 @@ export function WorkOrderFormModal({
           >
             <VendorSelect prefer={SUB_KINDS} placeholder="Type a subcontractor's name" onPick={onVendor} />
           </Form.Item>
-          <Form.Item name="woDate" label="Work order date" rules={[{ required: true, message: 'Pick the work order date' }]}>
+          <Form.Item name="woDate" label="Work order date" rules={[{ required: true, message: 'Choose the work order date' }]}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>

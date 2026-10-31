@@ -76,7 +76,7 @@ export function CoverFromStockModal({ open, onClose, request, stock }: { open: b
           <Form.Item name="fromProjectId" label="From" rules={[{ required: true, message: 'Choose the site the material comes from' }]}>
             <Select options={sites} placeholder="Site with stock" />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>

@@ -158,7 +158,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             </Form.Item>
           ) : (
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={editing}>
-              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
           )}
           {kind === 'BILL' && target && !editing && (
@@ -168,7 +168,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
             </Typography.Paragraph>
           )}
           <FormGrid cols={3}>
-            <Form.Item name="receiptDate" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
+            <Form.Item name="receiptDate" label="Received on" rules={[{ required: true, message: 'Choose the date' }]}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="amount" label="Amount received" rules={[{ required: true, message: 'Enter the amount received' }]}>

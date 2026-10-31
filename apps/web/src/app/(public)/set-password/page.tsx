@@ -41,7 +41,7 @@ export default function SetPasswordPage() {
 
   const invite = info.data?.purpose === 'INVITE';
   return (
-    <AuthCard title={invite ? 'Set up your account' : 'Choose a new password'} subtitle={invite ? 'Welcome! Choose a password to finish setting up your account.' : 'Pick a new password, then you are signed in.'}>
+    <AuthCard title={invite ? 'Set up your account' : 'Choose a new password'} subtitle={invite ? 'Welcome! Choose a password to finish setting up your account.' : 'Choose a new password, then you are signed in.'}>
       {!token || info.error ? (
         <Result
           status="warning"

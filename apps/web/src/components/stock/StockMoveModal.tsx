@@ -109,9 +109,9 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
         <Form.Item name="projectId" label={move === 'transfer' ? 'From project' : 'Project'} rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Select project"
+            placeholder="Choose the project"
             onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined })}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />
         </Form.Item>
         <FormGrid cols={2}>
@@ -125,13 +125,13 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                     label: group,
                     options: (destinations ?? [])
                       .filter((d) => d.id !== scope && d.store === (group === 'Central stores'))
-                      .map((d) => ({ value: d.id, label: `${d.code} - ${d.name}` })),
+                      .map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` })),
                   }))
                   .filter((g) => g.options.length)}
               />
             </Form.Item>
           )}
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {move === 'vendor' && (
@@ -178,11 +178,11 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                   const row = items.find((i) => i.itemId === itemId);
                   return (
                     <div key={f.key} className="stock-move-line" style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
+                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Choose an item' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
                           aria-label="Item"
-                          placeholder={scope ? 'Item' : 'Pick the project first'}
+                          placeholder={scope ? 'Item' : 'Choose the project first'}
                           disabled={!scope}
                           loading={stock.isLoading}
                           options={items.map((i) => ({

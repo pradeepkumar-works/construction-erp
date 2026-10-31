@@ -77,7 +77,7 @@ export function EmployeeEventModal({ open, onClose, employee, onSaved }: { open:
           <Form.Item name="type" label="What happened" rules={[{ required: true, message: 'Choose what to record' }]}>
             <Select options={types.map((t) => ({ value: t, label: EMPLOYEE_EVENT_LABELS[t] }))} />
           </Form.Item>
-          <Form.Item name="effectiveDate" label={exit ? 'Last working day' : 'From'} rules={[{ required: true, message: 'Pick the date it takes effect' }]}>
+          <Form.Item name="effectiveDate" label={exit ? 'Last working day' : 'From'} rules={[{ required: true, message: 'Choose the date it takes effect' }]}>
             <DatePicker {...DATE} />
           </Form.Item>
         </FormGrid>

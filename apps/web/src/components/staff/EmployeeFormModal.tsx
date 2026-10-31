@@ -185,7 +185,7 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
               <MasterInput list="department" maxLength={80} placeholder="Execution" />
             </Form.Item>
             <Form.Item name="projectId" label="Posted at" extra="Blank for head office">
-              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Head office" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Head office" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
             <Form.Item name="reportingToId" label="Reports to">
               <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Nobody" options={managers} />

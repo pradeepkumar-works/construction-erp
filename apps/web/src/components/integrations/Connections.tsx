@@ -151,7 +151,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
             </Form.Item>
           ) : batcher ? (
             <Form.Item name="projectId" label="Plant" extra="Its batches wait for challans on this plant's RMC page" rules={[{ required: true, message: 'Choose the RMC plant the controller batches for' }]}>
-              <Select loading={plants.isLoading} placeholder="Choose the plant" options={(plants.data ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <Select loading={plants.isLoading} placeholder="Choose the plant" options={(plants.data ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
           ) : (
             <Form.Item name="projectId" label="Site (optional)" extra="Where its readings belong when they do not say">

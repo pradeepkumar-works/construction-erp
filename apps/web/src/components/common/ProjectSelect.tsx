@@ -8,7 +8,7 @@ import { useProjects } from '@/lib/queries';
 /** The projects the signed-in person works on, as picker options. */
 function useProjectOptions(exclude?: string) {
   const { data, isLoading } = useProjects();
-  return { isLoading, options: (data ?? []).filter((p) => p.id !== exclude).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` })) };
+  return { isLoading, options: (data ?? []).filter((p) => p.id !== exclude).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` })) };
 }
 
 /** `exclude` leaves one project out (the one being copied into). */

@@ -235,17 +235,17 @@ export function PurchaseOrderFormModal({
         <FormSection title="Order">
           <FormGrid cols={4}>
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
             <Form.Item
               name="vendorId"
               label="Vendor"
-              rules={[{ required: true, message: 'Pick the vendor from the master' }]}
+              rules={[{ required: true, message: 'Choose the vendor from the master' }]}
               extra={vendor ? [vendor.gstin ? `GSTIN ${vendor.gstin}` : 'No GSTIN', vendor.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory] : null].filter(Boolean).join(' · ') : undefined}
             >
               <VendorSelect prefer={['SUPPLIER']} />
             </Form.Item>
-            <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Pick the PO date' }]}>
+            <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Choose the PO date' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="deliveryBy" label="Deliver by">

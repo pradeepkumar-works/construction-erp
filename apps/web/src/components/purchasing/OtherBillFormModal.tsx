@@ -279,7 +279,7 @@ export function OtherBillFormModal({
         <FormSection title={VENDOR_BILL_KIND_LABELS[kind]}>
           <FormGrid cols={kind === 'OTHER' ? 3 : 2}>
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!bill} options={(projects ?? []).map((pr) => ({ value: pr.id, label: `${pr.code} - ${pr.name}` }))} />
+              <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!bill} options={(projects ?? []).map((pr) => ({ value: pr.id, label: `${pr.code} · ${pr.name}` }))} />
             </Form.Item>
             {kind === 'HIRE' ? (
               <FormGrid cols={2}>
@@ -296,7 +296,7 @@ export function OtherBillFormModal({
                 </Form.Item>
               </FormGrid>
             ) : (
-              <Form.Item name="vendorId" label={kind === 'SERVICE' ? 'Workshop' : 'Vendor'} rules={[{ required: true, message: 'Pick the vendor from the master' }]}>
+              <Form.Item name="vendorId" label={kind === 'SERVICE' ? 'Workshop' : 'Vendor'} rules={[{ required: true, message: 'Choose the vendor from the master' }]}>
                 <VendorSelect prefer={['SERVICE']} disabled={!!bill} />
               </Form.Item>
             )}
@@ -310,7 +310,7 @@ export function OtherBillFormModal({
             <Form.Item name="invoiceNo" label="Vendor's invoice no." rules={[{ required: true, whitespace: true, message: 'Enter the invoice number' }]}>
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]}>
+            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Choose the invoice date' }]}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="freight" label="Freight">

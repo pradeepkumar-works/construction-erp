@@ -163,7 +163,7 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
       <Typography.Paragraph type="secondary">Enter the quantity you pass for each item. Items you leave as they are pass as claimed. The contractor's QS and project manager are told.</Typography.Paragraph>
       <Form form={form} layout="vertical" requiredMark={false}>
         <FormGrid cols={2}>
-          <Form.Item name="date" label="Certificate date" rules={[{ required: true, message: 'Pick the certificate date' }]}>
+          <Form.Item name="date" label="Certificate date" rules={[{ required: true, message: 'Choose the certificate date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="certificateNo" label="Certificate no.">

@@ -491,7 +491,7 @@ function TicketForm({
               }
               options={(projects ?? []).map((p) => ({
                 value: p.id,
-                label: `${p.code} - ${p.name}`,
+                label: `${p.code} · ${p.name}`,
               }))}
             />
           </Form.Item>
@@ -566,9 +566,9 @@ function TicketForm({
               />
             </Form.Item>
             {from === 'BRIDGE' ? (
-              <Form.Item name="weighingId" label="Weight on the bridge" rules={[{ required: true, message: 'Pick the weight the truck made' }]}>
+              <Form.Item name="weighingId" label="Weight on the bridge" rules={[{ required: true, message: 'Choose the weight the truck made' }]}>
                 <Select
-                  placeholder="Pick the truck's weight"
+                  placeholder="Choose the truck's weight"
                   options={onBridge.map((w) => ({
                     value: w.id,
                     label: weighingLabel(w),
@@ -674,12 +674,12 @@ function SecondWeightForm({ open, onClose, ticket, weighing, weighings }: { open
             rules={[
               {
                 required: true,
-                message: 'Pick the weight the truck made on the way out',
+                message: 'Choose the weight the truck made on the way out',
               },
             ]}
           >
             <Select
-              placeholder="Pick the truck's weight"
+              placeholder="Choose the truck's weight"
               options={onBridge.map((w) => ({
                 value: w.id,
                 label: weighingLabel(w),

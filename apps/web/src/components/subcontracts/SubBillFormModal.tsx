@@ -142,10 +142,10 @@ export function SubBillFormModal({
             </Form.Item>
           )}
           <FormGrid cols={2}>
-            <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
+            <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true, message: 'Pick the day work is measured up to' }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
+            <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true, message: 'Choose the day work is measured up to' }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="invoiceNo" label="Their invoice no.">

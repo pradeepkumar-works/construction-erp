@@ -149,12 +149,12 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
           }
         />
       ) : null}
-      {movedOnto ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`${formatDate(movedOnto.date)} already has its own sheet. Pick another date.`} /> : null}
+      {movedOnto ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`${formatDate(movedOnto.date)} already has its own sheet. Choose another date.`} /> : null}
 
       <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-        <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+        <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
       </Form.Item>
-      <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} style={{ maxWidth: 240 }}>
+      <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]} style={{ maxWidth: 240 }}>
         <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
       </Form.Item>
 

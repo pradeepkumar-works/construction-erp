@@ -82,7 +82,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
     () =>
       (projects ?? [])
         .filter((p) => reportKey === 'stock' || (p.type !== 'STORE' && p.type !== 'PLANT'))
-        .map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` })),
+        .map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` })),
     [projects, reportKey],
   );
 

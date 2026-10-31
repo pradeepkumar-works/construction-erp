@@ -377,7 +377,7 @@ export function PapersPanel() {
       <FormShell open={!!docEditing} onClose={() => setDocEditing(null)} form={docForm} layout="modal" title={docEditing === 'new' ? 'New paper' : 'Change paper'} okText="Save" onSubmit={(v) => saveDoc.mutateAsync(v)}>
         <Form form={docForm} layout="vertical">
           <FormGrid cols={2}>
-            <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Pick the machine' }]}>
+            <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Choose the machine' }]}>
               <EquipmentSelect disabled={docEditing !== 'new'} />
             </Form.Item>
             <Form.Item name="type" label="Paper" rules={[{ required: true, message: 'Choose the paper' }]}>
@@ -392,7 +392,7 @@ export function PapersPanel() {
               <Input maxLength={200} placeholder="Insurer, RTO, authority" />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="validity" label="Valid from / to" rules={[{ validator: (_, v?: [unknown, unknown]) => (v?.[1] ? Promise.resolve() : Promise.reject(new Error('Pick the date it expires'))) }]}>
+          <Form.Item name="validity" label="Valid from / to" rules={[{ validator: (_, v?: [unknown, unknown]) => (v?.[1] ? Promise.resolve() : Promise.reject(new Error('Choose the date it expires'))) }]}>
             <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, false]} />
           </Form.Item>
           <Form.Item name="notes" label="Notes">

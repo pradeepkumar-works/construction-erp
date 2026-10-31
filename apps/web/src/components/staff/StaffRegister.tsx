@@ -164,7 +164,7 @@ export function StaffRegister() {
   return (
     <>
       <CardToolbar wrap gap={8} align="center">
-        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} allowClear={false} placeholder="Select project" />
+        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} allowClear={false} placeholder="Choose the project" />
         <DatePicker value={date} allowClear={false} format="ddd DD MMM YYYY" aria-label="Date" onChange={(d) => d && setDate(d)} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         <div style={{ flex: 1 }} />
         <Space>

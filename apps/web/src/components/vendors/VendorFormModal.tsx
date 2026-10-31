@@ -160,7 +160,7 @@ export function VendorFormModal({
             <Input {...CODE_INPUT} placeholder="ABCPT1234F" />
           </Form.Item>
           <Form.Item name="stateCode" label="State (GST)">
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!!fromGstin} placeholder="Select" options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!!fromGstin} placeholder="Choose the state" options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="address" label="Address">
