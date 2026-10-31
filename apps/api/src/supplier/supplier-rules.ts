@@ -2,14 +2,12 @@ import { Prisma } from '@prisma/client';
 import { SUPPLIER_BANK_FIELDS, SUPPLIER_PROFILE_FIELDS, type SubmissionStatus, type SupplierInvoiceStage, type SupplierInvoiceStatus, type SupplierProfileField, type SupplierStatementKind } from '@erp/shared';
 
 /**
- * The supplier portal's figures (v6 item 105), with no database: the statement's running balance, what a bill is
+ * The supplier portal's figures, with no database: the statement's running balance, what a bill is
  * worth to the supplier, what is still to send on a PO line, whether a dispatch note fits the order, where an invoice
  * stands, and what a profile change touches. Tested in `src/scripts/supplier-test.ts`.
  */
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
-
-/* ---------- the statement ---------- */
 
 export interface StatementEntry {
   date: string;
@@ -78,8 +76,6 @@ export function dueSplit(bills: { due: Prisma.Decimal.Value; dueDate: string }[]
   return { due, overdue };
 }
 
-/* ---------- dispatch notes ---------- */
-
 /** What is still to send on a PO line: ordered, less received at site, less what is on the way. Never below zero. */
 export function toSend(ordered: Prisma.Decimal.Value, received: Prisma.Decimal.Value, onTheWay: Prisma.Decimal.Value) {
   const left = D(ordered).sub(D(received)).sub(D(onTheWay));
@@ -105,16 +101,12 @@ export function dispatchProblem(want: { lineId: string; quantity: Prisma.Decimal
   return null;
 }
 
-/* ---------- invoices ---------- */
-
 /** Where an invoice stands: returned or withdrawn as recorded; otherwise from the bill made from it (not a rejected one). */
 export function invoiceStage(status: SupplierInvoiceStatus, bill: { status: SubmissionStatus; payable: Prisma.Decimal.Value; paid: Prisma.Decimal.Value } | null): SupplierInvoiceStage {
   if (status !== 'SUBMITTED') return status;
   if (!bill || bill.status === 'REJECTED') return 'SUBMITTED';
   return bill.status === 'APPROVED' && D(bill.payable).gt(0) && D(bill.paid).gte(D(bill.payable)) ? 'PAID' : 'BILLED';
 }
-
-/* ---------- profile changes ---------- */
 
 export type ProfileValues = Record<SupplierProfileField, string | null>;
 

@@ -39,11 +39,11 @@ const totals = (rows: { taxable: string; igst: string; cgst: string; sgst: strin
 };
 
 /**
- * GST registers (v3 item 25), for the accountant to file GSTR-1 and reconcile input tax with GSTR-2B. Outward supplies
+ * GST registers, for the accountant to file GSTR-1 and reconcile input tax with GSTR-2B. Outward supplies
  * are approved RA bills by bill date: works on a site are supplied where the site is, which is where the contractor
  * bills from, so their GST is CGST + SGST. Input tax comes from approved vendor bills (by invoice date, a row per GST
  * rate of their lines), subcontractor bills and site expenses with GST; only invoices with the supplier's GSTIN can be
- * claimed; debit notes against those bills reverse their input tax (v5 item 91). E-invoicing is not done here.
+ * claimed; debit notes against those bills reverse their input tax. E-invoicing is not done here.
  */
 @Injectable()
 export class GstService {
@@ -193,7 +193,7 @@ export class GstService {
         gstStateCode(e.vendorGstin),
       );
     }
-    // A debit note against a bill reverses that much of its input tax (v5 item 91): negative rows, a row per GST rate.
+    // A debit note against a bill reverses that much of its input tax: negative rows, a row per GST rate.
     for (const n of debitNotes) {
       const byRate = new Map<string, { rate: Prisma.Decimal; taxable: Prisma.Decimal; gst: Prisma.Decimal }>();
       for (const l of n.lines) {

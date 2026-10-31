@@ -44,7 +44,7 @@ async function section<T>(fn: () => Promise<T>): Promise<T | { notAllowed: strin
 }
 
 /**
- * The digests behind "Summarise this week", "Explain" on a late activity and "What changed" on an RA bill (AI item 68).
+ * The digests behind "Summarise this week", "Explain" on a late activity and "What changed" on an RA bill.
  * Each gathers in one call what the answer needs from the same list services the pages use, with the asking user,
  * so access rules apply unchanged and the model reads one result instead of making eight calls.
  */

@@ -1,5 +1,5 @@
 /**
- * Batching plant tests (item 149): a batching plant connection's settings, a column map, a row from the Connector, a
+ * Batching plant tests: a batching plant connection's settings, a column map, a row from the Connector, a
  * row read through the map (figures, dates, the materials in their items' units), the first map guessed from a
  * report's headers, and the order a batch was for. No database. CI runs it after the build:
  *

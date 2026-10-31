@@ -23,8 +23,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
 const list = (xs: readonly string[]) => xs as unknown as string[];
 
-/* ---------- letters ---------- */
-
 export class CreateLetterDto {
   @ApiPropertyOptional({ description: 'The project; leave out (or null) for a head office letter' }) @IsOptional() @opt() @IsUUID() projectId?: string | null;
   @ApiProperty({ enum: LETTER_DIRECTIONS, description: 'IN = received (numbered at once), OUT = sent (numbered when approved, or at once where it needs no approval)' })
@@ -100,8 +98,6 @@ export class DispatchLetterDto {
   @ApiPropertyOptional({ type: [String], description: 'The receipt or acknowledged copy, added to the letter' }) @IsOptional() @IsArray() @ArrayMaxSize(10) @IsUUID('all', { each: true }) attachmentIds?: string[];
 }
 
-/* ---------- address book ---------- */
-
 export class LetterContactInput {
   @ApiProperty({ example: 'The Executive Engineer' }) @trim() @IsString() @IsNotEmpty() @MaxLength(200) name: string;
   @ApiPropertyOptional({ example: 'Road Division No. 2, Cuttack' }) @IsOptional() @trim() @IsString() @MaxLength(200) office?: string | null;
@@ -119,8 +115,6 @@ export class ListLetterContactsQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Include ones switched off' }) @IsOptional() @QueryBool() @IsBoolean() all?: boolean;
 }
 
-/* ---------- numbering and approval ---------- */
-
 export class LetterSettingsInput {
   @ApiProperty({ enum: LETTER_APPROVAL_RULES }) @IsIn(list(LETTER_APPROVAL_RULES)) approval: LetterApprovalRule;
   @ApiPropertyOptional({ enum: LETTER_APPROVAL_RULES, description: 'Item 169: which signed letters then wait for a director\'s seal at head office (never more than `approval` reaches)' })
@@ -137,8 +131,6 @@ export class LetterSeriesInput {
 }
 
 export class UpdateLetterSeriesDto extends PartialType(OmitType(LetterSeriesInput, ['projectId', 'direction'] as const)) {}
-
-/* ---------- templates ---------- */
 
 export class LetterTemplateInput {
   @ApiProperty() @trim() @IsString() @IsNotEmpty() @MaxLength(120) name: string;

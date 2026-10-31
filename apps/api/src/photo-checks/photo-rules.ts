@@ -1,7 +1,7 @@
 import { PHOTO_FLAGS, PHOTO_FLAG_INFO, PHOTO_FLAG_MIN_CONFIDENCE, PRODUCT_NAME, type PhotoCheckFlagDto, type PhotoCheckKind, type PhotoFlag } from '@erp/shared';
 
 /**
- * Site photo checks (AI item 76): the prompt, the record's words the model compares a photo with, and the checks on
+ * Site photo checks: the prompt, the record's words the model compares a photo with, and the checks on
  * what it answers. Pure, so they are tested without a model (src/scripts/photo-checks-test.ts).
  */
 

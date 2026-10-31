@@ -26,8 +26,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 /** Accept numbers or numeric strings; keep them as strings for Decimal columns. */
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : value));
 
-/* ---------- equipment master ---------- */
-
 export class CreateEquipmentDto {
   @ApiProperty({ example: 'EXC-01' }) @trim() @IsString() @IsNotEmpty() @MaxLength(30) code: string;
   @ApiProperty({ example: 'Excavator (Tata Hitachi EX200)' }) @trim() @IsString() @IsNotEmpty() @MaxLength(120) name: string;
@@ -104,8 +102,6 @@ export class ListEquipmentQuery extends PageQuery {
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.equipment, default: 'code' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.equipment as unknown as string[]) sortBy?: EquipmentSortField;
 }
 
-/* ---------- daily logs ---------- */
-
 export class CreateMachineryLogDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
@@ -140,8 +136,6 @@ export class ListMachineryLogsQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Only logs created by the current user' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.machinery, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.machinery as unknown as string[]) sortBy?: MachineryLogSortField;
 }
-
-/* ---------- fleet use (v5 item 93) ---------- */
 
 export class FleetPeriodQuery {
   @ApiPropertyOptional({ example: '2026-10-01', description: 'From the first log when left out' }) @IsOptional() @IsDateString() from?: string;

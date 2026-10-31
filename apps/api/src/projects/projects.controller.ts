@@ -22,7 +22,7 @@ export class ProjectsController {
     return this.projects.list(user, q);
   }
 
-  /** The next code in the company's series, offered on the New project form (finding 17 of the October review). */
+  /** The next code in the company's series, offered on the New project form. */
   @Get('next-code')
   @Roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER')
   nextCode(@CurrentUser() user: RequestUser, @Query() q: NextProjectCodeQuery) {
@@ -34,7 +34,7 @@ export class ProjectsController {
     return this.projects.get(user, id);
   }
 
-  /** The new project's setup checklist and the BOQ against the contract value (finding 6 of the October review). */
+  /** The new project's setup checklist and the BOQ against the contract value. */
   @Get(':id/setup')
   setupOf(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.setup.get(user, id);

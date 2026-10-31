@@ -5,7 +5,7 @@ import { windowRecovery } from '../stage-billing/stage-billing-rules';
 
 /*
  * Pricing an RA bill: its measured lines, its work value, GST, deductions and net payable. `RaBillsService` runs it on
- * every change and certificate, and the demo seed runs it for the town scheme's past bills (item 129), so both agree.
+ * every change and certificate, and the demo seed runs it for the town scheme's past bills, so both agree.
  */
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
@@ -14,7 +14,7 @@ const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_
 const pctOf = (base: Prisma.Decimal, pct: Prisma.Decimal) => round2(base.mul(pct).div(100));
 
 /**
- * An O&M bill's figures (item 131): the instalment less staff short (its work value), the O&M bills before it, and the
+ * An O&M bill's figures: the instalment less staff short (its work value), the O&M bills before it, and the
  * service level penalties it deducts. `omPricing` in `src/om/om-bill.ts` works them out.
  */
 export interface OmPricing {
@@ -99,7 +99,7 @@ export async function measuredLines(tx: Prisma.TransactionClient, bill: { id: st
 
 /**
  * Work value, price variation, GST, deductions and net payable of a set of lines priced on certified (else claimed)
- * quantities, with the stages' amounts and the slippage withheld (item 129). GST and the deductions are on work value +
+ * quantities, with the stages' amounts and the slippage withheld. GST and the deductions are on work value +
  * price variation.
  */
 export async function billTotals(
@@ -111,7 +111,7 @@ export async function billTotals(
   plan: BillStagePlan | null,
   om: OmPricing | null = null,
 ) {
-  // An O&M bill (item 131) recovers no mobilisation advance: that belonged to the works.
+  // An O&M bill recovers no mobilisation advance: that belonged to the works.
   const advance = om ? ZERO : terms.mobilisationAdvance;
   const amounts = lines.map((l) => round2((l.certifiedQty ?? l.thisQty).mul(l.rate)));
   const grossAmount = amounts.reduce((s, a) => s.add(a), plan?.stageAmount ?? om?.amount ?? ZERO);
@@ -125,7 +125,7 @@ export async function billTotals(
   const pvAmount = pvAmounts.reduce((s, l) => s.add(l.amount), ZERO);
   for (const l of pvAmounts) await tx.raBillPvLine.update({ where: { id: l.id }, data: { amount: l.amount } });
   const base = Prisma.Decimal.max(grossAmount.add(pvAmount), ZERO);
-  // A recovery window (item 129) recovers the advance between two % of the contract executed, else a % of each bill.
+  // A recovery window recovers the advance between two % of the contract executed, else a % of each bill.
   const windowed =
     !om && terms.advanceRecoveryFromPct && terms.advanceRecoveryToPct && terms.contractValue
       ? windowRecovery({ advance, contractValue: terms.contractValue, executedUpto: grossPrevious.add(grossAmount), fromPct: terms.advanceRecoveryFromPct, toPct: terms.advanceRecoveryToPct, recoveredBefore: recovered._sum.advanceRecoveryAmount ?? ZERO })

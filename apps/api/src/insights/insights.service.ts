@@ -10,7 +10,7 @@ import { AiService } from '../ai/ai.service';
 const blank = (key: InsightKey): InsightDto => ({ key, attention: false, count: null, inr: null, date: null, month: null, aiReason: null, failed: false });
 
 /**
- * The watch list's Other checks strip (intelligence quick win Q0): the headline of each check that has a page of its own,
+ * The watch list's Other checks strip: the headline of each check that has a page of its own,
  * read through that check's own service with the caller, so a figure here never shows more than the page would.
  */
 @Injectable()

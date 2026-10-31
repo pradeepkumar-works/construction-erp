@@ -11,7 +11,7 @@ import { QaRegistersService } from './registers.service';
 import { QaReportQuery } from './report.dto';
 
 /**
- * The monthly quality report (item 137 part 3): per project, the month's tests and pass rate, the tests the plan is short
+ * The monthly quality report: per project, the month's tests and pass rate, the tests the plan is short
  * of today, NCRs raised and closed with the open ones by age, rework cost, audits and open findings, and the grades whose
  * cubes fail; and for the company, NCRs by category and root cause, calibration, late reports and missing certificates.
  * The plan, cubes and registers are read through their own services; the totals are `reportTotals`.

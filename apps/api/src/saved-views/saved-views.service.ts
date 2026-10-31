@@ -25,7 +25,7 @@ function cleanState(raw: unknown): SavedViewState {
   return state;
 }
 
-/** Saved views on the busiest lists (UI roadmap item 55): personal, or shared with everyone in the company. */
+/** Saved views on the busiest lists: personal, or shared with everyone in the company. */
 @Injectable()
 export class SavedViewsService {
   constructor(

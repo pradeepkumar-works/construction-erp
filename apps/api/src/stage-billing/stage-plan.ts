@@ -22,7 +22,7 @@ import {
 } from './stage-billing-rules';
 
 /*
- * The parts of stage billing (item 129) that the demo seed runs too, so they take a database client and no user: the
+ * The parts of stage billing that the demo seed runs too, so they take a database client and no user: the
  * standard break-up, the grid proposed from the schedule, and what a bill takes from the break-up. `StageBillingService`
  * checks the caller's rights and calls them.
  */
@@ -48,7 +48,7 @@ export const PROJECT_SELECT = {
   endDate: true,
 } satisfies Prisma.ProjectSelect;
 
-/** What a bill takes from the break-up (item 129): its stage lines, the slippage withheld, and how its measured items are priced. */
+/** What a bill takes from the break-up: its stage lines, the slippage withheld, and how its measured items are priced. */
 export interface BillStagePlan {
   lines: {
     stageId: string;

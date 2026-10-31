@@ -1,5 +1,5 @@
 /**
- * The rules behind bill checks (AI item 69), as plain functions of a bill's facts so each can be tested on its own
+ * The rules behind bill checks, as plain functions of a bill's facts so each can be tested on its own
  * (`src/scripts/bill-checks-test.ts`). A rule returns one tick when it passes, or one flag per line or record it found.
  * Keys carry the figures they are about, so a flag accepted on one version of a bill comes back if the bill changes.
  */
@@ -44,7 +44,6 @@ function totalsRule(key: string, passTitle: string, failTitle: string, parts: { 
 
 const pctOf = (base: number, pct: number) => Math.round(base * pct) / 100;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Vendor bills: against the PO and the GRNs.
 
 export interface VendorBillFacts {
@@ -141,8 +140,7 @@ export function vendorBillChecks(f: VendorBillFacts): Check[] {
   ];
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Vendor bills without a PO (v5 item 91): a hire bill against the machine's logs, a service bill against its job cards.
+// Vendor bills without a PO: a hire bill against the machine's logs, a service bill against its job cards.
 
 export interface OtherVendorBillFacts {
   invoiceNo: string;
@@ -167,7 +165,7 @@ export interface OtherVendorBillFacts {
     fuelLitres: number;
     fuelRecovered: number;
     /**
-     * The logs' days the machine's tracker or maker's feed read (item 146): hours logged (worked and idle) and what
+     * The logs' days the machine's tracker or maker's feed read: hours logged (worked and idle) and what
      * the engine ran on them (within 2% or half an hour), and days logged as working on which the engine did not run
      */
     engine?: { days: number; loggedHours: number; engineHours: number; deadDays: string[] } | null;
@@ -225,7 +223,6 @@ export function otherVendorBillChecks(f: OtherVendorBillFacts): Check[] {
   ];
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Subcontract bills: against the work order and the measurement book.
 
 export interface SubcontractBillFacts {
@@ -263,7 +260,7 @@ export interface SubcontractBillFacts {
   netPayable: number;
   duplicates: Link[];
   /**
-   * Man-day lines against the site's attendance over the bill's days (AI item 124, `AttendanceCheckService.forBill`):
+   * Man-day lines against the site's attendance over the bill's days (`AttendanceCheckService.forBill`):
    * absent when the bill has none. Counts only; workers are never named on a bill.
    */
   manDays?: { lineId: string; no: number; description: string; billed: number; supported: number | null; excess: number; excessInr: number; flagged: boolean; sources: string; span: string; link: Link }[];
@@ -335,7 +332,6 @@ export function subcontractBillChecks(f: SubcontractBillFacts): Check[] {
   ];
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // RA bills: against the BOQ, the measurement book and the bill before.
 
 export interface RaBillFacts {
@@ -358,7 +354,7 @@ export interface RaBillFacts {
     /** On the approved measurement sheets of this bill and the earlier ones. */
     measuredToDate: number;
   }[];
-  /** A lump-sum bill's payment stages (item 129), what they add to the work value. */
+  /** A lump-sum bill's payment stages, what they add to the work value. */
   stageAmount: number;
   grossAmount: number;
   pvAmount: number;
@@ -366,13 +362,13 @@ export interface RaBillFacts {
   gstAmount: number;
   /**
    * The percentage deductions (retention, security deposit, TDS…); advance recovery may stop short of its percentage, or
-   * follow a recovery window (`expected`, item 129).
+   * follow a recovery window (`expected`).
    */
   deductions: { label: string; pct: number; amount: number; capped?: boolean; expected?: number }[];
   otherDeduction: number;
-  /** Withheld for milestone slippage (item 129), negative when the bill releases it. */
+  /** Withheld for milestone slippage, negative when the bill releases it. */
   slippageWithheld: number;
-  /** Service level penalties on an O&M bill (item 131) */
+  /** Service level penalties on an O&M bill */
   omPenalty?: number;
   totalDeductions: number;
   netPayable: number;
@@ -422,7 +418,6 @@ export function raBillChecks(f: RaBillFacts): Check[] {
   ];
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Site expenses.
 
 /** Income Tax section 40A(3): a cash payment above this to one party in a day is not allowed as an expense. */

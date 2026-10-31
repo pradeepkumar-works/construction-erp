@@ -26,7 +26,7 @@ import {
 } from './rmc.dto';
 import { ModuleSwitch } from '../common/decorators';
 
-/** Ready-mix concrete (v6 item 104): plants, mix designs, orders, batches and challans, the plant's day, bills and money received. */
+/** Ready-mix concrete: plants, mix designs, orders, batches and challans, the plant's day, bills and money received. */
 @ApiTags('rmc')
 @ApiBearerAuth()
 @ModuleSwitch('rmc')

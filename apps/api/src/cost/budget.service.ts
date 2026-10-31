@@ -33,7 +33,7 @@ export interface Forecast {
 }
 
 /**
- * Budget and forecast to complete (v4 item 38). A project's budget is set by cost head, and BOQ items can carry a
+ * Budget and forecast to complete. A project's budget is set by cost head, and BOQ items can carry a
  * budgeted cost per unit. % complete is the executed value (approved progress × BOQ rate) over the BOQ value, the budget
  * at completion is the cost-head total (else the BOQ budget), and the forecast at completion is the actual cost to date
  * plus the budget for the work still to do.

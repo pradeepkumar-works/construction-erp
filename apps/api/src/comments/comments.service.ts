@@ -15,7 +15,7 @@ type Row = Prisma.CommentGetPayload<{ include: typeof include }>;
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
 /**
- * Comments and mentions on a record (v6 item 116). The record is loaded through its own service with the caller
+ * Comments and mentions on a record. The record is loaded through its own service with the caller
  * (`CommentTargetsService`), so whoever may open it reads and writes its comments; guests and suppliers have none.
  * Someone mentioned must be able to open the record too. A mention, and a reply in a thread someone is in, is a notice.
  */

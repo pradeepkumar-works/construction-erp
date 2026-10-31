@@ -65,7 +65,7 @@ export class WebhookPunchesDto {
   punches: WebhookPunchDto[];
 }
 
-/** Put a user number on the ADMS devices (item 150): the name they show, and the devices (all of them when none are chosen). */
+/** Put a user number on the ADMS devices: the name they show, and the devices (all of them when none are chosen). */
 export class AddToDevicesDto {
   @ApiPropertyOptional({ example: 'Sneha Iyer', description: 'The name the device shows; the matched person’s name when empty' })
   @IsOptional()

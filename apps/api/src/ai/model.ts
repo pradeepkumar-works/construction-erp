@@ -111,15 +111,15 @@ export class FakeModel implements AiModel {
     const blocks = Array.isArray(last.content) ? last.content : [];
     const result = blocks.find((b): b is Anthropic.Beta.BetaToolResultBlockParam => b.type === 'tool_result');
     const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
-    // A page to read (item 70) gets a fixed reading of its kind, so the forms it fills can be tested without a model.
+    // A page to read gets a fixed reading of its kind, so the forms it fills can be tested without a model.
     if (blocks.some((b) => b.type === 'image')) {
       const said = blocks.map((b) => (b.type === 'text' ? b.text : '')).join(' ');
-      // A site photo (item 76) is read from words in its file name.
+      // A site photo is read from words in its file name.
       if (said.includes('Photo check.')) return { content: [{ type: 'text', text: fakePhotoReply(said), citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
       const kind = blocks.map((b) => (b.type === 'text' ? b.text : '')).join(' ').match(/Kind: (\w+)/)?.[1] ?? 'invoice';
       return { content: [{ type: 'text', text: JSON.stringify(FAKE_READS[kind] ?? FAKE_READS.invoice), citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
     }
-    // A DPR remark the hindrance rules could not place (item 123).
+    // A DPR remark the hindrance rules could not place.
     const said = blocks.map((b) => (b.type === 'text' ? b.text : '')).join(' ');
     if (!args.tools.length && said.includes('Hindrance check.')) return { content: [{ type: 'text', text: fakeHindranceReply(said), citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
     // A call with no tools (a bill-check summary) gets its draft line back.
@@ -163,7 +163,7 @@ function pickTool(q: string, projectId?: string): [string, Record<string, unknow
 
 const UNIT = '(bags?|kg|mt|nos|cum|ltr|rmt|sqm)';
 
-/** Drafts from a sentence (item 71), parsed by pattern: enough for the forms to be tested without a model. */
+/** Drafts from a sentence, parsed by pattern: enough for the forms to be tested without a model. */
 function fakeDraft(q: string, projectId?: string): [string, Record<string, unknown>] | null {
   if (!/^(raise|draft|write|book|log|make|create|fill)\b/.test(q)) return null;
   const code = q.match(/\b([a-z]{2}-\d{4}-\d{2})\b/)?.[1];

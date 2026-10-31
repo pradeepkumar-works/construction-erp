@@ -39,7 +39,7 @@ const labelOf = (e: ElementRow) => elementLabel(e)!;
 const addDays = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
 /**
- * Stock against the DPR (item 128): the reconciliation per structure, per pipe size, per house-connection kit, and the
+ * Stock against the DPR: the reconciliation per structure, per pipe size, per house-connection kit, and the
  * day-to-day exceptions. Loads the records and hands the arithmetic to reconciliation-rules.ts. Who may see them is
  * the reconciliation's own check.
  */
@@ -76,7 +76,6 @@ export class StockViewsService {
     return activities.flatMap((a) => (a.materialNorms.length ? a.materialNorms : (a.boqItem?.materialNorms ?? [])).map((n) => ({ activityId: a.id, ...n })));
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // R2: structure
 
   async structure(user: RequestUser, projectId: string, q: ReconciliationQuery): Promise<ProjectStructureReconDto> {
@@ -165,7 +164,6 @@ export class StockViewsService {
     return { projectId, projectCode: project.code, from, to, elements: out, untiedIssues: untied };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // R3: pipe
 
   async pipe(user: RequestUser, projectId: string): Promise<ProjectPipeReconDto> {
@@ -331,7 +329,6 @@ export class StockViewsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // R5: house-connection kits
 
   async kits(user: RequestUser, projectId: string): Promise<ProjectKitReconDto> {
@@ -407,7 +404,6 @@ export class StockViewsService {
     return { projectId, projectCode: project.code, kits };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // R6: exceptions
 
   async exceptions(user: RequestUser, projectId: string, q: ReconciliationQuery): Promise<ProjectReconExceptionsDto> {

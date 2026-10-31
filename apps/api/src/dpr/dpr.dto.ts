@@ -22,7 +22,7 @@ export class DprMaterialInputDto {
   @ApiProperty({ example: '92' }) @IsQuantity({ zero: true }) quantity: string;
 }
 
-/** A work line (item 127): it becomes a progress entry of the DPR. */
+/** A work line: it becomes a progress entry of the DPR. */
 export class DprLineInputDto {
   @ApiPropertyOptional({ description: "The line's progress entry, to keep it when the DPR is edited; a new id (uuid v4) for a new line" }) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty({ description: 'An activity or sub-activity with no sub-activities of its own' }) @IsUUID() activityId: string;

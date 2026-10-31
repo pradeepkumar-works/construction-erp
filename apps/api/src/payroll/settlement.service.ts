@@ -18,7 +18,7 @@ const include = {
 type Row = Prisma.FinalSettlementGetPayload<{ include: typeof include }>;
 
 /**
- * Full and final settlement (v6 item 100) of someone whose exit is recorded: salary for the last month's days no run
+ * Full and final settlement of someone whose exit is recorded: salary for the last month's days no run
  * paid, earned leave encashed, gratuity after five years, less notice not served and loans still owed. HR prepares it,
  * management approves it, accounts pays it.
  */

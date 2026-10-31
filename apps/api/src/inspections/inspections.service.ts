@@ -63,7 +63,7 @@ export class InspectionsService {
       },
     });
     lifecycle.beforeApprove('PROGRESS', (_user, id) => this.assertHoldPointCleared(id));
-    // A DPR approves its work lines (item 127), so each line's hold point is checked first.
+    // A DPR approves its work lines, so each line's hold point is checked first.
     lifecycle.beforeApprove('DPR', async (_user, id) => {
       const lines = await this.prisma.progressEntry.findMany({ where: { dailyReportId: id }, select: { id: true }, orderBy: { sortOrder: 'asc' } });
       for (const l of lines) await this.assertHoldPointCleared(l.id);
@@ -127,8 +127,6 @@ export class InspectionsService {
     ]);
     return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
-
-  /* ---------- the client portal ---------- */
 
   private portalDto(r: Row & { witnessedBy: { fullName: string } | null }): PortalInspectionDto {
     const d = this.toDto(r);
@@ -227,7 +225,7 @@ export class InspectionsService {
     return row ? this.get(user, row.id) : null;
   }
 
-  /** `checklistName` names given points (a pour card's, item 137); the API's own callers set it, the form does not. */
+  /** `checklistName` names given points (a pour card's); the API's own callers set it, the form does not. */
   async create(user: RequestUser, dto: CreateInspectionDto & { checklistName?: string }): Promise<InspectionDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
@@ -342,8 +340,6 @@ export class InspectionsService {
       `${p.activity.name} is a hold point: its progress is approved after a passed inspection${at ? ` at ${at}` : ''}. Request an inspection there first.`,
     );
   }
-
-  /* ---------- checklists ---------- */
 
   async checklists(user: RequestUser): Promise<ChecklistTemplateDto[]> {
     const rows = await this.prisma.checklistTemplate.findMany({ where: { organizationId: user.organizationId }, include: { _count: { select: { activities: true } } }, orderBy: { name: 'asc' } });

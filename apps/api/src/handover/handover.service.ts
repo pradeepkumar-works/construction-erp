@@ -53,7 +53,7 @@ const blank = (v: string | null | undefined) => (v ? v : null);
 const daysBetween = (from: string, to: string) => Math.round((parseDate(to).getTime() - parseDate(from).getTime()) / DAY_MS);
 
 /**
- * Handover and defects (v4 item 47). Snags are logged before handover and defects during the defect liability period
+ * Handover and defects. Snags are logged before handover and defects during the defect liability period
  * (DLP); both are put right (fixed) by our team or a subcontractor and then accepted (closed) by QA/QC or an approver.
  * The project's approvers record the completion certificate, which starts the DLP, and keep the close-out checklist.
  * NotificationJobsService.handoverDue reminds them when the DLP is about to end, to claim back retention.
@@ -73,7 +73,7 @@ export class HandoverService {
     undo.register('CLOSEOUT_ITEM', { entityType: 'CLOSEOUT_ITEM', check: (user, row) => this.access.assertCanManageHandover(user, row.projectId as string) });
   }
 
-  /* ---------- the handover page ---------- */
+  // The handover page
 
   private handoverDto(r: HandoverRow, today: string): HandoverDto {
     const dlpEndsOn = dateOnly(r.dlpEndsOn)!;
@@ -185,7 +185,7 @@ export class HandoverService {
     });
   }
 
-  /* ---------- close-out checklist ---------- */
+  // Close-out checklist
 
   /** Start the checklist from the standard lines (only while it is empty). */
   async addDefaultChecklist(user: RequestUser, projectId: string): Promise<CloseoutItemDto[]> {
@@ -242,7 +242,7 @@ export class HandoverService {
     return { ok: true, undo: this.undo.offer(user, 'CLOSEOUT_ITEM', { rows: [{ model: 'closeoutItem', data: row }] }) };
   }
 
-  /* ---------- snags and defects ---------- */
+  // Snags and defects
 
   private defectDto(r: DefectRow, today: string): DefectDto {
     const dueDate = dateOnly(r.dueDate);

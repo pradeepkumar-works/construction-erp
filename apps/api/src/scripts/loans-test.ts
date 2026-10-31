@@ -1,5 +1,5 @@
 /**
- * Machine finance's tests (v6 item 108): the EMI, the schedule (interest on what is owed, the last EMI clearing the
+ * Machine finance's tests: the EMI, the schedule (interest on what is owed, the last EMI clearing the
  * rest), dates a month apart, the terms that make no loan, where an EMI stands, what a loan has repaid and owes, paying
  * in order, closing early and the machine's cost of finance, with no database. CI runs it after the build:
  *

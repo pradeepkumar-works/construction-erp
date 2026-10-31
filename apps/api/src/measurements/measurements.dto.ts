@@ -65,7 +65,7 @@ export class ListMeasurementsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.measurements, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.measurements as unknown as string[]) sortBy?: MeasurementSortField;
 }
 
-/** The project whose unmeasured work to list (finding 14 of the October review). */
+/** The project whose unmeasured work to list. */
 export class ToMeasureQuery {
   @ApiProperty() @IsUUID() projectId: string;
 }

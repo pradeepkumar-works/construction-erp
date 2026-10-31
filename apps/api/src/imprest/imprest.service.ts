@@ -35,7 +35,7 @@ const D = (v: Prisma.Decimal | number | string) => new Prisma.Decimal(v);
 const inr = (n: number | Prisma.Decimal) => `₹${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
 /**
- * Site imprest (v4 item 45): a petty cash float held by one person at one project. Accounts advance cash (the float,
+ * Site imprest: a petty cash float held by one person at one project. Accounts advance cash (the float,
  * then top-ups the holder asks for); the holder's cash site expenses spend it; unspent cash can be handed back.
  */
 @Injectable()

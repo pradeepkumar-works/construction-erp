@@ -41,11 +41,11 @@ export const EVIDENCE_STAGE_SELECT = {
 const listNames = (names: string[]) => (names.length <= 2 ? names.join(' and ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`);
 
 /**
- * What each payment stage of a project has earned up to a day (item 129), % of the stage with the working in words:
- * - EVENT: 100 once its date has come, or (item 130) once the engineering deliverables it names are all approved;
+ * What each payment stage of a project has earned up to a day, % of the stage with the working in words:
+ * - EVENT: 100 once its date has come, or once the engineering deliverables it names are all approved;
  * - PROGRESS: the approved physical % of its activities on that day (of the whole component when it names none);
  * - SUPPLY: pipe or equipment received at the project by that day against the stage's scope, an item named by several
- *   stages shared by their scope (pipe bought by weight in metres); or (item 130) the share of the value of the equipment
+ *   stages shared by their scope (pipe bought by weight in metres); or the share of the value of the equipment
  *   packages it names that have reached its package stage (delivered when none is set);
  * - TEST: pipe of the component's network tested by that day against its length, else the progress of its activities.
  * The service and the demo seed both read it, so a bill prepared today and the seeded history agree.
@@ -105,7 +105,7 @@ export async function loadStageEvidence(db: Db, projectId: string, upTo: string,
     }
   }
 
-  // EPC (item 130): the deliverables and packages stages name.
+  // EPC: the deliverables and packages stages name.
   const deliverableIds = [...new Set(rows.filter((s) => s.trigger === 'EVENT').flatMap((s) => s.deliverableIds))];
   const packageIds = [...new Set(rows.filter((s) => s.trigger === 'SUPPLY').flatMap((s) => s.packageIds))];
   const [deliverables, packages] = await Promise.all([

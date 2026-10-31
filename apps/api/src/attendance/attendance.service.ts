@@ -58,8 +58,7 @@ interface LockingRun {
 
 /**
  * Daily attendance register: one sheet per project per day with head counts by contractor and trade.
- * Not an approval submission. It feeds the day's DPR manpower, stays open after that DPR is approved (attendance first,
- * finding 7 of the October review) and locks once payroll for its month is approved (`isAttendanceLocked`).
+ * Not an approval submission. It feeds the day's DPR manpower, stays open after that DPR is approved (attendance first) and locks once payroll for its month is approved (`isAttendanceLocked`).
  */
 @Injectable()
 export class AttendanceService {
@@ -238,7 +237,7 @@ export class AttendanceService {
         take: 100,
       }),
     ]);
-    // Trades come from the company's master (item 135); one it switched off is no longer offered, even if used before.
+    // Trades come from the company's master; one it switched off is no longer offered, even if used before.
     const trades = await this.masters.entriesFor(user.organizationId, 'trade');
     const tradesOff = new Set(trades.filter((t) => !t.isActive).map((t) => t.name.trim().toLowerCase()));
     const uniq = (xs: string[]) => {
@@ -264,7 +263,7 @@ export class AttendanceService {
   }
 
   /**
-   * Bring the day's head count in step with a roll call (v4 item 44): the contractor and trade pairs the roll call
+   * Bring the day's head count in step with a roll call: the contractor and trade pairs the roll call
    * covers take its counts, other lines stay. Creates the sheet when the roll call has someone on site. Runs in the
    * roll call's transaction; the caller has checked access and the DPR lock.
    */

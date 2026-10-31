@@ -8,8 +8,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
 const upper = () => Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value));
 
-/* ---------- employees ---------- */
-
 export class CreateEmployeeDto {
   @ApiPropertyOptional({ example: 'EMP-014', description: 'Unique per organisation; the next EMP- number when left out' }) @IsOptional() @trim() @IsString() @MaxLength(30) employeeCode?: string;
   @ApiProperty({ example: 'Ramesh Behera' }) @trim() @IsString() @IsNotEmpty() @MaxLength(120) fullName: string;
@@ -20,7 +18,7 @@ export class CreateEmployeeDto {
   @ApiPropertyOptional({ description: 'Posting; null = head office' }) @IsOptional() @opt() @IsUUID() projectId?: string | null;
   @ApiPropertyOptional({ example: '2025-04-01' }) @IsOptional() @opt() @IsDateString() joinedOn?: string | null;
 
-  /* HR records (v6 item 99) */
+  /* HR records */
   @ApiPropertyOptional({ example: '1990-06-15' }) @IsOptional() @opt() @IsDateString() dateOfBirth?: string | null;
   @ApiPropertyOptional({ enum: GENDERS }) @IsOptional() @opt() @IsIn(GENDERS as unknown as string[]) gender?: Gender | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(120) fatherOrSpouseName?: string | null;
@@ -45,8 +43,6 @@ export class CreateEmployeeDto {
   @ApiPropertyOptional({ example: 30 }) @IsOptional() @opt() @IsInt() @Min(0) @Max(180) noticeDays?: number | null;
   @ApiPropertyOptional({ example: 540000, description: 'Cost to company a year, rupees; later changes go through an increment' }) @IsOptional() @opt() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(1_000_000_000) ctcAnnual?: number | null;
 }
-
-/* ---------- HR records (v6 item 99) ---------- */
 
 export class RecordEmployeeEventDto {
   @ApiProperty({ enum: RECORDABLE_EVENT_TYPES }) @IsIn(RECORDABLE_EVENT_TYPES as unknown as string[]) type: EmployeeEventType;
@@ -80,8 +76,6 @@ export class ListEmployeesQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Include people who have left' }) @IsOptional() @QueryBool() @IsBoolean() includeInactive?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.employees, default: 'employeeCode' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.employees as unknown as string[]) sortBy?: EmployeeSortField;
 }
-
-/* ---------- attendance ---------- */
 
 export class CheckInDto {
   @ApiPropertyOptional({ description: 'Site worked at today when not their posting' }) @IsOptional() @IsUUID() projectId?: string;
@@ -119,8 +113,6 @@ export class AttendanceQuery {
   @ApiProperty({ example: '2026-10-31' }) @IsDateString() to: string;
 }
 
-/* ---------- leave ---------- */
-
 export class ApplyLeaveDto {
   @ApiPropertyOptional({ description: 'Staff admins apply for someone else; others apply for themselves' }) @IsOptional() @IsUUID() employeeId?: string;
   @ApiProperty({ enum: LEAVE_TYPES }) @IsIn(LEAVE_TYPES as unknown as string[]) type: LeaveType;
@@ -153,8 +145,6 @@ export class BalanceQuery {
   @ApiPropertyOptional({ example: 2026 }) @IsOptional() @Type(() => Number) @IsInt() @Min(2000) @Max(2100) year?: number;
 }
 
-/* ---------- holidays ---------- */
-
 export class CreateHolidayDto {
   @ApiProperty({ example: '2026-10-20' }) @IsDateString() date: string;
   @ApiProperty({ example: 'Dussehra' }) @trim() @IsString() @IsNotEmpty() @MaxLength(100) name: string;
@@ -169,8 +159,6 @@ export class HolidayQuery {
 export class UsersQuery {
   @ApiPropertyOptional({ description: 'Include the login already linked to this employee' }) @IsOptional() @IsUUID() employeeId?: string;
 }
-
-/* ---------- payroll inputs ---------- */
 
 export class PayrollQuery {
   @ApiProperty({ example: '2026-10' }) @IsString() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'month must be YYYY-MM' }) month: string;

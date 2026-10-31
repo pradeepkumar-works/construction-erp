@@ -14,8 +14,6 @@ const nullable = () => ValidateIf((_, v) => v !== null);
 const files = () => [IsOptional(), IsArray(), ArrayMaxSize(10), IsUUID('all', { each: true })];
 const Files = (): PropertyDecorator => (target, key) => files().forEach((d) => d(target, key));
 
-/* ---------- completion ---------- */
-
 export class SaveHandoverDto {
   @ApiProperty({ example: '2026-09-30', description: 'Date of completion the certificate states; the defect liability period runs from it' })
   @IsDateString()
@@ -35,8 +33,6 @@ export class SaveHandoverDto {
   @ApiPropertyOptional({ type: [String], description: 'Scan of the certificate; the complete set' }) @Files() attachmentIds?: string[];
 }
 
-/* ---------- close-out checklist ---------- */
-
 export class CreateCloseoutItemDto {
   @ApiProperty({ enum: CLOSEOUT_CATEGORIES }) @IsIn(CLOSEOUT_CATEGORIES) category: CloseoutCategory;
   @ApiProperty({ example: 'Borrow pits levelled and handed back' }) @trim() @IsString() @MinLength(1) @MaxLength(200) title: string;
@@ -49,8 +45,6 @@ export class UpdateCloseoutItemDto {
   @ApiPropertyOptional({ example: '2026-10-12', description: 'When it was done (today when ticked without one)' }) @IsOptional() @IsDateString() @dateOnly() doneOn?: string;
   @ApiPropertyOptional() @IsOptional() @nullable() @trim() @IsString() @MaxLength(1000) note?: string | null;
 }
-
-/* ---------- snags and defects ---------- */
 
 export class ListDefectsQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;

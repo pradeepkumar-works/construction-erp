@@ -18,7 +18,7 @@ const D = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v);
 const maxDate = (dates: (string | null)[]) => dates.reduce<string | null>((m, d) => (d && (!m || d > m) ? d : m), null);
 
 /**
- * Gantt, milestones and the schedule baseline (v4 item 43). Freezing the baseline copies every activity's planned dates
+ * Gantt, milestones and the schedule baseline. Freezing the baseline copies every activity's planned dates
  * and every milestone's due date to their baseline columns; the plan can then move while the baseline stays put.
  */
 @Injectable()
@@ -230,7 +230,7 @@ export class ScheduleService {
     return { ok: true, undo: this.undo.offer(user, 'MILESTONE', { rows: [{ model: 'milestone', data: row }] }) };
   }
 
-  // Links between activities, the look-ahead and schedule files (v6 item 114)
+  // Links between activities, the look-ahead and schedule files
 
   private linkDto(l: { id: string; predecessorId: string; successorId: string; type: ActivityLinkDto['type']; lagDays: number }, names: Map<string, string>): ActivityLinkDto {
     return { id: l.id, predecessorId: l.predecessorId, predecessorName: names.get(l.predecessorId) ?? '', successorId: l.successorId, successorName: names.get(l.successorId) ?? '', type: l.type, lagDays: l.lagDays };

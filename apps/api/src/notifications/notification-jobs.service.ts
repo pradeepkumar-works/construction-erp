@@ -50,7 +50,7 @@ export class NotificationJobsService {
   ) {}
 
   /**
-   * Reminders and escalation (v5 item 94), meant to run hourly: an entry that has waited at its level past its type's
+   * Reminders and escalation, meant to run hourly: an entry that has waited at its level past its type's
    * `remindAfterHours` reminds that level's approvers once; past `escalateAfterHours`, the next level's roles
    * (management above the top level) may decide it too and are told. Each is an `ApprovalStep` of the entry's round,
    * so it happens once per level, however often the job runs.
@@ -96,7 +96,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * The overnight batch (AI item 74): today's morning briefs for everyone who asked, and on Mondays last week's summary
+   * The overnight batch: today's morning briefs for everyone who asked, and on Mondays last week's summary
    * paragraph for each active project's report. Writes only; `morningBrief` sends the briefs after the digest.
    */
   async writeBriefs(date = todayIn()) {
@@ -158,7 +158,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * The weekly watch list (AI item 73): on Mondays (any day with `anyDay`, for a manual run), each user whose role has
+   * The weekly watch list: on Mondays (any day with `anyDay`, for a manual run), each user whose role has
    * early warnings and who has open ones gets one notification naming the first few. Once per user per week.
    */
   async watchList(date = todayIn(), anyDay = false): Promise<NotificationJobResult> {
@@ -202,7 +202,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * New warnings as they appear (item 119): each day, each person with a watch list is told about the open warnings
+   * New warnings as they appear: each day, each person with a watch list is told about the open warnings
    * they have not been told about, most costly first and at most DAILY_WARNING_ALERTS (so WhatsApp alerts are capped
    * too); the rest wait on the watch list, in the morning brief and the Monday round-up. A person's first run only
    * records what is already open, so nobody gets a backlog.
@@ -255,7 +255,7 @@ export class NotificationJobsService {
   async dprReminder(date = todayIn()): Promise<NotificationJobResult> {
     const result: NotificationJobResult = { job: 'DPR_REMINDER', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
     const projects = await this.prisma.project.findMany({
-      // A central store files no DPR (v6 item 106).
+      // A central store files no DPR.
       where: { status: 'ACTIVE', type: { not: 'STORE' } },
       include: {
         dailyReports: { where: { date: parseDate(date), status: { not: 'DRAFT' } }, select: { id: true } },
@@ -440,7 +440,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * Machine loan EMIs (v6 item 108): each EMI of a running loan is reminded once when it falls due within EMI_DUE_DAYS and
+   * Machine loan EMIs: each EMI of a running loan is reminded once when it falls due within EMI_DUE_DAYS and
    * once more if it is still unpaid after its date, to admin, management and accounts (who keep the loans). In-app and
    * push, under Payments due. Runs with the digest.
    */
@@ -482,7 +482,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * Machinery due (v4 item 42): machines falling due for service (with no open service job card), and vehicle papers
+   * Machinery due: machines falling due for service (with no open service job card), and vehicle papers
    * and driving licences expiring within 30 days or expired. Each is alerted once as it becomes due and once more
    * when it is overdue or expired, to admins and management and to the store managers and manager of the project the
    * machine is at. Runs with the digest.
@@ -567,7 +567,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * Guarantees, insurance and licences (v4 item 46): active entries expiring within DOC_ALERT_DAYS, alerted once as
+   * Guarantees, insurance and licences: active entries expiring within DOC_ALERT_DAYS, alerted once as
    * they start expiring and once more when expired, to accounts, admins and management and the project's manager.
    * Runs with the digest.
    */
@@ -613,7 +613,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * Handover (v4 item 47): the defect liability period ending within DLP_ALERT_DAYS (or just ended), so retention and
+   * Handover: the defect liability period ending within DLP_ALERT_DAYS (or just ended), so retention and
    * the performance guarantee are claimed back; and snags or defects past their due date, to whoever is to put them right.
    */
   async handoverDue(date = todayIn()): Promise<NotificationJobResult> {
@@ -688,7 +688,7 @@ export class NotificationJobsService {
   }
 
   /**
-   * The money that came in from clients last week (finding 18 of the October review): on Mondays (any day with
+   * The money that came in from clients last week: on Mondays (any day with
    * `anyDay`, for a manual run), the week's receipts per project to management and to each project's manager, in the
    * app and by email. Each receipt is already told as it is recorded; this is the week read at once, so nobody has to
    * add it up from the bell. Nothing goes out for a week with no money in. Once per person per week.

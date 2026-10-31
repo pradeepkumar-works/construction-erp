@@ -1,5 +1,5 @@
 /**
- * QA/QC's registers (item 137 part 2): a lab's accreditation, samples waiting at a lab, where an instrument stands in the
+ * QA/QC's registers: a lab's accreditation, samples waiting at a lab, where an instrument stands in the
  * calibration register, whether a test used one out of calibration, and which receipts need the maker's test
  * certificate, with no database. CI runs it after the build:
  *

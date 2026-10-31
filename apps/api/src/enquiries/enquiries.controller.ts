@@ -43,7 +43,7 @@ function limit(req: { ip?: string; headers: Record<string, string | string[] | u
   else if (++t.n > MAX_TRIES) throw new HttpException('Too many tries from this connection. Wait a few minutes and try again.', HttpStatus.TOO_MANY_REQUESTS);
 }
 
-/** The supplier's quote page (v5 item 95): no sign-in, the link's token is the key. */
+/** The supplier's quote page: no sign-in, the link's token is the key. */
 @ApiTags('purchasing')
 @Public()
 @AllowWhenUnpaid()

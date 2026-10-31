@@ -65,8 +65,6 @@ export class NotificationsController {
     return this.notifications.markRead(user, id);
   }
 
-  /* ---------- scheduled jobs (Vercel Cron / curl with CRON_SECRET) ---------- */
-
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
@@ -101,7 +99,7 @@ export class NotificationsController {
     await this.jobs.approvalEscalation().catch(() => undefined);
     const digest = await this.jobs.approvalDigest(q.date);
     await this.jobs.morningBrief(q.date).catch(() => undefined);
-    // New early warnings, at most five a person a day (item 119).
+    // New early warnings, at most five a person a day.
     await this.jobs.warningAlerts(q.date).catch(() => undefined);
     // Vercel Hobby allows two crons, so the daily test and payment reminders ride on the digest's.
     await this.jobs.testsDue(q.date).catch(() => undefined);
@@ -117,7 +115,7 @@ export class NotificationsController {
     await this.companyData.purgeDue(q.date).catch(() => undefined);
     // ...and starting trials and billing reminders.
     await this.billing.daily(q.date).catch(() => undefined);
-    // ...and makers' machine feeds where nothing reads them hourly (item 146).
+    // ...and makers' machine feeds where nothing reads them hourly.
     await this.integrations.pollDue().catch(() => undefined);
     // ...and reading filed PDFs no search has read yet (Ask the contract), for a minute at most.
     await this.documentText.readAllPending(60_000).catch(() => undefined);

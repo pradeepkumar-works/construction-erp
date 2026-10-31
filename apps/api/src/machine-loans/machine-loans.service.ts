@@ -49,7 +49,7 @@ const rowData = (organizationId: string, loanId: string, r: ScheduleRow): Prisma
 });
 
 /**
- * Machine finance (v6 item 108): loans on financed machines, their EMI schedules (`loan-rules.ts`), EMIs paid in order
+ * Machine finance: loans on financed machines, their EMI schedules (`loan-rules.ts`), EMIs paid in order
  * (or the loan closed early), and what is owed by lender. The posting service books the loan and each EMI paid; the
  * interest is the machine's cost of finance. Kept and seen by admin, management and accounts.
  */

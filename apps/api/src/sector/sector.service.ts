@@ -35,7 +35,7 @@ const sum = (xs: Prisma.Decimal[]) => xs.reduce((a, b) => a.add(b), ZERO);
 const MAX_SEGMENTS = 2000;
 
 /**
- * Sector progress views (v4 item 41), built from approved and submitted progress entries: a chainage strip per
+ * Sector progress views, built from approved and submitted progress entries: a chainage strip per
  * activity for roads (and pipelines with a chainage range), a floor × activity matrix for buildings, and for water
  * supply a village × activity matrix with pipe ordered, supplied, laid and tested.
  */
@@ -65,7 +65,7 @@ export class SectorService {
     const approvedSum = (es: Entry[]) => sum(es.filter((e) => e.status === 'APPROVED').map((e) => e.quantity));
     const executed = new Map(activities.map((a) => [a.id, approvedSum(byActivity.get(a.id) ?? [])]));
 
-    // What the views draw follows the project's type (item 134): its places and its pipe network.
+    // What the views draw follows the project's type: its places and its pipe network.
     const features = (await this.types.featuresOf(project.organizationId, [project])).get(project.id)!;
     const k = sectorKinds({ type: project.type, locations: features.locations });
     const water = k.village;

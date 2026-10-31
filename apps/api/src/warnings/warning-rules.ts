@@ -1,5 +1,5 @@
 /**
- * Early warnings' forecasts (AI roadmap item 73): plain calculations over facts the service loads, with no database
+ * Early warnings' forecasts: plain calculations over facts the service loads, with no database
  * and no model, so `src/scripts/warnings-test.ts` can test each one and replay them over the demo history. Dates are
  * YYYY-MM-DD; every rule takes the day it is run for, so a backtest can ask what it would have said on any day.
  */
@@ -16,8 +16,7 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
-// ---------------------------------------------------------------------------------------------------------------------
-// EPC packages (item 130): when a package reaches site is `packageStatus` in `epc/epc-rules.ts`.
+// EPC packages: when a package reaches site is `packageStatus` in `epc/epc-rules.ts`.
 
 /** A package forecast to reach site within this many days after site needs it is noise, not a warning. */
 export const PACKAGE_GRACE_DAYS = 3;
@@ -28,7 +27,7 @@ export function packageLate(f: { lateDays: number | null; forecastFrom: 'DELIVER
   return f.lateDays;
 }
 
-// O&M (item 131): a month's failures, penalties and staff short are `monthFigures` in `om/om-rules.ts`.
+// O&M: a month's failures, penalties and staff short are `monthFigures` in `om/om-rules.ts`.
 
 /** Days of the running period with no service level reading before the gap is worth a warning on its own. */
 export const OM_MISSING_DAYS = 3;
@@ -55,7 +54,6 @@ export function omSlip(months: OmMonthFacts[]): { penalty: number; staffDeductio
   return { penalty, staffDeduction, missingDays, atAllowance };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Schedule: an activity's current rate puts its finish past the baseline.
 
 /** The rate is the work done over this many days, so a burst long ago does not hide a stall now. */
@@ -119,7 +117,7 @@ export function scheduleWarns(f: ActivityForecast | null): boolean {
 }
 
 /**
- * The project's plan ends after its completion date (e2e review, fix 1): the latest planned finish of its activities
+ * The project's plan ends after its completion date: the latest planned finish of its activities
  * against the contract completion with the extensions granted. Days late, or null when the plan ends in time (or a
  * date is missing). Every day counts: a plan past the contract date is a claim for time or liquidated damages.
  */
@@ -128,7 +126,6 @@ export function planFinishLate(plannedFinish: string | null, completionDate: str
   return daysBetween(completionDate, plannedFinish);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Cash: bills due against expected receipts over the next eight weeks.
 
 export const CASH_WEEKS = 8;
@@ -177,7 +174,6 @@ export function cashWeeks(inflows: { date: string; amount: number }[], outflows:
 /** The first week where more has gone out than come in since today, or null. */
 export const cashGap = (weeks: CashWeek[]) => weeks.find((w) => w.cumulative < -0.5) ?? null;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Vendors: deliveries late more often, or more rejected, than before.
 
 export const VENDOR_WINDOW_DAYS = 60;
@@ -219,7 +215,6 @@ export function vendorTrend(deliveries: Delivery[], today: string): VendorTrend 
   return { recent, before, lateWorse, rejectWorse };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Stock: the balance runs out before a new order could arrive.
 
 export const ISSUE_WINDOW_DAYS = 30;
@@ -260,7 +255,6 @@ export function stockRunout(s: StockFacts, today: string): StockForecast | null 
   return { perDay, daysLeft, runsOut: addDays(today, Math.floor(daysLeft)) };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Machines: idle or breaking down more than the month before.
 
 export const MACHINE_WINDOW_DAYS = 30;
@@ -301,7 +295,6 @@ export function machineTrend(days: MachineDay[], today: string): MachineTrend | 
   return { recent, before, breakdownWorse, idleWorse };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // DPRs: none sent for a site three days running.
 
 export const DPR_MISSING_DAYS = 3;
@@ -320,8 +313,7 @@ export function dprGap(sent: Set<string>, today: string, startDate: string | nul
   return days >= DPR_MISSING_DAYS ? { from: addDays(today, -days), days } : null;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Material used over the norm (v5 item 92), from the material reconciliation.
+// Material used over the norm, from the material reconciliation.
 
 export interface OveruseFacts {
   /** Theoretical with the norms' wastage */
@@ -341,8 +333,7 @@ export function materialOveruse(f: OveruseFacts): { excess: number; overPct: num
 /** The step of the overuse a dismissal holds for: 5 points of %, so the warning comes back as the overuse grows. */
 export const overuseStep = (overPct: number) => Math.floor(overPct / 5) * 5;
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Fuel use off the norm (v5 item 93): a machine's average over its latest logs against its norm.
+// Fuel use off the norm: a machine's average over its latest logs against its norm.
 
 export interface FuelLog {
   date: string;
@@ -386,8 +377,7 @@ export function fuelNormCheck(logs: FuelLog[], norm: number, unit: FuelNormUnit,
 /** The step a dismissal holds for: 10 points of %, so the warning comes back when the machine drifts further. */
 export const fuelStep = (deviationPct: number) => Math.floor(Math.abs(deviationPct) / 10) * 10;
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Fuel tank against the slips (item 147): the fuel sensor's drains and its fills that the slips do not account for.
+// Fuel tank against the slips: the fuel sensor's drains and its fills that the slips do not account for.
 
 /** Days of the tank looked back over. */
 export const FUEL_TANK_DAYS = 7;
@@ -423,8 +413,7 @@ export function fuelTankCheck(days: FuelTankDay[]): FuelTankCheck | null {
   return { drained, drains: off.filter((d) => d.drained > 0).length, unslipped, notInTank, days: off.map((d) => d.date), last: off[off.length - 1].date, litres: Math.round((drained + unslipped + notInTank) * 10) / 10 };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Short deliveries at the weighbridge (item 148): a supplier's loads whose net weight fell below the challan.
+// Short deliveries at the weighbridge: a supplier's loads whose net weight fell below the challan.
 
 export interface WeighLoad {
   ticketNo: string;
@@ -462,8 +451,7 @@ export function weighShortCheck(loads: WeighLoad[], minLoads: number): WeighShor
   };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Machine loans (v6 item 108): an EMI past its date unpaid.
+// Machine loans: an EMI past its date unpaid.
 
 /** An EMI paid this many days late is still a slip worth no warning (a cheque in clearing). */
 export const EMI_GRACE_DAYS = 2;
@@ -490,8 +478,7 @@ export function emiOverdue(emis: { no: number; dueDate: string; emi: number; pai
   return { count: late.length, amount: late.reduce((s, e) => s + e.emi, 0), oldestNo: late[0].no, oldestDue: late[0].dueDate, days };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Track record and pauses (item 119): what people said about a kind's warnings when they dismissed them.
+// Track record and pauses: what people said about a kind's warnings when they dismissed them.
 
 export interface OutcomeFact {
   outcome: 'FIXED' | 'KNOWN' | 'WRONG';
@@ -535,8 +522,7 @@ export function alertsToSend<W extends { key: string; impact: { inr: number | nu
     .map((x) => x.w);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// QA/QC (item 137 part 3)
+// QA/QC
 
 /** A project's quality plan warns once this many tests are short of what its work and receipts owe. */
 export const TESTS_SHORT_MIN = 2;
@@ -570,7 +556,7 @@ export function lateReportGroups<S extends { projectId: string; labId: string; l
 }
 
 /**
- * Drawings still not buildable past their day (item 138), one warning per project and party that owes them, the longest
+ * Drawings still not buildable past their day, one warning per project and party that owes them, the longest
  * wait first. The party is who issues them as written, else the kind of source.
  */
 export function lateDrawingGroups<N extends { projectId: string; source: string; fromParty: string | null; overdue: boolean; daysLate: number | null }>(needs: N[]): { projectId: string; party: string; needs: N[]; longest: number }[] {
@@ -585,7 +571,7 @@ export function lateDrawingGroups<N extends { projectId: string; source: string;
 }
 
 /**
- * Design submissions with the reviewer past the day the reply was asked by (item 138 part 2), longest first. One warning
+ * Design submissions with the reviewer past the day the reply was asked by, longest first. One warning
  * each: the key moves with the round, so a resubmission is a new warning.
  */
 export function lateDesignReviews<R extends { status: string; daysLate: number | null }>(rows: R[]): (R & { daysLate: number })[] {
@@ -593,7 +579,7 @@ export function lateDesignReviews<R extends { status: string; daysLate: number |
 }
 
 /**
- * Controlled copies of a superseded revision still out past the recall period (item 138 part 3), one warning per document
+ * Controlled copies of a superseded revision still out past the recall period, one warning per document
  * and the revision that superseded them, the longest out first: site may be building from the old print.
  */
 export function lateRecalls<C extends { documentId: string; currentRevision: string | null; recallLate: boolean; recallDays: number | null }>(copies: C[]): { documentId: string; revision: string; copies: C[]; longest: number }[] {
@@ -608,8 +594,7 @@ export function lateRecalls<C extends { documentId: string; currentRevision: str
     .sort((a, b) => b.longest - a.longest);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Margin fade (intelligence quick win Q1): the margin at completion, forecast at each month end from earned value
+// Margin fade: the margin at completion, forecast at each month end from earned value
 // (EAC = BAC × AC ÷ EV), falling over the last few months.
 
 /** Months looked back over. */
@@ -698,8 +683,7 @@ export function headsBehind<H extends string>(heads: { head: H; spent: number; b
     .slice(0, max);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Cube strength at 7 days (intelligence quick win Q2)
+// Cube strength at 7 days
 
 /**
  * The share of its 28-day strength ordinary Portland cement concrete usually has at 7 days. Blended cements (PPC, slag)
@@ -732,8 +716,7 @@ export function cubeEarly(readings: { label: string; value: number | null }[], n
   return { at7, needed, projected, shortBy: Math.round((needed - projected) * 10) / 10 };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Purchase controls (intelligence quick win Q6)
+// Purchase controls
 
 /** Orders to one vendor on one project within this many days read as one purchase. */
 export const SPLIT_WINDOW_DAYS = 7;

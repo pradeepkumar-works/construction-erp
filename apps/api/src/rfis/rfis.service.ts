@@ -135,7 +135,7 @@ export class RfisService {
     };
   }
 
-  /* ---------- reading ---------- */
+  // Reading
 
   async list(user: RequestUser, q: ListRfisQuery): Promise<Paginated<RfiDto>> {
     const today = todayIn();
@@ -192,7 +192,7 @@ export class RfisService {
     };
   }
 
-  /* ---------- raising and changing ---------- */
+  // Raising and changing
 
   private async checkLinks(projectId: string, dto: { documentId?: string | null; boqItemId?: string | null }) {
     if (dto.documentId && !(await this.prisma.document.count({ where: { id: dto.documentId, projectId } }))) throw new BadRequestException('Choose a drawing or document of this project');
@@ -318,7 +318,7 @@ export class RfisService {
     return { ok: true };
   }
 
-  /* ---------- answering and closing ---------- */
+  // Answering and closing
 
   private checkAnswerDate(raisedOn: Date, answeredOn: string) {
     if (answeredOn > todayIn() || answeredOn < dateOnly(raisedOn)!) throw new BadRequestException('Enter an answer date between the raised date and today');
@@ -371,7 +371,7 @@ export class RfisService {
     return this.get(user, id);
   }
 
-  /* ---------- the client portal ---------- */
+  // The client portal
 
   /** The project's RFIs as the client's engineer or consultant sees them: open first, then the latest. */
   async listForClient(user: RequestUser, projectId: string): Promise<PortalRfiDto[]> {

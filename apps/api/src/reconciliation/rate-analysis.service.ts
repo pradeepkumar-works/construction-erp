@@ -39,7 +39,7 @@ const resourceDto = (r: ResourceRow): BoqResourceDto => ({
 type Line = { kind: 'MATERIAL'; itemId: string; qtyPerUnit: D; wastagePct: D; note: string | null } | { kind: 'LABOUR' | 'EQUIPMENT'; name: string; qtyPerUnit: D; note: string | null };
 
 /**
- * Rate analysis and the estimate (v5 item 92). A BOQ item's analysis is its material norms (MaterialNorm, also what the
+ * Rate analysis and the estimate. A BOQ item's analysis is its material norms (MaterialNorm, also what the
  * reconciliation reads) plus the labour and machine hours one unit takes (BoqResource). It is filled by hand, from the
  * starter library in @erp/shared, from another BOQ item, or from Excel; the estimate prices it at the item master's
  * rates, the labour rates and the company's equipment rates, adds the project's overheads and profit, and sets the
@@ -82,7 +82,6 @@ export class RateAnalysisService {
     return w;
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Estimate
 
   async estimate(user: RequestUser, projectId: string): Promise<ProjectEstimateDto> {
@@ -195,7 +194,6 @@ export class RateAnalysisService {
     return { overheadPct: pct(overhead), profitPct: pct(profit) };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Labour and machine lines
 
   async saveResource(user: RequestUser, projectId: string, dto: SaveBoqResourceDto): Promise<BoqResourceDto> {
@@ -236,7 +234,6 @@ export class RateAnalysisService {
     return { ok: true };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Copy, library and import
 
   /** Write lines onto a BOQ item: norms by store item, resources by kind and name; `replace` clears the item first. */

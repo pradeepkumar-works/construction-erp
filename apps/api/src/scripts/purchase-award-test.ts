@@ -1,5 +1,5 @@
 /**
- * Tests for awarding the lowest rate per item (finding 12 of the October review). The split is pure, so it needs no
+ * Tests for awarding the lowest rate per item. The split is pure, so it needs no
  * database:
  *
  *   node dist/scripts/purchase-award-test.js
@@ -156,8 +156,6 @@ test('the enquiry link goes to WhatsApp, to that supplier’s number when we hav
   assert.equal(whatsAppShareUrl(link, null), `https://wa.me/?text=${encodeURIComponent(link)}`);
   assert.equal(whatsAppShareUrl(link, '12345'), `https://wa.me/?text=${encodeURIComponent(link)}`);
 });
-
-/* ---------- Requests to order: L1, L2 and where a request stands ---------- */
 
 const priced = (id: string, vendorName: string, lines: [string, string, string][], freight = '0'): QuoteToRank => ({
   id,

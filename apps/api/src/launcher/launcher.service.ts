@@ -31,7 +31,7 @@ const pinDto = (p: NavPin, label = p.label): NavPinDto => ({ id: p.id, kind: p.k
 const visitDto = (v: NavVisit, label = v.label): NavVisitDto => ({ kind: v.kind, target: v.target, label, href: v.href, lastAt: iso(v.lastAt)! });
 
 /**
- * Pins and Recent on the launcher Home (phase 2, ARCHITECTURE "Launcher Home"). They belong to the user and follow them to
+ * Pins and Recent on the launcher Home (ARCHITECTURE "Launcher Home"). They belong to the user and follow them to
  * every browser and the phone. Projects are checked against the caller's access when pinned and again when read, so a pin
  * never shows a name the user may no longer see; a tree node is checked by the app, which knows the menu.
  */
@@ -43,7 +43,7 @@ export class LauncherService {
     private home: HomeService,
   ) {}
 
-  /** Pins and the latest places, with project names as they are now; and for Discover (phase 3), the company's marks, the
+  /** Pins and the latest places, with project names as they are now; and for Discover, the company's marks, the
    *  tiles the user has opened and their requests for access. */
   async get(user: RequestUser): Promise<LauncherDto> {
     const mine = { userId: user.id, organizationId: user.organizationId };
@@ -61,7 +61,7 @@ export class LauncherService {
     const projectIds = [...new Set([...pins, ...visits].filter((x) => x.kind === 'PROJECT').map((x) => x.target))];
     const projects = projectIds.length ? await this.prisma.project.findMany({ where: { AND: [this.access.projectWhere(user), { id: { in: projectIds } }] }, select: { id: true, name: true } }) : [];
     const projectName = new Map(projects.map((p) => [p.id, p.name]));
-    // A page of a module the company switched off (v6 item 117) stays saved but is left out until it is on again.
+    // A page of a module the company switched off stays saved but is left out until it is on again.
     const off = (href: string | null | undefined) => !!href && pathIsOff(href, user.modulesOff);
     const nameOf = (kind: string, target: string, label: string): string | null => {
       if (kind === 'PROJECT') return projectName.get(target) ?? null;

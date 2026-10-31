@@ -1,5 +1,5 @@
 /**
- * Stage billing on the town water supply scheme (item 129). Invented names and figures throughout.
+ * Stage billing on the town water supply scheme. Invented names and figures throughout.
  *
  * - Terms: 80.7% of the contract is a lump sum shared by the components; road restoration, house connections and the HT
  *   feeder are paid at their unit rates × the tender factor (1.0425). Security deposit 5%, TDS 2%, GST TDS 2%, labour

@@ -24,7 +24,7 @@ export interface PageImage {
 }
 
 /**
- * Reads an invoice, a delivery challan or a drawing's title block from page images (AI item 70). The model only copies
+ * Reads an invoice, a delivery challan or a drawing's title block from page images. The model only copies
  * what is printed, with where it is; the checks on what it read (a GSTIN's check character, figures adding up) and the
  * matching to the vendor, the order and its lines are code. Nothing is written but the cost of the call: the form the
  * result fills is saved only when the user saves it.

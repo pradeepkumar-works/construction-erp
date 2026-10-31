@@ -70,7 +70,7 @@ const linkOf = (a: ActionRow): MeetingLinkDto | null =>
         : null;
 
 /**
- * Meetings and action items (v6 item 112). A meeting is recorded on a project as a draft: who came, the points noted
+ * Meetings and action items. A meeting is recorded on a project as a draft: who came, the points noted
  * and decided, and the actions with an owner and a due date. Issuing the minutes fixes them, emails them to everyone
  * on the list with an address, and tells our action owners; the actions then stay open, come up at the project's next
  * meetings and in their owners' My work, until done or dropped. Rules in `meeting-rules.ts`.

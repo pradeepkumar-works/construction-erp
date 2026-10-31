@@ -1,5 +1,5 @@
 /**
- * Department screens' tests (item 168): which figures a department shows from the area modules', and a pipeline's stage
+ * Department screens' tests: which figures a department shows from the area modules', and a pipeline's stage
  * counts and order, with no database. CI runs it after the build:
  *
  *   node dist/scripts/department-home-test.js

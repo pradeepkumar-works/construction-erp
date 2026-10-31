@@ -47,7 +47,7 @@ const partInclude = {
 type PartRow = Prisma.EquipmentPartGetPayload<{ include: typeof partInclude }>;
 
 /**
- * Fuel and fleet use (v5 item 93): each site's daily fuel position and the fuel issued into machines (stock entries of
+ * Fuel and fleet use: each site's daily fuel position and the fuel issued into machines (stock entries of
  * fuel items with `equipmentId`), utilisation from the approved logs, and the tyres and batteries on each machine. The
  * fuel issue itself is `StockService.fuelIssue`, so it keeps the store's lock, numbering and stock checks.
  */
@@ -58,8 +58,6 @@ export class FleetService {
     private access: ProjectAccessService,
     private audit: AuditService,
   ) {}
-
-  /* ---------- fuel ---------- */
 
   private toIssue(e: IssueRow): FuelIssueDto {
     const line = e.lines[0];
@@ -155,8 +153,6 @@ export class FleetService {
     return rows.map((e) => this.toIssue(e));
   }
 
-  /* ---------- utilisation ---------- */
-
   /** GET /fleet/utilisation: each machine's approved logs in a period against the shift on the days it was on site. */
   async utilisation(user: RequestUser, q: FleetPeriodQuery): Promise<FleetUtilisationDto> {
     if (q.from && q.to && q.from > q.to) throw new BadRequestException('The period ends before it starts');
@@ -241,8 +237,6 @@ export class FleetService {
       fleet: group(null, rows),
     };
   }
-
-  /* ---------- tyres and batteries ---------- */
 
   private async machine(user: RequestUser, equipmentId: string) {
     const eq = await this.prisma.equipment.findFirst({ where: { id: equipmentId, organizationId: user.organizationId }, select: { id: true, code: true, name: true, fuelNormUnit: true } });

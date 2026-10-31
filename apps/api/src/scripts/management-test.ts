@@ -33,7 +33,6 @@ import {
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Work done and billing
 
 test('work done takes each item at the larger of progress and measurement, so supply items count once measured', () => {
@@ -88,7 +87,6 @@ test('margin on billing is left out when the billing is a sliver of the cost', (
   assert.equal(billedMarginPct(0, 100), null);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Schedule
 
 const facts = (f: Partial<ScheduleFacts>): ScheduleFacts => ({
@@ -138,7 +136,6 @@ test('elapsed share of the time and whole days between dates', () => {
   assert.equal(daysBetween('2026-10-01', '2026-10-26'), 25);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Approvals and health
 
 test('approvals by age and by type, the type with the oldest first', () => {
@@ -222,7 +219,6 @@ test('attention is sorted act before watch, then schedule, cost, billing, collec
   assert.deepEqual(items.map((i) => `${i.level}:${i.key}`), ['act:billing', 'act:collection', 'watch:schedule', 'watch:risk']);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Periods
 
 test('months between two dates, the last twelve, a month’s first and last day and the financial year', () => {

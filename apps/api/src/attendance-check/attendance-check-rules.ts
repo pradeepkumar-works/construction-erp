@@ -1,7 +1,7 @@
 import { HEADCOUNT_GAP_MIN, HEADCOUNT_GAP_PCT, MANDAY_TOLERANCE_MIN, MANDAY_TOLERANCE_PCT, NO_PUNCH_MIN, type AttendanceSourcesDto } from '@erp/shared';
 
 /**
- * Attendance cross-check (AI item 124): the arithmetic, as plain functions of what the site recorded, so each rule is
+ * Attendance cross-check: the arithmetic, as plain functions of what the site recorded, so each rule is
  * tested on its own (`src/scripts/attendance-check-test.ts`) and the bill check, the page and the watch list agree.
  */
 

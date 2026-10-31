@@ -1,5 +1,5 @@
 /**
- * Demo correspondence (item 136): the address book, the road project's letters given their categories, marks, dispatch and
+ * Demo correspondence: the address book, the road project's letters given their categories, marks, dispatch and
  * proof, a reply waiting for the project manager's signature, and a head office letter from the bank. Numbers come from
  * the same series the service uses, so the next letter recorded continues them. Runs once per company (when it has no
  * address book yet), after `seedDocuments` made the road project's letters.

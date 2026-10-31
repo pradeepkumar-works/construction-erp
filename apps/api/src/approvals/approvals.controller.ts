@@ -42,12 +42,12 @@ export class ApprovalsController {
     const t = type.toUpperCase() as SubmissionType;
     if (!SUBMISSION_TYPES.includes(t)) throw new BadRequestException('Unknown submission type');
     if (t === 'INSPECTION') throw new BadRequestException('Record the checklist with the inspection: POST /inspections/:id/inspect');
-    // Rejecting or sending back needs a reason of a few words, so the submitter knows what to fix (UX item 88).
+    // Rejecting or sending back needs a reason of a few words, so the submitter knows what to fix.
     const note = dto.note?.trim() || null;
     if (dto.decision !== 'APPROVE' && (note?.length ?? 0) < MIN_REASON_LENGTH) {
       throw new BadRequestException(dto.decision === 'REJECT' ? 'Say why you are rejecting it' : 'Say what needs changing');
     }
-    // The status it now has, and the level decided: below the last level it stays SUBMITTED for the next (v5 item 94).
+    // The status it now has, and the level decided: below the last level it stays SUBMITTED for the next.
     return { ok: true, ...(await this.lifecycle.review(user, t, id, dto.decision, note)) };
   }
 

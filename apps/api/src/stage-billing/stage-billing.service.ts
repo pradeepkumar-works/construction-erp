@@ -25,7 +25,7 @@ const COMPONENT_INCLUDE = {
 } satisfies Prisma.BillingComponentInclude;
 
 /**
- * The billing break-up of a lump-sum contract (item 129, ARCHITECTURE "Stage billing"): components with their share of
+ * The billing break-up of a lump-sum contract (ARCHITECTURE "Stage billing"): components with their share of
  * the lump sum, their payment stages with the evidence each reads, the milestone grid and its slippage tiers, and what an
  * RA bill takes from them (`planFor`, called by `RaBillsService`). The parts the demo seed runs too are in `stage-plan.ts`.
  */
@@ -48,7 +48,6 @@ export class StageBillingService {
     await this.access.assertCanAccessProject(user, projectId);
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Reading the break-up
 
   async breakup(user: RequestUser, projectId: string): Promise<BillingBreakupDto> {
@@ -194,7 +193,6 @@ export class StageBillingService {
     return (sum / total) * 100;
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Changing it
 
   private async billedStageIds(projectId: string) {
@@ -278,7 +276,7 @@ export class StageBillingService {
       const found = await this.prisma.activity.count({ where: { id: { in: activityIds }, projectId } });
       if (found !== activityIds.length) throw new BadRequestException('Choose activities of this project');
     }
-    // EPC (item 130): an event can be the approval of deliverables, supply the packages that reach a stage.
+    // EPC: an event can be the approval of deliverables, supply the packages that reach a stage.
     const deliverableIds = dto.trigger === 'EVENT' ? [...new Set(dto.deliverableIds ?? [])] : [];
     if (deliverableIds.length && (await this.prisma.engineeringDeliverable.count({ where: { id: { in: deliverableIds }, projectId } })) !== deliverableIds.length) throw new BadRequestException('Choose deliverables of this project');
     const packageIds = dto.trigger === 'SUPPLY' ? [...new Set(dto.packageIds ?? [])] : [];
@@ -392,7 +390,6 @@ export class StageBillingService {
     return this.breakup(user, projectId);
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // On a bill
 
   /** What an RA bill takes from the break-up (`stagePlan`), for `RaBillsService`. */

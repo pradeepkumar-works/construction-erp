@@ -1,7 +1,7 @@
 import { FUEL_NO_LOG_MIN_LITRES, IDLE_MIN_DAYS, MATERIAL_OVERUSE_MIN_PCT, SITE_RATIO_ABOVE_PTS, SITE_RATIO_MIN_SITES } from '@erp/shared';
 
 /**
- * Leakage checks (AI item 121), the arithmetic with no database: material against the allowance and the company's other
+ * Leakage checks, the arithmetic with no database: material against the allowance and the company's other
  * sites, fuel issued to a machine on a day it has no log, and a hired machine paid for hours it did not work. Rates are
  * `rateAboveOthers` in `@erp/shared` (the purchase order form uses it too). Tested in `src/scripts/leakage-test.ts`.
  */

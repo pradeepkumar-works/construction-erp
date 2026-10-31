@@ -34,7 +34,7 @@ export interface LdInputs {
 }
 
 /**
- * A project's contract with its client (v3 item 17): agreement, value, dates with the extensions of time granted in the
+ * A project's contract with its client: agreement, value, dates with the extensions of time granted in the
  * delay register, and the retention, advance, tax and cess percentages RA bills are built with.
  */
 @Injectable()
@@ -100,7 +100,7 @@ export class ContractsService {
   }
 
   /**
-   * Liquidated damages (v4 item 50): days past the completion date after extensions of time, at the contract's rate
+   * Liquidated damages: days past the completion date after extensions of time, at the contract's rate
    * per day, week or month (part periods pro rata) of the revised contract value, up to the cap. Also the forecast to
    * the schedule's last planned finish, and that forecast if the excusable days not yet granted are granted.
    */
@@ -254,13 +254,13 @@ export class ContractsService {
     const hadStart = dateOnly((await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { startDate: true } })).startDate);
     await this.prisma.project.update({ where: { id: projectId }, data });
     await this.audit.log(user, 'PROJECT', projectId, 'CONTRACT_UPDATED');
-    // The dates arriving for the first time spread the activities that have none (finding 11 of the October review).
+    // The dates arriving for the first time spread the activities that have none.
     if (!hadStart && data.startDate) await this.templates.spreadUndated(user, projectId);
     return this.get(user, projectId);
   }
 
   /**
-   * The contract currency (item 130): a project in another currency keeps its figures in rupees at the contract rate, so
+   * The contract currency: a project in another currency keeps its figures in rupees at the contract rate, so
    * the rate is needed and cannot move once a bill or receipt has been kept at it.
    */
   private async currencyChange(projectId: string, dto: UpdateContractDto): Promise<Prisma.ProjectUncheckedUpdateInput> {
@@ -277,7 +277,7 @@ export class ContractsService {
   }
 
   /**
-   * The price variation formula (v4 item 50): the base date and the components, each a share of the work value that
+   * The price variation formula: the base date and the components, each a share of the work value that
    * moves with an index. Replaces the whole list; bills already prepared keep the components they copied until they
    * are filled in again.
    */

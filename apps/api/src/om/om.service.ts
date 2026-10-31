@@ -32,7 +32,7 @@ const num = (v: string | null | undefined) => (v === null || v === undefined || 
 const r2 = (v: number) => (Math.round(v * 100) / 100).toFixed(2);
 
 /**
- * O&M contract (item 131, ARCHITECTURE "Operation and maintenance"): the project's O&M tab after handover. The terms are
+ * O&M contract (ARCHITECTURE "Operation and maintenance"): the project's O&M tab after handover. The terms are
  * kept by the project's managers, the daily service levels by the site and the lab, staff deployed by HR and the
  * managers; each instalment is billed as an O&M bill through `RaBillsService`. The arithmetic is in `om-rules.ts`.
  */
@@ -240,7 +240,6 @@ export class OmService {
     });
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Changes
 
   async saveContract(user: RequestUser, projectId: string, dto: SaveOmContractDto): Promise<OmDto> {

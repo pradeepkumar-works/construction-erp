@@ -41,7 +41,7 @@ const instrumentInclude = {
 type InstrumentRow = Prisma.QaInstrumentGetPayload<{ include: typeof instrumentInclude }>;
 
 /**
- * QA/QC registers (item 137 part 2, ARCHITECTURE "QA/QC"): the labs tests go to and the samples waiting on them, the
+ * QA/QC registers (ARCHITECTURE "QA/QC"): the labs tests go to and the samples waiting on them, the
  * calibration register, and which receipts need the maker's test certificate. Where each stands is pure in
  * `@erp/shared/qa-registers.ts`.
  */
@@ -68,7 +68,7 @@ export class QaRegistersService {
     return { OR: [{ projectId: null }, { project: this.access.projectWhere(user) }] };
   }
 
-  /* ---------- labs ---------- */
+  // Labs
 
   async labs(user: RequestUser): Promise<QaLabDto[]> {
     this.assertView(user);
@@ -165,7 +165,7 @@ export class QaRegistersService {
     return { ok: true, switchedOff: false };
   }
 
-  /* ---------- samples sent out ---------- */
+  // Samples sent out
 
   /** Tests sent to a lab: waiting for their report (oldest first), or reported. */
   async samples(user: RequestUser, q: LabSamplesQuery): Promise<LabSamplesDto> {
@@ -222,7 +222,7 @@ export class QaRegistersService {
     };
   }
 
-  /* ---------- instruments and calibration ---------- */
+  // Instruments and calibration
 
   private async kindNames(organizationId: string) {
     return new Map((await this.masters.entriesFor(organizationId, 'instrumentKind')).map((e) => [e.code, e.name]));
@@ -389,7 +389,7 @@ export class QaRegistersService {
     return this.instrument(user, id);
   }
 
-  /* ---------- test certificates ---------- */
+  // Test certificates
 
   async certificateCategories(user: RequestUser): Promise<{ categories: string[]; standard: string[]; canEdit: boolean }> {
     this.assertView(user);

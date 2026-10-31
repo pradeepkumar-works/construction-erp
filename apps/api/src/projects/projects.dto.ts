@@ -17,7 +17,7 @@ export class NextProjectCodeQuery {
   @ApiProperty({ enum: PROJECT_TYPES }) @IsIn(PROJECT_TYPES as unknown as string[]) type: ProjectType;
 }
 
-/** A component of the starting breakdown, and how many of it (item 134). */
+/** A component of the starting breakdown, and how many of it. */
 export class BreakdownPickDto {
   @ApiProperty({ example: '7' }) @IsString() @MaxLength(20) key: string;
   @ApiProperty({ example: 2 }) @IsInt() @Min(1) @Max(MAX_COMPONENT_COUNT) count: number;

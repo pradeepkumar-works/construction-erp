@@ -1,6 +1,6 @@
 /**
- * Biometric attendance's tests (v6 item 101): reading ADMS uploads, webhook times and punch files, and a person's day
- * from their punches; and the commands handed to an ADMS device and its answers (item 150), with no database. CI runs it after the build:
+ * Biometric attendance's tests: reading ADMS uploads, webhook times and punch files, and a person's day
+ * from their punches; and the commands handed to an ADMS device and its answers, with no database. CI runs it after the build:
  *
  *   node dist/scripts/biometric-test.js
  */

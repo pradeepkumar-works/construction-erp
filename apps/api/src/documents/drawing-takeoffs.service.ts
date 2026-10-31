@@ -37,7 +37,7 @@ type ScaleRow = Prisma.DrawingScaleGetPayload<{ include: { setBy: { select: { fu
 const metresPerPage = (s: { points: unknown; lengthM: Prisma.Decimal; aspect: number }) => scaleFrom(s.points as [MarkupPoint, MarkupPoint], Number(s.lengthM), s.aspect);
 
 /**
- * Measuring on drawings (v6 item 118): each page of a drawing file may have a scale (two points a known distance apart),
+ * Measuring on drawings: each page of a drawing file may have a scale (two points a known distance apart),
  * and lengths, areas and counts are taken off it, numbered T1, T2… per document. Anyone who can open the document
  * measures and sets the scale; whoever made a measure, and document control, rename or delete it. A new scale works the
  * page's lengths and areas out again. Scales and measures are on the document's history.

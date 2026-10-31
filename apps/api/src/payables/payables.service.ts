@@ -65,8 +65,8 @@ const ORDER: Record<VendorPaymentSortField, (o: SortOrder) => Prisma.VendorPayme
 };
 
 /**
- * The bill a payment is against, as payables sees it; or, for an advance (v5 item 90), the order; or, for a site's
- * fund request paid to a party (v6 item 107), the request itself: a payment on account.
+ * The bill a payment is against, as payables sees it; or, for an advance, the order; or, for a site's
+ * fund request paid to a party, the request itself: a payment on account.
  */
 interface Bill {
   type: PayableBillType | 'ADVANCE' | 'ON_ACCOUNT';
@@ -148,7 +148,7 @@ const totalsDto = (t: Totals): PayableTotalsDto => ({
 });
 
 /**
- * Payables (v3 item 23): money paid to vendors and subcontractors against their approved bills, with TDS or anything
+ * Payables: money paid to vendors and subcontractors against their approved bills, with TDS or anything
  * else deducted at payment. A bill is paid once its payments settle what it says is payable (a vendor bill's total, a
  * subcontractor bill's net payable). The summary is the due list: outstanding by vendor and project, aged from each
  * bill's due date, with micro and small enterprises flagged as their 45 days run out.
@@ -261,7 +261,7 @@ export class PayablesService {
     return bill;
   }
 
-  /** The order an advance is paid against (v5 item 90). */
+  /** The order an advance is paid against. */
   private async advance(user: RequestUser, order: { purchaseOrderId: string | null; workOrderId: string | null }): Promise<Bill> {
     const org = user.organizationId;
     let bill: Bill | null = null;
@@ -277,7 +277,7 @@ export class PayablesService {
     return bill;
   }
 
-  /** A fund request paid to a party (v6 item 107): the payment is on account, capped by the request. */
+  /** A fund request paid to a party: the payment is on account, capped by the request. */
   private async onAccount(user: RequestUser, r: { id: string; requestNo: string; projectId: string; vendorId: string | null; createdAt: Date }): Promise<Bill> {
     if (!r.vendorId) throw new BadRequestException(`${r.requestNo} goes into the site's imprest: release it from the request instead`);
     await this.access.assertCanAccessProject(user, r.projectId);
@@ -427,7 +427,7 @@ export class PayablesService {
     await this.audit.log(user, 'VENDOR_PAYMENT', id, 'CREATED', `₹${a.amount.toFixed(2)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}`);
     if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_MADE', paidOn);
     if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_MADE', paidOn);
-    // The supplier's portal logins (v6 item 105) see it on their statement.
+    // The supplier's portal logins see it on their statement.
     await this.notifications.notifyVendor(user.organizationId, bill.vendorId, {
       title: `Payment of ₹${a.amount.toFixed(2)} made`,
       body: `Against ${bill.label}, on ${dto.paymentDate}${dto.reference ? `, reference ${dto.reference}` : ''}.`,
@@ -585,9 +585,9 @@ export class PayablesService {
         t.tdsDeducted = t.tdsDeducted.add(b.tdsAmount);
       }
     }
-    // Advances (v5 item 90) are not against a bill: they count as outstanding with the vendor until their order's
+    // Advances are not against a bill: they count as outstanding with the vendor until their order's
     // approved bills take them off (adjusted on vendor bills, recovered on subcontractor bills). A payment on account
-    // of a site's fund request (v6 item 107) counts as paid.
+    // of a site's fund request counts as paid.
     const advances = new Map<string, { v: V; p: P; paid: Prisma.Decimal; taken: Prisma.Decimal }>();
     for (const r of payments) {
       const key = r.vendorBillId || r.subcontractBillId ? null : (r.purchaseOrderId ?? r.workOrderId);

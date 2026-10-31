@@ -24,7 +24,7 @@ export class ProjectAccessService {
   }
 
   /**
-   * Where stock can come from for a material request (v6 item 106): the projects the user sees, and every central store
+   * Where stock can come from for a material request: the projects the user sees, and every central store
    * of the company, so a site asking for material sees what the store holds even when no one there is a member of it.
    * Only the balance is shown; sending still needs a stock keeper of the store.
    */
@@ -77,7 +77,7 @@ export class ProjectAccessService {
 
   /**
    * Review a submission: the approval matrix must give the user's role this type at the level the entry waits at, up
-   * to its amount (or the entry escalated to the role); one person approves only one level of an entry (v5 item 94).
+   * to its amount (or the entry escalated to the role); one person approves only one level of an entry.
    */
   async assertCanApproveSubmission(user: RequestUser, type: SubmissionType, id: string, projectId: string) {
     await this.assertCanAccessProject(user, projectId);
@@ -195,7 +195,7 @@ export class ProjectAccessService {
     });
   }
 
-  /** A supplier-portal login (v6 item 105): the vendor it acts for. Everything it sees is that vendor's. */
+  /** A supplier-portal login: the vendor it acts for. Everything it sees is that vendor's. */
   supplierVendor(user: RequestUser): string {
     if (!isSupplier(user.roleKey) || !user.vendorId) throw new ForbiddenException('The supplier portal is for supplier accounts');
     return user.vendorId;
@@ -234,7 +234,7 @@ export class ProjectAccessService {
    * anyone else only themselves.
    */
   staffWhere(user: RequestUser): Prisma.EmployeeWhereInput {
-    // Payroll (accounts) sees every employee too, for salaries and bank details (v6 item 99).
+    // Payroll (accounts) sees every employee too, for salaries and bank details.
     if (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) return { organizationId: user.organizationId };
     if (canMarkStaff(user.roleKey)) return { organizationId: user.organizationId, OR: [{ userId: user.id }, { project: this.projectWhere(user) }] };
     return { organizationId: user.organizationId, userId: user.id };

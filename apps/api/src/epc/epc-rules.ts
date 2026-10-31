@@ -16,7 +16,7 @@ import {
 import { round3, type StageEvidence } from '../stage-billing/stage-billing-rules';
 
 /**
- * EPC (item 130, ARCHITECTURE "EPC"): pure arithmetic over deliverables, equipment packages, client inputs and the
+ * EPC (ARCHITECTURE "EPC"): pure arithmetic over deliverables, equipment packages, client inputs and the
  * contract currency, tested in `src/scripts/epc-test.ts`. Dates are YYYY-MM-DD strings.
  */
 
@@ -25,7 +25,6 @@ const addDays = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) 
 const maxDate = (a: string, b: string) => (a > b ? a : b);
 const order = (s: PackageStage) => PACKAGE_STAGES.indexOf(s);
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Engineering deliverables
 
 /** Where a deliverable stands, from its dates and the code it came back with. */
@@ -63,7 +62,6 @@ export function disciplineSummary(rows: { discipline: EngineeringDiscipline; sta
   }).filter((s) => s.total > 0);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Equipment packages
 
 export interface StageDates {
@@ -164,8 +162,7 @@ export function reachedOn(stages: StageDates[], stage: PackageStage): string | n
   return later.length ? later.sort()[0] : null;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// What a payment stage reads (item 129 stages, item 130 evidence)
+// What a payment stage reads
 
 /** An EVENT stage tied to deliverables is done on the day the last of them was approved, once all are. */
 export function deliverablesEvidence(rows: { approvedOn: string | null }[], upTo: string, fmt: Fmt = (d) => d): StageEvidence {
@@ -193,7 +190,6 @@ export function packagesEvidence(rows: { value: number | null; reachedOn: string
   return { pct, text: `${reached.length} of ${rows.length} packages ${word}${byValue && reached.length && reached.length < rows.length ? `, ${Math.round(pct * 10) / 10}% by value` : ''}` };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Client inputs and the contract currency
 
 /** Days a client input is past due and not given; null when given or not yet due. */

@@ -35,7 +35,7 @@ const n = (v: Prisma.Decimal | null | undefined) => (v === null || v === undefin
 const DAY = 86_400_000;
 
 /**
- * Weighbridge (item 148, ARCHITECTURE "Weighbridge"): the weights the Connector reads from a site's indicator, and the
+ * Weighbridge (ARCHITECTURE "Weighbridge"): the weights the Connector reads from a site's indicator, and the
  * store's tickets, each a truck's first and second weight with the order and challan it brought. The net weight drafts
  * the GRN, which `StockService.receive` makes and ties to the ticket; short supply and the GRN against the net weight
  * are `shortSupply` and `grnAboveNet` (`@erp/shared/weighbridge.ts`).

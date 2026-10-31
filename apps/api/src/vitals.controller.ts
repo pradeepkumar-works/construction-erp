@@ -39,7 +39,7 @@ export function parseVitals(data: string) {
 }
 
 /**
- * Web Vitals from the web app (item 83): each page load's LCP, CLS and INP, logged one JSON line each (`web-vital`) for
+ * Web Vitals from the web app: each page load's LCP, CLS and INP, logged one JSON line each (`web-vital`) for
  * the function logs to search, with `overBudget` against the web's `WEB_VITAL_BUDGETS`. Nothing is stored.
  */
 @ApiTags('health')

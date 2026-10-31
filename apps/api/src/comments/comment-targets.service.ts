@@ -28,7 +28,7 @@ export interface CommentTarget {
 type Getter = (user: RequestUser, id: string) => Promise<unknown>;
 
 /**
- * The records comments can be on (v6 item 116). Each kind loads its record through its own service with the user, so the
+ * The records comments can be on. Each kind loads its record through its own service with the user, so the
  * service's access rules decide who reads and writes its comments, and whom a comment may mention.
  */
 @Injectable()
@@ -72,7 +72,7 @@ export class CommentTargetsService {
 
   /** The record, as the user may see it; throws (403 or 404) when they may not. */
   async load(user: RequestUser, kind: CommentKind, id: string): Promise<CommentTarget> {
-    // A meeting or material approval while the company has that module off (v6 item 117) is out of reach.
+    // A meeting or material approval while the company has that module off is out of reach.
     const switchable = kind === 'MEETING' ? 'meetings' : kind === 'MATERIAL_APPROVAL' ? 'material_approvals' : null;
     if (switchable && !moduleOn(user, switchable)) throw new ForbiddenException(moduleOffMessage(switchable));
     if (kind === 'MEETING') {

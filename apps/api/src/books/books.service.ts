@@ -88,7 +88,7 @@ const voucherInclude = {
 type VoucherRow = Prisma.BookVoucherGetPayload<{ include: typeof voucherInclude }>;
 
 /**
- * The books of account (v6 item 102). Vouchers come from the modules through the posting service (the same one the
+ * The books of account. Vouchers come from the modules through the posting service (the same one the
  * Tally export uses), brought up to date on read, or are made by accounts and approved by management. The day book,
  * cash and bank books and ledgers read approved vouchers only; projects are the cost centres.
  */
@@ -113,7 +113,7 @@ export class BooksService {
     if (booksFrom && date < booksFrom) throw new BadRequestException(`The books begin on ${formatDay(booksFrom)}; what came before is in the opening balances. Date the voucher on or after that day.`);
   }
 
-  // ----- Posting -----
+  // Posting
 
   /** Post every module record that changed since the last run, when that run is older than a minute. */
   async fresh(user: RequestUser) {
@@ -266,7 +266,7 @@ export class BooksService {
     return { lastPostedAt: iso(st?.lastPostedAt), vouchers, held: (st?.held as unknown as BooksHeldDto[] | undefined) ?? [], toApprove };
   }
 
-  // ----- Chart of accounts -----
+  // Chart of accounts
 
   /** Every account with its debits, credits and balance in the approved vouchers (up to a day, for a project). */
   async accounts(user: RequestUser, q: AccountQuery = {}): Promise<LedgerAccountDto[]> {
@@ -361,7 +361,7 @@ export class BooksService {
     return { ok: true };
   }
 
-  // ----- Ledgers, cash and bank books -----
+  // Ledgers, cash and bank books
 
   /** One account's entries in a period with the opening balance, the running balance and the closing balance. */
   async ledger(user: RequestUser, q: LedgerQuery): Promise<LedgerDto> {
@@ -419,7 +419,7 @@ export class BooksService {
     };
   }
 
-  // ----- Day book and vouchers -----
+  // Day book and vouchers
 
   private voucherDto(user: RequestUser, v: VoucherRow): BookVoucherDto {
     const manual = v.source === 'MANUAL';
@@ -675,7 +675,7 @@ export class BooksService {
     return this.voucher(user, id);
   }
 
-  // ----- For the Accounts module's home -----
+  // For the Accounts module's home
 
   /** Cash and bank in hand today, and what waits: vouchers to approve, records that could not be posted. */
   async figures(user: RequestUser) {

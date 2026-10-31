@@ -125,7 +125,7 @@ export class ReconciliationService {
   }
 
   /**
-   * A period's report without the caller's checks (item 121, leakage checks): the interface other modules read the
+   * A period's report without the caller's checks (leakage checks): the interface other modules read the
    * reconciliation's figures through, so they follow it as it changes.
    */
   async forPeriod(projectId: string, from: string, to: string): Promise<ProjectReconciliationDto> {
@@ -139,7 +139,7 @@ export class ReconciliationService {
     if (q.from && q.from > to) throw new BadRequestException('The period starts after it ends: choose an earlier From date');
     const date = { ...(q.from ? { gte: parseDate(q.from) } : {}), lte: parseDate(to) };
     const approved = { projectId, status: 'APPROVED' as const, date };
-    // A DPR's work lines, or any line that says what it used (item 128): what the use is checked against
+    // A DPR's work lines, or any line that says what it used: what the use is checked against
     const reported = { ...approved, OR: [{ dailyReportId: { not: null } }, { materials: { some: {} } }] };
 
     const [norms, activityNorms, progress, onLines, activities, stock, before, used, firstUse] = await Promise.all([
@@ -288,7 +288,7 @@ export class ReconciliationService {
 
   /** Add a norm, or change the one the BOQ item already has for that store item. */
   /**
-   * What adopting the standard norms library would do to a project (finding 16 of the October review): the BOQ items
+   * What adopting the standard norms library would do to a project: the BOQ items
    * the library recognises, the norms they would get, and the store items it would have to add. Nothing is written.
    */
   async standardNormPlan(user: RequestUser, projectId: string): Promise<StandardNormPlanDto> {
@@ -405,7 +405,7 @@ export class ReconciliationService {
   }
 
   /**
-   * Add a norm on an activity (item 128), or change the one it has for that store item: for work with no BOQ item of its
+   * Add a norm on an activity, or change the one it has for that store item: for work with no BOQ item of its
    * own, such as a lump-sum component's activities or a house connection's kit. It counts before the BOQ item's norms.
    */
   async saveActivityNorm(user: RequestUser, projectId: string, dto: SaveActivityNormDto): Promise<ActivityNormDto> {
@@ -452,8 +452,7 @@ export class ReconciliationService {
     return { ok: true };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
-  // Per subcontractor (v5 item 92)
+  // Per subcontractor
 
   /**
    * Material issued to each subcontractor's work order against what their approved measured work should have taken
@@ -620,8 +619,7 @@ export class ReconciliationService {
     return { ok: true };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
-  // Wastage (v5 item 92)
+  // Wastage
 
   /** Stock adjustments in the period by reason and item, opening stock left out, valued at item rates. */
   async wastage(user: RequestUser, projectId: string, q: ReconciliationQuery): Promise<WastageReportDto> {

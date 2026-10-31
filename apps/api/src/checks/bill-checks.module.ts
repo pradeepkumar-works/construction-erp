@@ -9,6 +9,6 @@ import { TelematicsModule } from '../telematics/telematics.module';
 import { BillChecksController } from './bill-checks.controller';
 import { BillChecksService } from './bill-checks.service';
 
-/** Bill checks before approval (AI roadmap item 69). */
+/** Bill checks before approval. */
 @Module({ imports: [PurchasingModule, SubcontractsModule, ExpensesModule, RaBillsModule, AiModule, AttendanceCheckModule, TelematicsModule], controllers: [BillChecksController], providers: [BillChecksService], exports: [BillChecksService] })
 export class BillChecksModule {}

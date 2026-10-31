@@ -29,8 +29,6 @@ export class MaintenanceController {
     return this.maintenance.summary(user, q.projectId);
   }
 
-  /* ---------- job cards ---------- */
-
   @ApiOperation({ summary: 'Job cards', description: 'Open ones first. Site staff see those at their projects.' })
   @Get('maintenance/jobs')
   listJobs(@CurrentUser() user: RequestUser, @Query() q: ListJobsQuery) {
@@ -75,8 +73,6 @@ export class MaintenanceController {
     return this.maintenance.removeJob(user, id);
   }
 
-  /* ---------- documents ---------- */
-
   @ApiOperation({ summary: 'Insurance, fitness, permit, PUC, road tax and RC of machines and vehicles', description: 'The latest paper of each type per machine unless `latestOnly=false`.' })
   @Get('equipment-documents')
   listDocuments(@CurrentUser() user: RequestUser, @Query() q: ListDocumentsQuery) {
@@ -103,8 +99,6 @@ export class MaintenanceController {
   removeDocument(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.maintenance.removeDocument(user, id);
   }
-
-  /* ---------- drivers ---------- */
 
   @ApiOperation({ summary: 'Drivers and operators with their licence' })
   @Get('drivers')

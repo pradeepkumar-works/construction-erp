@@ -20,7 +20,7 @@ type MarkupRow = Prisma.DrawingMarkupGetPayload<{ include: typeof markupInclude 
 const clip = (note: string | null | undefined, n = 80) => (note && note.length > n ? `${note.slice(0, n - 1)}…` : note ?? '');
 
 /**
- * Drawing markup (item 109): marks on one page of a revision's file, numbered M1, M2… per document. Anyone who can
+ * Drawing markup: marks on one page of a revision's file, numbered M1, M2… per document. Anyone who can
  * open the document adds one; whoever made it and document control change, resolve or delete it. Marks are recorded
  * on the document's history. Open marks of earlier revisions are carried forward by the viewer (`marksForSheet`).
  */

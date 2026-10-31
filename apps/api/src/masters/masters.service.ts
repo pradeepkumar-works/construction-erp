@@ -20,7 +20,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { CreateMasterEntryDto, UpdateMasterEntryDto } from './masters.dto';
 
 /**
- * Masters (item 135, ARCHITECTURE "Masters"): the company's simple lists. Standard entries come from `MASTER_LIST_DEFS`;
+ * Masters (ARCHITECTURE "Masters"): the company's simple lists. Standard entries come from `MASTER_LIST_DEFS`;
  * a company's `MasterEntry` rows lay over them by code (a rename, Hindi name or switch-off) or add its own, so nothing is
  * seeded. Records keep the words, so an entry in use is never renamed and only the company's own unused ones are deleted.
  */

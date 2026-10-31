@@ -83,7 +83,7 @@ export class MachineryService {
     private telematics: TelematicsService,
   ) {}
 
-  /* ---------- equipment ---------- */
+  // Equipment
 
   toEquipmentDto(user: RequestUser, r: EquipmentRow): EquipmentDto {
     return {
@@ -112,7 +112,7 @@ export class MachineryService {
       fuelNormUnit: r.fuelNormUnit,
       fuelTolerancePct: dec(r.fuelTolerancePct),
       fuelTankLitres: dec(r.fuelTankLitres),
-      // Machine finance (v6 item 108): only those who keep the loans see that a machine is financed.
+      // Machine finance: only those who keep the loans see that a machine is financed.
       loan: canManageMachineLoans(user.roleKey) && r.loans[0] ? { id: r.loans[0].id, lenderName: r.loans[0].lenderName } : null,
       createdAt: iso(r.createdAt)!,
     };
@@ -243,9 +243,9 @@ export class MachineryService {
     return { ok: true };
   }
 
-  /* ---------- logs ---------- */
+  // Logs
 
-  /** Fuel issued from the store into each log's machine on its day (v5 item 93), by log id. */
+  /** Fuel issued from the store into each log's machine on its day, by log id. */
   private async fuelIssued(rows: LogRow[]): Promise<Map<string, string>> {
     if (!rows.length) return new Map();
     const entries = await this.prisma.stockEntry.findMany({

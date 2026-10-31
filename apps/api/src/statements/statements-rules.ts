@@ -14,8 +14,6 @@ import { fyCode } from '../books/books-rules';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 
-// ----- Financial years and periods -----
-
 /** The first and last day of a financial year from its code: 2025-26 is 2025-04-01 to 2026-03-31. */
 export function fyRange(code: string): { from: string; to: string } {
   const start = Number(code.slice(0, 4));
@@ -44,8 +42,6 @@ export function dayBefore(date: string): string {
   d.setUTCDate(d.getUTCDate() - 1);
   return d.toISOString().slice(0, 10);
 }
-
-// ----- Statement lines -----
 
 export interface AccountFigure {
   accountId: string;
@@ -118,8 +114,6 @@ export function closingLines(balances: { accountId: string; projectId: string | 
   if (!profit.isZero()) lines.push({ accountId: profitAccountId, projectId: null, debit: profit.lt(0) ? profit.neg() : D(0), credit: profit.gt(0) ? profit : D(0) });
   return { lines, profit };
 }
-
-// ----- Bank statements -----
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
@@ -234,8 +228,6 @@ export function rowFingerprint(r: { date: string; description: string; reference
   const base = [r.date, r.description.toLowerCase(), r.reference ?? '', r.withdrawal.toFixed(2), r.deposit.toFixed(2), r.balance?.toFixed(2) ?? ''].join('|');
   return createHash('sha1').update(`${base}#${n}`).digest('hex');
 }
-
-// ----- Matching and the reconciliation -----
 
 export interface MatchStatementLine {
   id: string;

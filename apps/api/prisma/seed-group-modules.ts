@@ -62,7 +62,6 @@ export async function seedGroupModules(prisma: Db, demoOrgId: string) {
   if (hold) await holdingLetters(prisma, hold);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Correspondence: the address book, letters numbered from their series, marks, and the series' counters.
 
 type ContactSpec = { name: string; office?: string; organisation?: string; address?: string; email?: string; client?: boolean };
@@ -181,7 +180,6 @@ async function writeLetters(prisma: Db, organizationId: string, contacts: Record
   }
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Demo Design Consultants
 
 const SISTER = 'Demo Infra Projects, for the scheme authority';
@@ -333,7 +331,6 @@ async function designLetters(prisma: Db, organizationId: string) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Demo Quality Labs
 
 async function labRegisters(prisma: Db, organizationId: string) {
@@ -405,7 +402,6 @@ async function labLetters(prisma: Db, organizationId: string) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Demo Buildcon
 
 async function buildconQuality(prisma: Db, organizationId: string) {
@@ -481,7 +477,6 @@ async function buildconLetters(prisma: Db, organizationId: string) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Demo Infra Holdings
 
 async function holdingLetters(prisma: Db, organizationId: string) {

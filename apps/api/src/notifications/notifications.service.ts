@@ -30,12 +30,12 @@ export interface NotifyInput {
   message?: OutgoingMessage;
   /**
    * Also emailed to the users who keep email alerts on (the default): an action that waits on them, with a button
-   * to the page that does it (e2e review, fix 2). `href` is a path in the web app.
+   * to the page that does it. `href` is a path in the web app.
    */
   email?: { href: string; cta: string };
 }
 
-/** A hand-off to the next role in the chain (e2e review, fix 2): who, and what they are told. */
+/** A hand-off to the next role in the chain: who, and what they are told. */
 export interface HandoffInput {
   organizationId: string;
   projectId: string;
@@ -76,7 +76,7 @@ export class NotificationsService {
     private mail: EmailService,
   ) {}
 
-  /* ---------- reading ---------- */
+  // Reading
 
   toDto(r: Row): NotificationDto {
     return {
@@ -126,7 +126,7 @@ export class NotificationsService {
     return { updated: res.count };
   }
 
-  /* ---------- push tokens ---------- */
+  // Push tokens
 
   private tokenDto(t: { id: string; token: string; platform: PushTokenDto['platform']; deviceName: string | null; createdAt: Date; lastSeenAt: Date }): PushTokenDto {
     return { id: t.id, token: t.token, platform: t.platform, deviceName: t.deviceName, createdAt: iso(t.createdAt)!, lastSeenAt: iso(t.lastSeenAt)! };
@@ -152,7 +152,7 @@ export class NotificationsService {
     return { removed: res.count };
   }
 
-  /* ---------- creating + delivering ---------- */
+  // Creating + delivering
 
   /**
    * Creates one notification per user and pushes it to all their devices.
@@ -228,7 +228,7 @@ export class NotificationsService {
     return users.filter((u) => ids.has(u.id));
   }
 
-  /** Tell the next role in the chain that a step waits on them (e2e review, fix 2), in the app and by email. */
+  /** Tell the next role in the chain that a step waits on them, in the app and by email. */
   async handoff(h: HandoffInput) {
     try {
       const holders = h.roles.length ? await this.onProjectFirst(await this.access.usersWithRoles(h.organizationId, h.projectId, h.roles), h.projectId) : [];
@@ -280,7 +280,7 @@ export class NotificationsService {
     }
   }
 
-  /* ---------- submission events (called by SubmissionLifecycleService) ---------- */
+  // Submission events (called by SubmissionLifecycleService)
 
   /** Short human description of a submission, e.g. "GSB laying: 2400 Cum on 13 Oct 2026". */
   async describeSubmission(type: SubmissionType, id: string): Promise<{ title: string; projectId: string; projectName: string; submittedById: string } | null> {
@@ -345,7 +345,7 @@ export class NotificationsService {
     }
   }
 
-  /** An approved payment request (v5 item 90) is money to release: tell the project's payers (admin, management, accounts). */
+  /** An approved payment request is money to release: tell the project's payers (admin, management, accounts). */
   private async onPaymentApproved(actor: RequestUser, id: string, s: { title: string; projectId: string; projectName: string; submittedById: string }) {
     const payers = await this.prisma.user.findMany({
       where: {
@@ -416,7 +416,7 @@ export class NotificationsService {
     }
   }
 
-  /** One approval level done (v5 item 94): the next level's approvers on the project are asked, like a new submission. */
+  /** One approval level done: the next level's approvers on the project are asked, like a new submission. */
   async onLevelApproved(actor: RequestUser, type: SubmissionType, id: string, nextLevel: number, levels: number) {
     try {
       const s = await this.describeSubmission(type, id);
@@ -442,7 +442,7 @@ export class NotificationsService {
   }
 
   /**
-   * An entry waited too long at its level (v5 item 94): remind its approvers, or tell the roles it escalated to that it
+   * An entry waited too long at its level: remind its approvers, or tell the roles it escalated to that it
    * is in their queue now. `hours` is how long it has waited.
    */
   async onWaiting(organizationId: string, type: SubmissionType, id: string, userIds: string[], hours: number, escalated: boolean) {
@@ -462,7 +462,7 @@ export class NotificationsService {
         projectId: s.projectId,
         entityType: type,
         entityId: id,
-        // An entry that has waited past its level's hours is worth an email (e2e review, fix 2), not just the bell.
+        // An entry that has waited past its level's hours is worth an email, not just the bell.
         email: { href: `/notifications?type=${type}&id=${id}`, cta: 'Decide it' },
         message: { template: 'APPROVAL_REQUEST', params: [this.subject(type, s.title), s.projectName, by?.fullName ?? '-', this.messaging.webUrl(`/notifications?type=${type}&id=${id}`)] },
       });
@@ -473,7 +473,7 @@ export class NotificationsService {
   }
 
   /** Tell the author how the review went. */
-  /** An approved purchase or work order goes to the supplier's portal logins to accept (v6 item 105). */
+  /** An approved purchase or work order goes to the supplier's portal logins to accept. */
   private async onOrderApproved(actor: RequestUser, type: 'PURCHASE_ORDER' | 'WORK_ORDER', id: string, projectName: string) {
     const order =
       type === 'PURCHASE_ORDER'
@@ -488,7 +488,7 @@ export class NotificationsService {
     });
   }
 
-  /** A supplier's portal logins (v6 item 105) are told what concerns their vendor: an order to accept, an enquiry, a payment. */
+  /** A supplier's portal logins are told what concerns their vendor: an order to accept, an enquiry, a payment. */
   async notifyVendor(organizationId: string, vendorId: string, n: Omit<NotifyInput, 'organizationId' | 'userIds' | 'type'>) {
     const logins = await this.prisma.user.findMany({ where: { organizationId, vendorId, isActive: true }, select: { id: true } });
     if (logins.length) await this.notify({ organizationId, userIds: logins.map((u) => u.id), type: 'SUPPLIER', ...n });
@@ -541,7 +541,7 @@ export class NotificationsService {
     }
   }
 
-  /* ---------- hand-offs to the next role (e2e review, fix 2) ---------- */
+  // Hand-offs to the next role
 
   /** An approved material request is purchase's to order: the procurement managers on the project, else the company's. */
   private async onRequestApproved(actor: RequestUser, id: string, s: { title: string; projectId: string; projectName: string; submittedById: string }) {
@@ -703,7 +703,7 @@ export class NotificationsService {
   }
 
   /**
-   * A supplier's bill that does not match its order (finding 18 of the October review): purchase raised the order and
+   * A supplier's bill that does not match its order: purchase raised the order and
    * agreed the rates, so the mismatch is theirs to settle with the vendor, and the project's manager hears of it too.
    * The approver already has it in their queue; this is so the bill is not approved or held by them alone.
    */

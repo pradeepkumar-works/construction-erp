@@ -38,7 +38,7 @@ const requestDto = (r: RequestRow): AccessRequestDto => ({
 const ANSWERED_SHOWN = 30;
 
 /**
- * Launcher phase 3 (ARCHITECTURE "Discover and access requests"): the company's New and Featured marks on Home's tiles, its
+ * Home tiles (ARCHITECTURE "Discover and access requests"): the company's New and Featured marks on Home's tiles, its
  * Discover switch, and requests for access. Admins (`canManageUsers`, who also change roles) mark and answer; anyone may ask
  * for a module their role cannot open. Changes are audited, and requests notify the admins and then the person.
  */

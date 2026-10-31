@@ -36,7 +36,7 @@ const pourInclude = {
 type PourRow = Prisma.PourGetPayload<{ include: typeof pourInclude }>;
 
 /**
- * The pour register (item 137): a pour is planned with its grade and volume, cleared by its pour card (an inspection with
+ * The pour register: a pour is planned with its grade and volume, cleared by its pour card (an inspection with
  * the card's points, passed by QA/QC), recorded poured with the volume placed, and owes the cube sets IS 456 asks for that
  * volume. Cube sets are tests recorded against the pour (`QualityTest.pourId`); the grade's acceptance is in `QaService.cubes`.
  */

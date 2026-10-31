@@ -13,8 +13,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 /** Quantities arrive as strings (decimal-safe) but the site app may send numbers. */
 const qty = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : value));
 
-/* ---------- receipts (GRN) ---------- */
-
 export class ReceiptLineDto {
   @ApiPropertyOptional({ description: 'Line of the approved material request being received (GRN against a request)' })
   @ValidateIf((o: ReceiptLineDto) => !o.purchaseOrderLineId)
@@ -46,8 +44,6 @@ export class CreateReceiptDto {
   lines: ReceiptLineDto[];
 }
 
-/* ---------- issues ---------- */
-
 export class IssueLineDto {
   @ApiProperty() @IsUUID() itemId: string;
   @ApiProperty({ example: '40' }) @qty() @IsQuantity() quantity: string;
@@ -77,9 +73,7 @@ export class CreateIssueDto {
   lines: IssueLineDto[];
 }
 
-/* ---------- fuel ---------- */
-
-/** Fuel from the store into one machine (v5 item 93). */
+/** Fuel from the store into one machine. */
 export class CreateFuelIssueDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
@@ -96,8 +90,6 @@ export class CreateFuelIssueDto {
   @ApiPropertyOptional({ example: 'Ramesh (operator)', description: 'Who took it; the machine when left out' }) @IsOptional() @IsString() @trim() @MaxLength(200) issuedTo?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
 }
-
-/* ---------- adjustments ---------- */
 
 export class AdjustmentLineDto {
   @ApiPropertyOptional({ description: 'An existing item; or send itemName + unit to add one (e.g. opening stock)' })
@@ -120,8 +112,6 @@ export class CreateAdjustmentDto {
   lines: AdjustmentLineDto[];
 }
 
-/* ---------- transfers, returns and counts ---------- */
-
 export class CreateTransferDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty({ description: 'The project the material leaves' }) @IsUUID() projectId: string;
@@ -135,8 +125,6 @@ export class CreateTransferDto {
   @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => IssueLineDto)
   lines: IssueLineDto[];
 }
-
-/* ---------- a material request met from stock (v5 item 95) ---------- */
 
 export class CoverLineDto {
   @ApiProperty() @IsUUID() materialRequestItemId: string;
@@ -215,8 +203,6 @@ export class StockValuationQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
 }
 
-/* ---------- lists ---------- */
-
 /** `q` matches entry number, project, supplier, challan, issued to, remarks, request number and item names. */
 export class ListStockEntriesQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
@@ -255,8 +241,6 @@ export class ReceivableQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
 }
 
-/* ---------- item master and minimum levels ---------- */
-
 export class ListItemsQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Only fuel items (v5 item 93)' }) @IsOptional() @QueryBool() @IsBoolean() fuel?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.items, default: 'name' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.items as unknown as string[]) sortBy?: ItemSortField;
@@ -284,7 +268,7 @@ export class UpdateItemDto {
   @ApiPropertyOptional({ example: '42.5', description: 'Pipe bought by weight: kg per metre, to turn issues into metres' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() kgPerMetre?: string | null;
 }
 
-/** Merge items into one (finding 3 of the October review). */
+/** Merge items into one. */
 export class MergeItemsDto {
   @ApiProperty({ type: [String], description: 'Items to fold into this one; they must be in the same unit' })
   @IsArray()

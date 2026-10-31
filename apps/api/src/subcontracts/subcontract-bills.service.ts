@@ -62,7 +62,7 @@ const checkNotFuture = (date: string, what: string) => {
 const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 86400000);
 
 /**
- * Subcontractor bills (v3 item 22), running bills under a work order. A bill takes the approved measurements of the
+ * Subcontractor bills, running bills under a work order. A bill takes the approved measurements of the
  * contractor's work up to a date that no earlier bill took (BOQ lines) and the quantities entered for the order's own
  * items, priced at the work order rates with previous / this bill / up to date per line; adds GST at the order's rate;
  * and recovers retention, the advance (capped at what is still outstanding), TDS and the material issued to them from
@@ -256,7 +256,7 @@ export class SubcontractBillsService {
     await tx.stockEntry.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.measurementSheet.updateMany({ where: { workOrderId: wo.id, status: 'APPROVED', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
     await tx.stockEntry.updateMany({ where: { workOrderId: wo.id, type: 'ISSUE', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
-    // Material used over the norm, raised from the reconciliation and not yet on a bill (v5 item 92).
+    // Material used over the norm, raised from the reconciliation and not yet on a bill.
     await tx.excessMaterialRecovery.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.excessMaterialRecovery.updateMany({ where: { workOrderId: wo.id, subcontractBillId: null }, data: { subcontractBillId: id } });
 
@@ -292,7 +292,7 @@ export class SubcontractBillsService {
     const grossAmount = sum(lines, (l) => l.amount);
     const grossPrevious = sum(lines, (l) => round2(l.prevQty.mul(l.rate)));
     const base = Prisma.Decimal.max(grossAmount, ZERO);
-    // Recovered from what was actually paid against the order once an advance payment is on record (v5 item 90).
+    // Recovered from what was actually paid against the order once an advance payment is on record.
     const advanceBase = await workOrderAdvanceBase(tx, wo);
     const outstanding = Prisma.Decimal.max(advanceBase.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
     const materialRecovery = sum(materials, (m) => m.amount);
@@ -326,7 +326,7 @@ export class SubcontractBillsService {
   }
 
   /**
-   * After a recovery is raised or cancelled on a work order (v5 item 92): re-take the bill being prepared on it, if one
+   * After a recovery is raised or cancelled on a work order: re-take the bill being prepared on it, if one
    * can still be edited, so the recovery shows on it now. Returns that bill's id, or null when none was re-taken.
    */
   async retakeOpenBill(workOrderId: string): Promise<string | null> {

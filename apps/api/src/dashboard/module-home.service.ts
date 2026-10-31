@@ -62,7 +62,7 @@ const count = (key: string, label: string, n: number, href: string, extra: Parti
 const rupees = (key: string, label: string, v: string | D, href: string, extra: Partial<ModuleFigureDto> = {}): ModuleFigureDto => ({ key, label, value: typeof v === 'string' ? v : money(v)!, format: 'money', href, ...extra });
 
 /**
- * Module home pages (v6 item 98): for one sidebar section, its figures, what waits for the caller in it, and the caller's
+ * Module home pages: for one sidebar section, its figures, what waits for the caller in it, and the caller's
  * own entries sent back or waiting with others. Each figure is behind the same permission helper as the list it counts,
  * and covers the projects the caller sees, or the one project asked for.
  */
@@ -425,7 +425,7 @@ export class ModuleHomeService {
     return out;
   }
 
-  /** RMC (v6 item 104): the plants the caller sees (or the one asked for). */
+  /** RMC: the plants the caller sees (or the one asked for). */
   private async rmc(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
     const role = user.roleKey;
     if (!canViewRmc(role) || !moduleOn(user, 'rmc')) return [];
@@ -498,7 +498,7 @@ export class ModuleHomeService {
     ];
     if (summary.leaveToDecide !== undefined) out.push(count('leaveToDecide', 'Leave to decide', summary.leaveToDecide, '/staff?tab=leave', { tone: summary.leaveToDecide ? 'warning' : 'default', note: summary.leaveToDecide ? 'Waiting for your decision' : 'Nothing waiting' }));
     if (summary.overtimeToDecide !== undefined) out.push(count('overtimeToDecide', 'Overtime to decide', summary.overtimeToDecide, '/staff?tab=overtime', { tone: summary.overtimeToDecide ? 'warning' : 'default', note: summary.overtimeToDecide ? 'Waiting for your decision' : 'Nothing waiting' }));
-    // Salary runs (v6 item 100): drafts for HR, submitted ones for management, approved ones for accounts.
+    // Salary runs: drafts for HR, submitted ones for management, approved ones for accounts.
     if (canViewPayroll(role) && moduleOn(user, 'payroll') && !projectId) {
       const runs = await this.payrollRuns.waiting(user);
       const net = runs.reduce((t, r) => t + Number(r.net), 0);

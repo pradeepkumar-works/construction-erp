@@ -1,5 +1,5 @@
 /**
- * Group companies' tests (phase 1, ARCHITECTURE "Group companies"): which company a sign-in lands in, when an email
+ * Group companies' tests (ARCHITECTURE "Group companies"): which company a sign-in lands in, when an email
  * gives someone a place in a sister company, who may be given a place, the group's admins, what a company's Users page
  * may change of a shared sign-in, and the modules each kind of company starts with. No database. CI runs it:
  *

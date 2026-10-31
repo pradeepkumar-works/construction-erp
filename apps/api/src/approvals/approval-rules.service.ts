@@ -10,7 +10,7 @@ const order = (r: ApprovalRuleDto) => (r.level ?? 1) * 10_000 + ROLE_KEYS.indexO
 
 /**
  * The organisation's approval matrix (who approves which submission type, up to what amount), its higher levels above
- * an amount, and reminders and escalation per type (v5 item 94). Admin only.
+ * an amount, and reminders and escalation per type. Admin only.
  */
 @Injectable()
 export class ApprovalRulesService {

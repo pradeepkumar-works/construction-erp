@@ -74,7 +74,7 @@ const blank = (v: string | null | undefined) => (v ? v : null);
 const DAY_MS = 86_400_000;
 
 /**
- * Safety at site (v4 item 40): the incident and near-miss register, toolbox talks and permits to work. Anyone working
+ * Safety at site: the incident and near-miss register, toolbox talks and permits to work. Anyone working
  * at site records them (phone or web); the safety officer or an approver closes incidents with the root cause and the
  * corrective action, and issues or rejects permits. These are registers, not approval submissions: an incident is
  * recorded the moment it is reported, and a permit has its own requested / issued / closed life.
@@ -91,7 +91,7 @@ export class SafetyService {
     private notifications: NotificationsService,
   ) {}
 
-  /* ---------- incidents ---------- */
+  // Incidents
 
   private incidentDto(r: IncidentRow): SafetyIncidentDto {
     return {
@@ -292,7 +292,7 @@ export class SafetyService {
     return this.audit.forEntity(user.organizationId, 'SAFETY_INCIDENT', id);
   }
 
-  /* ---------- toolbox talks ---------- */
+  // Toolbox talks
 
   private talkDto(r: TalkRow): ToolboxTalkDto {
     return {
@@ -417,7 +417,7 @@ export class SafetyService {
   }
 
   /**
-   * Today's toolbox talk (intelligence quick win Q8), for anyone who can open the project: written by the pure
+   * Today's toolbox talk, for anyone who can open the project: written by the pure
    * `toolboxTalk` (`@erp/shared/toolbox-talk.ts`) from the activities planned for today or reported in the last
    * `TALK_RECENT_DAYS` days, the permits requested or issued for today and the project's incidents of the last
    * `TALK_INCIDENT_DAYS` days. Nothing is saved: the talk is recorded through `createTalk` as ever.
@@ -467,7 +467,7 @@ export class SafetyService {
     return { projectId, projectName: project.name, ...talk };
   }
 
-  /* ---------- permits to work ---------- */
+  // Permits to work
 
   private permitDto(r: PermitRow, now = new Date()): WorkPermitDto {
     const validTo = iso(r.validTo)!;
@@ -671,7 +671,7 @@ export class SafetyService {
     return this.audit.forEntity(user.organizationId, 'WORK_PERMIT', id);
   }
 
-  /* ---------- summary ---------- */
+  // Summary
 
   async summary(user: RequestUser, projectId?: string): Promise<SafetySummaryDto> {
     const scope = { ...this.access.submissionWhere(user), ...(projectId ? { projectId } : {}) };
@@ -707,7 +707,7 @@ export class SafetyService {
     };
   }
 
-  /* ---------- notifications ---------- */
+  // Notifications
 
   /** The project's safety officers hear of everything; its approvers of anything worse than a near miss. */
   private async notifyIncident(user: RequestUser, i: SafetyIncidentDto) {

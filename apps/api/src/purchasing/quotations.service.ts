@@ -234,7 +234,7 @@ export class QuotationsService {
   }
 
   /**
-   * Each vendor's deliveries on the company's orders over the last `VENDOR_RECORD_DAYS` (intelligence quick win Q5): receipts
+   * Each vendor's deliveries on the company's orders over the last `VENDOR_RECORD_DAYS`: receipts
    * against its purchase orders, those after the order's delivery date, and the quantity rejected at the gate. Company-wide,
    * as the buyer weighs the vendor and not one site's dealings with it.
    */

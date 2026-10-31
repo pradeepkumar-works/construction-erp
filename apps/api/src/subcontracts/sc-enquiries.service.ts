@@ -24,7 +24,7 @@ const INCLUDE = {
 type Row = Prisma.SubcontractEnquiryGetPayload<{ include: typeof INCLUDE }>;
 
 /**
- * Subcontract enquiries (v6 item 111): the items of a project's BOQ (or the enquiry's own items) sent to several
+ * Subcontract enquiries: the items of a project's BOQ (or the enquiry's own items) sent to several
  * subcontractors, their quotes entered as they come, the comparative statement worked out by `compare`, and the chosen
  * quote made a draft work order through `WorkOrdersService.create`. Run by those who issue work orders.
  */

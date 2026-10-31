@@ -1,5 +1,5 @@
 /**
- * Demo telematics (item 146): the fleet's GPS service becomes a tracker service, and the excavator's tracker has
+ * Demo telematics: the fleet's GPS service becomes a tracker service, and the excavator's tracker has
  * read every day it was logged, half-hourly from eight in the morning. Two days ago the engine ran six hours though
  * the log says eight, and four days ago it went about seven kilometres from the road site after lunch, so the Engine
  * hours tab and the log show both. The days are rolled up by the same rules as live readings. Runs once per company.
@@ -10,7 +10,7 @@ import { dayRowData, rollUpDay, type Carry, type DayState, type ReadingFigures }
 
 export async function seedTelematics(prisma: PrismaClient, organizationId: string) {
   if (await prisma.machineDay.count({ where: { organizationId } })) return;
-  // From item 146 on, the demo's GPS service is a tracker service, so its messages make machine days.
+  // The demo's GPS service is a tracker service, so its messages make machine days.
   await prisma.integrationConnection.updateMany({ where: { organizationId, name: 'Fleet GPS service', kind: 'GENERIC_WEBHOOK' }, data: { kind: 'GPS_TRACKER' } });
   const exc = await prisma.equipment.findFirst({ where: { organizationId, code: 'EXC-01' }, select: { id: true, projectId: true, project: { select: { siteLat: true, siteLng: true, siteRadiusM: true } } } });
   const link = await prisma.deviceLink.findFirst({ where: { organizationId, externalId: '867530912345678' } });

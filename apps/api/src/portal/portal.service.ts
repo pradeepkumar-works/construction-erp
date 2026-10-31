@@ -26,7 +26,7 @@ const projectInclude = {
 type ProjectRow = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
 
 /**
- * The client portal (v3 item 32): projects, approved progress, approved DPRs and the progress report for the client's
+ * The client portal: projects, approved progress, approved DPRs and the progress report for the client's
  * engineer or consultant. Who sees what is ProjectAccessService (guests see the projects they are members of); bills and
  * inspections live in their own services (listForClient, certifyAsClient, witness). Staff can open the same views to
  * see what the client sees.
@@ -36,7 +36,7 @@ export class PortalService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private dpr: DprService) {}
 
   /**
-   * Activities with the agreed programme's dates (e2e review, fix 1): the client sees the baseline the PM froze, never
+   * Activities with the agreed programme's dates: the client sees the baseline the PM froze, never
    * the contractor's working re-plan, which may run past the contract date while recovery is worked out.
    */
   private activities(p: ProjectRow): PortalActivityDto[] {

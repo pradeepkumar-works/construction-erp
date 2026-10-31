@@ -81,7 +81,7 @@ const plusDays = (day: string, n: number) => {
 };
 
 /**
- * Design submissions (item 138 part 2, ARCHITECTURE "Design and drawings"): drawings or a design report sent for approval
+ * Design submissions (ARCHITECTURE "Design and drawings"): drawings or a design report sent for approval
  * or vetting, round by round, each coming back with a code and comments that we answer before resubmitting. A round's
  * covering letter is drafted through `CorrespondenceService.create`; a code moves the register's revisions sent for
  * approval through `DocumentsService.updateRevision` and the EPC deliverables through `EpcService.followDesignRound`; a

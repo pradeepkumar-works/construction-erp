@@ -1,5 +1,5 @@
 /**
- * Tests for measuring from progress (finding 14 of the October review). Which approved days a sheet still has to
+ * Tests for measuring from progress. Which approved days a sheet still has to
  * cover is pure, so it needs no database:
  *
  *   node dist/scripts/measure-from-progress-test.js

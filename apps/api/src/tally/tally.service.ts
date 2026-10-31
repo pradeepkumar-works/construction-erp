@@ -65,7 +65,7 @@ const COST_CENTRE_KEYS = new Set([
   'STAFF_RECOVERIES',
 ]);
 /**
- * Tally export (v3 item 24). Sends Tally the vouchers of the posting service (v6 item 102) as TallyPrime XML. Every
+ * Tally export. Sends Tally the vouchers of the posting service as TallyPrime XML. Every
  * record goes once: an export marks what it took, and undoing the export releases it.
  */
 @Injectable()
@@ -79,8 +79,6 @@ export class TallyService {
   private config(db: Tx, organizationId: string) {
     return this.posting.config(db, organizationId);
   }
-
-  // ----- Settings and ledger names -----
 
   async settings(user: RequestUser): Promise<TallySettingsDto> {
     this.assertCan(user);
@@ -163,8 +161,6 @@ export class TallyService {
       cfg.companyName,
     );
   }
-
-  // ----- Vouchers -----
 
   private range(q: TallyRangeQuery) {
     const upTo = parseDate(q.upTo);

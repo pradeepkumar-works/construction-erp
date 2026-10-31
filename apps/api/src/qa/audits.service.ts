@@ -36,7 +36,7 @@ const auditInclude = {
 type AuditRow = Prisma.QaAuditGetPayload<{ include: typeof auditInclude }>;
 
 /**
- * Audits and visits (item 137 part 3, ARCHITECTURE "QA/QC"): an internal audit or a visit by the client, its consultant,
+ * Audits and visits (ARCHITECTURE "QA/QC"): an internal audit or a visit by the client, its consultant,
  * a third-party inspector or the department, with its findings. A finding is closed on its own with a note, or followed
  * through an NCR raised from it by `QualityService.createNcr` (raised by the client when the visit was from outside).
  */

@@ -5,6 +5,6 @@ import { ReportsModule } from '../reports/reports.module';
 import { BriefsController } from './briefs.controller';
 import { BriefsService } from './briefs.service';
 
-/** The morning brief and the weekly narrative (AI roadmap item 74). The batch runs from `NotificationJobsService`. */
+/** The morning brief and the weekly narrative. The batch runs from `NotificationJobsService`. */
 @Module({ imports: [AiModule, DashboardModule, ReportsModule], controllers: [BriefsController], providers: [BriefsService], exports: [BriefsService] })
 export class BriefsModule {}

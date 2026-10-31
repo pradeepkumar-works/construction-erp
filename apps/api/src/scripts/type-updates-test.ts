@@ -1,5 +1,5 @@
 /**
- * Bringing running projects up to their type, and moving types between companies (item 134 part 3). An update plan
+ * Bringing running projects up to their type, and moving types between companies. An update plan
  * only adds: a component the project lacks comes with its kind's activities, a sub-component goes under every copy of
  * its component, a kind's new step reaches the components laid out from it (never one made by hand), an activity kept
  * as one line is not split, and the loose activities are matched by name; what the admin leaves out stays out. A
@@ -188,8 +188,6 @@ test('a new component lays out its kind’s plan as New project would', () => {
   assert.equal(plan.components[1].parentKey, plan.components[0].key);
 });
 
-// ---------- files ----------
-
 const file = (extra: Record<string, unknown> = {}) => ({
   format: BUNDLE_FORMAT,
   version: BUNDLE_VERSION,
@@ -245,8 +243,6 @@ test('an export is named after what it holds', () => {
   assert.equal(bundleFileName('Bridge (river)', '2027-03-01'), 'bridge-river-2027-03-01.json');
   assert.equal(bundleFileName('', '2027-03-01'), 'project-types-2027-03-01.json');
 });
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 let failed = 0;
 for (const [name, fn] of tests) {

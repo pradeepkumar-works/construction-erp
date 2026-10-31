@@ -9,7 +9,7 @@ export const dec = (v: Prisma.Decimal | number | null | undefined): string | nul
 export const money = (v: Prisma.Decimal | number | null | undefined): string | null =>
   v === null || v === undefined ? null : new Prisma.Decimal(v).toFixed(2);
 
-/** An exchange rate (item 130), to six places without trailing zeros. */
+/** An exchange rate, to six places without trailing zeros. */
 export const fxRate = (v: Prisma.Decimal | null | undefined): string | null => (v ? v.toFixed(6).replace(/\.?0+$/, '') : null);
 
 export const dateOnly = (d: Date | null | undefined): string | null => (d ? d.toISOString().slice(0, 10) : null);
@@ -27,7 +27,7 @@ export const pct = (executed: Prisma.Decimal | number, planned: Prisma.Decimal |
 export const parseDate = (s: string): Date => new Date(`${s}T00:00:00.000Z`);
 
 /**
- * A day's record cannot be dated after today in the company's time zone (finding 4 of the October review): a DPR,
+ * A day's record cannot be dated after today in the company's time zone: a DPR,
  * progress or attendance for a day still to come was taken before.
  */
 export function assertNotAfterToday(date: string, what: string) {

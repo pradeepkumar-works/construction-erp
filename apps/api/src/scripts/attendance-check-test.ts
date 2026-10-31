@@ -1,5 +1,5 @@
 /**
- * Attendance cross-check tests (AI item 124). First the rules on their own: a bill line's trade, a bill's days, what the
+ * Attendance cross-check tests. First the rules on their own: a bill line's trade, a bill's days, what the
  * records support, man-days above them, workers with no punch and head-count gaps. Then a backtest on labelled crew
  * cases, the way HR would check a month by hand: at least 6 flags in 10 must be real (the strategy's bar) and every padded
  * bill caught. Then, when DATABASE_URL is set, the demo company: Sri Jagannath's labour bill flagged at the helpers'

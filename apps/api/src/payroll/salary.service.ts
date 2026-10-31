@@ -53,7 +53,7 @@ const loanInclude = { employee: { select: { fullName: true, employeeCode: true, 
 type LoanRow = Prisma.StaffLoanGetPayload<{ include: typeof loanInclude }>;
 
 /**
- * Payroll's masters (v6 item 100): the company's settings, each employee's salary structure from a date, and loans and
+ * Payroll's masters: the company's settings, each employee's salary structure from a date, and loans and
  * advances recovered from salary. HR keeps them; management, accounts and admins read them.
  */
 @Injectable()
@@ -66,8 +66,6 @@ export class SalaryService {
   assertRun(user: RequestUser) {
     if (!canRunPayroll(user.roleKey)) throw new ForbiddenException('Only HR or an admin can change salaries and loans');
   }
-
-  /* ---------- settings ---------- */
 
   async settingsRow(orgId: string) {
     return this.prisma.payrollSettings.findUnique({ where: { organizationId: orgId } });
@@ -105,8 +103,6 @@ export class SalaryService {
     await this.audit.log(user, 'PAYROLL_SETTINGS', user.organizationId, 'UPDATED', Object.keys(data).join(', '));
     return this.settings(user);
   }
-
-  /* ---------- salary structures ---------- */
 
   private toStructureDto(s: StructureRow, st: RulesSettings): SalaryStructureDto {
     const r = toRulesStructure(s);
@@ -216,8 +212,6 @@ export class SalaryService {
     await this.audit.log(user, 'EMPLOYEE', s.employeeId, 'UPDATED', `Salary structure from ${dateOnly(s.effectiveFrom)} removed`);
     return { ok: true };
   }
-
-  /* ---------- loans and advances ---------- */
 
   /** Recovered so far: in runs past draft, or all of it once their settlement is approved. */
   private recovered(l: LoanRow) {

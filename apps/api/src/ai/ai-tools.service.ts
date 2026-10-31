@@ -51,7 +51,7 @@ interface Tool {
   def: Anthropic.Beta.BetaTool;
   /** Roles that may use the tool at all; the service still applies its own rules. */
   allowed?: (user: RequestUser) => boolean;
-  /** The module it reads, left out while the company has it off (v6 item 117) */
+  /** The module it reads, left out while the company has it off */
   module?: SwitchableModule;
   run: (user: RequestUser, input: Input) => Promise<unknown>;
 }
@@ -59,7 +59,7 @@ interface Tool {
 /** A kind of record the assistant can list and open: its own list and detail methods, and its page on the web. */
 interface RecordKind {
   label: string;
-  /** The module it belongs to, refused while the company has it off (v6 item 117) */
+  /** The module it belongs to, refused while the company has it off */
   module?: SwitchableModule;
   list: (user: RequestUser, q: Input) => Promise<Paginated<{ id: string }>>;
   get: (user: RequestUser, id: string) => Promise<{ id: string }>;
@@ -108,7 +108,7 @@ const fromProp = { type: 'string', description: 'From this day, YYYY-MM-DD (incl
 const toProp = { type: 'string', description: 'Up to this day, YYYY-MM-DD (inclusive)' } as const;
 
 /**
- * The assistant's tools (AI item 67). Every tool is read-only and calls the same service method as the page that
+ * The assistant's tools. Every tool is read-only and calls the same service method as the page that
  * shows the data, with the signed-in user, so project access, role rules and the company boundary apply unchanged.
  */
 @Injectable()
@@ -435,7 +435,7 @@ export class AiToolsService {
         def: { name: 'machinery_summary', description: 'Machines due for service, open breakdown job cards, vehicle papers and licences expiring.', input_schema: { type: 'object', properties: { projectId: projectIdProp } } },
         run: (user, i) => maintenance.summary(user, optUuid(i.projectId, 'projectId')),
       },
-      // Drafts from a sentence (item 71): fill a form for the user to check and save; never a write.
+      // Drafts from a sentence: fill a form for the user to check and save; never a write.
       {
         def: {
           name: 'draft_material_request',

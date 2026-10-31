@@ -21,8 +21,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 /** An empty string clears a number. */
 const num = () => Transform(({ value }) => (value === '' ? null : typeof value === 'number' ? String(value) : value));
 
-/* ---------- tests ---------- */
-
 export class TestReadingInputDto {
   @ApiPropertyOptional({ description: 'An existing reading; omitted = a new one' }) @IsOptional() @IsUUID() id?: string;
   @ApiProperty({ example: '28 days' }) @trim() @IsString() @IsNotEmpty() @MaxLength(60) label: string;
@@ -102,8 +100,6 @@ export class ListTestsQuery extends PageQuery {
   @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() to?: string;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.qualityTests, default: 'sampledOn' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.qualityTests as unknown as string[]) sortBy?: QualityTestSortField;
 }
-
-/* ---------- NCRs ---------- */
 
 export class CreateNcrDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;

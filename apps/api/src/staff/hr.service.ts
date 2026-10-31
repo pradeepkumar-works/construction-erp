@@ -42,7 +42,7 @@ const monthEnd = (d: string, plus = 0) => {
 };
 
 /**
- * HR records (v6 item 99): the events of a person's service (joining, confirmation, transfer, promotion, increment,
+ * HR records: the events of a person's service (joining, confirmation, transfer, promotion, increment,
  * warning, exit) each with its numbered letter, the employee's documents, and the HR dashboard. Recording an event
  * changes the staff record the same way, in one transaction. Staff admins record; payroll and the person read.
  */
@@ -237,8 +237,6 @@ export class HrService {
     };
   }
 
-  /* ---------- documents ---------- */
-
   async documents(user: RequestUser, employeeId: string): Promise<AttachmentDto[]> {
     const e = await this.employeeFor(user, employeeId);
     if (!canManageStaff(user.roleKey) && !canViewEmployeePrivate(user.roleKey) && e.userId !== user.id) throw new ForbiddenException('Only HR, payroll and the person themselves see their documents');
@@ -253,8 +251,6 @@ export class HrService {
     await this.audit.log(user, 'EMPLOYEE', employeeId, 'UPDATED', `Documents: ${dto.attachmentIds.length}`);
     return this.documents(user, employeeId);
   }
-
-  /* ---------- dashboard ---------- */
 
   /** Head count by site, department and type, the month's joiners and leavers, probation due, birthdays and anniversaries. */
   async dashboard(user: RequestUser): Promise<HrDashboardDto> {

@@ -65,7 +65,7 @@ const include = {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
     include: { stockTxns: { select: { quantity: true } }, billLines: { where: { bill: { status: { not: 'REJECTED' as const } } }, select: { quantity: true } } },
   },
-  // Advances (v5 item 90): paid with no bill, asked for on open requests, taken off its bills.
+  // Advances: paid with no bill, asked for on open requests, taken off its bills.
   advances: { where: { vendorBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
   paymentRequests: { where: { kind: 'PO_ADVANCE' as const, status: { in: ['SUBMITTED' as const, 'APPROVED' as const] } }, select: { amount: true } },
   vendorBills: { where: { status: { not: 'REJECTED' as const } }, select: { advanceAdjusted: true, status: true } },
@@ -203,7 +203,7 @@ export class PurchaseOrdersService {
     await this.access.assertCanAccessProject(user, projectId);
   }
 
-  /** Where the order's goods go when it names no address: the project's site store (finding 12 of the October review). */
+  /** Where the order's goods go when it names no address: the project's site store. */
   private async siteAddress(organizationId: string, projectId: string) {
     const p = await this.prisma.project.findFirst({ where: { id: projectId, organizationId }, select: { siteAddress: true, location: true } });
     return siteDeliveryAddress(p);
@@ -241,7 +241,7 @@ export class PurchaseOrdersService {
   }
 
   /**
-   * The last approved orders of each item (v5 item 95), newest first: vendor, date, project and rate, for the
+   * The last approved orders of each item, newest first: vendor, date, project and rate, for the
    * quotation, comparative and PO forms. Items are matched by name and unit, ignoring case; only orders the user may see.
    */
   async lastRates(user: RequestUser, q: LastRatesQuery): Promise<LastRatesDto> {
@@ -283,7 +283,7 @@ export class PurchaseOrdersService {
 
   /**
    * Approved orders of the items (matched by name and unit, ignoring case) dated `from` to `to`, keyed by `lastRateKey`:
-   * what a rate is checked against (item 121). `scope` limits the orders to those the caller may see.
+   * what a rate is checked against. `scope` limits the orders to those the caller may see.
    */
   async quotesFor(scope: Prisma.PurchaseOrderWhereInput, items: { name: string; unit: string }[], from: string, to: string, excludePoId?: string): Promise<Map<string, RateQuote[]>> {
     const wanted = new Map<string, { name: string; unit: string }>();
@@ -319,7 +319,7 @@ export class PurchaseOrdersService {
     return out;
   }
 
-  /** Each line's check against other sites (item 121), for the order's record and the approval pane. */
+  /** Each line's check against other sites, for the order's record and the approval pane. */
   private async lineRateChecks(user: RequestUser, r: { id: string; projectId: string; poDate: Date; lines: { id: string; itemName: string; unit: string; rate: Prisma.Decimal; quantity: Prisma.Decimal }[] }): Promise<Map<string, PoLineRateCheckDto>> {
     const poDate = dateOnly(r.poDate)!;
     const quotes = await this.quotesFor(this.access.submissionWhere(user), r.lines.map((l) => ({ name: l.itemName, unit: l.unit })), windowStart(poDate), poDate, r.id);
@@ -406,7 +406,7 @@ export class PurchaseOrdersService {
   }
 
   /**
-   * Procurement status (v4 item 48): approved orders with what has been received and what is still to come, late ones
+   * Procurement status: approved orders with what has been received and what is still to come, late ones
    * (past the delivery date) first, with totals and a line per vendor. Received quantity is net of returns to vendor.
    */
   async status(user: RequestUser, q: ProcurementStatusQuery): Promise<ProcurementStatusDto> {
@@ -528,10 +528,10 @@ export class PurchaseOrdersService {
   /**
    * Priced lines. A line raised from a request line takes its name, unit and specification and may order at most what
    * the request still needs: requested, less what other orders hold (see `orderedOn`), what was received without one
-   * and what stock met (v5 item 95).
+   * and what stock met.
    */
   private async lines(tx: Tx | PrismaService, organizationId: string, mr: Prisma.MaterialRequestGetPayload<{ include: { items: true } }> | null, input: PoLineInput[], excludePoId?: string): Promise<LineData[]> {
-    // A line of its own names its item as the master has it (finding 3 of the October review).
+    // A line of its own names its item as the master has it.
     const typed = await asMasterNames(tx, organizationId, input.map((l) => ({ itemName: l.itemName ?? '', unit: l.unit ?? '' })));
     input = input.map((l, i) => (l.materialRequestItemId || !l.itemName || !l.unit ? l : { ...l, itemName: typed[i].itemName, unit: typed[i].unit }));
     const linked = input.map((l) => l.materialRequestItemId).filter((x): x is string => !!x);
@@ -637,7 +637,7 @@ export class PurchaseOrdersService {
   }
 
   /**
-   * The split of a request between the vendors who quoted lowest for each item (finding 12 of the October review):
+   * The split of a request between the vendors who quoted lowest for each item:
    * what is still to order, at each winner's rate. The screen previews it with the same rules; `awardLowest` draws it
    * again here rather than trusting what was sent.
    */

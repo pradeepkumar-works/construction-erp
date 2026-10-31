@@ -104,7 +104,7 @@ const monthEnd = (month: string) => {
 };
 
 /**
- * The home page (UI roadmap item 59): My work, what the caller's role can act on, and six months of trends for the
+ * The home page: My work, what the caller's role can act on, and six months of trends for the
  * KPI tiles and charts. Each part is gated by the same permission helpers as the module it summarises.
  */
 @Injectable()
@@ -176,7 +176,7 @@ export class HomeService {
       sentBack.length,
       sentBack.map((s) => ({ label: s.title, note: 'Sent back to you', projectName: s.projectName, amount: s.amount, href: submissionHref(s.type, s.id) })),
     );
-    // Waiting with others (v5 item 94): oldest first; it starts to press after two days at one level.
+    // Waiting with others: oldest first; it starts to press after two days at one level.
     const waited = (since: string) => Math.max(0, daysBetween(todayIn(undefined, new Date(since)), today));
     out.waitingWithOthers = card(
       waiting.length,
@@ -250,7 +250,7 @@ export class HomeService {
         low.items.map((b) => ({ label: b.itemName, note: `${b.balance} ${b.unit} left, minimum ${b.minQty ?? '-'}`, projectName: b.projectName, amount: null, href: '/stock' })),
       );
     }
-    // Meeting actions (v6 item 112): for the roles that hold meetings always, for anyone else once they own one.
+    // Meeting actions: for the roles that hold meetings always, for anyone else once they own one.
     if (actions && (canRecordMeetings(role) || actions.items.length)) {
       const open = actions.items;
       out.meetingActions = card(
@@ -266,7 +266,7 @@ export class HomeService {
         most(open.filter((a) => a.dueOn).map((a) => a.daysOverdue ?? -(a.daysLeft ?? 0))),
       );
     }
-    // Letters (item 136): for those who keep or sign letters always, for anyone else once one is marked to them.
+    // Letters: for those who keep or sign letters always, for anyone else once one is marked to them.
     if (letters && (canViewLetters(role) || canSignLetters(role) || letters.total)) {
       out.letters = card(
         letters.total,
@@ -280,7 +280,7 @@ export class HomeService {
       );
       out.letters.href = '/correspondence?mine=1';
     }
-    // The queues each desk works through (finding 8 of the October review).
+    // The queues each desk works through.
     if (toOrder) {
       const late = (r: { requiredDate: string }) => daysBetween(r.requiredDate, today);
       const needed = (r: { requiredDate: string }) => (late(r) > 0 ? `needed ${days(late(r))} ago` : late(r) === 0 ? 'needed today' : `needed in ${days(-late(r))}`);
@@ -360,7 +360,7 @@ export class HomeService {
         most(unchecked.map((g) => ago(g.date) - CHECK_LATE_AFTER)),
       );
     }
-    // Audit and visit findings (item 137): QA/QC always, the managers once one is open.
+    // Audit and visit findings: QA/QC always, the managers once one is open.
     if (findings && (role === 'QA_QC_ENGINEER' || findings.length)) {
       out.findingsToClose = card(
         findings.length,
@@ -468,7 +468,7 @@ export class HomeService {
   }
 
   /**
-   * The company's day for the phone's Home (v5 item 96): money in and out today against yesterday, what is owed both
+   * The company's day for the phone's Home: money in and out today against yesterday, what is owed both
    * ways, attendance, fuel, the purchase pipeline and approvals by module. Each part is gated by the same helper as its
    * module and covers only the caller's projects.
    */
@@ -688,7 +688,7 @@ export class HomeService {
 
   private async dprsMissing(user: RequestUser, today: string) {
     const projects = await this.prisma.project.findMany({
-      // A central store files no DPR (v6 item 106).
+      // A central store files no DPR.
       where: { ...this.access.projectWhere(user), status: 'ACTIVE', type: { not: 'STORE' }, dailyReports: { none: { date: parseDate(today) } } },
       select: { id: true, name: true },
       orderBy: { code: 'asc' },

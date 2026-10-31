@@ -16,7 +16,7 @@ import { dateOnly, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 
 /**
- * Share of the work planned to be done by `today` (UX item 85), each activity weighted as physical progress weighs it
+ * Share of the work planned to be done by `today`, each activity weighted as physical progress weighs it
  * (planned quantity × BOQ rate, or the quantity without a rate) and spread evenly over its planned dates, inclusive.
  * Only activities with both dates count; null when none has them.
  */

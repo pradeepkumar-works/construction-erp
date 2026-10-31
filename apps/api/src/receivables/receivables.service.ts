@@ -109,7 +109,7 @@ const addMonths = (date: string, months: number) => {
 };
 
 /**
- * Receivables (v3 item 19): money received from clients against RA bills, with the deductions the client actually made
+ * Receivables: money received from clients against RA bills, with the deductions the client actually made
  * (TDS, GST TDS, retention, security deposit, advance recovery, cess, other), and releases of the retention and deposit it
  * held. A bill is paid once its receipts settle work + GST. The summary ages what is outstanding from the day each bill
  * was sent, per project and per client, with retention held and when it falls due.
@@ -355,7 +355,7 @@ export class ReceivablesService {
   }
 
   /**
-   * The day's rate of a receipt on a project in another currency (item 130); none in rupees. Its amounts are kept at the
+   * The day's rate of a receipt on a project in another currency; none in rupees. Its amounts are kept at the
    * contract rate like the bills they settle, and what the bank credited is at the day's rate.
    */
   private async dayRate(tx: Prisma.TransactionClient, projectId: string, rate: string | null | undefined) {

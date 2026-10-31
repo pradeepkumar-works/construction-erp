@@ -1,5 +1,5 @@
 /**
- * Input checks (finding 4 of the October review): a quantity is a plain number above zero, a day's record is not dated
+ * Input checks: a quantity is a plain number above zero, a day's record is not dated
  * after today, and a measurement sheet does not take a BOQ item past its quantity plus the contract's tolerance.
  *
  *   node dist/scripts/validation-test.js

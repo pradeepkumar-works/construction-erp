@@ -128,7 +128,7 @@ export class ManagementReportsService {
     const body = await this.build(key, user, projects, period, today, q.projectId);
     // Receivables, payables and stock read their own services by project, so a vertical does not narrow them.
     const notes = q.vertical && !q.projectId && OWN_SCOPE.has(key) ? [...body.notes, 'This report covers every vertical: it is read by project, not by vertical.'] : body.notes;
-    // The monthly MIS over every vertical adds up where each vertical stands (item 167).
+    // The monthly MIS over every vertical adds up where each vertical stands.
     const sections = key === 'mis' && !q.vertical && !q.projectId ? withVerticals(body.sections, projects, verticals) : body.sections;
     return { key, title: info.title, period: period.label, from: period.from, to: period.to, projectName, verticalName: OWN_SCOPE.has(key) ? null : verticalName, generatedAt: new Date().toISOString(), ...body, notes, sections };
   }
@@ -169,7 +169,6 @@ export class ManagementReportsService {
     }
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Monthly MIS
 
   private async mis(user: RequestUser, projects: ProjectSummary[], period: Period, today: string) {
@@ -287,7 +286,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Profit and loss
 
   private async profitLoss(user: RequestUser, projects: ProjectSummary[], period: Period, today: string) {
@@ -359,7 +357,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Work in progress
 
   private async wip(user: RequestUser, projects: ProjectSummary[], today: string) {
@@ -416,7 +413,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Receivables and payables
 
   private async receivablesReport(user: RequestUser, projectId?: string) {
@@ -479,7 +475,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Procurement
 
   private async procurement(user: RequestUser, projects: ProjectSummary[], period: Period) {
@@ -587,7 +582,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Labour and attendance
 
   private async labour(user: RequestUser, projects: ProjectSummary[], period: Period) {
@@ -650,7 +644,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Stock
 
   private async stockReport(user: RequestUser, projectId?: string) {
@@ -694,7 +687,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Approvals
 
   private async approvals(user: RequestUser, projects: ProjectSummary[], today: string) {

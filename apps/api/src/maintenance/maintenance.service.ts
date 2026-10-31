@@ -71,7 +71,7 @@ const nonNegative = (v: Prisma.Decimal | null, what: string) => {
 };
 
 /**
- * Machinery maintenance (v4 item 42): job cards for services and breakdowns, spares issued from the store against
+ * Machinery maintenance: job cards for services and breakdowns, spares issued from the store against
  * them, service schedules by working hours or days, the register of vehicle papers that expire, and drivers.
  * Site staff report breakdowns; the store manager or an approver raises services, closes job cards and keeps the
  * papers. A closed service resets the machine's schedule. Papers and licences expiring and services falling due are
@@ -93,7 +93,7 @@ export class MaintenanceService {
     undo.register('DRIVER', { entityType: 'DRIVER', check: (user) => this.access.assertCanManageMaintenance(user, null) });
   }
 
-  /* ---------- job cards ---------- */
+  // Job cards
 
   private jobDto(r: JobRow): MaintenanceJobDto {
     const spares = r.spareIssues.flatMap((e) =>
@@ -334,7 +334,7 @@ export class MaintenanceService {
     }
   }
 
-  /* ---------- summary ---------- */
+  // Summary
 
   /** Machines a user's summary covers: all for company-wide roles; others the machines at their projects (and the yard for maintenance managers). */
   private equipmentWhere(user: RequestUser, projectId?: string): Prisma.EquipmentWhereInput {
@@ -375,7 +375,7 @@ export class MaintenanceService {
     };
   }
 
-  /* ---------- documents ---------- */
+  // Documents
 
   private docDto(r: DocRow, today = todayIn()): EquipmentDocumentDto {
     const validTo = dateOnly(r.validTo)!;
@@ -482,7 +482,7 @@ export class MaintenanceService {
     return { ok: true };
   }
 
-  /* ---------- drivers ---------- */
+  // Drivers
 
   private driverDto(r: DriverRow, today = todayIn()): DriverDto {
     const validTo = dateOnly(r.licenceValidTo);

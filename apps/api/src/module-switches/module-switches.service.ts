@@ -5,7 +5,7 @@ import { AuditService } from '../common/audit.service';
 import { RequestUser } from '../common/current-user';
 import { nextModulesOff, switchesOf, switchNote, switchProblem } from './module-switch-rules';
 
-/** Module switches (v6 item 117): an admin turns the company's optional modules on and off. Audited. */
+/** Module switches: an admin turns the company's optional modules on and off. Audited. */
 @Injectable()
 export class ModuleSwitchesService {
   constructor(

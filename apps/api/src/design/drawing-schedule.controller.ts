@@ -4,7 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { DrawingScheduleService } from './drawing-schedule.service';
 import { AddDrawingNeedsDto, AsBuiltQuery, DrawingScheduleQuery, NextDrawingNoQuery, SaveDrawingNeedDto } from './drawing-schedule.dto';
 
-/** Design and drawings part 1 (item 138): the drawing schedule, chasing late drawings, drawing numbers and the as-built check. */
+/** Design and drawings part 1: the drawing schedule, chasing late drawings, drawing numbers and the as-built check. */
 @ApiTags('design')
 @ApiBearerAuth()
 @Controller('design')
