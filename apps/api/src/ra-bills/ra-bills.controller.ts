@@ -27,7 +27,7 @@ export class RaBillsController {
     summary: 'Prepare the next RA bill of a project',
     description:
       'Takes the approved measurements dated up to `measuredUpTo` that no earlier bill took, priced at the BOQ rates, with GST and the ' +
-      'contract deductions. On a lump-sum project with a billing break-up (item 129) it takes each stage\'s % from its evidence at that date, ' +
+      'contract deductions. On a lump-sum project with a billing break-up it takes each stage\'s % from its evidence at that date, ' +
       'measures only the unit-rate items (at rate × the tender factor) and withholds for milestone slippage. Refused while another bill of the ' +
       'project is not approved. Saved as a draft unless `submit: true`.',
   })

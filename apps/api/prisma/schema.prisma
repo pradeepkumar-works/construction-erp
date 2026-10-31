@@ -938,6 +938,7 @@ model Organization {
   biometricUsers       BiometricUser[]
   biometricPunches     BiometricPunch[]
   biometricCommands    BiometricCommand[]
+  contractObligations  ContractObligation[]
   officialReportIssues OfficialReportIssue[]
   integrations         IntegrationConnection[]
   connectorAgents      ConnectorAgent[]
@@ -1258,6 +1259,7 @@ model User {
   settlementsPrepared   FinalSettlement[]          @relation("SettlementPreparer")
   biometricDevices      BiometricDevice[]          @relation("BiometricDeviceCreator")
   biometricCommands     BiometricCommand[]         @relation("BiometricCommandCreator")
+  contractObligations   ContractObligation[]       @relation("ContractObligationCreator")
   officialReportIssues  OfficialReportIssue[]      @relation("OfficialReportIssuer")
   integrationsMade      IntegrationConnection[]    @relation("IntegrationConnectionCreator")
   weighTicketsMade      WeighTicket[]              @relation("WeighTicketCreator")
@@ -1378,6 +1380,8 @@ model Project {
   retentionPct           Decimal        @default(0) @db.Decimal(5, 2)
   /// Security deposit deducted from each bill, % of the work value
   securityDepositPct     Decimal        @default(0) @db.Decimal(5, 2)
+  /// Item 171: the most security deposit bills take, % of the contract value (or of the work billed, when more); null = no cap
+  securityDepositCapPct  Decimal?       @db.Decimal(5, 2)
   /// Mobilisation advance paid by the client, recovered from bills
   mobilisationAdvance    Decimal        @default(0) @db.Decimal(18, 2)
   /// Advance recovered from each bill, % of the work value, until all of it is recovered
@@ -1540,13 +1544,14 @@ model Project {
   workPermits        WorkPermit[]
   maintenanceJobs    MaintenanceJob[]
 
-  pvComponents      PriceVariationComponent[]
-  meetings          Meeting[]
-  meetingActions    MeetingAction[]
-  materialApprovals MaterialApproval[]
-  comments          Comment[]
-  approvedMakes     ApprovedMake[]
-  drawingTakeoffs   DrawingTakeoff[]
+  pvComponents        PriceVariationComponent[]
+  meetings            Meeting[]
+  meetingActions      MeetingAction[]
+  materialApprovals   MaterialApproval[]
+  comments            Comment[]
+  approvedMakes       ApprovedMake[]
+  drawingTakeoffs     DrawingTakeoff[]
+  contractObligations ContractObligation[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -3591,6 +3596,10 @@ model RaBill {
   /// and the components behind it (SlippageLineDto[])
   slippageWithheld      Decimal          @default(0) @db.Decimal(18, 2)
   slippageLines         Json?
+  /// Contract obligations (item 171): penalties and withholdings due by the bill's date less what earlier bills took (negative
+  /// when a withholding is given back), and the obligations behind it (ObligationBillLine[])
+  obligationRecovery    Decimal          @default(0) @db.Decimal(18, 2)
+  obligationLines       Json?
   /// O&M bills (item 131): the O&M year and the instalment of it this bill is for (null on a works bill), the
   /// penalty for service levels missed in the period (a deduction) and the figures behind it (OmBillDetail)
   omYear                Int?
@@ -9078,6 +9087,65 @@ model PlantBatchRow {
   @@index([plantId, takenAt])
   @@index([connectionId, batchNo])
   @@index([rmcBatchId])
+}
+
+/// The day a contract obligation's deadline counts from (item 171)
+enum ObligationAnchor {
+  AGREEMENT
+  START
+  COMPLETION
+  HANDOVER
+  DATE
+}
+
+/// What missing a contract obligation costs (item 171)
+enum ObligationPenalty {
+  NONE
+  WITHHOLD_PCT
+  ONCE_PCT
+  PER_MONTH
+  ONCE_AMOUNT
+}
+
+/// Who owes a contract obligation (item 171)
+enum ObligationParty {
+  CONTRACTOR
+  CLIENT
+}
+
+/// Something the contract data says must be done by a day, and what missing it costs (item 171): the programme within 15
+/// days of the agreement, the field laboratory within two months, the final account within 21 days of completion. Bills
+/// deduct the penalties through `billRecoveryLines` (@erp/shared contract-obligations.ts).
+model ContractObligation {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// A STANDARD_OBLIGATIONS code when it came from the standard set (one per project), else null
+  code           String?
+  title          String
+  clause         String?
+  party          ObligationParty   @default(CONTRACTOR)
+  anchor         ObligationAnchor
+  offsetDays     Int               @default(0)
+  offsetMonths   Int               @default(0)
+  /// The day itself when the anchor is DATE
+  dueOn          DateTime?         @db.Date
+  penalty        ObligationPenalty @default(NONE)
+  /// % of the contract value for WITHHOLD_PCT and ONCE_PCT, rupees otherwise
+  penaltyValue   Decimal?          @db.Decimal(18, 3)
+  metOn          DateTime?         @db.Date
+  waived         Boolean           @default(false)
+  note           String?
+  sortOrder      Int               @default(0)
+  createdById    String
+  createdBy      User              @relation("ContractObligationCreator", fields: [createdById], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([projectId, code])
+  @@index([organizationId, metOn])
 }
 
 /// Official progress reports (item 174): daily, weekly and monthly reports for the client, in Nirmaan's design

@@ -84,7 +84,7 @@ export class NotificationsController {
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
   @ApiOperation({
-    summary: 'Reminders and escalation of approvals waiting too long (v5 item 94). Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the two daily jobs run it too. Auth: Authorization: Bearer <CRON_SECRET>.',
+    summary: 'Reminders and escalation of approvals waiting too long. Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the two daily jobs run it too. Auth: Authorization: Bearer <CRON_SECRET>.',
   })
   @Get('jobs/approval-escalation')
   approvalEscalation() {
@@ -113,6 +113,7 @@ export class NotificationsController {
       MACHINERY_DUE: () => this.jobs.machineryDue(q.date),
       COMPLIANCE_DUE: () => this.jobs.complianceDue(q.date),
       HANDOVER_DUE: () => this.jobs.handoverDue(q.date),
+      OBLIGATIONS_DUE: () => this.jobs.obligationsDue(q.date),
       WATCH_LIST: () => this.jobs.watchList(q.date),
       RECEIPTS_WEEKLY: () => this.jobs.receiptsWeekly(q.date),
       PURGE_COMPANIES: () => this.companyData.purgeDue(q.date),
@@ -139,7 +140,7 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Reads the text of filed PDFs (current document revisions and letters) not read yet, page by page, for Ask the contract (AI item 75); searches read their own projects\' files too. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Reads the text of filed PDFs (current document revisions and letters) not read yet, page by page, for Ask the contract; searches read their own projects\' files too. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/read-documents')
   async readDocuments() {
     return { job: 'READ_DOCUMENTS', read: await this.documentText.readAllPending(240_000) };
@@ -148,7 +149,7 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: "The overnight batch: today's morning briefs and, on Mondays, last week's summary paragraph for each project's report (AI item 74). Writes only; the digest sends the briefs. Auth: Authorization: Bearer <CRON_SECRET>." })
+  @ApiOperation({ summary: "The overnight batch: today's morning briefs and, on Mondays, last week's summary paragraph for each project's report. Writes only; the digest sends the briefs. Auth: Authorization: Bearer <CRON_SECRET>." })
   @Get('jobs/briefs')
   writeBriefs(@Query() q: JobQuery) {
     return this.jobs.writeBriefs(q.date);
@@ -197,6 +198,15 @@ export class NotificationsController {
   @Get('jobs/compliance-due')
   complianceDue(@Query() q: JobQuery) {
     return this.jobs.complianceDue(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Contract obligations due within 7 days or overdue, each alerted once per stage and deadline (item 171). Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/obligations-due')
+  obligationsDue(@Query() q: JobQuery) {
+    return this.jobs.obligationsDue(q.date);
   }
 
   @Public()

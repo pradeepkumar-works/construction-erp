@@ -5,7 +5,7 @@ import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Typography } from 'a
 import { AppTag } from '@/components/common/AppTag';
 import { CopyOutlined, EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@/components/common/icons';
 import type { ProjectDetail, UserSummary } from '@erp/shared';
-import { canEditProjects } from '@erp/shared';
+import { canManageProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -26,7 +26,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
   const [adding, setAdding] = useState(false);
   const [userIds, setUserIds] = useState<string[]>([]);
   const [fromProject, setFromProject] = useState<string | undefined>();
-  const editor = !!user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
+  const editor = !!user && canManageProjects(user.roleKey);
 
   const done = (text: string) => {
     message.success(text);
