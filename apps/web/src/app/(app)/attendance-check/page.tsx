@@ -123,7 +123,7 @@ function AttendanceCheck() {
           </Typography.Paragraph>
         ) : null}
         <Button type="link" size="small" icon={open ? <UpOutlined /> : <DownOutlined />} aria-expanded={open} aria-controls={id} onClick={() => toggleWhy(f.key)} style={{ paddingInline: 0 }}>
-          Why: the working
+          Show how this was worked out
         </Button>
         {open ? (
           <ol id={id} style={{ margin: `${token.marginXS}px 0 0`, paddingInlineStart: token.paddingLG }} translate="no">

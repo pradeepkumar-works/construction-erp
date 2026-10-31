@@ -122,7 +122,7 @@ export function DeviceCommands() {
             onClick={() =>
               act
                 .mutateAsync({ path: `/biometric/commands/${c.id}/cancel` })
-                .then(() => message.success('Command taken back'))
+                .then(() => message.success('Command cancelled'))
                 .catch((err) => message.error(errorMessage(err, 'Could not take it back. Try again.')))
             }
           >

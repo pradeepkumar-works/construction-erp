@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { DownloadOutlined, PrinterOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { PayrollRunDetailDto, PayslipDto } from '@erp/shared';
+import { PAYSLIP_CODES } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayrollAction, usePayrollRun, type PayrollFileDto } from '@/lib/queries';
@@ -100,7 +101,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
       { header: 'Posted at', value: (p) => p.projectName ?? 'Head office', width: 28 },
       { header: 'Days paid', value: (p) => Number(p.paidDays) },
       { header: 'Loss of pay', value: (p) => Number(p.lopDays) },
-      ...(['BASIC', 'DA', 'HRA', 'CONVEYANCE', 'SPECIAL', 'OTHER', 'OVERTIME', 'ARREARS', 'BONUS', 'OTHER_EARNING'] as const).map((c) => ({ header: c === 'OTHER_EARNING' ? 'Other earning' : c.charAt(0) + c.slice(1).toLowerCase().replace('_', ' '), value: (p: PayslipDto) => amount(p, c) })),
+      ...(['BASIC', 'DA', 'HRA', 'CONVEYANCE', 'SPECIAL', 'OTHER', 'OVERTIME', 'ARREARS', 'BONUS', 'OTHER_EARNING'] as const).map((c) => ({ header: c === 'DA' || c === 'HRA' ? c : PAYSLIP_CODES[c].label, value: (p: PayslipDto) => amount(p, c) })),
       { header: 'Gross', value: (p) => Number(p.gross) },
       ...(['PF', 'ESI', 'PT', 'TDS', 'LOAN', 'ADVANCE', 'OTHER_DEDUCTION'] as const).map((c) => ({ header: c === 'OTHER_DEDUCTION' ? 'Other deduction' : c === 'LOAN' ? 'Loan' : c === 'ADVANCE' ? 'Advance' : c, value: (p: PayslipDto) => amount(p, c) })),
       { header: 'Deductions', value: (p) => Number(p.deductions) },
@@ -163,7 +164,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
           <Space wrap>
             {run.can.edit && (
               <Button loading={act.isPending} onClick={() => run_(`/payroll/runs/${run.id}/recompute`, 'Worked out again from attendance and salaries')}>
-                Work out again
+                Recalculate
               </Button>
             )}
             {run.can.submit && (

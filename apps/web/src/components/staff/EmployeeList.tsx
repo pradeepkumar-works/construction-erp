@@ -80,7 +80,7 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search name, code, designation"
-        searchLabel="Search employees"
+        searchLabel="Search staff"
         extra={newButton}
       >
         <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>

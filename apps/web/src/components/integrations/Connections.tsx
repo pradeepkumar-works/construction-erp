@@ -173,7 +173,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
           <Form.Item
             name="agentId"
             label="Read by the Connector"
-            extra={liveAgents.length ? 'The Connector on the computer that can reach the device' : 'Add a Connector on the Connectors tab first'}
+            extra={liveAgents.length ? 'The Connector on the computer that can reach the device' : 'Make a new Connector on the Connectors tab first'}
             rules={[{ required: true, message: 'Choose the Connector that reads it' }]}
           >
             <Select loading={agents.isLoading} options={liveAgents.map((a) => ({ value: a.id, label: a.hostname ? `${a.name} (${a.hostname})` : a.name }))} placeholder="Choose a Connector" />
@@ -247,7 +247,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                   <Input maxLength={2000} placeholder="https://login.maker.example/oauth/token" translate="no" />
                 </Form.Item>
                 <FormGrid cols={2}>
-                  <Form.Item name="clientId" label="Client id" rules={[{ required: true, whitespace: true, message: 'Enter the client id the maker gave you' }]}>
+                  <Form.Item name="clientId" label="Client ID" rules={[{ required: true, whitespace: true, message: 'Enter the client ID the maker gave you' }]}>
                     <Input maxLength={200} translate="no" />
                   </Form.Item>
                   <Form.Item name="scope" label="Scope (if the maker asks for one)">
@@ -268,7 +268,7 @@ function ConnectionForm({ open, onClose, connection, onCreated }: { open: boolea
                 ? `Key or password (saved, ends ${connection.secretLast4})`
                 : 'Key or password (optional)'
           }
-          extra={polled ? 'Saved sealed and shown only as its last four characters.' : 'For a service that asks for one. It is saved sealed and shown only as its last four characters.'}
+          extra={polled ? 'Saved encrypted; only the last four characters are shown.' : 'For a service that asks for one. It is saved encrypted; only the last four characters are shown.'}
           rules={polled && !connection?.secretLast4 ? [{ required: true, whitespace: true, message: `Enter the ${CREDENTIAL_LABEL[auth].toLowerCase()} the maker gave you` }] : undefined}
         >
           <Input.Password maxLength={2000} autoComplete="new-password" placeholder={connection?.secretLast4 ? 'Leave blank to keep it' : undefined} />

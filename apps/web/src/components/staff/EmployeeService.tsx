@@ -92,23 +92,23 @@ export function EmployeeService({ employee }: { employee: EmployeeDto }) {
                 </Button>
                 {isExitEvent(r.type) && r.type !== 'TERMINATED' && (
                   <Button size="small" onClick={() => print(r, true)}>
-                    Experience
+                    Experience letter
                   </Button>
                 )}
                 {admin && r.id === latest?.id && r.type !== 'JOINED' && (
                   <Popconfirm
-                    title={`Take back the ${EMPLOYEE_EVENT_LABELS[r.type].toLowerCase()}?`}
+                    title={`Cancel the ${EMPLOYEE_EVENT_LETTERS[r.type].toLowerCase()}?`}
                     description="The staff record goes back to how it was before."
-                    okText="Take back"
+                    okText="Cancel it" cancelText="Keep it"
                     onConfirm={() =>
                       remove
                         .mutateAsync(r.id)
-                        .then(() => message.success(`${EMPLOYEE_EVENT_LABELS[r.type]} taken back`))
-                        .catch((err) => message.error(errorMessage(err, 'Could not take it back. Try again.')))
+                        .then(() => message.success(`${EMPLOYEE_EVENT_LETTERS[r.type]} cancelled`))
+                        .catch((err) => message.error(errorMessage(err, 'It could not be cancelled. Try again.')))
                     }
                   >
                     <Button size="small" danger loading={remove.isPending}>
-                      Take back
+                      Cancel
                     </Button>
                   </Popconfirm>
                 )}

@@ -357,13 +357,13 @@ export default function PayablesPage() {
               // Pay against an approved request; pay directly only when the company does not ask for one; else ask.
               if (accounts && req?.status === 'APPROVED' && toNumber(req.unpaid) > 0)
                 return (
-                  <Button size="small" type="primary" onClick={() => setPaying({ ...r, payable: req.amount, outstanding: String(Math.min(toNumber(req.unpaid), toNumber(r.outstanding))), billLabel: `${req.requestNo} · ${r.billLabel}`, paymentRequestId: req.id })}>
+                  <Button size="small" onClick={() => setPaying({ ...r, payable: req.amount, outstanding: String(Math.min(toNumber(req.unpaid), toNumber(r.outstanding))), billLabel: `${req.requestNo} · ${r.billLabel}`, paymentRequestId: req.id })}>
                     Pay
                   </Button>
                 );
               if (accounts && !needRequest)
                 return (
-                  <Button size="small" type={r.daysToDue <= 7 ? 'primary' : 'default'} onClick={() => setPaying(r)}>
+                  <Button size="small" onClick={() => setPaying(r)}>
                     Pay
                   </Button>
                 );

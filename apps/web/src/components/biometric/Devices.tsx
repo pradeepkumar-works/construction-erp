@@ -37,7 +37,7 @@ function DeviceForm({ open, onClose, device, onSaved }: { open: boolean; onClose
       layout="modal"
       width={600}
       projectDefault={false}
-      title={device ? `Edit ${device.name}` : 'Register a device'}
+      title={device ? `Edit ${device.name}` : 'New device'}
       okText={device ? 'Save' : 'Register'}
       onSubmit={async (v) => {
         const body = { ...v, model: v.model?.trim() || null, serialNo: v.protocol === 'ADMS' ? v.serialNo?.trim() : null, projectId: v.projectId ?? null };
@@ -202,7 +202,7 @@ export function Devices() {
           Fingerprint and face devices at sites and offices. A device that sends by itself (ADMS, as on ZKTeco and eSSL) or to a web address marks attendance as people punch; with any other device, import its punch file.
         </Typography.Paragraph>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({ device: null })}>
-          Register a device
+          New device
         </Button>
       </div>
       {error ? (

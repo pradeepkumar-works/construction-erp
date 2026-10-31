@@ -68,7 +68,7 @@ function PayrollPage() {
                 ]
               : []),
             ...(labour ? [{ key: 'contractors', label: 'Labour contractors', children: <MonthInputs kind="contractors" /> }] : []),
-            ...(staff ? [{ key: 'settings', label: 'Settings', children: <PayrollSettings /> }] : []),
+            ...(staff ? [{ key: 'settings', label: 'Payroll settings', children: <PayrollSettings /> }] : []),
           ]}
         />
       </Card>

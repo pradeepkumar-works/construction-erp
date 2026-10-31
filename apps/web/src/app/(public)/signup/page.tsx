@@ -36,7 +36,7 @@ export default function SignupPage() {
       signIn(data);
       router.replace('/users?welcome=1');
     } catch (err) {
-      setError(errorMessage(err, 'Sign-up failed'));
+      setError(errorMessage(err, 'Your company was not created. Check the fields and try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -46,7 +46,7 @@ export default function SignupPage() {
     <AuthCard title="Create your company" subtitle="You become its admin and can invite your team next." width={440}>
       {isLoading ? <Skeleton active /> : null}
       {options && !options.signup ? (
-        <Alert type="info" showIcon title="Sign-up is closed on this server." description={`Ask whoever runs your ${BRAND.name} to create your organisation, or sign in if you already have an account.`} style={{ marginBottom: 16 }} />
+        <Alert type="info" showIcon title="Sign-up is closed on this server." description={`Ask whoever runs your ${BRAND.name} to create your company, or sign in if you already have an account.`} style={{ marginBottom: 16 }} />
       ) : null}
       {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
       {options?.signup ? (
@@ -75,7 +75,7 @@ export default function SignupPage() {
             <Input.Password autoComplete="new-password" size="large" />
           </Form.Item>
           <Button type="primary" htmlType="submit" block size="large" loading={submitting}>
-            Create organisation
+            Create company
           </Button>
         </Form>
       ) : null}

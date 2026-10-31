@@ -241,11 +241,11 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
                     Renew
                   </Button>
                   <Button size="small" onClick={() => setAction({ kind: 'release', doc: d })}>
-                    Release
+                    Record release
                   </Button>
                   {canBeInvoked(d.kind) ? (
                     <Button size="small" danger onClick={() => setAction({ kind: 'invoke', doc: d })}>
-                      Invoked
+                      Record invocation
                     </Button>
                   ) : null}
                 </>

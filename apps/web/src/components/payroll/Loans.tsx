@@ -40,7 +40,7 @@ function LoanForm({ open, onClose }: { open: boolean; onClose: () => void }) {
       layout="modal"
       width={600}
       projectDefault={false}
-      title="Record a loan or advance"
+      title="New loan or advance"
       okText="Record"
       onSubmit={async (v) => {
         const l = await save.mutateAsync({ path: '/payroll/loans', body: { ...v, issuedOn: v.issuedOn.format('YYYY-MM-DD'), startMonth: v.startMonth.format('YYYY-MM'), note: v.note?.trim() || null } });
@@ -102,7 +102,7 @@ export function Loans() {
       render: (_, l) =>
         admin && Number(l.recovered) === 0 ? (
           <Popconfirm
-            title="Delete this entry?"
+            title="Delete this loan or advance?"
             okText="Delete"
             onConfirm={() =>
               act
@@ -128,7 +128,7 @@ export function Loans() {
         </span>
         {admin && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
-            Record a loan or advance
+            New loan or advance
           </Button>
         )}
       </div>

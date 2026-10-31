@@ -30,7 +30,7 @@ function NewRunModal({ open, onClose, onCreated }: { open: boolean; onClose: () 
       layout="modal"
       width={520}
       projectDefault={false}
-      title="Prepare a salary run"
+      title="New salary run"
       okText="Prepare"
       onSubmit={async (v) => {
         const run = await act.mutateAsync({ path: '/payroll/runs', body: { month: v.month.format('YYYY-MM'), projectId: v.projectId ?? null } });
@@ -69,7 +69,7 @@ export function SalaryRuns() {
   ];
   const newButton = runs ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
-      Prepare salary run
+      New salary run
     </Button>
   ) : null;
 

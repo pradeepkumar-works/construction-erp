@@ -39,7 +39,7 @@ function PrepareModal({ who, onClose }: { who: { employeeId: string; name: strin
       width={560}
       projectDefault={false}
       title={`Full and final settlement for ${who?.name ?? ''}`}
-      okText={from ? 'Work out again' : 'Work it out'}
+      okText={from ? 'Prepare again' : 'Prepare settlement'}
       onSubmit={async (v) => {
         const s = await act.mutateAsync({ path: '/payroll/settlements', body: { employeeId: who!.employeeId, otherEarnings: v.otherEarnings ?? 0, otherDeductions: v.otherDeductions ?? 0, note: v.note?.trim() || null } });
         message.success(`${s.settlementNo} worked out: ${Number(s.net) >= 0 ? 'net payable' : 'they owe'} ${formatINR(Math.abs(Number(s.net)))}`);
@@ -129,7 +129,7 @@ function SettlementModal({ s, onClose, onRedo, onPay }: { s: FinalSettlementDto 
               <Button danger>Delete</Button>
             </Popconfirm>
           )}
-          {s.can.edit && <Button onClick={onRedo}>Work out again</Button>}
+          {s.can.edit && <Button onClick={onRedo}>Prepare again</Button>}
           <Button icon={<PrinterOutlined />} onClick={() => openSettlement(s, user?.organizationName ?? '')}>
             Print
           </Button>
@@ -255,7 +255,7 @@ export function Settlements() {
                     {d.leftOn ? `, left ${formatDate(d.leftOn)}` : ''}
                   </Typography.Text>
                   <Button size="small" onClick={() => setPreparing({ employeeId: d.employeeId, name: d.fullName })} aria-label={`Work out ${d.fullName}'s settlement`}>
-                    Work it out
+                    Prepare settlement
                   </Button>
                 </div>
               ))}

@@ -216,12 +216,12 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
               <InputNumber min={0} max={180} precision={0} suffix="days" style={{ width: '100%' }} />
             </Form.Item>
             {privateOk && (
-              <Form.Item name="ctcAnnual" label="Cost to company a year" extra={editing ? 'Later changes go through an increment on the Service tab' : undefined}>
+              <Form.Item name="ctcAnnual" label="Cost to company a year" extra={editing ? 'Later changes go through an increment on the Service and letters tab' : undefined}>
                 <MoneyInput />
               </Form.Item>
             )}
             {editing && (
-              <Form.Item name="leftOn" label="Last working day" extra="Marks them as left. To print a relieving letter, record the exit on the Service tab.">
+              <Form.Item name="leftOn" label="Last working day" extra="Marks them as left. To print a relieving letter, record the exit on the Service and letters tab.">
                 <DatePicker {...DATE} />
               </Form.Item>
             )}

@@ -36,7 +36,7 @@ function AdjustModal({ open, onClose, slip }: { open: boolean; onClose: () => vo
       width={680}
       projectDefault={false}
       title={`Add to ${slip.employeeName}'s payslip`}
-      okText="Save and work out again"
+      okText="Save and recalculate"
       onSubmit={async (v) => {
         const p = await save.mutateAsync({ method: 'put', path: `/payroll/payslips/${slip.id}/adjustments`, body: { lines: (v.lines ?? []).map((l) => ({ ...l, label: l.label?.trim() || undefined })) } });
         message.success(`Payslip worked out again: net pay ${formatINR(p.net)}`);

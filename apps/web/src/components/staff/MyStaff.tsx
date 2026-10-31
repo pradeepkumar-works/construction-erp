@@ -121,7 +121,7 @@ export function MyStaff() {
           <Section
             title={`Leave left in ${data.year}`}
             extra={
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setApply(true)}>
+              <Button icon={<PlusOutlined />} onClick={() => setApply(true)}>
                 Apply for leave
               </Button>
             }

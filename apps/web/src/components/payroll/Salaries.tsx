@@ -81,7 +81,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
       layout="drawer"
       width={640}
       projectDefault={false}
-      title={from ? `New salary for ${from.employeeName}` : 'Set a salary'}
+      title={from ? `New salary for ${from.employeeName}` : 'New salary'}
       okText="Save salary"
       onSubmit={async (v) => {
         const s = await save.mutateAsync({ path: '/payroll/structures', body: { ...v, effectiveFrom: v.effectiveFrom.format('YYYY-MM-DD'), note: v.note?.trim() || null } });
@@ -230,7 +230,7 @@ export function Salaries() {
         </Typography.Paragraph>
         {admin && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({ from: null })}>
-            Set a salary
+            New salary
           </Button>
         )}
       </div>

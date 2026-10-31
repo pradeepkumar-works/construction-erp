@@ -28,7 +28,7 @@ function AgentForm({ open, onClose, onCreated }: { open: boolean; onClose: () =>
       layout="modal"
       width={560}
       projectDefault={false}
-      title="Add a Connector"
+      title="New Connector"
       okText="Add and get a code"
       onSubmit={async (v) => onCreated(await act.mutateAsync({ path: '/integrations/agents', body: { name: v.name, projectId: v.projectId ?? null } }))}
     >
@@ -140,7 +140,7 @@ export function Connectors() {
           The Nirmaan Connector runs on a computer at a site or office and reads devices on its network (weighbridges, batching plants, meters). It keeps readings while the internet is down and sends them when it is back. Nothing needs to be opened on the site’s router.
         </Typography.Paragraph>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-          Add a Connector
+          New Connector
         </Button>
       </div>
       {error ? (

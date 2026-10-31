@@ -192,7 +192,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
                   add({ contractor: last?.contractor ?? DEPARTMENTAL_CONTRACTOR, count: null });
                 }}
               >
-                Add row
+                Add line
               </Button>
             </Space>
           )}

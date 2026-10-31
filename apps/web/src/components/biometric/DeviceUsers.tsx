@@ -113,7 +113,7 @@ export function DeviceUsers() {
       width: 140,
       render: (_, u) => (
         <Space size={4}>
-          <Button size="small" type={u.employeeId || u.workerId ? 'default' : 'primary'} onClick={() => setMatching({ user: u })} aria-label={`${u.employeeId || u.workerId ? 'Change' : 'Match'} user number ${u.pin}`}>
+          <Button size="small" onClick={() => setMatching({ user: u })} aria-label={`${u.employeeId || u.workerId ? 'Change' : 'Match'} user number ${u.pin}`}>
             {u.employeeId || u.workerId ? 'Change' : 'Match'}
           </Button>
           {digits(u) ? (

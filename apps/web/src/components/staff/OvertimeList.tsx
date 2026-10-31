@@ -70,7 +70,7 @@ export function OvertimeList() {
             <Button size="small" danger onClick={() => setRejecting(r)} aria-label={`Reject ${r.employeeName}'s overtime on ${formatDate(r.date)}`}>
               Reject
             </Button>
-            <Button size="small" type="primary" loading={act.isPending && act.variables?.row.id === r.id} onClick={() => act.mutate({ row: r, decision: 'approve' })} aria-label={`Approve ${r.employeeName}'s overtime on ${formatDate(r.date)}`}>
+            <Button size="small" loading={act.isPending && act.variables?.row.id === r.id} onClick={() => act.mutate({ row: r, decision: 'approve' })} aria-label={`Approve ${r.employeeName}'s overtime on ${formatDate(r.date)}`}>
               Approve
             </Button>
           </Space>
@@ -80,7 +80,7 @@ export function OvertimeList() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Typography.Paragraph type="secondary">Overtime from check-outs, and from the register when someone else marked it, at your sites. Payroll pays approved overtime only.</Typography.Paragraph>
+      <Typography.Paragraph type="secondary">Overtime from marking out, and from the register when someone else marked it, at your sites. Payroll pays approved overtime only.</Typography.Paragraph>
       <Table<StaffAttendanceDto> rowKey="id" size="small" columns={columns} dataSource={data} pagination={false} scroll={{ x: 1210 }} locale={{ emptyText: 'No overtime waiting on you' }} />
       <Modal
         open={!!rejecting}
