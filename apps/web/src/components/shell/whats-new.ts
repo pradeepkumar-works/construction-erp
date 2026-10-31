@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-09-official-reports',
+    date: '2027-10-04',
+    title: 'Daily, weekly and monthly reports for the client',
+    points: [
+      'Reports, Progress reports makes a project’s daily, weekly and monthly progress report (MPR) in your company’s design: the contract box, progress by component, the work done with its location, observations, crew and machines, hindrances, next period’s plan and photographs. The MPR adds the programme, milestones, bills, drawings, meetings, quality and safety.',
+      'Download it as PDF, Word or Excel. Issue to client keeps the copy with its number and revision, so the one you sent can be downloaded again.',
+    ],
+  },
+  {
     id: '2027-09-verticals-departments',
     date: '2027-09-27',
     title: 'Verticals, department screens, the head office seal and indent checks',

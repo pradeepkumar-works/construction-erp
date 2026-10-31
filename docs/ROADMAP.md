@@ -939,6 +939,20 @@ what they show is in Nirmaan already. These four were missing or thin, built as 
      and flags a line past the BOQ or one the store already covers, for the approver (`GET /material-requests/:id/check`).
      ARCHITECTURE "Indent checks".
 
+## Official progress reports (item 174)
+
+174. ~~**Daily, weekly and monthly progress reports for the client** (M).~~ Done: Reports › Progress reports makes the
+     daily, weekly and monthly progress report (MPR) of a project in the company's own design, laid out after the
+     reports a PIU and its consultant ask for on a water supply scheme: the contract box, progress by component with
+     its weight and status in words, the activities as per the approved programme, the work done entry by entry with
+     its location and chainage, observations and deviations with their closure, crew, machines and materials,
+     hindrances, the plan for the next period and photographs; the MPR adds the executive summary, delay against the
+     programme, village or floor-wise progress, the stage billing milestone grid, bills, variations, drawings,
+     meetings and their actions, letters, quality, safety and risks. Previewed on the page and downloaded as PDF, Word
+     or Excel; issuing keeps the copy with its number (counted from the start of work) and revision. ARCHITECTURE
+     "Official progress reports". Not yet: staff qualifications, the lab's equipment list, the safety yes/no checklist,
+     the environment and pre-construction checklist, and the phone.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

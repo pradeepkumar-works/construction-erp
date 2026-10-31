@@ -3670,6 +3670,36 @@ export; the client portal and the phone app show the amount.
   entry in `MANAGEMENT_REPORTS`, a builder in `ManagementReportsService`, and a node under Reports in the navigation tree.
 - **Not yet.** The phone, a scheduled email of the MIS, and a budget for the company as a whole.
 
+## Official progress reports
+
+Item 174. The reports a contractor sends the client and its consultant every day, week and month, in the company's own
+design. `apps/api/src/official-reports`, web `components/reports/official/`, page `/reports` (Daily, Weekly, Monthly
+(MPR), and Any dates for the older progress report).
+
+- **One document.** `OfficialReportsService.build` makes an `OfficialReportDto` (`@erp/shared/official-reports.ts`): the
+  control strip (doc no., revision, report date), the contract box (name of work, client, consultant, contractor, LOA,
+  agreement, location, start), numbered chapters of blocks (facts, text, figures, table, photos) and the signature
+  boxes. The page's preview and Print (`officialHtml.ts`), the PDF (`officialPdf.ts`, pdfmake), the Word file
+  (`officialDocx.ts`, docx) and the workbook (`officialExcel.ts`, a Report sheet and a sheet per table, numbers kept as
+  numbers) all draw that one DTO, and cells read through the management reports' `cellText` / `cellExcel`. The
+  writers load on first use.
+- **Read through the modules.** Progress is `ReportsService.progress` and `progressRollup` / `plannedProgress`; the
+  contract `ContractsService.get`; milestones the stage billing grid (`StageBillingService.breakup`); letters
+  `CorrespondenceService.list` (with `from` / `to`). A component's status in words is `componentStatusText`, a
+  delay `componentDelayDays`, the weekly summary `officialSummary` (or the stored weekly narrative). An activity with
+  sub-activities is left out of the tables, as it takes no progress of its own.
+- **Periods and numbers.** A week runs Monday to Sunday and belongs to the month holding its Thursday (`weekOfMonth`);
+  a report's number counts days, weeks or months from the project's start (`officialReportNo`) and its doc no. is
+  `CODE/DPR|WPR|MPR/NNN` (`officialDocNo`). A day, week or month after today is refused.
+- **Issue register.** Issue (`POST /reports/official/issue`, `canIssueOfficialReport`: admin, management, the PM) keeps
+  the report as it is in `OfficialReportIssue.snapshot` with the next revision of that period, and the page lists the
+  issued copies to download again exactly as sent. The MPR's Previous monthly reports chapter reads the register.
+- **Money.** A report made for someone without `canViewContract` leaves out the financial chapter, the milestones'
+  amounts, bills and variation amounts (`withMoney: false`); an issued copy with money in it opens only for those who
+  see the contract.
+- **Not yet.** Staff qualifications and experience (not on the employee), the lab's equipment list, a yes/no safety
+  checklist, the MPR's environment and pre-construction checklist, the company's logo in Word's header, and the phone.
+
 ## Integration layer
 
 Item 139, decided in ADR-001 ("How site devices and machine data reach Nirmaan"). Every outside system that sends to

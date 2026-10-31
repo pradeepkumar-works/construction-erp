@@ -1290,7 +1290,7 @@ export interface ProgressReportDto {
   delays: { riskNo: string; title: string; activityName: string | null; from: string; to: string | null; daysInPeriod: number; responsibleParty: DelayParty | null; eotClaimed: boolean; status: RiskStatus }[];
   risks: { riskNo: string; title: string; score: number; mitigation: string | null; ownerName: string | null; dueDate: string | null }[];
   /** Activities planned to be under way in the next period of the same length and not complete. */
-  nextPeriod: { name: string; unit: string; balanceQty: string; plannedEnd: string | null }[];
+  nextPeriod: { activityId: string; name: string; unit: string; balanceQty: string; plannedEnd: string | null }[];
   photos: { url: string; caption: string }[];
 }
 
