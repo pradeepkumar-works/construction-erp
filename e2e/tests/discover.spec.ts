@@ -32,7 +32,7 @@ test('a site engineer asks for Correspondence from Discover, and the admin decli
   const admin = await reset();
   await signIn(page, 'engineer@demo.com');
   const letters = discover(page).getByRole('button', { name: 'Correspondence', exact: true });
-  await expect(letters).toHaveAccessibleDescription(/^Ask for access/);
+  await expect(letters).toHaveAccessibleDescription(/^Request access/);
   await letters.click();
   const drawer = page.getByRole('dialog', { name: 'Correspondence' });
   // A rerun on the same data finds the last run's declined request, which can be asked again.
@@ -54,7 +54,7 @@ test('a site engineer asks for Correspondence from Discover, and the admin decli
   await page.context().clearCookies();
   await signIn(page, 'admin@demo.com');
   await page.goto('/home-tiles');
-  await expect(page.getByRole('heading', { level: 1, name: 'Home tiles' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Discover and access requests' })).toBeVisible();
   const row = page.getByRole('listitem').filter({ hasText: 'asks to open Correspondence' }).filter({ has: page.getByRole('button', { name: 'Decline' }) });
   await expect(row).toContainText('To see the letters about my site');
   await row.getByRole('button', { name: 'Decline' }).click();

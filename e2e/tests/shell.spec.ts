@@ -33,7 +33,7 @@ test('+ New opens the form from any page, and on the list already open', async (
   await expect(page.getByRole('dialog')).toBeHidden();
 
   await openNewMenu(page);
-  await page.getByRole('menuitem', { name: 'Material request' }).click();
+  await page.getByRole('menuitem', { name: 'Indent' }).click();
   await expect(page).toHaveURL(/\/material-requests$/);
   await expect(formPanel(page, 'New material request')).toBeVisible();
 });
