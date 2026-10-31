@@ -13,7 +13,7 @@ export const LETTER_STATUSES = ['DRAFT', 'AWAITING_APPROVAL', 'ISSUED', 'OPEN', 
 export type LetterStatus = (typeof LETTER_STATUSES)[number];
 export const LETTER_STATUS_LABELS: Record<LetterStatus, string> = {
   DRAFT: 'Draft',
-  AWAITING_APPROVAL: 'Waiting for approval',
+  AWAITING_APPROVAL: 'Waiting for signature',
   ISSUED: 'Issued',
   OPEN: 'Open',
   CLOSED: 'Closed',

@@ -207,7 +207,12 @@ export const COMMON: Record<string, string> = {
 
   // Stores and machinery
   'Receipt (GRN)': 'माल प्राप्ति (GRN)',
-  Issue: 'जारी करना',
+  Issue: 'जारी करें',
+  Inward: 'आवक',
+  Outward: 'जावक',
+  'In transit': 'रास्ते में',
+  'Hire agency': 'किराया एजेंसी',
+  'Superseded, to withdraw': 'बदल गई, वापस लेनी है',
   Adjustment: 'समायोजन',
   'Transfer out': 'दूसरी साइट भेजा',
   'Transfer in': 'दूसरी साइट से आया',

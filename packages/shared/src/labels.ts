@@ -123,11 +123,46 @@ export const SUBMISSION_TYPE_PLURAL_LABELS: Record<SubmissionType, string> = {
 };
 
 export const PAYMENT_REQUEST_KIND_LABELS: Record<PaymentRequestKind, string> = {
-  BILL: 'Bill payment',
+  BILL: 'Pay a vendor bill',
   PO_ADVANCE: 'Advance on a purchase order',
   WO_ADVANCE: 'Advance on a work order',
   FUND_REQUEST: 'Fund request',
 };
+
+/** How much of a bill is paid; a payment request's money is released, then paid. */
+export const PAID_STATES = ['PAID', 'PART', 'UNPAID'] as const;
+export type PaidState = (typeof PAID_STATES)[number];
+export const PAID_STATE_LABELS: Record<PaidState, string> = { PAID: 'Paid', PART: 'Part paid', UNPAID: 'Unpaid' };
+export const RELEASE_STATE_LABELS: Record<PaidState, string> = { PAID: 'Released', PART: 'Part released', UNPAID: 'To release' };
+
+/** Where an approved purchase order stands against its receipts. */
+export const PO_RECEIPT_STATES = ['OPEN', 'RECEIVED', 'CLOSED'] as const;
+export type PoReceiptState = (typeof PO_RECEIPT_STATES)[number];
+export const PO_RECEIPT_STATE_LABELS: Record<PoReceiptState, string> = { OPEN: 'Open', RECEIVED: 'Received', CLOSED: 'Closed' };
+
+/** A vendor bill against its PO and GRNs (three-way match), the same words on the order, the bill and the list. */
+export const MATCH_STATES = ['MATCHES', 'CHECKED', 'DOES_NOT_MATCH'] as const;
+export type MatchState = (typeof MATCH_STATES)[number];
+export const MATCH_STATE_LABELS: Record<MatchState, string> = { MATCHES: 'Matches', CHECKED: 'Checked', DOES_NOT_MATCH: 'Does not match' };
+
+/** A record's history line, by the audit log's action; an action not listed reads as its own words. */
+export const AUDIT_ACTION_LABELS: Record<string, string> = {
+  UPDATED: 'Edited',
+  CHANGE_REQUESTED: 'Changes requested',
+  COPY_TAKEN_BACK: 'Copy withdrawn',
+  QTY_FROM_DRAWING: 'Quantity from a drawing',
+  TAKEOFF_TO_BOQ: 'Take-off moved to the BOQ',
+};
+/** A leave request is applied for, not created. */
+export const LEAVE_ACTION_LABELS: Record<string, string> = { ...AUDIT_ACTION_LABELS, CREATED: 'Applied' };
+const ACTION_CAPITALS = new Set(['AI', 'BOQ', 'DPR', 'EMD', 'EMI', 'GRN', 'GST', 'MTC', 'NCR', 'PO', 'PPE', 'RA', 'RFI', 'SOR', 'TDS', 'WO']);
+/** "CHANGES_REQUESTED" reads "Changes requested", "BOQ_IMPORTED" "BOQ imported". */
+export function auditActionLabel(action: string, labels: Record<string, string> = AUDIT_ACTION_LABELS): string {
+  if (labels[action]) return labels[action];
+  const words = action.split('_').filter(Boolean).map((w) => (ACTION_CAPITALS.has(w) ? w : w.toLowerCase()));
+  const text = words.join(' ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 export const FUND_PURPOSE_LABELS: Record<FundPurpose, string> = {
   WAGES: 'Wages',
@@ -259,6 +294,8 @@ export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
 
 /** Common units used in BOQ / activities. Free text is still allowed. */
 export const COMMON_UNITS = ['Cum', 'Sqm', 'Rmt', 'MT', 'Nos', 'Kg', 'Ltr', 'LS', 'Km', '%'];
+/** A unit as people read it: the stored code "Cum" shows as m³. */
+export const unitLabel = (unit: string) => (unit.trim().toLowerCase() === 'cum' ? 'm³' : unit);
 
 /** Manpower categories used in DPR manpower summary. */
 export const MANPOWER_CATEGORIES = ['Mason', 'Carpenter', 'Bar Bender', 'Helper', 'Operator', 'Driver', 'Electrician', 'Plumber', 'Supervisor', 'Other'];
@@ -346,7 +383,7 @@ export const BILL_STAGE_LABELS: Record<BillStage, string> = {
 
 export const VENDOR_KIND_LABELS: Record<VendorKind, string> = {
   SUPPLIER: 'Material supplier',
-  HIRE_AGENCY: 'Machinery hire',
+  HIRE_AGENCY: 'Hire agency',
   SUBCONTRACTOR: 'Subcontractor',
   LABOUR_CONTRACTOR: 'Labour contractor',
   SERVICE: 'Services',
@@ -359,7 +396,7 @@ export const MSME_CATEGORY_LABELS: Record<MsmeCategory, string> = {
 };
 
 export const RECEIPT_KIND_LABELS: Record<ReceiptKind, string> = {
-  BILL: 'Bill payment',
+  BILL: 'Against an RA bill',
   RETENTION_RELEASE: 'Retention released',
   DEPOSIT_RELEASE: 'Security deposit released',
 };
@@ -397,6 +434,8 @@ export const WORK_PERMIT_STATUS_LABELS: Record<WorkPermitStatus, string> = {
   REJECTED: 'Rejected',
   CLOSED: 'Closed',
 };
+/** An issued permit past its end, in place of its status. */
+export const WORK_PERMIT_EXPIRED_LABEL = 'Expired';
 
 export const MAINTENANCE_KIND_LABELS: Record<MaintenanceKind, string> = {
   SERVICE: 'Service',
