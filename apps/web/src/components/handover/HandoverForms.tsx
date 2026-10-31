@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, AutoComplete, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
+import { App, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,11 +14,11 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { DescribeFromPhoto } from '@/components/photo-checks/DescribeFromPhoto';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { MasterInput } from '@/components/masters/MasterInput';
 
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const t = (v?: string) => v?.trim() || null;
 const DATE = 'DD MMM YYYY';
-const TRADES = ['Civil', 'Plaster', 'Masonry', 'Tiling', 'Painting', 'Plumbing', 'Electrical', 'Joinery', 'Waterproofing', 'Fabrication', 'Road work', 'Drainage', 'Road marking', 'Landscaping'];
 
 /* ---------- completion ---------- */
 
@@ -270,7 +270,7 @@ export function DefectFormModal({
                   <Input maxLength={200} placeholder="Block, floor, room or chainage" />
                 </Form.Item>
                 <Form.Item name="trade" label="Trade">
-                  <AutoComplete options={TRADES.map((v) => ({ value: v }))} showSearch={{ filterOption: (input, o) => String(o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} maxLength={80} />
+                  <MasterInput list="workTrade" maxLength={80} />
                 </Form.Item>
                 <Form.Item name="reportedOn" label="Found on">
                   <DatePicker format={DATE} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
