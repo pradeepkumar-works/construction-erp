@@ -218,6 +218,16 @@ export type RfiStatus = (typeof RFI_STATUSES)[number];
 export const RFI_PRIORITIES = ['NORMAL', 'URGENT'] as const;
 export type RfiPriority = (typeof RFI_PRIORITIES)[number];
 
+/**
+ * Where a consultant's engineer stands on a project (item 172): it sets how much of the measurements they check before a
+ * bill is certified (CHECK_LEVEL_SHARE), lowest first. Kept on their place in the project's team.
+ */
+export const CHECK_LEVELS = ['ASSISTANT_ENGINEER', 'RESIDENT_ENGINEER', 'DEPUTY_TEAM_LEADER', 'TEAM_LEADER'] as const;
+export type CheckLevel = (typeof CHECK_LEVELS)[number];
+/** A site order book entry (item 172): OPEN until the site replies with its compliance, REPLIED until the issuer accepts it. */
+export const SITE_ORDER_STATUSES = ['OPEN', 'REPLIED', 'CLOSED'] as const;
+export type SiteOrderStatus = (typeof SITE_ORDER_STATUSES)[number];
+
 /** A scheduled service when it falls due, or a breakdown repair. */
 export const MAINTENANCE_KINDS = ['SERVICE', 'BREAKDOWN'] as const;
 export type MaintenanceKind = (typeof MAINTENANCE_KINDS)[number];

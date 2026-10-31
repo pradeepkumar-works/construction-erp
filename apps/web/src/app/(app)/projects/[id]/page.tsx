@@ -33,6 +33,7 @@ import { RiskList } from '@/components/risks/RiskList';
 import { SafetyPanel } from '@/components/safety/SafetyPanel';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { ProjectQualityTab } from '@/components/quality/QualityTabs';
+import { SiteOrdersTab } from '@/components/site-orders/SiteOrdersTab';
 import { ProjectDocumentsTab } from '@/components/documents/DocumentTabs';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { ProjectBudgetPanel } from '@/components/cost/ProjectBudgetPanel';
@@ -105,6 +106,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
     { key: 'mb', group: 'site', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
     { key: 'inspections', group: 'site', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },
+    { key: 'site-orders', group: 'site', label: 'Site orders', children: <SiteOrdersTab projectId={project.id} initialOrderId={search.get('order') ?? undefined} /> },
     can(!user?.modulesOff?.includes('safety')) && { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
     { key: 'risks', group: 'site', label: 'Delays and risks', children: <RiskList projectId={project.id} /> },
     { key: 'documents', group: 'site', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },

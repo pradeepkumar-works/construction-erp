@@ -14,6 +14,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
 import { StageBillingService } from '../stage-billing/stage-billing.service';
+import { ConsultantChecksService } from '../consultant-checks/consultant-checks.service';
 import { storedLines } from '../contracts/obligation-recovery';
 import { BILL_TERMS_SELECT, PCT_DEDUCTIONS, TERMS_SELECT, billTotals, measuredLines, writeBill, type Line } from './ra-bill-pricing';
 import { ClaimStageDto } from '../stage-billing/stage-billing.dto';
@@ -103,6 +104,7 @@ export class RaBillsService {
     private notifications: NotificationsService,
     private stageBilling: StageBillingService,
     private email: EmailService,
+    private checks: ConsultantChecksService,
   ) {}
 
   private readonly log = new Logger(RaBillsService.name);
@@ -667,6 +669,8 @@ export class RaBillsService {
     await this.access.assertCanActAsClient(user, row.projectId);
     const bill = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, include: { items: true, stageLines: true, project: { select: TERMS_SELECT } } });
     if (bill.stage !== 'SENT') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'This bill is already certified');
+    // A consultant certifies only once they have checked their share of the bill's measurements (item 172).
+    await this.checks.assertMayCertify(user, id, bill.projectId);
     await this.applyCertificate(user, bill, dto);
     const dtoOut = await this.getForClient(user, id);
     const told = await this.access.approversForProject(user.organizationId, bill.projectId, 'BILL');

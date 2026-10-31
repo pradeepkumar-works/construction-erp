@@ -949,8 +949,11 @@ real tenders: gap analysis"; Pradeep chose items 1 to 3 of it, in order.
      its deadline from the agreement, start, completion or handover, and what missing it costs; RA bills deduct it as named
      Contract recoveries and give a withholding back once met; reminders a week before and when it passes; the security
      deposit held to a cap of the contract value. ARCHITECTURE "Contract obligations and recoveries".
-172. **Consultant checks in the portal** (M): tiered check measurement (100%, 25%, 10% and 3% by the consultant's level),
-     hidden work signed off against its inspection and countersigned, and a site order book with compliance replies.
+172. ~~**Consultant checks in the portal** (M).~~ Done: a check level for each of the client's side on the project's team;
+     check measurement in the portal at 100%, 25%, 10% and 3% by value, with the certificate held until the certifier has
+     checked their share and a short check told to the QS; hidden work signed off against its inspection before cover-up
+     and countersigned from above before its progress is approved; and a site order book with compliance replies, accepted
+     or sent back. ARCHITECTURE "Consultant checks".
 173. **Programme submissions and extension of time applications** (M): the programme submitted and approved with its
      update interval and the 0.20% watch, and EOT applications as records (sent, forwarded, decided within 30 days, EOT
      for a variation) that write the delay register's `eotGrantedDays`.

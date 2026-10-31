@@ -195,6 +195,7 @@ export class PlanningService {
       checklistTemplateId: a.checklistTemplateId,
       checklistName: a.checklistTemplate?.name ?? null,
       holdPoint: a.holdPoint,
+      hiddenWork: a.hiddenWork,
       baselineStart: dateOnly(a.baselineStart),
       baselineEnd: dateOnly(a.baselineEnd),
       workElementId: a.workElementId,
@@ -327,6 +328,7 @@ export class PlanningService {
         responsibleId: dto.responsibleId ?? null,
         checklistTemplateId: dto.checklistTemplateId ?? null,
         holdPoint: dto.holdPoint ?? false,
+        hiddenWork: dto.hiddenWork ?? false,
         sortOrder: dto.sortOrder ?? 0,
         ...links,
       },
@@ -351,6 +353,7 @@ export class PlanningService {
     if (dto.responsibleId !== undefined) data.responsibleId = dto.responsibleId;
     if (dto.checklistTemplateId !== undefined) data.checklistTemplateId = dto.checklistTemplateId;
     if (dto.holdPoint !== undefined) data.holdPoint = dto.holdPoint;
+    if (dto.hiddenWork !== undefined) data.hiddenWork = dto.hiddenWork;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     await this.prisma.$transaction(async (tx) => {
       await tx.activity.update({ where: { id }, data });

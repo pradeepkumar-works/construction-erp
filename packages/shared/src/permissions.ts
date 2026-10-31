@@ -78,6 +78,13 @@ export const QUALITY_TEST_ROLES: RoleKey[] = INSPECTION_REQUEST_ROLES;
 /** Roles that raise and close non-conformance reports: QA/QC and approvers. */
 export const NCR_ROLES: RoleKey[] = CHECKLIST_ADMIN_ROLES;
 
+/**
+ * Record a site order from the paper book and answer site orders with the compliance (item 172): the site staff, QA/QC,
+ * the QS and approvers. Anyone with project access reads the book; the client's engineer and the consultant write in it
+ * from the portal.
+ */
+export const SITE_ORDER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QA_QC_ENGINEER', 'QUANTITY_SURVEYOR', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
 /** Keep the document register: add drawings and revisions, send transmittals. Everyone on a project reads it. */
 export const DOCUMENT_CONTROL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER', 'DOCUMENT_CONTROLLER'];
 
@@ -118,6 +125,7 @@ export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
 /** Issue an official progress report to the client (item 174): it takes a revision and is kept as issued. */
 export const canIssueOfficialReport = (role: RoleKey) => APPROVER_ROLES.includes(role);
 export const canRequestInspection = (role: RoleKey) => INSPECTION_REQUEST_ROLES.includes(role);
+export const canKeepSiteOrders = (role: RoleKey) => SITE_ORDER_ROLES.includes(role);
 export const canManageChecklists = (role: RoleKey) => CHECKLIST_ADMIN_ROLES.includes(role);
 export const canRecordTest = (role: RoleKey) => QUALITY_TEST_ROLES.includes(role);
 export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);

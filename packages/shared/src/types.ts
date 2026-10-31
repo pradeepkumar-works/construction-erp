@@ -8,6 +8,7 @@ import type { AuthGroupDto, CompanyChoiceDto } from './group';
 import type { RaBillStageLineDto, SlippageLineDto } from './stage-billing';
 import type { ObligationBillLineDto } from './contract-obligations';
 import type { OmBillDto } from './om';
+import type { HiddenWorkDto } from './consultant-checks';
 import type { EmployeePrivateDto, EmploymentType } from './hr';
 import type { NotificationTab } from './notifications';
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
@@ -46,6 +47,7 @@ import type {
   ContractModel,
   PushPlatform,
   RoleKey,
+  CheckLevel,
   StockEntryType,
   SubmissionStatus,
   SubmissionType,
@@ -172,6 +174,8 @@ export interface ProjectMemberDto {
   fullName: string;
   roleKey: RoleKey;
   roleName: string;
+  /** A client guest's level on this project (item 172): how much of the measurements they check */
+  checkLevel: CheckLevel | null;
 }
 
 export interface ProjectSummary {
@@ -280,6 +284,8 @@ export interface ActivityDto {
   checklistName: string | null;
   /** Progress is approved only after a passed inspection */
   holdPoint: boolean;
+  /** Hidden work (item 172): covered up once done, so its inspection is signed off and countersigned before progress is approved */
+  hiddenWork: boolean;
   /** Planned dates when the baseline was frozen; null if added after it */
   baselineStart: string | null;
   baselineEnd: string | null;
@@ -619,7 +625,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | 'MEETING' | 'MATERIAL_APPROVAL' | 'ACCESS_REQUEST' | 'ACCESS_DECISION' | 'GRN' | 'GRN_CHECK' | 'GRN_TO_BILL' | 'DEBIT_TO_RAISE' | 'TRANSFER_IN' | 'PROJECT' | 'LETTER' | 'CONTRACT_OBLIGATION' | 'SITE_ORDER' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -2721,6 +2727,9 @@ export interface InspectionDto extends SubmissionBase {
   activityName: string;
   /** The activity is a hold point: its progress waits for a passed inspection */
   holdPoint: boolean;
+  /** The activity is hidden work (item 172): the inspection carries a sign-off before cover-up, countersigned */
+  hiddenWork: boolean;
+  hidden: HiddenWorkDto | null;
   /** The date the work is ready for inspection */
   date: string;
   location: string;

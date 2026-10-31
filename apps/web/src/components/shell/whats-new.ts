@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-10-consultant-checks',
+    date: '2027-10-18',
+    title: 'Consultant checks in the client portal',
+    points: [
+      'Give each of the consultant’s engineers a check level on the project’s team: assistant engineer, resident engineer, deputy team leader or team leader. In the portal’s Check measurement tab they check approved sheets with their own quantity, and a bill waits for their certificate until they have checked their share (100%, 25%, 10% or 3% by value). A check that differs tells the QS.',
+      'Mark an activity as hidden work (foundations, reinforcement): its inspection is signed off before cover-up in the portal and countersigned by someone above, and its progress is approved only after both.',
+      'A site order book on each project: the engineer writes an order in the portal or you copy one in from the paper book, the site replies with its compliance on the Site orders tab, and the engineer accepts it or sends it back.',
+    ],
+  },
+  {
     id: '2027-09-contract-obligations',
     date: '2027-10-11',
     title: 'Contract obligations and recoveries',

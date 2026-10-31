@@ -322,6 +322,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/contract-obligations-test.js
+      - name: Consultants check their share of the measurements before certifying, hidden work is countersigned above its sign-off, and site orders run to their compliance
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/consultant-checks-test.js
       - name: Masters lay the company's entries over the standard ones, keep a name in use, and sit in every department's menu
         if: matrix.suite == 'flows'
         working-directory: apps/api
