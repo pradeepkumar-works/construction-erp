@@ -46,7 +46,7 @@ function AdjustModal({ open, onClose, slip }: { open: boolean; onClose: () => vo
         <Typography.Paragraph type="secondary">PF, ESI, professional tax and TDS are worked out again with these lines.</Typography.Paragraph>
         <LineTable
           name="lines"
-          label="Line"
+          label="Payslip"
           addText="Add a line"
           columns={[
             {

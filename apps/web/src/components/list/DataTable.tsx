@@ -246,7 +246,7 @@ export function DataTable<T extends { id: string }>({
     </div>
   ) : failed ? (
     <Typography.Text type="secondary">
-      The list could not be loaded.
+      The list could not load. Try again in a moment.
     </Typography.Text>
   ) : (
     <div>
@@ -393,8 +393,8 @@ export function DataTable<T extends { id: string }>({
           >
             <Button
               size="small"
-              type={wrap ? "primary" : "default"}
-              ghost={wrap}
+              color="default"
+              variant={wrap ? "filled" : "outlined"}
               icon={<LineHeightOutlined />}
               aria-pressed={wrap}
               aria-label="Wrap long text"
@@ -500,7 +500,7 @@ export function DataTable<T extends { id: string }>({
                               </span>
                             ) : i === 0 ? (
                               <Typography.Text type="secondary">
-                                Total, this page
+                                Page total
                               </Typography.Text>
                             ) : null}
                           </Table.Summary.Cell>

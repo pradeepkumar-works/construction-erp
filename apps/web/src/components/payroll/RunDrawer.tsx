@@ -210,7 +210,7 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
                 ],
               }}
             >
-              <Button icon={<DownloadOutlined />}>Files</Button>
+              <Button icon={<DownloadOutlined />}>Download files</Button>
             </Dropdown>
             <Button icon={<PrinterOutlined />} disabled={!run.payslips.length} onClick={() => openPayslips(run.payslips, company)}>
               Print payslips

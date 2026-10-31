@@ -81,7 +81,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
         <Typography.Text type="secondary">Days present, leave and overtime for each person this month. Salary runs use these figures; export them if an outside firm runs your payroll.</Typography.Text>
         <div style={{ flex: 1 }} />
         <Button icon={<DownloadOutlined />} disabled={!rows.length} onClick={() => downloadXlsx(`payroll-inputs-${month}`, `Staff ${month}`, exportColumns, rows)}>
-          Export Excel
+          Export to Excel
         </Button>
       </div>
       {unmarked > 0 && (

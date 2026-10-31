@@ -6,7 +6,7 @@ import { FileExcelOutlined } from '@/components/common/icons';
 import { errorMessage } from '@/lib/api';
 
 /** "Export to Excel" button; `onExport` fetches every matching row (not just the page on screen) and downloads it. */
-export function ExportButton({ onExport, label = 'Export' }: { onExport: () => Promise<number | void>; label?: string }) {
+export function ExportButton({ onExport, label = 'Export to Excel' }: { onExport: () => Promise<number | void>; label?: string }) {
   const { message } = App.useApp();
   const [busy, setBusy] = useState(false);
   return (
@@ -19,7 +19,7 @@ export function ExportButton({ onExport, label = 'Export' }: { onExport: () => P
           const n = await onExport();
           if (typeof n === 'number') message.success(`Exported ${n} row${n === 1 ? '' : 's'}`);
         } catch (e) {
-          message.error(errorMessage(e, 'Export failed'));
+          message.error(errorMessage(e, 'The export did not finish. Try again, or narrow the filters.'));
         } finally {
           setBusy(false);
         }

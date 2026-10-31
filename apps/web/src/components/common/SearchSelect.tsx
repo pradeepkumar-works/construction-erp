@@ -85,7 +85,7 @@ export function SearchSelect<T extends { id: string }>({ source, params, toOptio
         fetching ? (
           <Spin size="small" />
         ) : (
-          <Typography.Text type="secondary">{q ? `Nothing matches "${q}"` : 'Nothing to choose yet'}</Typography.Text>
+          <Typography.Text type="secondary">{q ? `Nothing matches “${q}”` : 'Nothing to choose yet'}</Typography.Text>
         )
       }
     />
@@ -152,7 +152,7 @@ export function UserMultiSelect({
         setOpen(o);
         if (!o) setSearch('');
       }}
-      notFoundContent={open && page.isFetching ? <Spin size="small" /> : <Typography.Text type="secondary">{q ? `Nothing matches "${q}"` : 'Nothing to choose yet'}</Typography.Text>}
+      notFoundContent={open && page.isFetching ? <Spin size="small" /> : <Typography.Text type="secondary">{q ? `Nothing matches “${q}”` : 'Nothing to choose yet'}</Typography.Text>}
     />
   );
 }

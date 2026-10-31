@@ -10,7 +10,7 @@ import { PRODUCT_NAME, navNode, navNodeAt } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import { api, describeError } from '@/lib/api';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, inSentence } from '@/lib/format';
 import { setLeaveGuard } from '@/lib/leave-guard';
 import { handledInPlace } from '@/lib/notify';
 import { useProjectScope } from '@/lib/project-scope';
@@ -407,7 +407,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
           title={aiDraft.note ?? `Filled in by Ask ${PRODUCT_NAME} from what you wrote`}
           description={
             <>
-              Check each field before you {okText.toLowerCase()}. Nothing is saved until you do.
+              Check each field before you {inSentence(okText)}. Nothing is saved until you do.
               {aiDraft.flags.length > 0 && (
                 <ul aria-label="To check" style={{ margin: `${token.marginXXS}px 0 0`, paddingInlineStart: token.paddingMD }}>
                   {aiDraft.flags.map((f, i) => (
@@ -474,7 +474,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
                       >
                         {p.label}
                       </Typography.Link>
-                      {p.message && p.message !== p.label ? <Typography.Text type="secondary">{` · ${whole ? 'Required' : p.message}`}</Typography.Text> : null}
+                      {p.message && p.message !== p.label ? <Typography.Text type="secondary">{` · ${whole ? `Enter the ${inSentence(p.label)}` : p.message}`}</Typography.Text> : null}
                     </li>
                   );
                 })}

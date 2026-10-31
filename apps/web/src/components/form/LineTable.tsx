@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { Button, Form, Table, Typography, theme } from 'antd';
 import type { FormListFieldData, FormListOperation, TableColumnType } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
+import { inSentence } from '@/lib/format';
 
 export interface LineColumn {
   key: string;
@@ -84,7 +85,7 @@ export function LineTable({
                   key: 'remove',
                   width: 44,
                   render: (_: unknown, f: FormListFieldData, i: number) => (
-                    <Button type="text" size="small" aria-label={`Remove ${label} line ${i + 1}`} icon={<DeleteOutlined />} disabled={fields.length <= min} onClick={() => ops.remove(f.name)} />
+                    <Button type="text" size="small" aria-label={`Remove ${inSentence(label)} line ${i + 1}`} icon={<DeleteOutlined />} disabled={fields.length <= min} onClick={() => ops.remove(f.name)} />
                   ),
                 },
               ]),
@@ -100,7 +101,7 @@ export function LineTable({
               dataSource={fields}
               columns={cols}
               scroll={{ x: minWidth }}
-              locale={{ emptyText: `No ${label.toLowerCase()} lines yet` }}
+              locale={{ emptyText: `No ${inSentence(label)} lines yet` }}
               onRow={(_, i) => ({ 'data-line': i, 'data-line-label': `${label}, line ${(i ?? 0) + 1}` }) as React.HTMLAttributes<HTMLElement>}
               summary={footer ? () => footer(fields) : undefined}
             />

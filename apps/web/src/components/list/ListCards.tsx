@@ -216,7 +216,7 @@ export function ListCards<T extends { id: string }>({
         </ul>
         {totalColumns.length ? (
           <div className="list-card-totals">
-            <Typography.Text type="secondary">Total, this page</Typography.Text>
+            <Typography.Text type="secondary">Page total</Typography.Text>
             <dl>
               {totalColumns.map((c) => (
                 <div key={c.key}>
