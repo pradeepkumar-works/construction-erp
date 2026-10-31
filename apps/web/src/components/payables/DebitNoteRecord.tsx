@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useDebitNote } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatQty, NO_VALUE } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatPct, formatQty, NO_VALUE } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 
@@ -147,7 +147,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                       { title: 'What for', dataIndex: 'description' },
                       { title: 'Quantity', key: 'qty', width: 120, align: 'right', render: (_, l) => (l.quantity ? `${formatQty(l.quantity)} ${l.unit ?? ''}` : NO_VALUE) },
                       { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v: string | null) => (v ? money(v) : NO_VALUE) },
-                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => `${v}%` },
+                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => formatPct(v) },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => money(v, true) },
                     ]}
                     summary={() => (

@@ -9,7 +9,7 @@ import type { GrnQcStatus, StockEntryDto, StockLineDto } from '@erp/shared';
 import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS, certificateNeeded } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { formatQty, inSentence } from '@/lib/format';
+import { formatDate, formatQty, inSentence } from '@/lib/format';
 import { useCertificateCategories } from '@/lib/queries';
 import { DatePicker } from '@/components/common/DatePicker';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -87,7 +87,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`QA/QC check · ${entry.entryNo}`} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-        {entry.supplier ?? 'Material'} received on {entry.date}. The stock is not changed: send rejected material back with a return to vendor.
+        {entry.supplier ?? 'Material'} received on {formatDate(entry.date)}. The stock is not changed: send rejected material back with a return to vendor.
       </Typography.Paragraph>
       <Form form={form} layout="vertical" className="grn-qc-form">
         <Form.Item name="status" label="Result">

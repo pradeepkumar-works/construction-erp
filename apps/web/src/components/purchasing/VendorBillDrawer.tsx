@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useVendorBill } from '@/lib/queries';
-import { formatDate, formatINR, formatQty, toNumber, NO_VALUE, formatMonthLong } from '@/lib/format';
+import { formatDate, formatINR, formatPct, formatQty, toNumber, NO_VALUE, formatMonthLong } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -219,7 +219,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         dataIndex: 'gstRate',
                         width: 80,
                         align: 'right',
-                        render: (v, l) => <Typography.Text type={toNumber(v) !== toNumber(l.poGstRate) ? 'danger' : undefined}>{v}%</Typography.Text>,
+                        render: (v, l) => <Typography.Text type={toNumber(v) !== toNumber(l.poGstRate) ? 'danger' : undefined}>{formatPct(v)}</Typography.Text>,
                       },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
                       { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => money(v) },
@@ -227,7 +227,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                       { title: 'Line', dataIndex: 'itemName' },
                       { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 130, align: 'right', render: (v) => money(v) },
-                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => `${v}%` },
+                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => formatPct(v) },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
                       { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => money(v) },
                     ]}
