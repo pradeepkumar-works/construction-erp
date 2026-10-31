@@ -34,6 +34,7 @@ import { ExpiryTag } from '@/components/maintenance/maintenanceUi';
 import { RecordLink } from '@/components/record/RecordLink';
 import { ComplianceFormModal, type ComplianceAction } from './ComplianceForms';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { openableRow } from '@/components/list/openableRow';
 
 const KIND_COLORS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'blue', EMD: 'cyan', INSURANCE: 'purple', LICENCE: 'geekblue' };
 const STATUS_COLORS: Record<ComplianceDocStatus, string> = { ACTIVE: 'green', RENEWED: 'default', RELEASED: 'default', INVOKED: 'red' };
@@ -218,7 +219,8 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           columns={columns}
           pagination={false}
           scroll={{ x: 900 }}
-          onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
+          rowClassName="row-click"
+          onRow={(r) => openableRow(() => setOpenId(r.id))}
           locale={{ emptyText: status === 'ACTIVE' && !state && !q && kind === 'ALL' && !projectId ? 'Nothing in the register yet. Add your bank guarantees, EMDs, insurance policies and licences with New guarantee or licence.' : 'Nothing matches' }}
         />
       )}
@@ -307,7 +309,8 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
                   size="small"
                   pagination={false}
                   dataSource={d.history}
-                  onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
+                  rowClassName="row-click"
+                  onRow={(r) => openableRow(() => setOpenId(r.id))}
                   columns={[
                     { title: 'Number', dataIndex: 'reference' },
                     { title: 'Valid', key: 'v', render: (_, h) => `${h.issuedOn ? formatDate(h.issuedOn) : '?'} to ${h.expiresOn ? formatDate(h.expiresOn) : NO_VALUE}` },

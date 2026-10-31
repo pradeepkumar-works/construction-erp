@@ -18,6 +18,7 @@ import { FormShell } from '@/components/form/FormShell';
 import { PayslipModal } from './PayslipModal';
 import { RunStatusTag, Rupees, monthLabel, saveText } from './payrollUi';
 import { openPayslips } from './payslipPrint';
+import { openableRow } from '@/components/list/openableRow';
 
 const amount = (p: PayslipDto, code: string) => Number(p.lines.find((l) => l.code === code)?.amount ?? 0);
 
@@ -224,7 +225,8 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
             dataSource={run.payslips}
             pagination={false}
             scroll={{ x: 726, y: 480 }}
-            onRow={(p) => ({ onClick: () => setSlipFor(p.employeeId), style: { cursor: 'pointer' } })}
+            rowClassName="row-click"
+            onRow={(p) => openableRow(() => setSlipFor(p.employeeId))}
             locale={{ emptyText: 'No payslips: set salaries first' }}
           />
           <Typography.Text type="secondary">Open a payslip to see its lines{run.can.edit ? ' or add arrears, a bonus or a deduction' : ''}.</Typography.Text>

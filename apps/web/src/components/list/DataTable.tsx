@@ -26,6 +26,7 @@ import { EmptyArt } from "@/components/common/EmptyArt";
 import { HOVER_INTENT_MS, usePrefetch } from "@/lib/prefetch";
 import { useIsPhone, useWidthsReached } from "@/lib/screen";
 import { ListCards, type CardRole } from "./ListCards";
+import { ROW_OWN_CONTROLS } from "./openableRow";
 
 /** A list column: antd's, with a stable `key`, a plain-text `label` for the column chooser, and an optional page total. */
 export type ListColumn<T> = TableColumnType<T> & {
@@ -469,7 +470,7 @@ export function DataTable<T extends { id: string }>({
                       // Links, buttons, checkboxes, switches and menus in the row do their own thing.
                       if (
                         (e.target as HTMLElement).closest(
-                          "a, button, input, label, .ant-dropdown, .ant-checkbox-wrapper, .ant-image, .ant-switch",
+                          ROW_OWN_CONTROLS,
                         )
                       )
                         return;

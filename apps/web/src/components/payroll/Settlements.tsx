@@ -17,6 +17,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { Rupees, SettlementStatusTag } from './payrollUi';
 import { openSettlement } from './payslipPrint';
+import { openableRow } from '@/components/list/openableRow';
 
 interface PrepareValues {
   otherEarnings?: number;
@@ -274,7 +275,8 @@ export function Settlements() {
           dataSource={data ?? []}
           pagination={false}
           scroll={{ x: 1020 }}
-          onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
+          rowClassName="row-click"
+          onRow={(r) => openableRow(() => setOpenId(r.id))}
           locale={{ emptyText: 'No settlements yet. When someone leaves, record their exit on the staff record and work it out here.' }}
         />
       )}
