@@ -67,7 +67,7 @@ export class ContractsService {
       agreementNo: p.agreementNo,
       agreementDate: dateOnly(p.agreementDate),
       contractValue: money(p.contractValue),
-      approvedVariations: money(approvedVariations)!,
+      approvedVariations: money(approvedVariations),
       revisedContractValue: p.contractValue ? money(p.contractValue.add(approvedVariations)) : null,
       startDate: dateOnly(p.startDate),
       endDate,
@@ -76,7 +76,7 @@ export class ContractsService {
       extensions,
       retentionPct: pctStr(p.retentionPct),
       securityDepositPct: pctStr(p.securityDepositPct),
-      mobilisationAdvance: money(p.mobilisationAdvance)!,
+      mobilisationAdvance: money(p.mobilisationAdvance),
       advanceRecoveryPct: pctStr(p.advanceRecoveryPct),
       defectLiabilityMonths: p.defectLiabilityMonths,
       clientPaymentDays: p.clientPaymentDays,
@@ -95,7 +95,7 @@ export class ContractsService {
       ld: ld ? ContractsService.ldExposure(p, approvedVariations, extensionDays, ld) : null,
       currency: p.currency,
       exchangeRate: fxRate(p.exchangeRate),
-      updatedAt: iso(p.updatedAt)!,
+      updatedAt: iso(p.updatedAt),
     };
   }
 
@@ -138,7 +138,7 @@ export class ContractsService {
       ldRatePct: pctStr(p.ldRatePct),
       ldPeriod: p.ldPeriod,
       ldCapPct: pctStr(p.ldCapPct),
-      contractValue: money(value)!,
+      contractValue: money(value),
       endDate,
       extensionDays,
       revisedEndDate,
@@ -149,10 +149,10 @@ export class ContractsService {
       excusableDaysLost: excusable,
       contractorDaysLost: contractor,
       eotPendingDays,
-      ldToDate: money(ld(daysLate))!,
-      ldForecast: money(forecast)!,
-      ldForecastWithEot: money(ld(Math.max(0, forecastDaysLate - eotPendingDays)))!,
-      ldCap: money(cap)!,
+      ldToDate: money(ld(daysLate)),
+      ldForecast: money(forecast),
+      ldForecastWithEot: money(ld(Math.max(0, forecastDaysLate - eotPendingDays))),
+      ldCap: money(cap),
       capReached: p.ldRatePct.gt(0) && forecast.gte(cap) && cap.gt(0),
     };
   }

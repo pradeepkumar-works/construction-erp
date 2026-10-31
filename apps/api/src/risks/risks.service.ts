@@ -111,8 +111,8 @@ export class RisksService {
       raisedById: r.raisedById,
       raisedByName: r.raisedBy.fullName,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

@@ -105,7 +105,7 @@ export class StageBillingService {
           packageIds: s.packageIds,
           packageNames: s.packageIds.map((id) => packageName.get(id) ?? 'A package since removed'),
           packageStage: s.packageStage,
-          value: money(share ? stageValue(share.value, s.pct) : ZERO)!,
+          value: money(share ? stageValue(share.value, s.pct) : ZERO),
           evidencePct: ev.pct,
           evidenceText: ev.text,
           billedPct: round3(billedOf.get(s.id) ?? 0),
@@ -135,7 +135,7 @@ export class StageBillingService {
 
     const start = dateOnly(project.startDate);
     const end = dateOnly(project.endDate);
-    const months = start && end ? monthsBetween(start, end) : [...new Set(targets.map((t) => dateOnly(t.month)!))];
+    const months = start && end ? monthsBetween(start, end) : [...new Set(targets.map((t) => dateOnly(t.month)))];
     const top = dtos.filter((c) => !c.parentId && c.basis === 'STAGES');
     const grid: MilestoneRowDto[] = top.map((c) => ({
       componentId: c.id,
@@ -187,7 +187,7 @@ export class StageBillingService {
     let sum = 0;
     for (const leaf of leaves(componentId)) {
       for (const s of leaf.stages) {
-        const pct = billed.filter((b) => b.stageId === s.id && dateOnly(b.bill.measuredUpTo)! <= day).reduce((x, b) => x + num(b.certifiedPct ?? b.thisPct), 0);
+        const pct = billed.filter((b) => b.stageId === s.id && dateOnly(b.bill.measuredUpTo) <= day).reduce((x, b) => x + num(b.certifiedPct ?? b.thisPct), 0);
         sum += (Number(s.value) * pct) / 100;
       }
     }

@@ -79,7 +79,7 @@ export class InspectionsService {
       activityId: r.activityId,
       activityName: r.activity.name,
       holdPoint: r.activity.holdPoint,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       location: r.location,
       remarks: r.remarks,
       checklistName: r.checklistName,
@@ -93,8 +93,8 @@ export class InspectionsService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

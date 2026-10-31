@@ -90,12 +90,12 @@ export class SectorService {
             activityId: a.id,
             name: a.name,
             unit: a.unit,
-            plannedQty: dec(a.plannedQty)!,
-            executedQty: dec(executed.get(a.id)!)!,
+            plannedQty: dec(a.plannedQty),
+            executedQty: dec(executed.get(a.id)!),
             coveredM: covered,
             pendingM: all - covered,
-            unplacedQty: dec(approvedSum(es.filter((e) => e.chainageFrom === null)))!,
-            segments: placed.slice(0, MAX_SEGMENTS).map((e) => ({ ...seg(e), quantity: dec(e.quantity)!, status: e.status, date: dateOnly(e.date)!, entryId: e.id })),
+            unplacedQty: dec(approvedSum(es.filter((e) => e.chainageFrom === null))),
+            segments: placed.slice(0, MAX_SEGMENTS).map((e) => ({ ...seg(e), quantity: dec(e.quantity), status: e.status, date: dateOnly(e.date), entryId: e.id })),
           };
         });
     }
@@ -117,17 +117,17 @@ export class SectorService {
           cells.push({
             row,
             activityId: a.id,
-            approvedQty: dec(approvedSum(es))!,
-            pendingQty: dec(sum(es.filter((e) => e.status === 'SUBMITTED').map((e) => e.quantity)))!,
+            approvedQty: dec(approvedSum(es)),
+            pendingQty: dec(sum(es.filter((e) => e.status === 'SUBMITTED').map((e) => e.quantity))),
             lastDate: dateOnly(es[0].date),
           });
       }
       matrix = {
         rowLabel: water ? 'Village' : 'Floor',
         rows: [...listed, ...extra],
-        activities: used.map((a) => ({ id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty)!, executedQty: dec(executed.get(a.id)!)! })),
+        activities: used.map((a) => ({ id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty), executedQty: dec(executed.get(a.id)!) })),
         cells,
-        unassigned: used.map((a) => ({ activityId: a.id, approvedQty: dec(approvedSum((byActivity.get(a.id) ?? []).filter((e) => !key(e))))! })).filter((u) => Number(u.approvedQty) !== 0),
+        unassigned: used.map((a) => ({ activityId: a.id, approvedQty: dec(approvedSum((byActivity.get(a.id) ?? []).filter((e) => !key(e)))) })).filter((u) => Number(u.approvedQty) !== 0),
       };
     }
 
@@ -143,17 +143,17 @@ export class SectorService {
       const villageNames = [...new Set([...project.villages, ...entries.map((e) => e.village).filter((v): v is string => !!v)])];
       const villages: VillagePipeline[] = villageNames.map((v) => ({
         village: v,
-        laidM: dec(sum(approvedOf('LAID').filter((e) => e.village === v).map((e) => e.quantity)))!,
-        testedM: dec(sum(approvedOf('TESTED').filter((e) => e.village === v).map((e) => e.quantity)))!,
+        laidM: dec(sum(approvedOf('LAID').filter((e) => e.village === v).map((e) => e.quantity))),
+        testedM: dec(sum(approvedOf('TESTED').filter((e) => e.village === v).map((e) => e.quantity))),
       }));
       pipeline = {
         stages: {
-          orderedM: dec(sum(poLines.filter((l) => isPipeItem(l.itemName, l.unit)).map((l) => l.quantity)))!,
+          orderedM: dec(sum(poLines.filter((l) => isPipeItem(l.itemName, l.unit)).map((l) => l.quantity))),
           // Returns to the supplier are stored negative.
-          suppliedM: dec(sum(receipts.filter((t) => isPipeItem(t.item.name, t.item.unit)).map((t) => t.quantity)))!,
-          laidM: dec(sum(approvedOf('LAID').map((e) => e.quantity)))!,
-          testedM: dec(sum(approvedOf('TESTED').map((e) => e.quantity)))!,
-          plannedM: dec(sum(laidActs.map((a) => a.plannedQty)))!,
+          suppliedM: dec(sum(receipts.filter((t) => isPipeItem(t.item.name, t.item.unit)).map((t) => t.quantity))),
+          laidM: dec(sum(approvedOf('LAID').map((e) => e.quantity))),
+          testedM: dec(sum(approvedOf('TESTED').map((e) => e.quantity))),
+          plannedM: dec(sum(laidActs.map((a) => a.plannedQty))),
         },
         villages,
       };

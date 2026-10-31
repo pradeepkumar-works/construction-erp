@@ -63,7 +63,7 @@ export class HrService {
       employeeName: e.employee.fullName,
       employeeCode: e.employee.employeeCode,
       type: e.type,
-      effectiveDate: dateOnly(e.effectiveDate)!,
+      effectiveDate: dateOnly(e.effectiveDate),
       letterNo: e.letterNo,
       fromProjectName: e.fromProject?.name ?? null,
       toProjectName: e.toProject?.name ?? null,
@@ -282,7 +282,7 @@ export class HrService {
     const until = monthEnd(today, 1);
     const upcoming = (d: Date | null): string | null => {
       if (!d) return null;
-      const md = dateOnly(d)!.slice(5);
+      const md = dateOnly(d).slice(5);
       for (const y of [Number(today.slice(0, 4)), Number(today.slice(0, 4)) + 1]) {
         const on = `${y}-${md}`;
         if (on >= today && on <= until) return on;
@@ -305,10 +305,10 @@ export class HrService {
       bySite: tally((e) => [e.project?.name ?? '', e.project?.name ?? 'Head office']),
       byDepartment: tally((e) => [e.department ?? '', e.department ?? 'No department']),
       byType: tally((e) => [e.employmentType ?? '', e.employmentType ? EMPLOYMENT_TYPE_LABELS[e.employmentType] : 'Not set']),
-      joinedThisMonth: active.filter((e) => e.joinedOn && dateOnly(e.joinedOn)! >= monthStart).map((e) => row(e, dateOnly(e.joinedOn)!)),
+      joinedThisMonth: active.filter((e) => e.joinedOn && dateOnly(e.joinedOn) >= monthStart).map((e) => row(e, dateOnly(e.joinedOn)!)),
       leftThisMonth: left.map((e) => row(e, dateOnly(e.leftOn)!)),
       probationDue: active
-        .filter((e) => e.probationEndsOn && !e.confirmedOn && dateOnly(e.probationEndsOn)! <= soon)
+        .filter((e) => e.probationEndsOn && !e.confirmedOn && dateOnly(e.probationEndsOn) <= soon)
         .map((e) => row(e, dateOnly(e.probationEndsOn)!))
         .sort((a, b) => a.date.localeCompare(b.date)),
       birthdays: birthdays.sort((a, b) => a.date.localeCompare(b.date)),

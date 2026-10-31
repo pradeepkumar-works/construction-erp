@@ -33,7 +33,7 @@ export class ScheduleService {
   }
 
   private toMilestoneDto(m: Prisma.MilestoneGetPayload<object>, today: string): MilestoneDto {
-    const dueDate = dateOnly(m.dueDate)!;
+    const dueDate = dateOnly(m.dueDate);
     const achievedOn = dateOnly(m.achievedOn);
     return {
       id: m.id,

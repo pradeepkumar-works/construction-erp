@@ -393,7 +393,7 @@ export class WhatsappService {
     const kind = r.recordKind && isCaptureSaveKind(r.recordKind as CaptureSaveKind) ? (r.recordKind as CaptureSaveKind) : null;
     return {
       id: r.id,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
       userId: r.userId,
       userName: r.user?.fullName ?? null,
       fromPhone: r.fromPhone,

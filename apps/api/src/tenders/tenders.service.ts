@@ -162,10 +162,10 @@ export class TendersService {
       status: t.status,
       bidType: t.bidType,
       estimatedValue: money(t.estimatedValue),
-      submitBy: dateOnly(t.submitBy)!,
+      submitBy: dateOnly(t.submitBy),
       submittedOn: dateOnly(t.submittedOn),
       openedOn: dateOnly(t.openedOn),
-      daysToSubmit: t.status === 'PREPARING' ? daysToSubmit(dateOnly(t.submitBy)!, today) : null,
+      daysToSubmit: t.status === 'PREPARING' ? daysToSubmit(dateOnly(t.submitBy), today) : null,
       quotedAmount: money(p.totals.quotedAmount),
       quotedPct: p.totals.quotedPct,
       rank: opened ? (p.ranked.find((b) => b.us)?.rank ?? null) : null,
@@ -240,16 +240,16 @@ export class TendersService {
     // Open tenders soonest due first; closed ones latest first.
     if (status === 'open') shown.sort((a, b) => a.dto.submitBy.localeCompare(b.dto.submitBy) || a.dto.tenderNo.localeCompare(b.dto.tenderNo));
     const since = fyStart(today);
-    const decided = (s: TenderStatus) => all.filter(({ t }) => t.status === s && dateOnly(t.resultOn ?? t.updatedAt)! >= since);
+    const decided = (s: TenderStatus) => all.filter(({ t }) => t.status === s && dateOnly(t.resultOn ?? t.updatedAt) >= since);
     const won = decided('WON');
     const summary: TenderSummaryDto = {
       preparing: all.filter(({ t }) => t.status === 'PREPARING').length,
       dueThisWeek: all.filter(({ dto }) => dto.daysToSubmit !== null && dto.daysToSubmit >= 0 && dto.daysToSubmit <= TENDER_DUE_DAYS).length,
       awaitingResult: all.filter(({ t }) => t.status === 'SUBMITTED').length,
       wonCount: won.length,
-      wonValue: money(won.reduce((s, { dto }) => s.plus(dto.quotedAmount ?? 0), ZERO))!,
+      wonValue: money(won.reduce((s, { dto }) => s.plus(dto.quotedAmount ?? 0), ZERO)),
       lostCount: decided('LOST').length,
-      emdOut: money(all.filter(({ t }) => t.status !== 'WON' && t.emdDoc?.status === 'ACTIVE').reduce((s, { t }) => s.plus(t.emdDoc?.amount ?? 0), ZERO))!,
+      emdOut: money(all.filter(({ t }) => t.status !== 'WON' && t.emdDoc?.status === 'ACTIVE').reduce((s, { t }) => s.plus(t.emdDoc?.amount ?? 0), ZERO)),
     };
     return { items: shown.map((s) => s.dto), summary };
   }
@@ -264,7 +264,7 @@ export class TendersService {
     const bids: TenderBidDto[] = p.ranked.map((b) => ({
       id: b.id,
       bidderName: b.name,
-      amount: money(b.amount)!,
+      amount: money(b.amount),
       pct: pctOver(b.amount, base),
       rank: b.rank,
       us: b.us,
@@ -290,10 +290,10 @@ export class TendersService {
         itemCount: p.totals.itemCount,
         analysedCount: p.totals.analysedCount,
         sorAmount: money(p.totals.sorAmount),
-        costAmount: money(p.totals.costAmount)!,
-        overheads: money(p.totals.overheads)!,
-        profit: money(p.totals.profit)!,
-        builtUpAmount: money(p.totals.builtUpAmount)!,
+        costAmount: money(p.totals.costAmount),
+        overheads: money(p.totals.overheads),
+        profit: money(p.totals.profit),
+        builtUpAmount: money(p.totals.builtUpAmount),
         quotedAmount: money(p.totals.quotedAmount),
         costPct: p.totals.costPct,
         builtUpPct: p.totals.builtUpPct,
@@ -304,7 +304,7 @@ export class TendersService {
       labourTrades: [...rates.labour.keys()].map((k) => rates.labourName.get(k)!).sort((a, b) => a.localeCompare(b)),
       equipmentCategories: rates.categories,
       createdByName: t.createdBy.fullName,
-      createdAt: iso(t.createdAt)!,
+      createdAt: iso(t.createdAt),
       canEdit: canManageTenders(user.roleKey),
       canMakeProject: canMakeProjectFromTender(user.roleKey) && t.status === 'WON' && !t.projectId,
     };
@@ -865,7 +865,7 @@ export class TendersService {
       description: `Won on tender ${t.tenderNo}${t.nitNo ? ` (${t.nitNo})` : ''}`,
       startDate: start,
       endDate: t.completionMonths ? addMonths(start, t.completionMonths) : undefined,
-      contractValue: money(p.totals.quotedAmount)!,
+      contractValue: money(p.totals.quotedAmount),
       projectManagerId: dto.projectManagerId ?? undefined,
       applyTemplate: dto.applyTemplate ?? false,
     });

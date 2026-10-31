@@ -54,8 +54,8 @@ export class ImprestService {
       id: e.id,
       kind: e.kind,
       status: e.status,
-      amount: money(e.amount)!,
-      date: dateOnly(e.date)!,
+      amount: money(e.amount),
+      date: dateOnly(e.date),
       reason: e.reason,
       paidOn: dateOnly(e.paidOn),
       paymentMode: e.paymentMode,
@@ -66,7 +66,7 @@ export class ImprestService {
       decisionNote: e.decisionNote,
       paymentRequestId: e.paymentRequestId,
       requestNo: e.paymentRequest?.requestNo ?? null,
-      createdAt: iso(e.createdAt)!,
+      createdAt: iso(e.createdAt),
     };
   }
 
@@ -94,8 +94,8 @@ export class ImprestService {
       projectName: r.project.name,
       holderId: r.holderId,
       holderName: r.holder.fullName,
-      floatAmount: money(r.floatAmount)!,
-      openedOn: dateOnly(r.openedOn)!,
+      floatAmount: money(r.floatAmount),
+      openedOn: dateOnly(r.openedOn),
       closedOn: dateOnly(r.closedOn),
       isActive: r.isActive,
       note: r.note,
@@ -109,7 +109,7 @@ export class ImprestService {
       low: f.low,
       openRequest: open ? this.entryDto(open) : null,
       lastAdvanceOn: lastAdvance ? dateOnly(lastAdvance.paidOn ?? lastAdvance.date) : null,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -152,8 +152,8 @@ export class ImprestService {
       ...r.entries
         .filter((e) => e.status === 'PAID')
         .map((e) => {
-          const date = dateOnly(e.kind === 'ADVANCE' ? (e.paidOn ?? e.date) : e.date)!;
-          const amt = money(e.amount)!;
+          const date = dateOnly(e.kind === 'ADVANCE' ? (e.paidOn ?? e.date) : e.date);
+          const amt = money(e.amount);
           return {
             date,
             at: e.createdAt.getTime(),
@@ -170,17 +170,17 @@ export class ImprestService {
           };
         }),
       ...expenses.map((x) => ({
-        date: dateOnly(x.date)!,
+        date: dateOnly(x.date),
         at: x.createdAt.getTime(),
         line: {
-          date: dateOnly(x.date)!,
+          date: dateOnly(x.date),
           kind: 'EXPENSE' as const,
           ref: x.expenseNo,
           description: x.description,
           status: x.status,
           cashIn: '0.00',
           // A turned-down voucher is shown but does not reduce the cash in hand: the holder has to account for it.
-          cashOut: x.status === 'REJECTED' ? '0.00' : money(x.totalAmount)!,
+          cashOut: x.status === 'REJECTED' ? '0.00' : money(x.totalAmount),
           expenseId: x.id,
         },
       })),

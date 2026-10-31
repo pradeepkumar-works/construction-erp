@@ -270,7 +270,7 @@ export class QaService {
     const by = new Map<string, WorkDone[]>();
     for (const r of rows) {
       const list = by.get(r.projectId) ?? [];
-      list.push({ date: dateOnly(r.date)!, quantity: Number(r.quantity), unit: r.activity.unit, text: `${r.activity.name} ${r.activity.boqItem?.description ?? ''}` });
+      list.push({ date: dateOnly(r.date), quantity: Number(r.quantity), unit: r.activity.unit, text: `${r.activity.name} ${r.activity.boqItem?.description ?? ''}` });
       by.set(r.projectId, list);
     }
     return by;
@@ -287,7 +287,7 @@ export class QaService {
       const q = Number(r.quantity) - Number(r.rejectedQty ?? 0);
       if (q <= 0) continue;
       const list = by.get(r.projectId) ?? [];
-      list.push({ entryId: r.entryId, date: dateOnly(r.date)!, quantity: q, unit: r.item.unit, itemName: r.item.name, category: r.item.category });
+      list.push({ entryId: r.entryId, date: dateOnly(r.date), quantity: q, unit: r.item.unit, itemName: r.item.name, category: r.item.category });
       by.set(r.projectId, list);
     }
     return by;
@@ -312,7 +312,7 @@ export class QaService {
     ]);
     const names = new Map(planned.map((p) => [p.id, p.name]));
     const rows: TestsDueRowDto[] = lines.map((r) => {
-      const taken = tests.filter((x) => x.planLineId === r.id).map((x) => ({ planLineId: x.planLineId, sampledOn: dateOnly(x.sampledOn)! }));
+      const taken = tests.filter((x) => x.planLineId === r.id).map((x) => ({ planLineId: x.planLineId, sampledOn: dateOnly(x.sampledOn) }));
       return { line: this.toLineDto(r, types), projectName: names.get(r.projectId) ?? '', ...testsOwed(this.lineDef(r), work.get(r.projectId) ?? [], lots.get(r.projectId) ?? [], taken) };
     });
     const shown = q.short ? rows.filter((r) => r.short > 0) : rows;
@@ -359,7 +359,7 @@ export class QaService {
       if (!grade || !last || last.value === null) continue;
       const key = `${r.projectId}:${grade}`;
       const g = groups.get(key) ?? { projectId: r.projectId, projectName: r.project.name, grade, results: [], acceptance: cubeAcceptance([], gradeFck(grade)!) };
-      g.results.push({ id: r.id, date: dateOnly(r.sampledOn)!, value: Number(dec(last.value)), testNo: r.testNo, pourNo: r.pour?.pourNo ?? null });
+      g.results.push({ id: r.id, date: dateOnly(r.sampledOn), value: Number(dec(last.value)), testNo: r.testNo, pourNo: r.pour?.pourNo ?? null });
       groups.set(key, g);
     }
     return [...groups.values()]

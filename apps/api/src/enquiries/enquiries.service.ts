@@ -83,10 +83,10 @@ export class EnquiriesService {
     return {
       id: r.id,
       materialRequestId: r.materialRequestId,
-      closesOn: dateOnly(r.closesOn)!,
+      closesOn: dateOnly(r.closesOn),
       message: r.message,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
       vendors: r.tokens.map((t) => ({
         vendorId: t.vendorId,
         vendorName: t.vendor.name,
@@ -172,7 +172,7 @@ export class EnquiriesService {
       const rows = mr.items
         .map(
           (i) =>
-            `<tr><td style="padding:6px 8px;border-bottom:1px solid ${EMAIL_COLORS.border}">${escapeHtml(i.itemName)}${i.specification ? `<br><span style="color:${EMAIL_COLORS.muted};font-size:13px">${escapeHtml(i.specification)}</span>` : ''}</td><td style="padding:6px 8px;border-bottom:1px solid ${EMAIL_COLORS.border};text-align:right;white-space:nowrap">${escapeHtml(dec(i.quantity)!)} ${escapeHtml(i.unit)}</td></tr>`,
+            `<tr><td style="padding:6px 8px;border-bottom:1px solid ${EMAIL_COLORS.border}">${escapeHtml(i.itemName)}${i.specification ? `<br><span style="color:${EMAIL_COLORS.muted};font-size:13px">${escapeHtml(i.specification)}</span>` : ''}</td><td style="padding:6px 8px;border-bottom:1px solid ${EMAIL_COLORS.border};text-align:right;white-space:nowrap">${escapeHtml(dec(i.quantity))} ${escapeHtml(i.unit)}</td></tr>`,
         )
         .join('');
       const sent = await this.email.deliver({
@@ -254,11 +254,11 @@ export class EnquiriesService {
       siteAddress: siteDeliveryAddress(mr.project),
       vendorName: row.vendor.name,
       requestNo: mr.requestNo,
-      requiredDate: dateOnly(mr.requiredDate)!,
-      closesOn: dateOnly(row.enquiry.closesOn)!,
+      requiredDate: dateOnly(mr.requiredDate),
+      closesOn: dateOnly(row.enquiry.closesOn),
       message: row.enquiry.message,
       respondedAt: iso(row.respondedAt),
-      lines: mr.items.map((i) => ({ materialRequestItemId: i.id, itemName: i.itemName, specification: i.specification, unit: i.unit, quantity: dec(i.quantity)! })),
+      lines: mr.items.map((i) => ({ materialRequestItemId: i.id, itemName: i.itemName, specification: i.specification, unit: i.unit, quantity: dec(i.quantity) })),
     };
   }
 

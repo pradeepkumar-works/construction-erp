@@ -35,27 +35,27 @@ export class SettlementService {
       employeeName: s.employee.fullName,
       designation: s.employee.designation,
       joinedOn: dateOnly(s.employee.joinedOn),
-      lastWorkingDay: dateOnly(s.lastWorkingDay)!,
+      lastWorkingDay: dateOnly(s.lastWorkingDay),
       status: s.status,
       salaryDays: String(Number(s.salaryDays)),
-      salary: money(s.salary)!,
+      salary: money(s.salary),
       leaveDays: String(Number(s.leaveDays)),
-      leaveEncashment: money(s.leaveEncashment)!,
+      leaveEncashment: money(s.leaveEncashment),
       serviceYears: String(Number(s.serviceYears)),
-      gratuity: money(s.gratuity)!,
+      gratuity: money(s.gratuity),
       noticeShortDays: s.noticeShortDays,
-      noticeRecovery: money(s.noticeRecovery)!,
-      loanRecovery: money(s.loanRecovery)!,
-      otherEarnings: money(s.otherEarnings)!,
-      otherDeductions: money(s.otherDeductions)!,
-      net: money(s.net)!,
+      noticeRecovery: money(s.noticeRecovery),
+      loanRecovery: money(s.loanRecovery),
+      otherEarnings: money(s.otherEarnings),
+      otherDeductions: money(s.otherDeductions),
+      net: money(s.net),
       note: s.note,
       preparedByName: s.preparedBy.fullName,
       approvedByName: s.approvedBy?.fullName ?? null,
       approvedAt: iso(s.approvedAt),
       paidOn: dateOnly(s.paidOn),
       paymentRef: s.paymentRef,
-      createdAt: iso(s.createdAt)!,
+      createdAt: iso(s.createdAt),
       can: {
         edit: s.status === 'DRAFT' && canRunPayroll(user.roleKey),
         approve: s.status === 'DRAFT' && canApprovePayroll(user.roleKey),
@@ -88,7 +88,7 @@ export class SettlementService {
     if (!e) throw new NotFoundException('Employee not found');
     if (e.isActive || !e.leftOn) throw new BadRequestException(`${e.fullName} has not left. Record their exit on the staff record first.`);
     if (e.settlement && e.settlement.status !== 'DRAFT') throw new BadRequestException('The settlement is already approved');
-    const lwd = dateOnly(e.leftOn)!;
+    const lwd = dateOnly(e.leftOn);
     const month = lwd.slice(0, 7);
     const [structure] = await this.salary.structureOn([e.id], e.leftOn);
     if (!structure) throw new BadRequestException(`${e.fullName} has no salary structure. Add the one they left on first.`);

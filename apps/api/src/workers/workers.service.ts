@@ -65,7 +65,7 @@ export class WorkersService {
       skill: r.skill,
       idType: r.idType,
       idNumber: r.idNumber,
-      dailyWage: money(r.dailyWage)!,
+      dailyWage: money(r.dailyWage),
       otRate: money(r.otRate),
       effectiveOtRate: workerOtRate(r.dailyWage.toString(), r.otRate?.toString() ?? null).toFixed(2),
       projectId: r.projectId,
@@ -74,8 +74,8 @@ export class WorkersService {
       leftOn: dateOnly(r.leftOn),
       isActive: r.isActive,
       lastSeenOn: dateOnly(lastSeen),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -355,7 +355,7 @@ export class WorkersService {
       const w = k.worker;
       let r = rows.get(w.id);
       if (!r) {
-        r = { workerId: w.id, workerNo: w.workerNo, name: w.name, contractor: w.contractor, trade: w.trade, dailyWage: money(w.dailyWage)!, marks: {}, present: 0, halfDays: 0, absent: 0, manDays: 0, otHours: 0, wages: '0.00', _ot: w.otRate?.toString() ?? null };
+        r = { workerId: w.id, workerNo: w.workerNo, name: w.name, contractor: w.contractor, trade: w.trade, dailyWage: money(w.dailyWage), marks: {}, present: 0, halfDays: 0, absent: 0, manDays: 0, otHours: 0, wages: '0.00', _ot: w.otRate?.toString() ?? null };
         rows.set(w.id, r);
       }
       r.marks[k.date.getUTCDate()] = k.status;
@@ -426,7 +426,7 @@ export class WorkersService {
           activityName: a.name,
           unit: a.unit,
           manDays: d.total,
-          quantity: dec(quantity)!,
+          quantity: dec(quantity),
           outputPerManDay: d.total > 0 ? dec(quantity.div(d.total)) : null,
           trades: [...d.trades.entries()].map(([trade, n]) => ({ trade, manDays: n })).sort((x, y) => y.manDays - x.manDays),
         };
