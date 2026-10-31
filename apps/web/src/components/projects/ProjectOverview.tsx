@@ -29,7 +29,7 @@ function timeLeft(end: string | null): string | null {
   return `${plural(days, 'day')} left`;
 }
 
-/** The overview's first line, in words: on track or behind, and why (UX item 85). */
+/** The overview's first line, in words: on track or behind, and why. */
 function headline(project: ProjectDetail, s: ScheduleStatus): string {
   if (project.status === 'COMPLETED' || project.status === 'CLOSED') return 'Completed';
   if (project.status === 'ON_HOLD') return 'On hold';
@@ -53,7 +53,7 @@ function StatusLead({ project, dash }: { project: ProjectDetail; dash: ProjectDa
     s.plannedFinish && s.finishLateDays !== null ? `The plan ends ${formatDate(s.plannedFinish)}.` : null,
     s.state === 'NO_PLAN' ? 'Give the activities dates, or import the schedule, on the Schedule tab.' : null,
   ].filter(Boolean);
-  // Colour marks the exception only (UX item 82): behind is in the error text shade; on track stays neutral.
+  // Colour marks the exception only: behind is in the error text shade; on track stays neutral.
   const bad = s.behind;
   return (
     <div style={{ marginBottom: token.marginSM }} data-testid="project-status">
@@ -77,7 +77,7 @@ const ago = (date: string) => {
 };
 
 /**
- * The project's Overview tab (UX item 85): where it stands in words first, then the few figures that matter, each against
+ * The project's Overview tab: where it stands in words first, then the few figures that matter, each against
  * its plan (done against planned, work against the BOQ, billed against the contract, cost against the work), then
  * progress by activity, details and team.
  */

@@ -110,7 +110,7 @@ function PaneRecord({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenD
   }
 }
 
-/** A type without a record page: what the queue knows, the activity, and the details a click away. Every type has one since item 61. */
+/** A type without a record page: what the queue knows, the activity, and the details a click away. Every type has one today. */
 function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenDetails: () => void }) {
   const { token } = theme.useToken();
   return (

@@ -237,7 +237,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
 export default function PayablesPage() {
   const { user } = useAuth();
   const [projectId, setProjectId] = useProjectScope();
-  // The due list is the page's own list: its search and the vendor go in the address bar (UX item 84), as does the tab.
+  // The due list is the page's own list: its search and the vendor go in the address bar, as does the tab.
   const page = useListPage<'dueDate'>({ keys: PAGE_KEYS, sortBy: 'dueDate', sortOrder: 'asc', sortFields: [], scope: projectId });
   const vendorId = page.filters.vendorId;
   const [tab, setTab] = useUrlTab<PayablesTab>(TAB_KEYS, 'due', { param: 'tab' });

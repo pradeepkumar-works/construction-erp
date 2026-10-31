@@ -5,7 +5,7 @@ import { Card } from 'antd';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LetterRegister } from '@/components/correspondence/LetterRegister';
 
-/** The outward register (item 136): letters drafted, signed, numbered, dispatched and delivered. */
+/** The outward register: letters drafted, signed, numbered, dispatched and delivered. */
 export default function Page() {
   return (
     <div className="page-container">

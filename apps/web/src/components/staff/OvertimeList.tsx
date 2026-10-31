@@ -13,7 +13,7 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { CheckInPlaceTag, clock } from './staffUi';
 
 /**
- * Overtime waiting on the caller (v5 item 97): time past a standard day from staff check-outs, for the site manager or
+ * Overtime waiting on the caller: time past a standard day from staff check-outs, for the site manager or
  * HR to approve before payroll pays it. Overtime a decider marks in the register is approved as they save it.
  */
 export function OvertimeList() {

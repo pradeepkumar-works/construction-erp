@@ -50,13 +50,13 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
         ]
       : []),
   ];
-  // Nothing from a module the company has turned off (v6 item 117).
+  // Nothing from a module the company has turned off.
   return [site, office].map((g) => g.filter((e) => !pathIsOff(e.href, user.modulesOff))).filter((g) => g.length > 0);
 }
 
 /**
  * The header's "+ New": start any entry from any page. The list already on screen opens its form; otherwise its page does.
- * It is a secondary button: the page's own New is the one primary action (UX item 87).
+ * It is a secondary button: the page's own New is the one primary action.
  */
 export function NewMenu({ user, compact }: { user: AuthUser; compact?: boolean }) {
   const router = useRouter();

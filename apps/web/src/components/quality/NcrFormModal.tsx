@@ -27,7 +27,7 @@ interface FormValues {
   raisedByClient?: boolean;
 }
 
-/** A simple list's entries as Select options by code (item 137 part 2), keeping a switched-off entry a record still has. */
+/** A simple list's entries as Select options by code, keeping a switched-off entry a record still has. */
 export function useMasterOptions(slug: string, current?: string | null, enabled = true) {
   const { data } = useMasterList(slug, false, enabled);
   const entries = data?.entries ?? [];

@@ -236,7 +236,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
 
 export default function ReceivablesPage() {
   const [projectId, setProjectId] = useProjectScope();
-  // The open bills are the page's own list: their search goes in the address bar (UX item 84), as does the tab.
+  // The open bills are the page's own list: their search goes in the address bar, as does the tab.
   const page = useListPage<'daysOutstanding'>({ keys: NO_KEYS, sortBy: 'daysOutstanding', sortOrder: 'desc', sortFields: ['daysOutstanding'], scope: projectId });
   const [tab, setTab] = useUrlTab<ReceivablesTab>(TAB_KEYS, 'open', { param: 'tab' });
   const [billId, setBillId] = useState<string | null>(null);

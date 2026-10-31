@@ -101,7 +101,7 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
 }
 
 /**
- * The product tour (v4 item 51): a few steps over the app shell, shown once per user on this browser after they first
+ * The product tour: a few steps over the app shell, shown once per user on this browser after they first
  * sign in, and again from Help. Steps whose element is not on screen (search for guests) are left out, and
  * so is approvals for roles that approve nothing.
  */

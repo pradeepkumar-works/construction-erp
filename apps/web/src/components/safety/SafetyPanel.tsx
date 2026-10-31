@@ -20,7 +20,7 @@ export const SAFETY_TABS = ['incidents', 'talks', 'permits', 'ppe'] as const;
 export type SafetyTab = (typeof SAFETY_TABS)[number];
 const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
-/** Safety at a glance and its three registers; the Safety page and a project tab. The open register is `?sub=` in the URL (UX item 84). */
+/** Safety at a glance and its three registers; the Safety page and a project tab. The open register is `?sub=` in the URL. */
 export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: string; initialTab?: SafetyTab; initialId?: string }) {
   const { data: s } = useSafetySummary(projectId);
   const [tab, setTab] = useUrlTab<SafetyTab>(SAFETY_TABS, 'incidents', { initial: initialTab });

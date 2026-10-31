@@ -26,7 +26,7 @@ export interface AppTabsProps extends Omit<TabsProps, 'items' | 'tabBarExtraCont
    * page, a drawer or another tab, with the usual space under the bar.
    */
   variant?: 'page' | 'section';
-  /** Buttons beside the bar (Excel, New), outside its tablist, which may hold only tabs (WCAG, UI roadmap item 65). */
+  /** Buttons beside the bar (Excel, New), outside its tablist, which may hold only tabs (WCAG). */
   extra?: React.ReactNode;
   /** Keep the bar in view while the panel scrolls; `page` tabs do by default. Never on a phone, where the screen is short. */
   sticky?: boolean;

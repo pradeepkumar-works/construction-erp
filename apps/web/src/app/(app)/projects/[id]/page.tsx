@@ -58,7 +58,7 @@ export default function ProjectDetailPage() {
   const id = params?.id;
   const { data: project, isLoading, error, refetch } = useProject(id);
   const router = useRouter();
-  // A central store has no works; its page is the store's (v6 item 106).
+  // A central store has no works; its page is the store's.
   const store = project?.type === 'STORE';
   useEffect(() => {
     if (store && id) router.replace(`/stores/${id}`);
@@ -137,7 +137,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     setRemembered(null);
     const sp = new URLSearchParams(search.toString());
     sp.delete('defect');
-    // A tab's own tabs (`?sub=`, UX item 84) start again on the first in the next tab.
+    // A tab's own tabs (`?sub=`) start again on the first in the next tab.
     sp.delete('sub');
     if (key === 'overview') sp.delete('tab');
     else sp.set('tab', key);

@@ -11,7 +11,7 @@ import { DprFormEditor } from './DprFormEditor';
 import { DprFormPreview, type PreviewMode } from './DprFormPreview';
 
 /**
- * A project type's DPR form (item 134 part 2): the form the next report on its projects takes, seen as the web or the
+ * A project type's DPR form: the form the next report on its projects takes, seen as the web or the
  * phone shows it, with its saved versions and how many reports each holds.
  */
 export function DprFormTab({ type, editable }: { type: ProjectTypeDto; editable: boolean }) {

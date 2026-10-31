@@ -71,7 +71,7 @@ type Opened =
   | { kind: 'grn'; ticket: WeighTicketDto };
 
 /**
- * Stock › Weighbridge (item 148, ARCHITECTURE "Weighbridge"): the weights the site's weighbridge took that are on no
+ * Stock › Weighbridge (ARCHITECTURE "Weighbridge"): the weights the site's weighbridge took that are on no
  * ticket yet, the trucks waiting for their second weight, the weighed loads whose GRN is to make (at the net weight,
  * checked against the challan) and the week's done. Weights can be typed where no Connector reads the bridge.
  */

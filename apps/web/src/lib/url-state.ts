@@ -26,7 +26,7 @@ export function writeUrlParam(name: string, value?: string) {
 }
 
 /**
- * One piece of a page's state kept in the URL (UX item 84), so a reload or a link sent on brings it back: the
+ * One piece of a page's state kept in the URL, so a reload or a link sent on brings it back: the
  * Approvals inbox's search, type and order, a tab inside a tab. Read once when the component mounts.
  */
 export function useUrlParam(name: string): [string | undefined, (value?: string) => void] {

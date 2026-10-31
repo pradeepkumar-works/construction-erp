@@ -20,7 +20,7 @@ import { TAKEOFF_INK } from './TakeoffLayer';
 export const takeoffFigure = (kind: TakeoffKind, value: string | number) => `${kind === 'COUNT' ? Number(value) : formatQty(value)} ${TAKEOFF_UNITS[kind]}`;
 
 /**
- * The measures beside the drawing (v6 item 118): the sheet's scale, the measures (this sheet's or the whole drawing's)
+ * The measures beside the drawing: the sheet's scale, the measures (this sheet's or the whole drawing's)
  * with their totals by kind, and the ones ticked put into the measurement book or set as a BOQ item's quantity.
  */
 export function TakeoffList({

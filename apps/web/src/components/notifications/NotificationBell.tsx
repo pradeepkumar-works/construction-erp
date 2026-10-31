@@ -31,7 +31,7 @@ export function submissionOf(n: NotificationDto): OpenSubmission {
 }
 
 /**
- * Notifications centre (UI roadmap item 63): the header bell opens a drawer with For me, Approvals and Reminders tabs,
+ * Notifications centre: the header bell opens a drawer with For me, Approvals and Reminders tabs,
  * each grouped by day with its own unread count and Mark all read. A submission opens in place, over the current page.
  */
 export function NotificationBell() {

@@ -468,7 +468,7 @@ export interface ListFilters extends PageParams {
 export interface ProjectFilters extends PageParams {
   status?: ProjectStatus;
   type?: ProjectType;
-  /** A vertical's code or `none` (item 167) */
+  /** A vertical's code or `none` */
   vertical?: string;
 }
 
@@ -504,7 +504,7 @@ export interface StockBalanceFilters extends PageParams {
   projectId?: string;
   lowOnly?: boolean;
   inStock?: boolean;
-  /** Fuel items only (v5 item 93) */
+  /** Fuel items only */
   fuel?: boolean;
 }
 
@@ -549,7 +549,7 @@ export interface MeasurementFilters extends ListFilters {
 export const clean = (f?: object) =>
   Object.fromEntries(Object.entries(f ?? {}).filter(([, v]) => v !== undefined && v !== null && v !== ''));
 
-/* ---------- records and lists by their page, so a hover can fetch them ahead ---------- */
+// Records and lists by their page, so a hover can fetch them ahead
 
 /** Each record page's query: the route its links use, the API path, and the key its hook below reads. */
 const RECORD_QUERIES = {
@@ -610,7 +610,7 @@ export function listStartQueryFor(href: string, projectId?: string): { queryKey:
   return { queryKey: [...start.key, params], queryFn: async () => (await api.get<Paginated<unknown>>(start.path, { params })).data };
 }
 
-/* ---------- search-as-you-type pickers ---------- */
+// Search-as-you-type pickers
 
 /** Rows a picker shows at a time: the first page as it opens, then what matches the words typed. */
 export const PICKER_PAGE_SIZE = 20;
@@ -650,7 +650,7 @@ export const usePickerRecord = <T>(source: PickerSource, id: string | undefined,
   });
 };
 
-/* ---------- queries ---------- */
+// Queries
 
 /** The home page's My work: only the cards the caller's role has. */
 export const useMyWork = () =>
@@ -659,7 +659,7 @@ export const useMyWork = () =>
 /** Six months of trends for the home page's tiles and charts. */
 export const useHomeTrends = () => useQuery({ queryKey: ['dashboard', 'trends'], queryFn: async () => (await api.get<HomeTrendsDto>('/dashboard/trends')).data });
 
-/** A department's screen (item 168): its figures strip and the work in flight, for the header's project or all. */
+/** A department's screen: its figures strip and the work in flight, for the header's project or all. */
 export const useDepartmentHome = (key: string, projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['dashboard', 'department', key, projectId ?? null],
@@ -668,7 +668,7 @@ export const useDepartmentHome = (key: string, projectId: string | undefined, en
     refetchInterval: 60_000,
   });
 
-/** A module's home page (v6 item 98): its figures and what waits for the caller in it, for the header's project or all. */
+/** A module's home page: its figures and what waits for the caller in it, for the header's project or all. */
 export const useModuleHome = (key: string, projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['dashboard', 'module', key, projectId ?? null],
@@ -683,7 +683,7 @@ export const useCompanyDashboard = () =>
 export const useGettingStarted = (enabled: boolean) =>
   useQuery({ queryKey: ['dashboard', 'getting-started'], queryFn: async () => (await api.get<GettingStartedDto>('/dashboard/getting-started')).data, enabled });
 
-/** The new project's setup checklist (finding 6 of the October review); under the project's key, so team changes refresh it. */
+/** The new project's setup checklist; under the project's key, so team changes refresh it. */
 export const useProjectSetup = (id: string | undefined) =>
   useQuery({
     queryKey: ['projects', id, 'setup'],
@@ -756,7 +756,7 @@ export const useActivities = (projectId: string | undefined) =>
     enabled: !!projectId,
   });
 
-/** Work breakdown with rolled-up progress (item 125); under the activities key so any activity change refreshes it. */
+/** Work breakdown with rolled-up progress; under the activities key so any activity change refreshes it. */
 export const useStructure = (projectId: string | undefined) =>
   useQuery({
     queryKey: ['activities', projectId, 'structure'],
@@ -764,7 +764,7 @@ export const useStructure = (projectId: string | undefined) =>
     enabled: !!projectId,
   });
 
-/** Pipe zones and mains with their segments and stage progress (item 126); under the activities key so a change to the plan refreshes it. */
+/** Pipe zones and mains with their segments and stage progress; under the activities key so a change to the plan refreshes it. */
 export const usePipeNetwork = (projectId: string | undefined) =>
   useQuery({
     queryKey: ['activities', projectId, 'pipe-network'],
@@ -780,7 +780,7 @@ export const useGantt = (projectId: string | undefined) =>
     enabled: !!projectId,
   });
 
-/** Three weeks from this Monday on a project (v6 item 114); under the activities key so a change to the plan refreshes it. */
+/** Three weeks from this Monday on a project; under the activities key so a change to the plan refreshes it. */
 export const useLookahead = (projectId: string | undefined) =>
   useQuery({ queryKey: ['activities', projectId, 'lookahead'], queryFn: async () => (await api.get<LookaheadDto>(`/projects/${projectId}/lookahead`)).data, enabled: !!projectId });
 /** Links, moving to the links' dates and importing a schedule file: the Gantt, look-ahead and activities refresh. */
@@ -812,11 +812,11 @@ export const useDprList = (filters?: ListFilters, enabled = true) =>
 
 export const useDpr = (id: string | undefined) => useQuery({ ...recordQuery<DailyReportDto>('/dpr', id), enabled: !!id });
 
-/** What an approver should look at twice on a DPR (intelligence quick win Q3); advice only. */
+/** What an approver should look at twice on a DPR; advice only. */
 export const useDprChecks = (dprId: string | undefined, enabled = true) =>
   useQuery({ queryKey: ['dpr', dprId, 'checks'], queryFn: async () => (await api.get<DprChecksDto>(`/dpr/${dprId}/checks`)).data, enabled: enabled && !!dprId, staleTime: 60_000 });
 
-/** What a project's DPR form offers (item 127): activities that take progress, store items, open work orders. */
+/** What a project's DPR form offers: activities that take progress, store items, open work orders. */
 export const useDprWorkOptions = (projectId: string | undefined, date?: string) =>
   useQuery({
     queryKey: ['activities', projectId, 'dpr-options', date ?? null],
@@ -855,7 +855,7 @@ export const useAttendanceSuggestions = (projectId: string | undefined) =>
     staleTime: 5 * 60_000,
   });
 
-/* Named worker register (v4 item 44); every key starts with 'workers' so one invalidation refreshes them all. */
+/* Named worker register; every key starts with 'workers' so one invalidation refreshes them all. */
 export const useWorkers = (filters?: WorkerFilters) =>
   useQuery({
     queryKey: ['workers', 'list', clean(filters)],
@@ -884,7 +884,7 @@ export const useWorkerOutput = (projectId: string | undefined, from: string | un
     enabled: !!projectId && !!from && !!to,
   });
 
-/** Machine loans (v6 item 108): the loans with what each owes, and the running ones by lender. */
+/** Machine loans: the loans with what each owes, and the running ones by lender. */
 export const useMachineLoans = (filters?: { status?: EquipmentLoanStatus; q?: string; equipmentId?: string }, enabled = true) =>
   useQuery({
     queryKey: ['machine-loans', 'list', clean(filters)],
@@ -907,13 +907,13 @@ export const useLoanPreview = (terms: { amount?: number | null; ratePct?: number
   });
 };
 
-/* ---------- tender bidding (v6 item 110) ---------- */
+// Tender bidding
 
 /** The tender register: open ones by default (soonest due first), with the year's figures. */
 export const useTenders = (filters?: { status?: string; q?: string }, enabled = true) =>
   useQuery({ queryKey: ['tenders', 'list', clean(filters)], queryFn: async () => (await api.get<TenderListDto>('/tenders', { params: clean(filters) })).data, placeholderData: keepPreviousData, enabled });
 export const useTender = (id?: string) => useQuery({ queryKey: ['tenders', 'one', id], queryFn: async () => (await api.get<TenderDetailDto>(`/tenders/${id}`)).data, enabled: !!id });
-/** Where L1 landed on past openings of the same client and kind of work (intelligence quick win Q4). */
+/** Where L1 landed on past openings of the same client and kind of work. */
 export const usePastOpenings = (id?: string) => useQuery({ queryKey: ['tenders', 'past', id], queryFn: async () => (await api.get<PastOpeningsDto>(`/tenders/${id}/past-openings`)).data, enabled: !!id });
 export const useSorBooks = (enabled = true) => useQuery({ queryKey: ['tenders', 'sor-books'], queryFn: async () => (await api.get<SorBookDto[]>('/sor-books')).data, enabled });
 export const useSorItems = (filters: { bookId?: string; q?: string; page?: number; pageSize?: number }, enabled = true) =>
@@ -930,7 +930,7 @@ export function useTenderAction<T = TenderDetailDto>() {
   });
 }
 
-/* ---------- subcontract enquiries (v6 item 111) ---------- */
+// Subcontract enquiries
 
 /** Enquiries to subcontractors: open ones by default (soonest closing first), with the year's figures. */
 export const useScEnquiries = (filters?: { status?: string; projectId?: string; q?: string }, enabled = true) =>
@@ -954,7 +954,7 @@ export function useScEnquiryAction<T = ScEnquiryDetailDto>() {
   });
 }
 
-/** Meetings and their actions (v6 item 112). */
+/** Meetings and their actions. */
 export const useMeetings = (filters?: { status?: string; projectId?: string; q?: string }, enabled = true) =>
   useQuery({
     queryKey: ['meetings', 'list', clean(filters)],
@@ -986,7 +986,7 @@ export function useMeetingAction<T = MeetingDetailDto>() {
   });
 }
 
-/** Material approvals and each project's approved makes (v6 item 113). */
+/** Material approvals and each project's approved makes. */
 export const useMaterialApprovals = (filters?: { status?: string; kind?: string; projectId?: string; q?: string }, enabled = true) =>
   useQuery({
     queryKey: ['material-approvals', 'list', clean(filters)],
@@ -1005,7 +1005,7 @@ export const useApprovedMakes = (filters?: { projectId?: string; q?: string }, e
   });
 /** Order lines whose material has approved makes on the project but name another make, or none. */
 export const useMakeCheck = (projectId: string | undefined, lines: { itemName: string; make?: string | null }[]) => {
-  // No check while the company has material approvals off (v6 item 117).
+  // No check while the company has material approvals off.
   const on = useModuleOn('material_approvals');
   return useQuery({
     queryKey: ['material-approvals', 'check', projectId, lines],
@@ -1024,7 +1024,7 @@ export function useMaterialApprovalAction<T = MaterialApprovalDetailDto>() {
   });
 }
 
-/** Central stores and yards (v6 item 106), each with its stock, value and transfers on the road. */
+/** Central stores and yards, each with its stock, value and transfers on the road. */
 export const useStores = (enabled = true) => useQuery({ queryKey: ['stock', 'stores'], queryFn: async () => (await api.get<StoreSummaryDto[]>('/stock/stores')).data, enabled });
 /** Every open site and store a stock keeper can send to, stores first. */
 export const useStockDestinations = (enabled = true) =>
@@ -1084,7 +1084,7 @@ export const useStockItems = (filters?: PageParams & { fuel?: boolean }, enabled
     enabled,
   });
 
-/** Items that look like one item, for the store manager to merge (finding 3 of the October review). */
+/** Items that look like one item, for the store manager to merge. */
 export const useItemDuplicates = (enabled: boolean) =>
   useQuery({
     queryKey: ['stock', 'items', 'duplicates'],
@@ -1109,7 +1109,7 @@ export const useEquipment = (filters?: EquipmentFilters, enabled = true) =>
     enabled,
   });
 
-/* ---------- fuel and fleet use (v5 item 93) ---------- */
+// Fuel and fleet use
 
 /** Each site's fuel on a day (today when left out) and the day's fuel issues into machines. */
 export const useFuelPosition = (q: { date?: string; projectId?: string }) =>
@@ -1133,7 +1133,7 @@ export const useFleetUtilisation = (q: { from?: string; to?: string; projectId?:
     placeholderData: keepPreviousData,
   });
 
-/** Engine hours from trackers and makers' feeds (item 146): each machine's days, the last week by default. */
+/** Engine hours from trackers and makers' feeds: each machine's days, the last week by default. */
 export const useMachineDays = (q: { from?: string; to?: string; projectId?: string }) =>
   useQuery({
     queryKey: ['machinery', 'telematics', clean(q)],
@@ -1150,7 +1150,7 @@ export const useMachineDay = (equipmentId: string | undefined, date: string | un
     staleTime: 60_000,
   });
 
-/** A dispenser's fill refused as a slip, tried again (item 147); the fuel and telematics figures are fetched again. */
+/** A dispenser's fill refused as a slip, tried again; the fuel and telematics figures are fetched again. */
 export function useRetryDispense() {
   const qc = useQueryClient();
   return useMutation({
@@ -1159,7 +1159,7 @@ export function useRetryDispense() {
   });
 }
 
-/** Stock › Weighbridge (item 148): the weights on the bridge, the trucks waiting and the tickets to receive; fetched every half minute while open. */
+/** Stock › Weighbridge: the weights on the bridge, the trucks waiting and the tickets to receive; fetched every half minute while open. */
 export const useWeighbridge = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['stock', 'weighbridge', projectId ?? 'all'],
@@ -1281,7 +1281,7 @@ export const useApprovalMatrix = (enabled = true) =>
 export const useActivityTemplates = (enabled = true) =>
   useQuery({ queryKey: ['activity-templates'], queryFn: async () => (await api.get<ActivityTemplateDto[]>('/activity-templates')).data, enabled });
 
-/* Project types and component kinds (item 134): a save changes what New project, the Structure tab and the templates offer. */
+/* Project types and component kinds: a save changes what New project, the Structure tab and the templates offer. */
 const useTypeChange = <V, R>(fn: (v: V) => Promise<R>) => {
   const qc = useQueryClient();
   return useMutation({
@@ -1315,7 +1315,7 @@ export const useSaveComponentKind = () =>
   useTypeChange(async ({ code, ...v }: SaveComponentKindInput & { code: string }) => (await api.put<ComponentKindDto[]>(`/component-kinds/${code}`, v)).data);
 export const useRemoveComponentKind = () => useTypeChange(async (code: string) => (await api.delete<ComponentKindDto[]>(`/component-kinds/${code}`)).data);
 
-/* Update projects, export and import (item 134 part 3): what running projects would gain, adding it, and the types file. */
+/* Update projects, export and import: what running projects would gain, adding it, and the types file. */
 export const useTypeUpdates = (what: 'type' | 'kind', code: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['type-updates', what, code],
@@ -1359,7 +1359,7 @@ export const useImportTypes = () => {
 export type TypeImportPreviewDto = { from: string; exportedAt: string; rows: ImportRowDto[] };
 export type TypeImportResultDto = { imported: number; skipped: string[] };
 
-/* A type's DPR form (item 134 part 2): a save is a new version, which the next report on its projects takes. */
+/* A type's DPR form: a save is a new version, which the next report on its projects takes. */
 export const useDprForm = (code: string | undefined) =>
   useQuery({ queryKey: ['dpr-form', code], queryFn: async () => (await api.get<DprFormVersionsDto>(`/project-types/${code}/dpr-form`)).data, enabled: !!code });
 
@@ -1378,7 +1378,7 @@ const useDprFormChange = <V,>(fn: (v: V) => Promise<DprFormDto>) => {
 export const useSaveDprForm = () => useDprFormChange(async ({ code, definition }: { code: string; definition: DprFormDef }) => (await api.put<DprFormDto>(`/project-types/${code}/dpr-form`, { definition })).data);
 export const useResetDprForm = () => useDprFormChange(async (code: string) => (await api.delete<DprFormDto>(`/project-types/${code}/dpr-form`)).data);
 
-/** The code to offer a new project of this type (finding 17 of the October review). */
+/** The code to offer a new project of this type. */
 export const useNextProjectCode = (type: ProjectType | undefined, enabled = true) =>
   useQuery({
     queryKey: ['next-project-code', type],
@@ -1434,7 +1434,7 @@ export const useMeasurements = (filters?: MeasurementFilters) =>
 
 export const useMeasurement = (id: string | undefined) => useQuery({ ...recordQuery<MeasurementSheetDto>('/measurements', id), enabled: !!id });
 
-/** Work approved on site that no measurement sheet holds yet (finding 14 of the October review). */
+/** Work approved on site that no measurement sheet holds yet. */
 export const useToMeasure = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['to-measure', projectId],
@@ -1523,7 +1523,7 @@ export const useQualitySummary = (projectId?: string) =>
     queryFn: async () => (await api.get<QualitySummaryDto>('/quality/summary', { params: clean({ projectId }) })).data,
   });
 
-/* ---------- QA/QC plans and pours (item 137) ---------- */
+// QA/QC plans and pours
 
 /** The company's test types; switched-off ones only with `all`, for the master page. */
 export const useTestTypes = (all = false) =>
@@ -1575,7 +1575,7 @@ export const usePour = (id: string | null | undefined) =>
     enabled: !!id,
   });
 
-/* ---------- QA/QC registers (item 137 part 2) ---------- */
+// QA/QC registers
 
 export const useQaLabs = (enabled = true) =>
   useQuery({ queryKey: ['quality', 'qa', 'labs'], queryFn: async () => (await api.get<QaLabDto[]>('/qa/labs')).data, staleTime: 60_000, enabled });
@@ -1685,7 +1685,7 @@ export interface DesignSubmissionFilters extends PageParams {
   toAnswer?: boolean;
 }
 
-/** Design submissions (item 138 part 2): late reviews first, with the summary over the filter. */
+/** Design submissions: late reviews first, with the summary over the filter. */
 export const useDesignSubmissions = (filters?: DesignSubmissionFilters) =>
   useQuery({
     queryKey: ['documents', 'design-submissions', clean(filters)],
@@ -1785,7 +1785,7 @@ export const useDocumentHistory = (id: string | undefined) =>
     enabled: !!id,
   });
 
-/* ---------- drawing markup (item 109) ---------- */
+// Drawing markup
 
 /** Every mark on a document's revisions; the viewer picks the ones on the sheet it shows. */
 export const useDrawingMarkups = (documentId: string | undefined) =>
@@ -1828,7 +1828,7 @@ export const useLinkMarkupRfi = (documentId: string | undefined) =>
   useMarkupMutation(documentId, async ({ id, rfiId }: { id: string; rfiId: string | null }) => (await api.put<DrawingMarkupDto>(`/documents/${documentId}/markups/${id}/rfi`, { rfiId })).data);
 export const useDeleteMarkup = (documentId: string | undefined) => useMarkupMutation(documentId, async (id: string) => (await api.delete(`/documents/${documentId}/markups/${id}`)).data);
 
-/* ---------- measuring on drawings (v6 item 118) ---------- */
+// Measuring on drawings
 
 /** The scales of a document's sheets and every measure on them. */
 export const useDrawingTakeoffs = (documentId: string | undefined) =>
@@ -1927,7 +1927,7 @@ export interface LetterFilters extends PageParams {
   unmarked?: boolean;
 }
 
-/** Correspondence (item 136): the inward and outward registers. */
+/** Correspondence: the inward and outward registers. */
 export const useLetters = (filters?: LetterFilters, enabled = true) =>
   useQuery({
     queryKey: ['letters', clean(filters)],
@@ -1980,7 +1980,7 @@ export const useLetterTemplates = (enabled = true) =>
     enabled,
   });
 
-/* ---------- RFIs ---------- */
+// RFIs
 
 export interface RfiFilters extends PageParams {
   projectId?: string;
@@ -2064,7 +2064,7 @@ export function useAnswerRfiAsClient() {
   });
 }
 
-/* ---------- staff and leave ---------- */
+// Staff and leave
 
 export const useStaffSummary = () =>
   useQuery({
@@ -2072,7 +2072,7 @@ export const useStaffSummary = () =>
     queryFn: async () => (await api.get<StaffSummaryDto>('/staff/summary')).data,
   });
 
-/** Overtime waiting on the caller (v5 item 97), oldest first. */
+/** Overtime waiting on the caller, oldest first. */
 export const useOvertimeToDecide = (enabled = true) =>
   useQuery({
     queryKey: ['staff', 'overtime'],
@@ -2165,7 +2165,7 @@ export const useEmployeeHistory = (id: string | undefined, enabled = true) =>
     enabled: !!id && enabled,
   });
 
-/* ---------- HR records (v6 item 99) ---------- */
+// HR records
 
 export interface EmployeeEventFilters extends PageParams {
   employeeId?: string;
@@ -2247,7 +2247,7 @@ export const useContractorMonth = (month: string, projectId?: string, enabled = 
     enabled,
   });
 
-/* ---------- payroll (v6 item 100) ---------- */
+// Payroll
 
 export const usePayrollSettings = (enabled = true) =>
   useQuery({ queryKey: ['payroll', 'settings'], queryFn: async () => (await api.get<PayrollSettingsDto>('/payroll/settings')).data, enabled });
@@ -2292,14 +2292,14 @@ export function usePayrollAction<T = unknown>() {
   });
 }
 
-/* Biometric attendance (v6 item 101); every key starts with 'biometric'. */
+/* Biometric attendance; every key starts with 'biometric'. */
 export const useBiometricDevices = (enabled = true) =>
   useQuery({ queryKey: ['biometric', 'devices'], queryFn: async () => (await api.get<BiometricDeviceDto[]>('/biometric/devices')).data, enabled });
 
 export const useBiometricUsers = (enabled = true) =>
   useQuery({ queryKey: ['biometric', 'users'], queryFn: async () => (await api.get<BiometricUserDto[]>('/biometric/users')).data, enabled });
 
-/** Commands for the ADMS devices (item 150), newest first; the devices pick them up when they next call. */
+/** Commands for the ADMS devices, newest first; the devices pick them up when they next call. */
 export const useBiometricCommands = (enabled = true) =>
   useQuery({ queryKey: ['biometric', 'commands'], queryFn: async () => (await api.get<BiometricCommandDto[]>('/biometric/commands')).data, enabled, refetchInterval: 30_000 });
 
@@ -2310,7 +2310,7 @@ export const useBiometricPunches = (filters: { date: string; deviceId?: string; 
     placeholderData: keepPreviousData,
   });
 
-/* ---------- connections (item 139) ---------- */
+// Connections
 
 export const useIntegrationConnections = () =>
   useQuery({ queryKey: ['integrations', 'connections'], queryFn: async () => (await api.get<IntegrationConnectionDto[]>('/integrations/connections')).data });
@@ -2350,7 +2350,7 @@ export function useBiometricAction<T = unknown>() {
   });
 }
 
-/* Books of account (v6 item 102); every key starts with 'books'. */
+/* Books of account; every key starts with 'books'. */
 export const useBooksStatus = (enabled = true) => useQuery({ queryKey: ['books', 'status'], queryFn: async () => (await api.get<BooksStatusDto>('/books/status')).data, enabled });
 
 export const useLedgerAccounts = (filters: { to?: string; projectId?: string } = {}, enabled = true) =>
@@ -2406,7 +2406,7 @@ export function useBooksAction<T = unknown>() {
   });
 }
 
-// ----- Financial statements (v6 item 103); under ['books'] so every books action refreshes them -----
+// Financial statements; under ['books'] so every books action refreshes them
 
 export const useTrialBalance = (filters: { from: string; to: string; projectId?: string }, byProject = false) =>
   useQuery({
@@ -2525,11 +2525,11 @@ export interface PaymentRequestFilters extends PageParams {
   subcontractBillId?: string;
   purchaseOrderId?: string;
   workOrderId?: string;
-  /** Fund requests (v6 item 107) into this imprest */
+  /** Fund requests into this imprest */
   imprestId?: string;
 }
 
-/** Payment requests (v5 item 90): asking for a bill to be paid or an advance released, approved before accounts pays. */
+/** Payment requests: asking for a bill to be paid or an advance released, approved before accounts pays. */
 export const usePaymentRequests = (filters: PaymentRequestFilters, enabled = true) =>
   useQuery({
     queryKey: ['payment-requests', clean(filters)],
@@ -2647,7 +2647,7 @@ export const useComparative = (materialRequestId: string | undefined, enabled = 
     enabled: enabled && !!materialRequestId,
   });
 
-/* ---------- Requests to order and Finalise L1 ---------- */
+// Requests to order and Finalise L1
 
 export interface RequestsToOrderFilters extends PageParams {
   projectId?: string;
@@ -2687,7 +2687,7 @@ export function useFinaliseL1(id: string) {
   };
 }
 
-/* ---------- small purchase items (v5 item 95) ---------- */
+// Small purchase items
 
 /** Stock of a request's lines at its own site and the other sites (stock first). */
 export const useRequestStock = (materialRequestId: string | undefined, enabled = true) =>
@@ -2697,7 +2697,7 @@ export const useRequestStock = (materialRequestId: string | undefined, enabled =
     enabled: enabled && !!materialRequestId,
   });
 
-/** Item 170: a request's lines against the site's store and what the BOQ allows. */
+/** A request's lines against the site's store and what the BOQ allows. */
 export const useIndentCheck = (materialRequestId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['material-requests', 'check', materialRequestId],
@@ -2728,7 +2728,7 @@ export function useCoverRequest(materialRequestId: string) {
 }
 
 /** The last approved orders of items (`name|unit` each), keyed by `lastRateKey`. */
-/** What other sites paid for the items in the 30 days before the order (item 121), for the PO form's rate check. */
+/** What other sites paid for the items in the 30 days before the order, for the PO form's rate check. */
 export const useRateCheck = (items: { itemName: string; unit: string }[], projectId: string | undefined, poDate: string | undefined, enabled = true, excludePoId?: string) => {
   const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
   return useQuery({
@@ -2796,7 +2796,7 @@ export const useVendorBills = (filters: VendorBillFilters, enabled = true) =>
 
 export const useVendorBill = (id: string | undefined) => useQuery({ ...recordQuery<VendorBillDto>('/vendor-bills', id), enabled: !!id });
 
-/** A hired machine's approved logs of a month on a project, not yet billed: what its hire bill starts from (v5 item 91). */
+/** A hired machine's approved logs of a month on a project, not yet billed: what its hire bill starts from. */
 export const useHirePreview = (q: { equipmentId?: string; projectId?: string; month?: string; billId?: string }) =>
   useQuery({
     queryKey: ['vendor-bills', 'hire-preview', clean(q)],
@@ -2805,7 +2805,7 @@ export const useHirePreview = (q: { equipmentId?: string; projectId?: string; mo
     retry: false,
   });
 
-/** Closed job cards on a project a workshop can bill (v5 item 91). */
+/** Closed job cards on a project a workshop can bill. */
 export const useBillableJobs = (q: { projectId?: string; billId?: string }) =>
   useQuery({
     queryKey: ['vendor-bills', 'billable-jobs', clean(q)],
@@ -2823,7 +2823,7 @@ export interface DebitNoteFilters extends PageParams {
   includeCancelled?: boolean;
 }
 
-/** Debit notes (v5 item 91): what a vendor or subcontractor owes back, taken off their bill. */
+/** Debit notes: what a vendor or subcontractor owes back, taken off their bill. */
 export const useDebitNotes = (filters: DebitNoteFilters, enabled = true) =>
   useQuery({
     queryKey: ['debit-notes', clean(filters)],
@@ -2884,7 +2884,7 @@ export const useContract = (projectId: string | undefined, enabled = true) =>
     enabled: !!projectId && enabled,
   });
 
-/** A lump-sum project's billing break-up (item 129): components, stages with today's evidence, the milestone grid and tiers. */
+/** A lump-sum project's billing break-up: components, stages with today's evidence, the milestone grid and tiers. */
 export const useBillingBreakup = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['contract', projectId, 'billing-breakup'],
@@ -2892,7 +2892,7 @@ export const useBillingBreakup = (projectId: string | undefined, enabled = true)
     enabled: !!projectId && enabled,
   });
 
-/** An EPC project's engineering deliverables, equipment packages and client inputs (item 130). */
+/** An EPC project's engineering deliverables, equipment packages and client inputs. */
 export const useEpc = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['epc', projectId],
@@ -2900,7 +2900,7 @@ export const useEpc = (projectId: string | undefined, enabled = true) =>
     enabled: !!projectId && enabled,
   });
 
-/** A handed-over project's O&M contract, its periods and bills, and a month of service levels (item 131). */
+/** A handed-over project's O&M contract, its periods and bills, and a month of service levels. */
 export const useOm = (projectId: string | undefined, month?: string, enabled = true) =>
   useQuery({
     queryKey: ['om', projectId, month ?? null],
@@ -2923,7 +2923,7 @@ export const useCostSummary = (period: CostPeriod, enabled = true) =>
     enabled,
   });
 
-/** A project's earned value (v6 item 115), earned from approved progress or measured work. */
+/** A project's earned value, earned from approved progress or measured work. */
 export const useEarnedValue = (projectId: string | undefined, basis: EvBasis) =>
   useQuery({
     queryKey: ['cost', 'earned-value', projectId, basis],
@@ -2944,7 +2944,7 @@ export const useCashFlow = (params: { projectId?: string; granularity: CashFlowG
     placeholderData: keepPreviousData,
   });
 
-/* ---------- material reconciliation ---------- */
+// Material reconciliation
 
 /** A project's norms and its theoretical against issued material for a period (all time when empty). */
 export const useProjectReconciliation = (projectId: string | undefined, period: CostPeriod) =>
@@ -2955,7 +2955,7 @@ export const useProjectReconciliation = (projectId: string | undefined, period: 
     enabled: !!projectId,
   });
 
-/** What adopting the standard norms library would set on a project (finding 16 of the October review). */
+/** What adopting the standard norms library would set on a project. */
 export const useStandardNorms = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['standard-norms', projectId],
@@ -2989,7 +2989,7 @@ export function useRemoveMaterialNorm() {
   });
 }
 
-/** Each BOQ item's rate analysis priced into a built-up rate (v5 item 92). */
+/** Each BOQ item's rate analysis priced into a built-up rate. */
 export const useProjectEstimate = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['reconciliation', projectId, 'estimate'],
@@ -3004,7 +3004,7 @@ export const useSubconReconciliation = (projectId: string | undefined) =>
     enabled: !!projectId,
   });
 
-/** Stock against the DPR (item 128): per component, per pipe size, per kit, and the exceptions. */
+/** Stock against the DPR: per component, per pipe size, per kit, and the exceptions. */
 export const useStructureRecon = (projectId: string | undefined, period: CostPeriod) =>
   useQuery({
     queryKey: ['reconciliation', projectId, 'structure', clean(period)],
@@ -3189,7 +3189,7 @@ export const useProgressReport = (projectId: string | undefined, from: string, t
     enabled: !!projectId,
   });
 
-/** Official progress reports (item 174): the report for a period, the issue register, an issued copy, and Issue. */
+/** Official progress reports: the report for a period, the issue register, an issued copy, and Issue. */
 export const useOfficialReport = (projectId: string | undefined, kind: OfficialReportKind, date: string) =>
   useQuery({
     queryKey: ['reports', 'official', projectId, kind, date],
@@ -3252,7 +3252,7 @@ export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number; 
     enabled,
   });
 
-/* ---------- Client portal ---------- */
+// Client portal
 
 export const usePortalProjects = () => useQuery({ queryKey: ['portal', 'projects'], queryFn: async () => (await api.get<PortalProjectDto[]>('/portal/projects')).data });
 
@@ -3300,7 +3300,7 @@ export function useWitnessInspection() {
   });
 }
 
-/* ---------- WhatsApp and SMS ---------- */
+// WhatsApp and SMS
 
 export const useMessagingPrefs = (enabled = true) =>
   useQuery({ queryKey: ['messaging', 'me'], queryFn: async () => (await api.get<MessagingPrefsDto>('/messaging/me')).data, enabled });
@@ -3346,7 +3346,7 @@ export const useAudit = (type: ApprovalTypeParam, id: string | undefined) =>
     enabled: !!id,
   });
 
-/** Where an entry stands in its approval levels and whether the user may decide it now (v5 item 94). */
+/** Where an entry stands in its approval levels and whether the user may decide it now. */
 export const useApprovalStage = (type: ApprovalTypeParam, id: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['approvals', 'stage', type, id],
@@ -3354,7 +3354,7 @@ export const useApprovalStage = (type: ApprovalTypeParam, id: string | undefined
     enabled: enabled && !!id,
   });
 
-/* ---------- mutations ---------- */
+// Mutations
 
 export function useInvalidateAll() {
   const qc = useQueryClient();
@@ -3388,7 +3388,7 @@ function withStatus(data: unknown, ids: Set<string>, status: SubmissionStatus, d
 }
 
 /**
- * Shows a decision at once (UX item 86): every cached list and record of these entries takes the new status, and they
+ * Shows a decision at once: every cached list and record of these entries takes the new status, and they
  * leave the Approvals inbox (and its count). Hands back what puts the cache as it was, for when the server refuses.
  */
 export async function showReviewed(qc: ReturnType<typeof useQueryClient>, ids: string[], decision: ReviewDecision): Promise<() => void> {
@@ -3460,7 +3460,7 @@ export async function uploadFile(file: File): Promise<AttachmentDto> {
   return data;
 }
 
-/* ---------- Company data (export and deletion) ---------- */
+// Company data (export and deletion)
 
 export const useCompanyExportManifest = (enabled = true) =>
   useQuery({ queryKey: ['company-data', 'export'], queryFn: async () => (await api.get<CompanyExportManifestDto>('/company-data/export')).data, enabled });
@@ -3484,7 +3484,7 @@ export function useCancelCompanyDeletion() {
   });
 }
 
-// ---- Support access and the company log (v3 item 35) ----
+// Support access and the company log
 
 export const useCompanyLog = () => useQuery({ queryKey: ['company-data', 'log'], queryFn: async () => (await api.get<CompanyLogEntryDto[]>('/company-data/log')).data });
 
@@ -3501,7 +3501,7 @@ export function useSetSupportAccess() {
   });
 }
 
-// ---- Platform console for staff (v3 item 35) ----
+// Platform console for staff
 
 export const usePlatformCompanies = (enabled = true) =>
   useQuery({ queryKey: ['platform', 'companies'], queryFn: async () => (await api.get<PlatformCompanyDto[]>('/platform/companies')).data, enabled });
@@ -3523,7 +3523,7 @@ export function useSuspendCompany() {
 
 export const useOpenSupportSession = () => useMutation({ mutationFn: async (id: string) => (await api.post<SupportSessionDto>(`/platform/companies/${id}/support-session`)).data });
 
-// ---- Plans and billing (v3 item 34) ----
+// Plans and billing
 
 export const useBilling = (enabled = true) => useQuery({ queryKey: ['billing'], queryFn: async () => (await api.get<BillingSummaryDto>('/billing')).data, enabled });
 
@@ -3562,7 +3562,7 @@ export function useSetTrialEnd() {
   });
 }
 
-/** Set a company's plan, which decides its modules (v6 item 117). */
+/** Set a company's plan, which decides its modules. */
 export function useSetModuleTier() {
   const qc = useQueryClient();
   return useMutation({
@@ -3574,7 +3574,7 @@ export function useSetModuleTier() {
   });
 }
 
-/* ---------- variations (v4 item 37) ---------- */
+// Variations
 
 export interface VariationFilters extends PageParams {
   projectId?: string;
@@ -3603,7 +3603,7 @@ export const useVariationSummary = (projectId?: string, enabled = true) =>
     enabled,
   });
 
-/* ---------- Safety ---------- */
+// Safety
 
 export interface IncidentFilters extends PageParams {
   projectId?: string;
@@ -3627,7 +3627,7 @@ export interface PermitFilters extends PageParams {
   active?: boolean;
 }
 
-/* ---------- PPE register ---------- */
+// PPE register
 
 /** A project's workers with the PPE they hold and lack. */
 export const usePpeRegister = (projectId: string | undefined) =>
@@ -3708,7 +3708,7 @@ export const useSafetyIncident = (id: string | undefined) =>
 export const useSafetyIncidentHistory = (id: string | undefined) =>
   useQuery({ queryKey: ['safety', 'incident-history', id], queryFn: async () => (await api.get<AuditLogDto[]>(`/safety/incidents/${id}/history`)).data, enabled: !!id });
 
-/** Today's toolbox talk for a project, in Hindi and English (intelligence quick win Q8); nothing is saved. */
+/** Today's toolbox talk for a project, in Hindi and English; nothing is saved. */
 export const useTodaysTalk = (projectId?: string | null) =>
   useQuery({ queryKey: ['safety', 'talk-today', projectId], queryFn: async () => (await api.get<ToolboxTalkDraftDto>('/safety/talks/today', { params: { projectId } })).data, enabled: !!projectId });
 export const useToolboxTalks = (filters?: TalkFilters) =>
@@ -3731,7 +3731,7 @@ export const useWorkPermit = (id: string | undefined) =>
 export const useWorkPermitHistory = (id: string | undefined) =>
   useQuery({ queryKey: ['safety', 'permit-history', id], queryFn: async () => (await api.get<AuditLogDto[]>(`/safety/permits/${id}/history`)).data, enabled: !!id });
 
-/** Chainage strip, floor / village matrix and pipeline stages of a project (v4 item 41). */
+/** Chainage strip, floor / village matrix and pipeline stages of a project. */
 export const useSectorProgress = (projectId: string | undefined) =>
   useQuery({
     queryKey: ['sector', projectId],
@@ -3739,7 +3739,7 @@ export const useSectorProgress = (projectId: string | undefined) =>
     enabled: !!projectId,
   });
 
-/* ---------- Maintenance (v4 item 42) ---------- */
+// Maintenance
 
 export interface JobFilters extends PageParams {
   projectId?: string;
@@ -3791,7 +3791,7 @@ export const useDrivers = (filters?: DriverFilters) =>
     placeholderData: keepPreviousData,
   });
 
-/* Site imprest (v4 item 45) */
+/* Site imprest */
 export const useImprests = (filters?: { projectId?: string; active?: boolean; mine?: boolean }, enabled = true) =>
   useQuery({
     queryKey: ['imprests', 'list', clean(filters)],
@@ -3807,7 +3807,7 @@ export const useImprest = (id: string | null | undefined) =>
     enabled: !!id,
   });
 
-/* Guarantees, insurance and licences register (v4 item 46) */
+/* Guarantees, insurance and licences register */
 export const useComplianceDocs = (filters?: { kind?: ComplianceDocKind; status?: ComplianceDocStatus | 'ALL'; state?: 'EXPIRING' | 'EXPIRED'; projectId?: string; q?: string }) =>
   useQuery({
     queryKey: ['compliance', 'list', clean(filters)],
@@ -3842,7 +3842,7 @@ export const useDefect = (id: string | null | undefined) =>
     queryFn: async () => (await api.get<DefectDto>(`/defects/${id}`)).data,
     enabled: !!id,
   });
-/** One master list as the company has it (item 135), by its address (`trade`, `item-category`…); `usage` counts records. */
+/** One master list as the company has it, by its address (`trade`, `item-category`…); `usage` counts records. */
 export const useMasterList = (slug: string, usage = false, enabled = true) =>
   useQuery({
     queryKey: ['masters', slug, usage],
@@ -3889,7 +3889,7 @@ export const useProcurementStatus = (filters: { projectId?: string; vendorId?: s
     enabled,
   });
 
-/* Liquidated damages exposure (v4 item 50) */
+/* Liquidated damages exposure */
 export const useLdExposure = (enabled = true) =>
   useQuery({
     queryKey: ['ld-exposure'],
@@ -3897,7 +3897,7 @@ export const useLdExposure = (enabled = true) =>
     enabled,
   });
 
-/* ---------- saved views (UI roadmap item 55) ---------- */
+// Saved views
 
 export const useSavedViews = (list: SavedViewList, enabled = true) =>
   useQuery({ queryKey: ['saved-views', list], queryFn: async () => (await api.get<SavedViewDto[]>('/saved-views', { params: { list } })).data, enabled });
@@ -3933,7 +3933,7 @@ export function useSearch(q: string, enabled: boolean) {
   });
 }
 
-// ---- Ask Nirmaan (AI item 67) ----
+// Ask Nirmaan
 
 export const useAiStatus = (enabled: boolean) =>
   useQuery({ queryKey: ['ai', 'status'], queryFn: async () => (await api.get<AiStatusDto>('/ai/status')).data, enabled, staleTime: 60_000 });
@@ -3951,7 +3951,7 @@ export function useDeleteAiThread() {
 export const useAiFeedback = () =>
   useMutation({ mutationFn: async ({ id, value }: { id: string; value: 1 | -1 | null }) => (await api.post(`/ai/messages/${id}/feedback`, { value })).data });
 
-/** The settings and a month's use (AI item 77: `month` YYYY-MM, the current one when left out). */
+/** The settings and a month's use (`month` YYYY-MM, the current one when left out). */
 export const useAiSettings = (enabled: boolean, month?: string) =>
   useQuery({ queryKey: ['ai', 'settings', month ?? 'now'], queryFn: async () => (await api.get<AiSettingsDto>('/ai/settings', { params: { month } })).data, enabled, placeholderData: keepPreviousData });
 
@@ -3974,14 +3974,14 @@ export interface AiConversationFilters {
   pageSize: number;
 }
 
-/** The admins' log of the company's conversations (AI item 77). */
+/** The admins' log of the company's conversations. */
 export const useAiConversations = (f: AiConversationFilters, enabled: boolean) =>
   useQuery({ queryKey: ['ai', 'conversations', f], queryFn: async () => (await api.get<Paginated<AiConversationDto>>('/ai/conversations', { params: f })).data, enabled, placeholderData: keepPreviousData });
 
 export const useAiConversation = (id: string | null) =>
   useQuery({ queryKey: ['ai', 'conversation', id], queryFn: async () => (await api.get<AiConversationDetailDto>(`/ai/conversations/${id}`)).data, enabled: !!id });
 
-/** A bill's checks before approval (AI item 69); `version` refetches them when the bill itself was reloaded. */
+/** A bill's checks before approval; `version` refetches them when the bill itself was reloaded. */
 export const useBillChecks = (kind: CheckKind, id: string | undefined, version?: number) =>
   useQuery({
     queryKey: ['checks', kind, id, version],
@@ -4008,7 +4008,7 @@ export function useAcceptCheck(kind: CheckKind, id: string) {
   });
 }
 
-// ---- Site photo checks (AI item 76) ----
+// Site photo checks
 
 /** A record's photo captions and flags; `version` refetches them when the record was reloaded (a photo added). */
 export const usePhotoChecks = (kind: PhotoCheckKind, id: string | undefined, enabled = true, version?: number) =>
@@ -4041,24 +4041,24 @@ export function useSetPhotoFlags() {
 export const useSnagDraft = () =>
   useMutation({ mutationFn: async (v: { attachmentId: string; projectId: string }) => (await api.post<SnagDraftDto>('/photo-checks/snag-draft', v)).data });
 
-// ---- Early warnings, the watch list (AI item 73) ----
+// Early warnings, the watch list
 
-/** Leakage checks (item 121) for a month, YYYY-MM. */
+/** Leakage checks for a month, YYYY-MM. */
 export const useLeakage = (month: string, enabled = true) =>
   useQuery({ queryKey: ['leakage', month], queryFn: async () => (await api.get<LeakageDto>(`/leakage?month=${month}`)).data, enabled });
 
-/** The 13-week cash forecast (item 122): accounts and management. */
+/** The 13-week cash forecast: accounts and management. */
 export const useCashForecast = (enabled = true) =>
   useQuery({ queryKey: ['cash-forecast'], queryFn: async () => (await api.get<CashForecastDto>('/cash-forecast')).data, enabled });
 
-/** Billing readiness (item 122): measured work not billed, bills not sent, bills unpaid; one project or all. */
+/** Billing readiness: measured work not billed, bills not sent, bills unpaid; one project or all. */
 export const useBillingReadiness = (projectId: string | undefined, enabled = true) =>
   useQuery({ queryKey: ['billing-readiness', projectId ?? 'all'], queryFn: async () => (await api.get<BillingReadinessDto>('/billing-readiness', { params: { projectId } })).data, enabled });
 
 /** A payment reminder for a sent bill, drafted from its figures and the contract's payment clause; nothing is saved. */
 export const usePaymentReminder = () => useMutation({ mutationFn: async (billId: string) => (await api.get<AiDraftDto>(`/billing-readiness/reminder/${billId}`)).data });
 
-/** Attendance cross-check (AI item 124): the month's flags and man-day bills, and with a project its days. */
+/** Attendance cross-check: the month's flags and man-day bills, and with a project its days. */
 export const useAttendanceCheck = (month: string, projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['attendance-check', month, projectId ?? 'all'],
@@ -4066,7 +4066,7 @@ export const useAttendanceCheck = (month: string, projectId: string | undefined,
     enabled,
   });
 
-// ---- Hindrance register to notice (AI item 123) ----
+// Hindrance register to notice
 
 /** DPR remarks read as hindrances, for the project manager to record or dismiss; one project or all. */
 export const useHindranceSuggestions = (projectId: string | undefined, enabled = true) =>
@@ -4107,11 +4107,11 @@ export const useDelayRegister = () => useMutation({ mutationFn: async (projectId
 export const useWatchList = (enabled = true) =>
   useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
 
-/** The headline of each check with a page of its own, for the watch list's Other checks (intelligence quick win Q0). */
+/** The headline of each check with a page of its own, for the watch list's Other checks. */
 export const useInsights = (enabled = true) =>
   useQuery({ queryKey: ['insights'], queryFn: async () => (await api.get<InsightsDto>('/insights')).data, enabled, staleTime: 5 * 60_000 });
 
-/** Dismiss a warning saying what became of it (item 119), or bring a dismissed one back (`restore`). */
+/** Dismiss a warning saying what became of it, or bring a dismissed one back (`restore`). */
 export function useDismissWarning() {
   const qc = useQueryClient();
   return useMutation({
@@ -4124,7 +4124,7 @@ export function useDismissWarning() {
   });
 }
 
-/** Resume a paused kind of warning (admins and management, item 119). */
+/** Resume a paused kind of warning (admins and management). */
 export function useResumeWarningKind() {
   const qc = useQueryClient();
   return useMutation({
@@ -4136,7 +4136,7 @@ export function useResumeWarningKind() {
   });
 }
 
-// ---- WhatsApp entries (AI item 120) ----
+// WhatsApp entries
 
 export const useCaptureSetup = (enabled = true) => useQuery({ queryKey: ['whatsapp', 'setup'], queryFn: async () => (await api.get<CaptureSetupDto>('/whatsapp/setup')).data, enabled });
 
@@ -4165,7 +4165,7 @@ export function useDecideCapture() {
   });
 }
 
-// ---- Morning brief (AI item 74) ----
+// Morning brief
 
 export const useMorningBrief = () => useQuery({ queryKey: ['brief-today'], queryFn: async () => (await api.get<BriefStatusDto>('/briefs/today')).data, staleTime: 5 * 60_000 });
 
@@ -4178,13 +4178,13 @@ export function useSetMorningBrief() {
   });
 }
 
-// ---- Ask the contract (AI item 75) ----
+// Ask the contract
 
 /** One page of a filed PDF: the page an answer's citation opens. */
 export const useDocumentPage = (file: string | null, page: number) =>
   useQuery({ queryKey: ['document-page', file, page], queryFn: async () => (await api.get<DocumentPageViewDto>(`/documents/files/${file}/pages/${page}`)).data, enabled: !!file });
 
-// ---- Reading invoices, challans and drawings (AI item 70) ----
+// Reading invoices, challans and drawings
 
 /** Sends page images to be read; saves nothing. */
 export function useReadDocument() {
@@ -4207,7 +4207,7 @@ export interface DraftVendorBill {
   lines: { purchaseOrderLineId: string; quantity: number; rate: number; gstRate: number }[];
 }
 
-/** Item 69's checks on a vendor bill not yet saved. */
+/** The bill checks on a vendor bill not yet saved. */
 export const useDraftVendorBillChecks = (draft: DraftVendorBill | null) =>
   useQuery({
     queryKey: ['checks', 'draft', 'vendor-bill', draft],
@@ -4216,7 +4216,7 @@ export const useDraftVendorBillChecks = (draft: DraftVendorBill | null) =>
     placeholderData: keepPreviousData,
   });
 
-// ----- RMC (v6 item 104) -----
+// RMC
 
 export const useRmcPlants = (enabled = true) => useQuery({ queryKey: ['rmc', 'plants'], queryFn: async () => (await api.get<RmcPlantDto[]>('/rmc/plants')).data, enabled, staleTime: 5 * 60_000 });
 
@@ -4271,11 +4271,11 @@ export function useRmcAction<T = unknown>() {
 export const useRmcOrder = (id: string | null) => useQuery({ queryKey: ['rmc', 'order', id], queryFn: async () => (await api.get<RmcOrderDto>(`/rmc/orders/${id}`)).data, enabled: !!id });
 export const useRmcBatch = (id: string | null) => useQuery({ queryKey: ['rmc', 'batch', id], queryFn: async () => (await api.get<RmcBatchDto>(`/rmc/batches/${id}`)).data, enabled: !!id });
 
-/** The batching plant controllers' batches waiting for a challan (item 149); the Connector brings rows in every minute or so. */
+/** The batching plant controllers' batches waiting for a challan; the Connector brings rows in every minute or so. */
 export const usePlantBatches = (plantId: string | undefined, enabled = true) =>
   useQuery({ queryKey: ['rmc', 'batcher', plantId ?? 'all'], queryFn: async () => (await api.get<PlantBatchBoardDto>('/rmc/batcher', { params: { plantId } })).data, enabled, refetchInterval: 60_000 });
 
-/* ---------- the supplier portal (v6 item 105) ---------- */
+// The supplier portal
 
 export const useSupplierHome = () => useQuery({ queryKey: ['supplier', 'home'], queryFn: async () => (await api.get<SupplierHomeDto>('/supplier/home')).data });
 export const useSupplierEnquiries = () => useQuery({ queryKey: ['supplier', 'enquiries'], queryFn: async () => (await api.get<SupplierEnquiryDto[]>('/supplier/enquiries')).data });
@@ -4311,7 +4311,7 @@ export const useSupplierInboxInvoice = (id: string | null) =>
 export const useSupplierChanges = (enabled = true) =>
   useQuery({ queryKey: ['supplier-portal', 'changes'], queryFn: async () => (await api.get<SupplierChangeDto[]>('/supplier-portal/changes')).data, enabled });
 
-/* ---------- Comments and mentions (v6 item 116) ---------- */
+// Comments and mentions
 
 export const useComments = (kind: CommentKind, entityId?: string) =>
   useQuery({ queryKey: ['comments', kind, entityId], queryFn: async () => (await api.get<CommentThreadsDto>('/comments', { params: { kind, entityId } })).data, enabled: !!entityId });
@@ -4328,7 +4328,7 @@ export function useCommentAction(kind: CommentKind, entityId: string) {
   });
 }
 
-/** The company's optional modules (v6 item 117), for an admin. */
+/** The company's optional modules, for an admin. */
 export const useModuleSwitches = (enabled: boolean) =>
   useQuery({ queryKey: ['module-switches'], queryFn: async () => (await api.get<ModuleSwitchesDto>('/module-switches')).data, enabled });
 
@@ -4360,7 +4360,7 @@ export function useSaveNavSettings() {
 /** A person's own look for the top bar (null follows the company's); the caller refreshes the signed-in user. */
 export const useSaveOwnLook = () => useMutation({ mutationFn: async (look: NavLook | null) => (await api.put<{ look: NavLook | null }>('/nav-settings/own-look', { look })).data });
 
-/* Group companies (phase 1): the group's companies and its people, for the group's admins. Every change answers with the
+/* Group companies: the group's companies and its people, for the group's admins. Every change answers with the
    whole group; the caller refreshes the signed-in user when their own companies change (the switcher reads them). */
 const GROUP_KEY = ['group'] as const;
 export const useGroup = (enabled: boolean) => useQuery({ queryKey: GROUP_KEY, queryFn: async () => (await api.get<GroupStateDto>('/group')).data, enabled });
@@ -4378,7 +4378,7 @@ export const useGivePlace = () =>
 export const useSetGroupAdmin = () =>
   useGroupChange(async ({ loginId, admin }: { loginId: string; admin: boolean }) => (await api.put<GroupStateDto>(`/group/admins/${loginId}`, { admin })).data);
 
-/* Launcher Home (phase 2): pins and Recent from the server, badges by tile. Pin, move and unpin change the screen at once
+/* Launcher Home: pins and Recent from the server, badges by tile. Pin, move and unpin change the screen at once
    and roll back if the server refuses. */
 const LAUNCHER_KEY = ['launcher'] as const;
 
@@ -4424,7 +4424,7 @@ export const useMovePin = () =>
     async (v) => (await api.patch<NavPinDto>(`/launcher/pins/${v.id}`, { position: v.position })).data,
   );
 
-/* Launcher phase 3: Discover's requests for access, and Admin › Home tiles (New and Featured marks, the Discover switch,
+/* Discover's requests for access, and Admin › Home tiles (New and Featured marks, the Discover switch,
    answering requests). */
 const HOME_TILES_KEY = ['launcher', 'home-tiles'] as const;
 

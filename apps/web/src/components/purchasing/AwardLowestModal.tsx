@@ -13,7 +13,7 @@ import { themeFontSize } from '@/lib/theme';
 type Row = AwardLine & { vendorName: string; quotationId: string };
 
 /**
- * Award the lowest rate per item (finding 12 of the October review): the comparative statement marks the cheapest
+ * Award the lowest rate per item: the comparative statement marks the cheapest
  * rate for each line, but an order goes to one vendor, so a split used to be raised by hand. This shows the split
  * the rules work out, what it saves against the cheapest single quotation, and raises a draft order per winner.
  */

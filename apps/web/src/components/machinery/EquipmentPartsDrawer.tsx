@@ -37,7 +37,7 @@ const small = { fontSize: themeFontSize('fontSizeSM') };
 const num = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
 /**
- * Tyres and batteries on a machine (v5 item 93): what is on it now and what came off, with each one's life in hours
+ * Tyres and batteries on a machine: what is on it now and what came off, with each one's life in hours
  * or km from the meter readings. The store manager and approvers record fitting and removal.
  */
 export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentDto | null; onClose: () => void }) {

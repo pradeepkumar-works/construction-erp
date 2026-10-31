@@ -1,4 +1,4 @@
-/* The launcher's tile grid (module screens now, Home in phase 2): 2 columns on a phone, more as the screen widens. */
+/* The launcher's tile grid (module screens and Home): 2 columns on a phone, more as the screen widens. */
 .grid {
   list-style: none;
   margin: 0;

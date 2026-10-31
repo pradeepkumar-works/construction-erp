@@ -19,7 +19,7 @@ const RED = themeColor('colorErrorText');
 const reasonLabel = (r: StockAdjustmentReason | null) => (r ? STOCK_ADJUSTMENT_REASON_LABELS[r] : 'Not given');
 
 /**
- * Stock written off or found in a period (v5 item 92): the store's adjustments by the reason given and by item, valued
+ * Stock written off or found in a period: the store's adjustments by the reason given and by item, valued
  * at item rates. Opening stock is left out; counts post as a count difference.
  */
 export function WastageReport({ projectId }: { projectId: string }) {

@@ -84,7 +84,7 @@ function ContactDialog({ editing, onClose }: { editing: LetterContactDto | 'new'
   );
 }
 
-/** The address book (item 136): offices and people letters come from and go to, picked on a letter's From or To. */
+/** The address book: offices and people letters come from and go to, picked on a letter's From or To. */
 export function AddressBook() {
   const { token } = theme.useToken();
   const { user } = useAuth();

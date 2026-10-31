@@ -52,7 +52,7 @@ function costOf(lines: Line[] | undefined) {
 }
 
 /**
- * A bid item and its rate analysis (v6 item 110): what one unit takes in materials (with wastage), labour man-days and
+ * A bid item and its rate analysis: what one unit takes in materials (with wastage), labour man-days and
  * machine hours, each at a rate. A line left without a rate takes the store item's, the trade's labour rate or the
  * machines' rate on saving. The starter library fills a common item in one go.
  */

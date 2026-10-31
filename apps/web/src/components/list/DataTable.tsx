@@ -38,7 +38,7 @@ export type ListColumn<T> = TableColumnType<T> & {
   defaultHidden?: boolean;
   /**
    * A lower-priority column: on by default only on a window at least this wide (CSS pixels), so the default view fits
-   * without sideways scrolling (UX item 84). The column chooser still turns it on anywhere.
+   * without sideways scrolling. The column chooser still turns it on anywhere.
    */
   defaultFrom?: number;
   /** What it is on a phone's card (see `cardFields`); false keeps it off the card. */
@@ -100,9 +100,9 @@ export interface BulkAction<T> {
 }
 
 /**
- * The table of a list page (UI roadmap item 55): the column chooser and wrap switch, a header that stays in view,
+ * The table of a list page: the column chooser and wrap switch, a header that stays in view,
  * click a row to open it, select rows for the bulk bar, and a totals row for the figures on the page.
- * From the keyboard (UX item 81) the rows are one Tab stop: ↑ ↓ (or J K) move between them, Enter opens one and X ticks it.
+ * From the keyboard the rows are one Tab stop: ↑ ↓ (or J K) move between them, Enter opens one and X ticks it.
  */
 export function DataTable<T extends { id: string }>({
   columns,
@@ -150,7 +150,7 @@ export function DataTable<T extends { id: string }>({
 }) {
   const { token } = theme.useToken();
   const stickyTop = useStickyTop();
-  // Below 768 px each row is a card (UX item 84).
+  // Below 768 px each row is a card.
   const phone = useIsPhone();
   const [wrap, setWrap] = useState(() =>
     readPref<boolean>("nirmaan.table.wrap", false),
@@ -164,7 +164,7 @@ export function DataTable<T extends { id: string }>({
   const tabRow = Math.min(activeRow, Math.max(rows.length - 1, 0));
   const tableRef = useRef<HTMLDivElement>(null);
   const [singleKeys] = useSingleKeys();
-  // A row the pointer rests on, or that takes focus, fetches its record ahead (item 83) through its RecordLink.
+  // A row the pointer rests on, or that takes focus, fetches its record ahead through its RecordLink.
   const prefetch = usePrefetch();
   const hoverTimer = useRef<number | undefined>(undefined);
   const fetchRowAhead = (tr: HTMLElement) =>

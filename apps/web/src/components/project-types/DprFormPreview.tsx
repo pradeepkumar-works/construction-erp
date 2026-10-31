@@ -25,11 +25,11 @@ import { OwnFieldInput } from '@/components/dpr/OwnFields';
 
 export type PreviewMode = 'web' | 'phone';
 
-/** Where a line's work is named, for the type's places (item 134): chainage, floor, village, else a note. */
+/** Where a line's work is named, for the type's places: chainage, floor, village, else a note. */
 const WHERE: Record<WorkLocation, string> = { CHAINAGE: 'Chainage from, to', FLOOR: 'Floor', VILLAGE: 'Village' };
 
 /**
- * A type's DPR form as the site sees it (item 134 part 2): the web form's sections, or the phone's one column with the
+ * A type's DPR form as the site sees it: the web form's sections, or the phone's one column with the
  * Hindi names under the company's own fields. Nothing in it saves; it shows what the definition asks for.
  */
 export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def: DprFormDef; mode: PreviewMode; locations: WorkLocation[]; progressFromDpr: boolean }) {

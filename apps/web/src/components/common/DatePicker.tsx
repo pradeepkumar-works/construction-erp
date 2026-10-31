@@ -6,7 +6,7 @@ import type { DatePickerProps } from 'antd';
 import type { RangePickerProps } from 'antd/es/date-picker';
 
 /**
- * How a typed date is read (finding 4 of the October review): shown as "13 Oct 2026", and typed any common way:
+ * How a typed date is read: shown as "13 Oct 2026", and typed any common way:
  * 13/10/2026, 13-10-2026, 13.10.2026, 13 Oct 26 or 2026-10-13. Without these a date typed another way was dropped
  * when the field lost focus, with nothing said.
  */

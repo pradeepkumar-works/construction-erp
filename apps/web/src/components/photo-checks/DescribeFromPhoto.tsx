@@ -17,7 +17,7 @@ interface SnagFields {
 }
 
 /**
- * "Describe from photo" on a new snag (AI item 76): Ask Nirmaan drafts the title, details, place and trade from the
+ * "Describe from photo" on a new snag: Ask Nirmaan drafts the title, details, place and trade from the
  * first photo and fills in the fields still empty. Nothing is saved until the user saves the snag.
  */
 export function DescribeFromPhoto<T extends SnagFields>({ form, projectId }: { form: FormInstance<T>; projectId: string }) {

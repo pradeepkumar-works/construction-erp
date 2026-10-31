@@ -4,7 +4,7 @@ import React from 'react';
 import { Flex, Skeleton, theme } from 'antd';
 
 /**
- * A titled part of something that already has a surface, such as a project tab or a record (UX item 82: no cards inside
+ * A titled part of something that already has a surface, such as a project tab or a record (no cards inside
  * cards). It has no box of its own: a hairline above, the title with its actions, then the content.
  */
 export function Section({
@@ -45,7 +45,7 @@ export function Section({
   );
 }
 
-/** One figure among others on a surface: a hairline above it instead of a card around it (UX item 82). */
+/** One figure among others on a surface: a hairline above it instead of a card around it. */
 export function FigureBlock({ loading, children }: { loading?: boolean; children: React.ReactNode }) {
   const { token } = theme.useToken();
   return (

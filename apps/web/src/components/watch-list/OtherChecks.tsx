@@ -50,7 +50,7 @@ function figureOf(c: InsightDto): Pick<StripFigure, 'value' | 'note' | 'tone'> {
 }
 
 /**
- * The watch list's Other checks (intelligence quick win Q0): the checks that have pages of their own, each with its headline
+ * The watch list's Other checks: the checks that have pages of their own, each with its headline
  * and a link, so one page shows everything Nirmaan's rules have found. Only the checks the person may open.
  */
 export function OtherChecks({ checks }: { checks: InsightDto[] }) {

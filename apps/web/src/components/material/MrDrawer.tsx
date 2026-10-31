@@ -36,14 +36,14 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
   const [receiving, setReceiving] = useState(false);
   const [covering, setCovering] = useState(false);
   const approved = data?.status === 'APPROVED';
-  // Received and met from stock both count towards a line (v5 item 95).
+  // Received and met from stock both count towards a line.
   const got = (i: MaterialRequestItemDto) => Number(i.receivedQty) + Number(i.coveredQty);
   const pending = approved && !!data && data.items.some((i) => got(i) < Number(i.quantity));
   const mayReceive = pending && !!user && canKeepStock(user.roleKey);
   const purchasing = approved && !!user && canViewPurchaseOrders(user.roleKey);
   const receivedLines = data?.items.filter((i) => got(i) >= Number(i.quantity)).length ?? 0;
   const stock = useRequestStock(data?.id, approved);
-  // Item 170: before the decision, each line against the site's store and what the BOQ allows
+  // Before the decision, each line against the site's store and what the BOQ allows
   const deciding = data?.status === 'SUBMITTED' || data?.status === 'DRAFT' || data?.status === 'CHANGES_REQUESTED';
   const check = useIndentCheck(data?.id, deciding);
   const stockOf = (id: string) => stock.data?.lines.find((l) => l.materialRequestItemId === id);
@@ -179,7 +179,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
   );
 }
 
-/** A line's stock (v5 item 95): at the request's own site, and how much the other sites hold, listed in a popover. */
+/** A line's stock: at the request's own site, and how much the other sites hold, listed in a popover. */
 function StockCell({ line, loading }: { line: RequestLineStockDto | undefined; loading: boolean }) {
   if (loading) return <span className="text-muted">…</span>;
   if (!line) return <span className="text-muted">-</span>;

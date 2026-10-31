@@ -7,7 +7,7 @@ import { formatINRCompact, formatPct } from '@/lib/format';
 
 const money = (v: string) => <span translate="no">{formatINRCompact(v)}</span>;
 
-/** The portfolio by vertical (item 167): each vertical's projects added up, from contract to what clients owe. */
+/** The portfolio by vertical: each vertical's projects added up, from contract to what clients owe. */
 export function VerticalsTable({ verticals }: { verticals: PortfolioVerticalDto[] }) {
   return (
     <Table<PortfolioVerticalDto>

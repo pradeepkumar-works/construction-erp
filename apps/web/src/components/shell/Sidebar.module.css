@@ -306,7 +306,7 @@
   outline-offset: -2px;
 }
 
-/* Touch screens: each link and section head is a 44 px target (UX item 82); the sidebar keeps its width. */
+/* Touch screens: each link and section head is a 44 px target; the sidebar keeps its width. */
 @media (pointer: coarse) {
   .item,
   .rail .item,

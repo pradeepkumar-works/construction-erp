@@ -24,7 +24,7 @@ const heldAt = (l: RequestLineStockDto, projectId: string | undefined, own: stri
   !projectId ? 0 : projectId === own ? toNumber(l.here) : toNumber(l.others.find((o) => o.projectId === projectId)?.balance);
 
 /**
- * Stock first (v5 item 95): meet a request's lines from stock before buying. From the request's own site it is an issue
+ * Stock first: meet a request's lines from stock before buying. From the request's own site it is an issue
  * to whoever raised it; from another site, a transfer here (received at this site as usual). What is met no longer
  * needs ordering.
  */

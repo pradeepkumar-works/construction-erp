@@ -23,7 +23,7 @@ const SUGGESTED = ['Cement', 'Steel', 'Bitumen', 'Fuel (HSD)', 'Labour', 'Other 
 const fixedShare = (shares: (number | null | undefined)[]) => Math.max(0, 100 - shares.reduce<number>((s, v) => s + (Number(v) || 0), 0));
 
 /**
- * The price variation formula of a contract (v4 item 50): each component's share of the work value and its index on the
+ * The price variation formula of a contract: each component's share of the work value and its index on the
  * base date. Bills take this month's index for each and add work value × share × (current − base) / base.
  */
 export function PriceVariationCard({ contract, editable }: { contract: ProjectContractDto; editable: boolean }) {

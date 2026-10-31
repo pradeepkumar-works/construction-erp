@@ -120,7 +120,7 @@ function Body({ data }: { data: DesignDashboardDto }) {
 }
 
 /**
- * The design dashboard (item 138 part 3): late drawings, approvals and comments, superseded copies on site, as-builts and
+ * The design dashboard: late drawings, approvals and comments, superseded copies on site, as-builts and
  * RFIs by project, and what each revision of the last 30 days changes.
  */
 export function DesignDashboardPage() {

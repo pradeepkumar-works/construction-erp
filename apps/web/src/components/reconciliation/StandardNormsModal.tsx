@@ -13,7 +13,7 @@ import { formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 
 /**
- * Adopt the standard norms library on a project (finding 16 of the October review): the reconciliation stayed empty
+ * Adopt the standard norms library on a project: the reconciliation stayed empty
  * because every norm had to be typed first. This shows what the library would set, item by item, before it is written.
  */
 /** The BOQ item, with the norm the library reads it as. */

@@ -6,7 +6,7 @@ import type { PurchaseOrderDto } from '@erp/shared';
 import { PurchaseOrderRecord } from '@/components/purchasing/PurchaseOrderDrawer';
 import { PurchaseOrderFormModal } from '@/components/purchasing/PurchaseOrderFormModal';
 
-/** One purchase order, as its own page (UI roadmap item 57). */
+/** One purchase order, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

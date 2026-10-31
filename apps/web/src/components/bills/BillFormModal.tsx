@@ -62,7 +62,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
     mutationFn: async ({ v, submit }: { v: FormValues; submit: boolean }) => {
       const body = {
         billDate: v.billDate.format('YYYY-MM-DD'),
-        // An O&M bill covers its period (item 131): only its date, deductions and remarks change.
+        // An O&M bill covers its period: only its date, deductions and remarks change.
         ...(bill?.om ? {} : { measuredUpTo: v.measuredUpTo.format('YYYY-MM-DD'), isFinal: !!v.isFinal }),
         otherDeduction: String(v.otherDeduction ?? 0),
         otherDeductionNote: v.otherDeductionNote?.trim() || null,

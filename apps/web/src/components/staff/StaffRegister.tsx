@@ -31,7 +31,7 @@ export function StaffRegister() {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
-  // The header's project (UX item 84), else the first: picking one here picks it for every list.
+  // The header's project, else the first: picking one here picks it for every list.
   const [scope, setProjectId] = useProjectScope();
   const projectId = scope ?? projects?.[0]?.id;
   const [date, setDate] = useState(dayjs());
@@ -149,7 +149,7 @@ export function StaffRegister() {
             value={marks[r.employee.id]?.overtimeHours ?? null}
             onChange={(v) => set(r.employee.id, { overtimeHours: v })}
           />
-          {/* Overtime from a check-out waits for a decision (v5 item 97); a decider's own entry is approved as saved. */}
+          {/* Overtime from a check-out waits for a decision; a decider's own entry is approved as saved. */}
           {r.attendance?.overtimeStatus && r.attendance.overtimeStatus !== 'APPROVED' ? <OvertimeTag status={r.attendance.overtimeStatus} /> : null}
         </Space>
       ),

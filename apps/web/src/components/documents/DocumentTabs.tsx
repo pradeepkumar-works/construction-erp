@@ -22,7 +22,7 @@ export type DocumentTab = (typeof DOCUMENT_TABS)[number];
 /** A tab with what waits in it: "NCRs", 2, "not closed". */
 const count = (label: string, n: number | null | undefined, countLabel: string) => ({ label, count: n, countLabel, attention: true });
 
-/** A project's letters (Correspondence, item 136): received and sent, each its own register. */
+/** A project's letters (Correspondence): received and sent, each its own register. */
 function ProjectLetters({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<'IN' | 'OUT'>('IN');
   return (
@@ -104,7 +104,7 @@ export function DocumentTabs({ projectId, tab, onTab, openId, openRfiId }: { pro
 
 /** A project's Documents tab. */
 export function ProjectDocumentsTab({ projectId }: { projectId: string }) {
-  // The open tab is `?sub=` in the URL (UX item 84), so a reload keeps it.
+  // The open tab is `?sub=` in the URL, so a reload keeps it.
   const [tab, setTab] = useUrlTab<DocumentTab>(DOCUMENT_TABS, 'register');
   return <DocumentTabs projectId={projectId} tab={tab} onTab={setTab} />;
 }

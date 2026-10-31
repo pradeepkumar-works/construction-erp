@@ -78,7 +78,7 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
 }
 
 /**
- * A module's screen (v6 item 98, launcher phase 1): a tile for each of the module's pages this person may open, then its
+ * A module's screen: a tile for each of the module's pages this person may open, then its
  * figures for the header's project (or every project they see), what waits for them in it, and what they can start there.
  * A module where they see one page only opens that page.
  */

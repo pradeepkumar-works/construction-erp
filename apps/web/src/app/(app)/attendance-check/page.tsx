@@ -29,7 +29,7 @@ const KIND_COLOR: Record<AttendanceFlagKind, string> = { BILL_ABOVE: 'red', NO_P
 type BillRow = AttendanceBillLineDto & { bill: AttendanceBillDto; first: boolean };
 
 /**
- * Attendance cross-check (AI item 124): labour contractors' man-day bills against the head count, the named roll call and
+ * Attendance cross-check: labour contractors' man-day bills against the head count, the named roll call and
  * the biometric punches, and each day's records against each other and the DPR. Flags carry their working; workers are
  * named only to HR and the project manager. The month is in the URL (`?month=YYYY-MM`), the project is the header's.
  */

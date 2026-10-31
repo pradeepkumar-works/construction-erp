@@ -75,7 +75,7 @@ const ymd = (d: dayjs.Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') :
 /**
  * Record a letter received (numbered at once from its series, and marked to someone) or start one to send (a draft,
  * numbered when its signatory approves it or, where it needs no approval, when it is issued). With `letter`, change one.
- * `aiDraft` is a letter Ask Nirmaan wrote (AI item 71), from a delay's notice or a bill's reminder too.
+ * `aiDraft` is a letter Ask Nirmaan wrote, from a delay's notice or a bill's reminder too.
  */
 export function LetterForm({
   open,

@@ -6,7 +6,7 @@ import { AppstoreOutlined, CheckSquareOutlined, InboxOutlined, ScheduleOutlined,
 import { readPref, writePref } from '@/lib/prefs';
 import { StickyTopContext, useStickyTop } from '@/lib/sticky';
 
-/** The project page's groups (UI roadmap item 56): six at the top, the old tabs as a second level inside. */
+/** The project page's groups: six at the top, the old tabs as a second level inside. */
 export const WORKSPACE_GROUPS = [
   { key: 'overview', label: 'Overview', icon: <AppstoreOutlined aria-hidden /> },
   { key: 'plan', label: 'Plan', icon: <ScheduleOutlined aria-hidden /> },

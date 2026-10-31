@@ -168,7 +168,7 @@ function Chooser({ rows, value, onChange, defaultOn }: { rows: ProjectUpdateRowD
 }
 
 /**
- * Update projects (item 134 part 3, ARCHITECTURE "Project types", Updating projects): each running project of a type
+ * Update projects (ARCHITECTURE "Project types", Updating projects): each running project of a type
  * (or each one with components of a kind) and what it would gain from the type as it is now, to add it all or in part.
  * It only adds; what a project has stays as it is.
  */

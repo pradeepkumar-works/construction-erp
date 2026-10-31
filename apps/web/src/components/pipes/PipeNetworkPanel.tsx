@@ -37,7 +37,7 @@ type StateFilter = 'all' | SegmentState;
 const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
 /**
- * Pipe network tab (item 126, ARCHITECTURE "Pipe network"): a water supply or sewerage project's zones and mains, each
+ * Pipe network tab (ARCHITECTURE "Pipe network"): a water supply or sewerage project's zones and mains, each
  * drawn from its model file, with every pipe junction to junction in the state of its work, the zone's pipe sheet by
  * diameter, the pipes ready to start, and the list of pipes. Work reaches a pipe only through DPR lines.
  */

@@ -28,7 +28,7 @@ export function ProjectSelect({ exclude, ...props }: SelectProps<string> & { exc
   );
 }
 
-/** Several projects at once: the teams a new user joins (finding 17 of the October review). */
+/** Several projects at once: the teams a new user joins. */
 export function ProjectMultiSelect(props: SelectProps<string[]>) {
   const { options, isLoading } = useProjectOptions();
   return (

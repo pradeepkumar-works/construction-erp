@@ -55,7 +55,7 @@ function buildRows(s: StructureDto): Row[] {
 const pctBar = (v: number, label: string) => <Progress percent={v} size="small" status={v >= 100 ? 'success' : 'normal'} aria-label={`${label}: ${v}% done`} />;
 
 /**
- * Structure tab (item 125, ARCHITECTURE "Work breakdown"): the project's components and sub-components with their
+ * Structure tab (ARCHITECTURE "Work breakdown"): the project's components and sub-components with their
  * weights, the activities under each, and progress rolled up from the sub-activities to the project.
  */
 export function StructurePanel({ project }: { project: ProjectDetail }) {

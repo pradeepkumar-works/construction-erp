@@ -16,7 +16,7 @@ import { MaterialApprovalForm, MaterialApprovalStatusTag, OutcomeTag, ReviewDial
 import { CommentsCard } from '@/components/comments/CommentsSection';
 
 /**
- * One material approval request (v6 item 113): what is asked for, each revision sent to the reviewer with the outcome
+ * One material approval request: what is asked for, each revision sent to the reviewer with the outcome
  * and comments that came back, and the files. From here it is submitted, its outcome recorded, resubmitted or withdrawn.
  */
 export default function MaterialApprovalPage() {

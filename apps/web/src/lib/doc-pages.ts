@@ -2,7 +2,7 @@
 
 import { DOC_READ_MAX_PAGES, DOC_READ_MAX_PAGE_BYTES } from '@erp/shared';
 
-/** A page ready to send for reading (AI item 70): a JPEG, and a URL to show it beside the form. */
+/** A page ready to send for reading: a JPEG, and a URL to show it beside the form. */
 export interface PageImage {
   blob: Blob;
   url: string;

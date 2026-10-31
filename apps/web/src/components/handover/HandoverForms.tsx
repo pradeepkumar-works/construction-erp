@@ -20,8 +20,6 @@ const t = (v?: string) => v?.trim() || null;
 const DATE = 'DD MMM YYYY';
 const TRADES = ['Civil', 'Plaster', 'Masonry', 'Tiling', 'Painting', 'Plumbing', 'Electrical', 'Joinery', 'Waterproofing', 'Fabrication', 'Road work', 'Drainage', 'Road marking', 'Landscaping'];
 
-/* ---------- completion ---------- */
-
 interface HandoverValues {
   completedOn?: dayjs.Dayjs;
   certificateNo?: string;
@@ -115,8 +113,6 @@ export function HandoverFormModal({ open, summary, onClose }: { open: boolean; s
     </FormShell>
   );
 }
-
-/* ---------- snags and defects ---------- */
 
 export type DefectAction = { kind: 'new' } | { kind: 'edit'; defect: DefectDto } | { kind: 'fix'; defect: DefectDto } | { kind: 'close'; defect: DefectDto } | { kind: 'reopen'; defect: DefectDto };
 

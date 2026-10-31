@@ -34,7 +34,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
   }, [initialOpen]);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MaterialRequestDto | null>(null);
-  // A draft from Ask Nirmaan (AI item 71) the form opens with
+  // A draft from Ask Nirmaan the form opens with
   const [prefill, setPrefill] = useState<AiDraftDto | null>(null);
   const frame = useListFrame({
     list: 'material-requests',

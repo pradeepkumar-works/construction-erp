@@ -34,7 +34,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseDto | null>(null);
-  // A draft from Ask Nirmaan (AI item 71) the form opens with
+  // A draft from Ask Nirmaan the form opens with
   const [prefill, setPrefill] = useState<AiDraftDto | null>(null);
   const frame = useListFrame({
     list: 'expenses',

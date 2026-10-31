@@ -17,7 +17,7 @@ const rangeText = (f: DprOwnField) => {
   return '';
 };
 
-/** The rules of a field of the company's own (item 134 part 2), as the API checks them; `required` only when it is. */
+/** The rules of a field of the company's own, as the API checks them; `required` only when it is. */
 export function ownFieldRules(f: DprOwnField): Rule[] {
   const rules: Rule[] = [];
   if (f.required) rules.push({ required: true, message: `${f.kind === 'YES_NO' || f.kind === 'CHOICE' ? 'Choose' : 'Fill in'} ${f.label}` });

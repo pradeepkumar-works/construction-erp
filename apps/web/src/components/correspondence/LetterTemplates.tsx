@@ -66,7 +66,7 @@ function TemplateDialog({ editing, onClose }: { editing: LetterTemplateDto | 'ne
   );
 }
 
-/** Letter templates (item 136): the standard letters a draft starts from, with their placeholders. */
+/** Letter templates: the standard letters a draft starts from, with their placeholders. */
 export function LetterTemplates() {
   const { user } = useAuth();
   const qc = useQueryClient();

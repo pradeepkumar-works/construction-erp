@@ -1,8 +1,8 @@
 import { API_URL } from './api';
 
 /**
- * The speed budgets (item 83), Google's "good" thresholds: largest paint within 2.5 s of opening a page, layout shift
- * under 0.1, and the slowest response to a click or key under 200 ms. One constant, so a CI check (item 89) can read it.
+ * The speed budgets, Google's "good" thresholds: largest paint within 2.5 s of opening a page, layout shift
+ * under 0.1, and the slowest response to a click or key under 200 ms. One constant, so a CI check can read it.
  */
 export const WEB_VITAL_BUDGETS = { LCP: 2500, CLS: 0.1, INP: 200 } as const;
 export type BudgetedVital = keyof typeof WEB_VITAL_BUDGETS;

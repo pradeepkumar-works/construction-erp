@@ -35,7 +35,7 @@ export const TYPE_COLORS: Record<SubmissionType, string> = {
   INSPECTION: 'orange',
 };
 
-/** Types whose record has its own page (item 57), and so shows whole in the inbox's right-hand pane. */
+/** Types whose record has its own page, and so shows whole in the inbox's right-hand pane. */
 export const RECORD_PAGES: Partial<Record<SubmissionType, string>> = {
   PROGRESS: '/progress',
   DPR: '/dpr',

@@ -9,7 +9,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { usePageTitle } from '@/lib/page-title';
 
 /**
- * A page of a module the company has turned off (v6 item 117), opened from an old link or a bookmark: what is off, and for
+ * A page of a module the company has turned off, opened from an old link or a bookmark: what is off, and for
  * an admin the way to turn it on. Its data is kept, so nothing is lost.
  */
 export function ModuleOff({ module, user }: { module: SwitchableModule; user: AuthUser }) {

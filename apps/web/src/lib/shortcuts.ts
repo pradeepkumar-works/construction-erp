@@ -5,7 +5,7 @@ import { readPref, writePref } from './prefs';
 
 /**
  * Single-key shortcuts (J and K in lists and the inbox, A C R X O in Approvals, [ for the sidebar, ? for help) can be
- * turned off in Help > Keyboard shortcuts (UX item 81, WCAG 2.1.4), since speech input can fire them by accident.
+ * turned off in Help > Keyboard shortcuts (WCAG 2.1.4), since speech input can fire them by accident.
  * On by default; kept per browser.
  */
 const KEY = 'nirmaan.shortcuts.single';

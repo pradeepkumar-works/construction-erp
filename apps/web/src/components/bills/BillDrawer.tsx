@@ -389,7 +389,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
+          // Delete is a tap from Approve no longer.
           more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: data.billLabel, description: 'Its measurements become billable again.', onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }

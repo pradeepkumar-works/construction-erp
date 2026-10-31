@@ -19,7 +19,7 @@ interface Values {
 
 /**
  * Add a material norm (how much of a store item one unit of a BOQ item uses, with the wastage allowed) or change one.
- * A norm can instead sit on an activity (item 128), for work with no BOQ item of its own such as a lump-sum
+ * A norm can instead sit on an activity, for work with no BOQ item of its own such as a lump-sum
  * component's activities or a house connection's kit; it then counts before the BOQ item's. A norm's BOQ item or
  * activity and its store item are fixed once it exists; to move it, remove it and add another.
  */

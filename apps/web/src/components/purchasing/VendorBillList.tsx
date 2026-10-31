@@ -30,7 +30,7 @@ import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'exceptions', 'kind'] as const;
 
-/** What each kind of bill is recorded against, in the Record menu (v5 item 91). */
+/** What each kind of bill is recorded against, in the Record menu. */
 const KIND_HINTS: Record<VendorBillKind, string> = {
   PO: 'Matched against the order and its GRNs',
   HIRE: "A hired machine's month, from its approved logs",
@@ -45,7 +45,7 @@ function Sub({ children }: { children: React.ReactNode }) {
 
 function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: VendorBillDto) => void; sortOrderFor: (key: VendorBillSortField) => 'ascend' | 'descend' | null }): ListColumn<VendorBillDto>[] {
   const sort = (key: VendorBillSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
-  // What a window of each width leads with (finding 17 of the October review: at 1440 the table scrolled sideways and
+  // What a window of each width leads with (at 1440 the table scrolled sideways and
   // the fixed Status column lay over Match). The due date and the match carry the day's work, so the invoice date and
   // what the bill is against wait for a wider window; the column chooser turns any of them on at any width.
   return [

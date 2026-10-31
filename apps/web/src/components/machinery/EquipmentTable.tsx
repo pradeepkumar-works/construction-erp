@@ -104,11 +104,11 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         serviceIntervalHours: v.serviceIntervalHours ? String(v.serviceIntervalHours) : null,
         serviceIntervalDays: v.serviceIntervalDays || null,
         lastServiceDate: v.lastServiceDate ? v.lastServiceDate.format('YYYY-MM-DD') : null,
-        // Hire terms (v5 item 91): what its hire bill is checked against.
+        // Hire terms: what its hire bill is checked against.
         hireMinHours: v.ownership === 'HIRED' && v.hireMinHours ? String(v.hireMinHours) : null,
         hireFuelBy: v.ownership === 'HIRED' ? (v.hireFuelBy ?? null) : null,
         hireOperator: v.ownership === 'HIRED' && v.hireOperator ? v.hireOperator === 'yes' : null,
-        // Fuel norm (v5 item 93): what its fuel use is checked against.
+        // Fuel norm: what its fuel use is checked against.
         fuelNorm: v.fuelNorm ? String(v.fuelNorm) : null,
         fuelNormUnit: v.fuelNorm ? (v.fuelNormUnit ?? 'LITRES_PER_HOUR') : null,
         fuelTolerancePct: v.fuelNorm && v.fuelTolerancePct ? String(v.fuelTolerancePct) : null,

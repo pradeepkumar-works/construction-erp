@@ -17,7 +17,7 @@ import { TestResultTag } from '@/components/quality/qualityUi';
 
 type StateFilter = 'ALL' | 'AT_LAB' | 'REPORTED';
 
-/** Samples at the labs (item 137 part 2): what went to which lab, how long it has waited for its report, and the charges. */
+/** Samples at the labs: what went to which lab, how long it has waited for its report, and the charges. */
 export function SamplesPage() {
   const { token } = theme.useToken();
   const params = useSearchParams();

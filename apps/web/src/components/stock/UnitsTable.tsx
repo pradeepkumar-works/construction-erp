@@ -20,7 +20,7 @@ interface UnitForm {
   name: string;
 }
 
-/** Unit master (v4 item 48): the units every quantity field suggests. Units in use can be switched off but not removed. */
+/** Unit master: the units every quantity field suggests. Units in use can be switched off but not removed. */
 export function UnitsTable() {
   const { user } = useAuth();
   const { message } = App.useApp();

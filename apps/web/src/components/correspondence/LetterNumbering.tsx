@@ -108,7 +108,7 @@ function SeriesDialog({ editing, onClose }: { editing: LetterSeriesDto | 'new' |
   );
 }
 
-/** Numbering and approval (item 136): which outward letters wait for their signatory, and each series' pattern. */
+/** Numbering and approval: which outward letters wait for their signatory, and each series' pattern. */
 export function LetterNumbering() {
   const { token } = theme.useToken();
   const qc = useQueryClient();

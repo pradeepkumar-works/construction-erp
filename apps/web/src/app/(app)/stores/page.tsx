@@ -16,7 +16,7 @@ import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 
 /**
- * Central stores and yards (v6 item 106): each one is a project of type STORE, so it receives on GRNs and purchase
+ * Central stores and yards: each one is a project of type STORE, so it receives on GRNs and purchase
  * orders, sends to sites by transfer (in transit until the site receives it) and is counted like any site's store.
  */
 export default function StoresPage() {

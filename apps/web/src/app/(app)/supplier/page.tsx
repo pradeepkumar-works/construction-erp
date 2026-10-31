@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
 
-/** The supplier portal's home (v6 item 105): what waits on the supplier, and what is due to them. */
+/** The supplier portal's home: what waits on the supplier, and what is due to them. */
 export default function SupplierHomePage() {
   const { token } = theme.useToken();
   const { data, isLoading, error, refetch } = useSupplierHome();

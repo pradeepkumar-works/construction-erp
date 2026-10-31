@@ -58,7 +58,7 @@ const RATE_WORD = { HOUR: 'hour', DAY: 'day', MONTH: 'month' } as const;
 const TITLES: Record<OtherBillKind, string> = { HIRE: 'Record hire bill', SERVICE: 'Record workshop bill', OTHER: 'Record service bill' };
 
 /**
- * A vendor bill without a purchase order (v5 item 91): a hired machine's month from its approved logs, a workshop's
+ * A vendor bill without a purchase order: a hired machine's month from its approved logs, a workshop's
  * bill for closed job cards, or another service (transport, testing, consultancy) booked to an expense head. The API
  * works the hire lines out from the logs; what does not match them is recorded as an exception for the approver.
  */

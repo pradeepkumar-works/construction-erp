@@ -45,7 +45,7 @@ export interface MachineryPrefill {
   date: string;
 }
 
-/** The boxes the tracker's day fills (item 146), and only while no one has typed in them. */
+/** The boxes the tracker's day fills, and only while no one has typed in them. */
 const FROM_TRACKER = ['hoursWorked', 'idleHours', 'meterStart', 'meterEnd'] as const;
 
 /** Log a machine's day, or (with `log`) fix a returned log and resubmit it. */
@@ -63,7 +63,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
   const date = Form.useWatch('date', form);
   const worked = Form.useWatch('hoursWorked', form);
   const idle = Form.useWatch('idleHours', form);
-  // What the machine's tracker read that day, for a new log (item 146).
+  // What the machine's tracker read that day, for a new log.
   const day = useMachineDay(editing || !open ? undefined : equipmentId, date ? date.format('YYYY-MM-DD') : undefined).data ?? null;
   const filled = useRef<Partial<Record<(typeof FROM_TRACKER)[number], number | null>>>({});
 
