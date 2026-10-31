@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useBoq, useProjectSetup } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
-import { formatINR, formatINRCompact, formatQty, toNumber, RUPEE } from '@/lib/format';
+import { formatINR, formatINRCompact, formatPct, formatQty, toNumber, RUPEE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
@@ -293,7 +293,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
             },
             { title: 'Items', dataIndex: 'count', width: 80, align: 'right' },
             { title: 'Amount', dataIndex: 'amount', width: 160, align: 'right', className: 'mono', render: (v: number) => formatINR(v) },
-            { title: 'Share', dataIndex: 'share', width: 90, align: 'right', className: 'mono', render: (v: number) => `${v.toFixed(1)}%` },
+            { title: 'Share', dataIndex: 'share', width: 90, align: 'right', className: 'mono', render: (v: number) => formatPct(v) },
             {
               title: 'Value of work done',
               dataIndex: 'executed',

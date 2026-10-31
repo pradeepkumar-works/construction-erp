@@ -7,7 +7,7 @@ import { canRecordTest, type TestsDueRowDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useTestsDue } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatQty } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -84,7 +84,7 @@ export function TestsDuePage() {
                   key: 'done',
                   width: 150,
                   align: 'right',
-                  render: (_, r) => (r.quantity ? <span translate="no">{`${Number(r.quantity).toLocaleString('en-IN')} ${unitOf(r)}`}</span> : <Typography.Text type="secondary">Nothing yet</Typography.Text>),
+                  render: (_, r) => (r.quantity ? <span translate="no">{`${formatQty(r.quantity)} ${unitOf(r)}`}</span> : <Typography.Text type="secondary">Nothing yet</Typography.Text>),
                 },
                 { title: 'Owed', dataIndex: 'required', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
                 { title: 'Sampled', dataIndex: 'taken', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
