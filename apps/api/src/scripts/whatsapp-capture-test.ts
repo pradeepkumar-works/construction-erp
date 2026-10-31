@@ -26,7 +26,7 @@ const test = (name: string, fn: () => void) => tests.push([name, fn]);
 
 const draft = (over: Partial<AiDraftDto> = {}): AiDraftDto => ({
   kind: 'material-request',
-  title: 'Material request for Block B: 50 Bags OPC 53 Grade Cement, needed by 30 Oct 2026',
+  title: 'Indent for Block B: 50 Bags OPC 53 Grade Cement, needed by 30 Oct 2026',
   projectId: 'p1',
   projectName: 'Block B',
   values: { projectId: 'p1', requiredDate: '2026-10-30', priority: 'NORMAL', items: [{ itemName: 'OPC 53 Grade Cement', unit: 'Bags', quantity: 50 }] },
