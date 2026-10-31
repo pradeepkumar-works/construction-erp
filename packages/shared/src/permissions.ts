@@ -27,8 +27,10 @@ export const isSupplier = (role: RoleKey) => role === 'SUPPLIER';
 /** Roles allowed to approve / reject site submissions (within their accessible projects). */
 export const APPROVER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
-/** Roles allowed to create and edit projects, BOQ and activities. */
+/** Roles allowed to edit a project's BOQ, activities and plan. */
 export const PROJECT_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
+/** Open a project, change its details and keep its team: the project editors but the QS, who keeps the BOQ and plan only. */
+export const PROJECT_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 /** Freeze a project's schedule baseline: the project's managers, not the planners who keep the plan current. */
 export const BASELINE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
@@ -113,6 +115,8 @@ export const GETTING_STARTED_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
 export const COMPANY_TODAY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER', 'PROJECT_MANAGER'];
 
 export const isCompanyWide = (role: RoleKey) => COMPANY_WIDE_ROLES.includes(role);
+/** The company's directors: admins and management. */
+export const isDirector = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
 /** Issue an official progress report to the client (item 174): it takes a revision and is kept as issued. */
 export const canIssueOfficialReport = (role: RoleKey) => APPROVER_ROLES.includes(role);
@@ -152,6 +156,7 @@ export const canViewLabourSummary = (role: RoleKey) => PAYROLL_ROLES.includes(ro
 /** See the staff posted at their projects and mark their attendance: staff admins and attendance recorders. */
 export const canMarkStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role) || ATTENDANCE_RECORDER_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);
+export const canManageProjects = (role: RoleKey) => PROJECT_ADMIN_ROLES.includes(role);
 export const canFreezeBaseline = (role: RoleKey) => BASELINE_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 /** Export all the company's data, or ask for the company to be deleted: admins only. */
@@ -160,6 +165,10 @@ export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
 export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
 /** Changing or deleting a view someone else shared with the company (owners always can). */
 export const canManageSharedViews = (role: RoleKey) => role === 'ADMIN';
+/** Remove anyone's comment (authors always can). */
+export const canRemoveAnyComment = (role: RoleKey) => role === 'ADMIN';
+/** Make a group of companies with this company as its first (its maker runs the group). */
+export const canMakeGroup = (role: RoleKey) => role === 'ADMIN';
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
 export const seesCompanyToday = (role: RoleKey) => COMPANY_TODAY_ROLES.includes(role);
 export const submitsDpr = (role: RoleKey) => DPR_SUBMITTER_ROLES.includes(role);

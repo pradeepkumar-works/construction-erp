@@ -14,6 +14,7 @@ import {
   canViewLetters,
   contactLine,
   formatLetterNo,
+  isDirector,
   isGuest,
   letterFy,
   letterNeedsApproval,
@@ -157,7 +158,7 @@ export class CorrespondenceService {
   private can(user: RequestUser, l: { direction: LetterDirection; status: LetterStatus; createdById: string; markedToId: string | null; signatoryId: string | null; signedAt: Date | null; projectId: string | null; letterNo: string | null }): LetterDto['can'] {
     const keeper = canViewLetters(user.roleKey);
     const head = canHeadLetters(user.roleKey);
-    const director = user.roleKey === 'ADMIN' || user.roleKey === 'MANAGEMENT';
+    const director = isDirector(user.roleKey);
     const isIn = l.direction === 'IN';
     return {
       edit: keeper && (isIn ? l.status === 'OPEN' : l.status === 'DRAFT'),
@@ -407,7 +408,7 @@ export class CorrespondenceService {
   /** A signatory for a project letter: its project manager (on it) or a director; for head office, a director. */
   private maySign(role: RoleKey, onProject: boolean) {
     if (!canSignLetters(role)) return false;
-    return role === 'ADMIN' || role === 'MANAGEMENT' || onProject;
+    return isDirector(role) || onProject;
   }
 
   private async assertSignatory(organizationId: string, signatoryId: string, projectId: string | null) {
