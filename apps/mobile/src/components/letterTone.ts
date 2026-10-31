@@ -1,7 +1,7 @@
 import type { LetterStatus } from '@erp/shared';
 import { colors, type IconName, type Tone } from '../theme';
 
-/** A letter's status on the phone, by what it means (item 136). */
+/** A letter's status on the phone, by what it means. */
 export const LETTER_STATUS_TONE: Record<LetterStatus, Tone & { icon: IconName }> = {
   DRAFT: { fg: colors.neutral, bg: colors.neutralSoft, icon: 'ellipse-outline' },
   AWAITING_APPROVAL: { fg: colors.warning, bg: colors.warningSoft, icon: 'time-outline' },

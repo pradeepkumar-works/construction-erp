@@ -135,7 +135,6 @@ export default function NewMeasurementScreen() {
     setPhotos(outboxToPhotos(refused.photos));
     setRefusedLoaded(true);
     draft.settle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refused, refusedLoaded, draft.settle]);
 
   useEffect(() => {
@@ -151,7 +150,6 @@ export default function NewMeasurementScreen() {
     setLines(m.lines.map((l) => ({ key: `l${++seq}`, description: l.description, nos: l.nos ?? '', length: l.length ?? '', breadth: l.breadth ?? '', depth: l.depth ?? '', deduct: l.deduct })));
     setPhotos(attachmentsToPhotos(m.attachments));
     draft.settle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const boq = useFetch<BoqItemDto[]>((a) => a.get(`/projects/${projectId}/boq`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `boq:${projectId}` });
@@ -170,7 +168,7 @@ export default function NewMeasurementScreen() {
   const unit = item?.unit ?? existing.data?.unit ?? '';
 
   // A sheet started from the approved days: the item, one line per day, and where and when they were, for the
-  // surveyor to check against the book (finding 14 of the October review).
+  // surveyor to check against the book.
   const startFromProgress = (p: ProgressPrefill) => {
     setBoqItemId(p.boqItemId);
     setWorkOrderId('');

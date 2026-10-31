@@ -1,12 +1,10 @@
 /**
- * QA/QC registers (item 137 part 2, ARCHITECTURE "QA/QC"): the labs tests go to, samples sent out and their reports, the
+ * QA/QC registers (ARCHITECTURE "QA/QC"): the labs tests go to, samples sent out and their reports, the
  * calibration register, the manufacturer's test certificates a receipt needs, and an NCR's category, root cause and cost.
  * Everything here is pure; the API loads the rows and asks these functions where each stands.
  */
 import { daysBetween } from './maintenance';
 import type { AttachmentDto } from './types';
-
-/* ---------- labs ---------- */
 
 /** Where a test is done: the site's own lab, an NABL-accredited lab, a lab of a sister company, or any other. */
 export const LAB_KINDS = ['SITE', 'NABL', 'GROUP', 'OUTSIDE'] as const;
@@ -40,8 +38,6 @@ export function labProblem(l: { name: string; kind: LabKind; nablNo?: string | n
   return null;
 }
 
-/* ---------- samples sent out ---------- */
-
 /** A test sent to a lab: waiting for its report, reported, or not sent anywhere (tested at site). */
 export type SampleState = 'AT_LAB' | 'REPORTED' | 'NOT_SENT';
 
@@ -60,8 +56,6 @@ export function reportWait(t: { labId: string | null; sentOn: string | null; rep
   const days = Math.max(0, daysBetween(t.sentOn!, today));
   return { days, late: daysBetween(from, today) > LAB_REPORT_DAYS };
 }
-
-/* ---------- calibration ---------- */
 
 /** A calibration is "due soon" within this many days. */
 export const CALIBRATION_SOON_DAYS = 15;
@@ -143,8 +137,6 @@ export function calibrationProblem(c: { calibratedOn: string; nextDueOn?: string
   return null;
 }
 
-/* ---------- manufacturer's test certificates ---------- */
-
 /** Item categories (master codes) whose receipts need the maker's test certificate, until the company chooses its own. */
 export const STANDARD_MTC_CATEGORIES = ['steel', 'cement', 'pipes-and-fittings'];
 
@@ -162,8 +154,6 @@ const categoryCode = (c: string) =>
     .replace(/&/g, ' and ')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-
-/* ---------- what the API returns ---------- */
 
 export interface QaLabDto {
   id: string;

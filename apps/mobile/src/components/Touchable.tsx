@@ -16,7 +16,7 @@ export interface TouchableProps extends Omit<PressableProps, 'style' | 'accessib
 }
 
 /**
- * Every tappable thing in the app (UX item 88): the Android ripple and a fade while pressed, so a gloved tap is seen to
+ * Every tappable thing in the app: the Android ripple and a fade while pressed, so a gloved tap is seen to
  * land; a required `accessibilityRole`; and `disabled` reported to screen readers. Size it to at least `touch.min`
  * (48 dp), or give `hitSlop` when what shows must stay small.
  */

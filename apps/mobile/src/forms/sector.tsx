@@ -15,7 +15,7 @@ export interface SectorDraft {
 }
 
 /**
- * Chainage, floor or village for the chosen project's type (v4 item 41), as form state plus fields to render. The
+ * Chainage, floor or village for the chosen project's type, as form state plus fields to render. The
  * project's settings come from the same cache as the other forms, so the fields work offline once loaded.
  */
 export function useSectorInputs(projectId: string | null) {

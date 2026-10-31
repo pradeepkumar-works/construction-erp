@@ -30,7 +30,7 @@ export default function TabsLayout() {
   const t = useT();
   const { pendingApprovals } = useNotifications();
   const { pendingCount, failedCount } = useOffline();
-  // Counts on the tabs (UX item 88): entries waiting for this approver, and entries on this phone not yet sent (the
+  // Counts on the tabs: entries waiting for this approver, and entries on this phone not yet sent (the
   // Home tab's banner opens the outbox). Screen readers hear the count with the tab's name.
   const waitingToSend = pendingCount + failedCount;
   const approvals = approver && pendingApprovals ? pendingApprovals : 0;

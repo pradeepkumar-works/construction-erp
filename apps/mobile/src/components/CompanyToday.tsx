@@ -64,7 +64,7 @@ const money = (v: string | null | undefined) => formatMoneyCompact(v) ?? '₹0';
 const late = (days: number) => (days > 0 ? 'error' : days === 0 ? 'warning' : 'normal');
 
 /**
- * The company's day at the top of Home for owners, directors, accounts and project managers (v5 item 96), from
+ * The company's day at the top of Home for owners, directors, accounts and project managers, from
  * `GET /dashboard/company-today` (kept for offline). A tile opens its list in a sheet; a row opens its record where the
  * phone has a screen for it.
  */

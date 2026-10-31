@@ -6,7 +6,7 @@ interface MaterialRequest { id: string; requestNo: string; status: string }
 interface Note { id: string; type: string; entityId: string | null; readAt: string | null; body: string }
 interface NoteList { items: Note[]; unreadCount: number; unreadByTab: Record<'FOR_ME' | 'APPROVALS' | 'REMINDERS', number> }
 
-/** Notifications centre (UI roadmap item 63): tabs by kind, grouped by day, and a submission opens over the page. */
+/** Notifications centre: tabs by kind, grouped by day, and a submission opens over the page. */
 test.describe.serial('notifications centre', () => {
   let mr: MaterialRequest;
   let pm: string;

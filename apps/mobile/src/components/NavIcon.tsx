@@ -130,7 +130,7 @@ import Wrench from 'lucide-react-native/icons/wrench';
 
 /**
  * The Lucide icons the navigation tree names (`icon` in `@erp/shared` navigation.ts), as on the web, imported one by one so
- * the bundle holds only these (launcher phase 4). A node naming an icon that is not here fails the web's `scripts/nav-check.ts`.
+ * the bundle holds only these. A node naming an icon that is not here fails the web's `scripts/nav-check.ts`.
  */
 export const NAV_ICONS: Record<string, LucideIcon> = {
   'arrow-left': ArrowLeft,

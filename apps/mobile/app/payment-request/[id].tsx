@@ -14,8 +14,7 @@ const targetPath = (r: PaymentRequestDto) =>
   r.vendorBillId ? `/vendor-bill/${r.vendorBillId}` : r.subcontractBillId ? `/subcontract-bill/${r.subcontractBillId}` : r.purchaseOrderId ? `/purchase-order/${r.purchaseOrderId}` : `/work-order/${r.workOrderId}`;
 
 /**
- * A payment request (v5 item 90) on the phone: what is to be paid and why, and approval; a site's fund request (v6 item
- * 107) shows what the money is for and where it goes. Requests are raised on the web.
+ * A payment request on the phone: what is to be paid and why, and approval; a site's fund request shows what the money is for and where it goes. Requests are raised on the web.
  */
 export default function PaymentRequestScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

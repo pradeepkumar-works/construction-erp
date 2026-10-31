@@ -1,4 +1,4 @@
-/** Safety (v4 item 40): incident and near-miss register, toolbox talks and permits to work. */
+/** Safety: incident and near-miss register, toolbox talks and permits to work. */
 import { NOTIFICATION_TYPES, type NotificationType, type SafetyIncidentStatus, type SafetyIncidentType, type WorkPermitStatus, type WorkPermitType } from './enums';
 import type { AttachmentDto } from './types';
 

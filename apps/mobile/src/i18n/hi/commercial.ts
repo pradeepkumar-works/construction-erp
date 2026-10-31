@@ -1,4 +1,4 @@
-/** Hindi for the commercial screens (v4 item 49). */
+/** Hindi for the commercial screens. */
 export const COMMERCIAL: Record<string, string> = {
   // Shared by the bill and order screens
   'Open project': 'प्रोजेक्ट खोलें',
@@ -46,7 +46,7 @@ export const COMMERCIAL: Record<string, string> = {
   'Part quote': 'अधूरा कोटेशन',
   chosen: 'चुना गया',
 
-  // Payment requests (v5 item 90)
+  // Payment requests
   'Payment request': 'भुगतान अनुरोध',
   'Bill payment': 'बिल का भुगतान',
   'Advance on a purchase order': 'परचेज़ ऑर्डर पर एडवांस',
@@ -64,7 +64,7 @@ export const COMMERCIAL: Record<string, string> = {
   'Open bill': 'बिल खोलें',
   'Open order': 'ऑर्डर खोलें',
 
-  // Site fund requests (v6 item 107)
+  // Site fund requests
   'Fund request': 'फंड अनुरोध',
   Wages: 'मज़दूरी',
   'Local purchase': 'स्थानीय खरीद',
@@ -304,7 +304,7 @@ export const COMMERCIAL: Record<string, string> = {
   'No staff posted at this site': 'इस साइट पर कोई स्टाफ़ नहीं',
   'Mark the rest present': 'बाकी सबको हाज़िर लगाएँ',
   'Save ({n})': 'सेव करें ({n})',
-  // Attendance extras (v5 item 97)
+  // Attendance extras
   'Location recorded': 'जगह दर्ज हुई',
   'At the site ({distance})': 'साइट पर ({distance})',
   'At the site': 'साइट पर',

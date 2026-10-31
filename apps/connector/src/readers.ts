@@ -21,8 +21,8 @@ const reading = (conn: Connection, payload: Record<string, unknown>): Reading =>
 export const READERS: Record<string, Reader> = {
   /** One reading a run, so the log shows the Connector working before any device is set up. */
   CONNECTOR_CHECK: async (conn, ctx) => [reading(conn, { deviceId: hostname(), deviceName: hostname(), version: VERSION, uptimeMin: Math.round(uptime() / 60), waiting: ctx.waiting })],
-  /** Each weight the weighbridge's indicator held steady (item 148), read from its serial port or network address. */
+  /** Each weight the weighbridge's indicator held steady, read from its serial port or network address. */
   WEIGHBRIDGE: (conn) => readWeighbridge(conn),
-  /** Each row of the batch reports the plant's controller writes to its folder (item 149). */
+  /** Each row of the batch reports the plant's controller writes to its folder. */
   BATCHING_PLANT: (conn) => readBatchFolder(conn),
 };

@@ -1,5 +1,5 @@
 /**
- * Linking activities to BOQ items (finding 11 of the October review). A project's activities come from a template and
+ * Linking activities to BOQ items. A project's activities come from a template and
  * its BOQ from Excel or a scan, so nothing joins them until someone picks an item for each activity by hand. The BOQ's
  * sections are usually named after the same work, so the links can be offered: pure here, applied only on Confirm.
  */

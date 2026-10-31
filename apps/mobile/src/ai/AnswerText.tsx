@@ -5,7 +5,7 @@ import { colors, spacing, typography } from '../theme';
 import { phoneRoute } from './links';
 
 /**
- * An answer's text, as the web panel shows its Markdown but kept to what answers use (AI item 72): paragraphs, "-" and
+ * An answer's text, as the web panel shows its Markdown but kept to what answers use: paragraphs, "-" and
  * "1." lists, **bold**, and links. A link to a record the phone has a screen for opens it; any other is plain text.
  */
 export function AnswerText({ text }: { text: string }) {

@@ -1,5 +1,5 @@
 /**
- * HR records (v6 item 99): the employee master's personal, statutory and bank details, the events of a person's service
+ * HR records: the employee master's personal, statutory and bank details, the events of a person's service
  * (joining to exit) with their letters, and the HR dashboard on the People home.
  */
 

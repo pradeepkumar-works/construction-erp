@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, menuSettled, signIn } from './helpers';
 
 /**
- * Every page named and reachable by keyboard (UX item 81): a tab title and one heading per page, one breadcrumb,
+ * Every page named and reachable by keyboard: a tab title and one heading per page, one breadcrumb,
  * focus on the new page's heading, rows that open from the keyboard, and single-key shortcuts that can be turned off.
  */
 

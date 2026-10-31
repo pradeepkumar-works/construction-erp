@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { signIn } from './helpers';
 
-/** Empty, missing and forbidden states (UI roadmap item 64). */
+/** Empty, missing and forbidden states. */
 test.describe('page states', () => {
   test('an unknown address gets a 404 page with a way home', async ({ page }) => {
     await signIn(page, 'pm@demo.com');

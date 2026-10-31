@@ -3,7 +3,7 @@ import { MANPOWER_CATEGORIES } from './labels';
 import * as P from './permissions';
 
 /**
- * Masters (item 135, ARCHITECTURE "Masters"): the lists a company keeps itself. Each department's menu has a Masters
+ * Masters (ARCHITECTURE "Masters"): the lists a company keeps itself. Each department's menu has a Masters
  * sub-module naming the pages that are masters (items, vendors, the chart of accounts…), and Administration › Masters
  * lists them all. The simple lists here are words a form suggests (trades, designations, categories): their standard
  * entries live in code and a company's rows lay over them by code, so a company renames or switches off a standard entry

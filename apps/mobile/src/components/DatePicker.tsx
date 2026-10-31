@@ -31,7 +31,7 @@ interface Props {
 }
 
 /**
- * A date as YYYY-MM-DD (UX item 80): the phone's own calendar on a tap, so no one types a date on the number keypad,
+ * A date as YYYY-MM-DD: the phone's own calendar on a tap, so no one types a date on the number keypad,
  * plus a day back, a day on and Today beside it. On the web build the date is typed.
  */
 export function DatePicker({ label, value, onChange, error, required, max, min }: Props) {
@@ -158,7 +158,7 @@ const fromHHmm = (v: string) => {
   return d;
 };
 
-/** A time of day as HH:mm, picked on the phone's own clock (UX item 80); empty until set unless `required`. */
+/** A time of day as HH:mm, picked on the phone's own clock; empty until set unless `required`. */
 export function TimePicker({ label, value, onChange, error, required }: { label?: string; value: string; onChange: (v: string) => void; error?: string | null; required?: boolean }) {
   const t = useT();
   const [iosOpen, setIosOpen] = useState(false);

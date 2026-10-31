@@ -33,7 +33,7 @@ configureForegroundHandler();
 /** When "Not now" was last chosen, so the explanation comes back after a while rather than at every launch. */
 const ASKED_KEY = 'nirmaan.push.notNowAt';
 const ASK_AGAIN_MS = 14 * 24 * 3600_000;
-/** The last tapped push already opened, so a cold start never replays it on the next launch (UX item 88). */
+/** The last tapped push already opened, so a cold start never replays it on the next launch. */
 const HANDLED_KEY = 'nirmaan.push.handled';
 
 /**
@@ -94,7 +94,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     return () => {
       cancelled = true;
     };
-  }, [user?.id, token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, token]);
 
   const turnOn = () => {
     setExplain(false);

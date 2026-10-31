@@ -1,5 +1,5 @@
 // Lists English text passed to t() with no Hindi, keys whose Hindi differs between files, and translations whose
-// {placeholders} do not match the English (v4 item 49). Run: npm run i18n:check
+// {placeholders} do not match the English. Run: npm run i18n:check
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -36,7 +36,7 @@ for (const file of [...walk(join(root, 'app')), ...walk(join(root, 'src'))].filt
   }
 }
 
-// The navigation tree's names, descriptions and groups reach t() as values (Home's tiles, the module screens, launcher phase 4).
+// The navigation tree's names, descriptions and groups reach t() as values (Home's tiles, the module screens).
 const { NAV_TREE, AREA_MODULES, DEPARTMENT_MODULES, HOME_TABS } = await import('@erp/shared');
 for (const n of NAV_TREE.filter((x) => x.status === 'live')) {
   for (const en of [n.label, n.description, n.group, typeof n.nav === 'string' ? n.nav : undefined]) if (en && !dict.has(en)) missing.set(en, `NAV_TREE ${n.id}`);

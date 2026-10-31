@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Attendance cross-check (AI item 124). Sri Jagannath's labour bill on the road site asks more helper man-days than the
+ * Attendance cross-check. Sri Jagannath's labour bill on the road site asks more helper man-days than the
  * head count and roll call hold: the page flags it with its working, the bill's own checks flag the line (counts only)
  * and the watch list carries it for the approver. Three helpers marked present without a punch are named to the project
  * manager, and only counted for management. A site engineer is refused.

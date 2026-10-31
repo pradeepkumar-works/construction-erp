@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn, homeHeading } from './helpers';
 
-/** UX plan item 78: fixes found on the walk through the live site. */
+/** Fixes found on the walk through the live site. */
 
 test('the sign-in form starts empty, and a demo account fills it in', async ({ page }) => {
   await page.goto('/login');

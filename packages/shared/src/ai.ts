@@ -6,7 +6,7 @@ import type { BillingStatus } from './types';
 import type { BillingUnit } from './billing';
 
 /**
- * Ask Nirmaan (AI roadmap item 67): an assistant that answers from the company's own records through read-only tools
+ * Ask Nirmaan: an assistant that answers from the company's own records through read-only tools
  * that call the same services as the lists, so it sees only what the user's lists show.
  */
 
@@ -15,7 +15,7 @@ export const canUseAi = (role: RoleKey) => !isGuest(role);
 /** Switch the assistant on or off for the company and set its monthly cap: admins. */
 export const canManageAi = (role: RoleKey) => role === 'ADMIN';
 
-/** Roles an admin can open or close the assistant to (AI item 77). Admins always have it; guests never do. */
+/** Roles an admin can open or close the assistant to. Admins always have it; guests never do. */
 export const AI_ROLE_CHOICES: RoleKey[] = ROLE_KEYS.filter((r) => r !== 'ADMIN' && !GUEST_ROLES.includes(r));
 /** Whether a role may use the assistant in a company that limits it to `roles` (empty: all staff). */
 export const aiRoleAllowed = (role: RoleKey, roles: readonly string[]) => canUseAi(role) && (role === 'ADMIN' || !roles.length || roles.includes(role));
@@ -39,11 +39,11 @@ export interface AiMessageDto {
   /** 1 helpful, -1 not helpful, null not rated */
   feedback: 1 | -1 | null;
   createdAt: string;
-  /** Forms the answer filled in (AI item 71), for the user to open, check and save */
+  /** Forms the answer filled in, for the user to open, check and save */
   drafts?: AiDraftDto[];
 }
 
-/** What Ask Nirmaan can fill in from a sentence (AI item 71). The first four are also "+ New" kinds. */
+/** What Ask Nirmaan can fill in from a sentence. The first four are also "+ New" kinds. */
 export const AI_DRAFT_KINDS = ['material-request', 'expense', 'progress', 'dpr', 'letter'] as const;
 export type AiDraftKind = (typeof AI_DRAFT_KINDS)[number];
 
@@ -67,7 +67,7 @@ export interface AiDraftDto {
   projectName: string;
   values: Record<string, unknown>;
   flags: { field: string; note: string }[];
-  /** Drafted from a WhatsApp message (item 120): saving the form marks that message saved */
+  /** Drafted from a WhatsApp message: saving the form marks that message saved */
   captureId?: string;
   /** Who filled it in, for the form's banner when not Ask Nirmaan: "Drafted from the bill and the contract, page 14" */
   note?: string;
@@ -94,7 +94,7 @@ export interface AiStatusDto {
   enabled: boolean;
   /**
    * Why it is off, for the panel: not switched on for the company, not set up on this server, the month's allowance
-   * used, not open to the user's role (AI item 77), or the company is read-only because its trial or subscription ended
+   * used, not open to the user's role, or the company is read-only because its trial or subscription ended
    */
   reason: 'COMPANY_OFF' | 'NOT_CONFIGURED' | 'CAP_REACHED' | 'ROLE_OFF' | 'READ_ONLY' | null;
   /** Questions this user may still ask today */
@@ -103,7 +103,7 @@ export interface AiStatusDto {
   canManage: boolean;
 }
 
-/** What the plan includes for Ask Nirmaan (AI item 77), when billing is on and the company is charged. */
+/** What the plan includes for Ask Nirmaan, when billing is on and the company is charged. */
 export interface AiPlanDto {
   status: BillingStatus;
   /** Rupees a month the plan includes: the trial's amount, units × the per-unit amount once paid, 0 when read-only */
@@ -131,7 +131,7 @@ export interface AiSettingsDto {
   questionsThisMonth: number;
   /** Who used it in that month: questions, documents read and briefs, and what they cost */
   byUser: AiUserUsageDto[];
-  /** What the month's spend went on (AI item 74): how many of each and their cost */
+  /** What the month's spend went on: how many of each and their cost */
   byFeature: { feature: AiFeature; count: number; spentInr: number }[];
   /** The server has a model key (OPENROUTER_API_KEY, ANTHROPIC_API_KEY or the test provider) */
   configured: boolean;
@@ -152,7 +152,7 @@ export interface AiUserUsageDto {
   spentInr: number;
 }
 
-/** One conversation in the admins' log (AI item 77). */
+/** One conversation in the admins' log. */
 export interface AiConversationDto {
   id: string;
   title: string;
@@ -202,9 +202,9 @@ export interface AiAskInput {
   question: string;
   threadId?: string | null;
   page?: AiPageContext;
-  /** The language to answer in: the site app's (AI item 72). English when left out. */
+  /** The language to answer in: the site app's. English when left out. */
   language?: AiLanguage;
-  /** Where the question is asked from: the site app's Ask tab keeps answers short and links to its own screens; WhatsApp (item 120) drafts what is described. */
+  /** Where the question is asked from: the site app's Ask tab keeps answers short and links to its own screens; WhatsApp drafts what is described. */
   client?: 'web' | 'phone' | 'whatsapp';
   /** Model comparison only: one of the server's AI_EVAL_MODELS (ignored by the app) */
   model?: string;

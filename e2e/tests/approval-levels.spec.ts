@@ -10,7 +10,7 @@ type Pending = { type: string; id: string; level?: number; levels?: number };
 const NAME = 'Shuttering plywood, second level (e2e)';
 
 /**
- * Approval levels (v5 item 94): above an amount a site expense needs a second approval by management after the first
+ * Approval levels: above an amount a site expense needs a second approval by management after the first
  * (the project manager's or accounts'). The entry waits at level 1, then level 2; the level-1 roles cannot decide the
  * second level; the submitter sees whose queue it is in. The matrix is put back as it was.
  */

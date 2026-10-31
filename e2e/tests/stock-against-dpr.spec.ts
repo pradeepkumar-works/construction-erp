@@ -3,7 +3,7 @@ import type { DprWorkOptionsDto, ProjectKitReconDto, ProjectPipeReconDto, Projec
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Stock against the DPR (item 128) on the town water scheme: the seed plants one case of each kind. Cement on the
+ * Stock against the DPR on the town water scheme: the seed plants one case of each kind. Cement on the
  * 400 KL tank's concrete runs over its mix, HDPE 110 is cut above the allowed wastage, more DI pipe is laid than was
  * issued, four house connections went in without a saddle issued, and the store issued cement to a tank with no work.
  * A norm set on an activity shows in the Materials view and goes again; nothing else is saved.

@@ -9,7 +9,7 @@ const shift = (date: string, days: number) => new Date(Date.parse(`${date}T00:00
 /** YYYY-MM-DD as the date pickers take it: DD MMM YYYY. */
 const typed = (d: string) => `${d.slice(8, 10)} ${MONTHS[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
 
-/** Guarantees, insurance and licences register (v4 item 46): add a guarantee, see it expiring, renew it, close it. */
+/** Guarantees, insurance and licences register: add a guarantee, see it expiring, renew it, close it. */
 test('accounts add a bank guarantee, see it expiring and renew it', async ({ page }) => {
   // A company of its own, so the register starts empty.
   const stamp = Date.now();

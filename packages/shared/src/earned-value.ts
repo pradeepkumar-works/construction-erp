@@ -1,5 +1,5 @@
 /**
- * Earned value of a project (v6 item 115): planned value from the baseline (else the plan) and the BOQ, earned value from
+ * Earned value of a project: planned value from the baseline (else the plan) and the BOQ, earned value from
  * approved progress or measured work, actual cost from the project's cost, all at the budget's scale.
  */
 export const EV_BASES = ['PROGRESS', 'MEASURED'] as const;

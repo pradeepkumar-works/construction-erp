@@ -1,12 +1,12 @@
 /**
- * Stage billing for lump-sum contracts (item 129, ARCHITECTURE "Stage billing"): the billing break-up (components with
+ * Stage billing for lump-sum contracts (ARCHITECTURE "Stage billing"): the billing break-up (components with
  * their share of the lump sum, each paid in stages), the built-in stages per kind of component, the milestone grid and
  * its slippage tiers, and what an RA bill shows for each stage.
  */
 import type { BillingBasis, ContractModel, PackageStage, StageTrigger, WorkElementType } from './enums';
 import type { ContractCurrency } from './epc';
 
-/** Lump-sum contracts bill by stages of the break-up (item 129), and so do EPC contracts, by their milestones (item 130). */
+/** Lump-sum contracts bill by stages of the break-up, and so do EPC contracts, by their milestones. */
 export const billsByStages = (model: ContractModel) => model === 'LUMP_SUM' || model === 'EPC';
 
 export const BILLING_BASIS_LABELS: Record<BillingBasis, string> = {
@@ -144,7 +144,6 @@ export const DEFAULT_SLIPPAGE_TIERS: { fromPct: number; toPct: number | null; wi
 /** The mobilisation advance is usually recovered from 10% of the contract executed and finished by 80%. */
 export const ADVANCE_WINDOW_DEFAULT = { fromPct: 10, toPct: 80 };
 
-// ---------------------------------------------------------------------------------------------------------------------
 // What the API serves
 
 export interface BillingStageDto {
@@ -161,10 +160,10 @@ export interface BillingStageDto {
   scopeQty: string | null;
   achievedOn: string | null;
   evidence: string | null;
-  /** EVENT (item 130): the engineering deliverables whose approval is the event */
+  /** EVENT: the engineering deliverables whose approval is the event */
   deliverableIds: string[];
   deliverableNames: string[];
-  /** SUPPLY (item 130): the equipment packages it is paid by, and the stage they must reach (delivered when null) */
+  /** SUPPLY: the equipment packages it is paid by, and the stage they must reach (delivered when null) */
   packageIds: string[];
   packageNames: string[];
   packageStage: PackageStage | null;

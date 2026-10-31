@@ -25,7 +25,7 @@ const n = Number;
 const call = (token: string, path: string) => fetch(`${API_URL}${path}`, { headers: { authorization: `Bearer ${token}` } });
 
 /**
- * Earned value (v6 item 115) on the demo hospital, which has a cost budget, a baseline and approved progress behind plan:
+ * Earned value on the demo hospital, which has a cost budget, a baseline and approved progress behind plan:
  * the figures hang together (variances, indices, the S-curve ending on today's values, activities furthest behind first),
  * the tab shows them and switches to measured work, and only people who see cost get them.
  */

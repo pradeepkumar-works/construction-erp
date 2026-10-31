@@ -55,7 +55,7 @@ export async function api<T>(token: string, path: string, init: { method?: strin
 /**
  * Pick an option in an antd Select: type to filter, then Enter takes the first match (or the first option when `text` is
  * empty). It waits on this field's own list (one just closed can still be fading out), and a search-as-you-type picker
- * (item 83) offers no option until the server has answered for the words typed.
+ * offers no option until the server has answered for the words typed.
  */
 export async function chooseOption(field: Locator, text = '') {
   await field.click();
@@ -82,7 +82,7 @@ export function queueItem(page: Page, text: string | RegExp) {
 /** A quantity no other entry will have (three decimals), so a test can find its own row by it. */
 export const uniqueQty = () => String(Number((100 + Math.random() * 800).toFixed(3)));
 
-/** Opens a tab of the project page: its group across the top, then the tab inside the group (UI roadmap item 56). */
+/** Opens a tab of the project page: its group across the top, then the tab inside the group. */
 export async function openProjectTab(page: Page, group: string, tab?: string) {
   await page.getByTestId('project-workspace-bar').getByRole('tab', { name: group, exact: true }).click();
   if (tab) await projectTabs(page, group).getByText(tab, { exact: true }).click();
@@ -98,7 +98,7 @@ export function formPanel(page: Page, title: string | RegExp): Locator {
     .filter({ has: page.locator('.ant-modal-title, .ant-drawer-title').filter({ hasText: title }) });
 }
 
-/** The WCAG levels axe checks (UI roadmap item 65): 2.0, 2.1 and 2.2, A and AA. */
+/** The WCAG levels axe checks: 2.0, 2.1 and 2.2, A and AA. */
 export const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 /** The light or dark theme and the density, set before the app loads (Profile > Appearance keeps them here). */
@@ -137,7 +137,7 @@ export interface SizeFinding {
 }
 
 /**
- * Runs in the page (`page.evaluate(measureTargets, 24)`), UX item 82: the controls smaller than `min` px that crowd
+ * Runs in the page (`page.evaluate(measureTargets, 24)`): the controls smaller than `min` px that crowd
  * another, and the text set below 12 px.
  * - every control is at least `min` by `min` px (24 for a mouse, WCAG 2.5.8; 44 on a touch screen), or so spaced that a
  *   `min` px circle on its centre touches no other control (2.5.8's spacing exception). A link in running text (a
@@ -241,7 +241,7 @@ export function projectTabKeys(): string[] {
 /** The product name tab titles end with (`packages/shared/src/brand.ts`). */
 export const PRODUCT_NAME = /PRODUCT_NAME\s*=\s*'([^']+)'/.exec(fs.readFileSync(path.resolve(__dirname, '../../packages/shared/src/brand.ts'), 'utf8'))![1];
 
-/** `WEB_VITAL_BUDGETS` from `apps/web/src/lib/vitals.ts` (item 83): LCP and INP in ms, CLS unitless. */
+/** `WEB_VITAL_BUDGETS` from `apps/web/src/lib/vitals.ts`: LCP and INP in ms, CLS unitless. */
 export function webVitalBudgets(): { LCP: number; CLS: number; INP: number } {
   const body = /WEB_VITAL_BUDGETS\s*=\s*\{([^}]*)\}/.exec(webSource('lib/vitals.ts'))![1];
   const budgets = Object.fromEntries([...body.matchAll(/(\w+):\s*([\d.]+)/g)].map((m) => [m[1], Number(m[2])]));

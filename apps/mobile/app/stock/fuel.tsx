@@ -19,7 +19,7 @@ const QTY = /^\d+(\.\d{1,3})?$/;
 const METER = /^\d+(\.\d{1,2})?$/;
 
 /**
- * Fuel issue (v5 item 93): diesel from the site store into one machine, with its hour meter or odometer, and the
+ * Fuel issue: diesel from the site store into one machine, with its hour meter or odometer, and the
  * site's fuel position for today. Works offline through the outbox; the server checks the stock when it is sent.
  */
 export default function FuelIssueScreen() {

@@ -123,7 +123,7 @@ export default function StockScreen() {
       </>
     ) : null;
 
-  // Up to 500 balances at a big store: a virtualised list (UX item 88) rather than every card drawn at once.
+  // Up to 500 balances at a big store: a virtualised list rather than every card drawn at once.
   return (
     <Screen scroll={false} padded={false}>
       <FlatList

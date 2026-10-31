@@ -1,5 +1,5 @@
 /**
- * Biometric attendance (v6 item 101): fingerprint or face devices at sites and offices, the user numbers on them
+ * Biometric attendance: fingerprint or face devices at sites and offices, the user numbers on them
  * matched to employees and workers, and their punches turned into attendance. The parsing and the day's in and out
  * are in the API's `biometric-rules.ts`; this holds the labels and the shapes the screens use.
  */
@@ -21,7 +21,7 @@ export const BIOMETRIC_PUNCH_RESULT_LABELS: Record<BiometricPunchResult, string>
   SKIPPED: 'Not marked',
 };
 
-/** Biometric device commands (item 150): what an ADMS device is asked to do when it next calls. */
+/** Biometric device commands: what an ADMS device is asked to do when it next calls. */
 export const BIOMETRIC_COMMAND_KINDS = ['ADD_USER', 'REMOVE_USER', 'SET_CLOCK'] as const;
 export type BiometricCommandKind = (typeof BIOMETRIC_COMMAND_KINDS)[number];
 export const BIOMETRIC_COMMAND_KIND_LABELS: Record<BiometricCommandKind, string> = {
@@ -73,7 +73,7 @@ export interface BiometricDeviceDto {
   lastPunchAt: string | null;
   punchesToday: number;
   createdAt: string;
-  /** ADMS: commands waiting for the device, and the last ones it refused or never answered (item 150) */
+  /** ADMS: commands waiting for the device, and the last ones it refused or never answered */
   commandsWaiting: number;
   commandsFailed: number;
   /** ADMS: when its clock was last set */
@@ -95,7 +95,7 @@ export interface BiometricUserDto {
   lastPunchAt: string | null;
   /** The matched person has left (an employee or worker no longer active) */
   left: boolean;
-  /** ADMS devices the number was last added to, commands for it still waiting, and devices whose last one failed (item 150) */
+  /** ADMS devices the number was last added to, commands for it still waiting, and devices whose last one failed */
   onDevices: number;
   commandsWaiting: number;
   commandsFailed: number;

@@ -8,7 +8,7 @@ type OpenBill = { billType: string; billId: string; billLabel: string; outstandi
 type Payment = { id: string; reference: string | null };
 
 /**
- * Payables (v3 item 23): the seed's road PO bill is half paid and due soon to a small enterprise. Accounts pays part of
+ * Payables: the seed's road PO bill is half paid and due soon to a small enterprise. Accounts pays part of
  * the balance from the due list, overpaying is refused, then the rest from the bill itself and the bill is paid.
  */
 test('pay an approved vendor bill from the due list until it is paid', async ({ page }) => {

@@ -1,4 +1,4 @@
-/** Bill checks before approval (AI roadmap item 69): plain rules over a bill, its order and what was received or measured. */
+/** Bill checks before approval: plain rules over a bill, its order and what was received or measured. */
 export const CHECK_KINDS = ['vendor-bill', 'subcontract-bill', 'expense', 'ra-bill'] as const;
 export type CheckKind = (typeof CHECK_KINDS)[number];
 

@@ -1,5 +1,5 @@
 /**
- * Tender bidding (v6 item 110): the tender register (the notice, dates, EMD and result), the schedules of rates the bids
+ * Tender bidding: the tender register (the notice, dates, EMD and result), the schedules of rates the bids
  * are priced against (a state SOR, the CPWD DSR or the company's own rates, imported from Excel), the bid BOQ priced
  * from each item's rate analysis, the quote as a percentage above or below the SOR, the bids read out at opening (L1,
  * L2…), and a won tender turned into a project with its BOQ, budget and guarantees.
@@ -172,7 +172,7 @@ export interface TenderDto {
   clientId: string | null;
   clientName: string | null;
   location: string | null;
-  /** Its vertical (item 167), a code of the `vertical` master */
+  /** Its vertical, a code of the `vertical` master */
   verticalCode: string | null;
   status: TenderStatus;
   bidType: TenderBidType;

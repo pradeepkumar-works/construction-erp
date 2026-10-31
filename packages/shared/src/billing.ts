@@ -1,4 +1,4 @@
-/** Plans and billing (v3 item 34): a free trial, then a monthly price per active project (or per user), paid through Razorpay. */
+/** Plans and billing: a free trial, then a monthly price per active project (or per user), paid through Razorpay. */
 import type { BillingPaymentStatus } from './enums';
 import type { BillingStateDto, BillingStatus } from './types';
 
@@ -58,7 +58,7 @@ export interface BillingSummaryDto extends BillingStateDto {
   seller: { name: string; gstin: string; address: string; stateCode: string };
   /** Razorpay key id for Checkout */
   keyId: string;
-  /** Ask Nirmaan included in the plan (AI item 77): rupees a month now, per unit once paid, and in the trial */
+  /** Ask Nirmaan included in the plan: rupees a month now, per unit once paid, and in the trial */
   ai: { allowanceInr: number | null; perUnitInr: number; trialInr: number };
 }
 

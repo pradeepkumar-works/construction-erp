@@ -2,7 +2,7 @@ import type { RoleKey } from './enums';
 import type { ModuleKey } from './modules';
 
 /**
- * Module switches (v6 item 117): the parts of the product a company may not use. An admin turns one off; it leaves the
+ * Module switches: the parts of the product a company may not use. An admin turns one off; it leaves the
  * sidebar, Search, the New menu and Ask, its pages say it is off, and the API refuses its routes. Nothing is deleted, so
  * turning it on again brings everything back. The plan (`MODULE_TIERS`, set from the console) decides which a company has.
  * Daily reports, progress, requests, orders, bills and the rest of the core are never switched off.

@@ -7,7 +7,7 @@ import type { Connection } from './state';
 import { readFrame, splitFrames, WeightWatch, type Weighing } from './weight';
 
 /**
- * The weighbridge reader (item 148): keeps the indicator's serial port or network connection open between runs, reads
+ * The weighbridge reader: keeps the indicator's serial port or network connection open between runs, reads
  * its frames as they come and hands each run the weighings since the last. The Connector still only calls out: the
  * network connection is to the indicator on the site's own network, and nothing listens on a port.
  */

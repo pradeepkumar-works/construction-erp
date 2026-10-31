@@ -11,7 +11,7 @@ import { ProgressBar } from './ProgressBar';
 
 /**
  * What an approver needs to decide a purchase order on the phone, the same two sections as the web record
- * (OrderDecision.tsx there, finding 15 of the October review): the request's quotations side by side and where
+ * (OrderDecision.tsx there): the request's quotations side by side and where
  * the order takes the material budget. Both read what the request and the project already hold.
  */
 

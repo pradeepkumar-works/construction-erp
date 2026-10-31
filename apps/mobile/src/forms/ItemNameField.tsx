@@ -37,7 +37,7 @@ interface Props {
 }
 
 /**
- * The item of a request line (finding 3 of the October review), as on the web: while typing, the master's items that
+ * The item of a request line, as on the web: while typing, the master's items that
  * match are offered with their unit, so the same cement is not three items to stock, rates and leakage. A name the
  * master does not know is still taken (it is added when first received), but first the field offers what it may mean.
  */
