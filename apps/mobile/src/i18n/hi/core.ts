@@ -192,7 +192,6 @@ export const CORE: Record<string, string> = {
   'Work order': 'वर्क ऑर्डर',
   Activities: 'गतिविधियाँ',
   Delayed: 'देरी में',
-  'New DPR': 'नया DPR',
   "Today's attendance": 'आज की हाज़िरी',
   'Progress by chainage': 'चेनेज के हिसाब से प्रगति',
   'Progress by floor': 'मंज़िल के हिसाब से प्रगति',
@@ -513,4 +512,5 @@ export const CORE: Record<string, string> = {
   'Top-up of {amount} requested. Accounts have been told.': '{amount} का टॉप-अप माँगा गया। अकाउंट्स को बता दिया गया है।',
   Completion: 'पूरा होने की तारीख',
   '{executed} of {planned} {unit} done': '{planned} {unit} में से {executed} पूरा',
+  'Opens a new progress entry for this activity': 'इस काम (एक्टिविटी) की नई प्रगति एंट्री खोलता है',
 };
