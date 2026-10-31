@@ -57,7 +57,7 @@ test('a new project, vendor and user are offered what the company already knows'
   await userForm.getByLabel('Full name').fill('Ravi Sahu');
   await userForm.getByLabel('Email').fill(`ravi-${stamp}@e2e.test`);
   await userForm.getByLabel('Projects').click();
-  await page.getByTitle(`RD-${year}-01 - E2E road package`).click();
+  await page.getByTitle(`RD-${year}-01 · E2E road package`).click();
   await page.keyboard.press('Escape');
   await userForm.getByRole('button', { name: 'Invite user' }).click();
   await expect(userForm).toBeHidden();

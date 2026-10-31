@@ -36,7 +36,7 @@ test('the padded labour bill and the unpunched helpers come up for the project m
   await expect(page.getByRole('heading', { name: 'Attendance cross-check', level: 1 })).toBeVisible();
   const card = page.locator('[data-flag-key^="bill:"]').filter({ hasText: bill!.label });
   await expect(card.getByRole('heading', { name: `${bill!.label} bills ${helper.billed} helper man-days; the records show at most ${helper.supported}` })).toBeVisible();
-  await card.getByRole('button', { name: 'Why: the working' }).click();
+  await card.getByRole('button', { name: 'Show how this was worked out' }).click();
   await expect(card.getByText(/^Supported: the higher of the head count and the roll call/)).toBeVisible();
   await expect(card.getByRole('link', { name: bill!.label })).toHaveAttribute('href', `/subcontract-bills/${bill!.billId}`);
   if (miss) {
@@ -47,7 +47,7 @@ test('the padded labour bill and the unpunched helpers come up for the project m
   // The bills table and each day of the project.
   await expect(page.getByRole('heading', { name: 'Man-day bills', level: 2 })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Each day', level: 2 })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'DPR manpower' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'DPR labour' })).toBeVisible();
 });
 
 test('management sees the count without names; the bill flags its own line and the watch list carries it', async ({ page }) => {

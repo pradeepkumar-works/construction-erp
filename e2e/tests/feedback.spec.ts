@@ -32,7 +32,7 @@ async function progressRow(page: Page, remarks: string) {
 async function approveFromRow(page: Page, row: ReturnType<Page['locator']>) {
   await row.getByRole('button', { name: 'Actions' }).click();
   await page.getByRole('menuitem', { name: 'Approve' }).click();
-  await page.locator('.ant-modal').filter({ hasText: 'Note (optional)' }).getByRole('button', { name: 'Approve' }).click();
+  await page.getByRole('dialog', { name: 'Approve' }).getByRole('button', { name: 'Approve' }).click();
 }
 
 test('a delete asks with its name, says it is gone, and Undo brings it back', async ({ page }) => {
@@ -146,7 +146,7 @@ test('an approval that cannot reach the server goes back, says so in plain words
   expect((await api<{ status: string }>(pm, `/progress/${entry.id}`)).status).toBe('SUBMITTED');
 
   await page.unroute('**/api/approvals/progress/*/review');
-  await failed.getByRole('button', { name: 'Retry' }).click();
+  await failed.getByRole('button', { name: 'Try again' }).click();
   await expect(row).toContainText('Approved');
   await expect(notice(page, /^Approved$/)).toBeVisible();
   expect((await api<{ status: string }>(pm, `/progress/${entry.id}`)).status).toBe('APPROVED');

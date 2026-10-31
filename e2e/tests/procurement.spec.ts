@@ -98,7 +98,7 @@ test('date filters offer financial years', async ({ page }) => {
   await expect(async () => {
     if (!(await fy.isVisible())) await from.click();
     await fy.click();
-    await expect(from).toHaveValue(`1 Apr ${label.slice(3, 7)}`, { timeout: 2000 });
+    await expect(from).toHaveValue(`01 Apr ${label.slice(3, 7)}`, { timeout: 2000 });
   }).toPass();
   await expect(page.getByPlaceholder('To')).toHaveValue(`31 Mar ${Number(label.slice(3, 7)) + 1}`);
 });

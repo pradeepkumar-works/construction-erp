@@ -150,7 +150,7 @@ test('projects, clients, vendors and users have views, chips and columns too', a
   await page.goto('/vendors');
   await page.getByRole('tab', { name: 'Subcontractors' }).click();
   await expect(page).toHaveURL(/\/vendors\?kind=SUBCONTRACTOR$/);
-  await expect(page.locator('.ant-tag').filter({ hasText: 'Supplies: Subcontractor' })).toBeVisible();
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Vendor kind: Subcontractor' })).toBeVisible();
   await expect(rows(page).first()).toContainText('Subcontractor');
 
   await page.goto('/clients');

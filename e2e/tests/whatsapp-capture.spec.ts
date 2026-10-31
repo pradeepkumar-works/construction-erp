@@ -40,7 +40,7 @@ test('a WhatsApp message becomes a draft the sender saves from the page, or chan
     const card = page.locator('[data-message-id]').filter({ hasText: text });
     await expect(card.getByText('Indent, not saved', { exact: true })).toBeVisible();
     await card.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText(/^Saved and sent for approval/)).toBeVisible();
+    await expect(page.getByText(/^Saved and submitted for approval/)).toBeVisible();
     await expect(card.getByText('Saved as drafted')).toBeVisible();
     await expect(card.getByRole('link', { name: 'open the indent' })).toBeVisible();
     const saved = (await api<List>(engineer, '/whatsapp/messages')).items.find((m) => m.text === text);

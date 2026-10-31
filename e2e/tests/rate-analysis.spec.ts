@@ -104,7 +104,7 @@ test('a stock adjustment for damage shows in the wastage report', async ({ page 
 
   await signIn(page, 'pm2@demo.com');
   await page.goto(`/projects/${project.id}?tab=stock`);
-  await page.getByRole('button', { name: 'Adjust stock', exact: true }).click();
+  await page.getByRole('button', { name: 'Adjust stock' }).click();
   const form = formPanel(page, 'Adjust stock');
   await chooseOption(form.getByLabel('Reason'), 'Damaged');
   await form.getByLabel('Details').fill('Two bags set hard after the rain got into the store');

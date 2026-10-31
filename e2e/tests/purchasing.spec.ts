@@ -49,7 +49,7 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
 
   // The cheaper quotation is L1; finalise it and make the PO on it.
   await page.getByRole('tab', { name: /Finalise L1/ }).click();
-  await page.getByRole('row').filter({ hasText: 'Sahoo Auto Parts' }).getByRole('button', { name: 'Finalise L1', exact: true }).click();
+  await page.getByRole('row').filter({ hasText: 'Sahoo Auto Parts' }).getByRole('button', { name: 'Finalise L1' }).click();
   await page.getByRole('button', { name: 'New purchase order on Sahoo Auto Parts' }).click();
   modal = formPanel(page, `Purchase order for ${mr.requestNo}`);
   await expect(modal.getByLabel('Rate of line 1')).toHaveValue('85');

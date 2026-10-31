@@ -55,7 +55,7 @@ test('a quick look opens the full page, whose link can be copied and whose secti
 test('the other approval types have their own pages too', async ({ page }) => {
   const md = await apiToken('md@demo.com');
   const pages: { list: string; api: string; heading: RegExp }[] = [
-    { list: '/expenses', api: '/expenses', heading: /^Site expense · EXP-/ },
+    { list: '/expenses', api: '/expenses', heading: /^EXP-[\w-]+ · / },
     { list: '/machinery', api: '/machinery-logs', heading: /^Machinery log · / },
     { list: '/measurements', api: '/measurements', heading: /^Measurement · / },
     { list: '/vendor-bills', api: '/vendor-bills', heading: /^VB-\d{4}-\d{4} · / },

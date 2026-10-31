@@ -43,7 +43,7 @@ test.describe.serial('drawing viewer and markup', () => {
     await expect(list.getByText('Toilet block now at grid 5', { exact: false })).toBeVisible();
     // M2 was made on R0 and is still open, so it shows here, dashed, with its revision.
     const carried = list.getByRole('listitem').filter({ hasText: 'Sill level of this window' });
-    await expect(carried.getByText('Rev R0')).toBeVisible();
+    await expect(carried.getByText('R0', { exact: true })).toBeVisible();
     // M1 was resolved on R0 and stays behind.
     await expect(list.getByText('Waiting area too small', { exact: false })).toHaveCount(0);
     await page.getByRole('switch').click();
@@ -108,8 +108,8 @@ test.describe.serial('drawing viewer and markup', () => {
     await page.goto(`/documents/drawing?id=${docId}`);
     await sheetReady(page);
     await chooseOption(page.getByLabel('Compare with another revision'));
-    await expect(page.getByText('Only on Rev R0 (older)')).toBeVisible();
-    await expect(page.getByText('Only on Rev R1 (newer)')).toBeVisible();
+    await expect(page.getByText('Only on R0 (older)')).toBeVisible();
+    await expect(page.getByText('Only on R1 (newer)')).toBeVisible();
 
     const se = await apiToken('engineer2@demo.com');
     const pm = await apiToken('pm2@demo.com');
