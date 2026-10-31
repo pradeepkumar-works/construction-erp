@@ -354,29 +354,6 @@ export function navMenuFor(user: NavUser, settings: Pick<NavSettingsDto, 'module
   return out;
 }
 
-/** The one-bar look's Home puts the modules in three groups: sites, materials and machines, then money, people and control. */
-export const NAV_MENU_GROUPS = ['Sites and projects', 'Materials and machines', 'Money, people and control'] as const;
-export type NavMenuGroup = (typeof NAV_MENU_GROUPS)[number];
-const GROUP_OF_FAMILY: Record<NavFamily, NavMenuGroup> = {
-  work: 'Sites and projects',
-  business: 'Sites and projects',
-  buying: 'Materials and machines',
-  materials: 'Materials and machines',
-  money: 'Money, people and control',
-  people: 'Money, people and control',
-  insight: 'Money, people and control',
-  admin: 'Money, people and control',
-};
-const GROUP_OF_MODULE: Record<string, NavMenuGroup> = {
-  'contractor-management': 'Sites and projects',
-  'labour-management': 'Sites and projects',
-  'plant-production': 'Materials and machines',
-  subcontracts: 'Sites and projects',
-  rmc: 'Materials and machines',
-};
-
-export const navMenuGroup = (m: Pick<NavMenuModule, 'key' | 'family'>): NavMenuGroup => GROUP_OF_MODULE[m.key] ?? GROUP_OF_FAMILY[m.family];
-
 /** The phone's Home tabs: Overview (the menu as it is), then the company's modules' pages by the work they are for. */
 export const HOME_TABS = [
   { key: 'overview', label: 'Overview' },
@@ -437,6 +414,10 @@ const TAB_OF_SUB: Record<string, HomeCategory> = {
 
 export const homeTabOf = (m: Pick<NavMenuModule, 'key' | 'family'>, subKey?: string): HomeCategory =>
   (subKey ? TAB_OF_SUB[`${m.key}.${subKey}`] : undefined) ?? TAB_OF_MODULE[m.key] ?? TAB_OF_FAMILY[m.family];
+
+/** The one-bar look's Home groups the modules under the phone's Home tabs, so a module is under one heading on both. */
+export const NAV_MENU_GROUPS = HOME_TABS.filter((t) => t.key !== 'overview').map((t) => t.label);
+export const navMenuGroup = (m: Pick<NavMenuModule, 'key' | 'family'>): string => HOME_TABS.find((t) => t.key === homeTabOf(m))!.label;
 
 /** A heading of a Home tab: a module of the menu (or the part of it that belongs here) and its pages. */
 export interface HomeTabSection {
