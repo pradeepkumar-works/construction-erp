@@ -7,6 +7,7 @@ import {
   type OmChemicalRowDto,
   type OmStaffLineDto,
 } from '@erp/shared';
+import { Prisma } from '@prisma/client';
 
 /**
  * O&M (item 131, ARCHITECTURE "Operation and maintenance"): pure arithmetic over an O&M contract's periods, the daily
@@ -15,6 +16,8 @@ import {
  */
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
+/** a × b ÷ c to the paisa, half up, worked in Decimal: in floats 1,23,45,678.90 × 5% comes to …3.94 instead of …3.95. */
+const rupees = (a: number, b: number, c = 1) => new Prisma.Decimal(a).mul(b).div(c).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber();
 const round1 = (v: number) => Math.round(v * 10) / 10;
 const addDays = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 const daysIn = (month: string) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate();
@@ -87,7 +90,7 @@ export function omPeriods(t: OmTerms): OmPeriod[] {
   const out: OmPeriod[] = [];
   for (let year = 1; year <= t.years; year++) {
     const yearPct = t.yearPcts[year - 1] ?? t.yearPcts[t.yearPcts.length - 1] ?? 0;
-    const amount = t.contractValue ? round2((t.contractValue * yearPct) / 100 / t.instalmentsPerYear) : 0;
+    const amount = t.contractValue ? rupees(t.contractValue, yearPct, 100 * t.instalmentsPerYear) : 0;
     for (let instalment = 1; instalment <= t.instalmentsPerYear; instalment++) {
       const from = addMonths(t.startOn, (year - 1) * 12 + (instalment - 1) * months);
       const to = addDays(addMonths(from, months), -1);
@@ -221,13 +224,13 @@ export function monthFigures(args: {
       failures = complete && misses(s.key, value, limit) ? 1 : 0;
     }
     const penalised = Math.max(failures - s.allowedPerMonth, 0);
-    return { key: s.key, limit, failures, allowed: s.allowedPerMonth, penalised, penalty: round2(penalised * Number(s.penalty)), value, days: failed.sort() };
+    return { key: s.key, limit, failures, allowed: s.allowedPerMonth, penalised, penalty: rupees(penalised, Number(s.penalty)), value, days: failed.sort() };
   });
   const staffRecorded = args.deployed.size > 0;
   const staff = args.norms.map((n) => {
     const deployed = args.deployed.has(n.role) ? args.deployed.get(n.role)! : null;
     const short = deployed === null ? 0 : Math.max(n.required - deployed, 0);
-    return { role: n.role, required: n.required, deployed, short, deduction: round2(short * n.monthlyPay) };
+    return { role: n.role, required: n.required, deployed, short, deduction: rupees(short, n.monthlyPay) };
   });
   return {
     month,
