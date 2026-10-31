@@ -55,9 +55,16 @@ test('dark mode and compact density are chosen from the account menu and kept af
   expect(await backgroundLuminance(page, '.auth')).toBeGreaterThan(0.9);
 });
 
-test('the design reference shows the theme tokens', async ({ page }) => {
+test('the design reference is for staff and shows the theme tokens', async ({ page, browser }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/design');
-  await expect(page.getByRole('heading', { name: 'Design reference' })).toBeVisible();
-  await expect(page.locator('[data-token="colorPrimary"]')).toBeVisible();
+  await expect(page.getByText('This page is for Nirmaan staff.')).toBeVisible();
+  await expect(page.locator('[data-token="colorPrimary"]')).toHaveCount(0);
+
+  // In the e2e run admin@demo.com is staff (PLATFORM_ADMIN_EMAILS).
+  const staff = await (await browser.newContext()).newPage();
+  await signIn(staff, 'admin@demo.com');
+  await staff.goto('/design');
+  await expect(staff.getByRole('heading', { name: 'Design reference' })).toBeVisible();
+  await expect(staff.locator('[data-token="colorPrimary"]')).toBeVisible();
 });
