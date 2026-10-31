@@ -45,6 +45,15 @@ import { VendorSelect } from '@/components/common/SearchSelect';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
+const counted = (label: string, n: number) => (
+  <>
+    {label}{' '}
+    <Typography.Text type="secondary" translate="no">
+      {n}
+    </Typography.Text>
+  </>
+);
+
 const VIEWS = ['engineering', 'packages', 'inputs'] as const;
 type View = (typeof VIEWS)[number];
 const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
@@ -89,9 +98,9 @@ export function EpcPanel({ project }: { project: ProjectDetail }) {
         value={view}
         onChange={setView}
         options={[
-          { value: 'engineering', label: `Engineering (${data.deliverables.length})` },
-          { value: 'packages', label: `Packages (${data.packages.length})` },
-          { value: 'inputs', label: `Client inputs (${data.clientInputs.length})` },
+          { value: 'engineering', label: counted('Engineering', data.deliverables.length) },
+          { value: 'packages', label: counted('Packages', data.packages.length) },
+          { value: 'inputs', label: counted('Client inputs', data.clientInputs.length) },
         ]}
       />
 

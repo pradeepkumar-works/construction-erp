@@ -28,7 +28,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useOm } from '@/lib/queries';
 import { useUrlParam, useUrlTab } from '@/lib/url-state';
-import { formatDate, formatINR, formatMonth, formatPct, formatQty } from '@/lib/format';
+import { formatDate, formatDayMonth, formatINR, formatMonth, formatPct, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
@@ -38,6 +38,15 @@ import { recordPage } from '@/components/approvals/queue';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+
+const counted = (label: string, n: number) => (
+  <>
+    {label}{' '}
+    <Typography.Text type="secondary" translate="no">
+      {n}
+    </Typography.Text>
+  </>
+);
 
 const VIEWS = ['service', 'periods', 'staff', 'chemicals', 'terms'] as const;
 type View = (typeof VIEWS)[number];
@@ -108,7 +117,7 @@ export function OmPanel({ project }: { project: ProjectDetail }) {
         onChange={setView}
         options={[
           { value: 'service', label: 'Service levels' },
-          { value: 'periods', label: `Periods and bills (${data.periods.filter((p) => p.status !== 'FUTURE').length})` },
+          { value: 'periods', label: counted('Periods and bills', data.periods.filter((p) => p.status !== 'FUTURE').length) },
           { value: 'staff', label: 'Staff' },
           { value: 'chemicals', label: 'Chemicals' },
           { value: 'terms', label: 'Terms' },
@@ -201,7 +210,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                   <span translate="no">{`${b.failures} (${b.allowed} allowed)`}</span>
                   {b.days.length ? (
                     <Typography.Text type="secondary" style={small} translate="no">
-                      {b.days.map((d) => dayjs(d).format('D MMM')).join(', ')}
+                      {b.days.map((d) => formatDayMonth(d)).join(', ')}
                     </Typography.Text>
                   ) : null}
                 </Flex>
@@ -215,7 +224,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
         {missing.length ? (
           <p>
             <Typography.Text type="warning">
-              {`${missing.length} ${missing.length === 1 ? 'day has' : 'days have'} no reading: ${missing.map((d) => dayjs(d).format('D MMM')).join(', ')}. Missing days are not penalised, but the client will ask for them.`}
+              {`${missing.length} ${missing.length === 1 ? 'day has' : 'days have'} no reading: ${missing.map((d) => formatDayMonth(d)).join(', ')}. Missing days are not penalised, but the client will ask for them.`}
             </Typography.Text>
           </p>
         ) : null}

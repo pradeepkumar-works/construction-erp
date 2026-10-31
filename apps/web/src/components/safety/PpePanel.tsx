@@ -19,6 +19,15 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Section } from '@/components/common/Section';
 import { ClosePpeModal, IssuePpeModal, RequiredKitModal } from './PpeForms';
 
+const counted = (label: string, n: number) => (
+  <>
+    {label}{' '}
+    <Typography.Text type="secondary" translate="no">
+      {n}
+    </Typography.Text>
+  </>
+);
+
 type Show = 'all' | 'missing' | 'present' | 'due';
 const RED = themeColor('colorErrorText');
 const big = (color?: string) => ({ content: { fontSize: themeFontSize('fontSizeXL'), color } });
@@ -346,9 +355,9 @@ export function PpePanel({ projectId: fixedProject }: { projectId?: string }) {
               onChange={setShow}
               style={{ marginBottom: 12 }}
               options={[
-                { value: 'all', label: `All (${reg.counts.workers})` },
-                { value: 'missing', label: `Missing kit (${reg.counts.missingAny})` },
-                { value: 'present', label: `On site without kit (${reg.counts.presentMissing})` },
+                { value: 'all', label: counted('All', reg.counts.workers) },
+                { value: 'missing', label: counted('Missing kit', reg.counts.missingAny) },
+                { value: 'present', label: counted('On site without kit', reg.counts.presentMissing) },
                 { value: 'due', label: 'Due for replacement' },
               ]}
             />

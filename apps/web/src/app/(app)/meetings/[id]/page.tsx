@@ -183,16 +183,16 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
                 <Typography.Text type="secondary">Nothing noted yet.</Typography.Text>
               )}
             </Card>
-            <ActionsCard title={`Actions (${m.actions.length})`} list={m.actions} empty="No action given out at this meeting." />
+            <ActionsCard title="Actions" count={m.actions.length} list={m.actions} empty="No action given out at this meeting." />
             {m.earlierActions.length ? (
-              <ActionsCard title={`Open from earlier meetings (${m.earlierActions.length})`} list={m.earlierActions} from empty="" />
+              <ActionsCard title="Open from earlier meetings" count={m.earlierActions.length} list={m.earlierActions} from empty="" />
             ) : null}
             <CommentsCard kind="MEETING" entityId={m.id} heading={(t) => <CardTitle>{t}</CardTitle>} />
           </Flex>
         </Col>
         <Col xs={24} lg={8}>
           <Flex vertical gap={16}>
-            <Card size="small" title={<CardTitle>{`Who came (${m.attendees.length})`}</CardTitle>}>
+            <Card size="small" title={<CardTitle>Who came</CardTitle>} extra={<Typography.Text type="secondary" translate="no">{`${m.attendees.length} ${m.attendees.length === 1 ? 'person' : 'people'}`}</Typography.Text>}>
               {m.attendees.length ? (
                 <Flex vertical>
                   {m.attendees.map((a, i) => (
@@ -244,12 +244,12 @@ function CardTitle({ children }: { children: React.ReactNode }) {
 }
 
 /** Actions with who does each by when, where each stands, and what the caller may do with it. */
-function ActionsCard({ title, list, from, empty }: { title: string; list: MeetingActionDto[]; from?: boolean; empty: string }) {
+function ActionsCard({ title, count, list, from, empty }: { title: string; count: number; list: MeetingActionDto[]; from?: boolean; empty: string }) {
   const { token } = theme.useToken();
   const router = useRouter();
   const small = { display: 'block', fontSize: token.fontSizeSM } as const;
   return (
-    <Card size="small" title={<CardTitle>{title}</CardTitle>}>
+    <Card size="small" title={<CardTitle>{title}</CardTitle>} extra={<Typography.Text type="secondary" translate="no">{`${count} ${count === 1 ? 'action' : 'actions'}`}</Typography.Text>}>
       {list.length ? (
         <Flex vertical>
           {list.map((a, i) => (

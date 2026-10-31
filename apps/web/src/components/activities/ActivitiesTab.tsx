@@ -153,7 +153,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
           }}
         />
         {editor && project ? <Button onClick={() => setTemplateOpen(true)}>Add from template</Button> : null}
-        {editor && unlinked > 0 ? <Button onClick={() => setLinkOpen(true)}>Link to BOQ ({unlinked})</Button> : null}
+        {editor && unlinked > 0 ? <Button onClick={() => setLinkOpen(true)}>{`Link ${unlinked} ${unlinked === 1 ? 'activity' : 'activities'} to the BOQ`}</Button> : null}
         {editor && (
           <Button
             type="primary"
