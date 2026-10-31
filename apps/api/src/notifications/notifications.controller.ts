@@ -104,8 +104,6 @@ export class NotificationsController {
       APPROVAL_ESCALATION: () => this.jobs.approvalEscalation(),
     });
     const digest = await this.jobs.approvalDigest(q.date);
-    // Vercel Hobby allows two crons, so the daily reminders, the Monday round-ups, company erasure, billing, makers'
-    // machine feeds and PDF reading all run after the digest.
     const after = await this.runAll({
       MORNING_BRIEF: () => this.jobs.morningBrief(q.date),
       WARNING_ALERTS: () => this.jobs.warningAlerts(q.date),
