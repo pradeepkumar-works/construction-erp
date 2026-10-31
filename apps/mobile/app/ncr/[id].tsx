@@ -5,6 +5,7 @@ import type { NcrDto } from '@erp/shared';
 import { NCR_SEVERITY_LABELS, NCR_STATUS_LABELS, canActOnNcr, canRaiseNcr } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, Screen, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
@@ -27,6 +28,8 @@ export default function NcrScreen() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const errorSummary = useErrorSummary();
 
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
@@ -50,14 +53,18 @@ export default function NcrScreen() {
   const recordAction = () => {
     const c = (cause ?? data.cause ?? '').trim();
     const a = (action ?? data.correctiveAction ?? '').trim();
-    if (!c || !a) return setActionError(t('Say why it happened and what was done'));
-    if (photosUploading(photos) || photosQueued(photos)) return setActionError(t('Wait for photos to finish uploading'));
-    if (photosFailed(photos)) return setActionError(t('Remove or retry failed photos'));
+    const e: Record<string, string> = {};
+    if (!c) e.cause = t('Say why it happened');
+    if (!a) e.action = t('Say what was done to put it right');
+    if (photosUploading(photos) || photosQueued(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    setErrors(e);
+    if (Object.keys(e).length) return errorSummary.report(e);
     void run(() => api.post<NcrDto>(`/quality/ncrs/${data.id}/action`, { cause: c, correctiveAction: a, preventiveAction: (prevent ?? data.preventiveAction ?? '').trim() || null, attachmentIds: attachmentIds(photos) }));
   };
 
   return (
-    <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
+    <Screen refreshing={refreshing} onRefresh={refresh} keyboard scrollRef={errorSummary.scrollRef}>
       <View style={styles.head}>
         <Text maxFontSizeMultiplier={maxFontScale} style={typography.caption}>
           {data.ncrNo} · {data.projectName}
@@ -69,6 +76,7 @@ export default function NcrScreen() {
           {data.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
         </View>
       </View>
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={actionError} />
       <Card>
         <KeyValue label={t('Details')} value={data.description} multiline />
@@ -81,10 +89,11 @@ export default function NcrScreen() {
       </Card>
       {mayAct ? (
         <Card title={t('Cause and corrective action')}>
-          <Input label={t('Cause')} required value={cause ?? data.cause ?? ''} onChangeText={setCause} placeholder={t('Why it happened')} multiline />
-          <Input label={t('Corrective action')} required value={action ?? data.correctiveAction ?? ''} onChangeText={setAction} placeholder={t('What was done to put it right')} multiline />
+          <Input label={t('Cause')} required value={cause ?? data.cause ?? ''} onChangeText={setCause} placeholder={t('Why it happened')} error={errors.cause} multiline />
+          <Input label={t('Corrective action')} required value={action ?? data.correctiveAction ?? ''} onChangeText={setAction} placeholder={t('What was done to put it right')} error={errors.action} multiline />
           <Input label={t('Preventive action')} value={prevent ?? data.preventiveAction ?? ''} onChangeText={setPrevent} placeholder={t('What will stop it happening again')} multiline />
           <PhotoPicker photos={photos} onChange={setPhotos} />
+          {errors.photos ? <Text maxFontSizeMultiplier={maxFontScale} style={styles.photoError}>{errors.photos}</Text> : null}
           <Button title={t('Record action')} icon="checkmark-done" onPress={recordAction} loading={busy} style={styles.mt} />
         </Card>
       ) : data.correctiveAction ? (
@@ -125,4 +134,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   flex: { flex: 1 },
   mt: { marginTop: spacing.md },
+  photoError: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
 });

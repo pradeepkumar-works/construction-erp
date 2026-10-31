@@ -100,7 +100,7 @@ export const QUALITY: Record<string, string> = {
   'Sampled {date}': 'सैंपल {date}',
 
   // NCRs
-  'Say why it happened and what was done': 'बताएँ ऐसा क्यों हुआ और क्या किया गया',
+  'Say why it happened': 'बताएँ ऐसा क्यों हुआ',
   'Found by': 'किससे पकड़ा गया',
   Raised: 'दर्ज हुआ',
   'To rectify': 'ठीक करने वाले',
@@ -401,4 +401,5 @@ export const QUALITY: Record<string, string> = {
   'What was done': 'क्या किया गया',
   'Why it is not right yet': 'अभी क्यों ठीक नहीं है',
   'Snags at this project': 'इस प्रोजेक्ट की कमियाँ',
+  'Say what was done to put it right': 'बताएँ इसे ठीक करने के लिए क्या किया गया',
 };
