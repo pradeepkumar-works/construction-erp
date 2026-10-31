@@ -141,7 +141,7 @@ export function ActivityFormModal({
               allowClear
               disabled={!!parentId}
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder={structure?.elements.length ? 'None' : 'No breakdown yet (Structure tab)'}
+              placeholder={structure?.elements.length ? 'None' : 'No components yet (Components tab)'}
               options={(structure?.elements ?? []).map((e) => ({ value: e.id, label: `${e.code} ${e.name}` }))}
             />
           </Form.Item>

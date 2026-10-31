@@ -45,7 +45,7 @@ function Breakdown({ type, kinds }: { type: ProjectTypeDto; kinds: ComponentKind
   if (!rows.length)
     return (
       <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
-        No starting components. A new project of this type starts with its activities only; components are added on its Structure tab.
+        No starting components. A new project of this type starts with its activities only; components are added on its Components tab.
       </Typography.Paragraph>
     );
   return (

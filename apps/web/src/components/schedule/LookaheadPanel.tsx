@@ -128,7 +128,7 @@ export function LookaheadPanel({ projectId }: { projectId: string }) {
         <Statistic title="Past their end" value={data.overdue.length} styles={data.overdue.length ? { content: { fontSize: themeFontSize('fontSizeXL'), color: token.colorErrorText } } : big} />
       </div>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
-        {`The three weeks from Monday ${formatDate(data.weeks[0]?.from)}. An activity is ready when what it waits on has started or finished as its links need; links are set on the Gantt.`}
+        {`The three weeks from Monday ${formatDate(data.weeks[0]?.from)}. An activity is ready when what it waits on has started or finished as its links need; links are set on the Schedule tab.`}
       </Typography.Paragraph>
       <Table<Row>
         className="lookahead-table"

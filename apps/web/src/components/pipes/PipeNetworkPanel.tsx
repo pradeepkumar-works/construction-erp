@@ -68,7 +68,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
           No pipe zones yet. Add a component of kind Pipe network zone, Rising main or Feeder main in Structure, then load its network here from the design
           office&apos;s EPANET or Excel file.
         </p>
-        <LinkButton href={`/projects/${project.id}?tab=structure`}>Open Structure</LinkButton>
+        <LinkButton href={`/projects/${project.id}?tab=structure`}>Open Components</LinkButton>
       </div>
     );
 
