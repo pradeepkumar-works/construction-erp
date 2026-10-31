@@ -183,7 +183,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
         ),
     },
     {
-      title: 'State',
+      title: 'Status',
       key: 'state',
       width: 120,
       render: (_: unknown, c: DesignCommentDto) => <AppTag tone={COMMENT_TONE[c.state]}>{DESIGN_COMMENT_STATE_LABELS[c.state]}</AppTag>,

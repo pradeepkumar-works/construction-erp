@@ -202,7 +202,7 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
 
   const newButton = keeper ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      {isIn ? 'Record letter' : 'New letter'}
+      {isIn ? 'Record inward letter' : 'New letter'}
     </Button>
   ) : null;
 

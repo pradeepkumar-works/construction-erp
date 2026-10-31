@@ -92,7 +92,7 @@ export function ControlledCopiesPage() {
       },
       {
         key: 'state',
-        title: 'Stands',
+        title: 'Status',
         width: 180,
         card: 'status',
         render: (_, r) => (
@@ -198,7 +198,7 @@ export function ControlledCopiesPage() {
           searchPlaceholder="Search drawing or holder"
           searchLabel="Search controlled copies"
         >
-          <Select<StateFilter> allowClear placeholder={documentId ? 'Every copy' : 'Out on site'} aria-label="Stands" value={state} onChange={(v) => page.setFilter('state', v)} style={{ width: 210 }} options={STATE_FILTERS} />
+          <Select<StateFilter> allowClear placeholder={documentId ? 'Every copy' : 'Out on site'} aria-label="Status" value={state} onChange={(v) => page.setFilter('state', v)} style={{ width: 210 }} options={STATE_FILTERS} />
         </ListToolbar>
         <DataTable<ControlledCopyDto>
           columns={frame.columns}

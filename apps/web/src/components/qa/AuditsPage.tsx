@@ -397,7 +397,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
                 },
                 { title: 'Severity', dataIndex: 'severity', width: 100, render: (v: NcrSeverity) => <AppTag tone={SEVERITY_TONE[v]}>{NCR_SEVERITY_LABELS[v]}</AppTag> },
                 { title: 'By', dataIndex: 'dueOn', width: 110, render: (v: string | null) => (v ? formatDate(v) : '-') },
-                { title: 'Stands', key: 'state', width: 150, render: (_, f) => <FindingStateTag f={f} /> },
+                { title: 'Status', key: 'state', width: 150, render: (_, f) => <FindingStateTag f={f} /> },
                 ...(mayRecord
                   ? [
                       {

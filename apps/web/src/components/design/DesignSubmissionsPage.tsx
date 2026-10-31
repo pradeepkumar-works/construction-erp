@@ -94,7 +94,7 @@ export function DesignSubmissionsPage() {
       },
       {
         key: 'status',
-        title: 'Stands',
+        title: 'Status',
         width: 200,
         card: 'status',
         render: (_, r) => (

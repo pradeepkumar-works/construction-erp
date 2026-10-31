@@ -4,7 +4,8 @@ import React, { useEffect, useMemo } from 'react';
 import { AutoComplete, Checkbox, Form, Input, Segmented, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation } from '@tanstack/react-query';
-import type { AiDraftDto, AttachmentDto, LetterAction, LetterDirection, LetterDto, LetterMode, LetterPriority } from '@erp/shared';
+import type { AiDraftDto, AttachmentDto, LetterAction, LetterDirection, LetterDto, LetterMode, LetterPriority   RISK_KIND_LABELS,
+} from '@erp/shared';
 import {
   DEFAULT_REPLY_DAYS,
   LETTER_ACTIONS,
@@ -16,6 +17,7 @@ import {
   contactLine,
   fillLetterTemplate,
   letterNeedsApproval,
+  RISK_KIND_LABELS,
 } from '@erp/shared';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -132,7 +134,7 @@ export function LetterForm({
     () => (letters?.items ?? []).filter((l) => l.id !== letter?.id).map((l) => ({ value: l.id, label: `${letterLabel(l)} · ${formatDate(l.letterDate)} · ${l.subject}` })),
     [letters, letter],
   );
-  const riskOptions = useMemo(() => (delays?.items ?? []).map((r) => ({ value: r.id, label: `${r.riskNo} ${r.kind === 'DELAY' ? 'Delay' : 'Risk'}: ${r.title}` })), [delays]);
+  const riskOptions = useMemo(() => (delays?.items ?? []).map((r) => ({ value: r.id, label: `${r.riskNo} ${RISK_KIND_LABELS[r.kind]}: ${r.title}` })), [delays]);
   const signatories = (people ?? []).filter((p) => p.canSign);
   const needsApproval = !!settings && letterNeedsApproval(settings.approval, category);
 
@@ -244,7 +246,7 @@ export function LetterForm({
     meta: FAIL_NOTICE,
   });
 
-  const title = editing ? `Edit ${letterLabel(letter!)}` : isIn ? 'Record letter received' : prefill?.inReplyToId ? 'Reply' : 'New letter';
+  const title = editing ? `Edit ${letterLabel(letter!)}` : isIn ? 'Record inward letter' : prefill?.inReplyToId ? 'Reply' : 'New letter';
   const okText = editing ? 'Save' : isIn ? 'Record' : alreadySent ? 'Record as sent' : 'Save draft';
   const today = dayjs();
 
@@ -308,7 +310,7 @@ export function LetterForm({
               />
             </Form.Item>
             <Form.Item name="confidential" label="Confidential" valuePropName="checked" tooltip="Only the correspondence heads and whoever it is marked to see it">
-              <Checkbox>Confidential</Checkbox>
+              <Checkbox>Mark as confidential</Checkbox>
             </Form.Item>
           </FormGrid>
           {isIn ? (
@@ -372,10 +374,10 @@ export function LetterForm({
                     }}
                   />
                 </Form.Item>
-                <Form.Item name="action" label="To" hidden={!markToId}>
+                <Form.Item name="action" label="Action" hidden={!markToId}>
                   <Select options={LETTER_ACTIONS.map((a) => ({ value: a, label: LETTER_ACTION_LABELS[a] }))} />
                 </Form.Item>
-                <Form.Item name="actionDue" label="By" hidden={!markToId}>
+                <Form.Item name="actionDue" label="Due by" hidden={!markToId}>
                   <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
               </FormGrid>

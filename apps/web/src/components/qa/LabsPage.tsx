@@ -188,7 +188,7 @@ export function LabsPage() {
                     <Typography.Text strong translate="no">
                       {l.name}
                     </Typography.Text>
-                    {!l.active ? <AppTag tone="neutral">Off</AppTag> : null}
+                    {!l.active ? <AppTag tone="neutral">Not in use</AppTag> : null}
                   </Flex>
                   <Typography.Text type="secondary">{l.kind === 'SITE' && l.projectName ? `Site lab, ${l.projectName}` : LAB_KIND_LABELS[l.kind]}</Typography.Text>
                 </Flex>
@@ -230,9 +230,9 @@ export function LabsPage() {
                         <Button type="text" icon={<EditOutlined />} aria-label={`Edit ${l.name}`} onClick={() => setEditing(l)} />
                         <ConfirmDelete
                           what={l.name}
-                          description={l.atLab + l.reported ? 'Samples went to it, so it is switched off and kept on them.' : undefined}
+                          description={l.atLab + l.reported ? 'Samples went to it, so it is marked not in use and kept on them.' : undefined}
                           verb={l.atLab + l.reported ? 'Remove' : 'Delete'}
-                          notice={l.atLab + l.reported ? `${l.name} switched off` : undefined}
+                          notice={l.atLab + l.reported ? `${l.name} is no longer in use` : undefined}
                           onConfirm={() => remove.mutateAsync(l.id)}
                         >
                           <Button type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${l.name}`} />

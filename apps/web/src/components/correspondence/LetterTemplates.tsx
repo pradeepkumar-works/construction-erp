@@ -79,7 +79,7 @@ export function LetterTemplates() {
     mutationFn: async (t: LetterTemplateDto) => (await api.patch<LetterTemplateDto>(`/letter-templates/${t.id}`, { isActive: !t.isActive })).data,
     onSuccess: (t) => {
       qc.invalidateQueries({ queryKey: ['letter-templates'] });
-      notify.success(`${t.name} ${t.isActive ? 'switched on' : 'switched off'}`);
+      notify.success(`${t.name} ${t.isActive ? 'is in use' : 'is no longer in use'}`);
     },
     meta: FAIL_NOTICE,
   });
@@ -123,10 +123,10 @@ export function LetterTemplates() {
             },
             { title: 'Category', dataIndex: 'category', width: 200, render: (v: string | null) => (v ? (categories?.entries.find((e) => e.code === v)?.name ?? v) : <Typography.Text type="secondary">-</Typography.Text>) },
             {
-              title: 'Switched on',
+              title: 'In use',
               key: 'active',
               width: 110,
-              render: (_, t) => <Switch size="small" checked={t.isActive} disabled={!keeper} loading={toggle.isPending && toggle.variables?.id === t.id} onChange={() => toggle.mutate(t)} aria-label={`${t.name} switched on`} />,
+              render: (_, t) => <Switch size="small" checked={t.isActive} disabled={!keeper} loading={toggle.isPending && toggle.variables?.id === t.id} onChange={() => toggle.mutate(t)} aria-label={`${t.name} in use`} />,
             },
             ...(keeper
               ? [

@@ -146,7 +146,7 @@ function TypeDialog({ editing, onClose, codes }: { editing: TestTypeDto | 'new' 
             <Form.Item name="specimens" label="Specimens in a sample" tooltip="IS 456 makes one cube result the mean of three" rules={[{ required: true, message: 'Give the specimens, 1 to 12' }]}>
               <InputNumber min={1} max={12} precision={0} style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="active" label="Switched on" valuePropName="checked">
+            <Form.Item name="active" label="In use" valuePropName="checked">
               <Switch />
             </Form.Item>
           </FormGrid>
@@ -195,7 +195,7 @@ export function TestTypesPage() {
         <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
           <Input.Search allowClear placeholder="Find a test" aria-label="Find a test" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
           <Typography.Text type="secondary">
-            {data.filter((t) => t.active).length} of {data.length} switched on.
+            {data.filter((t) => t.active).length} of {data.length} in use.
           </Typography.Text>
         </Flex>
         <Table<TestTypeDto>
@@ -213,7 +213,7 @@ export function TestTypesPage() {
                   <Flex gap={token.marginXS} align="center" wrap>
                     <Typography.Text strong>{t.name}</Typography.Text>
                     {!t.standard ? <AppTag tone="info">Company's own</AppTag> : t.changed ? <AppTag tone="violet">Changed from standard</AppTag> : null}
-                    {!t.active ? <AppTag tone="neutral">Off</AppTag> : null}
+                    {!t.active ? <AppTag tone="neutral">Not in use</AppTag> : null}
                   </Flex>
                   <Typography.Text type="secondary" translate="no">
                     {t.code}

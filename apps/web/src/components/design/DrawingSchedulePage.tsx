@@ -481,7 +481,7 @@ function ScheduleList() {
       { key: 'holds', title: 'Holds up', width: 160, ellipsis: true, defaultFrom: 1600, render: (_, r) => r.activityName ?? <Typography.Text type="secondary">-</Typography.Text> },
       {
         key: 'stands',
-        title: 'Stands',
+        title: 'Status',
         width: 220,
         card: 'meta',
         cardText: (r) => DRAWING_NEED_STATE_LABELS[r.state],

@@ -96,7 +96,7 @@ export function RevisionImpactPanel({ documentId, projectId, manage, buildable }
             { title: 'Held by', dataIndex: 'holder', render: (v: string) => <span translate="no">{v}</span> },
             { title: 'Rev', dataIndex: 'revision', width: 60, render: (v: string) => <span translate="no">{v}</span> },
             { title: 'Issued', dataIndex: 'issuedOn', width: 110, render: (v: string) => <span translate="no">{formatDate(v)}</span> },
-            { title: 'Stands', key: 'state', width: 150, render: (_, c) => <CopyStateTag copy={c} /> },
+            { title: 'Status', key: 'state', width: 150, render: (_, c) => <CopyStateTag copy={c} /> },
             ...(manage
               ? [
                   {
