@@ -1,5 +1,5 @@
 /**
- * Module switches' tests (v6 item 117): which modules are off for a company (turned off, or left out of its plan), which
+ * Module switches' tests: which modules are off for a company (turned off, or left out of its plan), which
  * page belongs to which module, and what an admin may switch, with no database. CI runs it after the build:
  *
  *   node dist/scripts/module-switches-test.js

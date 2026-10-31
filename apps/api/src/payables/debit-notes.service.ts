@@ -55,7 +55,7 @@ interface Bill {
 }
 
 /**
- * Debit notes (v5 item 91): what we take off an approved vendor or subcontract bill for short supply, excess billing,
+ * Debit notes: what we take off an approved vendor or subcontract bill for short supply, excess billing,
  * material rejected at QA/QC or returned, or a rate difference. Numbered DN-<year>-0001 and raised by those who record
  * bills, without an approval of their own (the bill was approved; the note only lowers it). A note takes off at most what
  * is still unpaid on the bill; the bill's `debitNoteAmount` is kept as the sum of its notes not cancelled, so its payable

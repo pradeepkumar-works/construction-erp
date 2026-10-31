@@ -4,7 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { DesignSubmissionsService } from './design-submissions.service';
 import { DesignSubmissionsQuery, RecordDesignCodeDto, ReplyCommentDto, SaveDesignSubmissionDto, SubmitDesignDto, WithdrawDesignDto } from './design-submissions.dto';
 
-/** Design and drawings part 2 (item 138): design submissions for approval or vetting, their codes and the comment replies. */
+/** Design and drawings part 2: design submissions for approval or vetting, their codes and the comment replies. */
 @ApiTags('design')
 @ApiBearerAuth()
 @Controller('design/submissions')

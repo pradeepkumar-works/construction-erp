@@ -204,7 +204,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
             { key: 'loc', label: 'Location', children: data.location },
             { key: 'date', label: 'Ready on', children: formatDate(data.date) },
             { key: 'checklist', label: 'Checklist', children: data.checklistName ?? (data.checklist.length ? 'Own points' : 'None') },
-            // Hidden work (item 172): signed off before cover-up and countersigned by the client's side in their portal.
+            // Hidden work: signed off before cover-up and countersigned by the client's side in their portal.
             ...(data.hidden
               ? [
                   {

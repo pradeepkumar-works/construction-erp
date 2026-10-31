@@ -37,7 +37,7 @@ interface Loaded {
 }
 
 /**
- * Checks on a bill before it is approved (AI roadmap item 69): plain rules in `bill-rules.ts` over the bill and what it
+ * Checks on a bill before it is approved: plain rules in `bill-rules.ts` over the bill and what it
  * should agree with, flags an approver may accept with a note, and one line on top that the model writes when Ask
  * Nirmaan is on (cached per set of open flags), else the rules do.
  */
@@ -196,7 +196,7 @@ export class BillChecksService {
     return { type: 'VENDOR_BILL', projectId: dto.projectId, status: dto.status, label, checks };
   }
 
-  /** The billed logs against the machine's engine hours, on the days its tracker read (item 146). */
+  /** The billed logs against the machine's engine hours, on the days its tracker read. */
   private async engineFacts(equipmentId: string, logs: { date: Date; hoursWorked: Prisma.Decimal; idleHours: Prisma.Decimal }[]) {
     const engine = await this.telematics.engineHoursOn(equipmentId, logs.map((l) => l.date));
     const tracked = logs.filter((l) => engine.has(dateOnly(l.date)));
@@ -209,7 +209,7 @@ export class BillChecksService {
     };
   }
 
-  /** Duplicate invoices, then a hire bill against the machine's logs or a service bill against its job cards (v5 item 91). */
+  /** Duplicate invoices, then a hire bill against the machine's logs or a service bill against its job cards. */
   private async otherVendorBillChecksOf(
     user: RequestUser,
     bill: Prisma.VendorBillGetPayload<{ include: { vendor: { select: { gstin: true } }; lines: true } }>,
@@ -263,7 +263,7 @@ export class BillChecksService {
   }
 
   /**
-   * The checks on a vendor bill not yet saved (AI item 70: a bill filled from a scanned invoice), against the order and
+   * The checks on a vendor bill not yet saved (a bill filled from a scanned invoice), against the order and
    * every bill already entered. With the invoice's printed total, a total that is not what the lines give is flagged.
    */
   async previewVendorBill(user: RequestUser, draft: { purchaseOrderId: string; invoiceNo: string; freight: number; invoiceTotal?: number | null; lines: { purchaseOrderLineId: string; quantity: number; rate: number; gstRate: number }[] }): Promise<DraftChecksDto> {
@@ -460,7 +460,7 @@ export class BillChecksService {
       this.prisma.raBillStageLine.aggregate({ where: { billId: id }, _sum: { amount: true } }),
       this.prisma.raBill.aggregate({ where: earlier, _sum: { advanceRecoveryAmount: true, securityDepositAmount: true } }),
     ]);
-    // A recovery window (item 129) recovers the advance by the contract executed, not a % of the bill.
+    // A recovery window recovers the advance by the contract executed, not a % of the bill.
     const windowed =
       bill.omYear === null && project.advanceRecoveryFromPct && project.advanceRecoveryToPct && project.contractValue
         ? windowRecovery({
@@ -472,7 +472,7 @@ export class BillChecksService {
             recoveredBefore: recovered._sum.advanceRecoveryAmount ?? new Prisma.Decimal(0),
           })
         : null;
-    // A lump-sum contract's unit-rate items are paid at the BOQ rate × the tender factor (item 129).
+    // A lump-sum contract's unit-rate items are paid at the BOQ rate × the tender factor.
     const unitRate = billsByStages(project.contractModel) ? (await boqBasis(this.prisma, bill.projectId)).unitRateBoqItemIds : new Set<string>();
     const factor = project.tenderFactor ?? new Prisma.Decimal(1);
     const prev = new Map<string, number>();
@@ -493,7 +493,7 @@ export class BillChecksService {
         earlierBilled: prev.get(i.boqItemId) ?? 0,
         measuredToDate: n(measured.find((m) => m.boqItemId === i.boqItemId)?._sum.totalQty),
       })),
-      // An O&M bill (item 131) bills its instalment less the staff short, from no item.
+      // An O&M bill bills its instalment less the staff short, from no item.
       stageAmount: n(stages._sum.amount) + omWorkValue(bill.omDetail),
       grossAmount: n(bill.grossAmount),
       pvAmount: n(bill.pvAmount),
@@ -505,7 +505,7 @@ export class BillChecksService {
           label: 'Security deposit',
           pct: n(bill.securityDepositPct),
           amount: n(bill.securityDepositAmount),
-          // Held to the contract's cap (item 171): the % of the bill, but no more than the cap less earlier bills' deposit.
+          // Held to the contract's cap: the % of the bill, but no more than the cap less earlier bills' deposit.
           ...(project.securityDepositCapPct
             ? {
                 expected: cappedSecurityDeposit(

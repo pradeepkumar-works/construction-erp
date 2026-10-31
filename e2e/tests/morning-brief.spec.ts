@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * The morning brief (AI item 74). Ask Nirmaan is on for the DEMO company, so the MD is offered the brief on the home
+ * The morning brief. Ask Nirmaan is on for the DEMO company, so the MD is offered the brief on the home
  * page; asking for it writes today's at once (the test model returns the rules' own lines), and Turn off stops it.
  */
 

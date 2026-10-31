@@ -1,7 +1,7 @@
 import type { DelayParty, RiskCategory } from '@erp/shared';
 
 /**
- * 100 DPR remarks labelled by hand (AI item 123's set): whether each is a hindrance to record and, if so, its cause and
+ * 100 DPR remarks labelled by hand: whether each is a hindrance to record and, if so, its cause and
  * who is answerable. Written the way site engineers write them: English, Hinglish and Hindi, short and long, with the
  * routine remarks ("Nil", a few hours lost to our own diesel) that must not become delays. `hindrance-test.ts` scores
  * the rules on them and needs 9 in 10 right.

@@ -18,7 +18,7 @@ export interface ToolbarFilters {
 
 /**
  * The strip above a list: search, the project and status filters and the list's own (`children`), and its actions
- * (`extra`). On a phone (UX item 84) it is the search and a "Filters (N)" button, which opens the filters in a drawer from
+ * (`extra`). On a phone it is the search and a "Filters (N)" button, which opens the filters in a drawer from
  * the bottom with Apply and Clear; the actions stay beside it.
  */
 export function ListToolbar({

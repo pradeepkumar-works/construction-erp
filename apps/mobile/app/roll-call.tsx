@@ -20,7 +20,7 @@ interface Mark {
 const fromRow = (r: RollCallRowDto): Mark => ({ status: r.status, ot: r.otHours ?? '' });
 
 /**
- * The roll call of the named workers at one site for one day (v4 item 44): mark each present, half day or absent,
+ * The roll call of the named workers at one site for one day: mark each present, half day or absent,
  * with overtime. Saving also brings the day's head count in step. Needs a connection. A day nobody has marked yet is
  * kept on the phone as a draft while it is marked; changing a day already saved is not.
  */
@@ -85,7 +85,6 @@ export default function RollCallScreen() {
     setMarks(server);
     // Loaded by itself: not a change of the user's to keep or warn about.
     draft.settle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roll.data]);
   const startOver = () => {
     setActivityId(null);
@@ -176,7 +175,7 @@ export default function RollCallScreen() {
     </>
   );
 
-  // Up to a few hundred workers on a site: a virtualised list (UX item 88), with Save kept in reach below it.
+  // Up to a few hundred workers on a site: a virtualised list, with Save kept in reach below it.
   return (
     <Screen scroll={false} padded={false} keyboard>
       <FlatList

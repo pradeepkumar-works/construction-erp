@@ -9,7 +9,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const roadProject = async (token: string) => (await api<{ items: Project[] }>(token, '/projects?pageSize=50')).items.find((p) => p.code === 'RD-2026-01')!;
 
 /**
- * Inspections (v3 item 26): site requests one from the web, QA/QC records the checklist and sends it back for
+ * Inspections: site requests one from the web, QA/QC records the checklist and sends it back for
  * re-inspection, site requests it again, and QA/QC passes it.
  */
 test.describe.serial('inspection from request to pass', () => {

@@ -48,7 +48,7 @@ const FIRST_PROGRAMME_DAYS = 15;
 const rulesRow = (r: { revision: number; status: Row['status']; submittedOn: Date }) => ({ revision: r.revision, status: r.status, submittedOn: dateOnly(r.submittedOn) });
 
 /**
- * The programme register (item 173, ARCHITECTURE "Programme and EOT"): each revision of the construction programme as it
+ * The programme register (ARCHITECTURE "Programme and EOT"): each revision of the construction programme as it
  * went to the Engineer, what it showed, and their answer; the watch on the next one due; and the contract's programme
  * obligation, met by the first revision not returned. Rules are pure in `@erp/shared/programme-eot.ts`.
  */

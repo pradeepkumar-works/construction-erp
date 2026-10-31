@@ -1,5 +1,5 @@
 /**
- * QA/QC plans (item 137, ARCHITECTURE "QA/QC"): the company's test types, a project's quality plan (inspection and test
+ * QA/QC plans (ARCHITECTURE "QA/QC"): the company's test types, a project's quality plan (inspection and test
  * plan, ITP) and the tests it owes, and the pour register's IS 456 cube acceptance check. Everything here is pure: the
  * API loads the work done, receipts, tests and pours and asks these functions what is owed and whether concrete passes.
  *
@@ -10,7 +10,7 @@ import type { ProjectType } from './enums';
 import { TEST_KIND_DEFAULTS, type TestKind } from './quality';
 import { sameUnit } from './reconciliation';
 
-/* ---------- test types ---------- */
+// Test types
 
 /** A kind of test the company takes: what it tests, by which method, its unit, limits and readings. */
 export interface TestTypeDef {
@@ -88,7 +88,7 @@ export function testTypeProblem(d: Pick<TestTypeDef, 'code' | 'name' | 'unit' | 
   return null;
 }
 
-/* ---------- the quality plan ---------- */
+// The quality plan
 
 /** What a plan line counts its tests against: the work done in DPRs, or material received. */
 export const QA_PLAN_SOURCES = ['WORK', 'RECEIPT'] as const;
@@ -184,7 +184,7 @@ export function planLineProblem(l: QaPlanLineDef, types: TestTypeDef[]): string 
   return null;
 }
 
-/* ---------- what is owed ---------- */
+// What is owed
 
 /** "M25" from "RCC M 25 slab" or "M-30 grade"; null when the text names no grade. */
 export function concreteGrade(text: string | null | undefined): string | null {
@@ -319,7 +319,7 @@ export function planLineFor<L extends { id: string; testType: string; grade: str
   return general.length === 1 ? general[0] : null;
 }
 
-/* ---------- pours and the IS 456 acceptance check ---------- */
+// Pours and the IS 456 acceptance check
 
 export const POUR_STATUSES = ['PLANNED', 'POURED', 'CANCELLED'] as const;
 export type PourStatus = (typeof POUR_STATUSES)[number];
@@ -440,7 +440,7 @@ export function pourFlags(p: { status: PourStatus; volume: number | null; cardPa
 
 export const POUR_FLAG_LABELS = { NO_CARD: 'Poured without a passed card', CUBES_SHORT: 'Cube sets short' } as const;
 
-/* ---------- what the API returns ---------- */
+// What the API returns
 
 export interface TestTypeDto extends TestTypeDef {
   /** One of STANDARD_TEST_TYPES (perhaps changed by the company) */

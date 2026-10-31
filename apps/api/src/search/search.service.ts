@@ -35,7 +35,7 @@ const join = (...parts: (string | null | undefined)[]) => parts.filter(Boolean).
 type Source<T> = { kind: SearchKind; module?: SwitchableModule; allowed?: (user: RequestUser) => boolean; list: (user: RequestUser, q: string) => Promise<Paginated<T>>; hit: (row: T) => Omit<SearchHitDto, 'kind'> };
 
 /**
- * Search everything (UI roadmap item 62). Each kind is found through its own list service with `q`, so a record shows
+ * Search everything. Each kind is found through its own list service with `q`, so a record shows
  * only to someone its list would show it to (project access, role, the company). A kind the user may not see is skipped.
  */
 @Injectable()
@@ -156,7 +156,7 @@ export class SearchService {
     if (q.length < SEARCH_MIN_LENGTH) return { q, hits: [] };
     const found = await Promise.all(
       this.sources
-        // A kind whose module the company has off (v6 item 117) is not searched.
+        // A kind whose module the company has off is not searched.
         .filter((s) => (!s.module || moduleOn(user, s.module)) && (!s.allowed || s.allowed(user)))
         .map(async (s) => {
           try {

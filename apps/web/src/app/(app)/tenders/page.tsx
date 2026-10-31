@@ -55,7 +55,7 @@ const STATUS_OPTIONS = [
 ];
 
 /**
- * The tender register (v6 item 110): tenders being priced (soonest due first), bids awaiting their result, and those won,
+ * The tender register: tenders being priced (soonest due first), bids awaiting their result, and those won,
  * lost or not bid, with the year's count won and the EMD still with clients. Priced by admin, management and the QS;
  * project and accounts managers look on.
  */

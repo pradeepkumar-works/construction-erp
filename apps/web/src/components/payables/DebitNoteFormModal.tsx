@@ -68,7 +68,7 @@ const grnLines = (grn: DebitNoteGrn, bill: VendorBillDto | undefined): LineValue
   });
 
 /**
- * Raise a debit note (v5 item 91): what the vendor or subcontractor owes back on an approved bill (short supply, billed
+ * Raise a debit note: what the vendor or subcontractor owes back on an approved bill (short supply, billed
  * in excess, rejected, returned, a rate difference), taken off what is still unpaid on it. Lines take a quantity and
  * rate, or a lump sum. From a GRN, the form picks among its order's approved bills and starts from the GRN's lines.
  */

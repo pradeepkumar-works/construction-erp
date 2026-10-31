@@ -10,7 +10,7 @@ import { costHeadRows, monthLabel } from './chartData';
 type View = 'chart' | 'table';
 
 /**
- * A home chart in a card (UX item 81): the summary in words above it, the drawing named by that summary, and Chart / Table
+ * A home chart in a card: the summary in words above it, the drawing named by that summary, and Chart / Table
  * to read the same figures as a table instead. The chart itself comes from `charts.tsx`, loaded on its own.
  */
 export function ChartCard({ title, note, summary, chart, table }: { title: string; note?: React.ReactNode; summary: string; chart: React.ReactNode; table: React.ReactNode }) {

@@ -1,5 +1,5 @@
 /**
- * Tests for the standard norms library (finding 16 of the October review). Which BOQ item is which kind of work is
+ * Tests for the standard norms library. Which BOQ item is which kind of work is
  * pure, so it needs no database:
  *
  *   node dist/scripts/norms-library-test.js

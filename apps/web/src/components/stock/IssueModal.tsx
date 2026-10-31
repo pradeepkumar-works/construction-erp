@@ -34,7 +34,7 @@ interface FormValues {
 
 /**
  * Issue slip: material handed out at site. Items and quantities are limited to what the project has in stock. On a
- * project with a work breakdown the slip names the component or pipe zone it goes to (item 128), the activity's own
+ * project with a work breakdown the slip names the component or pipe zone it goes to, the activity's own
  * when an activity is chosen, so the reconciliation can check it against that component's DPR lines.
  */
 export function IssueModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {

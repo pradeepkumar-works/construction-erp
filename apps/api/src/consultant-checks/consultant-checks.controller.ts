@@ -5,7 +5,7 @@ import { ConsultantChecksService } from './consultant-checks.service';
 import { SiteOrdersService } from './site-orders.service';
 import { ListSiteOrdersQuery, RecordSiteOrderDto, SiteOrderCloseDto, SiteOrderReplyDto } from './consultant-checks.dto';
 
-/** Staff's side of the consultant checks (item 172): the checks on a measurement, and the site order book. */
+/** Staff's side of the consultant checks: the checks on a measurement, and the site order book. */
 @ApiTags('consultant checks')
 @ApiBearerAuth()
 @Controller()

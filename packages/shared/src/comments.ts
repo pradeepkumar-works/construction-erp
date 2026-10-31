@@ -3,7 +3,7 @@ import { SUBMISSION_TYPE_LABELS } from './labels';
 import { submissionHref } from './links';
 
 /**
- * Comments and mentions (v6 item 116): threads on a record, staff only. A kind is a submission type (its record page) or
+ * Comments and mentions: threads on a record, staff only. A kind is a submission type (its record page) or
  * one of the registers with a page of its own. A new kind is a key here, a loader in the API's `CommentTargetsService`
  * and the `CommentsSection` on its page.
  */

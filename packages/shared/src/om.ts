@@ -1,5 +1,5 @@
 /**
- * Operation and maintenance (item 131, ARCHITECTURE "Operation and maintenance"): the years of running a water scheme
+ * Operation and maintenance (ARCHITECTURE "Operation and maintenance"): the years of running a water scheme
  * after its handover. The contract pays each year as a % of the contract value in instalments (an O&M bill each), less
  * the pay of staff short of the minimum and the penalties for service levels missed beyond what a month allows. The
  * arithmetic is in `apps/api/src/om/om-rules.ts`.
@@ -119,7 +119,6 @@ export const omLimitText = (key: OmBenchmark, limit: string | number) => {
 /** "at least 135 lpcd", "at most 20%" */
 export const omRuleText = (key: OmBenchmark, limit: string | number) => `${OM_BENCHMARK_INFO[key].direction === 'MIN' ? 'at least' : 'at most'} ${omLimitText(key, limit)}`;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // What the project's O&M tab reads
 
 export interface OmStaffNormDto {

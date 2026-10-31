@@ -67,7 +67,7 @@ async function readFile(file: File): Promise<PipeNetworkFile> {
 }
 
 /**
- * Loads a zone's network (item 126) from the design office's model: an EPANET .inp file (WaterGEMS, LOOP and EPANET all
+ * Loads a zone's network from the design office's model: an EPANET .inp file (WaterGEMS, LOOP and EPANET all
  * write one) or an Excel book of nodes and pipes. The file is read here, the server says what saving would change, and
  * nothing is saved until that is accepted. Codes match pipes already loaded, so work recorded on them stays.
  */

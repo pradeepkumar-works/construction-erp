@@ -28,7 +28,7 @@ import { PipeNetworkImportDto, UpdatePipeSegmentDto } from './pipe-network.dto';
 type Db = PrismaService | Prisma.TransactionClient;
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
 
-/** A zone's or main's leaf activities and the pipe stage each stands for (item 126). */
+/** A zone's or main's leaf activities and the pipe stage each stands for. */
 export async function stageActivities(db: Db, where: Prisma.WorkElementWhereInput) {
   const zones = await db.workElement.findMany({
     where: { ...where, elementType: { in: PIPE_ELEMENT_TYPES } },
@@ -66,7 +66,7 @@ export async function heldOnSegments(db: Db, segmentIds: string[], exceptDprId?:
 }
 
 /**
- * Pipe network (item 126, ARCHITECTURE "Pipe network"): a project's pipe zones and mains with their junctions and
+ * Pipe network (ARCHITECTURE "Pipe network"): a project's pipe zones and mains with their junctions and
  * segments, how far each stage has got on each segment, the zone tables by diameter and the working fronts, and the
  * import that loads or refreshes a zone's model.
  */
@@ -83,7 +83,7 @@ export class PipeNetworkService {
     return this.network(projectId, canEditProjects(user.roleKey));
   }
 
-  /** The network and its figures without the caller's checks, for the reconciliation's pipe view (item 128), which has made them. */
+  /** The network and its figures without the caller's checks, for the reconciliation's pipe view, which has made them. */
   async network(projectId: string, canEdit = false): Promise<PipeNetworkDto> {
     const [{ zones, stageOf }, nodes, segments, tested] = await Promise.all([
       stageActivities(this.prisma, { projectId }),

@@ -32,7 +32,7 @@ function daysIn(a: Row, week: { from: string; to: string }): { on: boolean[]; te
 }
 
 /**
- * Look-ahead tab of a project (v6 item 114): the three weeks from this Monday, every activity planned in them (and those
+ * Look-ahead tab of a project: the three weeks from this Monday, every activity planned in them (and those
  * past their end, still open) with the days it runs each week, and whether it can start: under way, ready, or waiting on
  * the activities its links tie it to. Critical activities are marked; the site team plans the next weeks from it.
  */

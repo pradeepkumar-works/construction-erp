@@ -57,7 +57,7 @@ interface RecordProps {
 
 /**
  * A vendor bill, in a drawer or at `/vendor-bills/<id>`: against a PO with its three-way match against the order and the
- * GRNs, or (v5 item 91) a hire bill with the machine's logs, a workshop bill with its job cards, or another service bill.
+ * GRNs, or a hire bill with the machine's logs, a workshop bill with its job cards, or another service bill.
  */
 export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { user } = useAuth();
@@ -343,7 +343,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               <ReviewActions type="vendor_bill" id={data.id} status={data.status} amount={data.total} size={size} />
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
+          // Delete is a tap from Approve no longer.
           more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `vendor bill ${data.billNo}`, onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }
@@ -353,7 +353,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
   );
 }
 
-/** The machine logs a hire bill is made from, or the job cards a workshop bills (v5 item 91). */
+/** The machine logs a hire bill is made from, or the job cards a workshop bills. */
 function BillSources({ kind, rows }: { kind: VendorBillDto['kind']; rows: VendorBillSourceDto[] }) {
   const hire = kind === 'HIRE';
   return (

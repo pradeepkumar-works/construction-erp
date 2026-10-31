@@ -1,5 +1,5 @@
 /**
- * Work breakdown tests (item 125). The roll-up from sub-activity to activity to component to project, sibling weights
+ * Work breakdown tests. The roll-up from sub-activity to activity to component to project, sibling weights
  * (given, shared by value, none given), the same answer as before for a project with no breakdown, and the built-in
  * component templates: weights adding up to 100, lifts from a height, quantities from the specs.
  *
@@ -23,7 +23,6 @@ const act = (id: string, over: Partial<RollupActivity> = {}): RollupActivity => 
   ...over,
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Leaves and siblings
 
 test('a leaf is approved over planned, held to 0..100, 0 with nothing planned', () => {
@@ -44,7 +43,6 @@ test('siblings without a weight share what the weighted ones leave of 100, by va
   assert.deepEqual(siblingWeights([{ weightPct: 70, value: 1 }, { weightPct: 30, value: 1 }, { weightPct: null, value: 99 }]), [70, 30, 0]);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Roll-up
 
 test('a project with no breakdown is the BOQ-value weighted progress it always was', () => {
@@ -130,7 +128,6 @@ test('effective weights are each node as a share of its parent', () => {
   near(w.get('y'), 75);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Component templates
 
 test('every template: top-level weights and each activity’s sub-activities add up to 100', () => {
@@ -189,8 +186,6 @@ test('a building block lays out its frame floor by floor', () => {
     ['Frame: Ground floor', 'Frame: First floor', 'Frame: Second floor'],
   );
 });
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 let failed = 0;
 for (const [name, fn] of tests) {

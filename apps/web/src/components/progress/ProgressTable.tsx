@@ -55,7 +55,7 @@ export function progressColumns({
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => (v ? formatDate(v) : '-'), ...sort('submittedAt') },
     { card: 'status', title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} />, ...sort('status') },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) =>
-        // A DPR's work line (item 127) is changed and decided in its DPR.
+        // A DPR's work line is changed and decided in its DPR.
         r.dailyReportId ? (
           <DprLineActions row={r} onOpen={onOpen} />
         ) : (

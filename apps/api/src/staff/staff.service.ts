@@ -100,7 +100,7 @@ const order = (sortBy: string, o: SortOrder | undefined): SortOrder => o ?? (DES
 const opt = <T>(v: T | null | undefined, editing: boolean): T | null | undefined => (v === undefined ? (editing ? undefined : null) : v === '' ? null : v);
 const optDate = (v: string | null | undefined, editing: boolean) => (v === undefined ? (editing ? undefined : null) : v ? parseDate(v) : null);
 
-/** The HR record's fields (v6 item 99) from a create or edit: on an edit, a field left out stays as it is. */
+/** The HR record's fields from a create or edit: on an edit, a field left out stays as it is. */
 function hrFields(dto: Partial<CreateEmployeeDto>, editing: boolean) {
   return {
     dateOfBirth: optDate(dto.dateOfBirth, editing),
@@ -129,7 +129,7 @@ function hrFields(dto: Partial<CreateEmployeeDto>, editing: boolean) {
   };
 }
 
-/** The next HR letter number of the year an event takes effect in: HR-2026-0001 (v6 item 99). */
+/** The next HR letter number of the year an event takes effect in: HR-2026-0001. */
 export async function nextLetterNo(tx: Prisma.TransactionClient, organizationId: string, date: string) {
   const prefix = `HR-${date.slice(0, 4)}-`;
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`HRLETTER:${organizationId}:${prefix}`}))`;
@@ -167,9 +167,9 @@ export class StaffService {
     undo.register('HOLIDAY', { entityType: 'HOLIDAY', check: (user) => this.access.assertCanManageStaff(user) });
   }
 
-  /* ---------- mapping ---------- */
+  // Mapping
 
-  /** HR records (v6 item 99): personal, statutory and bank details go to staff admins, payroll and the person only. */
+  /** HR records: personal, statutory and bank details go to staff admins, payroll and the person only. */
   private seesPrivate(user: RequestUser | undefined, e: { userId: string | null }) {
     return !!user && (canViewEmployeePrivate(user.roleKey) || (!!e.userId && e.userId === user.id));
   }
@@ -287,7 +287,7 @@ export class StaffService {
     return { id: h.id, projectId: h.projectId, projectName: h.project?.name ?? null, date: dateOnly(h.date), name: h.name };
   }
 
-  /* ---------- lookups ---------- */
+  // Lookups
 
   private async ownEmployee(user: RequestUser) {
     return this.prisma.employee.findFirst({ where: { organizationId: user.organizationId, userId: user.id }, include: employeeInclude });
@@ -309,7 +309,7 @@ export class StaffService {
     return new Map(rows.map((h) => [dateOnly(h.date), h.name]));
   }
 
-  /* ---------- summary and me ---------- */
+  // Summary and me
 
   async summary(user: RequestUser): Promise<StaffSummaryDto> {
     const today = parseDate(todayIn());
@@ -362,7 +362,7 @@ export class StaffService {
   }
 
   /**
-   * Self check-in from the app: today, at their posting unless they say which site. With a position (v5 item 97) it
+   * Self check-in from the app: today, at their posting unless they say which site. With a position it
    * records where they were and whether that was inside the site's radius; a strict site refuses a check-in from
    * outside it or without a position. The phone sends the person's photo (face attendance), kept on the day.
    */
@@ -404,8 +404,7 @@ export class StaffService {
   }
 
   /**
-   * Check-out: overtime is the time past a standard day in half hours and waits for the site manager or HR (v5 item
-   * 97); under half a day is marked a half day.
+   * Check-out: overtime is the time past a standard day in half hours and waits for the site manager or HR; under half a day is marked a half day.
    */
   async checkOut(user: RequestUser, dto: CheckOutDto = {}): Promise<StaffAttendanceDto> {
     const e = await this.ownEmployee(user);
@@ -435,7 +434,7 @@ export class StaffService {
     return photo.id;
   }
 
-  /* ---------- employees ---------- */
+  // Employees
 
   async listEmployees(user: RequestUser, q: ListEmployeesQuery): Promise<Paginated<EmployeeDto>> {
     const and: Prisma.EmployeeWhereInput[] = [this.access.staffWhere(user)];
@@ -509,7 +508,7 @@ export class StaffService {
           },
           include: employeeInclude,
         });
-        // The joining is the first event of their service, and prints the appointment letter (v6 item 99).
+        // The joining is the first event of their service, and prints the appointment letter.
         if (e.joinedOn)
           await tx.employeeEvent.create({
             data: {
@@ -568,7 +567,7 @@ export class StaffService {
     return this.audit.forEntity(user.organizationId, 'EMPLOYEE', id);
   }
 
-  /* ---------- attendance ---------- */
+  // Attendance
 
   /** A site's staff for a day: everyone posted there (and anyone marked there that day), with leave covering the day. */
   async register(user: RequestUser, projectId: string, date: string): Promise<StaffRegisterDto> {
@@ -635,7 +634,7 @@ export class StaffService {
           await tx.staffAttendance.deleteMany({ where: { employeeId: e.employeeId, date: day } });
           continue;
         }
-        // Overtime the marker changes is approved when they may decide it (v5 item 97), else it waits; unchanged keeps its decision.
+        // Overtime the marker changes is approved when they may decide it, else it waits; unchanged keeps its decision.
         const emp = byId.get(e.employeeId)!;
         const was = emp.attendance[0];
         const otChanged = e.overtimeHours !== undefined && Number(e.overtimeHours ?? 0) !== Number(was?.overtimeHours ?? 0);
@@ -678,7 +677,7 @@ export class StaffService {
     return rows.map((r) => this.toAttendanceDto(r, user));
   }
 
-  /* ---------- overtime (v5 item 97) ---------- */
+  // Overtime
 
   /** Overtime waiting on the caller: the same people who decide the employee's leave, oldest first. */
   async overtimeToDecide(user: RequestUser): Promise<StaffAttendanceDto[]> {
@@ -742,7 +741,7 @@ export class StaffService {
     }
   }
 
-  /* ---------- leave ---------- */
+  // Leave
 
   /**
    * Days a year per type: fixed for casual, sick and earned; comp-off is earned by working a weekly off or holiday
@@ -930,7 +929,7 @@ export class StaffService {
         projectId: l.projectId,
         entityId: l.id,
         dedupeKey: `LEAVE_APPLIED:${l.id}`,
-        // Leave waits on whoever decides it, and the days may already have started (finding 18 of the October review).
+        // Leave waits on whoever decides it, and the days may already have started.
         email: { href: `/staff?tab=leave&leave=${l.id}`, cta: 'Decide it' },
       });
     } catch (e) {
@@ -957,7 +956,7 @@ export class StaffService {
     }
   }
 
-  /* ---------- holidays ---------- */
+  // Holidays
 
   async holidays(user: RequestUser, q: HolidayQuery): Promise<HolidayDto[]> {
     const year = q.year ?? yearOf(todayIn());

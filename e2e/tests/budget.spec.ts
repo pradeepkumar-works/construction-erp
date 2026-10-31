@@ -17,7 +17,7 @@ type Budget = {
 type CashFlow = { periods: { net: string; cumulative: string; remainingBudget: string }[]; projectsWithoutBudget: { projectCode: string }[] };
 
 /**
- * Budget and forecast (v4 item 38): the project manager budgets the water supply project (seeded without a budget) by
+ * Budget and forecast: the project manager budgets the water supply project (seeded without a budget) by
  * cost head and fills the BOQ budget rates at 80% of the client's rate. The forecast at completion and the cash-flow
  * forecast follow. The budget is taken off again at the end so the test can run twice.
  */

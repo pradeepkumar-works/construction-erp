@@ -54,11 +54,10 @@ const Note = ({ children }: { children: React.ReactNode }) => (
   </Typography.Paragraph>
 );
 
-// ---------------------------------------------------------------------------------------------------------------------
 // R2: structure
 
 /**
- * Per component (item 128): each normed material's design need, what the DPR lines approved in the period needed and
+ * Per component: each normed material's design need, what the DPR lines approved in the period needed and
  * used, what was issued to the component and what should still be there, with the use per unit each activity achieved
  * (bags of cement per m³ against the mix, steel per MT).
  */
@@ -228,7 +227,6 @@ export function StructureView({ projectId }: { projectId: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // R3: pipe
 
 function PipeFlags({ flags }: { flags: PipeFlag[] }) {
@@ -258,7 +256,7 @@ function WastageCell({ r }: { r: PipeReconRowDto }) {
 }
 
 /**
- * Pipe by size (item 128), since the start, in metres: over the project (scope, ordered, received, in store, issued,
+ * Pipe by size, since the start, in metres: over the project (scope, ordered, received, in store, issued,
  * laid, tested, to lay, to buy) and per zone (issued to it, laid, cut wastage on the DPR lines, at site not laid).
  */
 export function PipeView({ projectId }: { projectId: string }) {
@@ -398,12 +396,11 @@ export function PipeView({ projectId }: { projectId: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // R5: kits
 
 const KIT_COLOR: Record<KitStatus, string> = { SHORT: 'error', OVER: 'warning', OK: 'success' };
 
-/** House-connection kits (item 128): connections done × the kit (the activity's norms) against what was issued. */
+/** House-connection kits: connections done × the kit (the activity's norms) against what was issued. */
 export function KitsView({ projectId }: { projectId: string }) {
   const { data, isLoading, error, refetch } = useKitRecon(projectId);
 
@@ -505,12 +502,11 @@ export function KitsView({ projectId }: { projectId: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // R6: exceptions
 
 const EXCEPTION_COLOR: Record<ReconExceptionKind, string> = { USE_WITHOUT_ISSUE: 'error', ISSUE_WITHOUT_WORK: 'warning', LAID_ABOVE_ISSUED: 'error' };
 
-/** The day-to-day exceptions between stock and the DPR (item 128), newest first, each with the DPR or issue to open. */
+/** The day-to-day exceptions between stock and the DPR, newest first, each with the DPR or issue to open. */
 export function ExceptionsView({ projectId }: { projectId: string }) {
   const [period, setPeriod] = useState<PeriodState>({ preset: 'month', range: null });
   const [entryId, setEntryId] = useState<string | null>(null);

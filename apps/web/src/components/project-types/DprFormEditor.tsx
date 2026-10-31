@@ -81,7 +81,7 @@ const defOf = (v: Partial<Values>): DprFormDef => {
 };
 
 /**
- * Change a project type's DPR form (item 134 part 2): which built-in fields show, which are required and what they are
+ * Change a project type's DPR form: which built-in fields show, which are required and what they are
  * called, the photos a report needs, what a work line takes, and up to 20 fields of the company's own. A save is a new
  * version: the next report on every project of the type takes it, and reports made already keep theirs.
  */

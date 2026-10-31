@@ -57,7 +57,7 @@ export interface NavModuleDef {
 
 const sub = (key: string, label: string, ...nodes: string[]): NavSubDef => ({ key, label, nodes });
 
-/** The ten modules of a contractor's brochure, QA/QC, Design and drawings and Correspondence (item 135), plus Reports and MIS and
+/** The ten modules of a contractor's brochure, QA/QC, Design and drawings and Correspondence, plus Reports and MIS and
  *  Administration. Keys are kept forever (names hang on them). Each module's Masters names the pages that are its masters
  *  (`mastersByDepartment`). */
 export const DEPARTMENT_MODULES: NavModuleDef[] = [
@@ -567,7 +567,7 @@ export function navSettingsFrom(row: { navLayout?: string | null; navLook?: stri
 export const isDefaultNav = (s: NavSettingsDto) =>
   s.layout === DEFAULT_NAV_SETTINGS.layout && s.look === DEFAULT_NAV_SETTINGS.look && s.moduleSet === DEFAULT_NAV_SETTINGS.moduleSet && !s.personalLook && Object.keys(s.names).length === 0;
 
-/** Administration › Masters (item 135): each department's Masters sub-module, with only the pages this user may open. */
+/** Administration › Masters: each department's Masters sub-module, with only the pages this user may open. */
 export function mastersByDepartment(user: NavUser): { module: NavModuleDef; nodes: NavNode[] }[] {
   return DEPARTMENT_MODULES.filter((m) => m.key !== 'administration')
     .map((m) => ({

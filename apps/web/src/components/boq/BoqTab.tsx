@@ -27,10 +27,10 @@ export function BoqTab({ projectId }: { projectId: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useBoq(projectId);
-  // An item-rate BOQ far from the contract value (finding 6 of the October review), as the setup checklist and watch list say.
+  // An item-rate BOQ far from the contract value, as the setup checklist and watch list say.
   const gap = useProjectSetup(projectId).data?.boqGap ?? null;
   const [search, setSearch] = useState('');
-  // Bill sections or cost centres (item 125): filter by one, or see their subtotals.
+  // Bill sections or cost centres: filter by one, or see their subtotals.
   const [section, setSection] = useState<string | null>(null);
   const [view, setView] = useState<'items' | 'sections'>('items');
   const [formOpen, setFormOpen] = useState(false);
@@ -38,7 +38,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
   const [importOpen, setImportOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const editor = !!user && canEditProjects(user.roleKey);
-  // Rate analysis (v5 item 92): what one unit of each item takes, for the reconciliation and the estimate.
+  // Rate analysis: what one unit of each item takes, for the reconciliation and the estimate.
   const analyst = !!user && canViewReconciliation(user.roleKey);
   const rateSetter = !!user && canSetRateAnalysis(user.roleKey);
   const [analysis, setAnalysis] = useState<string | null>(null);

@@ -109,7 +109,7 @@ const LIGHT = {
   infoSoft: '#EDE9FE',
   neutral: '#4B5563',
   neutralSoft: '#E9ECF0',
-  /** Android ripple and the pressed wash on rows (UX item 88). */
+  /** Android ripple and the pressed wash on rows. */
   ripple: 'rgba(15,27,45,0.12)',
 };
 
@@ -177,7 +177,7 @@ const FAMILY_TINT_DARK: Record<NavFamily, { bg: string; fg: string }> = {
 export const familyTint = scheme === 'dark' ? FAMILY_TINT_DARK : FAMILY_TINT_LIGHT;
 
 /**
- * Drawing markup ink (item 109), as the web's `BRAND.colors.markup*`. Marks sit on the white of a drawing sheet in either
+ * Drawing markup ink, as the web's `BRAND.colors.markup*`. Marks sit on the white of a drawing sheet in either
  * theme, so these do not change with it; a pin's number is `onInk` on its ink.
  */
 export const markupInk = { RED: '#D92D20', BLUE: '#1E63D6', GREEN: '#167A3E', ORANGE: '#C2410C', sheet: '#FFFFFF', onInk: '#FFFFFF' } as const;
@@ -196,7 +196,7 @@ export const fonts = { display: 'Archivo_700Bold', displayHeavy: 'Archivo_800Ext
 export const maxFontScale = 1.6;
 
 /**
- * Sizes for reading outdoors (UX item 88): body text 16, labels and secondary text 14, and nothing under 12 (`small`,
+ * Sizes for reading outdoors: body text 16, labels and secondary text 14, and nothing under 12 (`small`,
  * for badges and tab labels only). Screens use these rather than their own numbers.
  */
 export const fontSize = { small: 12, secondary: 14, body: 16, large: 18 };
@@ -213,14 +213,14 @@ export const typography = {
 };
 
 /**
- * Touch targets for site use (gloves, sunlight): 48 dp at the least (Material's minimum, UX item 88) for anything
+ * Touch targets for site use (gloves, sunlight): 48 dp at the least (Material's minimum) for anything
  * tappable, `height` for primary buttons and fields. An icon that must stay small gets `hitSlop` up to `min`.
  */
 export const touch = { height: 52, heightSm: 48, min: 48 };
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
-/** A status's colours plus a shape, so it reads without colour vision and in sun glare (UX item 88). */
+/** A status's colours plus a shape, so it reads without colour vision and in sun glare. */
 export interface Tone {
   fg: string;
   bg: string;

@@ -1,5 +1,5 @@
 /**
- * The standard norms library (finding 16 of the October review): a new project's reconciliation was empty, because a
+ * The standard norms library: a new project's reconciliation was empty, because a
  * norm had to be typed for every BOQ item before anything could be checked. These are the usual starting figures for
  * the work a civil contractor does; a project adopts the ones its BOQ matches and the quantity surveyor corrects them
  * against the approved mix design. Nothing here is written anywhere until someone adopts it.

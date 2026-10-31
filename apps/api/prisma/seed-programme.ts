@@ -1,5 +1,5 @@
 /**
- * Demo programme and EOT (item 173). On the road: four revisions of the programme (Rev 0 approved, Rev 1 returned with
+ * Demo programme and EOT. On the road: four revisions of the programme (Rev 0 approved, Rev 1 returned with
  * comments, Rev 2 approved and in force, Rev 3 with the client's engineer since last month, so the next update is due
  * soon), and an extension of time applied for the encroachment delay, waiting for the engineer to forward it. On the
  * building: the drawing revision delay's 7 days, granted on an application the consultant forwarded. The other works

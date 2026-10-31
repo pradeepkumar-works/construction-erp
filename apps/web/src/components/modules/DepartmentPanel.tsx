@@ -109,7 +109,7 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
 }
 
 /**
- * A department's figures strip and its pipelines (item 168, `@erp/shared/department-home.ts`), for the header's project
+ * A department's figures strip and its pipelines (`@erp/shared/department-home.ts`), for the header's project
  * or every project the user sees. Nothing shows for a department with neither.
  */
 export function DepartmentPanel({ department }: { department: string }) {

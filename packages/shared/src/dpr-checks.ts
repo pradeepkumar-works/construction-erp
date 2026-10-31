@@ -2,7 +2,7 @@ import type { RoleKey } from './enums';
 import { canApprove } from './permissions';
 
 /**
- * DPR credibility checks (intelligence quick win Q3): what an approver should look at twice before approving a daily
+ * DPR credibility checks: what an approver should look at twice before approving a daily
  * report. Each is advice and never stops an approval. The rules are pure in `apps/api/src/dpr/dpr-check-rules.ts`.
  */
 export const DPR_CHECK_KINDS = ['NO_CREW', 'NO_MATERIAL', 'COPIED', 'CREW_COPIED', 'PHOTO_REUSED'] as const;

@@ -32,7 +32,7 @@ function Sub({ children }: { children: React.ReactNode }) {
 const STATUSES: Record<LetterDirection, LetterStatus[]> = { IN: ['OPEN', 'CLOSED'], OUT: ['DRAFT', 'AWAITING_APPROVAL', 'ISSUED'] };
 
 /**
- * The inward or outward register (item 136): numbered from each project's series (P07/IN/26-27/015), with who has a
+ * The inward or outward register: numbered from each project's series (P07/IN/26-27/015), with who has a
  * letter and by when, replies due, letters to sign and proof of delivery. On its own page with views in the URL, or in a
  * project's tab (`projectId`).
  */

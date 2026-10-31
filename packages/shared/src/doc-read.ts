@@ -1,6 +1,6 @@
 /**
- * Reading invoices, challans and drawing title blocks (AI roadmap item 70), and a work order or LoA into a new project
- * and a BOQ into the BOQ import (finding 10 of the October review). The model reads the page images and says
+ * Reading invoices, challans and drawing title blocks, and a work order or LoA into a new project
+ * and a BOQ into the BOQ import. The model reads the page images and says
  * where on the page each figure came from; matching what it read to vendors, orders and order lines is plain code here
  * and in the API, and nothing is saved until the user presses Save on the form it fills.
  */
@@ -145,7 +145,7 @@ export const readText = (f: DocReadField | undefined): string | null => (f?.valu
 /** A date read off a document is older than this many days before it is left for the person to type. */
 export const READ_DATE_MAX_AGE_DAYS = 400;
 
-/** Why a date read off a document cannot be used as it stands (finding 13 of the October review). */
+/** Why a date read off a document cannot be used as it stands. */
 export type ReadDateProblem = 'unreadable' | 'future' | 'old';
 
 /**
@@ -176,7 +176,7 @@ export function disciplineOf(text: string | null | undefined): 'ARCHITECTURAL' |
 }
 
 /**
- * A work order's completion date (finding 10 of the October review): as printed, else the start plus the time allowed
+ * A work order's completion date: as printed, else the start plus the time allowed
  * ("18 months" from 1 Nov 2026 runs to 30 Apr 2028), else null.
  */
 export function workOrderEnd(start: string | null, completion: string | null, durationMonths: number | null): string | null {
@@ -205,7 +205,7 @@ export interface ReadBoqRow {
 }
 
 /**
- * The read BOQ lines as import rows (finding 10): a heading carried down to the items under it, an item number taken
+ * The read BOQ lines as import rows: a heading carried down to the items under it, an item number taken
  * from the row above when a description runs on to a second line without one (the two joined), and a rate worked out
  * from the amount when only the amount is printed (said so). Rows without a quantity or rate stay, to be checked.
  */

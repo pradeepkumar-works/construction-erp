@@ -2,7 +2,7 @@ import type { ActivityLinkType } from '@erp/shared';
 import { dayNo } from './schedule-rules';
 
 /**
- * Schedules to and from MS Project XML and Primavera P6 XER (v6 item 114). Days are calendar days; a file's working
+ * Schedules to and from MS Project XML and Primavera P6 XER. Days are calendar days; a file's working
  * hours become days at 8 hours a day. Pure functions, tested in `src/scripts/schedule-links-test.ts`.
  */
 export interface FileActivity {

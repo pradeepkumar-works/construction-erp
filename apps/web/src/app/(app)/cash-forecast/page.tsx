@@ -23,7 +23,7 @@ type Direction = 'ALL' | 'IN' | 'OUT';
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
 /**
- * Cash forecast (AI item 122): the bank and cash ledgers today, 13 weeks of money in and out as a low, likely and high
+ * Cash forecast: the bank and cash ledgers today, 13 weeks of money in and out as a low, likely and high
  * balance, why a short week is short, what to chase and what can wait, every receipt and payment with why it is dated
  * when it is, and how far the forecast of four weeks ago was out. Accounts and management (`canSeeCashForecast`).
  */

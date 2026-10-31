@@ -36,7 +36,7 @@ function Keys({ keys }: { keys: string[] }) {
 
 /**
  * Help's menu items (keyboard shortcuts, also on ?; what's new; contact support; the tour) and the dialogs they open. The
- * header shows them under its Help button, or on a phone inside the account menu (UX item 84), with `dialogs` on the page.
+ * header shows them under its Help button, or on a phone inside the account menu, with `dialogs` on the page.
  */
 export function useHelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () => void; withSearch: boolean; withAsk?: boolean }) {
   const { token } = theme.useToken();

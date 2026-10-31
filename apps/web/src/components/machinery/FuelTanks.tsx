@@ -26,7 +26,7 @@ const L = (v: string | null, muted = true) =>
   );
 const small = { fontSize: themeFontSize('fontSizeSM') };
 
-/** What does not add up on a machine's tank that day, as tags (item 147); the norm's only where asked for. */
+/** What does not add up on a machine's tank that day, as tags; the norm's only where asked for. */
 export function fuelTags(f: MachineFuelDto, withNorm = true): React.ReactNode[] {
   return [
     f.unslippedLitres !== null ? (
@@ -53,7 +53,7 @@ export function fuelTags(f: MachineFuelDto, withNorm = true): React.ReactNode[] 
 }
 
 /**
- * Fuel sensors and the dispenser (item 147), under the day's fuel position: each machine's tank against the day's
+ * Fuel sensors and the dispenser, under the day's fuel position: each machine's tank against the day's
  * slips, and the dispenser's fills not on a slip yet. Shows only where a tracker reads a tank or a dispenser posts.
  */
 export function FuelTanks({ date, projectId, canIssue }: { date: string; projectId?: string; canIssue: boolean }) {

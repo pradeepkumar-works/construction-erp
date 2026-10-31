@@ -25,7 +25,7 @@ export class BulkBoqDto {
   items: CreateBoqItemDto[];
 }
 
-/** One activity and the BOQ item to link it to (finding 11 of the October review). */
+/** One activity and the BOQ item to link it to. */
 export class BoqLinkDto {
   @ApiProperty() @IsUUID() activityId: string;
   @ApiProperty() @IsUUID() boqItemId: string;

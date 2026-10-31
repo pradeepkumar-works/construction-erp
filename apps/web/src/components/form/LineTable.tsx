@@ -17,7 +17,7 @@ export interface LineColumn {
 const FOCUSABLE = 'input:not([type=hidden]):not([disabled]), textarea:not([disabled]), [role=combobox]:not([aria-disabled=true]), button:not([disabled])';
 
 /**
- * Lines of a form (manpower, machinery, order and bill lines) as an editable table (UI roadmap item 60). Enter moves
+ * Lines of a form (manpower, machinery, order and bill lines) as an editable table. Enter moves
  * to the same column on the next line, and on the last line adds one; Tab moves across. The rows carry
  * `data-line-label`, which the form's error summary names ("Manpower, line 2").
  */

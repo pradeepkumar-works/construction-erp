@@ -116,7 +116,7 @@ export function RequestToOrderScreen({ id }: { id: string }) {
   );
 }
 
-/* ---------- 1. Enquiry ---------- */
+// 1. Enquiry
 
 function EnquiryStep({ request, row, buyer, onNext }: { request: MaterialRequestDto; row: RequestToOrderDto; buyer: boolean; onNext: () => void }) {
   const { token } = theme.useToken();
@@ -197,7 +197,7 @@ function ItemsToBuy({ items }: { items: MaterialRequestItemDto[] }) {
   );
 }
 
-/* ---------- 2. Quotations ---------- */
+// 2. Quotations
 
 function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: MaterialRequestDto; cs: ComparativeStatementDto | undefined; loading: boolean; buyer: boolean; onNext: () => void }) {
   const { token } = theme.useToken();
@@ -305,7 +305,7 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
   );
 }
 
-/* ---------- 3. Finalise L1 ---------- */
+// 3. Finalise L1
 
 function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRequestDto; row: RequestToOrderDto; cs: ComparativeStatementDto | undefined; buyer: boolean; onNext: () => void }) {
   const { token } = theme.useToken();
@@ -567,7 +567,7 @@ function ChooseInsteadModal({ choice, ranked, onClose, onSubmit }: { choice: Ran
   );
 }
 
-/* ---------- 4. Purchase order ---------- */
+// 4. Purchase order
 
 function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: MaterialRequestDto; row: RequestToOrderDto; cs: ComparativeStatementDto | undefined; buyer: boolean; onFinalise: () => void }) {
   const { token } = theme.useToken();

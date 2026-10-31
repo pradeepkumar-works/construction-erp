@@ -38,7 +38,7 @@ const StateTag = ({ o }: { o: SiteOrderDto }) => (
 );
 
 /**
- * The site order book (item 172): the engineer's instructions, numbered per project, with the site's compliance and the
+ * The site order book: the engineer's instructions, numbered per project, with the site's compliance and the
  * engineer accepting it. The same book in the client portal (`portal`: write an order, accept or send back a reply) and
  * on the project's Site orders tab (copy one in from the paper book, reply with the compliance).
  */

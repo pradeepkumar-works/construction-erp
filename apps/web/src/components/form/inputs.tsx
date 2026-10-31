@@ -16,7 +16,7 @@ type NumberProps = Omit<InputNumberProps<number>, 'formatter' | 'parser'>;
 const parse = (s: string | undefined) => Number((s ?? '').replace(/[₹,\s]/g, '')) as unknown as number;
 
 /**
- * A rupee amount (UX item 79): ₹ in front, Indian grouping (12,34,567.50) once the field is left, the number keypad
+ * A rupee amount: ₹ in front, Indian grouping (12,34,567.50) once the field is left, the number keypad
  * on phones, and no spinner. Gives a number, like `InputNumber`.
  */
 export function MoneyInput({ style, ...rest }: NumberProps) {

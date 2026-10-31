@@ -65,7 +65,7 @@ const pctNote = (pct: string | null | undefined) =>
     : `${sorPctLabel(pct)}${Math.abs(Number(pct)) < 0.005 ? "" : " SOR"}`;
 
 /**
- * One tender (v6 item 110): the bid BOQ priced from each item's rate analysis, the quote against the SOR (one percentage
+ * One tender: the bid BOQ priced from each item's rate analysis, the quote against the SOR (one percentage
  * on a percentage tender, the rates on an item-rate one), the bids read out at opening ranked L1, L2…, the notice and
  * EMD, and the actions its status allows: submit, record the result, return the EMD, make the project.
  */

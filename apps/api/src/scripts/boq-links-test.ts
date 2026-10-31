@@ -1,5 +1,5 @@
 /**
- * Tests for linking activities to BOQ items and spreading undated activities (finding 11 of the October review).
+ * Tests for linking activities to BOQ items and spreading undated activities.
  * Both are pure, so they need no database:
  *
  *   node dist/scripts/boq-links-test.js

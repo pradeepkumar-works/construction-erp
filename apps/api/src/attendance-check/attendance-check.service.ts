@@ -83,7 +83,7 @@ const billInclude = {
 } satisfies Prisma.SubcontractBillInclude;
 
 /**
- * Attendance cross-check (AI item 124, ARCHITECTURE "Attendance cross-check"): labour contractors' man-day bills against
+ * Attendance cross-check (ARCHITECTURE "Attendance cross-check"): labour contractors' man-day bills against
  * the head-count sheet, the named roll call and the biometric punches over the bill's days, and each day's records
  * against each other and the DPR. The page is for HR and approvers (`canSeeAttendanceCheck`) and names workers only to
  * HR and the project manager; the bill check (`forBill`) and the watch list's MANDAYS_ABOVE read the same figures.

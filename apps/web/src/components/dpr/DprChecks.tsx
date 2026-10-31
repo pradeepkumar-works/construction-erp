@@ -8,7 +8,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { RecordSection } from '@/components/record/RecordFrame';
 
 /**
- * What an approver should look at twice before approving a DPR (intelligence quick win Q3): work with no crew, work whose
+ * What an approver should look at twice before approving a DPR: work with no crew, work whose
  * material was not issued, figures the same as on the reports before, a photo sent before. Advice; it stops nothing.
  */
 function DprChecks({ checks }: { checks: DprCheckDto[] }) {

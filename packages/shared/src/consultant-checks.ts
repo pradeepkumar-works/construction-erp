@@ -1,5 +1,5 @@
 /**
- * Consultant checks in the portal (item 172, ARCHITECTURE "Consultant checks"). A supervision consultant's terms of
+ * Consultant checks in the portal (ARCHITECTURE "Consultant checks"). A supervision consultant's terms of
  * reference say who checks how much: the assistant engineer checks every measurement, the resident engineer at least a
  * quarter, the deputy team leader a tenth and the team leader 3%, and each certifies their share before a bill is paid.
  * Work that will be hidden (foundations, reinforcement) is measured and signed off before it is covered up, and the
@@ -102,8 +102,6 @@ export function certifyCheckProblem(level: CheckLevel | null, coverage: LevelCov
   return `Check more of this bill's measurements first: ${article(level)} ${levelWords(level)} checks at least ${c.requiredPct}% of them${c.byValue ? ' by value' : ''} before certifying, and you have checked ${c.checkedPct}%.`;
 }
 
-/* ---------- Hidden work ---------- */
-
 /** The person who signs off or countersigns hidden work, as the rules need them. */
 export interface CheckSigner {
   id: string;
@@ -148,8 +146,6 @@ export function countersignProblem(ins: HiddenWorkState, by: CheckSigner): strin
 /** Hidden work may be covered: the inspection passed and its sign-off is countersigned. */
 export const hiddenWorkCleared = (ins: Pick<HiddenWorkState, 'status' | 'signedById' | 'countersignedById'>) => ins.status === 'APPROVED' && !!ins.signedById && !!ins.countersignedById;
 
-/* ---------- Site order book ---------- */
-
 /** Days given to comply when the order names no date. */
 export const SITE_ORDER_DEFAULT_DAYS = 7;
 export const SITE_ORDER_STATES = ['OPEN', 'OVERDUE', 'REPLIED', 'CLOSED'] as const;
@@ -173,8 +169,6 @@ export function siteOrderProblem(o: { instruction: string; date: string; complyB
 
 /** The order's name: its number in the project's book. */
 export const siteOrderLabel = (no: number) => `Order ${no}`;
-
-/* ---------- DTOs ---------- */
 
 export interface MeasurementCheckDto {
   id: string;

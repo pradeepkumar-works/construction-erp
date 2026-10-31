@@ -5,7 +5,7 @@ import { ProgrammeService } from './programme.service';
 import { EotService } from './eot.service';
 import { ApplyEotDto, DecideEotDto, DecideProgrammeDto, ForwardEotDto, ProgrammeIntervalDto, SubmitProgrammeDto } from './programme.dto';
 
-/** Programme revisions and extension of time applications (item 173), for the project's staff. Guests use `/portal`. */
+/** Programme revisions and extension of time applications, for the project's staff. Guests use `/portal`. */
 @ApiTags('programme')
 @ApiBearerAuth()
 @Controller()

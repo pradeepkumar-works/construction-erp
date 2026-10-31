@@ -1,5 +1,5 @@
 /**
- * Drawing markup's tests (item 109): what a mark needs before it is saved, and which marks a sheet shows (its own and
+ * Drawing markup's tests: what a mark needs before it is saved, and which marks a sheet shows (its own and
  * the open ones carried from earlier revisions), with no database. CI runs it after the build:
  *
  *   node dist/scripts/markup-test.js

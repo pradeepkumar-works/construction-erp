@@ -10,7 +10,7 @@ import { useProjectScope } from './project-scope';
 export const HOVER_INTENT_MS = 100;
 
 /**
- * Fetching ahead (item 83): a record link fetches the record (and its page's code), a sidebar link its list's first page,
+ * Fetching ahead: a record link fetches the record (and its page's code), a sidebar link its list's first page,
  * into the same queries the page then reads, so a click shows the page at once. Fresh data (`staleTime`) is not asked
  * for again, and a failed prefetch is silent: the page asks again and shows the error itself.
  */

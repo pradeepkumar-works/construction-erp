@@ -9,7 +9,7 @@ const upTo = () => {
 };
 
 /**
- * Tally export (v3 item 24): accounts renames the sales ledger, exports everything waiting up to this month as
+ * Tally export: accounts renames the sales ledger, exports everything waiting up to this month as
  * TallyPrime XML (the file carries the company and the renamed ledger), exported receipts are locked, and undoing the
  * export puts the vouchers back in the queue.
  */

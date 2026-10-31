@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, formPanel, signIn } from './helpers';
 
 /**
- * Cash forecast and billing readiness (AI item 122). Accounts see 13 weeks of bank and cash with every receipt and
+ * Cash forecast and billing readiness. Accounts see 13 weeks of bank and cash with every receipt and
  * payment behind them; a project manager sees billing readiness but not the forecast, and Draft reminder opens the
  * letter form filled in from the bill and the contract's payment clause (nothing is saved).
  */

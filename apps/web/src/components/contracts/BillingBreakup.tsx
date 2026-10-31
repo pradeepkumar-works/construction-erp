@@ -38,7 +38,7 @@ function Pct({ value, label }: { value: number; label: string }) {
 }
 
 /**
- * The billing break-up of a lump-sum contract (item 129, ARCHITECTURE "Stage billing") on its Contract tab: the
+ * The billing break-up of a lump-sum contract (ARCHITECTURE "Stage billing") on its Contract tab: the
  * components' shares of the lump sum and their payment stages with what each has earned today, the milestone grid with
  * what was billed against it, and the slippage tiers. Bills take their stage lines from it.
  */

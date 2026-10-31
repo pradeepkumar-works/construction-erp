@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 
 /**
- * The companies of the group the person has a place in (group companies, phase 1), as menu items: the one they are in is
+ * The companies of the group the person has a place in (group companies), as menu items: the one they are in is
  * ticked, picking another moves them there. Null when they have only the one company.
  */
 export function useCompanyMenu(user: AuthUser): { items: MenuProps['items']; busy: boolean } | null {

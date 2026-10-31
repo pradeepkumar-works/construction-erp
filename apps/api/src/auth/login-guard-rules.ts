@@ -1,5 +1,5 @@
 /**
- * Slowing password guessing (finding 5 of the October review): failed sign-ins are counted per email and per address
+ * Slowing password guessing: failed sign-ins are counted per email and per address
  * over a window. An email with too many failures is locked for a while, whatever password comes next; an address
  * with too many, across any emails, is held off too. Reset-link requests are limited the same way. Pure, tested in
  * `src/scripts/login-guard-test.ts`.

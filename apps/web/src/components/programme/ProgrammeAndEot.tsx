@@ -73,7 +73,7 @@ function whenText(w: ProgrammeRegisterDto['watch']) {
 }
 
 /**
- * Programme and EOT (item 173): the programme revisions as they went to the Engineer with their answers and the next one
+ * Programme and EOT: the programme revisions as they went to the Engineer with their answers and the next one
  * due, and the extension of time applications with the revised completion. On the project's tab for staff (send a
  * revision, record an answer or a decision from its letter) and in the client portal (`portal`: approve or return a
  * revision, forward an application with a recommendation).

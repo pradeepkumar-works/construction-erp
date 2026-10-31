@@ -52,7 +52,7 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
   const checks = usePortalBillChecks(id ?? undefined);
   const [certifying, setCertifying] = useState(false);
   const canCertify = !!user && isGuest(user.roleKey) && data?.stage === 'SENT';
-  // A consultant certifies once they have checked their share of the bill's measurements (item 172).
+  // A consultant certifies once they have checked their share of the bill's measurements.
   const held = canCertify ? (checks.data?.problem ?? null) : null;
   const nextSheets = (checks.data?.toCheck ?? []).map((sid) => data?.measurements?.find((m) => m.id === sid)?.mbNo).filter(Boolean);
   return (

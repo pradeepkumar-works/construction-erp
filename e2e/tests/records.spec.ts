@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { api, apiToken, localToday, signIn, uniqueQty } from './helpers';
 
-/** Record pages (UI roadmap item 57): each entry at its own address, with its stage, sections, activity and actions. */
+/** Record pages: each entry at its own address, with its stage, sections, activity and actions. */
 
 type Project = { id: string; code: string };
 type Activity = { id: string; name: string };

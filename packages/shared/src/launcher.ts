@@ -1,5 +1,5 @@
 /**
- * The launcher Home (phase 2, ARCHITECTURE "Launcher Home"): pins and Recent, kept per user on the server so they follow
+ * The launcher Home (ARCHITECTURE "Launcher Home"): pins and Recent, kept per user on the server so they follow
  * them to every browser and the phone. The tiles themselves come from the navigation tree (`navigation.ts`).
  */
 import type { AccessRequestStatus, NavPinKind, NavVisitKind, RoleKey, SubmissionType } from './enums';
@@ -67,7 +67,7 @@ export interface LauncherDto {
   pins: NavPinDto[];
   /** Newest first. */
   recent: NavVisitDto[];
-  /** Phase 3: the company's New and Featured marks. */
+  /** The company's New and Featured marks. */
   flags: LauncherFlagDto[];
   /** Home's tiles (top-level node ids) the user has opened at least once, from their visits. */
   opened: string[];
@@ -75,7 +75,7 @@ export interface LauncherDto {
   requests: MyAccessRequestDto[];
   /** Discover also shows modules the user's role cannot open, greyed, with Request access (on unless an admin turns it off). */
   discoverLocked: boolean;
-  /** The web app's address, for the phone to open a page it has no screen of (phase 4); null when not configured. */
+  /** The web app's address, for the phone to open a page it has no screen of; null when not configured. */
   webUrl: string | null;
 }
 
@@ -152,7 +152,7 @@ export function launcherMarks(node: NavNode, flag: LauncherFlagDto | undefined, 
 /** Home's tiles that Discover and Admin › Home tiles deal with: every top-level tile but My work. */
 export const LAUNCHER_FLAG_NODES: NavNode[] = NAV_TREE.filter((n) => n.parent === null && n.tile !== false && n.status === 'live' && n.id !== 'my-work');
 
-/** A module some of whose pages the company has not turned off (v6 item 117), whoever may open them. */
+/** A module some of whose pages the company has not turned off, whoever may open them. */
 export function navModuleOn(node: NavNode, modulesOff: readonly string[] | undefined): boolean {
   const under = (id: string): boolean =>
     NAV_TREE.some((c) => c.parent === id && c.status === 'live' && !c.shortcutOf && ((c.route ? !pathIsOff(c.route, modulesOff) : !!c.projectTab) || under(c.id)));
@@ -164,7 +164,7 @@ export const canRequestNav = (user: NavUser, node: NavNode): boolean =>
   node.parent === null && !node.route && node.id !== 'admin' && node.status === 'live' && !canSeeNav(user, node) && navModuleOn(node, user.modulesOff);
 
 /**
- * Discover on Home (launcher phase 3): modules marked New (until the user opens them) or Featured, then modules the user
+ * Discover on Home: modules marked New (until the user opens them) or Featured, then modules the user
  * can open but never has, then, when the company allows it, modules their role cannot open, greyed with Request access.
  * At most `DISCOVER_SHOWN`, each kind in the tree's order; one place is kept for a module to ask for when there is one.
  */

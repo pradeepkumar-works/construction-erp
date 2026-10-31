@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 
-/** The vertical (item 167) a dashboard or report is limited to. */
+/** The vertical a dashboard or report is limited to. */
 export class VerticalQuery {
   @ApiPropertyOptional({ description: "A vertical's code, or `none` for projects with none; every vertical when left out" })
   @IsOptional()

@@ -1,5 +1,5 @@
 /**
- * Where a node of the navigation tree opens on the phone (launcher phase 4). Kept free of React Native so the web's
+ * Where a node of the navigation tree opens on the phone. Kept free of React Native so the web's
  * `scripts/nav-check.ts` can check every path against the phone's screens.
  */
 import { navDestination, navNode, navTarget, type NavNode, type NavVisitDto } from '@erp/shared';

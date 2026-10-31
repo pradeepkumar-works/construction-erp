@@ -97,13 +97,13 @@ export function PurchaseOrderFormModal({
   const poDateValue = Form.useWatch('poDate', form) as dayjs.Dayjs | undefined;
   const poDate = (poDateValue ?? dayjs()).format('YYYY-MM-DD');
   const others = useRateCheck((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', unit: l?.unit ?? '' })), projectId, poDate, open, order?.id);
-  // Lines whose material has approved makes on the project but name another make, or none (v6 item 113).
+  // Lines whose material has approved makes on the project but name another make, or none.
   const makeKey = useDebounced(JSON.stringify((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', make: l?.make ?? null }))), 400);
   const makeLines = useMemo(() => JSON.parse(makeKey) as { itemName: string; make: string | null }[], [makeKey]);
   const makeCheck = useMakeCheck(open ? projectId : undefined, makeLines);
   const makeWarnings = makeCheck.data ?? [];
   const vendor = useVendor(open ? vendorId : undefined);
-  // Where it is delivered when the order says nothing: the project's own address (finding 12 of the October review).
+  // Where it is delivered when the order says nothing: the project's own address.
   const siteAddress = siteDeliveryAddress(useProject(open ? projectId : undefined).data);
   const msme = vendor?.msmeCategory === 'MICRO' || vendor?.msmeCategory === 'SMALL';
   const fromRequest = order ? order.requestNo : start?.requestNo;

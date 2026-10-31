@@ -1,5 +1,5 @@
 /**
- * Programme and EOT tests (item 173, ARCHITECTURE "Programme and EOT"): the revision in force, the day the programme
+ * Programme and EOT tests (ARCHITECTURE "Programme and EOT"): the revision in force, the day the programme
  * obligation was met, the watch on the next programme, what stops a revision or an answer, an application's state and
  * its 30 days, the extension for added work in proportion, the split of days granted over the delays, and what stops an
  * application, its forwarding and its decision.

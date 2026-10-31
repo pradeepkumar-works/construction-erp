@@ -166,7 +166,7 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
 }
 
 /**
- * Hidden work (item 172): measured before it is covered and signed off here at the guest's level, then countersigned by
+ * Hidden work: measured before it is covered and signed off here at the guest's level, then countersigned by
  * someone above (or the client's engineer). Its progress is approved only once both are in and the inspection passed.
  */
 function HiddenWorkSection({ data }: { data: PortalInspectionDto }) {

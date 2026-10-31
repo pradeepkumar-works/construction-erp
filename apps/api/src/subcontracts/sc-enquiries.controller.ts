@@ -5,7 +5,7 @@ import { ScEnquiriesService } from './sc-enquiries.service';
 import { AwardDto, CreateScEnquiryDto, InviteDto, ScEnquiryQuery, ScQuoteDto, ScStatusDto, UpdateScEnquiryDto } from './sc-enquiries.dto';
 import { ModuleSwitch } from '../common/decorators';
 
-/** Subcontract enquiries (v6 item 111): quotes from several subcontractors, compared, and the chosen one made a work order. */
+/** Subcontract enquiries: quotes from several subcontractors, compared, and the chosen one made a work order. */
 @ApiTags('subcontracts')
 @ApiBearerAuth()
 @ModuleSwitch('subcontract_enquiries')

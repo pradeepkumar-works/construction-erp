@@ -44,7 +44,7 @@ export function ClientFormModal({ open, client, initialName, onClose, onSaved }:
   const qc = useQueryClient();
   const gstin = Form.useWatch('gstin', form);
   const fromGstin = gstStateCode(gstin && GSTIN_PATTERN.test(gstin.toUpperCase()) ? gstin : null);
-  // The PAN is inside the GSTIN (finding 17 of the October review); it fills an empty box, never one already typed.
+  // The PAN is inside the GSTIN; it fills an empty box, never one already typed.
   const panOfGstin = panFromGstin(gstin);
 
   useEffect(() => {

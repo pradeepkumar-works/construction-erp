@@ -37,7 +37,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
     setAdding(false);
     qc.invalidateQueries({ queryKey: ['projects', project.id] });
   };
-  // Several people at once, or everyone on another project (finding 6 of the October review).
+  // Several people at once, or everyone on another project.
   const add = useMutation({
     mutationFn: async (ids: string[]) => api.post(`/projects/${project.id}/members`, { userIds: ids }),
     onSuccess: (_, ids) => done(ids.length === 1 ? 'Added to the team' : `${ids.length} people added to the team`),
@@ -59,7 +59,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
     meta: FAIL_NOTICE,
   });
 
-  // Removing someone is in each row's More menu (UX item 85), not a red button on every row, and asks first by name.
+  // Removing someone is in each row's More menu, not a red button on every row, and asks first by name.
   // Undo adds them back, as adding them again would.
   const confirmRemove = (m: { userId: string; fullName: string }) =>
     askRemove({
@@ -147,7 +147,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
                 description={<Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.roleName}</Typography.Text>}
               />
               {!m.isPm && isClientGuest(m.roleKey) ? (
-                // A client guest's check level (item 172): how much of the measurements they check before certifying.
+                // A client guest's check level: how much of the measurements they check before certifying.
                 editor ? (
                   <Select<CheckLevel | null>
                     size="small"

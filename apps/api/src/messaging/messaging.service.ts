@@ -32,7 +32,7 @@ const clean = (s: string) => s.replace(/\s+/g, ' ').trim() || '-';
 const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 3)}...` : s);
 
 /**
- * WhatsApp and SMS alerts (v3 item 31), sent only to users who switched them on, to the mobile number on their profile.
+ * WhatsApp and SMS alerts, sent only to users who switched them on, to the mobile number on their profile.
  * WhatsApp goes first; SMS is the fallback when WhatsApp is off, not set up or fails. Every attempt is written to
  * OutboundMessage, the company's message log. Nothing here throws into the caller: an outage must not fail an approval.
  *
@@ -98,8 +98,6 @@ export class MessagingService {
     return base ? `${base.replace(/\/+$/, '')}${path}` : '-';
   }
 
-  /* ---------- preferences ---------- */
-
   async prefs(user: RequestUser): Promise<MessagingPrefsDto> {
     const u = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { phone: true, whatsappAlerts: true, smsAlerts: true, emailAlerts: true } });
     return { phone: u.phone, sendTo: normalisePhone(u.phone), whatsapp: u.whatsappAlerts, sms: u.smsAlerts, email: u.emailAlerts, whatsappReady: this.ready('WHATSAPP'), whatsappProvider: this.disabled ? null : this.whatsappProvider, smsReady: this.ready('SMS') };
@@ -112,7 +110,7 @@ export class MessagingService {
     const sms = dto.sms ?? current.smsAlerts;
     if (phone && dto.phone !== undefined && !normalisePhone(phone)) throw new BadRequestException('Enter a 10-digit mobile number, or the full number with + and the country code');
     if ((whatsapp || sms) && !normalisePhone(phone)) throw new BadRequestException('Add your mobile number to get alerts on WhatsApp or SMS');
-    // WhatsApp entries (AI item 120) are read from the number they were switched on with: a new number switches them off.
+    // WhatsApp entries are read from the number they were switched on with: a new number switches them off.
     const captureOff = normalisePhone(phone) !== normalisePhone(current.phone) ? { captureFrom: null } : {};
     await this.prisma.user.update({ where: { id: user.id }, data: { phone, whatsappAlerts: whatsapp, smsAlerts: sms, ...(dto.email !== undefined ? { emailAlerts: dto.email } : {}), ...captureOff } });
     return this.prefs(user);
@@ -126,8 +124,6 @@ export class MessagingService {
     const row = await this.attempt({ organizationId: user.organizationId, userId: user.id, notificationId: null, to }, channel, { template: 'TEST', params: [] });
     return this.toDto(await this.prisma.outboundMessage.findUniqueOrThrow({ where: { id: row.id }, include }));
   }
-
-  /* ---------- the log ---------- */
 
   toDto(r: Row): OutboundMessageDto {
     return { id: r.id, userId: r.userId, userName: r.user?.fullName ?? null, channel: r.channel, template: r.template, to: r.to, body: r.body, status: r.status, error: r.error, createdAt: iso(r.createdAt) };
@@ -147,8 +143,6 @@ export class MessagingService {
     ]);
     return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
-
-  /* ---------- sending ---------- */
 
   /** The alert behind each new notification, to the users among them who switched WhatsApp or SMS on. */
   async forNotifications(rows: { id: string; userId: string; organizationId: string }[], msg: OutgoingMessage): Promise<number> {
@@ -283,8 +277,6 @@ export class MessagingService {
     }
     return { ok: true, providerRef: json.messages[0].id };
   }
-
-  /* ---------- replies inside a conversation (AI item 120) ---------- */
 
   /**
    * A free-text reply to someone who wrote in the last 24 hours (WhatsApp's service window: no template needed). On the

@@ -27,7 +27,7 @@ const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const FIXED = new Map(TALLY_FIXED_LEDGERS.map((l) => [l.key, l]));
 /**
  * The ledger a vendor bill's value is booked to: purchases for a PO bill, machine hire, repairs to machinery, or the
- * expense head of any other bill (v5 item 91).
+ * expense head of any other bill.
  */
 function billHead(b: { kind: VendorBillKind; expenseCategory: ExpenseCategory | null }): { key: string; fallback?: string } {
   if (b.kind === 'HIRE') return { key: 'MACHINE_HIRE' };
@@ -71,7 +71,7 @@ export interface Built {
 }
 
 /**
- * The posting service (v6 item 102): what each module's records become in the accounts, as vouchers of keyed ledger
+ * The posting service: what each module's records become in the accounts, as vouchers of keyed ledger
  * lines. The Tally export sends them to Tally (each record once); the books keep them as their own vouchers. Approved
  * RA bills once the client certifies them are sales; money received against them (with what the client deducted) and
  * retention or deposit released are receipts; approved vendor bills are purchases; approved subcontractor bills are
@@ -169,7 +169,7 @@ export class PostingService {
     }
 
     // Receipts: Dr bank or cash, Dr what the client deducted; Cr the client (or retention / deposit held, for releases).
-    // A client in another currency (item 130) is credited at the contract rate; the bank takes what it credited at the
+    // A client in another currency is credited at the contract rate; the bank takes what it credited at the
     // day's rate, and the difference is an exchange gain (Cr) or loss (Dr).
     for (const r of receipts) {
       const client = clientOf(r.project);
@@ -269,7 +269,7 @@ export class PostingService {
       });
     }
 
-    // Debit notes (v5 item 91): Dr the party against the bill; Cr the head the bill was booked to and the input GST it
+    // Debit notes: Dr the party against the bill; Cr the head the bill was booked to and the input GST it
     // reverses.
     for (const n of debitNotes) {
       const label = n.vendorBill ? n.vendorBill.invoiceNo : n.subcontractBill ? subBillLabel(n.subcontractBill.workOrder.woNo, n.subcontractBill.billNo, n.subcontractBill.isFinal) : '';
@@ -293,8 +293,8 @@ export class PostingService {
     }
 
     // Payments to vendors: Dr the vendor with what the payment settles; Cr bank or cash, TDS and other deductions. An
-    // advance (v5 item 90) has no bill: it goes against the party ledger as an advance on the order, which Tally
-    // sets off when the bill is booked. A site's fund request paid to a party (v6 item 107) is on account the same
+    // advance has no bill: it goes against the party ledger as an advance on the order, which Tally
+    // sets off when the bill is booked. A site's fund request paid to a party is on account the same
     // way, against the request.
     for (const p of payments) {
       const number = `PAY/${shortId(p.id)}`;
@@ -359,7 +359,7 @@ export class PostingService {
   }
 
   /**
-   * Salary runs (v6 item 102): an approved run is a journal on the month's last day (Dr salaries and the company's PF
+   * Salary runs: an approved run is a journal on the month's last day (Dr salaries and the company's PF
    * and ESI; Cr each deduction's payable and the net to salaries payable); once paid, a payment (Dr salaries payable,
    * Cr bank). A site's run carries the site as cost centre.
    */
@@ -436,7 +436,7 @@ export class PostingService {
     }
   }
 
-  /** Loans and salary advances given to staff (v6 item 102): a payment, Dr loans to staff, Cr bank. */
+  /** Loans and salary advances given to staff: a payment, Dr loans to staff, Cr bank. */
   private async staffLoans(db: Tx, org: string, name: LedgerName, opts: PostingOptions, range: (field: string) => object, add: (v: Voucher) => void) {
     const loans = await db.staffLoan.findMany({
       where: { organizationId: org, ...(opts.unexported ? { tallyExportId: null } : {}), ...range('issuedOn') },
@@ -462,7 +462,7 @@ export class PostingService {
   }
 
   /**
-   * RMC (v6 item 104): a bill is a sale (Dr the customer, Cr sales of ready-mix concrete with the plant as cost centre,
+   * RMC: a bill is a sale (Dr the customer, Cr sales of ready-mix concrete with the plant as cost centre,
    * Cr output GST as billed); money received is a receipt (Dr bank or cash, Cr the customer). A cancelled bill posts
    * nothing.
    */
@@ -516,7 +516,7 @@ export class PostingService {
   }
 
   /**
-   * Machine finance (v6 item 108): a loan is a journal on its sanction date, Dr Plant and Machinery (the lender paid the
+   * Machine finance: a loan is a journal on its sanction date, Dr Plant and Machinery (the lender paid the
    * dealer) or the bank (a loan against a machine already owned, a receipt in Tally), Cr the loan's own ledger under
    * Secured Loans; each EMI paid is a payment, Dr the loan with the principal and interest on machinery loans (finance
    * costs) with the interest, Cr bank or cash.

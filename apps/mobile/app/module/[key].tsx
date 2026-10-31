@@ -14,7 +14,7 @@ import { familyTint, maxFontScale, spacing, typography } from '../../src/theme';
 import { useT } from '../../src/i18n/LanguageContext';
 
 /**
- * A module's screen on the phone (launcher phase 4), as `/modules/<key>` on the web: a module of the company's menu
+ * A module's screen on the phone, as `/modules/<key>` on the web: a module of the company's menu
  * (`navMenuFor`, in its set and under its name) with the pages the role opens. The tree's own modules keep their pages'
  * headings; a department module shows its sub-modules as the headings. A page the phone has a screen of opens it; the
  * others open on the web.

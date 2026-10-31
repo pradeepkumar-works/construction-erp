@@ -91,7 +91,7 @@ export default function NewMachineryLogScreen() {
   }, [fleet.data, projectId, t]);
   const machine = fleet.data?.items.find((e) => e.id === equipmentId) ?? null;
 
-  // What the machine's tracker read that day (item 146) fills the hours and meter for the operator to check; a box
+  // What the machine's tracker read that day fills the hours and meter for the operator to check; a box
   // someone typed in is left as it is.
   const tracker = useFetch<MachineDayDto | ''>((a) => a.get(`/telematics/day`, { equipmentId, date }), [equipmentId, date], {
     enabled: !editId && online && !!equipmentId && isIsoDate(date),

@@ -1,5 +1,5 @@
 /**
- * Earned value (v6 item 115) as pure functions on calendar days, tested in `src/scripts/earned-value-test.ts`. Planned
+ * Earned value as pure functions on calendar days, tested in `src/scripts/earned-value-test.ts`. Planned
  * value comes from each activity's value at BOQ rates spread evenly over its baseline (else planned) days, earned value
  * from the share of the BOQ value done, and both are scaled to the budget at completion, so they compare with actual cost.
  */

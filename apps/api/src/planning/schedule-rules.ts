@@ -1,7 +1,7 @@
 import type { ActivityLinkType, LookaheadReadiness } from '@erp/shared';
 
 /**
- * Links between activities and the critical path (v6 item 114), on calendar days: an activity runs from its start day
+ * Links between activities and the critical path, on calendar days: an activity runs from its start day
  * to its end day, both counted, so a one-day activity starts and ends on the same day. Pure functions, tested in
  * `src/scripts/schedule-links-test.ts`.
  */

@@ -152,7 +152,7 @@ export class MeasurementsService {
   }
 
   /**
-   * What is still to measure on a project (finding 14 of the October review): the QS used to read the approved DPRs
+   * What is still to measure on a project: the QS used to read the approved DPRs
    * and type the quantities into a sheet again. Each BOQ item's approved progress, less what its sheets already hold,
    * with the days that make up the remainder (`unmeasuredEntries`) so a sheet can start from them. Only activities
    * recording the item's own unit count; the rest are named, not converted.

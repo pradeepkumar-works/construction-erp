@@ -22,7 +22,7 @@ const pct = (v: string | null) => (v === null ? null : `${Math.abs(toNumber(v)).
 const qty = (v: string) => toNumber(v).toLocaleString('en-IN', { maximumFractionDigits: 3 });
 
 /**
- * One subcontract enquiry (v6 item 111): the comparative statement (each item's rate from every quote received, the
+ * One subcontract enquiry: the comparative statement (each item's rate from every quote received, the
  * lowest marked, the spread between them, the totals ranked L1, L2… and each against the client's rates), the
  * subcontractors asked and their quotes, and the award that makes the chosen quote a work order.
  */

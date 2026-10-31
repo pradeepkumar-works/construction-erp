@@ -19,7 +19,7 @@ const months = () => {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /**
- * Bills without a PO (v5 item 91): accounts records a hired machine's month from its approved logs, with a
+ * Bills without a PO: accounts records a hired machine's month from its approved logs, with a
  * mobilisation charge; a second bill for the same machine and month is refused. Once approved, a debit note raised from
  * the bill comes off what is payable, and cancelling it puts it back.
  */

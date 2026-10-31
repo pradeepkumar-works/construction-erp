@@ -139,7 +139,7 @@ function LanguageCard() {
   );
 }
 
-/** The palette is picked when the JS starts, so a new choice reloads the app (UX item 80); drafts and the outbox are kept. */
+/** The palette is picked when the JS starts, so a new choice reloads the app; drafts and the outbox are kept. */
 async function applyAppearance(choice: AppearanceChoice) {
   saveAppearance(choice);
   // Clear the explicit scheme this session set, so "Same as phone" reads the phone again after the reload.

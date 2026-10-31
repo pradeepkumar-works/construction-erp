@@ -42,7 +42,7 @@ export interface NavSection {
 const iconOf = (link: NavSidebarLink) => navIcon(link.overview ? 'layout-dashboard' : link.node.icon);
 
 export function navFor(user: AuthUser): NavSection[] {
-  // A supplier's login has the supplier portal only (v6 item 105).
+  // A supplier's login has the supplier portal only.
   if (isSupplier(user.roleKey)) {
     return [
       {
@@ -129,7 +129,7 @@ export function activeHref(pathname: string, sections: NavSection[] = []): strin
   const [, first, second] = pathname.split('/');
   // A module's screen is /modules/<key>: the link is the whole path.
   if (first === 'modules' && second) return `/modules/${second}`;
-  // The supplier portal's pages are each a link of their own (v6 item 105).
+  // The supplier portal's pages are each a link of their own.
   if (first === 'supplier' && second) return `/supplier/${second}`;
   return '/' + first;
 }

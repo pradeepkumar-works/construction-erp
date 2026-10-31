@@ -90,7 +90,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
               ),
             },
             ...(data.remarks ? [{ key: 'remarks', title: 'Remarks', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</div> }] : []),
-            // The client's and consultant's checks of the sheet from their portal (item 172).
+            // The client's and consultant's checks of the sheet from their portal.
             ...(checks.data?.length
               ? [
                   {

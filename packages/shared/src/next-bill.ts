@@ -1,5 +1,5 @@
 /**
- * The next bill (intelligence quick win Q7): on billing readiness, what each project could bill now and what it will be
+ * The next bill: on billing readiness, what each project could bill now and what it will be
  * worth by the next bill date at the pace of the last `PACE_DAYS`. Pure; `CashForecastService.readiness` gathers the
  * figures through the measurement and stage billing services.
  */

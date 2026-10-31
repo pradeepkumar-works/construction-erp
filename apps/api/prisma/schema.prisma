@@ -10,43 +10,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------- Enums (mirrored as string unions in packages/shared) ----------
+// Enums (mirrored as string unions in packages/shared)
 
 enum ProjectType {
   ROAD
   BUILDING
   WATER_SUPPLY
-  /// Sewer network, pumping stations and a sewage treatment plant (item 125)
+  /// Sewer network, pumping stations and a sewage treatment plant
   SEWERAGE
-  /// Work that is none of the four above (item 134): irrigation, solar, sheds; its company type says where work is located
+  /// Work that is none of the four above: irrigation, solar, sheds; its company type says where work is located
   OTHER
   PLANT
-  /// A central store or yard (v6 item 106): holds stock and sends it to sites; no works of its own
+  /// A central store or yard: holds stock and sends it to sites; no works of its own
   STORE
 }
 
-/// Where a project type's work is located on progress and measurements (item 134)
+/// Where a project type's work is located on progress and measurements
 enum WorkLocation {
   CHAINAGE
   FLOOR
   VILLAGE
 }
 
-/// How the contract pays (item 125): by measured BOQ quantities, a lump sum paid in stages, or design and build (EPC)
+/// How the contract pays: by measured BOQ quantities, a lump sum paid in stages, or design and build (EPC)
 enum ContractModel {
   ITEM_RATE
   LUMP_SUM
   EPC
 }
 
-/// How a billing component is paid (item 129): stages of its share of the lump sum, or measured quantities at the unit
+/// How a billing component is paid: stages of its share of the lump sum, or measured quantities at the unit
 /// rates × the tender factor
 enum BillingBasis {
   STAGES
   UNIT_RATE
 }
 
-/// What moves a payment stage (item 129): a dated certificate, the physical % of activities, pipe or equipment
+/// What moves a payment stage: a dated certificate, the physical % of activities, pipe or equipment
 /// received against its scope, or pipe tested against its length
 enum StageTrigger {
   EVENT
@@ -55,7 +55,7 @@ enum StageTrigger {
   TEST
 }
 
-/// EPC (item 130): the discipline an engineering deliverable belongs to
+/// EPC: the discipline an engineering deliverable belongs to
 enum EngineeringDiscipline {
   PROCESS
   CIVIL
@@ -64,7 +64,7 @@ enum EngineeringDiscipline {
   INSTRUMENTATION
 }
 
-/// Where an engineering deliverable stands with the client (item 130), kept in step with its dates and approval code
+/// Where an engineering deliverable stands with the client, kept in step with its dates and approval code
 enum DeliverableStatus {
   NOT_STARTED
   SUBMITTED
@@ -72,7 +72,7 @@ enum DeliverableStatus {
   APPROVED
 }
 
-/// The stages an equipment package goes through (item 130), in order; shipped and customs only for an import
+/// The stages an equipment package goes through, in order; shipped and customs only for an import
 enum PackageStage {
   ENQUIRY
   ORDERED
@@ -118,7 +118,7 @@ enum WorkElementType {
   GENERAL
 }
 
-/// A point of a pipe network (item 126): a junction of the hydraulic model, a tank or source, or a fitting placed on the line
+/// A point of a pipe network: a junction of the hydraulic model, a tank or source, or a fitting placed on the line
 enum PipeNodeKind {
   JUNCTION
   TANK
@@ -148,7 +148,7 @@ enum PipeScope {
   EXISTING
 }
 
-/// The stage of pipe work an activity of a pipe zone or main stands for (item 126); valves are counted on nodes
+/// The stage of pipe work an activity of a pipe zone or main stands for; valves are counted on nodes
 enum PipeStage {
   TRENCH
   BEDDING
@@ -185,8 +185,8 @@ enum MaterialPriority {
 
 /// RECEIPT = goods received (GRN) against an approved material request, ISSUE = handed out for use at site,
 /// ADJUSTMENT = opening stock or a physical-count correction (either sign).
-/// QA/QC's check of material received on a GRN (v4 item 48)
-/// How a liquidated damages rate is expressed in the contract (v4 item 50)
+/// QA/QC's check of material received on a GRN
+/// How a liquidated damages rate is expressed in the contract
 enum LdPeriod {
   DAY
   WEEK
@@ -297,9 +297,9 @@ enum NotificationType {
   SUPPLIER
   COMMENT
   ACCESS_REQUEST
-  /// A step handed to the next role in the chain (e2e review, fix 2): to order, delivery to expect, goods received, money to collect
+  /// A step handed to the next role in the chain: to order, delivery to expect, goods received, money to collect
   HANDOFF
-  /// A letter marked to someone, or sent to its signatory (item 136)
+  /// A letter marked to someone, or sent to its signatory
   LETTER
 }
 
@@ -313,7 +313,7 @@ enum TestKind {
   BRICK
   STEEL
   WATER
-  /// Hydraulic pressure test of a pipeline stretch (item 126)
+  /// Hydraulic pressure test of a pipeline stretch
   HYDRAULIC
   OTHER
 }
@@ -370,7 +370,7 @@ enum RevisionStatus {
   WITHDRAWN
 }
 
-/// Drawing markup (item 109)
+/// Drawing markup
 enum MarkupKind {
   PIN
   CLOUD
@@ -405,7 +405,7 @@ enum LetterDirection {
   OUT
 }
 
-/// Item 136. IN: OPEN until settled, then CLOSED. OUT: DRAFT, AWAITING_APPROVAL with its signatory, ISSUED once numbered.
+/// IN: OPEN until settled, then CLOSED. OUT: DRAFT, AWAITING_APPROVAL with its signatory, ISSUED once numbered.
 enum LetterStatus {
   DRAFT
   AWAITING_APPROVAL
@@ -449,7 +449,7 @@ enum StaffAttendanceStatus {
   ABSENT
 }
 
-/// HR records (v6 item 99)
+/// HR records
 enum Gender {
   MALE
   FEMALE
@@ -477,7 +477,7 @@ enum EmployeeEventType {
   RETIRED
 }
 
-/// Payroll (v6 item 100): which tax regime an employee's TDS is worked out under.
+/// Payroll: which tax regime an employee's TDS is worked out under.
 enum TaxRegime {
   NEW
   OLD
@@ -521,13 +521,13 @@ enum LeaveType {
   EARNED
   COMP_OFF
   UNPAID
-  /// Attendance extras (v5 item 97): away on company work for the day; counted present, not against a balance
+  /// Attendance extras: away on company work for the day; counted present, not against a balance
   ON_DUTY
   /// Away on a site visit or tour for one or more days; counted present, not against a balance
   TOUR
 }
 
-/// Biometric attendance (v6 item 101): how a device sends its punches
+/// Biometric attendance: how a device sends its punches
 enum BiometricProtocol {
   /// ZKTeco, eSSL and other devices with the ADMS (iclock) push protocol
   ADMS
@@ -537,7 +537,7 @@ enum BiometricProtocol {
   FILE
 }
 
-/// Biometric device commands (item 150): what Nirmaan asks an ADMS device to do when it next calls
+/// Biometric device commands: what Nirmaan asks an ADMS device to do when it next calls
 enum BiometricCommandKind {
   /// Put a user number and its name on the device, for the person to enrol a finger or face under
   ADD_USER
@@ -559,21 +559,21 @@ enum BiometricCommandStatus {
   CANCELLED
 }
 
-/// What an outside system is (item 139, ARCHITECTURE "Integration layer"); each kind has its reader in integrations
+/// What an outside system is (ARCHITECTURE "Integration layer"); each kind has its reader in integrations
 enum IntegrationKind {
   /// Any outside service that posts JSON to the connection's own web address
   GENERIC_WEBHOOK
   /// The Nirmaan Connector's own check: one reading a minute from the computer it runs on
   CONNECTOR_CHECK
-  /// A machine maker's fleet feed (AEMP 2.0, ISO 15143-3), read by Nirmaan every hour (item 146)
+  /// A machine maker's fleet feed (AEMP 2.0, ISO 15143-3), read by Nirmaan every hour
   MACHINE_FEED
-  /// A GPS tracker's service posting each position, ignition and hour meter (item 146)
+  /// A GPS tracker's service posting each position, ignition and hour meter
   GPS_TRACKER
-  /// A site's fuel dispenser posting each fill, issued from the site's store as a fuel slip (item 147)
+  /// A site's fuel dispenser posting each fill, issued from the site's store as a fuel slip
   FUEL_DISPENSER
-  /// A site's weighbridge indicator, read by the Connector: each weight it holds steady (item 148)
+  /// A site's weighbridge indicator, read by the Connector: each weight it holds steady
   WEIGHBRIDGE
-  /// A batching plant's controller, its batch reports read from their folder by the Connector (item 149)
+  /// A batching plant's controller, its batch reports read from their folder by the Connector
   BATCHING_PLANT
 }
 
@@ -603,7 +603,7 @@ enum BiometricPunchResult {
   SKIPPED
 }
 
-/// Attendance extras (v5 item 97): overtime from a check-out waits for the posting's project manager or HR
+/// Attendance extras: overtime from a check-out waits for the posting's project manager or HR
 enum OvertimeStatus {
   PENDING
   APPROVED
@@ -696,9 +696,9 @@ enum PushPlatform {
   WEB
 }
 
-// ---------- Tenancy, users, roles ----------
+// Tenancy, users, roles
 
-/// A parent company and the companies under it (group companies, phase 1). Not a tenant: each company keeps its own data,
+/// A parent company and the companies under it (group companies). Not a tenant: each company keeps its own data,
 /// roles, books and menu, and a person moves between them with the company switcher.
 model CompanyGroup {
   id        String   @id @default(uuid())
@@ -722,13 +722,13 @@ model GroupAdmin {
   @@unique([groupId, loginId])
 }
 
-/// One person's sign-in (group companies, phase 1): an email and password across every company they have a place in.
+/// One person's sign-in (group companies): an email and password across every company they have a place in.
 /// Their place in each company (role, projects, alerts) is a `User` row of that company. No organisation of its own.
 model Login {
   id                 String    @id @default(uuid())
   email              String    @unique
   passwordHash       String
-  /// Sessions signed in before this are refused (finding 5 of the October review): set when the password changes or is reset
+  /// Sessions signed in before this are refused: set when the password changes or is reset
   tokensValidAfter   DateTime?
   /// The company signed in to last: sign-in goes back to it
   lastOrganizationId String?
@@ -758,7 +758,7 @@ model Organization {
   supportAccessUntil         DateTime?
   supportAccessGrantedByName String?
 
-  /// Subscription (v3 item 34). Last day of the free trial; set when billing is on (at sign-up, or by the daily job)
+  /// Subscription. Last day of the free trial; set when billing is on (at sign-up, or by the daily job)
   trialEndsAt        DateTime? @db.Date
   /// Last day paid for
   paidUntil          DateTime? @db.Date
@@ -771,31 +771,31 @@ model Organization {
   /// The last billing reminder sent, so each is sent once (e.g. "TRIAL:2026-11-13:7")
   billingRemindedFor String?
 
-  /// Ask Nirmaan (AI item 67): switched on by an admin; off until then
+  /// Ask Nirmaan: switched on by an admin; off until then
   aiEnabled                Boolean            @default(false)
   /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
   aiMonthlyCapInr          Int?
-  /// Roles besides admins that may use Ask Nirmaan (AI item 77); empty = all staff
+  /// Roles besides admins that may use Ask Nirmaan; empty = all staff
   aiRoles                  String[]           @default([])
-  /// Payment requests (v5 item 90): accounts may pay a bill only against an approved payment request. Off for companies
-  /// made before item 90, on for new sign-ups.
+  /// Payment requests: accounts may pay a bill only against an approved payment request. Off for companies
+  /// made before payment requests existed, on for new sign-ups.
   paymentsNeedRequest      Boolean            @default(false)
-  /// Progress from the DPR only (item 127): progress is recorded as the DPR's work lines, not on its own. Off for
-  /// companies made before item 127, on for new sign-ups.
+  /// Progress from the DPR only: progress is recorded as the DPR's work lines, not on its own. Off for
+  /// companies made before the structured DPR, on for new sign-ups.
   progressFromDpr          Boolean            @default(false)
   /// Supplier choice approval: a purchase order on a material request waits until the supplier finalised on it (Finalise
   /// L1) is approved as a SUPPLIER_CHOICE. Off for companies made before it, on for new sign-ups.
   ordersNeedApprovedChoice Boolean            @default(false)
-  /// Module switches (v6 item 117): the switchable modules (SWITCHABLE_MODULES in @erp/shared) an admin turned off.
+  /// Module switches: the switchable modules (SWITCHABLE_MODULES in @erp/shared) an admin turned off.
   /// Their data stays; turning one on again brings it back.
   modulesOff               String[]           @default([])
-  /// Correspondence (item 136): which outward letters wait for their signatory's approval before they are numbered
+  /// Correspondence: which outward letters wait for their signatory's approval before they are numbered
   letterApproval           LetterApprovalRule @default(CONTRACTUAL)
-  /// Item 169: which signed letters then wait for a director's seal at head office (L2) before they are numbered
+  /// Which signed letters then wait for a director's seal at head office (L2) before they are numbered
   letterSeal               LetterApprovalRule @default(NONE)
-  /// Item categories (master codes) whose receipts need the maker's test certificate (item 137 part 2)
+  /// Item categories (master codes) whose receipts need the maker's test certificate
   mtcCategories            String[]           @default(["steel", "cement", "pipes-and-fittings"])
-  /// Launcher phase 3: Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
+  /// Discover on Home also shows modules a person's role cannot open, greyed, with Request access.
   discoverLocked           Boolean            @default(true)
   /// The plan's module set, set from the Nirmaan console; null = every module
   moduleTier               ModuleTier?
@@ -807,7 +807,7 @@ model Organization {
   navNames                 Json               @default("{}")
   /// People may choose their own look (User.navLook)
   navPersonalLook          Boolean            @default(false)
-  /// Group companies (phase 1): the group the company belongs to, if any, and what kind of company it is. The kind sets
+  /// Group companies: the group the company belongs to, if any, and what kind of company it is. The kind sets
   /// the modules a new company starts with (COMPANY_KIND_MODULES_OFF in @erp/shared); it changes nothing afterwards.
   groupId                  String?
   group                    CompanyGroup?      @relation(fields: [groupId], references: [id])
@@ -1056,7 +1056,7 @@ model ApprovalRule {
   /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST | SUPPLIER_CHOICE
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
-  /// v5 item 94: 1 is the matrix; 2 and 3 are further approvals of the same entry
+  /// 1 is the matrix; 2 and 3 are further approvals of the same entry
   level          Int          @default(1)
   /// Levels 2 and 3: the amount from which the level applies (null = always)
   minAmount      Decimal?     @db.Decimal(18, 2)
@@ -1073,7 +1073,7 @@ enum ApprovalStepAction {
   REMINDED
 }
 
-/// One step of a submission through its approval levels (v5 item 94). The submission's own status columns stay as they
+/// One step of a submission through its approval levels. The submission's own status columns stay as they
 /// are: it is SUBMITTED until the last level approves. `round` is the submission's submittedAt the step belongs to, so a
 /// resubmitted entry starts again at level 1 and keeps the earlier steps as history.
 model ApprovalStep {
@@ -1096,7 +1096,7 @@ model ApprovalStep {
   @@index([organizationId, createdAt])
 }
 
-/// Reminders and escalation for one submission type (v5 item 94), set on the Approval rules page.
+/// Reminders and escalation for one submission type, set on the Approval rules page.
 model ApprovalEscalation {
   id                 String       @id @default(uuid())
   organizationId     String
@@ -1116,7 +1116,7 @@ model User {
   organization   Organization @relation(fields: [organizationId], references: [id])
   roleId         String
   role           Role         @relation(fields: [roleId], references: [id])
-  /// The person's sign-in (group companies, phase 1): the same login has a user in each company of a group they work in.
+  /// The person's sign-in (group companies): the same login has a user in each company of a group they work in.
   /// The password and the sessions live on the login; `email` is always the login's.
   loginId        String
   login          Login        @relation(fields: [loginId], references: [id])
@@ -1126,17 +1126,17 @@ model User {
   /// The user's own opt-in for alerts on WhatsApp and by SMS (WhatsApp first, SMS as the fallback).
   whatsappAlerts Boolean      @default(false)
   smsAlerts      Boolean      @default(false)
-  /// Email for what waits on the user (hand-offs and send-backs, e2e review fix 2); on unless they switch it off
+  /// Email for what waits on the user (hand-offs and send-backs); on unless they switch it off
   emailAlerts    Boolean      @default(true)
-  /// The user's own opt-in for a three-line morning brief from Ask Nirmaan (AI item 74).
+  /// The user's own opt-in for a three-line morning brief from Ask Nirmaan.
   morningBrief   Boolean      @default(false)
-  /// WhatsApp entries (AI item 120): the user's number, normalised (919876543210), while they have them switched on.
+  /// WhatsApp entries: the user's number, normalised (919876543210), while they have them switched on.
   /// Messages from it are read as this user; one number belongs to one user across all companies.
   captureFrom    String?      @unique
   isActive       Boolean      @default(true)
   /// Set when invited; cleared once the user chooses a password.
   invitedAt      DateTime?
-  /// A supplier-portal login (role SUPPLIER, v6 item 105): the vendor it acts for. Null for everyone else.
+  /// A supplier-portal login (role SUPPLIER): the vendor it acts for. Null for everyone else.
   vendorId       String?
   /// The top bar's look this person chose (Profile › Appearance), used when their company lets people choose
   navLook        NavLook?
@@ -1346,7 +1346,7 @@ model User {
   @@index([organizationId])
 }
 
-// ---------- Projects ----------
+// Projects
 
 model Project {
   id                     String         @id @default(uuid())
@@ -1355,28 +1355,28 @@ model Project {
   aiBriefs               AiBrief[]
   documentPages          DocumentPage[]
   photoChecks            PhotoCheck[]
-  /// Site photo checks (AI item 76): the safety officer switched the photo flags off for this project; captions still show
+  /// Site photo checks: the safety officer switched the photo flags off for this project; captions still show
   photoFlagsOff          Boolean        @default(false)
   /// Kit every worker at the project must have (PPE register); new projects start with the standard three
   ppeRequired            PpeKind[]      @default([HELMET, SAFETY_SHOES, REFLECTIVE_JACKET])
   code                   String
   name                   String
   type                   ProjectType
-  /// The company's project type (item 134, `ProjectTypeConfig.code` or a standard type's code); null takes the standard
+  /// The company's project type (`ProjectTypeConfig.code` or a standard type's code); null takes the standard
   /// type of `type`. `type` is always the type's built-in kind
   typeCode               String?
   /// The type's version the project was made with
   typeVersion            Int?
-  /// Item 167: the business line (vertical) the project belongs to, a code of the `vertical` master; filled from its type
+  /// The business line (vertical) the project belongs to, a code of the `vertical` master; filled from its type
   verticalCode           String?
   status                 ProjectStatus  @default(PLANNED)
-  /// Item rate, lump sum or EPC (item 125): lump sum and EPC projects weigh their components by billing share
+  /// Item rate, lump sum or EPC: lump sum and EPC projects weigh their components by billing share
   contractModel          ContractModel  @default(ITEM_RATE)
   clientName             String?
   consultantName         String?
   location               String?
-  /// Where deliveries go: the site store's address, which a purchase order takes when it names none
-  /// (finding 12 of the October review). Falls back to `location`.
+  /// Where deliveries go: the site store's address, which a purchase order takes when it names none.
+  /// Falls back to `location`.
   siteAddress            String?
   /// Road or pipeline length the sector view draws, in metres from the start (chainage 0+000 = 0)
   chainageStart          Int?
@@ -1395,14 +1395,14 @@ model Project {
   /// Client from the client master; `clientName` keeps a copy of its name (and stays free text without one)
   clientId               String?
   client                 Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  // ----- Contract terms (what RA bills are built on) -----
+  // Contract terms (what RA bills are built on)
   agreementNo            String?
   agreementDate          DateTime?      @db.Date
   /// Retention money deducted from each bill, % of the work value; released after the defect liability period
   retentionPct           Decimal        @default(0) @db.Decimal(5, 2)
   /// Security deposit deducted from each bill, % of the work value
   securityDepositPct     Decimal        @default(0) @db.Decimal(5, 2)
-  /// Item 171: the most security deposit bills take, % of the contract value (or of the work billed, when more); null = no cap
+  /// The most security deposit bills take, % of the contract value (or of the work billed, when more); null = no cap
   securityDepositCapPct  Decimal?       @db.Decimal(5, 2)
   /// Mobilisation advance paid by the client, recovered from bills
   mobilisationAdvance    Decimal        @default(0) @db.Decimal(18, 2)
@@ -1418,7 +1418,7 @@ model Project {
   ldPeriod               LdPeriod       @default(WEEK)
   /// Liquidated damages are capped at this % of the contract value
   ldCapPct               Decimal        @default(10) @db.Decimal(5, 2)
-  /// Stage billing (item 129): the lump sum the billing components share; null takes the contract value
+  /// Stage billing: the lump sum the billing components share; null takes the contract value
   lumpSumValue           Decimal?       @db.Decimal(18, 2)
   /// Lump sum ÷ the estimate: unit-rate lines are paid at the BOQ rate × this; null is 1
   tenderFactor           Decimal?       @db.Decimal(9, 6)
@@ -1426,7 +1426,7 @@ model Project {
   /// advanceRecoveryPct on each bill
   advanceRecoveryFromPct Decimal?       @db.Decimal(5, 2)
   advanceRecoveryToPct   Decimal?       @db.Decimal(5, 2)
-  /// The contract's currency, ISO code (item 130). Every amount is kept in rupees; a project in another currency keeps
+  /// The contract's currency, ISO code. Every amount is kept in rupees; a project in another currency keeps
   /// its contract figures at `exchangeRate` rupees to one unit and shows them in its currency
   currency               String         @default("INR") @db.VarChar(3)
   exchangeRate           Decimal?       @db.Decimal(12, 6)
@@ -1440,7 +1440,7 @@ model Project {
   labourCessPct          Decimal        @default(0) @db.Decimal(5, 2)
   /// Days the client takes to pay a bill once it is sent; the cash-flow forecast assumes 30 when not set
   clientPaymentDays      Int?
-  /// Days the contract allows to give notice of a hindrance; the notice clock assumes 14 when not set (AI item 123)
+  /// Days the contract allows to give notice of a hindrance; the notice clock assumes 14 when not set
   noticeDays             Int?
   /// How far, in %, measurement may run past a BOQ item's quantity before it needs a variation; 25 when not set
   measureTolerancePct    Int?
@@ -1449,16 +1449,16 @@ model Project {
   baselineById           String?
   baselineBy             User?          @relation("ProjectBaselineBy", fields: [baselineById], references: [id])
   baselineNote           String?
-  /// Estimate (v5 item 92): overheads and profit added to the cost of each BOQ item's resources for its built-up rate, %
+  /// Estimate: overheads and profit added to the cost of each BOQ item's resources for its built-up rate, %
   estimateOverheadPct    Decimal        @default(5) @db.Decimal(5, 2)
   estimateProfitPct      Decimal        @default(10) @db.Decimal(5, 2)
-  /// Attendance extras (v5 item 97): where the site is, for GPS check-in; a check-in further than the radius is flagged
+  /// Attendance extras: where the site is, for GPS check-in; a check-in further than the radius is flagged
   siteLat                Decimal?       @db.Decimal(9, 6)
   siteLng                Decimal?       @db.Decimal(9, 6)
   siteRadiusM            Int?
   /// Refuse a check-in from outside the radius (or without a position) instead of only flagging it
   siteCheckInStrict      Boolean        @default(false)
-  /// Someone who edits the project hid its setup checklist from the Overview (finding 6 of the October review)
+  /// Someone who edits the project hid its setup checklist from the Overview
   setupHiddenAt          DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
@@ -1558,7 +1558,7 @@ model Project {
   holidays           Holiday[]
   variations         Variation[]
   budget             ProjectBudget?
-  /// The tender this project was won from (v6 item 110)
+  /// The tender this project was won from
   tender             Tender?
   safetyIncidents    SafetyIncident[]
   toolboxTalks       ToolboxTalk[]
@@ -1579,7 +1579,7 @@ model Project {
   siteOrders           SiteOrder[]
   programmeSubmissions ProgrammeSubmission[]
   eotApplications      EotApplication[]
-  /// Days between programme updates as the contract sets them (item 173); null for PROGRAMME_UPDATE_DAYS
+  /// Days between programme updates as the contract sets them; null for PROGRAMME_UPDATE_DAYS
   programmeUpdateDays  Int?
 
   @@unique([organizationId, code])
@@ -1605,7 +1605,7 @@ model Client {
   email                 String?
   phone                 String?
   isActive              Boolean      @default(true)
-  /// The client's usual terms (finding 6 of the October review): what a new project of theirs starts with; null takes
+  /// The client's usual terms: what a new project of theirs starts with; null takes
   /// STANDARD_TERMS in @erp/shared
   retentionPct          Decimal?     @db.Decimal(5, 2)
   securityDepositPct    Decimal?     @db.Decimal(5, 2)
@@ -1701,7 +1701,7 @@ model Quotation {
   paymentTerms      String?
   freight           Decimal         @default(0) @db.Decimal(18, 2)
   remarks           String?
-  /// Typed by the supplier on the enquiry link (v5 item 95), not entered by us
+  /// Typed by the supplier on the enquiry link, not entered by us
   fromSupplier      Boolean         @default(false)
   createdById       String
   createdBy         User            @relation("QuotationCreator", fields: [createdById], references: [id])
@@ -1764,7 +1764,7 @@ model PurchaseOrder {
   /// Short-closed: no more GRNs or bills against it
   closedAt             DateTime?
   closeNote            String?
-  /// The supplier accepted it on the supplier portal (v6 item 105), with their remark
+  /// The supplier accepted it on the supplier portal, with their remark
   supplierAcceptedAt   DateTime?
   supplierAcceptedById String?
   supplierAcceptedBy   User?            @relation("PoSupplierAccepter", fields: [supplierAcceptedById], references: [id], onDelete: SetNull)
@@ -1812,7 +1812,7 @@ model PurchaseOrderLine {
   materialRequestItem   MaterialRequestItem? @relation(fields: [materialRequestItemId], references: [id], onDelete: SetNull)
   itemName              String
   specification         String?
-  /// The make (brand) ordered, checked against the project's approved makes (v6 item 113)
+  /// The make (brand) ordered, checked against the project's approved makes
   make                  String?
   unit                  String
   quantity              Decimal              @db.Decimal(18, 3)
@@ -1841,7 +1841,7 @@ model VendorBill {
   vendorId        String
   vendor          Vendor           @relation(fields: [vendorId], references: [id])
   /// PO (against a purchase order, matched three ways), HIRE (a hired machine's month from its logs), SERVICE (closed
-  /// job cards), OTHER (transport, testing, consultancy against an expense category) (v5 item 91)
+  /// job cards), OTHER (transport, testing, consultancy against an expense category)
   kind            VendorBillKind   @default(PO)
   /// PO bills only
   purchaseOrderId String?
@@ -1869,7 +1869,7 @@ model VendorBill {
   subtotal        Decimal          @default(0) @db.Decimal(18, 2)
   gstAmount       Decimal          @default(0) @db.Decimal(18, 2)
   total           Decimal          @default(0) @db.Decimal(18, 2)
-  /// Advance paid on the PO and taken off this bill (v5 item 90); what is payable is total less this
+  /// Advance paid on the PO and taken off this bill; what is payable is total less this
   advanceAdjusted Decimal          @default(0) @db.Decimal(18, 2)
   /// Settled by payments so far (paid + deducted at payment), kept in step by payables
   paidAmount      Decimal          @default(0) @db.Decimal(18, 2)
@@ -1943,7 +1943,7 @@ enum HireFuelBy {
   COMPANY
 }
 
-/// How a machine's fuel norm is measured (v5 item 93): litres per working hour, or km per litre for vehicles
+/// How a machine's fuel norm is measured: litres per working hour, or km per litre for vehicles
 enum FuelNormUnit {
   LITRES_PER_HOUR
   KM_PER_LITRE
@@ -1963,7 +1963,7 @@ enum DebitNoteReason {
   OTHER
 }
 
-/// What a rate-analysis resource is besides material (v5 item 92); materials are MaterialNorm rows
+/// What a rate-analysis resource is besides material; materials are MaterialNorm rows
 enum BoqResourceKind {
   /// A trade (matches LabourRate.category), in man-days per BOQ unit
   LABOUR
@@ -1971,7 +1971,7 @@ enum BoqResourceKind {
   EQUIPMENT
 }
 
-/// Why stock was adjusted (v5 item 92); everything but OPENING is a loss or gain the wastage report counts
+/// Why stock was adjusted; everything but OPENING is a loss or gain the wastage report counts
 enum StockAdjustmentReason {
   OPENING
   WASTAGE
@@ -1981,7 +1981,7 @@ enum StockAdjustmentReason {
   OTHER
 }
 
-/// What we take off a vendor's or subcontractor's approved bill (v5 item 91): DN-<year>-0001, against exactly one bill.
+/// What we take off a vendor's or subcontractor's approved bill: DN-<year>-0001, against exactly one bill.
 /// The bill's payable drops by its total, input GST is reversed in the GST registers, and Tally gets a debit note.
 model DebitNote {
   id                String           @id @default(uuid())
@@ -2044,7 +2044,7 @@ model DebitNoteLine {
   @@index([debitNoteId])
 }
 
-/// Work order to a subcontractor or labour contractor (v3 item 22): rates per BOQ item or for its own items, with the
+/// Work order to a subcontractor or labour contractor: rates per BOQ item or for its own items, with the
 /// retention, advance and TDS their bills are made with. Approved through the approval matrix (submission type WORK_ORDER).
 model WorkOrder {
   id                   String           @id @default(uuid())
@@ -2078,7 +2078,7 @@ model WorkOrder {
   /// Closed: no more measurements, issues or bills against it
   closedAt             DateTime?
   closeNote            String?
-  /// The subcontractor accepted it on the supplier portal (v6 item 105), with their remark
+  /// The subcontractor accepted it on the supplier portal, with their remark
   supplierAcceptedAt   DateTime?
   supplierAcceptedById String?
   supplierAcceptedBy   User?            @relation("WoSupplierAccepter", fields: [supplierAcceptedById], references: [id], onDelete: SetNull)
@@ -2168,14 +2168,14 @@ model SubcontractBill {
   tdsAmount             Decimal          @db.Decimal(18, 2)
   /// Material issued to them from stock, at the item's rate
   materialRecovery      Decimal          @db.Decimal(18, 2)
-  /// Material used beyond the norm and its wastage, recovered from the reconciliation (v5 item 92)
+  /// Material used beyond the norm and its wastage, recovered from the reconciliation
   excessRecovery        Decimal          @default(0) @db.Decimal(18, 2)
   otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
   otherDeductionNote    String?
   totalDeductions       Decimal          @db.Decimal(18, 2)
   /// gross + GST - deductions
   netPayable            Decimal          @db.Decimal(18, 2)
-  /// Debit notes against the bill that are not cancelled; what is payable drops by them (v5 item 91)
+  /// Debit notes against the bill that are not cancelled; what is payable drops by them
   debitNoteAmount       Decimal          @default(0) @db.Decimal(18, 2)
   /// Settled by payments so far (paid + deducted at payment), kept in step by payables
   paidAmount            Decimal          @default(0) @db.Decimal(18, 2)
@@ -2251,7 +2251,7 @@ model ProjectMember {
   project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId     String
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// A client guest's level on this project (item 172): the share of measurements they check before certifying a bill
+  /// A client guest's level on this project: the share of measurements they check before certifying a bill
   checkLevel CheckLevel?
   createdAt  DateTime    @default(now())
 
@@ -2259,7 +2259,7 @@ model ProjectMember {
   @@index([userId])
 }
 
-// ---------- Planning: BOQ and activities ----------
+// Planning: BOQ and activities
 
 model BoqItem {
   id             String       @id @default(uuid())
@@ -2275,9 +2275,9 @@ model BoqItem {
   revisedQty     Decimal?     @db.Decimal(18, 3)
   /// Budgeted cost per unit (our cost, not the client's rate): the item's planned margin and its share of the budget
   budgetRate     Decimal?     @db.Decimal(18, 2)
-  /// Bill section or cost centre the item is grouped under, e.g. "Civil works", "Electrical works" (item 125)
+  /// Bill section or cost centre the item is grouped under, e.g. "Civil works", "Electrical works"
   section        String?
-  /// The component or sub-component the item is for (item 125)
+  /// The component or sub-component the item is for
   workElementId  String?
   workElement    WorkElement? @relation(fields: [workElementId], references: [id], onDelete: SetNull)
   /// The schedule of rates item the rate comes from, and its number as printed in the BOQ (e.g. "SOR 4.1.3")
@@ -2305,7 +2305,7 @@ model BoqItem {
   @@index([workElementId])
 }
 
-/// One node of a project's work breakdown (item 125): a component such as an intake well, a treatment plant or a tank,
+/// One node of a project's work breakdown: a component such as an intake well, a treatment plant or a tank,
 /// or a sub-component inside one. Activities and BOQ items hang under it; its progress is the weighted progress of what
 /// is under it, and the project's is its components' by weight.
 model WorkElement {
@@ -2321,7 +2321,7 @@ model WorkElement {
   code           String
   name           String
   elementType    WorkElementType  @default(GENERAL)
-  /// The company's component kind it was laid out from (item 134, `ComponentKind.code` or a built-in kind's code)
+  /// The company's component kind it was laid out from (`ComponentKind.code` or a built-in kind's code)
   kindCode       String?
   /// What the template needs to know, e.g. { capacityKl: 650, stagingM: 16, liftM: 3 } for a tank
   specs          Json?
@@ -2355,10 +2355,10 @@ model Activity {
   project             Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   boqItemId           String?
   boqItem             BoqItem?           @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
-  /// Component or sub-component the activity belongs to (item 125)
+  /// Component or sub-component the activity belongs to
   workElementId       String?
   workElement         WorkElement?       @relation(fields: [workElementId], references: [id], onDelete: SetNull)
-  /// The activity this is a sub-activity of; an activity with sub-activities takes no progress of its own (item 125)
+  /// The activity this is a sub-activity of; an activity with sub-activities takes no progress of its own
   parentActivityId    String?
   parentActivity      Activity?          @relation("ActivityTree", fields: [parentActivityId], references: [id], onDelete: SetNull)
   /// Share of its parent activity or element, %; null shares what is left by BOQ value
@@ -2378,9 +2378,9 @@ model Activity {
   checklistTemplate   ChecklistTemplate? @relation(fields: [checklistTemplateId], references: [id], onDelete: SetNull)
   /// Hold point: progress is approved only after a passed inspection (at the same location, when the entry gives one)
   holdPoint           Boolean            @default(false)
-  /// Hidden work (item 172): covered once done, so progress waits for its inspection signed off before cover-up and countersigned
+  /// Hidden work: covered once done, so progress waits for its inspection signed off before cover-up and countersigned
   hiddenWork          Boolean            @default(false)
-  /// The stage of pipe work this activity of a pipe zone or main stands for (item 126); its lines name a segment (a node for VALVES)
+  /// The stage of pipe work this activity of a pipe zone or main stands for; its lines name a segment (a node for VALVES)
   pipeStage           PipeStage?
   sortOrder           Int                @default(0)
   createdAt           DateTime           @default(now())
@@ -2415,7 +2415,7 @@ enum ActivityLinkType {
   SF
 }
 
-/// The successor waits on the predecessor (v6 item 114): finish to start, start to start, finish to finish or start to
+/// The successor waits on the predecessor: finish to start, start to start, finish to finish or start to
 /// finish, with a lag in calendar days (negative for a lead). Both activities are of the same project.
 model ActivityLink {
   id             String           @id @default(uuid())
@@ -2451,7 +2451,7 @@ model Milestone {
   baselineDate   DateTime?    @db.Date
   achievedOn     DateTime?    @db.Date
   note           String?
-  /// Owed by the client (item 130): power for testing, land, an approval. Late, it is a delay the client caused
+  /// Owed by the client: power for testing, land, an approval. Late, it is a delay the client caused
   byClient       Boolean      @default(false)
   /// The delay recorded for a late client input
   delayId        String?      @unique
@@ -2472,7 +2472,7 @@ model ActivityTemplate {
   organization   Organization @relation(fields: [organizationId], references: [id])
   /// The type's built-in kind
   projectType    ProjectType
-  /// The company's project type the activity belongs to (item 134); a standard type's code for the standard types
+  /// The company's project type the activity belongs to; a standard type's code for the standard types
   typeCode       String
   name           String
   unit           String
@@ -2487,7 +2487,7 @@ model ActivityTemplate {
   @@index([organizationId, typeCode])
 }
 
-/// A company's project type (item 134, ARCHITECTURE "Project types"): its own, or its copy of a standard type (same
+/// A company's project type (ARCHITECTURE "Project types"): its own, or its copy of a standard type (same
 /// code). Built on a `ProjectType`, which its projects take as `Project.type`
 model ProjectTypeConfig {
   id             String         @id @default(uuid())
@@ -2516,7 +2516,7 @@ model ProjectTypeConfig {
   @@unique([organizationId, code])
 }
 
-/// One saved version of a project type's DPR form (item 134 part 2), never changed once saved: a DPR keeps the version
+/// One saved version of a project type's DPR form, never changed once saved: a DPR keeps the version
 /// it was made on. A type with none uses its standard form (@erp/shared dpr-form.ts)
 model DprFormConfig {
   id             String       @id @default(uuid())
@@ -2536,7 +2536,7 @@ model DprFormConfig {
   @@unique([organizationId, typeCode, version])
 }
 
-/// A company's component kind (item 134): its own, or its copy of a built-in kind (same code). Built on a
+/// A company's component kind: its own, or its copy of a built-in kind (same code). Built on a
 /// `WorkElementType`, which components laid out from it take as `WorkElement.elementType`
 model ComponentKind {
   id             String          @id @default(uuid())
@@ -2560,7 +2560,7 @@ model ComponentKind {
   @@unique([organizationId, code])
 }
 
-// ---------- Site submissions (all share the same approval lifecycle) ----------
+// Site submissions (all share the same approval lifecycle)
 
 model ProgressEntry {
   id             String           @id @default(uuid())
@@ -2574,28 +2574,28 @@ model ProgressEntry {
   quantity       Decimal          @db.Decimal(18, 3)
   remarks        String?
   location       String?
-  /// Structured location for the sector views (v4 item 41): chainage in metres, a floor of the project, a village
+  /// Structured location for the sector views: chainage in metres, a floor of the project, a village
   chainageFrom   Int?
   chainageTo     Int?
   floor          String?
   village        String?
   manpowerCount  Int?
   machineryUsed  String?
-  /// A work line of this DPR (item 127): it is submitted, approved and sent back with the DPR, never on its own
+  /// A work line of this DPR: it is submitted, approved and sent back with the DPR, never on its own
   dailyReportId  String?
   dailyReport    DailyReport?     @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
   /// [{ category: string, count: number }]: the crew on this line; manpowerCount is their total
   labour         Json?
   /// [{ name: string, hours: number }]: machines on this line; machineryUsed is their names
   machines       Json?
-  /// A DPR line's values of the form's own line fields (item 134), by key
+  /// A DPR line's values of the form's own line fields, by key
   extra          Json?
   /// The subcontractor's work order the line was done under
   workOrderId    String?
   workOrder      WorkOrder?       @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
   /// Order of the line in its DPR
   sortOrder      Int              @default(0)
-  /// The pipe segment the work was on (item 126): metres per segment and stage are held to its length
+  /// The pipe segment the work was on: metres per segment and stage are held to its length
   pipeSegmentId  String?
   pipeSegment    PipeSegment?     @relation(fields: [pipeSegmentId], references: [id], onDelete: SetNull)
   /// The valve or fitting fixed (VALVES stage), or the end of the segment the day's work started from
@@ -2624,8 +2624,8 @@ model ProgressEntry {
   @@index([pipeSegmentId])
 }
 
-/// Material a DPR work line used (item 127), suggested from the BOQ item's norms; the stock check against the DPR
-/// (item 128) reads it.
+/// Material a DPR work line used, suggested from the BOQ item's norms; the stock check against the DPR
+/// reads it.
 model ProgressMaterial {
   id              String        @id @default(uuid())
   organizationId  String
@@ -2641,7 +2641,7 @@ model ProgressMaterial {
   @@index([organizationId, itemId])
 }
 
-/// A material norm on an activity (item 128): store item per unit of the activity's work, for work with no BOQ item of
+/// A material norm on an activity: store item per unit of the activity's work, for work with no BOQ item of
 /// its own (a lump-sum or EPC component's activities). An activity's own norms come before its BOQ item's.
 model ActivityMaterialNorm {
   id             String       @id @default(uuid())
@@ -2666,7 +2666,7 @@ model ActivityMaterialNorm {
   @@index([organizationId])
 }
 
-// ---------- Pipe network (item 126) ----------
+// Pipe network
 
 /// A point of a zone's or main's hydraulic model: junction J-12, tank, source, or a valve or chamber on the line
 model PipeNode {
@@ -2775,7 +2775,7 @@ model DailyReport {
   safetyObservations String?
   issues             String?
   nextDayPlan        String?
-  /// The version of its type's DPR form it was made on (item 134); null for the type's standard form
+  /// The version of its type's DPR form it was made on; null for the type's standard form
   dprFormConfigId    String?
   dprFormConfig      DprFormConfig?   @relation(fields: [dprFormConfigId], references: [id], onDelete: Restrict)
   /// Values of the form's own day fields, by key ({ rainHours: 2.5 })
@@ -2793,7 +2793,7 @@ model DailyReport {
 
   attachments Attachment[]
   hindrance   HindranceCheck?
-  /// The work done, line by line (item 127)
+  /// The work done, line by line
   lines       ProgressEntry[]
 
   @@index([projectId, date])
@@ -2909,7 +2909,7 @@ model MaterialRequestItem {
   covers         MaterialRequestCover[]
 }
 
-/// Part of a request line met from stock instead of buying it (v5 item 95): an issue from the request's own site, or a
+/// Part of a request line met from stock instead of buying it: an issue from the request's own site, or a
 /// transfer from another site. It goes with its store entry: deleting the entry deletes it.
 model MaterialRequestCover {
   id                    String              @id @default(uuid())
@@ -2927,7 +2927,7 @@ model MaterialRequestCover {
   @@index([organizationId])
 }
 
-/// Prices asked from vendors for an approved material request (v5 item 95). Each vendor gets its own one-time link.
+/// Prices asked from vendors for an approved material request. Each vendor gets its own one-time link.
 model Enquiry {
   id                String          @id @default(uuid())
   organizationId    String
@@ -2972,7 +2972,7 @@ model EnquiryToken {
   @@index([organizationId])
 }
 
-// ---------- Attendance (daily register, not an approval submission) ----------
+// Attendance (daily register, not an approval submission)
 
 /// Workers present on one project on one day, recorded by the site supervisor. One sheet per project per day.
 /// The day's DPR takes its manpower from here; the sheet locks once that DPR is approved.
@@ -3018,9 +3018,9 @@ model AttendanceLine {
   @@index([vendorId])
 }
 
-// ---------- Attachments and audit ----------
+// Attachments and audit
 
-// ---------- Stock ----------
+// Stock
 
 /// Material master per organisation. Receipts create items from the material request lines (same name and unit).
 model Item {
@@ -3032,9 +3032,9 @@ model Item {
   category       String?
   /// Standard rate per unit; values issues in the project cost view
   rate           Decimal?      @db.Decimal(18, 2)
-  /// Diesel, petrol and the like (v5 item 93): issued to machines and counted in the daily fuel position
+  /// Diesel, petrol and the like: issued to machines and counted in the daily fuel position
   isFuel         Boolean       @default(false)
-  /// Pipe items (item 128): the size and material it lays as, so pipe issued and laid compare by diameter; null when
+  /// Pipe items: the size and material it lays as, so pipe issued and laid compare by diameter; null when
   /// the name says it ("HDPE PE100 110mm PN6") or it is not pipe
   pipeDiameterMm Int?
   pipeMaterial   PipeMaterial?
@@ -3063,7 +3063,7 @@ model Item {
   @@unique([organizationId, name, unit])
 }
 
-/// A company's entry in one of its simple master lists (item 135): trades, designations, departments, item and equipment
+/// A company's entry in one of its simple master lists: trades, designations, departments, item and equipment
 /// categories (`MASTER_LISTS` in shared). Standard entries live in code; a row with a standard code renames it, switches it
 /// off or carries its Hindi name, and a row with any other code is the company's own.
 model MasterEntry {
@@ -3084,7 +3084,7 @@ model MasterEntry {
   @@unique([organizationId, list, code])
 }
 
-/// Units of measure the company uses (v4 item 48). Units stay free text on items and lines; this list suggests them
+/// Units of measure the company uses. Units stay free text on items and lines; this list suggests them
 /// so the same unit is written the same way.
 model Unit {
   id             String       @id @default(uuid())
@@ -3118,7 +3118,7 @@ model StockEntry {
   /// Receipts: the approved purchase order this GRN is against
   purchaseOrderId    String?
   purchaseOrder      PurchaseOrder?         @relation(fields: [purchaseOrderId], references: [id])
-  /// Receipts: the supplier's dispatch note it was filled from (v6 item 105)
+  /// Receipts: the supplier's dispatch note it was filled from
   supplierDispatchId String?                @unique
   supplierDispatch   SupplierDispatch?      @relation(fields: [supplierDispatchId], references: [id], onDelete: SetNull)
   supplier           String?
@@ -3131,7 +3131,7 @@ model StockEntry {
   /// Issues: the activity the material is for
   activityId         String?
   activity           Activity?              @relation(fields: [activityId], references: [id], onDelete: SetNull)
-  /// Issues (item 128): the component or pipe zone it went to; the activity's own when an activity is given
+  /// Issues: the component or pipe zone it went to; the activity's own when an activity is given
   workElementId      String?
   workElement        WorkElement?           @relation(fields: [workElementId], references: [id], onDelete: SetNull)
   /// Issues: the subcontractor's work order the material went to; recovered in their next bill
@@ -3148,12 +3148,12 @@ model StockEntry {
   transferOut        StockEntry?            @relation("StockTransfer", fields: [transferOutId], references: [id], onDelete: SetNull)
   transferIn         StockEntry?            @relation("StockTransfer")
   remarks            String?
-  /// Adjustments: why (v5 item 92); null on adjustments made before reasons were asked
+  /// Adjustments: why; null on adjustments made before reasons were asked
   adjustmentReason   StockAdjustmentReason?
   /// Issues: spares for this maintenance job
   maintenanceJobId   String?
   maintenanceJob     MaintenanceJob?        @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
-  /// Fuel issues (v5 item 93): the machine the fuel went into, and its hour meter or odometer then
+  /// Fuel issues: the machine the fuel went into, and its hour meter or odometer then
   equipmentId        String?
   equipment          Equipment?             @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   meterReading       Decimal?               @db.Decimal(18, 2)
@@ -3163,7 +3163,7 @@ model StockEntry {
   qcById             String?
   qcBy               User?                  @relation("GrnQcBy", fields: [qcById], references: [id], onDelete: SetNull)
   qcNote             String?
-  /// The maker's test certificate for the lot (item 137 part 2), where its item category needs one
+  /// The maker's test certificate for the lot, where its item category needs one
   mtcNo              String?
   mtcDate            DateTime?              @db.Date
   createdById        String
@@ -3178,9 +3178,9 @@ model StockEntry {
   covers      MaterialRequestCover[]
   rmcBatch    RmcBatch?
 
-  /// The dispenser fill it was made from (item 147)
+  /// The dispenser fill it was made from
   fuelDispense FuelDispense?
-  /// Receipts: the weighbridge ticket it was drafted from (item 148)
+  /// Receipts: the weighbridge ticket it was drafted from
   weighTicket  WeighTicket?
 
   @@unique([organizationId, entryNo])
@@ -3268,7 +3268,7 @@ model MaterialNorm {
   @@index([organizationId])
 }
 
-/// Rate analysis (v5 item 92): the labour and machine hours one unit of a BOQ item takes, next to its material norms.
+/// Rate analysis: the labour and machine hours one unit of a BOQ item takes, next to its material norms.
 /// The estimate prices them at LabourRate and the company's equipment rates for the item's built-up rate.
 model BoqResource {
   id             String          @id @default(uuid())
@@ -3294,7 +3294,7 @@ model BoqResource {
   @@index([organizationId])
 }
 
-/// Material a subcontractor used beyond the norm and its wastage, to be taken off their next running bill (v5 item 92).
+/// Material a subcontractor used beyond the norm and its wastage, to be taken off their next running bill.
 /// Raised from the reconciliation's subcontractor view; the next bill prepared or re-saved on the work order takes it.
 model ExcessMaterialRecovery {
   id                String           @id @default(uuid())
@@ -3338,7 +3338,7 @@ model Equipment {
   registrationNo       String?
   rate                 Decimal?           @db.Decimal(18, 2)
   rateUnit             EquipmentRateUnit  @default(HOUR)
-  /// Hire terms of a hired machine (v5 item 91): hours paid for a month even if it worked less, who fuels it, and
+  /// Hire terms of a hired machine: hours paid for a month even if it worked less, who fuels it, and
   /// whether the owner's operator comes with it
   hireMinHours         Decimal?           @db.Decimal(18, 2)
   hireFuelBy           HireFuelBy?
@@ -3346,16 +3346,16 @@ model Equipment {
   projectId            String?
   project              Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
   isActive             Boolean            @default(true)
-  /// Service every so many working hours and / or days (v4 item 42); the last service resets both
+  /// Service every so many working hours and / or days; the last service resets both
   serviceIntervalHours Decimal?           @db.Decimal(18, 2)
   serviceIntervalDays  Int?
   lastServiceDate      DateTime?          @db.Date
   lastServiceMeter     Decimal?           @db.Decimal(18, 2)
-  /// Fuel norm (v5 item 93): litres an hour, or km a litre for vehicles, and how far the average may stray (%)
+  /// Fuel norm: litres an hour, or km a litre for vehicles, and how far the average may stray (%)
   fuelNorm             Decimal?           @db.Decimal(18, 3)
   fuelNormUnit         FuelNormUnit?
   fuelTolerancePct     Decimal?           @db.Decimal(5, 2)
-  /// The fuel tank's size (item 147), so a fuel sensor's % reads as litres
+  /// The fuel tank's size, so a fuel sensor's % reads as litres
   fuelTankLitres       Decimal?           @db.Decimal(18, 3)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
@@ -3376,7 +3376,7 @@ model Equipment {
   @@index([organizationId, projectId])
 }
 
-/// A tyre or battery on a machine (v5 item 93): fitted with the meter then, removed with the meter and why. Its life is
+/// A tyre or battery on a machine: fitted with the meter then, removed with the meter and why. Its life is
 /// the meter run between the two (hours or km), or up to the machine's latest reading while still on.
 model EquipmentPart {
   id               String            @id @default(uuid())
@@ -3440,7 +3440,7 @@ model MachineryLog {
   reviewedBy     User?            @relation("MachineryReviewer", fields: [reviewedById], references: [id])
   reviewedAt     DateTime?
   reviewNote     String?
-  /// The hire bill that billed this approved log (v5 item 91)
+  /// The hire bill that billed this approved log
   vendorBillId   String?
   vendorBill     VendorBill?      @relation(fields: [vendorBillId], references: [id], onDelete: SetNull)
   createdAt      DateTime         @default(now())
@@ -3552,7 +3552,7 @@ model Risk {
 
   attachments      Attachment[]
   letters          Letter[]
-  /// The EOT application that claims this delay (item 173); its decision writes eotGrantedDays
+  /// The EOT application that claims this delay; its decision writes eotGrantedDays
   eotApplicationId String?
   eotApplication   EotApplication?   @relation("EotDelays", fields: [eotApplicationId], references: [id], onDelete: SetNull)
   hindrances       HindranceCheck[]
@@ -3581,7 +3581,7 @@ model MeasurementSheet {
   date              DateTime         @db.Date
   /// Chainage, grid, floor, zone
   location          String
-  /// Structured location for the sector views (v4 item 41): chainage in metres, a floor of the project, a village
+  /// Structured location for the sector views: chainage in metres, a floor of the project, a village
   chainageFrom      Int?
   chainageTo        Int?
   floor             String?
@@ -3639,7 +3639,7 @@ model MeasurementLine {
   @@index([sheetId])
 }
 
-/// Running account (RA) bill N of a project to its client, built from approved measurements (v3 item 18).
+/// Running account (RA) bill N of a project to its client, built from approved measurements.
 /// A submission like the others (six status columns, approval matrix); once approved it is sent, certified, paid.
 /// Amounts are on the claimed quantities until the client certifies, then on the certified ones (claimed* keep the claim).
 model RaBill {
@@ -3676,15 +3676,15 @@ model RaBill {
   labourCessAmount      Decimal          @db.Decimal(18, 2)
   otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
   otherDeductionNote    String?
-  /// Milestone slippage (item 129): withheld on this bill (negative when caught-up work releases what earlier bills held),
+  /// Milestone slippage: withheld on this bill (negative when caught-up work releases what earlier bills held),
   /// and the components behind it (SlippageLineDto[])
   slippageWithheld      Decimal          @default(0) @db.Decimal(18, 2)
   slippageLines         Json?
-  /// Contract obligations (item 171): penalties and withholdings due by the bill's date less what earlier bills took (negative
+  /// Contract obligations: penalties and withholdings due by the bill's date less what earlier bills took (negative
   /// when a withholding is given back), and the obligations behind it (ObligationBillLine[])
   obligationRecovery    Decimal          @default(0) @db.Decimal(18, 2)
   obligationLines       Json?
-  /// O&M bills (item 131): the O&M year and the instalment of it this bill is for (null on a works bill), the
+  /// O&M bills: the O&M year and the instalment of it this bill is for (null on a works bill), the
   /// penalty for service levels missed in the period (a deduction) and the figures behind it (OmBillDetail)
   omYear                Int?
   omInstalment          Int?
@@ -3760,7 +3760,7 @@ model RaBillItem {
   @@index([boqItemId])
 }
 
-/// One component of a contract's price variation formula (v4 item 50): its share of the work value and the index it
+/// One component of a contract's price variation formula: its share of the work value and the index it
 /// follows (e.g. Cement 15% on the RBI WPI for cement). The rest of the work value is fixed.
 model PriceVariationComponent {
   id             String       @id @default(uuid())
@@ -3796,7 +3796,7 @@ model RaBillPvLine {
   @@index([billId])
 }
 
-/// A line of a lump-sum contract's billing break-up (item 129): a component with its share of the lump sum, or a
+/// A line of a lump-sum contract's billing break-up: a component with its share of the lump sum, or a
 /// sub-component with its share of its parent (three tanks splitting the tanks' share by capacity). A stages component
 /// is paid by its stages; a unit-rate one by its BOQ items measured in the MB at rate × the tender factor.
 model BillingComponent {
@@ -3831,7 +3831,7 @@ model BillingComponent {
   @@index([workElementId])
 }
 
-/// A payment stage of a billing component (item 129): its % of the component and what moves it.
+/// A payment stage of a billing component: its % of the component and what moves it.
 model BillingStage {
   id             String           @id @default(uuid())
   organizationId String
@@ -3852,9 +3852,9 @@ model BillingStage {
   /// EVENT: the day it happened, and the certificate or letter that says so
   achievedOn     DateTime?        @db.Date
   evidence       String?
-  /// EVENT (item 130): engineering deliverables whose approval is the event; done when the last is approved
+  /// EVENT: engineering deliverables whose approval is the event; done when the last is approved
   deliverableIds String[]         @default([])
-  /// SUPPLY (item 130): equipment packages, paid by the value of those that have reached `packageStage` (delivered when empty)
+  /// SUPPLY: equipment packages, paid by the value of those that have reached `packageStage` (delivered when empty)
   packageIds     String[]         @default([])
   packageStage   PackageStage?
   sortOrder      Int              @default(0)
@@ -3868,7 +3868,7 @@ model BillingStage {
   @@index([organizationId])
 }
 
-/// One payment stage on an RA bill (item 129): % up to the previous bill, this bill and up to date, at the stage's value.
+/// One payment stage on an RA bill: % up to the previous bill, this bill and up to date, at the stage's value.
 model RaBillStageLine {
   id            String       @id @default(uuid())
   billId        String
@@ -3895,7 +3895,7 @@ model RaBillStageLine {
   @@index([stageId])
 }
 
-/// The contract's milestone grid (item 129): a component's cumulative financial target, % of its value, by the end of a month.
+/// The contract's milestone grid: a component's cumulative financial target, % of its value, by the end of a month.
 model MilestoneTarget {
   id             String           @id @default(uuid())
   organizationId String
@@ -3913,7 +3913,7 @@ model MilestoneTarget {
   @@index([organizationId])
 }
 
-/// A tier of withholding for milestone slippage (item 129): a component this far behind its target has this % of the
+/// A tier of withholding for milestone slippage: a component this far behind its target has this % of the
 /// value of the work not done withheld, released once it catches up.
 model SlippageTier {
   id             String       @id @default(uuid())
@@ -3931,7 +3931,7 @@ model SlippageTier {
   @@index([organizationId])
 }
 
-/// An engineering deliverable of an EPC job (item 130): a design report, drawing set or datasheet the contractor owes the
+/// An engineering deliverable of an EPC job: a design report, drawing set or datasheet the contractor owes the
 /// client, by discipline, with its planned and actual submission and approval. Its revisions are filed in the document
 /// register; its approval can be the event of a payment stage (BillingStage.deliverableIds).
 model EngineeringDeliverable {
@@ -3968,7 +3968,7 @@ model EngineeringDeliverable {
   @@index([organizationId])
 }
 
-/// An equipment package of an EPC job (item 130): blowers, screens, the MCC; its vendor and order, what it covers, the
+/// An equipment package of an EPC job: blowers, screens, the MCC; its vendor and order, what it covers, the
 /// day site needs it, and its planned and actual dates from enquiry to commissioning (PackageStageDate). An import
 /// carries its ship, bill of lading and ETA.
 model ProcurementPackage {
@@ -4013,7 +4013,7 @@ model ProcurementPackage {
   @@index([purchaseOrderId])
 }
 
-/// One stage of an equipment package (item 130): when it was planned and when it happened. A stage with neither does
+/// One stage of an equipment package: when it was planned and when it happened. A stage with neither does
 /// not apply to the package.
 model PackageStageDate {
   id             String             @id @default(uuid())
@@ -4029,7 +4029,7 @@ model PackageStageDate {
   @@index([organizationId])
 }
 
-/// O&M contract (item 131, ARCHITECTURE "Operation and maintenance"): the years of running a scheme after its handover.
+/// O&M contract (ARCHITECTURE "Operation and maintenance"): the years of running a scheme after its handover.
 /// Each year is paid as a % of the contract value in equal instalments (usually quarterly), each instalment an O&M bill
 /// (an RA bill with `omYear`), less the pay of staff not deployed against the minimum and the penalties for service
 /// levels missed beyond what a month allows.
@@ -4098,7 +4098,7 @@ model OmStaffMonth {
   @@index([organizationId])
 }
 
-/// A day of running the scheme (item 131): water produced and supplied, the tail-end readings, complaints and pump
+/// A day of running the scheme: water produced and supplied, the tail-end readings, complaints and pump
 /// efficiency. One per project and day; the benchmarks are checked against it.
 model ServiceLevelDay {
   id                  String       @id @default(uuid())
@@ -4154,7 +4154,7 @@ enum ReceiptKind {
   DEPOSIT_RELEASE
 }
 
-/// Money received from the client, with the deductions it actually made (v3 item 19)
+/// Money received from the client, with the deductions it actually made
 model Receipt {
   id                    String       @id @default(uuid())
   organizationId        String
@@ -4168,7 +4168,7 @@ model Receipt {
   receiptDate           DateTime     @db.Date
   /// Credited to the bank; on a project in another currency, the client's payment at the contract rate
   amount                Decimal      @db.Decimal(18, 2)
-  /// Another currency (item 130): rupees to one unit on the day the bank credited it; the difference from the contract
+  /// Another currency: rupees to one unit on the day the bank credited it; the difference from the contract
   /// rate is an exchange gain or loss in the books
   exchangeRate          Decimal?     @db.Decimal(12, 6)
   mode                  PaymentMode  @default(BANK)
@@ -4198,7 +4198,7 @@ model Receipt {
   @@index([tallyExportId])
 }
 
-/// Money paid to a vendor or subcontractor against an approved bill (payables, v3 item 23). A bill is paid once its
+/// Money paid to a vendor or subcontractor against an approved bill (payables). A bill is paid once its
 /// payments (amount paid plus what was deducted at payment) settle what it says is payable.
 model VendorPayment {
   id                 String           @id @default(uuid())
@@ -4208,7 +4208,7 @@ model VendorPayment {
   project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   vendorId           String
   vendor             Vendor           @relation(fields: [vendorId], references: [id])
-  /// One of the two bills, or (an advance, v5 item 90) the purchase order or work order it is paid against
+  /// One of the two bills, or (an advance) the purchase order or work order it is paid against
   vendorBillId       String?
   vendorBill         VendorBill?      @relation(fields: [vendorBillId], references: [id], onDelete: Restrict)
   subcontractBillId  String?
@@ -4250,16 +4250,16 @@ model VendorPayment {
   @@index([tallyExportId])
 }
 
-/// What a payment request is for (v5 item 90).
+/// What a payment request is for.
 enum PaymentRequestKind {
   BILL
   PO_ADVANCE
   WO_ADVANCE
-  /// A site asks head office for money (v6 item 107): released into the site's imprest or paid to a party on account
+  /// A site asks head office for money: released into the site's imprest or paid to a party on account
   FUND_REQUEST
 }
 
-/// What a site's fund request is for (v6 item 107).
+/// What a site's fund request is for.
 enum FundPurpose {
   WAGES
   LOCAL_PURCHASE
@@ -4268,7 +4268,7 @@ enum FundPurpose {
   OTHER
 }
 
-/// A request to release money (v5 item 90): pay an approved vendor or subcontractor bill, or an advance against a
+/// A request to release money: pay an approved vendor or subcontractor bill, or an advance against a
 /// purchase order or work order. Approved through the approval matrix (submission type PAYMENT_REQUEST) before accounts
 /// pays; payments draw on it up to its amount.
 model PaymentRequest {
@@ -4281,7 +4281,7 @@ model PaymentRequest {
   /// The party paid; a fund request released into an imprest has none
   vendorId          String?
   vendor            Vendor?            @relation(fields: [vendorId], references: [id], onDelete: Restrict)
-  /// Fund requests (v6 item 107): what for, the imprest it tops up (else the party is paid on account), and the site
+  /// Fund requests: what for, the imprest it tops up (else the party is paid on account), and the site
   /// that asked when it asks on behalf of another
   purpose           FundPurpose?
   imprestId         String?
@@ -4416,13 +4416,13 @@ model Attachment {
   rfi                Rfi?               @relation(fields: [rfiId], references: [id], onDelete: Cascade)
   paymentRequestId   String?
   paymentRequest     PaymentRequest?    @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
-  /// An employee's documents (v6 item 99): ID, certificates, signed letters
+  /// An employee's documents: ID, certificates, signed letters
   employeeId         String?
   employee           Employee?          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  /// A supplier's invoice sent on the supplier portal (v6 item 105)
+  /// A supplier's invoice sent on the supplier portal
   supplierInvoiceId  String?
   supplierInvoice    SupplierInvoice?   @relation(fields: [supplierInvoiceId], references: [id], onDelete: Cascade)
-  /// A material or sample approval request's catalogue, test certificates and photos (v6 item 113)
+  /// A material or sample approval request's catalogue, test certificates and photos
   materialApprovalId String?
   materialApproval   MaterialApproval?  @relation(fields: [materialApprovalId], references: [id], onDelete: Cascade)
   /// When the PDF's text was read into DocumentPage (Ask the contract); null = not yet
@@ -4442,7 +4442,7 @@ model Attachment {
   staffMarkOuts   StaffAttendance[] @relation("StaffMarkOutPhoto")
 
   @@index([organizationId])
-  // Every record lists its files: one index per parent column (item 83).
+  // Every record lists its files: one index per parent column.
   @@index([progressEntryId])
   @@index([dailyReportId])
   @@index([materialRequestId])
@@ -4495,7 +4495,7 @@ model AuditLog {
   @@index([actorId, createdAt])
 }
 
-// ---------- Notifications ----------
+// Notifications
 
 /// In-app notification for one user. Push and email are delivery channels for the same row.
 model Notification {
@@ -4590,7 +4590,7 @@ enum CaptureOutcome {
   DISCARDED
 }
 
-/// A WhatsApp message to the company's number from a user who switched WhatsApp entries on (AI item 120): what they
+/// A WhatsApp message to the company's number from a user who switched WhatsApp entries on: what they
 /// sent, what Ask Nirmaan drafted from it, the reply, and the record saved from it. Nothing is saved without their Save.
 model InboundMessage {
   id              String              @id @default(uuid())
@@ -4647,7 +4647,7 @@ model PushToken {
   @@index([userId])
 }
 
-// ---------- Cost ----------
+// Cost
 
 /// Daily wage per trade (attendance category), used to value attendance in the project cost view.
 model LabourRate {
@@ -4712,7 +4712,7 @@ model TallyExport {
   @@index([organizationId, createdAt])
 }
 
-// ---------- Quality ----------
+// Quality
 
 /// A standard inspection checklist ("Reinforcement before concreting"): the points an inspector checks.
 model ChecklistTemplate {
@@ -4762,7 +4762,7 @@ model Inspection {
   witnessedBy             User?            @relation("InspectionWitness", fields: [witnessedById], references: [id])
   witnessedAt             DateTime?
   witnessNote             String?
-  /// Hidden work (item 172): measured and signed off before it is covered, by a client guest at their level
+  /// Hidden work: measured and signed off before it is covered, by a client guest at their level
   hiddenSignedById        String?
   hiddenSignedBy          User?            @relation("InspectionHiddenSigner", fields: [hiddenSignedById], references: [id], onDelete: SetNull)
   hiddenSignedLevel       CheckLevel?
@@ -4815,10 +4815,10 @@ model QualityTest {
   remarks        String?
   createdById    String
   createdBy      User          @relation("TestCreator", fields: [createdById], references: [id])
-  /// Cubes taken from an RMC truck (v6 item 104)
+  /// Cubes taken from an RMC truck
   rmcBatchId     String?       @unique
   rmcBatch       RmcBatch?     @relation(fields: [rmcBatchId], references: [id], onDelete: SetNull)
-  /// The test type it was taken as (item 137): a standard code or the company's own
+  /// The test type it was taken as: a standard code or the company's own
   testTypeCode   String?
   /// The quality plan line it counts under
   planLineId     String?
@@ -4826,7 +4826,7 @@ model QualityTest {
   /// Cubes taken at a pour
   pourId         String?
   pour           Pour?         @relation(fields: [pourId], references: [id], onDelete: SetNull)
-  /// Sent out (item 137 part 2): the lab, the day it went, the lab's report number and day, and its charge
+  /// Sent out: the lab, the day it went, the lab's report number and day, and its charge
   labId          String?
   lab            QaLab?        @relation(fields: [labId], references: [id], onDelete: SetNull)
   sentOn         DateTime?     @db.Date
@@ -4904,7 +4904,7 @@ model Ncr {
   closedBy         User?        @relation("NcrCloser", fields: [closedById], references: [id])
   closedAt         DateTime?
   closureNote      String?
-  /// Item 137 part 2: the `ncrCategory` and `ncrRootCause` masters (codes), raised by the client or TPI, and what putting it right cost
+  /// The `ncrCategory` and `ncrRootCause` masters (codes), raised by the client or TPI, and what putting it right cost
   category         String?
   rootCause        String?
   raisedByClient   Boolean      @default(false)
@@ -4921,7 +4921,7 @@ model Ncr {
   @@index([organizationId, status])
 }
 
-/// A company's copy of a standard test type or one of its own (item 137, `STANDARD_TEST_TYPES` in shared): matched by
+/// A company's copy of a standard test type or one of its own (`STANDARD_TEST_TYPES` in shared): matched by
 /// code, so a company that never edits its tests needs no rows.
 model TestType {
   id             String       @id @default(uuid())
@@ -4948,7 +4948,7 @@ model TestType {
   @@unique([organizationId, code])
 }
 
-/// One line of a project's quality plan (inspection and test plan, item 137): a test, the work or material it covers and
+/// One line of a project's quality plan (inspection and test plan): a test, the work or material it covers and
 /// how often it is owed. Tests due are counted from it (`testsOwed` in shared).
 model QaPlanLine {
   id             String       @id @default(uuid())
@@ -4984,7 +4984,7 @@ model QaPlanLine {
   @@index([organizationId])
 }
 
-/// A concrete pour (item 137): its grade and volume, the pour card that clears it and the cube sets taken from it,
+/// A concrete pour: its grade and volume, the pour card that clears it and the cube sets taken from it,
 /// checked under IS 456.
 model Pour {
   id             String       @id @default(uuid())
@@ -5089,7 +5089,7 @@ model DocumentRevision {
   @@index([documentId, createdAt])
 }
 
-/// A mark on a drawing (item 109): a comment pin, cloud, box, arrow, text or freehand line on one page of a revision's
+/// A mark on a drawing: a comment pin, cloud, box, arrow, text or freehand line on one page of a revision's
 /// file. Points are normalised to the page (0 to 1). Open marks are carried onto later revisions until resolved.
 model DrawingMarkup {
   id             String           @id @default(uuid())
@@ -5131,7 +5131,7 @@ model DrawingMarkup {
   @@index([attachmentId])
 }
 
-/// The scale of one page of a drawing file (v6 item 118): two points on the sheet a known distance apart.
+/// The scale of one page of a drawing file: two points on the sheet a known distance apart.
 model DrawingScale {
   id             String       @id @default(uuid())
   organizationId String
@@ -5156,7 +5156,7 @@ model DrawingScale {
   @@index([documentId])
 }
 
-/// A length, area or count measured on a drawing (v6 item 118), T1, T2… per document.
+/// A length, area or count measured on a drawing, T1, T2… per document.
 model DrawingTakeoff {
   id             String            @id @default(uuid())
   organizationId String
@@ -5189,7 +5189,7 @@ model DrawingTakeoff {
   @@index([attachmentId, page])
 }
 
-/// What a measure on a drawing is (v6 item 118)
+/// What a measure on a drawing is
 enum TakeoffKind {
   LENGTH
   AREA
@@ -5294,7 +5294,7 @@ model Letter {
   signatoryId       String?
   signatory         User?     @relation("LetterSignatory", fields: [signatoryId], references: [id], onDelete: SetNull)
   sentForApprovalAt DateTime?
-  /// Item 169: the signatory's approval (L1) where the letter then waits for a director's seal at head office (L2)
+  /// The signatory's approval (L1) where the letter then waits for a director's seal at head office (L2)
   signedAt          DateTime?
   signedById        String?
   signedBy          User?     @relation("LetterSigner", fields: [signedById], references: [id], onDelete: SetNull)
@@ -5330,7 +5330,7 @@ model Letter {
   @@index([riskId])
 }
 
-/// Each time a letter is marked or forwarded to someone (item 136), kept in order.
+/// Each time a letter is marked or forwarded to someone, kept in order.
 model LetterMark {
   id             String       @id @default(uuid())
   organizationId String
@@ -5353,7 +5353,7 @@ model LetterMark {
   @@index([toId, doneAt])
 }
 
-/// The address book (item 136): offices and people letters come from and go to.
+/// The address book: offices and people letters come from and go to.
 model LetterContact {
   id             String       @id @default(uuid())
   organizationId String
@@ -5379,7 +5379,7 @@ model LetterContact {
   @@index([organizationId, name])
 }
 
-/// A numbering series (item 136): one per project (or head office) and direction, its number restarting each financial year.
+/// A numbering series: one per project (or head office) and direction, its number restarting each financial year.
 model LetterSeries {
   id             String          @id @default(uuid())
   organizationId String
@@ -5413,7 +5413,7 @@ model LetterSeriesCounter {
   @@unique([seriesId, fy])
 }
 
-/// A letter template (item 136): subject and text with {placeholders}, filled when a draft starts from it.
+/// A letter template: subject and text with {placeholders}, filled when a draft starts from it.
 model LetterTemplate {
   id             String       @id @default(uuid())
   organizationId String
@@ -5453,7 +5453,7 @@ model Employee {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  /// HR records (v6 item 99). Personal details: shown to staff admins, payroll and the person themselves
+  /// HR records. Personal details: shown to staff admins, payroll and the person themselves
   dateOfBirth        DateTime?       @db.Date
   gender             Gender?
   fatherOrSpouseName String?
@@ -5482,7 +5482,7 @@ model Employee {
   confirmedOn        DateTime?       @db.Date
   /// Days of notice either side gives
   noticeDays         Int?
-  /// Cost to company a year, from the latest increment (payroll's salary structure, item 100, starts from it)
+  /// Cost to company a year, from the latest increment (payroll's salary structure starts from it)
   ctcAnnual          Decimal?        @db.Decimal(18, 2)
   /// Why they left (resignation, termination, retirement), with the exit event
   exitReason         String?
@@ -5516,7 +5516,7 @@ enum WorkerIdType {
   OTHER
 }
 
-/// A named worker of a labour contractor (or departmental) at site (v4 item 44). Not an employee: no PF, ESI or
+/// A named worker of a labour contractor (or departmental) at site. Not an employee: no PF, ESI or
 /// payroll. The wage is what the contractor is paid per man-day for them, for checking the contractor's bill.
 model Worker {
   id             String        @id @default(uuid())
@@ -5576,7 +5576,7 @@ model WorkerAttendance {
   activityId        String?
   activity          Activity?             @relation(fields: [activityId], references: [id], onDelete: SetNull)
   note              String?
-  /// Biometric attendance (v6 item 101): the device whose punches set in and out
+  /// Biometric attendance: the device whose punches set in and out
   biometricDeviceId String?
   biometricDevice   BiometricDevice?      @relation(fields: [biometricDeviceId], references: [id], onDelete: SetNull)
   markedById        String
@@ -5590,7 +5590,7 @@ model WorkerAttendance {
 }
 
 /// One employee's day: marked by the site in-charge or by themselves (check in / check out).
-/// HR records (v6 item 99): joining, confirmation, transfer, promotion, increment, warning and exit, each with its letter.
+/// HR records: joining, confirmation, transfer, promotion, increment, warning and exit, each with its letter.
 /// Recording one updates the employee (posting, designation, CTC, confirmation, last working day).
 model EmployeeEvent {
   id              String            @id @default(uuid())
@@ -5641,7 +5641,7 @@ model StaffAttendance {
   checkIn             DateTime?
   checkOut            DateTime?
   overtimeHours       Decimal?              @db.Decimal(4, 1)
-  /// Attendance extras (v5 item 97): where the phone or browser was at check-in, and whether that was inside the site's radius
+  /// Attendance extras: where the phone or browser was at check-in, and whether that was inside the site's radius
   checkInLat          Decimal?              @db.Decimal(9, 6)
   checkInLng          Decimal?              @db.Decimal(9, 6)
   checkInAccuracyM    Int?
@@ -5654,7 +5654,7 @@ model StaffAttendance {
   overtimeDecidedAt   DateTime?
   overtimeNote        String?
   note                String?
-  /// Biometric attendance (v6 item 101): the device whose punches set check-in and check-out
+  /// Biometric attendance: the device whose punches set check-in and check-out
   biometricDeviceId   String?
   biometricDevice     BiometricDevice?      @relation(fields: [biometricDeviceId], references: [id], onDelete: SetNull)
   /// Face attendance: the photo the phone took of the person as they marked in and as they marked out
@@ -5758,7 +5758,7 @@ model BillingPayment {
   @@index([organizationId, createdAt])
 }
 
-// ----- Variations (v4 item 37) -----
+// Variations
 
 /// Where a variation stands with the client. Only an approved variation changes the BOQ and the contract value.
 enum VariationStatus {
@@ -5917,7 +5917,7 @@ enum RfiStatus {
   WITHDRAWN
 }
 
-/// A consultant engineer's level on a project (item 172), lowest first
+/// A consultant engineer's level on a project, lowest first
 enum CheckLevel {
   ASSISTANT_ENGINEER
   RESIDENT_ENGINEER
@@ -5925,7 +5925,7 @@ enum CheckLevel {
   TEAM_LEADER
 }
 
-/// A site order book entry (item 172)
+/// A site order book entry
 enum SiteOrderStatus {
   OPEN
   REPLIED
@@ -6038,7 +6038,7 @@ model PpeIssue {
   @@index([organizationId])
 }
 
-/// Incident and near-miss register per project (v4 item 40). Not an approval submission: an entry stays open
+/// Incident and near-miss register per project. Not an approval submission: an entry stays open
 /// until the safety officer or an approver closes it with the root cause and the corrective action.
 model SafetyIncident {
   id               String               @id @default(uuid())
@@ -6149,7 +6149,7 @@ model WorkPermit {
   @@index([projectId, status])
 }
 
-/// Scheduled service or breakdown repair of a machine (v4 item 42).
+/// Scheduled service or breakdown repair of a machine.
 enum MaintenanceKind {
   SERVICE
   BREAKDOWN
@@ -6196,7 +6196,7 @@ model MaintenanceJob {
   labourCost     Decimal           @default(0) @db.Decimal(18, 2)
   /// Parts bought outside (spares from the store are stock issues linked to the job)
   partsCost      Decimal           @default(0) @db.Decimal(18, 2)
-  /// The workshop's service bill for the job (v5 item 91)
+  /// The workshop's service bill for the job
   vendorBillId   String?
   vendorBill     VendorBill?       @relation(fields: [vendorBillId], references: [id], onDelete: SetNull)
   reportedById   String
@@ -6273,7 +6273,7 @@ enum ImprestEntryStatus {
   REJECTED
 }
 
-/// Site imprest (v4 item 45): a petty cash float held by one person at one project. Their cash site expenses spend it.
+/// Site imprest: a petty cash float held by one person at one project. Their cash site expenses spend it.
 model Imprest {
   id             String       @id @default(uuid())
   organizationId String
@@ -6324,7 +6324,7 @@ model ImprestEntry {
   decidedBy        User?              @relation("ImprestDecider", fields: [decidedById], references: [id])
   decidedAt        DateTime?
   decisionNote     String?
-  /// The fund request it releases (v6 item 107)
+  /// The fund request it releases
   paymentRequestId String?
   paymentRequest   PaymentRequest?    @relation(fields: [paymentRequestId], references: [id], onDelete: NoAction)
   createdAt        DateTime           @default(now())
@@ -6335,7 +6335,7 @@ model ImprestEntry {
   @@index([organizationId, status])
 }
 
-/// What a register entry is (v4 item 46).
+/// What a register entry is.
 enum ComplianceDocKind {
   BANK_GUARANTEE
   EMD
@@ -6352,7 +6352,7 @@ enum ComplianceDocStatus {
   INVOKED
 }
 
-/// Guarantees, EMD, insurance policies and licences (v4 item 46), company-wide or for one project, with expiry
+/// Guarantees, EMD, insurance policies and licences, company-wide or for one project, with expiry
 /// reminders. Renewing one adds a new entry that points back at the one it replaces.
 model ComplianceDoc {
   id             String              @id @default(uuid())
@@ -6390,14 +6390,14 @@ model ComplianceDoc {
   updatedAt      DateTime            @updatedAt
 
   attachments Attachment[]
-  /// The tender this EMD was paid for (v6 item 110)
+  /// The tender this EMD was paid for
   tender      Tender?      @relation("TenderEmd")
 
   @@index([organizationId, status, expiresOn])
   @@index([projectId])
 }
 
-/// Handover and defects (v4 item 47). SNAG = found before handover (punch list); DEFECT = reported in the defect
+/// Handover and defects. SNAG = found before handover (punch list); DEFECT = reported in the defect
 /// liability period.
 enum DefectPhase {
   SNAG
@@ -6511,7 +6511,7 @@ model CloseoutItem {
   @@index([projectId, sortOrder])
 }
 
-/// A list's filters, sort and columns saved under a name (UI roadmap item 55). Personal unless shared with the company.
+/// A list's filters, sort and columns saved under a name. Personal unless shared with the company.
 model SavedView {
   id             String       @id @default(uuid())
   organizationId String
@@ -6531,7 +6531,7 @@ model SavedView {
   @@index([userId])
 }
 
-/// An Ask Nirmaan conversation (AI item 67), kept for the user and the company's admins.
+/// An Ask Nirmaan conversation, kept for the user and the company's admins.
 model AiThread {
   id             String       @id @default(uuid())
   organizationId String
@@ -6564,7 +6564,7 @@ model AiMessage {
   unverified       Json?
   /// Tools called, in order, with their inputs (for admins and the evaluation)
   toolCalls        Json?
-  /// Forms the answer filled in for the user to check and save (AiDraftDto[], AI item 71)
+  /// Forms the answer filled in for the user to check and save (AiDraftDto[])
   drafts           Json?
   model            String?
   inputTokens      Int          @default(0)
@@ -6582,7 +6582,7 @@ model AiMessage {
   @@index([threadId, createdAt])
 }
 
-/// An approver looked at a bill check's flag and accepted it, with a note (AI item 69).
+/// An approver looked at a bill check's flag and accepted it, with a note.
 model BillCheckAcceptance {
   id             String       @id @default(uuid())
   organizationId String
@@ -6620,7 +6620,7 @@ model BillCheckSummary {
   @@index([organizationId, createdAt])
 }
 
-/// One invoice, challan or drawing read by the model to fill a form (AI item 70). Only what it cost is kept: the pages
+/// One invoice, challan or drawing read by the model to fill a form. Only what it cost is kept: the pages
 /// and what was read go back to the form, and nothing is saved until the user saves it.
 model AiDocumentRead {
   id             String       @id @default(uuid())
@@ -6642,14 +6642,14 @@ model AiDocumentRead {
   @@index([organizationId, createdAt])
 }
 
-/// An early warning dismissed with a reason (AI item 73), for the whole company. The key carries the figures the
+/// An early warning dismissed with a reason, for the whole company. The key carries the figures the
 /// warning fired on, so it comes back when they move on.
 model WarningDismissal {
   id             String         @id @default(uuid())
   organizationId String
   organization   Organization   @relation(fields: [organizationId], references: [id])
   warningKey     String
-  /// What became of it (item 119); dismissals from before item 119 are KNOWN
+  /// What became of it; dismissals from before outcomes were kept are KNOWN
   outcome        WarningOutcome @default(KNOWN)
   reason         String
   dismissedById  String
@@ -6659,14 +6659,14 @@ model WarningDismissal {
   @@unique([organizationId, warningKey])
 }
 
-/// What became of a dismissed warning (item 119). FIXED and KNOWN count as right in a kind's track record.
+/// What became of a dismissed warning. FIXED and KNOWN count as right in a kind's track record.
 enum WarningOutcome {
   FIXED
   KNOWN
   WRONG
 }
 
-/// Every outcome given to a warning (item 119), kept when the dismissal is undone, so a kind's track record ("right 7
+/// Every outcome given to a warning, kept when the dismissal is undone, so a kind's track record ("right 7
 /// of the last 10") and its pause read the whole history.
 model WarningOutcomeLog {
   id             String         @id @default(uuid())
@@ -6684,7 +6684,7 @@ model WarningOutcomeLog {
   @@index([organizationId, kind, createdAt])
 }
 
-/// A week's cash forecast as it was made (AI item 122), kept so a later week can show how far it was out.
+/// A week's cash forecast as it was made, kept so a later week can show how far it was out.
 model CashForecastSnapshot {
   id             String       @id @default(uuid())
   organizationId String
@@ -6700,7 +6700,7 @@ model CashForecastSnapshot {
   @@unique([organizationId, weekStart])
 }
 
-/// A paused warning kind resumed by an admin (item 119): outcomes from before `resumedAt` no longer count to a pause.
+/// A paused warning kind resumed by an admin: outcomes from before `resumedAt` no longer count to a pause.
 model WarningKindResume {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
@@ -6712,7 +6712,7 @@ model WarningKindResume {
   @@id([organizationId, kind])
 }
 
-/// A warning a person has been told about (item 119), so each goes out once and at most DAILY_WARNING_ALERTS a day.
+/// A warning a person has been told about, so each goes out once and at most DAILY_WARNING_ALERTS a day.
 /// `alertedAt` is null for warnings that were already open when the person's alerts began, which are never sent.
 model WarningAlert {
   id             String       @id @default(uuid())
@@ -6729,7 +6729,7 @@ model WarningAlert {
   @@index([organizationId])
 }
 
-/// Written by Ask Nirmaan in the overnight batch (AI item 74): a user's morning brief (MORNING, for `date`) or a
+/// Written by Ask Nirmaan in the overnight batch: a user's morning brief (MORNING, for `date`) or a
 /// project's weekly narrative for the client's report (WEEK, `date` = the week's Monday). `key` is
 /// MORNING:<userId>:<date> or WEEK:<projectId>:<monday>, so a re-run writes nothing twice.
 model AiBrief {
@@ -6759,7 +6759,7 @@ model AiBrief {
   @@index([organizationId, createdAt])
 }
 
-/// One page of a PDF filed with a document revision or a letter, as text (Ask the contract, AI item 75). `search` is a
+/// One page of a PDF filed with a document revision or a letter, as text (Ask the contract). `search` is a
 /// generated tsvector (english) with a GIN index, made in the migration; Postgres full-text search, no vector database.
 model DocumentPage {
   id             String                   @id @default(uuid())
@@ -6780,7 +6780,7 @@ model DocumentPage {
   @@index([organizationId, projectId])
 }
 
-/// Site photo checks (AI item 76): what the model saw in one photo, read once and kept. Advisory only.
+/// Site photo checks: what the model saw in one photo, read once and kept. Advisory only.
 model PhotoCheck {
   id             String       @id @default(uuid())
   organizationId String
@@ -6807,9 +6807,7 @@ model PhotoCheck {
   @@index([projectId])
 }
 
-/**
- * ---------- Payroll (v6 item 100) ----------
- */
+// Payroll
 
 /// The company's payroll rules: PF, ESI, professional tax state, paid days and overtime rate.
 model PayrollSettings {
@@ -6889,7 +6887,7 @@ model StaffLoan {
   createdById    String
   createdBy      User          @relation("StaffLoanCreator", fields: [createdById], references: [id])
   createdAt      DateTime      @default(now())
-  /// The Tally export that took the money given (v6 item 102)
+  /// The Tally export that took the money given
   tallyExportId  String?
   tallyExport    TallyExport?  @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
 
@@ -6925,7 +6923,7 @@ model PayrollRun {
   paidBy               User?            @relation("PayrollPayer", fields: [paidById], references: [id])
   paidOn               DateTime?        @db.Date
   paymentRef           String?
-  /// The Tally export that took the salary journal, and the one that took the payment (v6 item 102)
+  /// The Tally export that took the salary journal, and the one that took the payment
   tallyExportId        String?
   tallyExport          TallyExport?     @relation("PayrollRunTally", fields: [tallyExportId], references: [id], onDelete: SetNull)
   tallyPaymentExportId String?
@@ -7043,7 +7041,7 @@ model FinalSettlement {
   @@unique([organizationId, settlementNo])
 }
 
-/// Biometric attendance (v6 item 101): a fingerprint or face device at a site or office. ADMS devices are known by their
+/// Biometric attendance: a fingerprint or face device at a site or office. ADMS devices are known by their
 /// serial number (unique across companies, as the device sends nothing else); a webhook device posts with its key.
 model BiometricDevice {
   id             String            @id @default(uuid())
@@ -7077,7 +7075,7 @@ model BiometricDevice {
   @@index([organizationId])
 }
 
-/// A command for an ADMS device (item 150), handed over when it next asks (`GET /iclock/getrequest`) and closed by its
+/// A command for an ADMS device, handed over when it next asks (`GET /iclock/getrequest`) and closed by its
 /// answer (`POST /iclock/devicecmd`). The text is made when it is sent, so a clock is set to the time it goes.
 model BiometricCommand {
   id             String                 @id @default(uuid())
@@ -7147,7 +7145,7 @@ model BiometricPunch {
   @@index([organizationId, pin, date])
 }
 
-// ---------- Books of account (v6 item 102) ----------
+// Books of account
 
 enum AccountGroup {
   CAPITAL_ACCOUNT
@@ -7210,7 +7208,7 @@ model LedgerAccount {
   isSystem       Boolean             @default(false)
   isActive       Boolean             @default(true)
   description    String?
-  /// Where the statements show it, when not its group's line (v6 item 103)
+  /// Where the statements show it, when not its group's line
   statementLine  StatementLine?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
@@ -7288,7 +7286,7 @@ model BooksState {
   lastPostedAt   DateTime?
   /// Records that could not be posted, with why: [{ source, sourceId, date, number, party, reason }]
   held           Json         @default("[]")
-  /// The day the books begin: module records before it are in the opening balances instead (v6 item 103)
+  /// The day the books begin: module records before it are in the opening balances instead
   booksFrom      DateTime?    @db.Date
   /// Nothing posts, changes or is cancelled on or before this day
   lockedUpTo     DateTime?    @db.Date
@@ -7324,7 +7322,7 @@ enum StatementLine {
 }
 
 /// A line of a bank account's statement, imported from the bank's file and matched to a line of the bank book
-/// (v6 item 103, bank reconciliation).
+/// (bank reconciliation).
 model BankStatementLine {
   id             String        @id @default(uuid())
   organizationId String
@@ -7376,7 +7374,7 @@ enum RmcInvoiceStatus {
   CANCELLED
 }
 
-/// What goes into a cubic metre of a grade at a plant (v6 item 104), approved by quality before it is batched.
+/// What goes into a cubic metre of a grade at a plant, approved by quality before it is batched.
 model MixDesign {
   id             String          @id @default(uuid())
   organizationId String
@@ -7570,7 +7568,7 @@ model RmcReceipt {
   @@index([clientId])
 }
 
-// ---------- Supplier portal (v6 item 105) ----------
+// Supplier portal
 
 enum SupplierInvoiceStatus {
   SUBMITTED
@@ -7686,7 +7684,7 @@ model SupplierChangeRequest {
   @@index([vendorId])
 }
 
-// ---------- Machine finance (v6 item 108) ----------
+// Machine finance
 
 /// What the lender did with a machine loan: paid the dealer for the machine, or credited the company's bank.
 enum LoanDisbursal {
@@ -7699,7 +7697,7 @@ enum EquipmentLoanStatus {
   CLOSED
 }
 
-/// A loan on a financed machine (v6 item 108): its terms and the EMI schedule built from them (`loan-rules.ts`). Posts
+/// A loan on a financed machine: its terms and the EMI schedule built from them (`loan-rules.ts`). Posts
 /// to the books as a journal (Dr Plant and Machinery or the bank, Cr the loan's own ledger under Secured Loans).
 model EquipmentLoan {
   id             String              @id @default(uuid())
@@ -7769,8 +7767,7 @@ model LoanEmi {
   @@index([tallyExportId])
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Tender bidding (v6 item 110)
+// Tender bidding
 
 /// Where a schedule of rates comes from.
 enum SorBookKind {
@@ -7865,7 +7862,7 @@ model Tender {
   /// The client's name (a copy of the client master's, or free text without one)
   clientName       String?
   location         String?
-  /// Item 167: the business line (vertical) the tender is for, a code of the `vertical` master
+  /// The business line (vertical) the tender is for, a code of the `vertical` master
   verticalCode     String?
   bidType          TenderBidType  @default(PERCENTAGE)
   sorBookId        String?
@@ -7974,7 +7971,7 @@ model TenderBid {
   @@index([organizationId])
 }
 
-// ---------- Subcontract enquiries (v6 item 111) ----------
+// Subcontract enquiries
 
 enum ScEnquiryStatus {
   OPEN
@@ -7982,7 +7979,7 @@ enum ScEnquiryStatus {
   CANCELLED
 }
 
-/// Subcontract enquiry SCE-<year>-0001 (v6 item 111): chosen items of a project's BOQ (or its own items) sent to several
+/// Subcontract enquiry SCE-<year>-0001: chosen items of a project's BOQ (or its own items) sent to several
 /// subcontractors; their rates are compared item by item and in total, and the chosen quote becomes a draft work order.
 model SubcontractEnquiry {
   id             String            @id @default(uuid())
@@ -8078,7 +8075,7 @@ model SubcontractQuoteLine {
   @@index([organizationId])
 }
 
-/// v6 item 112: a meeting's kind, for the register and the minutes' heading.
+/// A meeting's kind, for the register and the minutes' heading.
 enum MeetingKind {
   PROGRESS
   CLIENT
@@ -8106,7 +8103,7 @@ enum MeetingActionStatus {
   DROPPED
 }
 
-/// A meeting on a project and its minutes (v6 item 112): who came, what was noted and decided, and the actions.
+/// A meeting on a project and its minutes: who came, what was noted and decided, and the actions.
 model Meeting {
   id             String        @id @default(uuid())
   organizationId String
@@ -8215,7 +8212,7 @@ model MeetingAction {
   @@index([meetingId])
 }
 
-/// Material approvals (v6 item 113): a material or a sample put up to the client's engineer or consultant for approval.
+/// Material approvals: a material or a sample put up to the client's engineer or consultant for approval.
 enum MaterialApprovalKind {
   /// Catalogue, data sheet and test certificates of a make
   MATERIAL
@@ -8347,7 +8344,7 @@ model ApprovedMake {
   @@index([approvalId])
 }
 
-/// A comment on a record (v6 item 116). A thread's first comment has no parent and holds whether the thread is resolved;
+/// A comment on a record. A thread's first comment has no parent and holds whether the thread is resolved;
 /// replies point at it. Staff only: guests and suppliers neither see nor write them.
 model Comment {
   id             String       @id @default(uuid())
@@ -8378,7 +8375,7 @@ model Comment {
   @@index([parentId])
 }
 
-/// What a company does (group companies, phase 1): COMPANY_KINDS in @erp/shared
+/// What a company does (group companies): COMPANY_KINDS in @erp/shared
 enum CompanyKind {
   CONSTRUCTION
   CONSULTANCY
@@ -8387,7 +8384,7 @@ enum CompanyKind {
   HOLDING
 }
 
-/// The plans' module sets (v6 item 117): MODULE_TIER_MODULES in @erp/shared
+/// The plans' module sets: MODULE_TIER_MODULES in @erp/shared
 enum ModuleTier {
   ESSENTIALS
   BUSINESS
@@ -8411,7 +8408,7 @@ enum NavModuleSet {
   DEPARTMENTS
 }
 
-/// Pinned on Home (launcher phase 2): a tile of the navigation tree (NAV_TREE in @erp/shared) or a project,
+/// Pinned on Home: a tile of the navigation tree (NAV_TREE in @erp/shared) or a project,
 /// in the user's own order. At most LAUNCHER_PIN_MAX per user. A pin to something the user can no longer open is hidden, not deleted.
 model NavPin {
   id             String       @id @default(uuid())
@@ -8431,7 +8428,7 @@ model NavPin {
   @@index([organizationId])
 }
 
-/// Places a user opened (launcher phase 2), for Recent on Home and in Search. Node rows are kept (Discover reads "never opened"
+/// Places a user opened, for Recent on Home and in Search. Node rows are kept (Discover reads "never opened"
 /// from them); project and record rows are trimmed to the latest LAUNCHER_VISITS_KEPT.
 model NavVisit {
   id             String       @id @default(uuid())
@@ -8463,7 +8460,7 @@ enum NavVisitKind {
   RECORD
 }
 
-/// A company's own New and Featured marks on Home's tiles (launcher phase 3, Admin › Home tiles); a null keeps the
+/// A company's own New and Featured marks on Home's tiles (Admin › Home tiles); a null keeps the
 /// navigation tree's default (`newUntil`, `featured` on the node).
 model LauncherFlag {
   organizationId String
@@ -8480,7 +8477,7 @@ model LauncherFlag {
   @@id([organizationId, nodeId])
 }
 
-/// Someone asks, from Discover, for a module their role cannot open (launcher phase 3). The company's admins are told
+/// Someone asks, from Discover, for a module their role cannot open. The company's admins are told
 /// (ACCESS_REQUEST); granting means changing the person's role or turning the module on, then marking it granted. Audited.
 model AccessRequest {
   id             String              @id @default(uuid())
@@ -8509,7 +8506,7 @@ enum AccessRequestStatus {
   DECLINED
 }
 
-/// A DPR's hindrance remark as read for a delay (AI item 123): what the rules or the model made of it, and what the
+/// A DPR's hindrance remark as read for a delay: what the rules or the model made of it, and what the
 /// project manager did with it (recorded it as a delay, or dismissed it). Read again when the remark is changed.
 model HindranceCheck {
   id             String        @id @default(uuid())
@@ -8544,7 +8541,7 @@ model HindranceCheck {
   @@index([riskId])
 }
 
-/// Failed sign-ins and reset-link requests (finding 5 of the October review), counted per email and per address to slow
+/// Failed sign-ins and reset-link requests, counted per email and per address to slow
 /// password guessing (`login-guard-rules.ts`). Not a tenant table: an attempt may name no one's account. Rows older than
 /// a day are removed as new ones come in.
 model AuthAttempt {
@@ -8561,7 +8558,7 @@ model AuthAttempt {
   @@index([createdAt])
 }
 
-/// A lab tests are done at (item 137 part 2): the site's own, an NABL lab with its accreditation, a sister company's, or other.
+/// A lab tests are done at: the site's own, an NABL lab with its accreditation, a sister company's, or other.
 model QaLab {
   id             String       @id @default(uuid())
   organizationId String
@@ -8589,7 +8586,7 @@ model QaLab {
   @@unique([organizationId, name])
 }
 
-/// An instrument in the calibration register (item 137 part 2), at a site or a lab, with when it falls due.
+/// An instrument in the calibration register, at a site or a lab, with when it falls due.
 model QaInstrument {
   id               String       @id @default(uuid())
   organizationId   String
@@ -8644,7 +8641,7 @@ model QaCalibration {
   @@index([instrumentId, calibratedOn])
 }
 
-/// An internal audit or a visit by the client, its consultant, a third-party inspector or the department (item 137 part 3).
+/// An internal audit or a visit by the client, its consultant, a third-party inspector or the department.
 model QaAudit {
   id             String       @id @default(uuid())
   organizationId String
@@ -8691,7 +8688,7 @@ model QaAuditFinding {
   @@index([auditId])
 }
 
-/// A drawing the project needs (item 138 part 1, the drawing schedule): from whom and by when, matched to the register's
+/// A drawing the project needs (the drawing schedule): from whom and by when, matched to the register's
 /// document when it arrives (by number). One still not buildable past its day is chased by letter and can be recorded
 /// as a delay.
 model DrawingNeed {
@@ -8734,7 +8731,7 @@ model DrawingNeed {
   @@index([organizationId])
 }
 
-/// A design submission (item 138 part 2): drawings or a design report sent to the client's side for approval, or to an
+/// A design submission: drawings or a design report sent to the client's side for approval, or to an
 /// outside institution for vetting, each sending a round (R0, R1…) that comes back with a code (A to D) and comments.
 model DesignSubmission {
   id             String       @id @default(uuid())
@@ -8857,7 +8854,7 @@ model DesignComment {
   @@index([organizationId])
 }
 
-/// A controlled copy of a drawing (item 138 part 3): a numbered print of one revision in a holder's hands. When a later
+/// A controlled copy of a drawing: a numbered print of one revision in a holder's hands. When a later
 /// revision supersedes it, it is recalled until returned, destroyed or reported lost.
 model ControlledCopy {
   id             String           @id @default(uuid())
@@ -8890,7 +8887,7 @@ model ControlledCopy {
   @@index([documentId])
 }
 
-/// An outside system the company has connected (item 139, ARCHITECTURE "Integration layer"): a vendor cloud that
+/// An outside system the company has connected (ARCHITECTURE "Integration layer"): a vendor cloud that
 /// posts to /api/hooks/<kind>/<secret>, or a device on a site's network read by a paired Nirmaan Connector.
 model IntegrationConnection {
   id              String          @id @default(uuid())
@@ -9008,7 +9005,7 @@ model DeviceLink {
   @@index([organizationId])
 }
 
-/// One reading from a machine's tracker or its maker's feed (item 146): kept 90 days, rolled up into its MachineDay.
+/// One reading from a machine's tracker or its maker's feed: kept 90 days, rolled up into its MachineDay.
 model MachineReading {
   id             String       @id @default(uuid())
   organizationId String
@@ -9036,7 +9033,7 @@ model MachineReading {
   @@index([organizationId, at])
 }
 
-/// A machine's day from its readings (item 146): engine hours from the meter, idle, fuel used and how far from its site.
+/// A machine's day from its readings: engine hours from the meter, idle, fuel used and how far from its site.
 model MachineDay {
   id              String       @id @default(uuid())
   organizationId  String
@@ -9068,7 +9065,7 @@ model MachineDay {
   outsideReadings Int          @default(0)
   lastLat         Decimal?     @db.Decimal(9, 6)
   lastLng         Decimal?     @db.Decimal(9, 6)
-  /// The tank (item 147): litres at the day's start (the day before's last reading) and at its last reading, when
+  /// The tank: litres at the day's start (the day before's last reading) and at its last reading, when
   /// that was read, and the refills and drains seen in between ([{ kind, startAt, endAt, before, after, engineOn }])
   fuelStart       Decimal?     @db.Decimal(18, 3)
   fuelEnd         Decimal?     @db.Decimal(18, 3)
@@ -9080,7 +9077,7 @@ model MachineDay {
   @@index([organizationId, date])
 }
 
-/// A fill a fuel dispenser posted (item 147): one per transaction, issued from the connection's site as a fuel slip once
+/// A fill a fuel dispenser posted: one per transaction, issued from the connection's site as a fuel slip once
 /// its tag (a DeviceLink under the dispenser's connection) is matched to a machine; a refused issue keeps its reason.
 model FuelDispense {
   id             String                @id @default(uuid())
@@ -9107,7 +9104,7 @@ model FuelDispense {
   @@index([organizationId, stockEntryId])
 }
 
-/// One weight a site's weighbridge held steady, as the Connector read it from the indicator (item 148). A ticket uses it
+/// One weight a site's weighbridge held steady, as the Connector read it from the indicator. A ticket uses it
 /// as its first or second weight.
 model Weighing {
   id             String                @id @default(uuid())
@@ -9130,7 +9127,7 @@ model Weighing {
   @@index([organizationId, at])
 }
 
-/// A truck over the weighbridge (item 148): its first and second weights, the order and challan it brought, and the GRN
+/// A truck over the weighbridge: its first and second weights, the order and challan it brought, and the GRN
 /// drafted from its net weight. Numbered WB-<year>-0001 per company.
 model WeighTicket {
   id                  String             @id @default(uuid())
@@ -9172,7 +9169,7 @@ model WeighTicket {
   @@index([purchaseOrderId])
 }
 
-/// A row of a batching plant controller's batch report, as the Connector read it from the controller's folder (item 149):
+/// A row of a batching plant controller's batch report, as the Connector read it from the controller's folder:
 /// its cells by column name, read through the plant's column map (the connection's config). A challan dispatched from it
 /// ties it to its RmcBatch; a test batch or a wash-out is set aside with a reason.
 model PlantBatchRow {
@@ -9202,7 +9199,7 @@ model PlantBatchRow {
   @@index([rmcBatchId])
 }
 
-/// The day a contract obligation's deadline counts from (item 171)
+/// The day a contract obligation's deadline counts from
 enum ObligationAnchor {
   AGREEMENT
   START
@@ -9211,7 +9208,7 @@ enum ObligationAnchor {
   DATE
 }
 
-/// What missing a contract obligation costs (item 171)
+/// What missing a contract obligation costs
 enum ObligationPenalty {
   NONE
   WITHHOLD_PCT
@@ -9220,13 +9217,13 @@ enum ObligationPenalty {
   ONCE_AMOUNT
 }
 
-/// Who owes a contract obligation (item 171)
+/// Who owes a contract obligation
 enum ObligationParty {
   CONTRACTOR
   CLIENT
 }
 
-/// Something the contract data says must be done by a day, and what missing it costs (item 171): the programme within 15
+/// Something the contract data says must be done by a day, and what missing it costs: the programme within 15
 /// days of the agreement, the field laboratory within two months, the final account within 21 days of completion. Bills
 /// deduct the penalties through `billRecoveryLines` (@erp/shared contract-obligations.ts).
 model ContractObligation {
@@ -9261,14 +9258,14 @@ model ContractObligation {
   @@index([organizationId, metOn])
 }
 
-/// Official progress reports (item 174): daily, weekly and monthly reports for the client, in Nirmaan's design
+/// Official progress reports: daily, weekly and monthly reports for the client, in Nirmaan's design
 enum OfficialReportKind {
   DAILY
   WEEKLY
   MONTHLY
 }
 
-/// An official progress report as it was issued to the client (item 174): its number, revision and the copy that went
+/// An official progress report as it was issued to the client: its number, revision and the copy that went
 model OfficialReportIssue {
   id             String             @id @default(uuid())
   organizationId String
@@ -9295,7 +9292,7 @@ model OfficialReportIssue {
   @@index([organizationId, projectId, kind])
 }
 
-// ---------- Consultant checks (item 172) ----------
+// Consultant checks
 
 /// A consultant's or client engineer's check of a measurement sheet: their own quantity against the recorded one, at their level.
 model MeasurementCheck {
@@ -9360,20 +9357,20 @@ model SiteOrder {
   @@index([organizationId, status])
 }
 
-/// Programme and EOT (item 173): a programme revision with the Engineer
+/// Programme and EOT: a programme revision with the Engineer
 enum ProgrammeStatus {
   SUBMITTED
   APPROVED
   RETURNED
 }
 
-/// What an extension of time is claimed for (item 173)
+/// What an extension of time is claimed for
 enum EotBasis {
   DELAY
   VARIATION
 }
 
-/// An EOT application's step (item 173)
+/// An EOT application's step
 enum EotStatus {
   SENT
   FORWARDED
@@ -9381,7 +9378,7 @@ enum EotStatus {
   WITHDRAWN
 }
 
-/// A revision of the construction programme as it went to the Engineer, with what it showed and their answer (item 173).
+/// A revision of the construction programme as it went to the Engineer, with what it showed and their answer.
 model ProgrammeSubmission {
   id             String          @id @default(uuid())
   organizationId String
@@ -9413,7 +9410,7 @@ model ProgrammeSubmission {
   @@index([organizationId, status])
 }
 
-/// An application for an extension of time (item 173): sent, forwarded by the Engineer, decided by the competent authority.
+/// An application for an extension of time: sent, forwarded by the Engineer, decided by the competent authority.
 model EotApplication {
   id              String       @id @default(uuid())
   organizationId  String

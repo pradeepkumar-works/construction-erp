@@ -1,5 +1,5 @@
 /**
- * Indent checks (item 170, ARCHITECTURE "Indent checks"): before a project manager approves a material request, each line
+ * Indent checks (ARCHITECTURE "Indent checks"): before a project manager approves a material request, each line
  * set against what the site's store holds and what the BOQ allows for the item. The allowance is the project's norms
  * (`MaterialNorm` per BOQ item, `ActivityMaterialNorm` per activity, an activity's own first as in `normSource`) over the
  * whole BOQ, with their wastage; what is left of it is the allowance less what was issued to the work, what the store

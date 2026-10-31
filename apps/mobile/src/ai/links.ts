@@ -1,5 +1,5 @@
 /**
- * The site app's screen for a link in an answer (AI item 72). Answers link to the web app's paths (`/dpr/<id>`,
+ * The site app's screen for a link in an answer. Answers link to the web app's paths (`/dpr/<id>`,
  * `/purchase-orders/<id>`, `/risks?id=<id>`); each maps to the phone's own screen, or to null when the phone has none,
  * and the link is then shown as plain text.
  */
@@ -32,11 +32,11 @@ export function phoneRoute(href: string): string | null {
   const [, first, second] = path.split('/');
   const params = new URLSearchParams(query);
   if (first && second && ID.test(second) && RECORDS[first]) return `${RECORDS[first]}${second}`;
-  // A page of a filed PDF (Ask the contract, AI item 75)
+  // A page of a filed PDF (Ask the contract)
   const file = params.get('file');
   if (first === 'documents' && second === 'view' && file && ID.test(file)) return `/document-page?file=${file}&page=${Number(params.get('page')) || 1}`;
   const id = params.get('id');
-  // A drawing in the viewer (item 109), or a document opened in the register
+  // A drawing in the viewer, or a document opened in the register
   if (first === 'documents' && (second === 'drawing' || !second) && id && ID.test(id)) return `/drawing/${id}`;
   if (first === 'risks' && id && ID.test(id)) return `/risk/${id}`;
   if (first === 'safety' && params.get('tab') === 'incidents' && id && ID.test(id)) return `/incident/${id}`;

@@ -20,7 +20,7 @@ async function at(page: Page, fx: number, fy: number) {
 }
 
 /**
- * Drawing viewer and markup (item 109) on the demo hospital's ground floor plan (ARC-101, two revisions, marks seeded):
+ * Drawing viewer and markup on the demo hospital's ground floor plan (ARC-101, two revisions, marks seeded):
  * the project manager sees this revision's marks and the one carried open from R0, adds a comment pin and a cloud,
  * resolves the pin, compares the revisions, and opens the CAD drawing with its layers. Site can mark up too but not
  * change another person's mark.

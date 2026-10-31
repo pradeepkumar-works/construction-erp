@@ -1,7 +1,7 @@
 import type { ProjectType } from './enums';
 
 /**
- * The next project code in the company's series (finding 17 of the October review: the code was typed by hand,
+ * The next project code in the company's series (the code was typed by hand,
  * though the series is plain to see). A code reads `<prefix>-<year>-<serial>`: the prefix says what kind of work it
  * is and the serial runs on across the company, so RD-2026-01, BL-2026-02 and WS-2026-03 are one series and the next
  * water supply project is WS-2026-04.

@@ -52,7 +52,7 @@ const shiftMonth = (m: string, n: number) => dayjs(`${m}-01`).add(n, 'month').fo
 const toStr = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
 /**
- * O&M tab of a handed-over project (item 131, ARCHITECTURE "Operation and maintenance"): the contract's years paid in
+ * O&M tab of a handed-over project (ARCHITECTURE "Operation and maintenance"): the contract's years paid in
  * instalments, the daily service levels against the benchmarks with the month's failures and penalties, the staff
  * deployed against the minimum, the treatment chemicals against their norm, and each period's O&M bill. The open view is
  * `?sub=` and the month the log shows `?month=` in the URL.
@@ -157,7 +157,6 @@ function useOmSave<V>(projectId: string, call: (v: V) => Promise<OmDto>) {
   });
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Service levels
 
 function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; benchmarks: OmBenchmarkMonthDto[]; missing: string[]; onEdit: (d: ServiceLevelDayDto | 'new') => void }) {
@@ -418,7 +417,6 @@ function DayForm({ data, target, onClose }: { data: OmDto; target: ServiceLevelD
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Periods and their bills
 
 function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
@@ -489,7 +487,6 @@ function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Staff
 
 function Staff({ data, onRecord }: { data: OmDto; onRecord: () => void }) {
@@ -594,7 +591,6 @@ function StaffForm({ data, open, onClose }: { data: OmDto; open: boolean; onClos
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Chemicals
 
 function Chemicals({ data }: { data: OmDto }) {
@@ -625,7 +621,6 @@ function Chemicals({ data }: { data: OmDto }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Terms
 
 function Terms({ data, onEdit }: { data: OmDto; onEdit: () => void }) {

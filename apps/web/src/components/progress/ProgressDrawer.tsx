@@ -57,7 +57,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
             photosSection('progress', data.id, data.attachments),
           ],
           activity: { type: 'progress', id: data.id, submission: data },
-          // A DPR's work line (item 127) is changed and decided in its DPR.
+          // A DPR's work line is changed and decided in its DPR.
           actions: (size) =>
             data.dailyReportId ? (
               <LinkButton href={`/dpr/${data.dailyReportId}`} size={size}>

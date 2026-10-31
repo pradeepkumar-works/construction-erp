@@ -1,5 +1,5 @@
 /**
- * Demo project types (item 134, ARCHITECTURE "Project types"). All names and figures are invented.
+ * Demo project types (ARCHITECTURE "Project types"). All names and figures are invented.
  *
  * The standard types and component kinds are data in packages/shared and need no rows. The demo company adds one type
  * of its own, Bridge (built on road, located by chainage), from two kinds of its own: a pier whose shaft is cast in
@@ -80,7 +80,7 @@ export const DEMO_TYPE: ProjectTypeDef = {
 };
 
 /**
- * The demo bridge's DPR form (item 134 part 2): the road's form with the weather required, a site photo, the piling
+ * The demo bridge's DPR form: the road's form with the weather required, a site photo, the piling
  * rig and crane offered by name, and the figures a bridge site reports every day.
  */
 export const DEMO_DPR_FORM: DprFormDef = normaliseDprForm({

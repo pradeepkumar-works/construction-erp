@@ -78,7 +78,7 @@ function layout(nodes: PipeNodeDto[], segments: PipeSegmentDto[]): { at: Map<str
 }
 
 /**
- * A zone's network drawn from its nodes and pipes (item 126): each pipe in the state of its work, thicker for larger
+ * A zone's network drawn from its nodes and pipes: each pipe in the state of its work, thicker for larger
  * diameters, the tank or source as a square and valves as diamonds (filled once fixed). The pipe list beside it says
  * the same in words, so the drawing is a picture, not a control.
  */

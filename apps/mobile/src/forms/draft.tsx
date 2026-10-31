@@ -11,7 +11,7 @@ import { formatDateTime } from '../utils/format';
 import { kvGet, kvRemove, kvSet } from '../utils/kv';
 
 /**
- * A new entry's unsent work, kept on this phone as it is typed (UX item 80), so a back swipe, a call, the camera or
+ * A new entry's unsent work, kept on this phone as it is typed, so a back swipe, a call, the camera or
  * Android closing the app never loses a DPR. One draft per form and user; it is restored on the form's first frame and
  * cleared when the entry is sent or the user starts over. Edits of entries already on the server keep no draft.
  */
@@ -81,7 +81,6 @@ export function useFormDraft<T>(key: string | null, value: T, restore: (value: T
     }
     setReady(true);
     // Once per form: a later change of key (signing in again) does not restore again.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -114,7 +113,7 @@ export function restorePhotos(photos: LocalPhoto[]): LocalPhoto[] {
 }
 
 /**
- * Asks before the user leaves a form with unsent work by Back, a swipe or the header (UX item 80). With a draft the
+ * Asks before the user leaves a form with unsent work by Back, a swipe or the header. With a draft the
  * work is already safe, so the question is only whether to keep it; editing a sent entry asks whether to discard.
  */
 export function useLeaveGuard(draft: FormDraft, opts: { keepsDraft: boolean; busy?: boolean }) {

@@ -3,29 +3,29 @@ import { COMMENTS_ANCHOR } from '@/components/comments/CommentsSection';
 
 /** Where a notification leads when clicked: a submission drawer on the notifications page, or a page. */
 export function notificationHref(n: NotificationDto): string {
-  // A mention or a reply (v6 item 116): the record's own page, at its comments.
+  // A mention or a reply: the record's own page, at its comments.
   if (n.type === 'COMMENT' && n.entityId && (COMMENT_KINDS as readonly string[]).includes(n.entityType ?? '')) return `${commentKindHref(n.entityType as CommentKind, n.entityId)}#${COMMENTS_ANCHOR}`;
   if (n.type === 'SAFETY') return `/safety?tab=${n.entityType === 'WORK_PERMIT' ? 'permits' : 'incidents'}${n.entityId ? `&id=${n.entityId}` : ''}`;
   if (n.type === 'MACHINERY')
     return n.entityType === 'EQUIPMENT_DOCUMENT' || n.entityType === 'DRIVER' ? '/machinery?tab=papers' : `/machinery?tab=maintenance${n.entityType === 'MAINTENANCE_JOB' && n.entityId ? `&id=${n.entityId}` : ''}`;
   if (n.type === 'IMPREST') return `/imprest${n.entityId ? `?id=${n.entityId}` : ''}`;
-  // A contract obligation coming due (item 171): the project's Contract tab.
+  // A contract obligation coming due: the project's Contract tab.
   if (n.entityType === 'CONTRACT_OBLIGATION' && n.projectId) return `/projects/${n.projectId}?tab=contract`;
   if (n.type === 'COMPLIANCE') return `/compliance${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.type === 'DEFECT' && n.projectId) return `/projects/${n.projectId}?tab=handover${n.entityType === 'DEFECT' && n.entityId ? `&defect=${n.entityId}` : ''}`;
   if (n.type === 'WATCH_LIST') return '/watch-list';
-  // A request for access (launcher phase 3): admins answer it in Admin › Home tiles; the person's answer opens Home.
+  // A request for access: admins answer it in Admin › Home tiles; the person's answer opens Home.
   if (n.entityType === 'ACCESS_REQUEST') return `/home-tiles${n.entityId ? `?request=${n.entityId}` : ''}`;
   if (n.entityType === 'ACCESS_DECISION') return '/';
   // An RFI: the client's engineer or consultant answers it in their portal; staff open it in Documents.
   if (n.entityType === 'RFI' && n.entityId) return n.type === 'PORTAL' && n.projectId ? `/portal/${n.projectId}?tab=rfis&open=${n.entityId}` : `/documents?tab=rfis&rfi=${n.entityId}`;
-  // A site order (item 172): the engineer accepts it in the portal; staff reply on the project's Site orders tab.
+  // A site order: the engineer accepts it in the portal; staff reply on the project's Site orders tab.
   if (n.entityType === 'SITE_ORDER' && n.entityId && n.projectId) return n.type === 'PORTAL' ? `/portal/${n.projectId}?tab=site-orders&open=${n.entityId}` : `/projects/${n.projectId}?tab=site-orders&order=${n.entityId}`;
-  // A programme revision or an EOT application (item 173): the engineer answers in the portal; staff open the project's tab.
+  // A programme revision or an EOT application: the engineer answers in the portal; staff open the project's tab.
   if ((n.entityType === 'PROGRAMME' || n.entityType === 'EOT') && n.entityId && n.projectId)
     return n.type === 'PORTAL' ? `/portal/${n.projectId}?tab=programme&open=${n.entityId}` : `/projects/${n.projectId}?tab=programme&${n.entityType === 'EOT' ? 'eot' : 'revision'}=${n.entityId}`;
   if (n.type === 'MORNING_BRIEF') return '/';
-  // The supplier portal (v6 item 105): the supplier's own notices open their pages; the company's open the inbox or the vendor.
+  // The supplier portal: the supplier's own notices open their pages; the company's open the inbox or the vendor.
   if (n.entityType === 'PORTAL_PO' || n.entityType === 'PORTAL_WO') return `/supplier/orders?open=${n.entityType === 'PORTAL_PO' ? 'po' : 'wo'}:${n.entityId}`;
   if (n.entityType === 'PORTAL_INVOICE') return '/supplier/invoices';
   if (n.entityType === 'PORTAL_CHANGE') return '/supplier/profile';
@@ -36,7 +36,7 @@ export function notificationHref(n: NotificationDto): string {
   if (n.entityType === 'MEETING' && n.entityId) return `/meetings/${n.entityId}`;
   if (n.entityType === 'LETTER' && n.entityId) return `/correspondence/${n.entityId}`;
   if (n.entityType === 'EQUIPMENT_LOAN' && n.entityId) return `/machine-loans/${n.entityId}`;
-  // Hand-offs (e2e review, fix 2): a goods receipt opens in Stock, a new project's team member opens the project.
+  // Hand-offs: a goods receipt opens in Stock, a new project's team member opens the project.
   if (n.entityType === 'GRN') return `/stock${n.projectId ? `?projectId=${n.projectId}` : ''}`;
   // Each desk's notice opens its own queue, not the store's register.
   if (n.entityType === 'GRN_CHECK') return '/inspections?tab=grns';

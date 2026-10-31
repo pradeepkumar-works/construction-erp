@@ -35,7 +35,7 @@ function MasterRow({ node, count }: { node: NavNode; count?: { active: number; t
 }
 
 /**
- * Administration › Masters (item 135): every master the company keeps, under the department whose menu names it, with only
+ * Administration › Masters: every master the company keeps, under the department whose menu names it, with only
  * the ones this person may open. The simple lists open their own page; the rest open where they always lived.
  */
 export default function MastersPage() {

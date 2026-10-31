@@ -1,5 +1,5 @@
 /**
- * Pipe network tests (item 126). Reading an EPANET file (units, valves, pumps, coordinates) and a design office's sheet
+ * Pipe network tests. Reading an EPANET file (units, valves, pumps, coordinates) and a design office's sheet
  * with loose headers, the checks that stop an import, what a re-import changes (matched by code, never shortening a pipe
  * below its work), a segment's stages held to its length and weighted, the zone's pipe sheet, the pipes ready to
  * start, the cap a DPR line meets, the DPR's pipeline summary, and a stage guessed from an activity's name.

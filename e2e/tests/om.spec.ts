@@ -3,7 +3,7 @@ import type { OmDto, RaBillDto, WatchListDto } from '../../packages/shared/src';
 import { api, apiToken, axeViolations, signIn } from './helpers';
 
 /**
- * Operation and maintenance (item 131) on the water supply scheme handed over 19 months ago: the seed gives it five
+ * Operation and maintenance on the water supply scheme handed over 19 months ago: the seed gives it five
  * years of O&M paid quarterly, a reading for every day (pressure short twice in September and twice this month), the
  * staff recorded each month (a pump operator short in August), chemicals issued against their norm and six O&M bills,
  * the last a draft. Everything a test adds is removed again.

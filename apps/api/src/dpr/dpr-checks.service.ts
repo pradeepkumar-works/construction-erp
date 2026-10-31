@@ -11,7 +11,7 @@ const daysBefore = (d: string, n: number) => dateOnly(new Date(Date.parse(`${d}T
 const crewOf = (v: unknown): ManpowerLine[] => (Array.isArray(v) ? (v as ManpowerLine[]) : []);
 
 /**
- * DPR credibility checks (intelligence quick win Q3) for those who approve daily reports. The report comes through
+ * DPR credibility checks for those who approve daily reports. The report comes through
  * `DprService.get` with the caller, so a report they cannot open gives nothing; its project's earlier reports, norms,
  * issues and photos are then read for the comparison. The rules are pure in `dpr-check-rules.ts`.
  */

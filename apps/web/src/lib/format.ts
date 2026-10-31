@@ -34,7 +34,7 @@ const intl2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximum
 const intl0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
 /**
- * Money a project keeps in rupees, in its contract currency (item 130): "US$ 74,850.00" on a foreign contract at the
+ * Money a project keeps in rupees, in its contract currency: "US$ 74,850.00" on a foreign contract at the
  * contract rate, else formatINR. International digit grouping abroad, Indian at home.
  */
 export function formatMoney(rupees: string | number | null | undefined, c: ContractCurrency | null | undefined, decimals = false): string {
@@ -103,7 +103,7 @@ export function inSentence(label: string): string {
 const pctFormats = new Map<string, Intl.NumberFormat>();
 
 /**
- * A percentage, written one way everywhere (UX item 85): whole numbers from 10% up, one decimal below it (2.5%, and 2%
+ * A percentage, written one way everywhere: whole numbers from 10% up, one decimal below it (2.5%, and 2%
  * rather than 2.0%), `%` without a space, `–` for none. `digits` fixes the decimals instead ({ digits: 0 } for a
  * whole number always).
  */

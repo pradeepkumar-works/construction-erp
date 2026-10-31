@@ -3,7 +3,7 @@ import { billRecoveryLines, obligationDue, revisedCompletion, type ObligationAnc
 import { dateOnly, money } from '../common/serialize';
 
 /*
- * Contract obligations on a bill (item 171): what each obligation missed costs as of the bill's date less what earlier
+ * Contract obligations on a bill: what each obligation missed costs as of the bill's date less what earlier
  * bills took. `billTotals` runs it for every works bill, and `ContractObligationsService` reads the same anchors.
  */
 

@@ -1,5 +1,5 @@
 /**
- * Ready-mix concrete (v6 item 104): a plant is a project of type PLANT, so its cement, aggregates and admixture are
+ * Ready-mix concrete: a plant is a project of type PLANT, so its cement, aggregates and admixture are
  * bought, received and counted as any site's. Mix designs say what goes into a cubic metre of each grade; orders (a
  * quote first) say what a customer wants; each truck is a batch with its delivery challan, which issues the materials
  * from the plant's stock and can have cubes taken; bills are raised from delivered challans with GST.
@@ -131,7 +131,7 @@ export interface RmcBatchDto {
   cubeTestId: string | null;
   cubeTestNo: string | null;
   cubeResult: string | null;
-  /** The plant controller's batch number, when the challan was made from its batch report (item 149) */
+  /** The plant controller's batch number, when the challan was made from its batch report */
   plantBatchNo: string | null;
   lines: RmcBatchLineDto[];
   canDeliver: boolean;

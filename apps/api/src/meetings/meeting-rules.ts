@@ -1,5 +1,5 @@
 /**
- * Meetings' rules (v6 item 112), with no database: how late an action is, what stops the minutes being issued, what an
+ * Meetings' rules, with no database: how late an action is, what stops the minutes being issued, what an
  * action may move to, and the counts the register shows. Tested in src/scripts/meetings-test.ts.
  */
 import type { MeetingActionStatus } from '@erp/shared';

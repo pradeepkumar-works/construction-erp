@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Leaving a form with unsaved work (UX item 79): the open form registers a check here, and in-app navigation that does
+ * Leaving a form with unsaved work: the open form registers a check here, and in-app navigation that does
  * not go through a link the form can see (Ctrl K, the Ask panel's record links) asks it first. Links and the browser's
  * Back are handled by `FormShell` itself.
  */

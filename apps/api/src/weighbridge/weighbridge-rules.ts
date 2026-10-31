@@ -1,5 +1,5 @@
 /**
- * Weighbridge rules (item 148, ARCHITECTURE "Weighbridge"): what a Connector's weighing says, a weighbridge
+ * Weighbridge rules (ARCHITECTURE "Weighbridge"): what a Connector's weighing says, a weighbridge
  * connection's settings, and the tickets' numbers. Pure: tested in `src/scripts/weighbridge-test.ts`. The net weight,
  * short supply and the GRN check are in `@erp/shared/weighbridge.ts`.
  */

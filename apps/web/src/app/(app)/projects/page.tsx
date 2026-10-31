@@ -86,7 +86,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
 export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  // The header's vertical (item 167) narrows the list; the filter here is the same choice.
+  // The header's vertical narrows the list; the filter here is the same choice.
   const [vertical, setVertical] = useVerticalScope();
   const { data: verticals } = useMasterList('vertical', false, !!user && !isGuest(user.roleKey));
   const verticalName = (code: string | null) => (code ? (verticals?.entries.find((e) => e.code === code)?.name ?? code) : null);

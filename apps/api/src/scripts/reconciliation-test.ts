@@ -107,8 +107,7 @@ test('reconcile: a BOQ item without progress gives no theoretical and no work', 
   assert.equal(r.variancePct, null);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Estimate, wastage and the starter library (v5 item 92)
+// Estimate, wastage and the starter library
 
 test('estimate: materials with wastage, labour and machines priced, overheads and profit on the cost', () => {
   // M25: 8.2 bags at 400 with 2% wastage, 2.5 helper-days at 550, 0.8 machine hours at 450; 5% overheads, 10% profit.
@@ -191,8 +190,7 @@ test('library: a material picks the store item with the right unit and the most 
   assert.equal(inTonnes.wrongUnit?.unit, 'MT');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Stock against the DPR (item 128)
+// Stock against the DPR
 
 test("activity norms: an activity with norms of its own counts under itself, not under its BOQ item's norms", () => {
   const boqOf = new Map<string, string | null>([['conc-1', 'boq-rcc'], ['conc-2', 'boq-rcc'], ['hc', null], ['trench', null]]);

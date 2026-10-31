@@ -51,7 +51,7 @@ interface Project {
 export type LeakageFlag = LeakageFlagDto & { warnKey: string; action: string };
 
 /**
- * Leakage checks (AI item 121): the month's material, rate, fuel and idle-hire flags over the caller's projects, with
+ * Leakage checks: the month's material, rate, fuel and idle-hire flags over the caller's projects, with
  * the rupees at risk. Material reads the reconciliation (`ReconciliationService.forPeriod`), rates the purchase orders
  * (`PurchaseOrdersService.quotesFor`), fuel and hire the machinery logs and fuel issues. The arithmetic is in
  * `leakage-rules.ts`; the watch list's RATE_ABOVE, FUEL_NO_LOG and IDLE_HIRE warnings are built from these flags.
@@ -117,8 +117,6 @@ export class LeakageService {
     const byValue = (a: LeakageFlag, b: LeakageFlag) => (b.valueInr ?? -1) - (a.valueInr ?? -1) || a.title.localeCompare(b.title);
     return { flags: parts.flatMap((p) => p.sort(byValue)), projects: projects.length };
   }
-
-  // -------------------------------------------------------------------------------------------------------------------
 
   /**
    * Material used against the allowance for the month's approved progress, and against the company's median use of the

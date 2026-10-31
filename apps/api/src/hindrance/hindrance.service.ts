@@ -49,7 +49,7 @@ or supplied material; THIRD_PARTY villagers, utilities and permitting bodies; FO
 const clauseSource = (c: { clause: string; docNo: string; page: number }) => `Clause ${c.clause} of ${c.docNo}, page ${c.page}`;
 
 /**
- * Hindrance register to notice (AI item 123). DPR remarks are read for hindrances (rules first, the model for those the
+ * Hindrance register to notice. DPR remarks are read for hindrances (rules first, the model for those the
  * rules cannot place) and kept with what the project manager decided, so each is read once. Recording one raises a delay
  * through `RisksService`; an open delay the contractor is not answerable for runs a notice clock (`noticeDays` on the
  * contract, else 14) until an outgoing letter is linked to it, which the watch list shows as NOTICE_DUE. Draft notice
@@ -72,7 +72,7 @@ export class HindranceService {
     if (!canReviewHindrances(user.roleKey)) throw new ForbiddenException('Hindrances from the DPRs are for project managers to record');
   }
 
-  /* ---------- reading the DPRs ---------- */
+  // Reading the DPRs
 
   /** The model's reading of a remark the rules could not place, or null when it is off, fails or answers out of shape. */
   private async modelRead(user: RequestUser, remark: string, reportDate: string): Promise<Reading | null> {
@@ -251,7 +251,7 @@ export class HindranceService {
     return { ok: true };
   }
 
-  /* ---------- the notice period and the clock ---------- */
+  // The notice period and the clock
 
   private async project(user: RequestUser, projectId: string) {
     const p = await this.prisma.project.findFirst({
@@ -361,7 +361,7 @@ export class HindranceService {
     };
   }
 
-  /* ---------- the register printout ---------- */
+  // The register printout
 
   async register(user: RequestUser, projectId: string): Promise<DelayRegisterDto> {
     if (!canViewLetters(user.roleKey) && !canViewContract(user.roleKey)) throw new ForbiddenException('Your role does not see the delay register');

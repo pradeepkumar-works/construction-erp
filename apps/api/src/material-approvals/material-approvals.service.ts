@@ -53,7 +53,7 @@ const WITH_US: MaterialApprovalStatus[] = ['REVISE_RESUBMIT', 'REJECTED'];
 const DECIDED: MaterialApprovalStatus[] = ['APPROVED', 'APPROVED_AS_NOTED', 'WITHDRAWN'];
 
 /**
- * Material approvals (v6 item 113). A request puts a make (or a sample) for a material up to the client's engineer or
+ * Material approvals. A request puts a make (or a sample) for a material up to the client's engineer or
  * consultant; each submission is a revision (R0, R1…) with the reviewer's outcome, recorded from their letter. An
  * approval puts the make on the project's approved makes, alongside those from the contract's list, and a purchase
  * order line for a listed material in another make is flagged. Rules in `material-approval-rules.ts`.

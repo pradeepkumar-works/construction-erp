@@ -22,7 +22,7 @@ import { CheckCoverage } from './CheckCoverage';
 const OUTCOME_TONE: Record<CheckOutcome, 'success' | 'danger' | 'pending'> = { AGREED: 'success', LESS: 'danger', MORE: 'pending' };
 
 /**
- * Check measurement (item 172): the contractor's approved sheets, with each level's share checked. The caller checks a sheet
+ * Check measurement: the contractor's approved sheets, with each level's share checked. The caller checks a sheet
  * at their level on the project; the sheets they still need are listed first.
  */
 export function PortalMeasurements({ measurements, openId, onOpen }: { measurements: UseQueryResult<PortalMeasurementsDto>; openId: string | null; onOpen: (id: string | null) => void }) {

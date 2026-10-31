@@ -67,7 +67,7 @@ const SYSTEM_ACCOUNTS: Record<string, { name: string; group: AccountGroup }> = {
 const NO_PROJECT = 'none';
 
 /**
- * Financial statements (v6 item 103): the trial balance, profit and loss and balance sheet from the books' approved
+ * Financial statements: the trial balance, profit and loss and balance sheet from the books' approved
  * vouchers, the bank reconciliation, opening balances, the lock date and the year's close. A year's close is a voucher
  * that empties income and expenses into the profit and loss account; the statements leave it out of the year's own
  * movements and count it in balances after.
@@ -83,7 +83,7 @@ export class StatementsService {
     if (!canApproveVouchers(user.roleKey)) throw new ForbiddenException('Only management or an admin locks the books or closes a year');
   }
 
-  // ----- Sums -----
+  // Sums
 
   /** Debit less credit of each account (and project, when asked) in approved vouchers matching `voucher`. */
   private async sums(organizationId: string, voucher: Prisma.BookVoucherWhereInput, projectId?: string, byProject = false) {
@@ -112,7 +112,7 @@ export class StatementsService {
     if (from > to) throw new BadRequestException('From is after to. Choose an earlier from date.');
   }
 
-  // ----- Trial balance -----
+  // Trial balance
 
   async trialBalance(user: RequestUser, q: PeriodQuery): Promise<TrialBalanceDto> {
     this.assertKeep(user);
@@ -183,7 +183,7 @@ export class StatementsService {
     return rows;
   }
 
-  // ----- Profit and loss -----
+  // Profit and loss
 
   async profitLoss(user: RequestUser, q: ProfitLossQuery): Promise<ProfitLossDto> {
     this.assertKeep(user);
@@ -248,7 +248,7 @@ export class StatementsService {
     return dto;
   }
 
-  // ----- Balance sheet -----
+  // Balance sheet
 
   async balanceSheet(user: RequestUser, asOn: string): Promise<BalanceSheetDto> {
     this.assertKeep(user);
@@ -287,7 +287,7 @@ export class StatementsService {
     };
   }
 
-  // ----- Bank reconciliation -----
+  // Bank reconciliation
 
   private async bankAccount(user: RequestUser, accountId: string) {
     const a = await this.prisma.ledgerAccount.findFirst({ where: { id: accountId, organizationId: user.organizationId } });
@@ -486,7 +486,7 @@ export class StatementsService {
     return { ok: true };
   }
 
-  // ----- Opening balances, the lock and the year's close -----
+  // Opening balances, the lock and the year's close
 
   /** A system account the statements post to, made when first needed. */
   private async systemAccount(tx: Tx, organizationId: string, key: string) {

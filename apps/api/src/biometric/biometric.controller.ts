@@ -8,7 +8,7 @@ import { BiometricService } from './biometric.service';
 import { BiometricCommandsService } from './biometric-commands.service';
 import { AddToDevicesDto, CommandQuery, CreateDeviceDto, ImportPunchesDto, MatchUserDto, PunchQuery, RemoveFromDevicesDto, UpdateDeviceDto, WebhookPunchesDto } from './biometric.dto';
 
-/** Biometric attendance (v6 item 101): devices, the user numbers on them, punches, punch files, and the webhook. */
+/** Biometric attendance: devices, the user numbers on them, punches, punch files, and the webhook. */
 @ApiTags('biometric')
 @ApiBearerAuth()
 @ModuleSwitch('biometric')

@@ -1,5 +1,5 @@
 /**
- * Meetings and action items (v6 item 112): a meeting on a project and its minutes (who came, what was noted and
+ * Meetings and action items: a meeting on a project and its minutes (who came, what was noted and
  * decided), and the actions, each with an owner and a due date, that stay open and come up at the next meetings until
  * they are done or dropped.
  */

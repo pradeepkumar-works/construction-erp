@@ -10,7 +10,7 @@ const settled = (s: { _sum: { amount: Prisma.Decimal | null; tdsAmount: Prisma.D
 const SUMS = { _sum: { amount: true, tdsAmount: true, otherDeduction: true } } as const;
 
 /**
- * Advances paid against a purchase order or a work order (v5 item 90): payments with no bill, drawn on an approved
+ * Advances paid against a purchase order or a work order: payments with no bill, drawn on an approved
  * payment request. `count` is how many such payments there are, so a work order knows whether its advance is on record.
  */
 export async function advancePaid(db: Db, order: { purchaseOrderId: string } | { workOrderId: string }, excludePaymentId?: string) {

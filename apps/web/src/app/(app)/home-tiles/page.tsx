@@ -237,7 +237,7 @@ function HomeTiles({ data }: { data: HomeTilesDto }) {
 }
 
 /**
- * Admin › Home tiles (launcher phase 3): answer requests for access from Discover, choose whether Discover shows modules a
+ * Admin › Home tiles: answer requests for access from Discover, choose whether Discover shows modules a
  * role cannot open, and mark Home's tiles New or Featured for the whole company.
  */
 export default function HomeTilesPage() {

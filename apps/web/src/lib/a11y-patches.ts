@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 
 /**
- * Two keyboard fixes for markup antd draws itself, applied once for the whole app (`<A11yPatches />` in `Providers`,
- * UX item 89), so no page or table needs to do anything:
+ * Two keyboard fixes for markup antd draws itself, applied once for the whole app (`<A11yPatches />` in `Providers`), so no page or table needs to do anything:
  *
  * 1. A box that scrolls can be scrolled with the arrow keys only once something in it takes focus (WCAG 2.1.1, axe
  *    `scrollable-region-focusable`). A table wider than its column (`.ant-table-content` / `.ant-table-body` under

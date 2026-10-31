@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { API_URL, api, apiToken, formPanel, signIn } from './helpers';
 
 /**
- * WhatsApp entries (AI item 120). The API runs with AI_PROVIDER=fake and WATI_WEBHOOK_SECRET=e2e-wati, so a message
+ * WhatsApp entries. The API runs with AI_PROVIDER=fake and WATI_WEBHOOK_SECRET=e2e-wati, so a message
  * posted to WATI's webhook address is read as whoever switched entries on for that number, drafted by the test model,
  * and shown on the page. Save saves it in their name; Open form opens the list's own form, and saving there marks the
  * message changed.

@@ -12,7 +12,7 @@ import { useT } from '../src/i18n/LanguageContext';
 
 type Show = 'mine' | 'toSign';
 
-/** Letters for you (item 136): letters received that are marked to you, and outward letters waiting for your signature. */
+/** Letters for you: letters received that are marked to you, and outward letters waiting for your signature. */
 export default function LettersScreen() {
   const router = useRouter();
   const t = useT();

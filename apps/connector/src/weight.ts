@@ -1,5 +1,5 @@
 /**
- * A weighbridge indicator's output (item 148): most indicators send the weight on the bridge several times a second as
+ * A weighbridge indicator's output: most indicators send the weight on the bridge several times a second as
  * a line of text ("ST,GS,+0026420kg", "  26420", STX 26420 ETX, "W: 26.42 t"). `splitFrames` cuts the stream into
  * lines, `readFrame` reads one, and `WeightWatch` turns the stream into weighings: a weight above the empty bridge that
  * holds still for a few seconds, taken once per truck. Pure: tested in `weight-test.ts`.

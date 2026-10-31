@@ -325,7 +325,7 @@ export class RisksService {
     if (dto.activityId !== undefined) await this.assertActivity(current.projectId, dto.activityId);
     if (dto.ownerId !== undefined) await this.assertOwner(user, current.projectId, dto.ownerId);
     const kind = dto.kind ?? current.kind;
-    // A delay claimed in an EOT application (item 173) takes its extension from the application's decision.
+    // A delay claimed in an EOT application takes its extension from the application's decision.
     if (current.eotApplicationId) {
       const touches =
         (dto.kind !== undefined && dto.kind !== current.kind) ||
@@ -394,7 +394,7 @@ export class RisksService {
     return this.audit.forEntity(user.organizationId, 'RISK', id);
   }
 
-  /* ---------- notifications ---------- */
+  // Notifications
 
   /** A delay, or a risk scored HIGH_RISK_SCORE or more, goes to the project's approvers and the owner. */
   private async notifyRaised(user: RequestUser, r: RiskDto) {

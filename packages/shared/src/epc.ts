@@ -1,5 +1,5 @@
 /**
- * EPC packages and engineering deliverables (item 130, ARCHITECTURE "EPC"): what the design team owes the client by
+ * EPC packages and engineering deliverables (ARCHITECTURE "EPC"): what the design team owes the client by
  * discipline, the equipment packages with their dates from enquiry to commissioning against the day site needs them,
  * the inputs the client owes, and the contract currency. The rules are in `apps/api/src/epc/epc-rules.ts`.
  */
@@ -55,7 +55,7 @@ export const IMPORT_STAGES: PackageStage[] = ['SHIPPED', 'CUSTOMS_CLEARED'];
 /** Days from the port to site (customs and the truck) when a package does not say. */
 export const DEFAULT_PORT_TO_SITE_DAYS = 10;
 
-/** Contract currencies (item 130). Amounts are kept in rupees at the project's contract rate and shown in its currency. */
+/** Contract currencies. Amounts are kept in rupees at the project's contract rate and shown in its currency. */
 export const CURRENCIES = [
   { code: 'INR', symbol: '₹', name: 'Indian rupee' },
   { code: 'USD', symbol: 'US$', name: 'US dollar' },
@@ -100,7 +100,6 @@ export function toRupees(amount: number | string, rate: number | string): number
   return Math.round(Number(amount) * Number(rate) * 100) / 100;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // What the project's Engineering and packages tab reads
 
 export interface DeliverableDto {

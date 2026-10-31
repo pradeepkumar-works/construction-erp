@@ -1,4 +1,4 @@
-/** Variation register (v4 item 37): changes to the contract claimed from the client, and the client's decision. */
+/** Variation register: changes to the contract claimed from the client, and the client's decision. */
 
 import type { AttachmentDto } from './types';
 

@@ -17,7 +17,7 @@ import { CODE_INPUT, QuantityInput, upper } from '@/components/form/inputs';
 
 const COLORS: Record<GrnQcStatus, string> = { ACCEPTED: 'green', PARTLY_ACCEPTED: 'gold', REJECTED: 'red' };
 
-/** Where a GRN stands with QA/QC (v4 item 48). */
+/** Where a GRN stands with QA/QC. */
 export function GrnQcTag({ status }: { status: GrnQcStatus | null | undefined }) {
   if (!status)
     return (

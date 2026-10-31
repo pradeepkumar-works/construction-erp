@@ -66,7 +66,7 @@ export class InspectionsService {
       },
     });
     lifecycle.beforeApprove('PROGRESS', (_user, id) => this.assertHoldPointCleared(id));
-    // A DPR approves its work lines (item 127), so each line's hold point is checked first.
+    // A DPR approves its work lines, so each line's hold point is checked first.
     lifecycle.beforeApprove('DPR', async (_user, id) => {
       const lines = await this.prisma.progressEntry.findMany({ where: { dailyReportId: id }, select: { id: true }, orderBy: { sortOrder: 'asc' } });
       for (const l of lines) await this.assertHoldPointCleared(l.id);
@@ -103,7 +103,7 @@ export class InspectionsService {
     };
   }
 
-  /** The hidden-work sign-off and its countersign (item 172); null for an activity that is not hidden work and was never signed. */
+  /** The hidden-work sign-off and its countersign; null for an activity that is not hidden work and was never signed. */
   private hiddenDto(r: Row): HiddenWorkDto | null {
     if (!r.activity.hiddenWork && !r.hiddenSignedById) return null;
     return {
@@ -150,7 +150,7 @@ export class InspectionsService {
     return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
 
-  /* ---------- the client portal ---------- */
+  // The client portal
 
   private portalDto(r: Row & { witnessedBy: { fullName: string } | null }): PortalInspectionDto {
     const d = this.toDto(r);
@@ -251,7 +251,7 @@ export class InspectionsService {
     return row ? this.get(user, row.id) : null;
   }
 
-  /** `checklistName` names given points (a pour card's, item 137); the API's own callers set it, the form does not. */
+  /** `checklistName` names given points (a pour card's); the API's own callers set it, the form does not. */
   async create(user: RequestUser, dto: CreateInspectionDto & { checklistName?: string }): Promise<InspectionDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
@@ -356,7 +356,7 @@ export class InspectionsService {
   }
 
   /**
-   * Hold point: progress of the activity is approved only after a passed inspection there. Hidden work (item 172) holds
+   * Hold point: progress of the activity is approved only after a passed inspection there. Hidden work holds
    * the same way, and the passed inspection's sign-off before cover-up must also be countersigned.
    */
   async assertHoldPointCleared(progressId: string) {
@@ -381,7 +381,7 @@ export class InspectionsService {
 
   /**
    * The client's engineer or a consultant measures hidden work before it is covered and signs it off against its
-   * inspection (item 172), at their level on the project; signing again before the countersign replaces it. The site
+   * inspection, at their level on the project; signing again before the countersign replaces it. The site
    * and QA/QC are told.
    */
   async signHidden(user: RequestUser, id: string, dto: { qty?: string | null; note?: string | null }): Promise<PortalInspectionDto> {
@@ -402,7 +402,7 @@ export class InspectionsService {
     return this.portalOne(user, id);
   }
 
-  /** A second guest, above whoever signed (or the client's engineer), countersigns the hidden-work sign-off (item 172). */
+  /** A second guest, above whoever signed (or the client's engineer), countersigns the hidden-work sign-off. */
   async countersignHidden(user: RequestUser, id: string, note: string | null): Promise<PortalInspectionDto> {
     const row = await this.prisma.inspection.findFirst({ where: { id, organizationId: user.organizationId, status: { not: 'DRAFT' } }, include });
     if (!row) throw new NotFoundException('Inspection not found');
@@ -446,7 +446,7 @@ export class InspectionsService {
     }
   }
 
-  /* ---------- checklists ---------- */
+  // Checklists
 
   async checklists(user: RequestUser): Promise<ChecklistTemplateDto[]> {
     const rows = await this.prisma.checklistTemplate.findMany({ where: { organizationId: user.organizationId }, include: { _count: { select: { activities: true } } }, orderBy: { name: 'asc' } });

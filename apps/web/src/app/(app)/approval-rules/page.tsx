@@ -28,7 +28,7 @@ const toGrid = (m: ApprovalMatrixDto): Grid => {
   return g;
 };
 
-/** A higher approval level of one type (v5 item 94): the roles that approve it, from what amount (null = always). */
+/** A higher approval level of one type: the roles that approve it, from what amount (null = always). */
 type Level = { roles: RoleKey[]; from: number | null };
 type Higher = Record<SubmissionType, { 2: Level; 3: Level; remind: number | null; escalate: number | null }>;
 
@@ -88,7 +88,7 @@ export default function ApprovalRulesPage() {
     meta: FAIL_NOTICE,
   });
 
-  // Payments only against an approved payment request (v5 item 90): a company switch beside the matrix.
+  // Payments only against an approved payment request: a company switch beside the matrix.
   const payRule = useMutation({
     mutationFn: async (paymentsNeedRequest: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { paymentsNeedRequest })).data,
     onSuccess: (m) => {
@@ -110,7 +110,7 @@ export default function ApprovalRulesPage() {
     meta: FAIL_NOTICE,
   });
 
-  // Progress from the DPR only (item 127): progress is recorded as the DPR's work lines.
+  // Progress from the DPR only: progress is recorded as the DPR's work lines.
   const dprRule = useMutation({
     mutationFn: async (progressFromDpr: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { progressFromDpr })).data,
     onSuccess: (m) => {
@@ -315,7 +315,7 @@ export default function ApprovalRulesPage() {
 }
 
 /**
- * Second and third approvals above an amount, and reminders and escalation, per submission type (v5 item 94). An entry
+ * Second and third approvals above an amount, and reminders and escalation, per submission type. An entry
  * that needs a higher level stays waiting after the level before approves it; the same person never approves two levels.
  */
 function HigherLevels({

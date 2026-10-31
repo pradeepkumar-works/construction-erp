@@ -26,7 +26,7 @@ async function signInGuest(page: Page, email: string) {
 }
 
 /**
- * Programme and EOT (item 173), in a company of its own: the first programme is overdue 15 days after the agreement until
+ * Programme and EOT, in a company of its own: the first programme is overdue 15 days after the agreement until
  * Rev 0 goes; the client's engineer returns it with comments in the portal and approves Rev 1, which comes into force and
  * sets the next update a month on. An extension of time for two delays is requested on the project's tab, forwarded by
  * the engineer with fewer days than claimed, and decided: the days granted go to the delays oldest first and move the

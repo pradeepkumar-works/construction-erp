@@ -2,7 +2,7 @@ import type { RoleKey } from './enums';
 import { canApplyEot, canKeepProgramme, canApprove, canEditProjects, canManageDocuments, canManageMachineLoans, canManagePackages, canManageQaPlan, canManageMaintenance, canManageOm, canManageStore, canPurchase, canRaiseRisk, canSetMaterialNorms, canViewCost } from './permissions';
 
 /**
- * Early warnings (AI roadmap item 73): plain forecasts over the records, shown as the Watch list (a My work card and its
+ * Early warnings: plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
 export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW', 'PURCHASE_CONTROL', 'FUEL_TANK', 'WEIGH_SHORT', 'PROGRAMME_DUE', 'EOT_OVERDUE'] as const;
@@ -42,7 +42,7 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
 };
 
 /**
- * Purchase controls (intelligence quick win Q6): orders split under an approval limit, goods received by the person who
+ * Purchase controls: orders split under an approval limit, goods received by the person who
  * ordered them, a payment soon after a vendor's bank details changed. Management, accounts and the admin; each sees them on
  * their own watch list, never in a shared place.
  */
@@ -60,35 +60,35 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   if (canSetMaterialNorms(role)) out.push('MATERIAL_OVERUSE');
   if (canManageMaintenance(role)) out.push('FUEL_NORM');
   if (canManageMachineLoans(role)) out.push('LOAN_EMI');
-  // Leakage checks (item 121)
+  // Leakage checks
   if (canPurchase(role)) out.push('RATE_ABOVE');
   if (canManageMaintenance(role)) out.push('FUEL_NO_LOG', 'IDLE_HIRE');
-  // Fuel sensors (item 147): drains and fills off the slips, for whoever looks after the machines' fuel.
+  // Fuel sensors: drains and fills off the slips, for whoever looks after the machines' fuel.
   if (canManageMaintenance(role)) out.push('FUEL_TANK');
-  // Weighbridge (item 148): a supplier's loads short of their challans, for the store and the buyers who deal with them.
+  // Weighbridge: a supplier's loads short of their challans, for the store and the buyers who deal with them.
   if (canManageStore(role) || canPurchase(role)) out.push('WEIGH_SHORT');
-  // Hindrance notices (item 123): the project manager signs them.
+  // Hindrance notices: the project manager signs them.
   if (canApprove(role) && canRaiseRisk(role)) out.push('NOTICE_DUE');
-  // Attendance cross-check (item 124): whoever approves the bill.
+  // Attendance cross-check: whoever approves the bill.
   if (canApprove(role)) out.push('MANDAYS_ABOVE');
-  // EPC packages (item 130): procurement and the project's managers chase them.
+  // EPC packages: procurement and the project's managers chase them.
   if (canManagePackages(role)) out.push('PACKAGE_LATE');
-  // O&M (item 131): the managers who run the scheme and sign its bills.
+  // O&M: the managers who run the scheme and sign its bills.
   if (canManageOm(role)) out.push('OM_SERVICE');
-  // Project setup (finding 6 of the October review): every figure built on the BOQ is off; the managers who see cost and
+  // Project setup: every figure built on the BOQ is off; the managers who see cost and
   // edit the project put it right.
   if (canViewCost(role) && canEditProjects(role)) out.push('BOQ_OFF_CONTRACT');
-  // QA/QC (item 137): QA/QC and the managers who keep the quality plan.
+  // QA/QC: QA/QC and the managers who keep the quality plan.
   if (canManageQaPlan(role)) out.push('TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE');
-  // Design and drawings (item 138): whoever keeps the register chases the drawings and records the delay.
+  // Design and drawings: whoever keeps the register chases the drawings and records the delay.
   if (canManageDocuments(role)) out.push('DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE');
-  // Margin fade (intelligence quick win Q1): those who see cost and approve, the PM up to the MD.
+  // Margin fade: those who see cost and approve, the PM up to the MD.
   if (canViewCost(role) && canApprove(role)) out.push('MARGIN_FADE');
   // Cubes weak at 7 days (Q2): QA/QC and the approvers, who can hold the next lift.
   if (canManageQaPlan(role)) out.push('CUBE_7DAY_LOW');
   // Purchase controls (Q6): the owners of the money only, never the buyers or approvers whose work they look at.
   if (canSeePurchaseControls(role)) out.push('PURCHASE_CONTROL');
-  // Programme and EOT (item 173): the planners keep the programme up to date; the contract's people chase the decision.
+  // Programme and EOT: the planners keep the programme up to date; the contract's people chase the decision.
   if (canKeepProgramme(role)) out.push('PROGRAMME_DUE');
   if (canApplyEot(role)) out.push('EOT_OVERDUE');
   return out;
@@ -113,7 +113,7 @@ export const WARNING_CONFIDENCE_HELP: Record<WarningConfidence, string> = {
   CHECK_THIS: 'Read by Ask Nirmaan from a photo, voice note or message: check it against the original.',
 };
 
-/** What each kind is (item 119). Kinds read by the model are CHECK_THIS. */
+/** What each kind is. Kinds read by the model are CHECK_THIS. */
 export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
   SCHEDULE: 'LIKELY',
   CASH: 'LIKELY',
@@ -148,7 +148,7 @@ export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
 };
 
 /**
- * What became of a warning when someone dismissed it (item 119): WRONG (the figures or the rule were wrong), KNOWN
+ * What became of a warning when someone dismissed it: WRONG (the figures or the rule were wrong), KNOWN
  * (true, and accepted for a reason) or FIXED (true, and acted on). KNOWN and FIXED count as right in the track record.
  */
 export const WARNING_OUTCOMES = ['FIXED', 'KNOWN', 'WRONG'] as const;

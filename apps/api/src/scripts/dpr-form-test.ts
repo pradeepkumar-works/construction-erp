@@ -1,5 +1,5 @@
 /**
- * The DPR form of each project type (item 134 part 2). The standard forms are sound and leave a report as it was; a
+ * The DPR form of each project type. The standard forms are sound and leave a report as it was; a
  * stored definition reads whole whatever it holds; the checks name what an admin must fix; a field already used keeps
  * its kind; the values of the company's own fields are read by kind and range; the required fields and photos are
  * asked for in words; and Ask Nirmaan's names find their fields.
@@ -232,8 +232,6 @@ test('the line picker narrows component, then sub-component, then activity', () 
   assert.deepEqual(linePick({ component: '10', sub: null }, acts[0]), { component: '2', sub: '2.1' });
   assert.deepEqual(componentChoices([acts[3]]), []);
 });
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 let failed = 0;
 for (const [name, fn] of tests) {

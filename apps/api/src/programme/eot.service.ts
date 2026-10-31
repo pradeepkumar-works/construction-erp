@@ -57,7 +57,7 @@ export interface EotInput {
 }
 
 /**
- * Extension of time applications (item 173, ARCHITECTURE "Programme and EOT"): applied for in writing, forwarded by the
+ * Extension of time applications (ARCHITECTURE "Programme and EOT"): applied for in writing, forwarded by the
  * Engineer to the competent authority and decided within 30 days, for delays in the register or for added work. The days
  * granted are written to the delays' `eotGrantedDays` (for added work, to a delay entry made through `RisksService.create`),
  * which the revised completion, LD and slippage already read. Rules are pure in `@erp/shared/programme-eot.ts`.

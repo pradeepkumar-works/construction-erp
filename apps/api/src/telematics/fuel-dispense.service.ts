@@ -23,7 +23,7 @@ export const dispenserItemOf = (config: unknown) => {
 };
 
 /**
- * A site's fuel dispenser (item 147, ARCHITECTURE "Fuel sensors and dispensers"): each fill is kept once, by the
+ * A site's fuel dispenser (ARCHITECTURE "Fuel sensors and dispensers"): each fill is kept once, by the
  * dispenser's own id, and becomes a fuel issue slip through `StockService.fuelIssue` as soon as its tag is matched to a
  * machine, so the stock, the fuel position and the leakage checks see it as any slip. A slip refused (no stock booked,
  * the machine inactive) keeps its reason until someone tries it again.

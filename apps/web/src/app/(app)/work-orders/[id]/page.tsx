@@ -6,7 +6,7 @@ import type { WorkOrderDto } from '@erp/shared';
 import { WorkOrderRecord } from '@/components/subcontracts/WorkOrderDrawer';
 import { WorkOrderFormModal } from '@/components/subcontracts/WorkOrderFormModal';
 
-/** One work order, as its own page (UI roadmap item 61). */
+/** One work order, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

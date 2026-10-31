@@ -3,7 +3,7 @@ import type { AttachmentDto, PasswordLinkDto } from './types';
 import type { PublicEnquiryDto } from './small-purchase';
 
 /**
- * The supplier portal (v6 item 105): a supplier's or subcontractor's own login, tied to one vendor. They quote on the
+ * The supplier portal: a supplier's or subcontractor's own login, tied to one vendor. They quote on the
  * enquiries sent to them, accept the purchase and work orders raised on them, send dispatch notes the store fills its
  * GRN from, send invoices that accounts turn into bills (or return), and see their bills, payments and statement. A
  * change to their details, above all their bank account, waits for the company's approval.

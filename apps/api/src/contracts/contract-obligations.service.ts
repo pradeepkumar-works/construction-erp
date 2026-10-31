@@ -27,7 +27,7 @@ import { CreateContractObligationDto, UpdateContractObligationDto } from './cont
 type Row = Prisma.ContractObligationGetPayload<object>;
 
 /**
- * A contract's obligations (item 171, ARCHITECTURE "Contract obligations and recoveries"): what each side has to do by
+ * A contract's obligations (ARCHITECTURE "Contract obligations and recoveries"): what each side has to do by
  * when, counted from the agreement, the start, completion or the handover, and what missing it costs on our bills.
  * Seen with the contract terms (`canViewContract`), changed by those who change them (`canEditContract`).
  */
@@ -150,7 +150,7 @@ export class ContractObligationsService {
   async update(user: RequestUser, projectId: string, id: string, dto: UpdateContractObligationDto): Promise<ContractObligationsDto> {
     await this.assertEdit(user, projectId);
     const cur = await this.find(user, projectId, id);
-    // The programme obligation is met by the programme register once it holds a revision (item 173).
+    // The programme obligation is met by the programme register once it holds a revision.
     if (cur.code === PROGRAMME_OBLIGATION_CODE && dto.metOn !== undefined && dto.metOn !== dateOnly(cur.metOn) && (await this.prisma.programmeSubmission.count({ where: { projectId } })))
       throw new BadRequestException('The programme register sets when this was met: send or answer a revision on the Programme and EOT tab');
     const data = this.checked({ ...termsOf(cur), title: cur.title }, dto);

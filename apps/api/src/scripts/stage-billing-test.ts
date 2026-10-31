@@ -1,5 +1,5 @@
 /**
- * Stage billing's tests (item 129). The break-up, the evidence, the bill's stage lines, slippage and the advance window,
+ * Stage billing's tests. The break-up, the evidence, the bill's stage lines, slippage and the advance window,
  * with no database; CI runs it after the build:
  *
  *   node dist/scripts/stage-billing-test.js

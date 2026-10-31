@@ -1,5 +1,5 @@
 /**
- * Programme submissions and extension of time applications (item 173, ARCHITECTURE "Programme and EOT").
+ * Programme submissions and extension of time applications (ARCHITECTURE "Programme and EOT").
  *
  * A works contract asks for the construction programme within days of the agreement (0.20% of the contract value is held
  * back until it comes), then an updated programme at a set interval, each approved by the Engineer. Each revision is

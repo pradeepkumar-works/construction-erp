@@ -30,7 +30,7 @@ async function demo(token: string) {
 }
 
 /**
- * Subcontract enquiries (v6 item 111): management sends brickwork and an own item to two subcontractors from Purchases,
+ * Subcontract enquiries: management sends brickwork and an own item to two subcontractors from Purchases,
  * enters one quote on the page and the other comes in lower, then awards the higher one: a reason is asked for, and the
  * award opens the draft work order it made at that quote's rates.
  */

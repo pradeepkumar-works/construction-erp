@@ -10,7 +10,7 @@ const PDF = Buffer.from(
 );
 
 /**
- * Document register (v3 item 28): the project manager adds a drawing with its file, issues a new revision (site is told),
+ * Document register: the project manager adds a drawing with its file, issues a new revision (site is told),
  * sends it on a transmittal that is then signed for. Letters are Correspondence's (correspondence.spec.ts).
  */
 test.describe.serial('drawings and transmittals', () => {

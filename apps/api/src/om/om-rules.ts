@@ -10,7 +10,7 @@ import {
 import { Prisma } from '@prisma/client';
 
 /**
- * O&M (item 131, ARCHITECTURE "Operation and maintenance"): pure arithmetic over an O&M contract's periods, the daily
+ * O&M (ARCHITECTURE "Operation and maintenance"): pure arithmetic over an O&M contract's periods, the daily
  * service levels, staff deployed and treatment chemicals, tested in `src/scripts/om-test.ts`. Dates are YYYY-MM-DD
  * strings and months YYYY-MM; money is rupees to the paisa.
  */
@@ -38,7 +38,6 @@ export function monthsBetween(from: string, to: string): string[] {
   return out;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The contract's periods
 
 /** Instalments a year an O&M contract can be paid in: each must cover whole months. */
@@ -105,7 +104,6 @@ export const omEndsOn = (t: Pick<OmTerms, 'startOn' | 'years'>) => addDays(addMo
 /** The period a day falls in, or null outside the contract. */
 export const periodOf = (periods: OmPeriod[], day: string) => periods.find((p) => p.from <= day && day <= p.to) ?? null;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Service levels
 
 export interface DayReading {
@@ -245,7 +243,6 @@ export function monthFigures(args: {
   };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The O&M bill
 
 /** What an O&M bill keeps of the figures behind it (`RaBill.omDetail`). */
@@ -304,7 +301,6 @@ export function billProblem(period: OmPeriod | null, billDate: string, billed: {
   return null;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Chemicals
 
 /** A treatment chemical's use against its norm per ML of water produced. */

@@ -4,6 +4,6 @@ import { ProgrammeController } from './programme.controller';
 import { ProgrammeService } from './programme.service';
 import { EotService } from './eot.service';
 
-/** Programme and EOT (item 173, ARCHITECTURE "Programme and EOT"). */
+/** Programme and EOT (ARCHITECTURE "Programme and EOT"). */
 @Module({ imports: [RisksModule], controllers: [ProgrammeController], providers: [ProgrammeService, EotService], exports: [ProgrammeService, EotService] })
 export class ProgrammeModule {}

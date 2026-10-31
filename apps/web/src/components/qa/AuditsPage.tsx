@@ -450,7 +450,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
   );
 }
 
-/** Audits and visits (item 137 part 3): internal audits and visits from outside, each with findings followed until closed. */
+/** Audits and visits: internal audits and visits from outside, each with findings followed until closed. */
 export function AuditsPage() {
   const { user } = useAuth();
   const params = useSearchParams();

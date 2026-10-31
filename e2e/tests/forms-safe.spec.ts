@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, chooseOption, formPanel, openProjectTab, signIn } from './helpers';
 
 /**
- * Forms that never lose work (UX item 79): errors that say how to fix them, amounts in Indian grouping, Back that closes
+ * Forms that never lose work: errors that say how to fix them, amounts in Indian grouping, Back that closes
  * an edit only after asking, and a new DPR that starts from the previous one's gang and machines, said so.
  */
 

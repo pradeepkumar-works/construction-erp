@@ -10,7 +10,7 @@ type Entry = { id: string; entryNo: string; type: string };
 type Enquiry = { id: string; vendors: { vendorName: string; state: string; link?: string | null }[] };
 
 /**
- * Stock first (v5 item 95): a request for an item the road site holds 20 of and the water site 50. The store issues
+ * Stock first: a request for an item the road site holds 20 of and the water site 50. The store issues
  * the 20 here from the request page, transfers the 50 from the water site, and only the rest is left to order;
  * deleting the issue gives its quantity back to the request.
  */
@@ -65,7 +65,7 @@ test('a request is met from stock here and at another site before buying', async
 });
 
 /**
- * Last orders and emailed enquiries (v5 item 95): the comparative shows an item's last approved order; procurement
+ * Last orders and emailed enquiries: the comparative shows an item's last approved order; procurement
  * sends an enquiry, the supplier opens the link signed out and quotes, and the quote lands on the comparative marked
  * from the supplier. The link then only says it was received.
  */

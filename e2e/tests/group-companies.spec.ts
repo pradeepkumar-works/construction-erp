@@ -18,7 +18,7 @@ async function newCompany(stamp: number) {
 const switcher = (page: Page) => page.locator('[data-tour="company"]');
 
 /**
- * Group companies (phase 1). A company admin makes a group, adds a quality lab to it and gives a colleague a place there;
+ * Group companies. A company admin makes a group, adds a quality lab to it and gives a colleague a place there;
  * the colleague signs in once, sees both companies in the header and moves to the lab, which starts with the modules its
  * kind leaves out turned off.
  */

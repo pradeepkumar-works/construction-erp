@@ -7,7 +7,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { usePageTitle } from '@/lib/page-title';
 import { ResultMark } from '@/components/common/ResultMark';
 
-/** A page that crashed while drawing: the shell stays, and the page can be tried again (UI roadmap item 64). */
+/** A page that crashed while drawing: the shell stays, and the page can be tried again. */
 export default function PageError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   usePageTitle('Page error');
   useEffect(() => {

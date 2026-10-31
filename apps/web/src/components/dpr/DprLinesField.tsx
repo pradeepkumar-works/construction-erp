@@ -49,7 +49,7 @@ export interface DprLineValues {
   activityId?: string;
   quantity?: number | null;
   location?: string;
-  /** Where by the project's places (item 134): chainage typed as km+m, floor, village */
+  /** Where by the project's places: chainage typed as km+m, floor, village */
   chainageFrom?: string;
   chainageTo?: string;
   floor?: string;
@@ -57,7 +57,7 @@ export interface DprLineValues {
   /** The component and sub-component picked before the activity (the form's cascade); not sent */
   pickComponent?: string | null;
   pickSub?: string | null;
-  /** The pipe segment (item 126), or for a valve line the valve, the work was on */
+  /** The pipe segment, or for a valve line the valve, the work was on */
   pipeSegmentId?: string | null;
   pipeNodeId?: string | null;
   labour?: ManpowerLine[];
@@ -179,7 +179,7 @@ const crewText = (l: DprLineValues | undefined, items: Map<string, { name: strin
     .join(' · ');
 
 /**
- * The DPR's work done, line by line (item 127), as the project type's form asks (item 134 part 2): each line against an
+ * The DPR's work done, line by line, as the project type's form asks: each line against an
  * activity or sub-activity (picked component by component, or from one grouped list), where by the project's places,
  * how much today, and in a dialog per line what else the form takes (crew, machines, material, work order, remark,
  * photo and the company's own line fields). The activities planned this week come first.
@@ -294,7 +294,7 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
   );
 }
 
-/** The component, then the sub-component, before the activity (item 134 part 2). Picking an activity sets both. */
+/** The component, then the sub-component, before the activity. Picking an activity sets both. */
 function CascadePick({
   field: f,
   line,
@@ -364,7 +364,7 @@ function cascadeOptions(options: DprWorkOptionsDto, line: DprLineValues | undefi
 
 /** Activities for the line's picker: this week's first, then by component › sub-component. */
 /**
- * Where the line's work was. Pipe work (item 126) names the segment from the zone's network, junction to junction, or
+ * Where the line's work was. Pipe work names the segment from the zone's network, junction to junction, or
  * the valve for a valve line; the server writes the segment into the location and holds each stage to the pipe's length.
  * Anything else, or a zone with no network loaded, is free text.
  */
@@ -401,7 +401,7 @@ function WhereField({ field: f, activity: a, options }: { field: FormListFieldDa
     </Form.Item>
   );
   const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Give the chainage like 14+200'))) };
-  // Where by the project's places (item 134): a chainage from and to, a floor, a village; a note below.
+  // Where by the project's places: a chainage from and to, a floor, a village; a note below.
   const byPlace = placed ? (
     <Flex vertical gap={4}>
       {places.includes('CHAINAGE') ? (

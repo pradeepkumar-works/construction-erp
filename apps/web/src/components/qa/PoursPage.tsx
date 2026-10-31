@@ -405,7 +405,7 @@ function CubeAcceptancePanel() {
   );
 }
 
-/** The pour register (item 137): pours with their card and cube sets, and the cube acceptance of each grade. */
+/** The pour register: pours with their card and cube sets, and the cube acceptance of each grade. */
 export function PoursPage() {
   const [tab, setTab] = useUrlTab<Tab>(TABS, 'pours', { param: 'tab' });
   return (

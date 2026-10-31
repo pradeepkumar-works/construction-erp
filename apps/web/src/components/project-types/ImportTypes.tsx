@@ -20,7 +20,7 @@ export function saveBundle(bundle: TypeBundle, what: string) {
 }
 
 /**
- * Import project types (item 134 part 3, ARCHITECTURE "Project types", Export and import): a file exported from another
+ * Import project types (ARCHITECTURE "Project types", Export and import): a file exported from another
  * company, read here, previewed item by item (new, replacing yours, the same, or refused with why), and the chosen ones
  * saved through the editors' own checks.
  */

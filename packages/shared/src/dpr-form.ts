@@ -1,5 +1,5 @@
 /**
- * The DPR form of a project type (item 134 part 2, ARCHITECTURE "DPR form per project type"). Each type has one form
+ * The DPR form of a project type (ARCHITECTURE "DPR form per project type"). Each type has one form
  * definition, which the web form, the phone form, the record page, the print and the export all draw from: which
  * built-in fields show, which are required and what they are called, how a work line is picked and what it shows, and up
  * to 20 fields of the company's own. Every save is a new version (`DprFormConfig`), and a DPR keeps the version it was
@@ -40,7 +40,7 @@ export const DPR_BUILT_INS: Record<DprBuiltInKey, DprBuiltInInfo> = {
   materialReceived: { label: 'Material received', section: 'NOTES', canHide: true, missing: 'Say what material was received' },
   testsConducted: { label: 'Tests conducted', section: 'NOTES', canHide: true, missing: 'Say which tests were done' },
   safetyObservations: { label: 'Safety observations', section: 'NOTES', canHide: true, missing: 'Note the safety observations' },
-  // The hindrance register (item 123) reads it, so it always shows; it can be renamed and required.
+  // The hindrance register reads it, so it always shows; it can be renamed and required.
   issues: { label: 'Issues / hindrances', section: 'NOTES', canHide: false, missing: 'Say what held up the work, or write None' },
   nextDayPlan: { label: 'Next day plan', section: 'NOTES', canHide: true, missing: 'Write the plan for the next day' },
   photos: { label: 'Site photos', section: 'NOTES', canHide: true, missing: 'Add site photos' },
@@ -154,7 +154,7 @@ const OWN_KEY = /^[a-z][A-Za-z0-9]{0,29}$/;
 /** Longest text a company's own text field keeps */
 export const MAX_OWN_TEXT = 1000;
 
-/** The form a DPR was made on before item 134 part 2, and the one a type has when nothing else applies. */
+/** The form a DPR was made on before DPR forms per type, and the one a type has when nothing else applies. */
 export const STANDARD_DPR_FORM: DprFormDef = {
   fields: DPR_BUILT_IN_KEYS.map((key) => ({ key, show: true, required: false, label: null })),
   minPhotos: 0,
@@ -331,7 +331,7 @@ export function ownFieldKey(label: string, taken: Iterable<string>): string {
   for (let i = 2; ; i++) if (!used.has(`${base}${i}`)) return `${base}${i}`;
 }
 
-/* ---------- reading a form ---------- */
+// Reading a form
 
 export const dprSetting = (def: DprFormDef, key: DprBuiltInKey): DprFieldSetting => def.fields.find((f) => f.key === key) ?? { key, show: true, required: false, label: null };
 /** What the form calls a built-in field. */
@@ -347,7 +347,7 @@ export const ownFieldsOf = (def: DprFormDef, scope: DprFieldScope): DprOwnField[
 /** A field's name in the language shown. */
 export const ownFieldLabel = (f: Pick<DprOwnField, 'label' | 'labelHi'>, language: 'en' | 'hi' = 'en'): string => (language === 'hi' && f.labelHi ? f.labelHi : f.label);
 
-/* ---------- values of the company's own fields ---------- */
+// Values of the company's own fields
 
 export type DprExtraValue = string | number | boolean;
 export type DprExtra = Record<string, DprExtraValue>;
@@ -489,7 +489,7 @@ export const filledExtra = (fields: DprOwnField[], values: DprExtra | null | und
   });
 
 /**
- * Values given by the field's name (Ask Nirmaan's drafts and WhatsApp entries, items 71 and 120) put under the
+ * Values given by the field's name (Ask Nirmaan's drafts and WhatsApp entries) put under the
  * fields' keys; a name matches a field's English or Hindi name, or its key, ignoring case. Unknown names are left out.
  */
 export function extraByLabel(fields: DprOwnField[], byName: Record<string, unknown> | null | undefined): Record<string, unknown> {

@@ -1,5 +1,5 @@
 /**
- * DPR credibility checks (intelligence quick win Q3), pure: work with no crew, work whose material was never issued,
+ * DPR credibility checks, pure: work with no crew, work whose material was never issued,
  * figures and crews copied day after day, and a photo that came with an earlier report. `DprChecksService` loads the
  * report and its history; tested in `src/scripts/intelligence-test.ts`.
  */

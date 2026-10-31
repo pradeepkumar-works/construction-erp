@@ -42,7 +42,7 @@ const scalarFields = new Map(
 );
 
 /**
- * Undo for deletes that can be reversed (UX item 86). Deletes stay hard deletes: the delete hands back a sealed copy
+ * Undo for deletes that can be reversed. Deletes stay hard deletes: the delete hands back a sealed copy
  * of what it removed (`undo`), and `POST /undo` with it puts the same rows back, with the same ids, within a minute.
  * The copy is encrypted with the server's secret (AES-GCM, so it can be neither read, which keeps columns the user may
  * not see hidden, nor edited) and names the organisation and the user, so no one else can use it; restoring runs the

@@ -57,7 +57,7 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 /**
- * How long a request may take before it counts as no connection (UX item 80): on weak signal a request can hang for
+ * How long a request may take before it counts as no connection: on weak signal a request can hang for
  * minutes, and a submit that times out goes to the outbox instead of spinning.
  */
 const REQUEST_TIMEOUT_MS = 25_000;

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { api, apiToken, signIn, homeHeading } from './helpers';
 
 /**
- * Navigation and words (UX item 87): each role's sidebar holds its own modules, sections remember being closed, Recent
+ * Navigation and words: each role's sidebar holds its own modules, sections remember being closed, Recent
  * lives in Search, every sidebar link is named like the page it opens, and the header's New is not the page's primary.
  */
 

@@ -14,7 +14,7 @@ const esc = (v: unknown) =>
 const para = (v: string | null | undefined) => (v ? esc(v).replace(/\n/g, '<br/>') : '<span class="muted">-</span>');
 
 /**
- * The work lines in the site's DPR layout (item 127): S.No, component, sub-component, activity, unit, scope, up to
+ * The work lines in the site's DPR layout: S.No, component, sub-component, activity, unit, scope, up to
  * previous, today, cumulative, %, balance and remark.
  */
 function workTable(lines: DprLineDto[], def: DprFormDef): string {
@@ -22,7 +22,7 @@ function workTable(lines: DprLineDto[], def: DprFormDef): string {
   const rows = lines
     .map((l, i) => {
       const where = [lineLocation(l), l.workOrderNo].filter(Boolean).join(' · ');
-      // The line's own fields (item 134 part 2) go with its remark.
+      // The line's own fields go with its remark.
       const extra = filledExtra(own, l.extra).map((x) => `${x.field.label}: ${x.text}`).join(', ');
       const remark = [where, l.remarks, extra].filter(Boolean).join('. ');
       return `<tr><td class="num">${i + 1}</td><td>${esc(l.componentName ?? '-')}</td><td>${esc(l.subComponentName ?? '-')}</td><td>${esc(dprActivityLabel({ name: l.activityName, parentActivityName: l.parentActivityName }))}</td><td>${esc(l.unit)}</td><td class="num">${esc(formatQty(l.scope))}</td><td class="num">${esc(formatQty(l.previous))}</td><td class="num"><b>${esc(formatQty(l.quantity))}</b></td><td class="num">${esc(formatQty(l.cumulative))}</td><td class="num">${l.pct === null ? '-' : esc(formatPct(l.pct))}</td><td class="num">${esc(formatQty(l.balance))}</td><td>${esc(remark)}</td></tr>`;
@@ -42,7 +42,7 @@ function workTable(lines: DprLineDto[], def: DprFormDef): string {
   ${used ? `<h2>Material used</h2><table><thead><tr><th>Item</th><th class="num">Used</th></tr></thead><tbody>${used}</tbody></table>` : ''}`;
 }
 
-/** Today's pipe work (item 126): metres per stage by zone and diameter, and valves fixed. */
+/** Today's pipe work: metres per stage by zone and diameter, and valves fixed. */
 function pipeTable(lines: DprLineDto[]): string {
   const rows = pipelineSummary(lines);
   if (!rows.length) return '';

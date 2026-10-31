@@ -19,7 +19,7 @@ const roadOrder = (token: string) => orderOf(token, 'RD-2026-01');
 const people = async (token: string) => new Map((await api<{ items: { id: string; fullName: string; email: string }[] }>(token, '/users?pageSize=100')).items.map((u) => [u.email, u]));
 
 /**
- * Comments and mentions (v6 item 116) on the road's purchase order: the project manager mentions the managing director
+ * Comments and mentions on the road's purchase order: the project manager mentions the managing director
  * from the order's page, who is told and replies; the project manager hears of the reply and resolves the thread there.
  */
 test('a mention on a record’s page reaches the person, their reply comes back, and the thread is resolved', async ({ page }) => {

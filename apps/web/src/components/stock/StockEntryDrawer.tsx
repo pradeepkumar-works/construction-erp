@@ -30,7 +30,7 @@ const KIND: Record<StockEntryType, string> = {
   RETURN_FROM_SITE: 'Return from site',
 };
 
-/** What a debit note starts from: a GRN's rejected quantities, or what went back to the supplier (v5 item 91). */
+/** What a debit note starts from: a GRN's rejected quantities, or what went back to the supplier. */
 export function debitNoteFrom(e: StockEntryDto): DebitNoteGrn | null {
   const returned = e.type === 'RETURN_TO_VENDOR';
   const lines = e.lines

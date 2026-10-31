@@ -9,7 +9,7 @@ import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 
 /**
- * An item's last approved orders (v5 item 95) under a rate: the latest rate and vendor at a glance, the last five in a
+ * An item's last approved orders under a rate: the latest rate and vendor at a glance, the last five in a
  * popover (date, vendor, project, quantity, rate). Nothing when the item was never ordered.
  */
 export function LastRates({ itemName, rates, loading }: { itemName: string; rates: LastRateDto[] | undefined; loading?: boolean }) {
@@ -50,7 +50,7 @@ export function LastRates({ itemName, rates, loading }: { itemName: string; rate
 }
 
 /**
- * Leakage checks (item 121) on the order form: the rate typed is above the lowest another site paid for the item in the
+ * Leakage checks on the order form: the rate typed is above the lowest another site paid for the item in the
  * 30 days before the order. The same rule as the order's record, the leakage page and the watch list.
  */
 export function RateAbove({ rate, quantity, projectId, poDate, quotes }: { rate: number | string | null | undefined; quantity?: number | string | null; projectId: string | undefined; poDate: string; quotes: RateQuote[] | undefined }) {

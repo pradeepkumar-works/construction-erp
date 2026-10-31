@@ -1,5 +1,5 @@
 /**
- * Masters' tests (item 135): a company's rows lay over the standard entries by code, new entries get a code of their own,
+ * Masters' tests: a company's rows lay over the standard entries by code, new entries get a code of their own,
  * an entry in use keeps its name, each list says who changes it, every master list has its node, and each department's
  * Masters names pages of the tree, with no database. CI runs it after the build:
  *

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { signIn } from './helpers';
 
-/** List pages (UI roadmap item 55): views, filters in the URL, saved and shared views, columns, rows, selection. */
+/** List pages: views, filters in the URL, saved and shared views, columns, rows, selection. */
 
 const rows = (page: Page) => page.locator('.ant-table-tbody .ant-table-row');
 
@@ -47,7 +47,7 @@ test('a view saved and shared shows for the company, and only its owner can chan
   // The owner deletes it.
   await page.getByRole('button', { name: `${name} view options` }).click();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
-  // The one delete confirmation (UX item 86): it names the view, and once it is gone the notice offers Undo.
+  // The one delete confirmation: it names the view, and once it is gone the notice offers Undo.
   const confirm = page.getByRole('dialog').filter({ hasText: `Delete the view “${name}”?` });
   await confirm.getByRole('button', { name: 'Delete' }).click();
   await expect(confirm).toHaveCount(0);
@@ -185,6 +185,6 @@ test('registers have views, and lists in a tab keep chips and columns', async ({
     await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: /^Issue$/ }).click();
     await expect(chip).toBeVisible({ timeout: 2000 });
   }).toPass();
-  // A tab list keeps its filters to itself: only the open tab goes in the address bar (UX item 84).
+  // A tab list keeps its filters to itself: only the open tab goes in the address bar.
   await expect(page).toHaveURL(/\/stock\?sub=register$/);
 });

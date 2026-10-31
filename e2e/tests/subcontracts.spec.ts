@@ -21,7 +21,7 @@ type SubBill = {
 const n = (v: string) => Number(v);
 
 /**
- * Subcontractor work orders (v3 item 22): the project manager gives a BOQ item to a subcontractor on a work order,
+ * Subcontractor work orders: the project manager gives a BOQ item to a subcontractor on a work order,
  * management approves it, the engineer measures their work under it, the store issues material to them, and the
  * quantity surveyor prepares their bill from the work order: work as measured, less retention, TDS and the material.
  */

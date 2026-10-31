@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 
 /**
- * Where the phone is, for a check-in (v5 item 97): asks for location while the app is in use, and gives up after ten
+ * Where the phone is, for a check-in: asks for location while the app is in use, and gives up after ten
  * seconds. Null when it is refused, switched off or too slow; the server decides whether a check-in without a
  * position is allowed at the site.
  */

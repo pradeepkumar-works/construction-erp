@@ -20,7 +20,7 @@ async function signInGuest(page: Page, email: string) {
 }
 
 /**
- * Consultant checks in the portal (item 172), in a company of its own: the consultant's deputy team leader may not
+ * Consultant checks in the portal, in a company of its own: the consultant's deputy team leader may not
  * certify a bill until they have checked a tenth of its measurements by value, and a check that finds less tells the QS;
  * hidden work holds its progress until its inspection is signed off before cover-up and countersigned from above; and
  * the site order book runs from the engineer's order to the site's compliance and the engineer accepting it.

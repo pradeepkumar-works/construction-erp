@@ -5,7 +5,7 @@ import { Button, type ButtonProps } from 'antd';
 import { useRouter } from 'next/navigation';
 
 /**
- * A link that looks like a button (UX item 81): one `<a>` with antd's button styles, so there is no `<button>` inside a
+ * A link that looks like a button: one `<a>` with antd's button styles, so there is no `<button>` inside a
  * `<Link>` (invalid HTML and two Tab stops). A plain click moves within the app; Ctrl or Cmd click and a middle click open
  * a new tab as any link does.
  */

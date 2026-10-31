@@ -1,4 +1,4 @@
-/** Hindi for the payslips screen (v6 item 100). */
+/** Hindi for the payslips screen. */
 export const HR: Record<string, string> = {
   'My payslips': 'मेरी सैलरी स्लिप',
   'Your salary each month once it is approved: days paid, earnings, PF, tax and net pay.': 'हर महीने की सैलरी, मंज़ूर होने के बाद: कितने दिन का भुगतान, कमाई, PF, टैक्स और हाथ में आने वाली रकम।',

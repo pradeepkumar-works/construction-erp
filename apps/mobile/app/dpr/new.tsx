@@ -50,7 +50,7 @@ interface MachineryRow {
 }
 
 const newKey = () => Math.random().toString(36).slice(2, 9);
-/** The phone's names of the built-in fields, which a company's form may rename (item 134 part 2). */
+/** The phone's names of the built-in fields, which a company's form may rename. */
 const PHONE_LABEL: Record<DprBuiltInKey, string> = {
   weather: 'Weather',
   siteCondition: 'Site condition',
@@ -76,7 +76,7 @@ export default function NewDprScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string; outboxId?: string; fromAsk?: string }>();
   const editId = params.editId ?? null;
   const outboxId = params.outboxId ?? null;
-  // Filled in by Ask Nirmaan (AI item 72): it takes the place of a draft kept on the phone and is itself kept as one.
+  // Filled in by Ask Nirmaan: it takes the place of a draft kept on the phone and is itself kept as one.
   const [askDraft] = useState(() => (editId || outboxId ? null : draftFor(params.fromAsk)));
   const t = useT();
   const { language } = useLanguage();
@@ -208,7 +208,6 @@ export default function NewDprScreen() {
     setPhotos([]);
     // Manpower said in the notes stays; with none, the day's attendance fills it as for any new DPR.
     setManpowerEdited(!!v.manpower?.length);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [askDraft]);
 
   // Editing: prefill the form from the loaded report.
@@ -231,10 +230,9 @@ export default function NewDprScreen() {
     setLines((e.lines ?? []).map((l) => lineRowFrom(l, newId())));
     setExtra(ownValuesFrom(e.extra));
     draft.settle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
-  // Work lines (item 127): what the picker offers, kept on the phone for offline use, with the type's form (item 134).
+  // Work lines: what the picker offers, kept on the phone for offline use, with the type's form.
   const workOptions = useFetch<DprWorkOptionsDto>((a) => a.get('/dpr/work-options', { projectId: projectId!, date: isIsoDate(date) ? date : today() }), [projectId], {
     enabled: !!projectId,
     refetchOnFocus: false,
@@ -279,7 +277,6 @@ export default function NewDprScreen() {
       // Filled in by itself: not a change of the user's to keep or warn about.
       if (!draft.restoredAt && !askDraft) draft.settle();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attendance, manpowerEdited, filledFrom]);
 
   const headCount = useMemo(() => manpower.filter((r) => r.category && /^\d+$/.test(r.count.trim())).map((r) => ({ category: r.category as string, count: Number(r.count) })), [manpower]);
@@ -319,7 +316,7 @@ export default function NewDprScreen() {
     if (!workExecuted.trim() && !hasLines) e.workExecuted = t('Describe the work executed today, or add a work line');
     const lineProblem = linesProblem(lines, t, workOptions.data ?? null, def, language);
     if (lineProblem) e.lines = lineProblem;
-    // What the type's form requires (item 134 part 2); the server checks the same when the report is sent.
+    // What the type's form requires; the server checks the same when the report is sent.
     const ownProblem = ownProblems(ownDay, extra, t, language);
     if (ownProblem) e.extra = ownProblem;
     const missing = (key: DprBuiltInKey) => (dprSetting(def, key).label ? t('Fill in {label}', { label: dprSetting(def, key).label! }) : t(DPR_BUILT_INS[key].missing));
