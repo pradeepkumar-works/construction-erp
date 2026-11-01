@@ -173,7 +173,6 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
             </Flex>
           ),
         }}
-        scrollX={fixedProject ? 800 : 1000}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No toolbox talk matches this search' : 'No toolbox talks recorded'} />}
         emptyAction={newButton}
       />

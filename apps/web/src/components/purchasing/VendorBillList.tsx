@@ -233,7 +233,6 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1200 : 1420}
         emptyText={<EmptyArt art="entries" title="No vendor bills here yet" />}
         emptyAction={newButton}
       />

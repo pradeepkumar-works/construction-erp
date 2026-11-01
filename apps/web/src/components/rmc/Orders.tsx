@@ -106,7 +106,6 @@ export function Orders() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1000}
         emptyText={<EmptyArt art="entries" title={view === 'QUOTED' ? 'No quotes waiting for an answer' : 'No orders here'} />}
         emptyAction={newButton}
       />

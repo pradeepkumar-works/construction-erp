@@ -2,9 +2,10 @@
 
 import React from 'react';
 import type { SavedViewList, SortOrder, SubmissionStatus, SubmissionType } from '@erp/shared';
-import { SUBMISSION_STATUS_LABELS } from '@erp/shared';
+import { SUBMISSION_STATUS_LABELS, mayApproveTypeAtAll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useListPage } from '@/lib/listPage';
+import { usePendingApprovals } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { useColumnChoice, type ListColumn } from './DataTable';
 import { FilterChips, type ChipLabels } from './FilterChips';
@@ -54,7 +55,11 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
   const columns = opts.columns(page.sortOrderFor);
   const choice = useColumnChoice(opts.list, columns);
   const statusLabels: Record<string, string> = opts.statusLabels ?? SUBMISSION_STATUS_LABELS;
-  const builtIns = (opts.type ? standardViews(user, opts.type) : [{ key: 'all', label: 'All', filters: {} }]).map((v) => (v.key === 'all' && opts.allLabel ? { ...v, label: opts.allLabel } : v));
+  // Waiting for me says how many: the approvals queue, of this type, in the header's project.
+  const approver = !!user && !!opts.type && inUrl && mayApproveTypeAtAll(user, opts.type);
+  const { data: pending } = usePendingApprovals(approver);
+  const waiting = approver && pending ? pending.filter((p) => p.type === opts.type && (!projectId || p.projectId === projectId)).length : undefined;
+  const builtIns = (opts.type ? standardViews(user, opts.type, waiting) : [{ key: 'all', label: 'All', filters: {} }]).map((v) => (v.key === 'all' && opts.allLabel ? { ...v, label: opts.allLabel } : v));
 
   const views = !inUrl ? null : (
     <ListViews

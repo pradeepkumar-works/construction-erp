@@ -210,7 +210,6 @@ export function ProgrammeAndEot({
                 loading={loading}
                 failed={!!error}
                 onOpen={onOpen}
-                scrollX={760}
                 emptyText={portal ? 'The contractor has not sent a programme yet.' : 'No revision sent yet. Plan the activities, then send the programme to the Engineer as Rev 0.'}
               />
             </>
@@ -242,7 +241,6 @@ export function ProgrammeAndEot({
                 loading={loading}
                 failed={!!error}
                 onOpen={onOpen}
-                scrollX={900}
                 emptyText={portal ? 'No extension of time applied for.' : 'No application yet. Request an extension for delays in the register, or for the added work of a variation.'}
               />
             </>

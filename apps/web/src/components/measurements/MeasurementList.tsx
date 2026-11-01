@@ -124,7 +124,6 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1150 : 1350}
         emptyText={<EmptyArt art="entries" title="No measurements here yet" />}
         emptyAction={newButton}
       />

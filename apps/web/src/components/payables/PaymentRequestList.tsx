@@ -264,7 +264,6 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
         table={page.tableProps<PaymentRequestDto>(data?.total)}
         onOpen={(id) => setOpened(id)}
         bulk={[exportSelected<PaymentRequestDto>(fund ? 'fund-requests' : 'payment-requests', fund ? 'Fund requests' : 'Payment requests', PAYMENT_REQUEST_EXPORT)]}
-        scrollX={1400}
         empty={{
           filtered,
           clear: () => (page.clear(), setStatus(undefined), setKind(undefined)),

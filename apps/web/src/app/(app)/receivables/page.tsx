@@ -227,7 +227,6 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
           else if (r && accounts && !r.exportedToTally) setEditing(r);
         }}
         bulk={[exportSelected<ReceiptDto>('receipts', 'Receipts', RECEIPT_EXPORT)]}
-        scrollX={1100}
         emptyText={<EmptyArt art="entries" title={kind || page.params.q ? 'No receipt matches these filters' : 'No money received recorded yet'} />}
         emptyAction={newButton}
       />
@@ -445,7 +444,6 @@ export default function ReceivablesPage() {
                     table={page.tableProps<Keyed<OpenBillDto>>(openBills.length)}
                     onOpen={setBillId}
                     bulk={[exportSelected<Keyed<OpenBillDto>, OpenBillDto>('open-bills', 'Open bills', OPEN_BILL_EXPORT)]}
-                    scrollX={1000}
                     empty={{ filtered: !!page.params.q, clear: () => page.clear() }}
                     emptyText={<EmptyArt art="entries" title={page.params.q ? 'No open bill matches this search' : 'Every bill sent has been settled'} />}
                   />
@@ -467,7 +465,6 @@ export default function ReceivablesPage() {
                     loading={isLoading}
                     failed={failed}
                     bulk={[exportSelected<Keyed<ProjectReceivableDto>, ProjectReceivableDto>('receivables', 'Receivables', RECEIVABLE_EXPORT)]}
-                    scrollX={1700}
                     emptyText="No client owes anything on any project"
                   />
                 </>
@@ -476,7 +473,7 @@ export default function ReceivablesPage() {
             {
               key: 'clients',
               label: 'By client',
-              children: <LocalDataTable<Keyed<ClientReceivableDto>> list="receivables-clients" columns={clientColumns} rows={clients} loading={isLoading} failed={failed} scrollX={1650} emptyText="No client owes anything" />,
+              children: <LocalDataTable<Keyed<ClientReceivableDto>> list="receivables-clients" columns={clientColumns} rows={clients} loading={isLoading} failed={failed} emptyText="No client owes anything" />,
             },
             { key: 'receipts', label: 'Money received', children: <ReceiptsTab projectId={projectId} /> },
           ]}

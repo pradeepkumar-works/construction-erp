@@ -333,7 +333,6 @@ export function PapersPanel() {
         onOpen={manager ? (id) => { const d = docs.data?.items.find((x) => x.id === id); if (d) openDoc(d); } : undefined}
         chips={docFrame.chips}
         empty={docFrame.empty}
-        scrollX={960}
         emptyText={<EmptyArt art="entries" title={docType || docState || docMachine || showOld || docList.params.q ? 'No paper matches these filters' : 'No papers recorded'} />}
         emptyAction={newButton}
       />
@@ -369,7 +368,6 @@ export function PapersPanel() {
         onOpen={manager ? (id) => { const d = drivers.data?.items.find((x) => x.id === id); if (d) openDriver(d); } : undefined}
         chips={drvFrame.chips}
         empty={drvFrame.empty}
-        scrollX={900}
         emptyText={<EmptyArt art="entries" title={showLeft || drvList.params.q ? 'No driver matches these filters' : 'No drivers recorded'} />}
         emptyAction={newDriverButton}
       />

@@ -245,7 +245,6 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1000}
         emptyText={<EmptyArt art="entries" title={status || kind || equipmentId || page.params.q ? 'No job card matches these filters' : 'No job cards yet'} />}
         emptyAction={newButton}
       />

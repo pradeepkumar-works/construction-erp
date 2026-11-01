@@ -169,7 +169,6 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1050 : 1250}
         emptyText={<EmptyArt art="entries" title={buyer ? 'No purchase orders yet. Make one from an approved indent, or with New purchase order.' : 'No purchase orders yet'} />}
         emptyAction={newButton}
       />

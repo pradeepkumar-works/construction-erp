@@ -193,7 +193,6 @@ export function ItemsTable() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={900}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No item matches this search' : 'No items yet. GRNs add them from the request lines.'} />}
         emptyAction={newButton}
       />

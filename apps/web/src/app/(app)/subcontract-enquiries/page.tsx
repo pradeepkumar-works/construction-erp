@@ -191,7 +191,6 @@ function ScEnquiriesPage() {
           onOpen={open}
           empty={{ filtered: !!page.params.q || status !== 'open', clear: () => page.clear() }}
           failed={!!error}
-          scrollX={1080}
           emptyText={<EmptyArt art="entries" title={page.params.q ? 'No enquiry matches the search' : status === 'open' ? 'No open enquiry' : 'No enquiry here yet'} />}
           emptyAction={newButton}
         />

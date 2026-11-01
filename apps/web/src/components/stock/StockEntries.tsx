@@ -145,7 +145,6 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1160 : 1380}
         emptyText={<EmptyArt art="entries" title={type || qcFilter || page.params.q || page.params.from || page.params.to ? 'No entry matches these filters' : 'No stock entries yet'} />}
       />
       <StockEntryDrawer id={opened} onClose={() => setOpened(null)} />

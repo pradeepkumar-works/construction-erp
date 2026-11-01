@@ -165,7 +165,6 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1130}
         emptyText={<EmptyArt art="entries" title={status || page.params.q ? 'No variation matches these filters' : 'No variations yet'} />}
         emptyAction={newButton}
       />

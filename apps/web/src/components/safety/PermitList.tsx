@@ -142,7 +142,6 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 900 : 1100}
         emptyText={<EmptyArt art="entries" title={view === 'ACTIVE' ? 'No permits waiting or live' : 'No permits'} />}
         emptyAction={newButton}
       />

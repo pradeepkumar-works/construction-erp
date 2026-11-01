@@ -164,7 +164,6 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={type || status || page.params.q ? 'No incident matches these filters' : 'No incidents or near misses recorded'} />}
         emptyAction={newButton}
       />

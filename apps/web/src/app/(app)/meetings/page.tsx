@@ -253,7 +253,6 @@ function MeetingsPage() {
             onOpen={open}
             empty={{ filtered, clear: () => page.clear(['q', 'status', 'mine']) }}
             failed={!!meetings.error}
-            scrollX={1020}
             emptyText={<EmptyArt art="entries" title={page.params.q ? 'No meeting matches the search' : 'No meeting recorded yet'} />}
             emptyAction={newButton}
           />
@@ -272,7 +271,6 @@ function MeetingsPage() {
             }}
             empty={{ filtered, clear: () => page.clear(['q', 'status', 'mine']) }}
             failed={!!actions.error}
-            scrollX={940}
             emptyText={<EmptyArt art="entries" title={page.params.q ? 'No action matches the search' : status === 'open' ? (mine ? 'Nothing open for you' : 'No open action') : 'No action here'} />}
           />
         )}

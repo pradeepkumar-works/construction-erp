@@ -165,7 +165,6 @@ function ToExport() {
         rows={rows}
         loading={isLoading || isFetching}
         failed={!!error}
-        scrollX={900}
         emptyText="Nothing new to export up to this month"
         expandable={{
           expandedRowRender: (v) => (
@@ -277,7 +276,6 @@ function Exports() {
               }
             : undefined
         }
-        scrollX={800}
         emptyText="Nothing exported yet"
       />
     </>

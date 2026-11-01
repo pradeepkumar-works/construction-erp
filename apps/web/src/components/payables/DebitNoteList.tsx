@@ -152,7 +152,6 @@ export function DebitNoteList({ projectId, vendorId }: { projectId?: string; ven
         table={page.tableProps<DebitNoteDto>(data?.total)}
         onOpen={(id) => setOpened(id)}
         bulk={[exportSelected<DebitNoteDto>('debit-notes', 'Debit notes', DEBIT_NOTE_EXPORT)]}
-        scrollX={1200}
         empty={{ filtered, clear }}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No debit note matches these filters' : 'No debit notes yet. Raise one from an approved bill.'} />}
       />

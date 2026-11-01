@@ -262,7 +262,6 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1100 : 1300}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No letter matches these filters' : isIn ? 'No letters received yet' : 'No letters sent yet'} />}
         emptyAction={newButton}
       />

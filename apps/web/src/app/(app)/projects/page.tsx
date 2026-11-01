@@ -192,7 +192,6 @@ export default function ProjectsPage() {
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
-          scrollX={1150}
           emptyText={<EmptyArt art="projects" title={filtered ? 'No project matches these filters' : 'No projects yet'} />}
           emptyAction={newButton}
         />

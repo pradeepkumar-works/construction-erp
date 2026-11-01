@@ -327,7 +327,6 @@ function TendersPage() {
             clear: () => page.clear(),
           }}
           failed={!!error}
-          scrollX={1300}
           emptyText={
             <EmptyArt
               art="entries"

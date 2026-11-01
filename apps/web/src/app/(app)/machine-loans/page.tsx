@@ -181,7 +181,6 @@ function MachineLoansPage() {
           onOpen={open}
           empty={{ filtered: !!page.params.q || status !== 'ACTIVE', clear: () => page.clear() }}
           failed={!!error}
-          scrollX={1000}
           emptyText={<EmptyArt art="entries" title={page.params.q ? 'No loan matches the search' : status === 'ACTIVE' ? 'No running machine loan' : 'No machine loan yet'} />}
           emptyAction={newButton}
         />

@@ -161,7 +161,6 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={preparer ? 'No RA bills yet. Bill the approved measurements with New RA bill.' : 'No bills yet'} />}
         emptyAction={newButton}
       />

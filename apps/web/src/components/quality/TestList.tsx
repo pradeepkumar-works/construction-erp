@@ -118,7 +118,6 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1100 : 1280}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No test matches these filters' : 'No test recorded yet'} />}
         emptyAction={newButton}
       />

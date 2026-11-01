@@ -201,7 +201,6 @@ export function RequestsToOrderList() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1100}
         emptyText={<EmptyArt art="approved" title={stage ? `Nothing at ${ORDER_STAGE_LABELS[stage].toLowerCase()}` : 'Nothing to order. Approved indents show here until everything on them is ordered.'} />}
       />
     </>

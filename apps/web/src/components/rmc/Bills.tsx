@@ -182,7 +182,6 @@ export function Bills() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={960}
         emptyText={<EmptyArt art="entries" title={due ? 'Every bill is paid' : 'No bills yet'} />}
       />
       {bill && (

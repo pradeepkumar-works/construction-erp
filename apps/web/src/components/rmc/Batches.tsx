@@ -88,7 +88,6 @@ export function Batches() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1000}
         emptyText={<EmptyArt art="entries" title="No trucks on these days" />}
       />
       {drawers}

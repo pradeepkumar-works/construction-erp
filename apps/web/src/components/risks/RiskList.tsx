@@ -240,7 +240,6 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1150 : 1350}
         emptyText={<EmptyArt art="entries" title={kind !== 'ALL' || status !== 'ACTIVE' || category || mine || overdue || page.params.q ? 'Nothing matches these filters' : 'No delays or risks open'} />}
         emptyAction={newButton}
       />

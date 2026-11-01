@@ -135,7 +135,6 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No NCR matches these filters' : 'No NCR raised'} />}
         emptyAction={newButton}
       />

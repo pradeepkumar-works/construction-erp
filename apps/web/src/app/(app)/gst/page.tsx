@@ -244,7 +244,6 @@ function GstRegistersPage() {
                   loading={isFetching}
                   failed={!!error}
                   onOpen={(id) => router.push(`/bills?id=${id}`)}
-                  scrollX={1150}
                   emptyText="No approved RA bill in this period"
                 />
               ),
@@ -261,7 +260,6 @@ function GstRegistersPage() {
                   rows={inward}
                   loading={isFetching}
                   failed={!!error}
-                  scrollX={1150}
                   emptyText="No purchase with GST in this period"
                 />
               ),

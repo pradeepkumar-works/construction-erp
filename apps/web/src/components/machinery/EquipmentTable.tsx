@@ -304,7 +304,6 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1000}
         emptyText={<EmptyArt art="entries" title={ownership || includeInactive || page.params.q ? 'No machine matches these filters' : mayManage ? 'No machines yet. Add the fleet with New machine.' : 'No machines yet'} />}
         emptyAction={newButton}
       />

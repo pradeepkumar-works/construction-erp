@@ -187,7 +187,6 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={issuer ? 'No work orders yet. Give work to a subcontractor with New work order.' : 'No work orders yet'} />}
         emptyAction={newButton}
       />

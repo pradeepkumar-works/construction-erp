@@ -200,7 +200,6 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={preparer ? 'No subcontractor bills yet. Prepare one from an approved work order.' : 'No subcontractor bills yet'} />}
         emptyAction={newButton}
       />

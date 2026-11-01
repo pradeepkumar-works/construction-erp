@@ -155,7 +155,6 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1250 : 1450}
         emptyText={<EmptyArt art="entries" title="No inspection requested yet" />}
         emptyAction={newButton}
       />

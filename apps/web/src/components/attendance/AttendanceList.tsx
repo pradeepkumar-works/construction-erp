@@ -141,7 +141,6 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1250}
         emptyText={<EmptyArt art="entries" title={page.filters.from || page.filters.to || page.params.q ? 'No sheet matches these filters' : canRecord ? 'No attendance yet. Record the day with Record attendance.' : 'No attendance yet'} />}
         emptyAction={newButton}
       />

@@ -120,7 +120,6 @@ export function DeliveriesExpected({ projectId }: { projectId?: string }) {
         rows={rows}
         loading={isLoading}
         failed={failed}
-        scrollX={projectId ? 900 : 1100}
         emptyText="Nothing on order. Approved purchase orders show here until everything on them is received."
       />
       {receiving ? <ReceiptModal open={!!receiving} onClose={() => setReceiving(null)} projectId={receiving.projectId} purchaseOrderId={receiving.purchaseOrderId} /> : null}

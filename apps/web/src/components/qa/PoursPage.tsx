@@ -328,7 +328,6 @@ function PourList() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1400}
         emptyText={<EmptyArt art="entries" title={status || flagged || page.params.q ? 'No pour matches these filters' : 'No pour planned yet'} />}
         emptyAction={newButton}
       />

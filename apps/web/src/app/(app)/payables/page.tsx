@@ -222,7 +222,6 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
           if (r) openBill(r);
         }}
         bulk={[exportSelected<VendorPaymentDto>('payments', 'Payments', VENDOR_PAYMENT_EXPORT)]}
-        scrollX={1100}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No payment matches this search' : 'No payments recorded yet'} />}
         emptyAction={newButton}
       />
@@ -521,7 +520,6 @@ export default function PayablesPage() {
                       if (r) setBill(r);
                     }}
                     bulk={[exportSelected<Keyed<PayableBillDto>, PayableBillDto>('due-list', 'Due list', PAYABLE_BILL_EXPORT)]}
-                    scrollX={1250}
                     empty={{ filtered: !!page.params.q || !!vendorId, clear: () => page.clear() }}
                     emptyText={<EmptyArt art="entries" title={page.params.q || vendorId ? 'No open bill matches these filters' : 'Every approved bill is paid'} />}
                   />
@@ -545,7 +543,6 @@ export default function PayablesPage() {
                     loading={isLoading}
                     failed={failed}
                     bulk={[exportSelected<Keyed<VendorPayableDto>, VendorPayableDto>('payables-by-vendor', 'Payables by vendor', PAYABLE_VENDOR_EXPORT)]}
-                    scrollX={1800}
                     emptyText="Nothing owed to any vendor"
                   />
                 </>
@@ -554,7 +551,7 @@ export default function PayablesPage() {
             {
               key: 'projects',
               label: 'By project',
-              children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} scrollX={1700} emptyText="Nothing owed on any project" />,
+              children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} emptyText="Nothing owed on any project" />,
             },
             { key: 'payments', label: 'Payments', children: <PaymentsTab projectId={projectId} vendorId={vendorId} onBill={setBill} /> },
             { key: 'debit-notes', label: 'Debit notes', children: <DebitNotesTab projectId={projectId} vendorId={vendorId} /> },

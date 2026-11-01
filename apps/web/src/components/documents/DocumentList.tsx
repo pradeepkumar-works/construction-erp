@@ -124,7 +124,6 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1050 : 1250}
         emptyText={<EmptyArt art="entries" title={kind || discipline || status || page.params.q ? 'No document matches these filters' : 'No drawings or documents yet'} />}
         emptyAction={newButton}
       />

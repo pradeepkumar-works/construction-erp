@@ -180,7 +180,6 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1100}
         emptyText={<EmptyArt art="entries" title={!active ? 'Nobody has left' : page.params.q ? 'No worker matches this search' : 'No workers yet. Add the labour contractors’ workers by name to mark a daily roll call.'} />}
         emptyAction={newButton}
       />
