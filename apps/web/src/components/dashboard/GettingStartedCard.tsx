@@ -73,7 +73,7 @@ export function GettingStartedCard({ state }: { state: ReturnType<typeof useGett
   return (
     <Card
       size="small"
-      style={{ marginBottom: 16, borderTop: `3px solid ${BRAND.colors.accent}` }}
+      style={{ marginBottom: 16 }}
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span>Your first week on {BRAND.name}</span>

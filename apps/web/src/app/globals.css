@@ -384,9 +384,26 @@ h4.ant-typography,
   color: var(--ant-color-text-tertiary);
 }
 
-/* Dashboard KPI cards: the title leaves room for the icon square in the top right corner (control height + a gap). */
-.kpi-card .ant-statistic-title {
-  padding-right: calc(var(--ant-control-height, 32px) + 8px);
+.figure-cell {
+  position: relative;
+}
+.figure-link {
+  color: inherit;
+}
+.figure-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.figure-cell:has(.figure-link):hover {
+  background: var(--ant-color-fill-quaternary);
+}
+.figure-link:focus-visible {
+  outline: none;
+}
+.figure-link:focus-visible::after {
+  outline: 2px solid var(--ant-color-primary);
+  outline-offset: -2px;
 }
 
 /* Keeps the unticked choices in the account menu lined up with the ticked one. */

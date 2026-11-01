@@ -14,7 +14,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AppTag } from '@/components/common/AppTag';
 import { FileExcelOutlined } from '@/components/common/icons';
 import { ChartCard } from '@/components/home/ChartCard';
-import { FigureStrip, type StripFigure } from '@/components/management/FigureStrip';
+import { FigureStrip, type StripFigure } from '@/components/common/FigureStrip';
 import { MoneyPipeline } from '@/components/management/MoneyPipeline';
 import { AttentionList } from '@/components/management/AttentionList';
 import { ProjectsHealthTable } from '@/components/management/ProjectsHealthTable';

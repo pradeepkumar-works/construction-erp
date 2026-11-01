@@ -67,7 +67,7 @@ test('My work draws without layout shift above the charts', async ({ page }) => 
   await page.goto('/my-work');
   await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-  await expect(page.getByText('Projects by type')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Key figures' })).toBeVisible();
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(500);
   const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
