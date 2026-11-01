@@ -5,8 +5,14 @@ import { Button, Checkbox, Flex, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { CaretDownOutlined, CaretRightOutlined } from '@/components/common/icons';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
-import { formatDateTime, formatINR, inSentence, timeAgo } from '@/lib/format';
-import { decidedInPlace, queueKey, type QueueGroup } from './queue';
+import { formatDateTime, formatINR, formatINRCompact, inSentence, plural, timeAgo } from '@/lib/format';
+import { decidedInPlace, noQuantity, queueKey, type QueueGroup } from './queue';
+
+/** "7 · ₹14.20 L · oldest 3 days": how many, the rupees at stake where the entries carry any, and how long the oldest has waited. */
+const groupLine = (g: QueueGroup) =>
+  [String(g.items.length), g.amount === null ? null : formatINRCompact(g.amount), `oldest ${g.oldestDays ? plural(g.oldestDays, 'day') : 'today'}`]
+    .filter(Boolean)
+    .join(' · ');
 
 interface Props {
   groups: QueueGroup[];
@@ -76,8 +82,8 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
               >
                 {g.label}
               </Button>
-              <span className="text-muted" translate="no" style={{ marginInlineStart: 'auto' }}>
-                {g.items.length}
+              <span className="text-muted" translate="no" style={{ marginInlineStart: 'auto', textAlign: 'end' }}>
+                {groupLine(g)}
               </span>
             </Flex>
             {!isCollapsed && (
@@ -127,10 +133,16 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
                           <Typography.Text strong={isCurrent} ellipsis={{ tooltip: p.title }} style={{ minWidth: 0 }}>
                             {p.title}
                           </Typography.Text>
-                          {p.amount !== null && (
-                            <Typography.Text className="mono" style={{ whiteSpace: 'nowrap', fontSize: token.fontSizeSM }}>
-                              {formatINR(p.amount)}
-                            </Typography.Text>
+                          {noQuantity(p) ? (
+                            <AppTag meaning="waiting" style={{ flex: 'none' }}>
+                              No quantity
+                            </AppTag>
+                          ) : (
+                            p.amount !== null && (
+                              <Typography.Text className="mono" translate="no" style={{ whiteSpace: 'nowrap', fontSize: token.fontSizeSM }}>
+                                {formatINR(p.amount)}
+                              </Typography.Text>
+                            )
                           )}
                         </Flex>
                         <Flex justify="space-between" gap={token.marginXS} style={{ fontSize: token.fontSizeSM }}>

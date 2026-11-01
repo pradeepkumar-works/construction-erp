@@ -40,6 +40,7 @@ import {
   WEIGH_SHORT_LOADS,
   WEIGH_SHORT_TOLERANCE_KG,
   WEIGH_SHORT_TOLERANCE_PCT,
+  rankWaiting,
 } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -216,7 +217,11 @@ export class WarningsService {
         })
       : [];
     const by = new Map(dismissals.map((d) => [d.warningKey, { outcome: d.outcome, reason: d.reason, byName: d.dismissedBy.fullName, at: d.createdAt.toISOString() }]));
-    const all: WarningDto[] = warnings.map((w) => ({ ...w, dismissed: by.get(w.key) ?? null }));
+    // Most rupees at stake first, then the latest, then the kinds' own order (ARCHITECTURE "Early warnings").
+    const all: WarningDto[] = rankWaiting(
+      warnings.map((w) => ({ ...w, dismissed: by.get(w.key) ?? null })),
+      (w) => ({ amount: w.impact?.inr, daysLate: w.impact?.days }),
+    );
     return { asOf: today, kinds, open: all.filter((w) => !w.dismissed), dismissed: all.filter((w) => w.dismissed), records, canResume: canResumeWarningKind(user.roleKey) };
   }
 
@@ -1470,7 +1475,7 @@ export class WarningsService {
         title: `No DPR from ${p.name} for ${plural(gap.days, 'day')}`,
         detail: last ? `The last DPR sent was for ${day(last)}; none has been sent for ${day(gap.from)} to ${day(addDays(today, -1))}.` : `No DPR has been sent in the last month.`,
         action: `Ask the site team at ${p.code} to send the missing DPRs today`,
-        impact: { text: `${plural(gap.days, 'day')} not recorded`, inr: null, days: null },
+        impact: { text: `${plural(gap.days, 'day')} not recorded`, inr: null, days: gap.days },
         working: [last ? `Last DPR sent: ${day(last)}` : 'No DPR sent in the last 31 days', `Days since with none sent: ${gap.days >= 30 ? '30 or more' : gap.days}`, `Flagged after ${DPR_MISSING_DAYS} days in a row; drafts do not count`],
         facts: [
           { label: 'Days without a DPR', value: gap.days >= 30 ? '30 or more' : String(gap.days) },

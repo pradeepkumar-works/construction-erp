@@ -1017,6 +1017,9 @@ for `ProjectAccessService.assertCanApproveSubmission`; `pending()` keeps only en
 `GET /approvals/:type/:id/stage` gives a record its levels, steps, whose queue it is in (`waitingWith`) and since when,
 `canReview` and the reason; `GET /approvals/waiting` lists the caller's own waiting entries (Home's Waiting with others
 card and the phone's My submissions). The web's buttons follow the stage on a record and the Approvals queue in lists.
+The Approvals inbox groups its queue by type (`groupQueue`, `components/approvals/queue.ts`) and orders the groups by
+`rankWaiting`: the rupees a group adds up to, then the days its oldest entry has waited, then the type's usual place. Each
+group's header says "7 · ₹14.20 L · oldest 3 days"; Oldest first or Newest first orders the entries inside a group.
 
 `ApprovalEscalation` (per type: `remindAfterHours`, `escalateAfterHours`) drives `NotificationJobsService.approvalEscalation`,
 run hourly (`GET /notifications/jobs/approval-escalation`, the in-process scheduler on the hour, and inside both daily
@@ -3586,6 +3589,11 @@ days; it is claimed for delays in the register, or for the added work of a varia
   forecast; CHECK_THIS, read by the model from a photo, voice note or message; `WARNING_CONFIDENCE_OF` per kind), and
   carries `working`, the rule and its numbers a line each ("58 m³ done × 7.1 bags = 412 bags"), shown under Why with the
   facts. A new kind fills all four; `warnings-test.ts` fails a demo warning without them. My work's card shows the action.
+- **The page.** `/watch-list` is a table, one row a warning (`LocalDataTable`): kind, title, project, At risk (`impact.inr`,
+  a money column), Late by (`impact.days`), how sure, and a ⋯ menu (Show how this was worked out, Dismiss or Restore). A
+  row opens its card in a drawer. Above the table one line says how many are open, the rupees at risk and the projects.
+  `WarningsService.list` returns the warnings in the one order for what waits, `rankWaiting` (`@erp/shared/waiting-rank.ts`:
+  the rupees' band, then days late, then the kinds' own order), so the page and the Monday round-up lead with the same ones.
 - **Dismissing.** `POST /warnings/dismiss {key, outcome, reason?}` says what became of it: FIXED (acted on), KNOWN (true,
   left for a reason; the note is required) or WRONG. It holds for the whole company (`WarningDismissal`, audited). The key
   carries the warning's figures in coarse form (the slip in 14-day steps, the month, the week), so a dismissed warning
