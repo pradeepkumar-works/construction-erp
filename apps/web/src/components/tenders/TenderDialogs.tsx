@@ -119,7 +119,7 @@ export function BidDialog({ tender, open, onClose }: { tender: TenderDetailDto; 
     >
       <Form form={form} layout="vertical">
         <Form.Item name="bidderName" label="Bidder" rules={[{ required: true, whitespace: true, message: 'Enter the bidder' }]}>
-          <Input maxLength={160} placeholder="Kalinga Constructions" />
+          <Input maxLength={160} placeholder="e.g. ABC Infra" />
         </Form.Item>
         <Form.Item name="as" label="Their bid as">
           <Radio.Group
@@ -139,7 +139,7 @@ export function BidDialog({ tender, open, onClose }: { tender: TenderDetailDto; 
           </Form.Item>
         )}
         <Form.Item name="note" label="Note">
-          <Input maxLength={300} placeholder="Technically qualified" />
+          <Input maxLength={300} placeholder="e.g. Technically qualified" />
         </Form.Item>
       </Form>
     </FormShell>
@@ -174,7 +174,7 @@ export function EmdReturnedDialog({ tender, open, onClose }: { tender: TenderDet
           <DatePicker disabledDate={notAfterToday} style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item name="note" label="Note">
-          <Input maxLength={300} placeholder="Refunded to the current account" />
+          <Input maxLength={300} placeholder="e.g. Refunded to the current account" />
         </Form.Item>
       </Form>
     </FormShell>
@@ -249,7 +249,7 @@ export function MakeProjectDialog({ tender, open, onClose }: { tender: TenderDet
         <FormSection title="Project">
           <FormGrid cols={2}>
             <Form.Item name="code" label="Project code" rules={[{ required: true, whitespace: true, message: 'Enter a project code, e.g. RD-014' }]}>
-              <Input maxLength={30} placeholder="RD-014" {...CODE_INPUT} />
+              <Input maxLength={30} placeholder="e.g. RD-014" {...CODE_INPUT} />
             </Form.Item>
             <Form.Item name="type" label="Kind of project" rules={[{ required: true, message: 'Choose the kind of project' }]}>
               <Select options={PROJECT_TYPES.filter((t) => t !== 'PLANT' && t !== 'STORE').map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))} />
@@ -263,7 +263,7 @@ export function MakeProjectDialog({ tender, open, onClose }: { tender: TenderDet
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="agreementNo" label="Agreement no.">
-              <Input maxLength={80} placeholder="Agreement No. 14/2026-27" {...CODE_INPUT} />
+              <Input maxLength={80} placeholder="e.g. Agreement No. 14/2026-27" {...CODE_INPUT} />
             </Form.Item>
           </FormGrid>
           <Form.Item name="projectManagerId" label="Project manager">
@@ -281,7 +281,7 @@ export function MakeProjectDialog({ tender, open, onClose }: { tender: TenderDet
             <>
               <FormGrid cols={2}>
                 <Form.Item name={['guarantee', 'reference']} label="Guarantee no." rules={[{ required: true, whitespace: true, message: 'Enter the guarantee number' }]}>
-                  <Input maxLength={80} placeholder="BG 0045/2026" {...CODE_INPUT} />
+                  <Input maxLength={80} placeholder="e.g. BG 0045/2026" {...CODE_INPUT} />
                 </Form.Item>
                 <Form.Item name={['guarantee', 'amount']} label="Amount" rules={[{ required: true, message: 'Enter the guarantee amount' }]}>
                   <MoneyInput />
@@ -289,7 +289,7 @@ export function MakeProjectDialog({ tender, open, onClose }: { tender: TenderDet
               </FormGrid>
               <FormGrid cols={2}>
                 <Form.Item name={['guarantee', 'issuer']} label="Bank">
-                  <Input maxLength={120} placeholder="State Bank of India" />
+                  <Input maxLength={120} placeholder="e.g. the bank’s name" />
                 </Form.Item>
                 <Form.Item name={['guarantee', 'expiresOn']} label="Valid until">
                   <DatePicker style={{ width: '100%' }} />

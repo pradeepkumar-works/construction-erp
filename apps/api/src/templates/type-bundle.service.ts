@@ -35,7 +35,7 @@ export interface ImportResultDto {
 const rowKey = (r: Pick<ImportRowDto, 'what' | 'code'>) => `${r.what}:${r.code}`;
 
 /**
- * Export and import of project types and component kinds (item 134 part 3, ARCHITECTURE "Project types", Export and
+ * Export and import of project types and component kinds (ARCHITECTURE "Project types", Export and
  * import): a file another company (or a child company, once group sharing comes) reads in. Everything it saves goes
  * through the editors' own checks and write paths, as new rows or new versions; nothing is deleted.
  */

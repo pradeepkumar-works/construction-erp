@@ -31,7 +31,7 @@ export default function ProjectScreen() {
   if (!data) return null;
   const { project, activities } = data;
   const delayed = activities.filter((a) => a.isDelayed).length;
-  // Where the project's type places work (item 134): none for a type that is not located by place.
+  // Where the project's type places work: none for a type that is not located by place.
   const sector = sectorStepOf(project);
   // The project's other screens, as rows; a module the company turned off is left out, as on the Submit tab.
   const role = user?.roleKey;

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: BRAND.colors.canvas };
 
 /**
- * Runs before the first paint (UX item 81): a signed-in page in dark mode, chosen or from the system, starts dark instead of
+ * Runs before the first paint: a signed-in page in dark mode, chosen or from the system, starts dark instead of
  * flashing white until the app loads. It reads the same stored choice as `AppearanceProvider`; sign-in and the public
  * pages stay light. It leaves the theme-colour meta to `AppearanceProvider`: changed before hydration, React adds a second
  * one. (The `\\/` keep the regex's slashes once the template literal is read: with a bare `\/` the script did not parse.)

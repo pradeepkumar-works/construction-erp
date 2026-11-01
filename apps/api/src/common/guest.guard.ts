@@ -6,7 +6,7 @@ import { RequestUser } from './current-user';
 
 /**
  * Deny by default for guests: after sign-in the client's engineer and the consultant reach only routes marked
- * @GuestAllowed(), and a supplier (v6 item 105) only routes marked @SupplierAllowed() plus the account routes marked
+ * @GuestAllowed(), and a supplier only routes marked @SupplierAllowed() plus the account routes marked
  * @GuestAllowed() that are not the client portal's. Runs after JwtAuthGuard, so the user is known. Staff are kept out
  * of routes marked @GuestOnly() or @SupplierOnly(), and client guests out of @SupplierOnly() ones.
  */

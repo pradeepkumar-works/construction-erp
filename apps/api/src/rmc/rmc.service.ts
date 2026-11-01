@@ -94,7 +94,7 @@ type InvoiceRow = Prisma.RmcInvoiceGetPayload<{ include: typeof invoiceInclude }
 const customerOf = (o: { client: { name: string } | null; project: { name: string } | null }) => o.client?.name ?? (o.project ? `Own site: ${o.project.name}` : '');
 
 /**
- * Ready-mix concrete (v6 item 104). A plant is a project of type PLANT, so its materials are bought, received and
+ * Ready-mix concrete. A plant is a project of type PLANT, so its materials are bought, received and
  * counted as at any site, and only those who see the plant see its RMC. Sales quote and confirm orders; quality
  * approves mix designs; the plant dispatches trucks (each a batch and its challan, issuing the materials from the plant's
  * stock through the stock service) and takes cubes (a quality test); accounts bill delivered challans with GST and
@@ -135,7 +135,7 @@ export class RmcService {
     return this.prisma.project.findMany({ where: this.plantWhere(user), select: { id: true, code: true, name: true }, orderBy: { name: 'asc' } });
   }
 
-  // ----- Mix designs -----
+  // Mix designs
 
   private designDto(user: RequestUser, d: DesignRow): MixDesignDto {
     const priced = d.lines.every((l) => l.item.rate !== null);
@@ -151,7 +151,7 @@ export class RmcService {
       status: d.status,
       approvedByName: d.approvedBy?.fullName ?? null,
       approvedAt: iso(d.approvedAt),
-      lines: d.lines.map((l) => ({ itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, quantity: dec(l.quantity)! })),
+      lines: d.lines.map((l) => ({ itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, quantity: dec(l.quantity) })),
       costPerM3: priced && d.lines.length ? money(cost) : null,
       canEdit: d.status === 'DRAFT' && (canRunRmcPlant(user.roleKey) || canApproveMixDesign(user.roleKey)),
       canApprove: d.status === 'DRAFT' && canApproveMixDesign(user.roleKey),
@@ -247,7 +247,7 @@ export class RmcService {
     return this.designDto(user, await this.design(user, id));
   }
 
-  // ----- Orders -----
+  // Orders
 
   private orderDto(user: RequestUser, o: OrderRow): RmcOrderDto {
     const p = orderProgress(o.batches);
@@ -258,7 +258,7 @@ export class RmcService {
       orderNo: o.orderNo,
       plantId: o.plantId,
       plantName: o.plant.name,
-      date: dateOnly(o.date)!,
+      date: dateOnly(o.date),
       status: o.status,
       clientId: o.clientId,
       projectId: o.projectId,
@@ -267,16 +267,16 @@ export class RmcService {
       mixDesignId: o.mixDesignId,
       mixDesignCode: o.mixDesign.code,
       grade: o.mixDesign.grade,
-      quantity: dec(o.quantity)!,
-      rate: money(o.rate)!,
+      quantity: dec(o.quantity),
+      rate: money(o.rate),
       pumpRate: money(o.pumpRate),
       pourDate: dateOnly(o.pourDate),
       validUntil: dateOnly(o.validUntil),
       notes: o.notes,
-      delivered: dec(p.delivered)!,
-      onTheWay: dec(p.onTheWay)!,
-      unbilled: dec(p.unbilled)!,
-      value: money(orderValue(o.quantity, o.rate, o.pumpRate))!,
+      delivered: dec(p.delivered),
+      onTheWay: dec(p.onTheWay),
+      unbilled: dec(p.unbilled),
+      value: money(orderValue(o.quantity, o.rate, o.pumpRate)),
       canEdit: sell && (o.status === 'QUOTED' || o.status === 'CONFIRMED'),
       canConfirm: sell && o.status === 'QUOTED',
       canDispatch: canRunRmcPlant(user.roleKey) && o.status === 'CONFIRMED' && o.mixDesign.status === 'APPROVED' && left.gt(0),
@@ -428,7 +428,7 @@ export class RmcService {
     return this.order(user, id);
   }
 
-  // ----- Batches and challans -----
+  // Batches and challans
 
   private batchDto(user: RequestUser, b: BatchRow): RmcBatchDto {
     return {
@@ -442,9 +442,9 @@ export class RmcService {
       site: b.order.site,
       grade: b.mixDesign.grade,
       mixDesignCode: b.mixDesign.code,
-      date: dateOnly(b.date)!,
-      dispatchedAt: iso(b.dispatchedAt)!,
-      quantity: dec(b.quantity)!,
+      date: dateOnly(b.date),
+      dispatchedAt: iso(b.dispatchedAt),
+      quantity: dec(b.quantity),
       truck: b.truck,
       driver: b.driver,
       pumped: b.pumped,
@@ -459,7 +459,7 @@ export class RmcService {
       cubeTestNo: b.cubeTest?.testNo ?? null,
       cubeResult: b.cubeTest?.result ?? null,
       plantBatchNo: b.plantRows[0]?.batchNo ?? null,
-      lines: b.lines.map((l) => ({ itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, designQty: dec(l.designQty)!, actualQty: dec(l.actualQty)!, variancePct: variancePct(l.designQty, l.actualQty) })),
+      lines: b.lines.map((l) => ({ itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, designQty: dec(l.designQty), actualQty: dec(l.actualQty), variancePct: variancePct(l.designQty, l.actualQty) })),
       canDeliver: b.status === 'DISPATCHED' && (canRunRmcPlant(user.roleKey) || canSellRmc(user.roleKey)),
       canTakeCubes: b.status !== 'REJECTED' && !b.cubeTest && canRecordTest(user.roleKey),
     };
@@ -513,7 +513,7 @@ export class RmcService {
     if (D(dto.quantity).gt(left)) throw new BadRequestException(left.lte(0) ? `${o.orderNo} has had all its concrete. Raise the order's quantity to send more.` : `${o.orderNo} can take ${dec(left)} m³ more. Raise the order's quantity to send more.`);
     const design = await this.prisma.mixDesignLine.findMany({ where: { mixDesignId: o.mixDesignId }, orderBy: { sortOrder: 'asc' } });
     const planned = batchQuantities(design, dto.quantity);
-    // From the controller's batch (item 149): its weights are the lines unless the form sent its own.
+    // From the controller's batch: its weights are the lines unless the form sent its own.
     const fromPlant = dto.plantRowId ? await this.plantBatches.forDispatch(user.organizationId, dto.plantRowId, o.plantId) : null;
     if (fromPlant?.read.problems.length) throw new BadRequestException(`The controller's batch cannot be read: ${fromPlant.read.problems[0]}`);
     const weighed = dto.lines?.length ? dto.lines : fromPlant?.read.materials;
@@ -603,7 +603,7 @@ export class RmcService {
       kind: 'CONCRETE_CUBE',
       title: `${b.mixDesign.grade} cubes, ${b.batchNo} to ${customerOf(b.order)}`.slice(0, 200),
       location: b.order.site,
-      sampledOn: dateOnly(b.date)!,
+      sampledOn: dateOnly(b.date),
       specification: strength ? `Not less than ${strength} N/mm² at 28 days` : null,
       specMin: strength ? String(strength) : null,
     });
@@ -612,7 +612,7 @@ export class RmcService {
     return this.batch(user, id);
   }
 
-  // ----- The plant's day -----
+  // The plant's day
 
   async day(user: RequestUser, q: RmcDayQuery): Promise<RmcDayDto> {
     this.assertView(user);
@@ -656,17 +656,17 @@ export class RmcService {
       plantId: q.plantId ?? null,
       orders: orders.map((o) => this.orderDto(user, o)),
       batches: batchRows.map((b) => this.batchDto(user, b)),
-      byGrade: [...byGrade].sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })).map(([grade, g]) => ({ grade, m3: dec(g.m3)!, trucks: g.trucks })),
+      byGrade: [...byGrade].sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })).map(([grade, g]) => ({ grade, m3: dec(g.m3), trucks: g.trucks })),
       materials: items
         .map((i) => {
           const m = merged.get(i.id)!;
-          return { itemId: i.id, itemName: i.name, unit: i.unit, needed: dec(m.needed)!, inStock: dec(m.inStock)!, short: m.short };
+          return { itemId: i.id, itemName: i.name, unit: i.unit, needed: dec(m.needed), inStock: dec(m.inStock), short: m.short };
         })
         .sort((a, b) => Number(b.short) - Number(a.short) || a.itemName.localeCompare(b.itemName)),
     };
   }
 
-  // ----- Bills and money received -----
+  // Bills and money received
 
   private invoiceDto(user: RequestUser, r: InvoiceRow): RmcInvoiceDto {
     const received = r.receipts.reduce((s, x) => s.add(x.amount), ZERO);
@@ -674,7 +674,7 @@ export class RmcService {
     return {
       id: r.id,
       invoiceNo: r.invoiceNo,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       plantId: r.plantId,
       plantName: r.plant.name,
       clientId: r.clientId,
@@ -682,17 +682,17 @@ export class RmcService {
       gstin: r.client.gstin,
       orderNo: r.order?.orderNo ?? null,
       status: r.status,
-      quantity: dec(r.quantity)!,
-      concrete: money(r.concrete)!,
-      pumping: money(r.pumping)!,
-      taxable: money(r.taxable)!,
-      cgst: money(r.cgst)!,
-      sgst: money(r.sgst)!,
-      igst: money(r.igst)!,
-      total: money(r.total)!,
-      received: money(received)!,
-      due: money(due)!,
-      challans: r.batches.map((b) => ({ batchId: b.id, batchNo: b.batchNo, date: dateOnly(b.date)!, quantity: dec(b.quantity)!, grade: b.mixDesign.grade })),
+      quantity: dec(r.quantity),
+      concrete: money(r.concrete),
+      pumping: money(r.pumping),
+      taxable: money(r.taxable),
+      cgst: money(r.cgst),
+      sgst: money(r.sgst),
+      igst: money(r.igst),
+      total: money(r.total),
+      received: money(received),
+      due: money(due),
+      challans: r.batches.map((b) => ({ batchId: b.id, batchNo: b.batchNo, date: dateOnly(b.date), quantity: dec(b.quantity), grade: b.mixDesign.grade })),
       canCancel: canBillRmc(user.roleKey) && r.status === 'ISSUED' && !r.tallyExportId && !r.receipts.length,
       canReceive: canBillRmc(user.roleKey) && r.status === 'ISSUED' && due.gt(0),
     };
@@ -776,12 +776,12 @@ export class RmcService {
   private receiptDto(r: Prisma.RmcReceiptGetPayload<{ include: { client: { select: { name: true } }; invoice: { select: { invoiceNo: true } } } }>): RmcReceiptDto {
     return {
       id: r.id,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       clientId: r.clientId,
       customer: r.client.name,
       invoiceId: r.invoiceId,
       invoiceNo: r.invoice?.invoiceNo ?? null,
-      amount: money(r.amount)!,
+      amount: money(r.amount),
       mode: r.mode,
       reference: r.reference,
     };

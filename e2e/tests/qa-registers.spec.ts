@@ -8,7 +8,7 @@ type Test = { id: string; testNo: string; labId: string | null; labName: string 
 type Samples = { items: { testId: string; state: string; late: boolean }[]; total: number; atLab: number; late: number };
 
 /**
- * QA/QC part 2 (item 137): the demo NABL lab's accreditation runs out next month, the site lab's scale is overdue; QA/QC
+ * QA/QC part 2: the demo NABL lab's accreditation runs out next month, the site lab's scale is overdue; QA/QC
  * adds an instrument and calibrates it, records a test sent to the NABL lab and run on it, and the sample waits at the lab;
  * a site engineer cannot change the labs; the registers' pages open.
  */

@@ -1,5 +1,5 @@
 /**
- * Verticals (item 167, ARCHITECTURE "Verticals"): the company's business lines, such as water, buildings and roads. A
+ * Verticals (ARCHITECTURE "Verticals"): the company's business lines, such as water, buildings and roads. A
  * vertical is an entry of the `vertical` master (`MASTER_LIST_DEFS.vertical`, kept by code); each project and tender
  * carries one (`verticalCode`, or none). A new project takes the vertical of its built-in kind when the form names
  * none (`verticalOfType`); the header can show one vertical at a time, and reports group their rows by it

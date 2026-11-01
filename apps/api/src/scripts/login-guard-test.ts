@@ -1,5 +1,5 @@
 /**
- * Sign-in guard tests (finding 5 of the October review): five wrong passwords lock an email for 15 minutes from the
+ * Sign-in guard tests: five wrong passwords lock an email for 15 minutes from the
  * fifth, old failures fall out of the window, an address trying many emails is held off, and reset links are limited.
  *
  *   node dist/scripts/login-guard-test.js

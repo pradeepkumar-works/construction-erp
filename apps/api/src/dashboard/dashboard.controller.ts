@@ -35,20 +35,20 @@ export class DashboardController {
     return this.home.trends(user);
   }
 
-  /** The company's day for the phone's Home (v5 item 96): admin, management, accounts and project managers. */
+  /** The company's day for the phone's Home: admin, management, accounts and project managers. */
   @Get('company-today')
   companyToday(@CurrentUser() user: RequestUser) {
     return this.home.companyToday(user);
   }
 
-  /** A module's home page (v6 item 98): its figures, what waits for the caller in it, their entries sent back. */
+  /** A module's home page: its figures, what waits for the caller in it, their entries sent back. */
   @Get('modules/:key')
   @ApiQuery({ name: 'projectId', required: false, description: "The header's project; every project the caller sees when left out" })
   moduleHome(@CurrentUser() user: RequestUser, @Param('key') key: string, @Query('projectId') projectId?: string) {
     return this.modules.home(user, key, projectId || undefined);
   }
 
-  /** A department's screen (item 168): its figures strip and the work in flight through it. */
+  /** A department's screen: its figures strip and the work in flight through it. */
   @Get('departments/:key')
   @ApiQuery({ name: 'projectId', required: false, description: "The header's project; every project the caller sees when left out" })
   departmentHome(@CurrentUser() user: RequestUser, @Param('key') key: string, @Query('projectId') projectId?: string) {

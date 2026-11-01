@@ -37,7 +37,7 @@ type StateFilter = 'all' | SegmentState;
 const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
 /**
- * Pipe network tab (item 126, ARCHITECTURE "Pipe network"): a water supply or sewerage project's zones and mains, each
+ * Pipe network tab (ARCHITECTURE "Pipe network"): a water supply or sewerage project's zones and mains, each
  * drawn from its model file, with every pipe junction to junction in the state of its work, the zone's pipe sheet by
  * diameter, the pipes ready to start, and the list of pipes. Work reaches a pipe only through DPR lines.
  */
@@ -68,7 +68,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
           No pipe zones yet. Add a component of kind Pipe network zone, Rising main or Feeder main in Structure, then load its network here from the design
           office&apos;s EPANET or Excel file.
         </p>
-        <LinkButton href={`/projects/${project.id}?tab=structure`}>Open Structure</LinkButton>
+        <LinkButton href={`/projects/${project.id}?tab=structure`}>Open Components</LinkButton>
       </div>
     );
 
@@ -267,7 +267,7 @@ export function PipeNetworkPanel({ project }: { project: ProjectDetail }) {
                         key: 'actions',
                         title: '',
                         width: 56,
-                        render: (_: unknown, s: PipeSegmentDto) => <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Correct ${s.code}`} onClick={() => setEditing(s)} />,
+                        render: (_: unknown, s: PipeSegmentDto) => <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${s.code}`} onClick={() => setEditing(s)} />,
                       },
                     ]
                   : []),
@@ -309,7 +309,7 @@ function SegmentFormModal({ projectId, segment, onClose }: { projectId: string; 
       layout="modal"
       width={640}
       projectDefault={false}
-      title={segment ? `Correct ${segment.code}, ${segment.fromCode} to ${segment.toCode}` : 'Correct pipe'}
+      title={segment ? `Edit ${segment.code}, ${segment.fromCode} to ${segment.toCode}` : 'Edit pipe'}
       okText="Save pipe"
       onSubmit={(v) => save.mutateAsync(v)}
     >

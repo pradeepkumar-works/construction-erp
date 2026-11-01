@@ -28,7 +28,7 @@ const toGrid = (m: ApprovalMatrixDto): Grid => {
   return g;
 };
 
-/** A higher approval level of one type (v5 item 94): the roles that approve it, from what amount (null = always). */
+/** A higher approval level of one type: the roles that approve it, from what amount (null = always). */
 type Level = { roles: RoleKey[]; from: number | null };
 type Higher = Record<SubmissionType, { 2: Level; 3: Level; remind: number | null; escalate: number | null }>;
 
@@ -88,7 +88,7 @@ export default function ApprovalRulesPage() {
     meta: FAIL_NOTICE,
   });
 
-  // Payments only against an approved payment request (v5 item 90): a company switch beside the matrix.
+  // Payments only against an approved payment request: a company switch beside the matrix.
   const payRule = useMutation({
     mutationFn: async (paymentsNeedRequest: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { paymentsNeedRequest })).data,
     onSuccess: (m) => {
@@ -99,7 +99,18 @@ export default function ApprovalRulesPage() {
     meta: FAIL_NOTICE,
   });
 
-  // Progress from the DPR only (item 127): progress is recorded as the DPR's work lines.
+  // Orders only on an approved supplier choice: Finalise L1 goes to an approver before the purchase order.
+  const choiceRule = useMutation({
+    mutationFn: async (ordersNeedApprovedChoice: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { ordersNeedApprovedChoice })).data,
+    onSuccess: (m) => {
+      qc.setQueryData(['approval-rules'], (old: ApprovalMatrixDto | undefined) => (old ? { ...old, ordersNeedApprovedChoice: m.ordersNeedApprovedChoice } : m));
+      void qc.invalidateQueries({ queryKey: ['quotations'] });
+      message.success(m.ordersNeedApprovedChoice ? 'Orders now wait for an approved supplier choice' : 'Purchase can order as soon as L1 is finalised');
+    },
+    meta: FAIL_NOTICE,
+  });
+
+  // Progress from the DPR only: progress is recorded as the DPR's work lines.
   const dprRule = useMutation({
     mutationFn: async (progressFromDpr: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { progressFromDpr })).data,
     onSuccess: (m) => {
@@ -272,6 +283,21 @@ export default function ApprovalRulesPage() {
       {data ? (
         <Card size="small" style={{ marginTop: 16 }}>
           <Flex gap={12} align="flex-start">
+            <Switch checked={data.ordersNeedApprovedChoice} loading={choiceRule.isPending} onChange={(v) => choiceRule.mutate(v)} aria-labelledby="choice-rule" aria-describedby="choice-rule-note" />
+            <div>
+              <Typography.Text strong id="choice-rule">
+                Orders wait for an approved supplier choice
+              </Typography.Text>
+              <Typography.Paragraph type="secondary" id="choice-rule-note" style={{ margin: 0 }}>
+                When purchase finalises L1 (or chooses another supplier, with a reason) under Requests to order, the choice goes for approval under the {SUBMISSION_TYPE_LABELS.SUPPLIER_CHOICE} column above, and the order on a material request can be raised only on the approved supplier. Off, purchase orders as soon as it finalises.
+              </Typography.Paragraph>
+            </div>
+          </Flex>
+        </Card>
+      ) : null}
+      {data ? (
+        <Card size="small" style={{ marginTop: 16 }}>
+          <Flex gap={12} align="flex-start">
             <Switch checked={data.progressFromDpr} loading={dprRule.isPending} onChange={(v) => dprRule.mutate(v)} aria-labelledby="dpr-progress-rule" aria-describedby="dpr-progress-rule-note" />
             <div>
               <Typography.Text strong id="dpr-progress-rule">
@@ -289,7 +315,7 @@ export default function ApprovalRulesPage() {
 }
 
 /**
- * Second and third approvals above an amount, and reminders and escalation, per submission type (v5 item 94). An entry
+ * Second and third approvals above an amount, and reminders and escalation, per submission type. An entry
  * that needs a higher level stays waiting after the level before approves it; the same person never approves two levels.
  */
 function HigherLevels({

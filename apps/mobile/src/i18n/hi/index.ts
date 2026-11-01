@@ -1,5 +1,5 @@
 /**
- * Hindi for the site app (v4 item 49), keyed by the English text on screen. Each file covers a group of screens; a
+ * Hindi for the site app, keyed by the English text on screen. Each file covers a group of screens; a
  * key may appear in more than one file only with the same Hindi. `npm run i18n:check` lists English text passed to
  * `t()` that has no Hindi yet.
  */

@@ -9,7 +9,7 @@ import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUSES, MAINT
 import { useAuth } from '@/lib/auth';
 import { useMaintenanceJobs, useMaintenanceSummary } from '@/lib/queries';
 import { EquipmentSelect, useEquipmentItem } from '@/components/common/SearchSelect';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -31,7 +31,7 @@ function Sub({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Machinery maintenance (v4 item 42): service schedule of the fleet, open breakdowns and job cards. Site staff report
+ * Machinery maintenance: service schedule of the fleet, open breakdowns and job cards. Site staff report
  * breakdowns; the store manager or an approver raises services, issues spares and closes job cards.
  */
 export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { projectId?: string; initialOpenId?: string }) {
@@ -82,7 +82,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       { key: 'description', title: 'Fault / work', dataIndex: 'description', ellipsis: true },
       ...(fixedProject ? [] : [{ key: 'projectName', title: 'At', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string | null) => v ?? <Sub>Yard</Sub> } satisfies ListColumn<MaintenanceJobDto>]),
       { key: 'status', title: 'Status', dataIndex: 'status', width: 90, render: (v: MaintenanceStatus) => <JobStatusTag status={v} /> },
-      { key: 'totalCost', title: 'Cost', dataIndex: 'totalCost', width: 110, align: 'right', render: (v: string, r) => (r.status === 'CLOSED' || Number(v) > 0 ? formatINR(v) : '-'), total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.totalCost), 0)) },
+      { key: 'totalCost', title: 'Cost', dataIndex: 'totalCost', width: 110, align: 'right', render: (v: string, r) => (r.status === 'CLOSED' || Number(v) > 0 ? formatINR(v) : NO_VALUE), total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.totalCost), 0)) },
     ],
   });
   const { page, projectId } = frame;
@@ -129,7 +129,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       ),
     },
     { title: 'Due', key: 'due', width: 220, render: (_, r) => <span className={r.state === 'OVERDUE' ? 'text-danger' : undefined}>{serviceLeft(r.hoursLeft, r.daysLeft)}</span> },
-    { title: 'State', dataIndex: 'state', width: 100, render: (v) => <ServiceStateTag state={v} /> },
+    { title: 'Status', dataIndex: 'state', width: 100, render: (v) => <ServiceStateTag state={v} /> },
     ...(manager
       ? [
           {

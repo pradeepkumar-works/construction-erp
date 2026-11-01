@@ -45,6 +45,8 @@ import { AuditService } from '../common/audit.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { TelematicsService } from '../telematics/telematics.service';
 import { WeighbridgeService } from '../weighbridge/weighbridge.service';
+import { ProgrammeService } from '../programme/programme.service';
+import { EotService } from '../programme/eot.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { dateOnly, parseDate } from '../common/serialize';
 import { PrismaService } from '../prisma/prisma.service';
@@ -143,7 +145,6 @@ export const rupees = (v: number) => {
 };
 /** One decimal, or two significant figures below 1 so a slow rate is not "0". */
 const qty = (v: number) => (Math.abs(v) > 0 && Math.abs(v) < 1 ? Number(v.toPrecision(2)) : Math.round(v * 10) / 10).toLocaleString('en-IN');
-/** 2026-10-23 → "23 Oct". */
 /** With the year: a completion date is often next year or later. */
 const dayYear = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -151,7 +152,7 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 type Draft = Omit<WarningDto, 'dismissed' | 'confidence'>;
 
-/** The watch-list kinds built from the leakage checks (item 121), and the section each comes from. */
+/** The watch-list kinds built from the leakage checks, and the section each comes from. */
 const LEAK_SECTION = { RATE_ABOVE: 'rates', FUEL_NO_LOG: 'fuel', IDLE_HIRE: 'idle' } as const;
 
 interface Project {
@@ -165,7 +166,7 @@ interface Project {
 }
 
 /**
- * Early warnings, the Watch list (AI roadmap item 73): forecasts in `warning-rules.ts` over what the caller may see
+ * Early warnings, the Watch list: forecasts in `warning-rules.ts` over what the caller may see
  * (`ProjectAccessService.projectWhere`, and each kind only for the roles in `watchListKinds`). A warning dismissed with
  * a reason stays dismissed for the company while its key, which carries the figures, holds. Every load takes the day
  * it is for, so `src/scripts/warnings-test.ts` can replay the demo history; cash is as of today only, because it is
@@ -195,6 +196,8 @@ export class WarningsService {
     private approvalRights: ApprovalRightsService,
     private telematics: TelematicsService,
     private weighbridge: WeighbridgeService,
+    private programme: ProgrammeService,
+    private eot: EotService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -217,7 +220,7 @@ export class WarningsService {
   }
 
   /**
-   * Item 119: dismissing says what became of the warning. Known and accepted needs a note saying why; Fixed and Wrong
+   * Dismissing says what became of the warning. Known and accepted needs a note saying why; Fixed and Wrong
    * may have one. The outcome is also logged for the kind's track record, and kept when the warning is restored.
    */
   async dismiss(user: RequestUser, key: string, outcome: WarningOutcome, reason?: string): Promise<WatchListDto> {
@@ -258,7 +261,7 @@ export class WarningsService {
   }
 
   /**
-   * Item 119: each kind's track record over its latest outcomes in the company, and whether it is paused (marked Wrong
+   * Each kind's track record over its latest outcomes in the company, and whether it is paused (marked Wrong
    * too often in the last 30 days, since it was last resumed). `warningAlerts` and the morning brief leave paused kinds out.
    */
   async records(organizationId: string, kinds: WarningKind[], today: string): Promise<WarningRecordDto[]> {
@@ -301,7 +304,7 @@ export class WarningsService {
 
   /** Every warning the caller's role and projects give on `today`, dismissed or not (paused kinds too), most pressing kind first. */
   async compute(user: RequestUser, today: string, only?: WarningKind[]): Promise<Omit<WarningDto, 'dismissed'>[]> {
-    // EMIs only while the company uses machine loans (v6 item 117).
+    // EMIs only while the company uses machine loans.
     const kinds = watchListKinds(user.roleKey).filter((k) => (!only || only.includes(k)) && (k !== 'LOAN_EMI' || moduleOn(user, 'machine_loans')));
     if (!kinds.length) return [];
     const projects: Project[] = await this.prisma.project.findMany({
@@ -325,24 +328,27 @@ export class WarningsService {
         if (k === 'NOTICE_DUE') return this.notices(active, today);
         if (k === 'MANDAYS_ABOVE') return today === todayIn() ? this.manDays(user) : Promise.resolve([]);
         if (k === 'PACKAGE_LATE') return this.packages(active, today);
-        // A scheme in O&M is a completed project (item 131).
+        // A scheme in O&M is a completed project.
         if (k === 'OM_SERVICE') return this.omService(projects, today);
         if (k === 'BOQ_OFF_CONTRACT') return this.boqGaps(projects.filter((p) => p.status === 'ACTIVE' || p.status === 'PLANNED'));
-        // QA/QC (item 137): today's registers, read through their own services.
+        // QA/QC: today's registers, read through their own services.
         if (k === 'TESTS_SHORT') return today === todayIn() ? this.testsShort(user) : Promise.resolve([]);
         if (k === 'CALIBRATION_DUE') return today === todayIn() ? this.calibration(user, today) : Promise.resolve([]);
         if (k === 'LAB_REPORT_LATE') return today === todayIn() ? this.labReports(user) : Promise.resolve([]);
-        // Design and drawings (item 138): the schedule's late drawings, through its own service.
+        // Design and drawings: the schedule's late drawings, through its own service.
         if (k === 'DRAWING_LATE') return today === todayIn() ? this.drawings(user) : Promise.resolve([]);
         if (k === 'DESIGN_REVIEW_LATE') return today === todayIn() ? this.designReviews(user) : Promise.resolve([]);
         if (k === 'COPY_RECALL_LATE') return today === todayIn() ? this.copyRecalls(user) : Promise.resolve([]);
-        // Margin fade (intelligence quick win Q1): earned value's month ends, as of today.
+        // Margin fade: earned value's month ends, as of today.
         if (k === 'MARGIN_FADE') return today === todayIn() ? this.marginFades(user, active) : Promise.resolve([]);
         if (k === 'CUBE_7DAY_LOW') return today === todayIn() ? this.cubesEarly(user, today) : Promise.resolve([]);
         if (k === 'PURCHASE_CONTROL') return this.purchaseControls(user, projects, today);
         if (k === 'FUEL_TANK') return this.fuelTank(projects, today);
         if (k === 'WEIGH_SHORT') return this.weighShort(projects, today);
-        // A central store files no DPR (v6 item 106).
+        // Programme and EOT: through their own services.
+        if (k === 'PROGRAMME_DUE') return this.programmeDue(active, today);
+        if (k === 'EOT_OVERDUE') return this.eotOverdue(projects, today);
+        // A central store files no DPR.
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
     );
@@ -375,7 +381,7 @@ export class WarningsService {
           plannedStart: dateOnly(a.plannedStart),
           plannedEnd: dateOnly(a.plannedEnd),
           baselineEnd: dateOnly(a.baselineEnd),
-          entries: a.progressEntries.map((e) => ({ date: dateOnly(e.date)!, qty: n(e.quantity) })),
+          entries: a.progressEntries.map((e) => ({ date: dateOnly(e.date), qty: n(e.quantity) })),
         },
         today,
       );
@@ -426,7 +432,7 @@ export class WarningsService {
     return out.sort((a, b) => b.slip - a.slip).map(({ slip: _slip, ...w }) => w);
   }
 
-  /** Projects whose plan ends after the completion date with its extensions (e2e review, fix 1), first in the list. */
+  /** Projects whose plan ends after the completion date with its extensions, first in the list. */
   private async planFinishes(projects: Project[]): Promise<(Draft & { slip: number })[]> {
     const dated = projects.filter((p) => p.endDate);
     if (!dated.length) return [];
@@ -481,9 +487,9 @@ export class WarningsService {
     return out;
   }
 
-  /** Materials consumed beyond their norms' allowance at active projects with norms (v5 item 92), largest overuse first. */
+  /** Materials consumed beyond their norms' allowance at active projects with norms, largest overuse first. */
   /**
-   * Leakage checks (item 121) as warnings: rates above another site, fuel issued with no log and hired machines paid for
+   * Leakage checks as warnings: rates above another site, fuel issued with no log and hired machines paid for
    * idle time, from the month's flags in `LeakageService` so the watch list and the Leakage checks page agree. Fuel off
    * its norm stays FUEL_NORM, and material over the norm MATERIAL_OVERUSE.
    */
@@ -558,7 +564,7 @@ export class WarningsService {
   }
 
   /**
-   * Machines with a fuel norm whose average over their latest logs strays from it (v5 item 93). A log's litres are
+   * Machines with a fuel norm whose average over their latest logs strays from it. A log's litres are
    * what was typed on it, else the fuel issued from the store to the machine that day.
    */
   private async fuel(projects: Project[], today: string): Promise<Draft[]> {
@@ -589,7 +595,7 @@ export class WarningsService {
       const k = `${e.equipmentId}|${dateOnly(e.date)}`;
       issued.set(k, (issued.get(k) ?? 0) - e.lines.reduce((s, l) => s + n(l.quantity), 0));
     }
-    // A machine whose tracker reads its tank or fuel counter (item 147): what it burnt comes before what was put in.
+    // A machine whose tracker reads its tank or fuel counter: what it burnt comes before what was put in.
     const burnt = await this.telematics.burntOn([...new Set(logs.map((l) => l.equipmentId))], addDays(today, -120), today);
     const litresOf = (l: (typeof logs)[number]) => {
       const k = `${l.equipmentId}|${dateOnly(l.date)}`;
@@ -606,7 +612,7 @@ export class WarningsService {
       const tolerance = eq.fuelTolerancePct ? n(eq.fuelTolerancePct) : FUEL_TOLERANCE_DEFAULT_PCT;
       const f = fuelNormCheck(
         ls.map((l) => {
-          const date = dateOnly(l.date)!;
+          const date = dateOnly(l.date);
           return {
             date,
             hoursWorked: n(l.hoursWorked),
@@ -621,7 +627,7 @@ export class WarningsService {
       );
       if (!f) continue;
       const p = byId.get(ls[ls.length - 1].projectId);
-      const usedLogs = ls.filter((l) => dateOnly(l.date)! >= f.from && dateOnly(l.date)! <= f.to);
+      const usedLogs = ls.filter((l) => dateOnly(l.date) >= f.from && dateOnly(l.date) <= f.to);
       const litres = usedLogs.reduce((s, l) => s + litresOf(l), 0);
       const sensed = usedLogs.filter((l) => burnt.has(`${id}|${dateOnly(l.date)}`)).length;
       const use = unit === 'KM_PER_LITRE' ? usedLogs.reduce((s, l) => s + (l.meterStart && l.meterEnd ? n(l.meterEnd) - n(l.meterStart) : 0), 0) : usedLogs.reduce((s, l) => s + n(l.hoursWorked), 0);
@@ -660,7 +666,7 @@ export class WarningsService {
   }
 
   /**
-   * Fuel sensors (item 147): each machine's week of its tank against the fuel slips made out to it, through the
+   * Fuel sensors: each machine's week of its tank against the fuel slips made out to it, through the
    * telematics service; drains and fills off the slips are pure in `fuelTankCheck`.
    */
   private async fuelTank(projects: Project[], today: string): Promise<Draft[]> {
@@ -718,7 +724,7 @@ export class WarningsService {
   }
 
   /**
-   * Weighbridge (item 148): each supplier's loads received over the last WEIGH_SHORT_DAYS days against their challans,
+   * Weighbridge: each supplier's loads received over the last WEIGH_SHORT_DAYS days against their challans,
    * through the weighbridge service; short loads are `shortSupply`'s and the count is pure in `weighShortCheck`.
    */
   private async weighShort(projects: Project[], today: string): Promise<Draft[]> {
@@ -760,7 +766,7 @@ export class WarningsService {
     return out.sort((a, b) => b.kg - a.kg).map(({ kg: _k, ...w }) => w);
   }
 
-  /** Machine loans (v6 item 108): an EMI unpaid past its date, most overdue first. Company-wide, as the loans are. */
+  /** Machine loans: an EMI unpaid past its date, most overdue first. Company-wide, as the loans are. */
   private async loanEmis(organizationId: string, today: string): Promise<Draft[]> {
     const loans = await this.prisma.equipmentLoan.findMany({
       where: { organizationId, status: 'ACTIVE', emis: { some: { paidOn: null, dueDate: { lt: parseDate(today) } } } },
@@ -775,7 +781,7 @@ export class WarningsService {
     const out: (Draft & { days: number })[] = [];
     for (const l of loans) {
       const o = emiOverdue(
-        l.emis.map((e) => ({ no: e.no, dueDate: dateOnly(e.dueDate)!, emi: n(e.emi), paidOn: dateOnly(e.paidOn) })),
+        l.emis.map((e) => ({ no: e.no, dueDate: dateOnly(e.dueDate), emi: n(e.emi), paidOn: dateOnly(e.paidOn) })),
         today,
       );
       if (!o) continue;
@@ -803,7 +809,7 @@ export class WarningsService {
   }
 
   /**
-   * Hindrance notices (item 123): an open delay the contractor is not answerable for, with no outgoing letter linked by
+   * Hindrance notices: an open delay the contractor is not answerable for, with no outgoing letter linked by
    * `today`, at 7, 3 and 0 days or fewer before its notice is due (the delay's start plus the contract's notice days).
    * The key carries the stage, so a dismissal holds until the next one. Overdue ones stay until a letter is linked.
    */
@@ -858,7 +864,7 @@ export class WarningsService {
   }
 
   /**
-   * EPC equipment packages that will reach site after the day site needs them (item 130): at sea by the ship's ETA,
+   * EPC equipment packages that will reach site after the day site needs them: at sea by the ship's ETA,
    * else by the plan moved by the slip so far (`packageStatus`). The key moves with the forecast.
    */
   private async packages(projects: Project[], today: string): Promise<Draft[]> {
@@ -909,7 +915,7 @@ export class WarningsService {
 
   /**
    * A scheme in O&M whose running period is losing money to service levels or staff short, has days with no reading, or
-   * has a benchmark at this month's allowance (item 131, `omSlip`). The key moves with the figures.
+   * has a benchmark at this month's allowance (`omSlip`). The key moves with the figures.
    */
   private async omService(projects: Project[], today: string): Promise<Draft[]> {
     if (!projects.length) return [];
@@ -1136,13 +1142,12 @@ export class WarningsService {
   }
 
   /**
-   * An item-rate project whose BOQ adds up to far from its contract value (finding 6 of the October review,
-   * `boqContractGap`): work done, earned value and the budget are built on the BOQ, so all of them are off. The key moves
+   * An item-rate project whose BOQ adds up to far from its contract value (`boqContractGap`): work done, earned value and the budget are built on the BOQ, so all of them are off. The key moves
    * with the gap's whole %.
    */
   /**
-   * Projects whose forecast margin at completion has fallen by `MARGIN_FADE_PTS` or more over the last few months
-   * (intelligence quick win Q1). The forecast at each month end is earned value's (EAC = BAC × AC ÷ EV), read through
+   * Projects whose forecast margin at completion has fallen by `MARGIN_FADE_PTS` or more over the last few months.
+   * The forecast at each month end is earned value's (EAC = BAC × AC ÷ EV), read through
    * `EarnedValueService` with the caller; the heads behind it are what each spent in the window against its budget for
    * the work earned in it.
    */
@@ -1225,11 +1230,11 @@ export class WarningsService {
 
   /**
    * Cube sets whose 7-day result points to a 28-day one below the mark while the 28-day result is still to come
-   * (intelligence quick win Q2, `cubeEarly`), read through `QualityService.listTests` with the caller. Sampled in the last
+   * (`cubeEarly`), read through `QualityService.listTests` with the caller. Sampled in the last
    * 35 days, so a 28-day result long overdue does not keep warning here (the tests due list chases that).
    */
   private async cubesEarly(user: RequestUser, today: string): Promise<Draft[]> {
-    const from = dateOnly(new Date(Date.parse(`${today}T00:00:00Z`) - 35 * 86_400_000))!;
+    const from = dateOnly(new Date(Date.parse(`${today}T00:00:00Z`) - 35 * 86_400_000));
     const tests = await this.quality.listTests(user, { kind: 'CONCRETE_CUBE', result: 'PENDING', from, page: 1, pageSize: MAX_PAGE_SIZE });
     return tests.items.flatMap((t) => {
       const grade = concreteGrade(t.title);
@@ -1269,7 +1274,7 @@ export class WarningsService {
   }
 
   /**
-   * Purchase controls (intelligence quick win Q6) over the last 90 days of the caller's projects: orders split under the
+   * Purchase controls over the last 90 days of the caller's projects: orders split under the
    * approver's limit (`splitOrders`, the limit from the approval matrix), goods received by the person who raised the
    * order (`selfReceived`), and payments soon after the vendor's bank details changed (`paidAfterBankChange`, from the
    * vendor's BANK_CHANGED audit lines). Each is a fact to look at, not a finding of wrongdoing.
@@ -1302,7 +1307,7 @@ export class WarningsService {
     const byId = new Map(orders.map((o) => [o.id, o]));
     const out: Draft[] = [];
 
-    for (const g of splitOrders(orders.map((o) => ({ id: o.id, poNo: o.poNo, vendorId: o.vendorId, projectId: o.projectId, date: dateOnly(o.poDate)!, total: n(o.total), reviewedById: o.reviewedById, limit: limitOf(o.reviewedBy?.role.key) })))) {
+    for (const g of splitOrders(orders.map((o) => ({ id: o.id, poNo: o.poNo, vendorId: o.vendorId, projectId: o.projectId, date: dateOnly(o.poDate), total: n(o.total), reviewedById: o.reviewedById, limit: limitOf(o.reviewedBy?.role.key) })))) {
       const first = byId.get(g.orders[0].id)!;
       const approver = first.reviewedBy?.fullName ?? 'the approver';
       out.push({
@@ -1337,7 +1342,7 @@ export class WarningsService {
         detail: `${o.submittedBy.fullName} raised the order to ${o.vendor.name} (${rupees(n(o.total))}) and made its receipt ${entryNo}. With no second person between the order and the gate, what came is only their word.`,
         action: 'Have the store check the receipt against the challan, and keep ordering and receiving with different people',
         impact: { text: rupees(n(o.total)), inr: Math.round(n(o.total)), days: null },
-        working: [`${o.poNo} raised by ${o.submittedBy.fullName} on ${day(dateOnly(o.poDate)!)}`, `${entryNo} made by the same person`],
+        working: [`${o.poNo} raised by ${o.submittedBy.fullName} on ${day(dateOnly(o.poDate))}`, `${entryNo} made by the same person`],
         facts: [
           { label: 'Order', value: o.poNo },
           { label: 'Receipt', value: entryNo },
@@ -1349,8 +1354,8 @@ export class WarningsService {
       });
     }
 
-    const changed = changes.map((c) => ({ vendorId: c.entityId, date: dateOnly(c.createdAt)!, note: c.note, by: c.actor.fullName }));
-    for (const { payment: p, change, days } of paidAfterBankChange(changed, payments.map((p) => ({ ...p, date: dateOnly(p.paymentDate)! })))) {
+    const changed = changes.map((c) => ({ vendorId: c.entityId, date: dateOnly(c.createdAt), note: c.note, by: c.actor.fullName }));
+    for (const { payment: p, change, days } of paidAfterBankChange(changed, payments.map((p) => ({ ...p, date: dateOnly(p.paymentDate) })))) {
       const by = changed.find((c) => c === change)?.by;
       out.push({
         key: `bankpay:${p.id}`,
@@ -1414,7 +1419,7 @@ export class WarningsService {
     return out;
   }
 
-  /** Subcontractor bills waiting for approval that bill more man-days than the site's attendance supports (item 124). */
+  /** Subcontractor bills waiting for approval that bill more man-days than the site's attendance supports. */
   private async manDays(user: RequestUser): Promise<Draft[]> {
     const bills = await this.attendance.waitingBills(user);
     return bills.map((b) => {
@@ -1454,7 +1459,7 @@ export class WarningsService {
     });
     const out: Draft[] = [];
     for (const p of projects) {
-      const dates = new Set(reports.filter((r) => r.projectId === p.id).map((r) => dateOnly(r.date)!));
+      const dates = new Set(reports.filter((r) => r.projectId === p.id).map((r) => dateOnly(r.date)));
       const gap = dprGap(dates, today, dateOnly(p.startDate));
       if (!gap) continue;
       const last = [...dates].sort().pop();
@@ -1491,7 +1496,7 @@ export class WarningsService {
     for (const t of issues) {
       const k = `${t.projectId}:${t.itemId}`;
       if (!pairs.has(k)) pairs.set(k, { projectId: t.projectId, itemId: t.itemId, issues: [] });
-      pairs.get(k)!.issues.push({ date: dateOnly(t.date)!, qty: Math.abs(n(t.quantity)) });
+      pairs.get(k)!.issues.push({ date: dateOnly(t.date), qty: Math.abs(n(t.quantity)) });
     }
     const itemIds = [...new Set(issues.map((t) => t.itemId))];
     const [balances, items, receipts, orders] = await Promise.all([
@@ -1519,7 +1524,7 @@ export class WarningsService {
     for (const [k, pair] of pairs) {
       const item = itemOf.get(pair.itemId);
       if (!item) continue;
-      const lead = leadDays(receipts.filter((r) => r.itemId === pair.itemId && r.purchaseOrderLine).map((r) => ({ poDate: dateOnly(r.purchaseOrderLine!.purchaseOrder.poDate)!, received: dateOnly(r.date)! })));
+      const lead = leadDays(receipts.filter((r) => r.itemId === pair.itemId && r.purchaseOrderLine).map((r) => ({ poDate: dateOnly(r.purchaseOrderLine!.purchaseOrder.poDate), received: dateOnly(r.date) })));
       const name = item.name.trim().toLowerCase();
       const onOrder = orders
         .filter((o) => o.projectId === pair.projectId)
@@ -1578,7 +1583,7 @@ export class WarningsService {
     const dueOf = new Map(pos.map((p) => [p.id, dateOnly(p.deliveryBy)]));
     const byVendor = new Map<string, Delivery[]>();
     for (const e of entries) {
-      const date = dateOnly(e.date)!;
+      const date = dateOnly(e.date);
       const due = dueOf.get(e.purchaseOrderId!);
       const list = byVendor.get(e.vendorId!) ?? [];
       list.push({ date, late: !!due && date > due, qty: e.lines.reduce((s, l) => s + n(l.quantity), 0), rejectedQty: e.lines.reduce((s, l) => s + n(l.rejectedQty), 0) });
@@ -1627,7 +1632,7 @@ export class WarningsService {
     for (const l of logs) {
       const m = byMachine.get(l.equipmentId) ?? { name: `${l.equipment.code} ${l.equipment.name}`, projectId: l.projectId, days: [] };
       m.projectId = l.projectId;
-      m.days.push({ date: dateOnly(l.date)!, worked: n(l.hoursWorked), idle: n(l.idleHours), breakdown: n(l.breakdownHours) });
+      m.days.push({ date: dateOnly(l.date), worked: n(l.hoursWorked), idle: n(l.idleHours), breakdown: n(l.breakdownHours) });
       byMachine.set(l.equipmentId, m);
     }
     const byId = new Map(projects.map((p) => [p.id, p]));
@@ -1728,7 +1733,7 @@ export class WarningsService {
     ];
   }
   /**
-   * The cash gap from the 13-week forecast (item 122) for whoever keeps the books: the bank and cash in hand, every
+   * The cash gap from the 13-week forecast for whoever keeps the books: the bank and cash in hand, every
    * receipt and payment the forecast knows, and the first week whose likely balance goes below zero.
    */
   private async cashFromForecast(user: RequestUser): Promise<Draft[]> {
@@ -1767,5 +1772,61 @@ export class WarningsService {
         projectName: null,
       },
     ];
+  }
+
+  /**
+   * Programme and EOT: a project whose first programme or next update is due within a week or past due, from
+   * the programme register's own watch. The key carries the day and the state, so a dismissal holds until it moves on.
+   */
+  private async programmeDue(projects: Project[], today: string): Promise<Draft[]> {
+    const watches = await this.programme.watchFor(projects.map((p) => p.id), today);
+    const out: Draft[] = [];
+    for (const p of projects) {
+      const w = watches.get(p.id);
+      if (!w || !w.nextDue || (w.state !== 'DUE_SOON' && w.state !== 'OVERDUE')) continue;
+      const what = w.first ? 'The first programme' : `The programme update after ${w.lastLabel}`;
+      const when = w.state === 'OVERDUE' ? `${plural(w.daysLate ?? 0, 'day')} overdue` : w.daysLeft === 0 ? 'due today' : `due in ${plural(w.daysLeft ?? 0, 'day')}`;
+      out.push({
+        key: `programme:${p.id}:${w.nextDue}:${w.state}`,
+        kind: 'PROGRAMME_DUE',
+        title: `${what} for ${p.code} is ${when}`,
+        detail: `${p.name}: the contract wants ${w.first ? 'the programme' : `an updated programme every ${plural(w.intervalDays, 'day')}`} by ${day(w.nextDue)}${w.first && w.withholdPct ? `, and ${w.withholdPct}% of the contract value is held back on bills while it is late` : ''}.`,
+        action: w.state === 'OVERDUE' ? 'Send the revision to the Engineer today' : `Send the revision by ${day(w.nextDue)}`,
+        impact: { text: w.state === 'OVERDUE' ? `${plural(w.daysLate ?? 0, 'day')} late` : `${plural(w.daysLeft ?? 0, 'day')} left`, inr: null, days: w.daysLate ?? 0 },
+        working: [
+          w.first ? `The first programme is due ${day(w.nextDue)}, from the contract's programme obligation` : `${w.lastLabel} went to the Engineer; the next is due ${plural(w.intervalDays, 'day')} later, ${day(w.nextDue)}`,
+          'Shown from a week before the day until a revision is sent',
+        ],
+        facts: [{ label: 'Due', value: day(w.nextDue) }],
+        links: [{ label: 'Programme and EOT', href: `/projects/${p.id}?tab=programme` }],
+        projectId: p.id,
+        projectName: p.name,
+      });
+    }
+    return out;
+  }
+
+  /** Extension of time applications past the 30 days the authority has to decide them. */
+  private async eotOverdue(projects: Project[], today: string): Promise<Draft[]> {
+    const apps = await this.eot.overdue(projects.map((p) => p.id), today);
+    return apps.map((a) => {
+      const late = Math.max(0, daysBetween(a.decisionDue, today));
+      return {
+        key: `eot:${a.id}:${a.decisionDue}`,
+        kind: 'EOT_OVERDUE' as const,
+        title: `${a.label} for ${a.projectName} is ${plural(late, 'day')} past its decision`,
+        detail: `${plural(a.daysClaimed, 'day')} were claimed on ${day(a.appliedOn)}; the contract has the authority decide within 30 days, by ${day(a.decisionDue)}.`,
+        action: a.status === 'SENT' ? 'Ask the Engineer to forward it, in writing' : 'Write to the authority for its decision',
+        impact: { text: `${plural(a.daysClaimed, 'day')} of extension undecided`, inr: null, days: a.daysClaimed },
+        working: [`Applied ${day(a.appliedOn)}; decision due ${day(a.decisionDue)}`, a.forwardedOn ? `Forwarded by the Engineer on ${day(a.forwardedOn)}` : 'Not forwarded by the Engineer yet'],
+        facts: [
+          { label: 'Days claimed', value: String(a.daysClaimed) },
+          { label: 'Decision due', value: day(a.decisionDue) },
+        ],
+        links: [{ label: a.label, href: `/projects/${a.projectId}?tab=programme&eot=${a.id}` }],
+        projectId: a.projectId,
+        projectName: a.projectName,
+      };
+    });
   }
 }

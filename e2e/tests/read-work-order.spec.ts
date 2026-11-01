@@ -9,7 +9,7 @@ type Contract = { agreementNo: string | null; agreementDate: string | null };
 type Boq = { itemNo: string; section: string | null; unit: string; rate: string; originalQty: string }[];
 
 /**
- * Reading the work order and the BOQ (finding 10 of the October review): a work order or LoA fills New project, a
+ * Reading the work order and the BOQ: a work order or LoA fills New project, a
  * value read with low confidence is marked to check, a client not in the master can be added from the read name; and
  * a BOQ PDF or scan comes into the BOQ import as rows to check and untick before importing. The model is the scripted
  * stand-in, which reads a road work order and four of its BOQ items off any page.
@@ -31,7 +31,7 @@ test('a work order fills New project, and a BOQ scan imports its rows after a ch
   await expect(form.getByLabel('Location', { exact: true })).toHaveValue('Bhadrak');
   // The agreement date was hard to read; 18 months from the start give the end date.
   await expect(form.getByText(/Check this: hard to read/)).toBeVisible();
-  await expect(form.getByRole('textbox', { name: 'Start / end date' })).toHaveValue('15 Nov 2026');
+  await expect(form.getByRole('textbox', { name: 'Start and completion dates' })).toHaveValue('15 Nov 2026');
   await expect(form.getByRole('textbox', { name: 'End date', exact: true })).toHaveValue('14 May 2028');
   // The issuing office is not a client yet: add it from the read name, and it is picked.
   await form.getByRole('button', { name: 'Add client' }).click();
@@ -42,7 +42,7 @@ test('a work order fills New project, and a BOQ scan imports its rows after a ch
   await expect(form.getByText('is not in the client master')).toHaveCount(0);
 
   await form.getByLabel('Project code').fill(code);
-  await form.getByRole('button', { name: 'Create project' }).click();
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page).toHaveURL(/\/projects\/[0-9a-f-]{36}/);
 
   const pm = await apiToken('pm@demo.com');

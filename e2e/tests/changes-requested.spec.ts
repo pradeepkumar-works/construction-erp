@@ -57,7 +57,7 @@ test.describe.serial('material request: changes requested, then resubmitted', ()
     await signIn(page, 'engineer@demo.com');
     await page.goto('/material-requests');
     const row = page.locator('tr').filter({ hasText: mr.requestNo });
-    await expect(row.getByText('Changes Requested', { exact: false })).toBeVisible();
+    await expect(row.getByText('Changes requested', { exact: false })).toBeVisible();
     await row.getByRole('button', { name: 'Actions' }).click();
     await page.getByRole('menuitem', { name: 'Edit and resubmit' }).click();
     const modal = formPanel(page, mr.requestNo);

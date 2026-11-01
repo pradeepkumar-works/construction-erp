@@ -109,7 +109,7 @@ const ORG_AI = { aiEnabled: true, aiMonthlyCapInr: true, aiRoles: true, code: tr
 const rupees = (paise: number) => Math.round(paise) / 100;
 
 /**
- * Ask Nirmaan (AI roadmap item 67): a question goes to the model with read-only tools; the answer streams back, its
+ * Ask Nirmaan: a question goes to the model with read-only tools; the answer streams back, its
  * links are kept only where a tool returned them, its figures are checked against the tool results, and the
  * conversation, tokens and estimated cost are stored per company.
  */
@@ -163,13 +163,13 @@ export class AiService {
     if (!org?.aiEnabled) return { enabled: false, reason: 'COMPANY_OFF', questionsLeftToday: left, canManage };
     if (!aiRoleAllowed(user.roleKey, org.aiRoles)) return { enabled: false, reason: 'ROLE_OFF', questionsLeftToday: 0, canManage };
     const plan = await this.plan(user.organizationId, org);
-    // A company whose trial or subscription ended reads but changes nothing, and runs up no AI cost (AI item 77).
+    // A company whose trial or subscription ended reads but changes nothing, and runs up no AI cost.
     if (plan?.status === 'READ_ONLY') return { enabled: false, reason: 'READ_ONLY', questionsLeftToday: left, canManage };
     if (rupees(spent) >= this.capOf(org.aiMonthlyCapInr, plan)) return { enabled: false, reason: 'CAP_REACHED', questionsLeftToday: left, canManage };
     return { enabled: true, reason: null, questionsLeftToday: left, canManage };
   }
 
-  /** What the plan includes (AI item 77); null when billing is off on this server or the company is not charged. */
+  /** What the plan includes; null when billing is off on this server or the company is not charged. */
   private async plan(organizationId: string, org: OrgAi): Promise<AiPlanDto | null> {
     const cfg = billingConfig();
     if (!cfg) return null;
@@ -345,7 +345,7 @@ export class AiService {
 
     const draft = [parts.join('\n\n'), failure].filter(Boolean).join('\n\n');
     const { text, citations } = filterLinks(draft, collectHrefs(results));
-    // Figures must be in what the tools returned, and so must quoted words (AI item 75: quotes from contracts).
+    // Figures must be in what the tools returned, and so must quoted words (quotes from contracts).
     const unverified =
       failure && !parts.length
         ? []
@@ -419,7 +419,7 @@ export class AiService {
   }
 
   /**
-   * A short text for the overnight batch (AI item 74): the model rewrites the rules' draft from the facts alone, with no
+   * A short text for the overnight batch: the model rewrites the rules' draft from the facts alone, with no
    * tools. Its text is used only when `fits` takes it and every figure in it is in the facts; otherwise the draft is,
    * and a failed call also falls back to the draft. Null when the assistant is not on for this user, so nothing is written.
    */
@@ -452,7 +452,7 @@ export class AiService {
   }
 
   /**
-   * One line for an approver about a bill's checks (AI item 69), written by the model from the flags alone, with no
+   * One line for an approver about a bill's checks, written by the model from the flags alone, with no
    * tools. Null when the assistant is not on for this user; the caller then shows the rules' own line. A line with a
    * figure the flags do not contain is not used.
    */
@@ -549,7 +549,7 @@ export class AiService {
     };
   }
 
-  /** The company's conversations with Ask Nirmaan (AI item 77), newest first, for its admins. */
+  /** The company's conversations with Ask Nirmaan, newest first, for its admins. */
   async conversations(user: RequestUser, f: AiConversationsQueryDto): Promise<Paginated<AiConversationDto>> {
     this.assertManage(user);
     const args = pageArgs(f);

@@ -3,7 +3,7 @@ import { EMI_DUE_DAYS, LOAN_MAX_MONTHS, LOAN_MAX_RATE, type EmiStage } from '@er
 import { addDays, daysBetween } from '../warnings/warning-rules';
 
 /**
- * Machine finance's figures (v6 item 108), with no database: the EMI of a loan, its schedule (each month's interest on
+ * Machine finance's figures, with no database: the EMI of a loan, its schedule (each month's interest on
  * what is owed at the month's start, the rest of the EMI repaying the loan, the last EMI clearing what is left), where
  * an EMI stands on a day, and what is repaid, paid in interest, owed and overdue. Tested in `src/scripts/loans-test.ts`.
  */

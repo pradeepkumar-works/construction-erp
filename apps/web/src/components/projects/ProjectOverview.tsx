@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useProjectScope } from '@/lib/project-scope';
 import dayjs from 'dayjs';
 import { Col, Descriptions, Flex, Progress, Row, Statistic, Table, Typography, theme } from 'antd';
 import { CheckCircleOutlined, ExclamationCircleOutlined } from '@/components/common/icons';
@@ -29,7 +30,7 @@ function timeLeft(end: string | null): string | null {
   return `${plural(days, 'day')} left`;
 }
 
-/** The overview's first line, in words: on track or behind, and why (UX item 85). */
+/** The overview's first line, in words: on track or behind, and why. */
 function headline(project: ProjectDetail, s: ScheduleStatus): string {
   if (project.status === 'COMPLETED' || project.status === 'CLOSED') return 'Completed';
   if (project.status === 'ON_HOLD') return 'On hold';
@@ -53,7 +54,7 @@ function StatusLead({ project, dash }: { project: ProjectDetail; dash: ProjectDa
     s.plannedFinish && s.finishLateDays !== null ? `The plan ends ${formatDate(s.plannedFinish)}.` : null,
     s.state === 'NO_PLAN' ? 'Give the activities dates, or import the schedule, on the Schedule tab.' : null,
   ].filter(Boolean);
-  // Colour marks the exception only (UX item 82): behind is in the error text shade; on track stays neutral.
+  // Colour marks the exception only: behind is in the error text shade; on track stays neutral.
   const bad = s.behind;
   return (
     <div style={{ marginBottom: token.marginSM }} data-testid="project-status">
@@ -77,12 +78,13 @@ const ago = (date: string) => {
 };
 
 /**
- * The project's Overview tab (UX item 85): where it stands in words first, then the few figures that matter, each against
+ * The project's Overview tab: where it stands in words first, then the few figures that matter, each against
  * its plan (done against planned, work against the BOQ, billed against the contract, cost against the work), then
  * progress by activity, details and team.
  */
 export function ProjectOverview({ project }: { project: ProjectDetail }) {
   const { token } = theme.useToken();
+  const [, setScope] = useProjectScope();
   const { user } = useAuth();
   const seesCost = !!user && canViewCost(user.roleKey);
   const { data: dash, isLoading, error, refetch } = useProjectDashboard(project.id);
@@ -172,13 +174,13 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
             Waiting on this project:{' '}
             {[
               dash.pendingApprovals > 0 ? (
-                <Link key="a" href="/approvals" className="text-link">
+                <Link key="a" href="/approvals" className="text-link" onClick={() => setScope(project.id)}>
                   {plural(dash.pendingApprovals, 'entry', 'entries')} for approval
                 </Link>
               ) : null,
               dash.openMaterialRequests > 0 ? (
                 <Link key="m" href={`/projects/${project.id}?tab=material`} className="text-link">
-                  {plural(dash.openMaterialRequests, 'material request')} open
+                  {plural(dash.openMaterialRequests, 'indent')} open
                 </Link>
               ) : null,
             ]
@@ -187,7 +189,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
           </p>
         )}
 
-        <Section title="Planned vs executed by activity" style={{ marginTop: token.margin }} loading={isLoading}>
+        <Section title="Planned and done by activity" style={{ marginTop: token.margin }} loading={isLoading}>
           <Table
             size="small"
             rowKey="activityId"
@@ -197,7 +199,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
             columns={[
               { title: 'Activity', dataIndex: 'name' },
               { title: 'Planned', dataIndex: 'plannedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
-              { title: 'Executed', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
+              { title: 'Done', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
               {
                 title: 'Progress',
                 dataIndex: 'progressPct',
@@ -222,8 +224,8 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
               { key: 'wo', label: 'Work order', children: project.workOrderNo ?? '-' },
               { key: 'location', label: 'Location', children: project.location ?? '-' },
               ...(project.siteAddress ? [{ key: 'siteAddress', label: 'Delivery address', children: project.siteAddress }] : []),
-              { key: 'start', label: 'Start', children: formatDate(project.startDate) },
-              { key: 'end', label: 'End', children: formatDate(project.endDate) },
+              { key: 'start', label: 'Start date', children: formatDate(project.startDate) },
+              { key: 'end', label: 'Completion date', children: formatDate(project.endDate) },
               { key: 'pm', label: 'Project manager', children: project.projectManagerName ?? '-' },
               ...(project.description ? [{ key: 'desc', label: 'Description', children: project.description }] : []),
             ]}

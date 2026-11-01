@@ -1,5 +1,5 @@
 /**
- * Handover and defects (v4 item 47): snags before handover, the completion certificate, defects reported in the
+ * Handover and defects: snags before handover, the completion certificate, defects reported in the
  * defect liability period (DLP), and the close-out checklist.
  */
 import type { DefectPhase, DefectPriority, DefectStatus } from './enums';

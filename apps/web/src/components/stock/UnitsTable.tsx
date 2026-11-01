@@ -14,13 +14,14 @@ import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { FormShell } from '@/components/form/FormShell';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { NO_VALUE } from '@/lib/format';
 
 interface UnitForm {
   code: string;
   name: string;
 }
 
-/** Unit master (v4 item 48): the units every quantity field suggests. Units in use can be switched off but not removed. */
+/** Unit master: the units every quantity field suggests. Units in use can be switched off but not removed. */
 export function UnitsTable() {
   const { user } = useAuth();
   const { message } = App.useApp();
@@ -80,7 +81,7 @@ export function UnitsTable() {
         columns={[
           { title: 'Unit', dataIndex: 'code', width: 120, render: (v: string) => <Typography.Text strong>{v}</Typography.Text> },
           { title: 'Name', dataIndex: 'name' },
-          { title: 'Items', dataIndex: 'itemCount', width: 100, align: 'right', render: (v: number) => v || '-' },
+          { title: 'Items', dataIndex: 'itemCount', width: 100, align: 'right', render: (v: number) => v || NO_VALUE },
           {
             title: 'In use',
             key: 'active',

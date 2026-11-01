@@ -16,7 +16,6 @@ export const daysBetween = (from: string, to: string) => Math.round((at(to) - at
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Work done (BI review: supply items with no activity counted as no work)
 
 export interface BoqWork {
@@ -68,7 +67,6 @@ export function forecastCost(actual: number, budget: number | null, donePct: num
   return actual + budget * (1 - Math.min(100, donePct) / 100);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Schedule (until the fixes thread's `projectScheduleStatus` lands in @erp/shared; the facts carry the same names)
 
 export interface ScheduleFacts {
@@ -120,7 +118,6 @@ export function scheduleOf(f: ScheduleFacts): PortfolioScheduleDto {
   return { ...base, state, daysLate };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Approvals
 
 /** Waiting entries by age (0–2, 3–7, 8–15, over 15 days) and by type, the type with the oldest first. */
@@ -143,7 +140,6 @@ export function approvalAgeing(items: { type: SubmissionType; submittedAt: strin
   };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Health
 
 /** A margin on work done thinner than this is worth watching. */
@@ -217,7 +213,6 @@ const KEY_ORDER: HealthReasonDto['key'][] = ['schedule', 'cost', 'billing', 'col
 export const byUrgency = <T extends { level: 'act' | 'watch'; key: HealthReasonDto['key'] }>(a: T, b: T) =>
   (a.level === b.level ? 0 : a.level === 'act' ? -1 : 1) || KEY_ORDER.indexOf(a.key) - KEY_ORDER.indexOf(b.key);
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Periods
 
 /** The months from `from` to `to` (YYYY-MM), both included. */
@@ -268,8 +263,7 @@ export const billedMarginPct = (billed: number, cost: number): number | null => 
 /** A share in %, one decimal; null when the base is nil. */
 export const pctOf = (part: number, whole: number): number | null => (whole > 0 ? round1((part / whole) * 100) : null);
 
-// ---------------------------------------------------------------------------------------------------------------------
-// MIS commentary (intelligence quick win Q9)
+// MIS commentary
 
 /** Rupees in words a board reads: "₹2.45 crore", "₹38.2 lakh", "₹42,500". */
 export function inrWords(n: number): string {

@@ -52,7 +52,7 @@ export function VendorFormModal({
   initial?: Partial<FormValues> | null;
   onClose: () => void;
   onSaved?: (v: VendorDto) => void;
-  /** Opens the vendor's supplier-portal logins (v6 item 105); the way there on a phone, where the list has no actions */
+  /** Opens the vendor's supplier-portal logins; the way there on a phone, where the list has no actions */
   onPortal?: () => void;
 }) {
   const [form] = Form.useForm<FormValues>();
@@ -63,7 +63,7 @@ export function VendorFormModal({
   const gstin = Form.useWatch('gstin', form);
   const msme = Form.useWatch('msmeCategory', form);
   const fromGstin = gstStateCode(gstin && GSTIN_PATTERN.test(gstin.trim().toUpperCase()) ? gstin : null);
-  // The PAN is inside the GSTIN (finding 17 of the October review); it fills an empty box, never one already typed.
+  // The PAN is inside the GSTIN; it fills an empty box, never one already typed.
   const panOfGstin = panFromGstin(gstin);
 
   useEffect(() => {
@@ -132,7 +132,7 @@ export function VendorFormModal({
       onClose={onClose}
       form={form}
       title={vendor ? `Edit ${vendor.name}` : 'New vendor'}
-      okText={vendor ? 'Save changes' : 'Add vendor'}
+      okText="Save vendor"
       onSubmit={(v) => save.mutateAsync(v)}
       layout="drawer"
       width={720}
@@ -149,7 +149,7 @@ export function VendorFormModal({
             <Input placeholder="Maa Tarini Traders" maxLength={200} />
           </Form.Item>
           <Form.Item name="kinds" label="Supplies">
-            <Select mode="multiple" placeholder="What they do for you" options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
+            <Select mode="multiple" placeholder="Materials or services they supply" options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>
@@ -160,7 +160,7 @@ export function VendorFormModal({
             <Input {...CODE_INPUT} placeholder="ABCPT1234F" />
           </Form.Item>
           <Form.Item name="stateCode" label="State (GST)">
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!!fromGstin} placeholder="Select" options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!!fromGstin} placeholder="Choose the state" options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))} />
           </Form.Item>
         </FormGrid>
         <Form.Item name="address" label="Address">

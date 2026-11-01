@@ -23,7 +23,7 @@ export default defineConfig({
   projects: [
     // The flows: everything but the route walk.
     { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /route-walk\.spec\.ts/ },
-    // The route walk (item 89, `route-walk.spec.ts`): reads only, so it may run on several workers (`--workers=2`), after
+    // The route walk (`route-walk.spec.ts`): reads only, so it may run on several workers (`--workers=2`), after
     // one sign-in per role. CI runs it as its own jobs beside the flows. Its checks give the same answer every time, so a
     // retry would only hide a page that sometimes breaks and double the time of every finding; no trace either (each
     // finding names its page, check and element, and the screenshots are kept), and no failure screenshot (the walk takes

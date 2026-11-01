@@ -102,7 +102,7 @@ export function MaterialApprovalForm({ open, onClose, approval, onSaved }: { ope
       layout="drawer"
       width={760}
       title={approval ? `Edit ${approval.marNo}` : 'Request material approval'}
-      okText={approval ? 'Save' : 'Save draft'}
+      okText={approval ? 'Save' : 'Save as draft'}
       draftKey={approval ? undefined : 'material-approval:new'}
       onSubmit={async (v) => {
         const body = {
@@ -135,7 +135,7 @@ export function MaterialApprovalForm({ open, onClose, approval, onSaved }: { ope
                 showSearch={{ optionFilterProp: 'label' }}
                 disabled={!!approval}
                 onChange={() => form.setFieldValue('boqItemId', null)}
-                options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+                options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
               />
             </Form.Item>
             <Form.Item name="kind" label="Request for">
@@ -393,7 +393,7 @@ export function ApprovedMakeForm({ open, onClose }: { open: boolean; onClose: ()
     >
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
-          <Select showSearch={{ optionFilterProp: 'label' }} options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} options={(projects ?? []).filter((p) => p.type !== 'STORE').map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="material" label="Material" rules={[{ required: true, whitespace: true, message: 'Name the material' }]}>

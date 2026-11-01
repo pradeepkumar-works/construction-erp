@@ -1,5 +1,5 @@
 /**
- * Machine telematics (item 146, ARCHITECTURE "Machine telematics"), as plain functions tested in
+ * Machine telematics (ARCHITECTURE "Machine telematics"), as plain functions tested in
  * `src/scripts/telematics-test.ts`: reading a GPS tracker's message and a maker's fleet feed (AEMP 2.0, ISO 15143-3),
  * checking a feed's settings, and rolling a machine's readings up into its day.
  */
@@ -228,7 +228,7 @@ export function readFeedPage(body: unknown, pageUrl: string): { machines: unknow
   return { machines: list, next, problem: null };
 }
 
-/* ---------- a feed's settings ---------- */
+// A feed's settings
 
 const PRIVATE_V4 = [/^10\./, /^127\./, /^0\./, /^169\.254\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./, /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./];
 
@@ -268,7 +268,7 @@ export function readFeedConfig(config: unknown, hasCredential: boolean): { confi
 /** Whether a feed is due to be read: never read, or read FEED_EVERY_MIN ago. */
 export const feedDue = (lastPolledAt: Date | null, now: Date) => !lastPolledAt || now.getTime() - lastPolledAt.getTime() >= (FEED_EVERY_MIN - 2) * 60_000;
 
-/* ---------- a machine's day ---------- */
+// A machine's day
 
 /** A day's figures as they are kept (MachineDay), built one reading at a time. */
 export interface DayState {
@@ -290,7 +290,7 @@ export interface DayState {
   outsideReadings: number;
   lastLat: number | null;
   lastLng: number | null;
-  /** The tank (item 147): litres at the day's start and its last reading, when that was, and its refills and drains */
+  /** The tank: litres at the day's start and its last reading, when that was, and its refills and drains */
   fuelStart: number | null;
   fuelEnd: number | null;
   fuelAt: Date | null;
@@ -547,7 +547,7 @@ export function fuelUsedOf(d: Pick<DayState, 'fuelUsedStart' | 'fuelUsedEnd'> & 
   return r1(Math.max(0, d.fuelStart + m.filled - m.drained - d.fuelEnd));
 }
 
-/* ---------- days in a time zone ---------- */
+// Days in a time zone
 
 function offsetMs(at: Date, timeZone: string): number {
   const p: Record<string, number> = {};
@@ -578,7 +578,7 @@ export function feedHttpProblem(status: number, what = 'feed'): string {
   return `The ${what} answered ${status}; check its address`;
 }
 
-/* ---------- a fuel dispenser's fill (item 147) ---------- */
+// A fuel dispenser's fill
 
 /** One fill a dispenser sent: its own id, the machine's tag, when, how much and the machine's meter. */
 export interface DispenseIn {

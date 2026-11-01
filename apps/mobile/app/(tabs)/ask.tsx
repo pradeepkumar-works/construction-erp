@@ -29,7 +29,7 @@ interface Turn {
 const NOTES_MAX = AI_QUESTION_MAX - 300;
 
 /**
- * Ask Nirmaan on the phone (AI item 72): type or speak (the keyboard's own microphone) in Hindi, English or Hinglish;
+ * Ask Nirmaan on the phone: type or speak (the keyboard's own microphone) in Hindi, English or Hinglish;
  * answers come in the app's language with links that open the phone's own screens. "Dictate today's DPR" turns spoken
  * notes into a filled DPR form to check and send, which goes through the outbox like any DPR if the signal drops.
  */

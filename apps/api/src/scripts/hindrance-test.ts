@@ -1,5 +1,5 @@
 /**
- * Hindrance register to notice tests (AI item 123). First the rules on their own: 100 labelled DPR remarks (9 in 10
+ * Hindrance register to notice tests. First the rules on their own: 100 labelled DPR remarks (9 in 10
  * must be read right: hindrance or not, and its cause), the day a hindrance began, short stops that are not
  * hindrances, the notice clause and the extension-of-time clause in the demo contracts, the notice clock's stages and
  * the notice letter. Then, when DATABASE_URL is set, the demo company: the seeded DPR remarks come up as suggestions
@@ -21,7 +21,6 @@ const test = (name: string, fn: () => void) => tests.push([name, fn]);
 
 const page = (docNo: string, n: number) => DEMO_CONTRACTS.find((c) => c.docNo === docNo)!.pages[n - 1].join(' ');
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Reading a remark
 
 test('100 labelled DPR remarks: 9 in 10 read right (hindrance or not, and its cause)', () => {
@@ -74,7 +73,6 @@ test('the day it began: dates, days ago, yesterday and weekdays, never after the
   assert.equal(classifyRemark('Continuous rain since 3 days, site waterlogged', on).startOffset, 3);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The contract
 
 test('notice clause: the road contract asks for notice in 14 days (9.1), the building one for an application (5.1)', () => {
@@ -97,7 +95,6 @@ test('extension-of-time clause: the one about claiming it', () => {
   assert.equal(eotClause(page('HB-AGR-01', 2)), '5.1');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The clock
 
 test('notice clock: due on the start plus the notice days, at 7, 3 and 0 days left', () => {
@@ -110,7 +107,6 @@ test('notice clock: due on the start plus the notice days, at 7, 3 and 0 days le
   assert.deepEqual(noticeClock('2026-10-11', 14, '2026-10-30'), { due: '2026-10-25', daysLeft: -5, stage: 0 });
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The letter
 
 const facts = (over: Partial<NoticeFacts> = {}): NoticeFacts => ({
@@ -118,7 +114,7 @@ const facts = (over: Partial<NoticeFacts> = {}): NoticeFacts => ({
   agreementNo: 'HB/2026/07',
   title: 'GF slab reinforcement drawings revised by the architect',
   description: null,
-  categoryLabel: 'Drawings & design',
+  categoryLabel: 'Drawings and design',
   activityName: 'Ground floor slab',
   delayStart: '2026-10-11',
   delayEnd: null,
@@ -136,7 +132,7 @@ test('notice letter: the clause, the dates, the DPR entries, the days lost and t
   const { subject, lines } = noticeLetter(facts());
   const text = lines.join('\n');
   assert.equal(subject, 'Notice of hindrance: GF slab reinforcement drawings revised by the architect');
-  assert.match(text, /Under Clause 5\.1 of the agreement HB\/2026\/07, we give you notice that the work of Ground floor slab at District Hospital Block B \(G\+3\) has been held up since 11 October 2026 \(drawings & design\)\./);
+  assert.match(text, /Under Clause 5\.1 of the agreement HB\/2026\/07, we give you notice that the work of Ground floor slab at District Hospital Block B \(G\+3\) has been held up since 11 October 2026 \(drawings and design\)\./);
   assert.match(text, /- 21 October 2026: First-floor column drawings revised/);
   assert.match(text, /The hindrance continues; so far 13 days have been lost\. Photographs taken at site \(2\) are enclosed\./);
   assert.match(text, /We reserve our right to an extension of time under Clause 5\.1 for the delay\./);

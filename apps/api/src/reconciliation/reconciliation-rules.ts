@@ -13,7 +13,7 @@ const HUNDRED = new Dec(100);
 
 export interface NormInput {
   id: string;
-  /** A BOQ item's norm; null on an activity's own norm (item 128) */
+  /** A BOQ item's norm; null on an activity's own norm */
   boqItemId: string | null;
   activityId?: string | null;
   itemId: string;
@@ -25,7 +25,7 @@ export interface NormInput {
 export const normSource = (n: { boqItemId: string | null; activityId?: string | null }) => (n.activityId ? `a:${n.activityId}` : n.boqItemId!);
 
 /**
- * Approved work per norm source (item 128): an activity with norms of its own counts under itself, any other under its
+ * Approved work per norm source: an activity with norms of its own counts under itself, any other under its
  * BOQ item; work on an activity with neither is left out.
  */
 export function executedBySource(rows: { activityId: string; quantity: D }[], boqOf: Map<string, string | null>, ownNorms: Set<string>): Map<string, D> {
@@ -139,8 +139,7 @@ export function movementsFrom(rows: { itemId: string; type: string; quantity: D 
   return out;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Estimate (v5 item 92): a BOQ item's built-up rate from its rate analysis.
+// Estimate: a BOQ item's built-up rate from its rate analysis.
 
 export interface EstimateLineInput {
   kind: 'MATERIAL' | 'LABOUR' | 'EQUIPMENT';
@@ -211,8 +210,7 @@ export function builtUpRate(lines: EstimateLineInput[], overheadPct: D, profitPc
   };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Wastage (v5 item 92): stock adjustments by reason and item.
+// Wastage: stock adjustments by reason and item.
 
 export interface AdjustmentRow {
   reason: string | null;
@@ -245,8 +243,7 @@ export function wastageGroups(rows: AdjustmentRow[]): WastageGroup[] {
   return [...out.values()].map(({ ids: _ids, ...g }) => g);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Stock against the DPR (item 128)
+// Stock against the DPR
 
 const EPS = new Dec('0.001');
 const pct1 = (num: D, den: D) => (den.gt(0) ? Math.round(num.div(den).mul(1000).toNumber()) / 10 : null);
@@ -292,7 +289,7 @@ export function bookOf(before: { itemId: string; quantity: D }[], during: { item
   return out;
 }
 
-/** A norm as it applies to one activity: the activity's own, else its BOQ item's (item 128). */
+/** A norm as it applies to one activity: the activity's own, else its BOQ item's. */
 export interface ActivityNormInput {
   activityId: string;
   itemId: string;
@@ -418,7 +415,7 @@ export interface PipeRow {
 const m3 = (v: number) => Math.round(v * 1000) / 1000;
 
 /**
- * A pipe size's checks (item 128). Cut wastage is what the lines reporting pipe used beyond what they laid; pipe at site
+ * A pipe size's checks. Cut wastage is what the lines reporting pipe used beyond what they laid; pipe at site
  * not laid is issued less laid less that wastage; to buy is the scope with the allowed wastage less what is already
  * ordered or received. A zone with no issue tied to it cannot be laid above issued.
  */

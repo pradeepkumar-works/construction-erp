@@ -1,5 +1,5 @@
 /**
- * Demo biometric device commands (item 150): the gate terminal's clock was set when it called this morning, the staff
+ * Demo biometric device commands: the gate terminal's clock was set when it called this morning, the staff
  * enrolled on it were put there from Nirmaan with their names, and one more was refused by the device. Runs once per
  * company (when it has no command yet), after the biometric demo.
  */

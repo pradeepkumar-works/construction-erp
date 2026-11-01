@@ -1,5 +1,5 @@
 /**
- * Verticals' tests (item 167): the vertical a new project takes from its kind, the filter the header and lists share,
+ * Verticals' tests: the vertical a new project takes from its kind, the filter the header and lists share,
  * the check on a vertical about to be saved and the grouping reports use, with no database. CI runs it after the build:
  *
  *   node dist/scripts/verticals-test.js

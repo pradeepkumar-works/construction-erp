@@ -68,8 +68,8 @@ export class RfisService {
   ) {}
 
   private dto(r: Row, today = todayIn()): RfiDto {
-    const raisedOn = dateOnly(r.raisedOn)!;
-    const replyBy = dateOnly(r.replyBy)!;
+    const raisedOn = dateOnly(r.raisedOn);
+    const replyBy = dateOnly(r.replyBy);
     const answeredOn = dateOnly(r.answeredOn);
     return {
       id: r.id,
@@ -106,8 +106,8 @@ export class RfisService {
       raisedByName: r.raisedBy.fullName,
       age: rfiAge({ status: r.status, raisedOn, replyBy, answeredOn }, today),
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -135,7 +135,7 @@ export class RfisService {
     };
   }
 
-  /* ---------- reading ---------- */
+  // Reading
 
   async list(user: RequestUser, q: ListRfisQuery): Promise<Paginated<RfiDto>> {
     const today = todayIn();
@@ -177,7 +177,7 @@ export class RfisService {
     const ageing = Object.fromEntries(RFI_AGE_BUCKETS.map((b) => [b.key, 0])) as Record<RfiAgeBucket, number>;
     let overdue = 0;
     for (const r of open) {
-      const late = rfiAge({ status: 'OPEN', raisedOn: today, replyBy: dateOnly(r.replyBy)!, answeredOn: null }, today).daysOverdue;
+      const late = rfiAge({ status: 'OPEN', raisedOn: today, replyBy: dateOnly(r.replyBy), answeredOn: null }, today).daysOverdue;
       if (late > 0) overdue += 1;
       ageing[rfiAgeBucket(late)] += 1;
     }
@@ -192,7 +192,7 @@ export class RfisService {
     };
   }
 
-  /* ---------- raising and changing ---------- */
+  // Raising and changing
 
   private async checkLinks(projectId: string, dto: { documentId?: string | null; boqItemId?: string | null }) {
     if (dto.documentId && !(await this.prisma.document.count({ where: { id: dto.documentId, projectId } }))) throw new BadRequestException('Choose a drawing or document of this project');
@@ -288,8 +288,8 @@ export class RfisService {
     this.assertOwner(user, cur, 'change it');
     if (cur.status !== 'OPEN') throw new ConflictException('Only an RFI still waiting for its answer can be changed');
     await this.checkLinks(cur.projectId, dto);
-    const replyBy = dto.replyBy ?? dateOnly(cur.replyBy)!;
-    if (replyBy < dateOnly(cur.raisedOn)!) throw new BadRequestException('The answer-by date is before the raised date: choose a later one');
+    const replyBy = dto.replyBy ?? dateOnly(cur.replyBy);
+    if (replyBy < dateOnly(cur.raisedOn)) throw new BadRequestException('The answer-by date is before the raised date: choose a later one');
     const data: Prisma.RfiUncheckedUpdateInput = {};
     if (dto.subject !== undefined) data.subject = dto.subject;
     if (dto.question !== undefined) data.question = dto.question;
@@ -318,10 +318,10 @@ export class RfisService {
     return { ok: true };
   }
 
-  /* ---------- answering and closing ---------- */
+  // Answering and closing
 
   private checkAnswerDate(raisedOn: Date, answeredOn: string) {
-    if (answeredOn > todayIn() || answeredOn < dateOnly(raisedOn)!) throw new BadRequestException('Enter an answer date between the raised date and today');
+    if (answeredOn > todayIn() || answeredOn < dateOnly(raisedOn)) throw new BadRequestException('Enter an answer date between the raised date and today');
   }
 
   /** Staff record an answer received by letter, mail or at a meeting. */
@@ -342,7 +342,7 @@ export class RfisService {
     const cur = await this.load(user, id);
     this.assertOwner(user, cur, 'close it');
     if (cur.status !== 'ANSWERED') throw new ConflictException(cur.status === 'OPEN' ? 'Record the answer before closing the RFI' : 'This RFI is already closed or withdrawn');
-    if (dto.on > todayIn() || (cur.answeredOn && dto.on < dateOnly(cur.answeredOn)!)) throw new BadRequestException('Enter a date between the answer date and today');
+    if (dto.on > todayIn() || (cur.answeredOn && dto.on < dateOnly(cur.answeredOn))) throw new BadRequestException('Enter a date between the answer date and today');
     await this.prisma.rfi.update({ where: { id }, data: { status: 'CLOSED', closedOn: parseDate(dto.on), closeNote: blank(dto.note) ?? null, closedById: user.id } });
     await this.audit.log(user, 'RFI', id, 'CLOSED', blank(dto.note) ?? null);
     return this.get(user, id);
@@ -371,7 +371,7 @@ export class RfisService {
     return this.get(user, id);
   }
 
-  /* ---------- the client portal ---------- */
+  // The client portal
 
   /** The project's RFIs as the client's engineer or consultant sees them: open first, then the latest. */
   async listForClient(user: RequestUser, projectId: string): Promise<PortalRfiDto[]> {

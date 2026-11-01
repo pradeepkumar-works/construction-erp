@@ -15,7 +15,7 @@ test('the weekly report previews in the company design, downloads as PDF and is 
   expect((await download).suggestedFilename()).toMatch(/^RD-2026-01-WPR-\d{3}(-R\d+)?-\d{4}-\d{2}-\d{2}\.pdf$/);
 
   await page.getByRole('button', { name: /Issue (to client|again)$/ }).click();
-  await page.getByLabel('Note for the register (optional)').fill('Sent to the PIU by email');
+  await page.getByLabel('Note for the register').fill('Sent to the PIU by email');
   await page.getByRole('button', { name: /^Issue as Rev \d+$/ }).click();
   await expect(page.getByRole('list', { name: 'Issued copies' }).getByText('Sent to the PIU by email').first()).toBeVisible();
 });

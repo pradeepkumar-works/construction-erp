@@ -4,7 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { SetModuleSwitchDto } from './module-switches.dto';
 import { ModuleSwitchesService } from './module-switches.service';
 
-/** The company's optional modules (v6 item 117). Admins. */
+/** The company's optional modules. Admins. */
 @ApiTags('module-switches')
 @ApiBearerAuth()
 @Controller('module-switches')

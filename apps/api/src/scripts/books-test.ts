@@ -1,5 +1,5 @@
 /**
- * The books' tests (v6 item 102): what a hand-made voucher must be, voucher numbers by financial year, running balances,
+ * The books' tests: what a hand-made voucher must be, voucher numbers by financial year, running balances,
  * and that every ledger the posting service uses has a group in the chart of accounts, with no database. CI runs it
  * after the build:
  *

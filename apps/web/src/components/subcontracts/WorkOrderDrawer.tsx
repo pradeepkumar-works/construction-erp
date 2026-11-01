@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useWorkOrder } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -87,7 +87,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const approved = data?.status === 'APPROVED';
   const openBill = data?.bills?.find((b) => b.status !== 'APPROVED' && b.status !== 'REJECTED');
   const finalBilled = data?.bills?.some((b) => b.isFinal && b.status !== 'REJECTED');
-  // Once an advance is paid through a payment request (v5 item 90), bills recover what was paid, not what the order says.
+  // Once an advance is paid through a payment request, bills recover what was paid, not what the order says.
   const advancePaid = data ? toNumber(data.advancePaid) : 0;
   const advanceLeft = data ? (advancePaid > 0 ? advancePaid : toNumber(data.advanceAmount)) - toNumber(data.advanceRecovered) : 0;
   const requests = approved && !data?.closedAt && !!user && canViewPaymentRequests(user.roleKey);
@@ -155,7 +155,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
             { key: 'title', label: 'Work', span: 2, children: data.title },
             { key: 'value', label: 'Value before GST', children: <strong>{money(data.value)}</strong> },
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
-            { key: 'period', label: 'Period', children: `${data.startDate ? formatDate(data.startDate) : '-'} to ${data.endDate ? formatDate(data.endDate) : '-'}` },
+            { key: 'period', label: 'Period', children: `${data.startDate ? formatDate(data.startDate) : NO_VALUE} to ${data.endDate ? formatDate(data.endDate) : NO_VALUE}` },
             { key: 'gst', label: 'GST on their bills', children: formatPct(data.gstRate) },
             { key: 'ret', label: 'Retention', children: formatPct(data.retentionPct) },
             { key: 'tds', label: 'TDS (194C)', children: formatPct(data.tdsPct) },
@@ -172,10 +172,10 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                     </div>
                   </span>
                 ) : (
-                  '-'
+                  NO_VALUE
                 ),
             },
-            { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : '-' },
+            { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : NO_VALUE },
             ...(approved ? [{ key: 'billed', label: 'Billed', children: <Progress percent={data.billedPct} size="small" style={{ maxWidth: 320, margin: 0 }} format={() => `${formatPct(data.billedPct)} · ${formatINR(data.billedAmount, true)}`} aria-label={`${formatPct(data.billedPct)} billed`} /> }] : []),
             ...(data.supplierAcceptedAt
               ? [{ key: 'accepted', label: 'Subcontractor accepted', children: `${formatDateTime(data.supplierAcceptedAt)}${data.supplierAcceptedBy ? ` by ${data.supplierAcceptedBy}` : ''}${data.supplierNote ? `: ${data.supplierNote}` : ''}` }]
@@ -227,7 +227,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                                     {formatQty(v)}
                                   </Typography.Text>
                                 ) : (
-                                  <span className="text-muted">-</span>
+                                  <span className="text-muted">{NO_VALUE}</span>
                                 ),
                             },
                             { title: 'Billed', dataIndex: 'billedQty', width: 100, align: 'right' as const, render: (v: string) => <span className="mono" translate="no">{formatQty(v)}</span> },
@@ -263,7 +263,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                         columns={[
                           { title: 'Bill', dataIndex: 'label', render: (v, b) => (billingRole ? <Link href={`/subcontract-bills/${b.id}`}>{v}</Link> : v) },
                           { title: 'Date', dataIndex: 'billDate', width: 120, render: (v) => formatDate(v) },
-                          { title: 'Work value', dataIndex: 'grossAmount', width: 150, align: 'right', render: (v) => money(v) },
+                          { title: 'Work done', dataIndex: 'grossAmount', width: 150, align: 'right', render: (v) => money(v) },
                           { title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', render: (v) => money(v) },
                           { title: 'Status', dataIndex: 'status', width: 130, render: (s) => <StatusTag status={s} /> },
                         ]}
@@ -295,7 +295,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
               <ReviewActions type="work_order" id={data.id} status={data.status} amount={data.value} size={size} />
               {data.open && billingRole && !openBill && !finalBilled ? (
                 <Button size={size} type="primary" icon={<FileAddOutlined />} onClick={() => setBilling(true)}>
-                  Prepare bill
+                  New subcontractor bill
                 </Button>
               ) : null}
               {data.open && issuer ? (
@@ -311,7 +311,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
               ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
+          // Delete is a tap from Approve no longer.
           more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `work order ${data.woNo}`, onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }

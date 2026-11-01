@@ -61,13 +61,13 @@ export function TopBar({ user, look, mobile, menu, place, pendingCount, tools, o
         {mobile ? (
           <>
             <Button type="text" icon={<MenuOutlined />} onClick={onOpenMenu} aria-label="Open menu" data-tour="menu" />
-            <Link href="/" className={s.brand} aria-label="Home, all modules">
+            <Link href="/" className={s.brand} aria-label="Home">
               <BrandMark size={28} />
             </Link>
           </>
         ) : (
           <>
-            <Link href="/" className={s.brand} aria-label="Home, all modules">
+            <Link href="/" className={s.brand} aria-label="Home">
               <BrandMark size={look === 'BAR' ? 30 : 28} />
               {!inBar && <Wordmark size={17} />}
             </Link>
@@ -111,7 +111,7 @@ function TopLinks({ user, pendingCount }: { user: AuthUser; pendingCount: number
   const pathname = usePathname();
   const myWork = navNode('my-work');
   const links = [
-    { href: '/', label: 'Modules', icon: 'layout-grid', show: true },
+    { href: '/', label: 'Home', icon: 'layout-grid', show: true, tour: 'modules' },
     { href: '/my-work', label: 'My work', icon: 'list-todo', show: !!myWork && canSeeNav(user, myWork) },
     { href: '/approvals', label: 'Approvals', icon: 'inbox', show: mayApprove(user), count: pendingCount, tour: 'approvals' },
   ];
@@ -197,7 +197,7 @@ function ModuleNav({ menu, place, mobile, inBar }: { menu: NavMenuModule[]; plac
     else setPicking(node);
   };
   const switchItems: MenuProps['items'] = [
-    { key: 'home', icon: <TreeIcon name="layout-grid" />, label: <Link href="/">All modules</Link> },
+    { key: 'home', icon: <TreeIcon name="layout-grid" />, label: <Link href="/">Home</Link> },
     { type: 'divider' },
     ...menu.map((m) => ({ key: m.key, icon: <TreeIcon name={m.icon} />, label: <Link href={moduleScreenHref(m.key)}>{m.label}</Link> })),
   ];

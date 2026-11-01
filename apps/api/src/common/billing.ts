@@ -6,7 +6,7 @@ import type { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 
 /**
- * Plans and billing (v3 item 34). Billing is on only when Razorpay keys, a price and the seller's GST details are all
+ * Plans and billing. Billing is on only when Razorpay keys, a price and the seller's GST details are all
  * set; until then every company works as before and nothing is charged.
  */
 export interface BillingConfig {
@@ -21,7 +21,7 @@ export interface BillingConfig {
   exemptCodes: string[];
   seller: { name: string; gstin: string; address: string; stateCode: string; sac: string };
   invoicePrefix: string;
-  /** Ask Nirmaan included in the price (AI item 77): rupees a month per unit once paid, and for the whole trial month */
+  /** Ask Nirmaan included in the price: rupees a month per unit once paid, and for the whole trial month */
   aiPerUnitInr: number;
   aiTrialInr: number;
 }
@@ -59,7 +59,7 @@ export async function billingUnits(prisma: PrismaService, cfg: BillingConfig, or
 }
 
 /**
- * Rupees a month of Ask Nirmaan the plan includes (AI item 77): a fixed amount in the trial, the per-unit amount for
+ * Rupees a month of Ask Nirmaan the plan includes: a fixed amount in the trial, the per-unit amount for
  * each unit paid for, nothing while read-only. Null for a company that is not charged, which keeps its own cap.
  */
 export function aiPlanAllowanceInr(cfg: BillingConfig, status: BillingStatus, units: number): number | null {

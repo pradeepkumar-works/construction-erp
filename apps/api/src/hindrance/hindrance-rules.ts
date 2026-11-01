@@ -2,7 +2,7 @@ import type { DelayParty, RiskCategory } from '@erp/shared';
 import { NOTICE_STAGES, delayDays } from '@erp/shared';
 
 /**
- * Hindrance register to notice (AI item 123), the pure part: reading a DPR remark for a hindrance (cause, party and the
+ * Hindrance register to notice, the pure part: reading a DPR remark for a hindrance (cause, party and the
  * day it began), finding the notice period in a contract's text, the notice clock and the notice letter's lines.
  * Tested in `src/scripts/hindrance-test.ts`, with 100 labelled remarks in `hindrance-cases.ts`.
  */
@@ -14,7 +14,6 @@ export const addDays = (d: string, n: number) => {
 };
 export const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Reading a remark
 
 export type Verdict = 'HINDRANCE' | 'NONE' | 'UNSURE';
@@ -243,7 +242,6 @@ export function startDateFrom(remark: string, reportDate: string): string {
   return reportDate;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The contract's notice period
 
 /** Clauses of a page of contract text: "9.1 The Contractor shall …." up to the next numbered clause. */
@@ -270,7 +268,6 @@ export function noticeClause(text: string): { no: string; text: string; days: nu
   return best ? { no: best.no, text: best.text, days: best.days } : null;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The notice clock
 
 export interface Clock {
@@ -288,7 +285,6 @@ export function noticeClock(delayStart: string, noticeDays: number, today: strin
   return { due, daysLeft, stage };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The notice letter
 
 export interface NoticeFacts {

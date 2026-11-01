@@ -23,7 +23,7 @@ const saveBreakdown = (token: string, t: TypeDto, breakdown: unknown[]) =>
   });
 
 /**
- * Update projects and types files (item 134 part 3, ARCHITECTURE "Updating projects from their type", "Export and import
+ * Update projects and types files (ARCHITECTURE "Updating projects from their type", "Export and import
  * of project types"): a type gains a component after a project was made from it; Update projects shows the project and
  * adds only the new component, with no weight beside the weighted ones. The type is exported and imported into a
  * second company, which previews it as new first. Both companies are fresh, so the demo data stays as it is.

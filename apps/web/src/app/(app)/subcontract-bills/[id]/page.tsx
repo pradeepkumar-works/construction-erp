@@ -6,7 +6,7 @@ import type { SubcontractBillDto } from '@erp/shared';
 import { SubBillRecord } from '@/components/subcontracts/SubBillDrawer';
 import { SubBillFormModal } from '@/components/subcontracts/SubBillFormModal';
 
-/** One subcontractor's bill, as its own page (UI roadmap item 61). */
+/** One subcontractor's bill, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

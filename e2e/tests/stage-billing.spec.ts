@@ -3,7 +3,7 @@ import type { BillingBreakupDto, RaBillDto } from '../../packages/shared/src';
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Stage billing (item 129) on the town water scheme, a lump-sum contract: the seed makes its standard break-up, a
+ * Stage billing on the town water scheme, a lump-sum contract: the seed makes its standard break-up, a
  * milestone grid the treatment plant has fallen behind, and RA bills 1 to 4 priced from the evidence at their dates
  * (bill 3 with a stage the client cut). The QS prepares bill 5, claims a stage by hand and goes back to the evidence;
  * the bill is deleted again, so nothing is left behind.
@@ -61,8 +61,8 @@ test('a lump-sum bill takes its stages from the evidence and withholds for slipp
     // On screen: the break-up on the Contract tab, and the bill's stages and slippage.
     await signIn(page, 'qs@demo.com');
     await page.goto(`/projects/${town.id}?tab=contract`);
-    await expect(page.getByRole('heading', { name: 'Billing break-up' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Milestone grid' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Payment schedule' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milestone targets' })).toBeVisible();
     await page.goto(`/bills/${fifth.id}`);
     await expect(page.getByText('Payment stages (').first()).toBeVisible();
     await expect(page.getByText(/This bill withholds|releases/).first()).toBeVisible();

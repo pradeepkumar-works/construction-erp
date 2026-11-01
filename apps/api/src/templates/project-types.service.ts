@@ -42,7 +42,7 @@ const stepOf = (s: ComponentStepDto): ComponentStep => {
 const json = (v: unknown) => v as Prisma.InputJsonValue;
 
 /**
- * Project types and component kinds (item 134, ARCHITECTURE "Project types"). The standard ones are data in
+ * Project types and component kinds (ARCHITECTURE "Project types"). The standard ones are data in
  * @erp/shared; a company's row of the same code replaces one, and its own codes add to them, so nothing is seeded and
  * a company that never opens Admin › Project types keeps today's behaviour. Loose activities stay `ActivityTemplate`
  * rows, now keyed by the type's code.
@@ -50,8 +50,6 @@ const json = (v: unknown) => v as Prisma.InputJsonValue;
 @Injectable()
 export class ProjectTypesService {
   constructor(private prisma: PrismaService, private audit: AuditService) {}
-
-  /* ---------- reading ---------- */
 
   /** The company's component kinds: the built-in ones (or its copies) and its own. */
   async kinds(organizationId: string, db: Db = this.prisma) {
@@ -124,8 +122,6 @@ export class ProjectTypesService {
       }),
     );
   }
-
-  /* ---------- project types ---------- */
 
   async list(user: RequestUser): Promise<ProjectTypeDto[]> {
     const [types, counts, saved] = await Promise.all([
@@ -250,7 +246,7 @@ export class ProjectTypesService {
   }
 
   /**
-   * A type from a file (item 134 part 3, `TypeBundleService`): a new one, or a new version of the company's own. It goes
+   * A type from a file (`TypeBundleService`): a new one, or a new version of the company's own. It goes
    * through the editor's checks against `kinds` (the company's, with the file's being imported); the caller has decided
    * it may (`importAction`).
    */
@@ -284,15 +280,13 @@ export class ProjectTypesService {
     return { reset: t.standard };
   }
 
-  /* ---------- component kinds ---------- */
-
   async listKinds(user: RequestUser): Promise<ComponentKindDto[]> {
     const [kinds, counts] = await Promise.all([
       this.kinds(user.organizationId),
       this.prisma.workElement.groupBy({ by: ['kindCode', 'elementType'], where: { organizationId: user.organizationId }, _count: { _all: true } }),
     ]);
     const used = new Map<string, number>();
-    // A component made before item 134 counts towards the built-in kind of its element type.
+    // A component made before project types existed counts towards the built-in kind of its element type.
     for (const c of counts) used.set(c.kindCode ?? c.elementType, (used.get(c.kindCode ?? c.elementType) ?? 0) + c._count._all);
     return kinds.map(({ row, ...k }) => ({ ...k, version: row?.version ?? 1, components: used.get(k.code) ?? 0, updatedAt: iso(row?.updatedAt ?? null) }));
   }
@@ -337,7 +331,7 @@ export class ProjectTypesService {
     return this.listKinds(user);
   }
 
-  /** A component kind from a file (item 134 part 3): a new one, or a new version of the company's copy or its own. */
+  /** A component kind from a file: a new one, or a new version of the company's copy or its own. */
   async putKind(user: RequestUser, def: ComponentKindDef) {
     this.assertManage(user);
     const problems = componentKindProblems(def);

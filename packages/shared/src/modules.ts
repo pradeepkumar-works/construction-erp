@@ -3,7 +3,7 @@ import { NAV_TREE } from './navigation';
 import type { ModuleProgressDto } from './project-progress';
 
 /**
- * Module screens (v6 item 98, launcher phase 1): every module on Home that is not a page itself has a screen at
+ * Module screens: every module on Home that is not a page itself has a screen at
  * `/modules/<key>`, with a tile for each of its pages (from the navigation tree) above its figures from
  * `GET /dashboard/modules/:key`. Each figure is left out for a role that may not see its list, and covers only the projects
  * the caller sees (or the header's project). The keys are the modules' ids in `NAV_TREE`.
@@ -33,7 +33,7 @@ export const MODULE_SUBMISSION_TYPES: Record<ModuleKey, SubmissionType[]> = {
   correspondence: [],
   materials: ['MATERIAL_REQUEST'],
   plant: ['MACHINERY'],
-  purchases: ['PURCHASE_ORDER', 'VENDOR_BILL'],
+  purchases: ['SUPPLIER_CHOICE', 'PURCHASE_ORDER', 'VENDOR_BILL'],
   subcontracts: ['WORK_ORDER', 'SUBCONTRACT_BILL'],
   billing: ['BILL'],
   tenders: [],

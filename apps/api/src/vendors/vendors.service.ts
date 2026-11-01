@@ -62,8 +62,8 @@ export class VendorsService {
       expenseCount: r._count.expenses,
       equipmentCount: r._count.equipment,
       grnCount: r._count.stockEntries,
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -180,7 +180,7 @@ export class VendorsService {
       throw e;
     }
     await this.audit.log(user, 'VENDOR', id, 'UPDATED');
-    // A changed bank account is its own line in the log: the purchase controls (intelligence quick win Q6) read it
+    // A changed bank account is its own line in the log: the purchase controls read it
     // against the payments that follow.
     const mask = (v: string | null | undefined) => (v ? `••${v.slice(-4)}` : 'none');
     if (BANK_FIELDS.some((k) => dto[k] !== undefined && (dto[k] ?? null) !== (current[k] ?? null)))

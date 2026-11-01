@@ -6,7 +6,7 @@ import { fontSize, maxFontScale, radius, spacing, statusTone, type IconName } fr
 import { useT } from '../i18n/LanguageContext';
 
 /**
- * A submission's status as a word and a shape (UX item 88): clock for waiting, tick for approved, cross for rejected,
+ * A submission's status as a word and a shape: clock for waiting, tick for approved, cross for rejected,
  * pencil for sent back, so Pending and Rejected differ without colour vision and in glare. `labels` words the status
  * for one kind of entry (an inspection is "Passed" rather than "Approved").
  */

@@ -95,7 +95,7 @@ export function DayBook() {
             reset();
           }}
         />
-        <Select allowClear placeholder="Every type" aria-label="Voucher type" value={type} onChange={(v) => (setType(v), reset())} style={{ minWidth: 150 }} options={BOOK_VOUCHER_TYPES.map((t) => ({ value: t, label: BOOK_VOUCHER_TYPE_LABELS[t] }))} />
+        <Select allowClear placeholder="All types" aria-label="Voucher type" value={type} onChange={(v) => (setType(v), reset())} style={{ minWidth: 150 }} options={BOOK_VOUCHER_TYPES.map((t) => ({ value: t, label: BOOK_VOUCHER_TYPE_LABELS[t] }))} />
         <Select allowClear placeholder="From anywhere" aria-label="From" value={source} onChange={(v) => (setSource(v), reset())} style={{ minWidth: 180 }} options={BOOK_SOURCES.map((s) => ({ value: s, label: BOOK_SOURCE_LABELS[s] }))} />
         <ProjectSelect allowClear placeholder="All projects" value={projectId} onChange={(v) => (setProjectId(v), reset())} aria-label="Project" style={{ minWidth: 220 }} />
         <Input.Search allowClear placeholder="Number, party or narration" aria-label="Search the day book" onSearch={(v) => (setQ(v.trim()), reset())} style={{ width: 240 }} />

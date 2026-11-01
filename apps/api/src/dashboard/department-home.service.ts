@@ -29,7 +29,7 @@ import { ModuleHomeService } from './module-home.service';
 const listed = (names: string[], left: number) => (names.length ? `${names.join(', ')}${left > names.length ? ` and ${left - names.length} more` : ''}` : `${left} items`);
 
 /**
- * Department screens (item 168, `@erp/shared/department-home.ts`): a department's figures, taken from the area modules'
+ * Department screens (`@erp/shared/department-home.ts`): a department's figures, taken from the area modules'
  * own (`ModuleHomeService`), and its pipelines, read from the modules' own list services so their access rules hold:
  * material requests, requests to order and procurement status for indents and deliveries, the letter register for
  * letters. For the header's project, or every project the caller sees.

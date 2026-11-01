@@ -81,7 +81,7 @@ const TRANSMITTAL_ORDER: Record<TransmittalSortField, (o: SortOrder) => Prisma.T
 const DESC_DEFAULT = new Set<string>(['issuedOn', 'updatedAt', 'sentOn', 'transmittalNo', 'letterDate', 'letterNo', 'createdAt']);
 const order = (sortBy: string, o: SortOrder | undefined): SortOrder => o ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
 
-/** Letters received that we owe a reply to (Correspondence, item 136, keeps the registers). */
+/** Letters received that we owe a reply to (Correspondence keeps the registers). */
 const LETTERS_AWAITING = { direction: 'IN', status: 'OPEN', replyBy: { not: null }, replies: { none: { direction: 'OUT', status: 'ISSUED' } } } satisfies Prisma.LetterWhereInput;
 
 /** Revisions in force order: the latest issued first (the one added last wins a tie). */
@@ -90,7 +90,7 @@ const REVISION_ORDER: Prisma.DocumentRevisionOrderByWithRelationInput[] = [{ iss
 /**
  * Document register: drawings and documents with their revisions (files on each revision), transmittals that send
  * revisions to someone. Anyone on a project reads the register; document control roles change it. Letters are
- * Correspondence's (item 136, `CorrespondenceService`).
+ * Correspondence's (`CorrespondenceService`).
  * The current revision is the latest issued and is kept on `Document.currentRevisionId`.
  */
 @Injectable()
@@ -111,14 +111,14 @@ export class DocumentsService {
     await this.text.readPending(user.organizationId, [projectId], 3, 15_000).catch((e: Error) => this.log.warn(`reading files: ${e.message}`));
   }
 
-  /* ---------- documents ---------- */
+  // Documents
 
   private toRevisionDto(r: RevisionRow, currentId: string | null, transmittals: DocumentRevisionDto['transmittals'] = []): DocumentRevisionDto {
     return {
       id: r.id,
       documentId: r.documentId,
       revision: r.revision,
-      issuedOn: dateOnly(r.issuedOn)!,
+      issuedOn: dateOnly(r.issuedOn),
       status: r.status,
       receivedFrom: r.receivedFrom,
       remarks: r.remarks,
@@ -127,7 +127,7 @@ export class DocumentsService {
       current: r.id === currentId,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       transmittals,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -146,8 +146,8 @@ export class DocumentsService {
       openMarkups: d._count.markups,
       createdById: d.createdById,
       createdByName: d.createdBy.fullName,
-      createdAt: iso(d.createdAt)!,
-      updatedAt: iso(d.updatedAt)!,
+      createdAt: iso(d.createdAt),
+      updatedAt: iso(d.updatedAt),
     };
   }
 
@@ -198,7 +198,7 @@ export class DocumentsService {
         this.toRevisionDto(
           r,
           row.currentRevisionId,
-          r.transmittals.map((t) => ({ id: t.transmittal.id, transmittalNo: t.transmittal.transmittalNo, toParty: t.transmittal.toParty, sentOn: dateOnly(t.transmittal.sentOn)! })),
+          r.transmittals.map((t) => ({ id: t.transmittal.id, transmittalNo: t.transmittal.transmittalNo, toParty: t.transmittal.toParty, sentOn: dateOnly(t.transmittal.sentOn) })),
         ),
       ),
     };
@@ -406,7 +406,7 @@ export class DocumentsService {
     }
   }
 
-  /* ---------- transmittals ---------- */
+  // Transmittals
 
   private toTransmittalDto(t: TransmittalRow): TransmittalDto {
     return {
@@ -418,7 +418,7 @@ export class DocumentsService {
       toParty: t.toParty,
       attention: t.attention,
       purpose: t.purpose,
-      sentOn: dateOnly(t.sentOn)!,
+      sentOn: dateOnly(t.sentOn),
       remarks: t.remarks,
       acknowledgedOn: dateOnly(t.acknowledgedOn),
       acknowledgedBy: t.acknowledgedBy,
@@ -434,8 +434,8 @@ export class DocumentsService {
         status: i.revision.status,
         copies: i.copies,
       })),
-      createdAt: iso(t.createdAt)!,
-      updatedAt: iso(t.updatedAt)!,
+      createdAt: iso(t.createdAt),
+      updatedAt: iso(t.updatedAt),
     };
   }
 
@@ -535,7 +535,7 @@ export class DocumentsService {
   async acknowledgeTransmittal(user: RequestUser, id: string, dto: AcknowledgeTransmittalDto): Promise<TransmittalDto> {
     const cur = await this.loadTransmittal(user, id);
     if (dto.acknowledgedOn > todayIn()) throw new BadRequestException('The acknowledgement date cannot be in the future');
-    if (dto.acknowledgedOn < dateOnly(cur.sentOn)!) throw new BadRequestException('Acknowledged before it was sent');
+    if (dto.acknowledgedOn < dateOnly(cur.sentOn)) throw new BadRequestException('Acknowledged before it was sent');
     await this.prisma.transmittal.update({ where: { id }, data: { acknowledgedOn: parseDate(dto.acknowledgedOn), acknowledgedBy: dto.acknowledgedBy } });
     await this.audit.log(user, 'TRANSMITTAL', id, 'ACKNOWLEDGED', dto.acknowledgedBy);
     return this.getTransmittal(user, id);
@@ -549,7 +549,7 @@ export class DocumentsService {
     return { ok: true };
   }
 
-  /* ---------- summary ---------- */
+  // Summary
 
   async summary(user: RequestUser, projectId?: string): Promise<DocumentSummaryDto> {
     const base = { ...this.access.submissionWhere(user), ...(projectId ? { projectId } : {}) };

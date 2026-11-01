@@ -5,7 +5,7 @@ import { MachineLoansService } from './machine-loans.service';
 import { CreateEquipmentLoanDto, EquipmentLoanQuery, ForecloseDto, LoanPreviewQuery, PayEmiDto, UpdateEquipmentLoanDto } from './machine-loans.dto';
 import { ModuleSwitch } from '../common/decorators';
 
-/** Machine finance (v6 item 108): loans on financed machines, their EMI schedules and EMIs paid. Admin, management and accounts. */
+/** Machine finance: loans on financed machines, their EMI schedules and EMIs paid. Admin, management and accounts. */
 @ApiTags('machine-loans')
 @ApiBearerAuth()
 @ModuleSwitch('machine_loans')

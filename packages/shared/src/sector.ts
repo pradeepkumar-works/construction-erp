@@ -1,4 +1,4 @@
-/** Sector progress views (v4 item 41): road chainage strip, building floor matrix, water supply villages and pipeline stages. */
+/** Sector progress views: road chainage strip, building floor matrix, water supply villages and pipeline stages. */
 import type { ProjectType, WorkLocation } from './enums';
 
 /** Structured location on a progress entry or a measurement. Chainage is in metres from the project's 0+000. */
@@ -41,7 +41,7 @@ export const sectorLocation = (f: Partial<SectorFields>): string | null => {
   return parts.length ? parts.join(', ') : null;
 };
 
-/** Where a project's work is located, by its built-in kind: what a project of no type of its own (Plant, Store, made before item 134) asks for. */
+/** Where a project's work is located, by its built-in kind: what a project of no type of its own (Plant, Store, made before project types) asks for. */
 export const LOCATIONS_OF_BASE: Record<ProjectType, WorkLocation[]> = {
   ROAD: ['CHAINAGE'],
   BUILDING: ['FLOOR'],
@@ -53,7 +53,7 @@ export const LOCATIONS_OF_BASE: Record<ProjectType, WorkLocation[]> = {
 };
 
 /**
- * Which structured location a project asks for on progress and measurements: its type's places (item 134, `locations`
+ * Which structured location a project asks for on progress and measurements: its type's places (`locations`
  * on the project from the API), else its built-in kind's.
  */
 export const sectorKinds = (p: ProjectType | { type: ProjectType; locations?: WorkLocation[] | null }): { chainage: boolean; floor: boolean; village: boolean } => {

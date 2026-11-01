@@ -46,7 +46,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
     });
     if (!user) throw new UnauthorizedException();
-    // Signed in before the password last changed: that session has ended (finding 5 of the October review).
+    // Signed in before the password last changed: that session has ended.
     const validAfter = user.login.tokensValidAfter;
     if (validAfter && payload.iat !== undefined && payload.iat < Math.floor(validAfter.getTime() / 1000))
       throw new UnauthorizedException('Your password was changed. Sign in again.');

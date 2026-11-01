@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto, WeighTicketDto } from '@erp/shared';
-import { MATERIAL_PRIORITY_LABELS, itemSimilarity, kgToUnit, matchLines, readNumber, readText } from '@erp/shared';
+import { MATERIAL_PRIORITY_LABELS, itemSimilarity, kgToUnit, matchLines, readNumber, readText, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useReceivable, useReceivableOrders } from '@/lib/queries';
@@ -26,7 +26,7 @@ interface FormValues {
   vehicleNo?: string;
   remarks?: string;
   photos?: AttachmentDto[];
-  /** The supplier's dispatch note this delivery came with (supplier portal, v6 item 105) */
+  /** The supplier's dispatch note this delivery came with (supplier portal) */
   dispatchId?: string;
 }
 
@@ -75,7 +75,7 @@ export function ReceiptModal({
   projectId?: string;
   materialRequestId?: string;
   purchaseOrderId?: string;
-  /** A weighed truck (item 148): the GRN is drafted at its net weight, with its challan and truck */
+  /** A weighed truck: the GRN is drafted at its net weight, with its challan and truck */
   weighTicket?: WeighTicketDto;
 }) {
   const [form] = Form.useForm<FormValues>();
@@ -94,13 +94,13 @@ export function ReceiptModal({
   const request = sources.find((s) => s.key === watchedSource);
   const loading = receivable.isLoading || orders.isLoading;
   const [qty, setQty] = useState<Record<string, string | null>>({});
-  // A delivery challan read to fill the GRN (AI item 70), and the quantities waiting for its order to be picked.
+  // A delivery challan read to fill the GRN, and the quantities waiting for its order to be picked.
   const [readState, setReadState] = useState<ReadState | null>(null);
   const [activeRead, setActiveRead] = useState<string | null>(null);
   const [readLines, setReadLines] = useState<Record<string, number> | null>(null);
   const pendingQty = useRef<{ key: string; qty: Record<string, string | null> } | null>(null);
   // The challan itself is kept on the GRN, and a date it cannot have been dispatched on is left for the store keeper
-  // to type (finding 13 of the October review).
+  // to type.
   const keepChallan = useKeepReadFile(form, 'photos');
   const dateProblem = readDateReason(readText(readState?.result.fields.date));
 
@@ -117,7 +117,7 @@ export function ReceiptModal({
         date: dayjs(weighTicket.second?.at ?? weighTicket.first.at),
         remarks: [
           `Weighed on ${weighTicket.ticketNo}: net ${formatQty(weighTicket.netQty ?? weighTicket.netKg)} ${weighTicket.netQty !== null ? weighTicket.unit : 'kg'}${typed ? ' (a weight typed)' : ''}`,
-          s?.short ? `${formatQty(kgToUnit(s.shortKg, weighTicket.unit) ?? s.shortKg)} ${weighTicket.unit} short of the challan's ${formatQty(weighTicket.challanQty)}` : null,
+          s?.short ? `${formatQty(kgToUnit(s.shortKg, weighTicket.unit) ?? s.shortKg)} ${unitLabel(weighTicket.unit)} short of the challan's ${formatQty(weighTicket.challanQty)}` : null,
         ]
           .filter(Boolean)
           .join(', '),
@@ -180,7 +180,7 @@ export function ReceiptModal({
     });
     const best = candidates.sort((a, b) => b.score - a.score)[0];
     if (!best || !best.m.some(Boolean)) {
-      message.warning('The challan is read, but no purchase order waiting for material has its items. Pick what it is against.');
+      message.warning('The challan is read, but no purchase order waiting for material has its items. Choose what it is against.');
     } else {
       const byLine: Record<string, number> = {};
       best.m.forEach((x, i) => {
@@ -199,7 +199,7 @@ export function ReceiptModal({
 
   const save = useMutation({
     mutationFn: async (v: FormValues) => {
-      if (!request) throw new Error('Pick what this delivery is against.');
+      if (!request) throw new Error('Choose what this delivery is against.');
       const po = request.kind === 'PO';
       const lines = Object.entries(qty)
         .filter(([, q]) => q && Number(q) > 0)
@@ -261,11 +261,11 @@ export function ReceiptModal({
               showSearch={{ optionFilterProp: 'label' }}
               placeholder="All projects"
               onChange={() => form.setFieldValue('source', undefined)}
-              options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+              options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             />
           </Form.Item>
         )}
-        <Form.Item name="source" label="Against" rules={[{ required: true, message: 'Pick the purchase order or request this delivery is against' }]}>
+        <Form.Item name="source" label="Against" rules={[{ required: true, message: 'Choose the purchase order or request this delivery is against' }]}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
             loading={loading}
@@ -273,7 +273,7 @@ export function ReceiptModal({
             notFoundContent={loading ? undefined : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Nothing pending to receive" />}
             options={[
               ...(sources.some((s) => s.kind === 'PO') ? [{ label: 'Purchase orders', options: sources.filter((s) => s.kind === 'PO').map((s) => ({ value: s.key, label: s.label })) }] : []),
-              ...(sources.some((s) => s.kind === 'MR') ? [{ label: 'Material requests', options: sources.filter((s) => s.kind === 'MR').map((s) => ({ value: s.key, label: s.label })) }] : []),
+              ...(sources.some((s) => s.kind === 'MR') ? [{ label: 'Indents', options: sources.filter((s) => s.kind === 'MR').map((s) => ({ value: s.key, label: s.label })) }] : []),
             ]}
           />
         </Form.Item>
@@ -282,7 +282,7 @@ export function ReceiptModal({
             <Select
               allowClear
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Pick the note that came with this truck"
+              placeholder="Choose the note that came with this truck"
               onChange={(id?: string) => pickDispatch(id)}
               options={request.dispatches.map((d) => ({ value: d.id, label: `${d.dispatchNo} · sent ${formatDate(d.date)}${d.vehicleNo ? ` · ${d.vehicleNo}` : ''}` }))}
             />
@@ -314,7 +314,7 @@ export function ReceiptModal({
                   );
                 },
               },
-              { title: request.kind === 'PO' ? 'Ordered' : 'Requested', dataIndex: 'due', align: 'right', width: 100, render: (v, l) => `${formatQty(v)} ${l.unit}` },
+              { title: request.kind === 'PO' ? 'Ordered' : 'Requested', dataIndex: 'due', align: 'right', width: 100, render: (v, l) => `${formatQty(v)} ${unitLabel(l.unit)}` },
               { title: 'Received', dataIndex: 'received', align: 'right', width: 100, render: (v) => formatQty(v) },
               {
                 title: 'Receiving now',
@@ -340,19 +340,19 @@ export function ReceiptModal({
             ]}
           />
         ) : watchedSource ? null : (
-          <Alert type="info" showIcon style={{ marginBottom: 16 }} title="Material is received against an approved purchase order or material request. Each line can take up to what is still pending." />
+          <Alert type="info" showIcon style={{ marginBottom: 16 }} title="Material is received against an approved purchase order or indent. Each line can take up to what is still pending." />
         )}
 
         <FormGrid cols={2}>
-          <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Pick the date' }]} {...readFieldProps(readState, 'date', setActiveRead, dateProblem)}>
+          <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Choose the date' }]} {...readFieldProps(readState, 'date', setActiveRead, dateProblem)}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {request?.kind === 'PO' ? (
-            <Form.Item label="Supplier">
-              <Input value={request.vendorName ?? ''} disabled aria-label="Supplier" />
+            <Form.Item label="Vendor">
+              <Input value={request.vendorName ?? ''} disabled aria-label="Vendor" />
             </Form.Item>
           ) : (
-            <Form.Item name="supplier" label="Supplier">
+            <Form.Item name="supplier" label="Vendor">
               <VendorPicker kind="SUPPLIER" />
             </Form.Item>
           )}

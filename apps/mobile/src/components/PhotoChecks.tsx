@@ -10,7 +10,7 @@ import { useT } from '../i18n/LanguageContext';
 import { Card } from './Card';
 
 /**
- * What Ask Nirmaan saw in a record's photos (AI item 76): a caption each, and flags such as workers without helmets.
+ * What Ask Nirmaan saw in a record's photos: a caption each, and flags such as workers without helmets.
  * Photos not looked at yet are checked when the screen opens, while Ask Nirmaan is on for the company. Advisory only.
  */
 export function PhotoChecks({ kind, id, attachments }: { kind: PhotoCheckKind; id: string; attachments: AttachmentDto[] }) {
@@ -31,7 +31,6 @@ export function PhotoChecks({ kind, id, attachments }: { kind: PhotoCheckKind; i
     return () => {
       live = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, kind, id, photos.length]);
 
   // Ask again while photos are left and the last run checked some; a failed run stops it quietly.

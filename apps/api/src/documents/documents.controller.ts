@@ -114,8 +114,6 @@ export class DocumentsController {
     return this.docs.removeRevision(user, id, revisionId);
   }
 
-  /* ---------- drawing markup (item 109) ---------- */
-
   @ApiOperation({ summary: "Every mark on the document's revisions (M1, M2…), with the file and page each sits on" })
   @Get(':id/markups')
   listMarkups(@CurrentUser() user: RequestUser, @Param('id') id: string) {
@@ -155,8 +153,6 @@ export class DocumentsController {
   removeMarkup(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('markupId', ParseUUIDPipe) markupId: string) {
     return this.markups.remove(user, id, markupId);
   }
-
-  /* ---------- measuring on drawings (v6 item 118) ---------- */
 
   @ApiOperation({ summary: "The scales of the document's sheets and every measure on them (T1, T2…)" })
   @Get(':id/takeoffs')

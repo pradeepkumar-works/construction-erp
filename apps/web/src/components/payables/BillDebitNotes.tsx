@@ -14,7 +14,7 @@ import { DebitNoteFormModal, type DebitNoteBill } from './DebitNoteFormModal';
 /** Whether a bill's record shows its debit notes: approved, and the user may see them. */
 export const showsDebitNotes = (role: Parameters<typeof canViewDebitNotes>[0] | undefined, status: string) => !!role && status === 'APPROVED' && canViewDebitNotes(role);
 
-/** The debit notes on one approved vendor or subcontract bill (v5 item 91), with "Raise debit note" while some is unpaid. */
+/** The debit notes on one approved vendor or subcontract bill, with "Raise debit note" while some is unpaid. */
 export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
   const { user } = useAuth();
   const [raising, setRaising] = useState(false);
@@ -30,7 +30,7 @@ export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
         <Typography.Text type="secondary">Short supply, billed in excess, rejected or returned material, a rate difference: taken off what is unpaid.</Typography.Text>
         {raiser && toNumber(bill.outstanding) > 0 ? (
           <Button size="small" onClick={() => setRaising(true)}>
-            Raise debit note
+            New debit note
           </Button>
         ) : null}
       </div>
@@ -65,7 +65,7 @@ export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
               </strong>
             ),
           },
-          { title: 'State', key: 'state', width: 150, render: (_, r) => <DebitNoteTag note={r} /> },
+          { title: 'Status', key: 'state', width: 150, render: (_, r) => <DebitNoteTag note={r} /> },
         ]}
       />
       <DebitNoteFormModal open={raising} bill={bill} onClose={() => setRaising(false)} />

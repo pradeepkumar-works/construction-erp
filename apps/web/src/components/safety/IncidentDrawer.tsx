@@ -1,5 +1,6 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Skeleton, Space, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +15,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { PhotosWithChecks } from '@/components/photo-checks/PhotoChecksSection';
 import { FormShell } from '@/components/form/FormShell';
 import { IncidentStatusTag, IncidentTypeTag, SafetyHistory } from './safetyUi';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** One incident or near miss: what happened, the investigation, and closing it with the root cause and the action. */
 export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit: (i: SafetyIncidentDto) => void }) {
@@ -90,11 +90,7 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
               </Button>
             ) : null}
             {manager ? (
-              <ConfirmDelete what={`incident ${data.incidentNo}`} description="Only for an entry made by mistake." onConfirm={() => remove.mutateAsync()}>
-                <Button size="small" danger loading={remove.isPending}>
-                  Delete
-                </Button>
-              </ConfirmDelete>
+              <DeleteInMenu what={`incident ${data.incidentNo}`} description="Only for an entry made by mistake." onConfirm={() => remove.mutateAsync()} />
             ) : null}
           </Space>
         ) : null
@@ -120,7 +116,7 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
                     ...(data.daysLost !== null ? [{ key: 'lost', label: 'Days off work', children: data.daysLost }] : []),
                   ]
                 : []),
-              { key: 'contractor', label: 'Whose workers', children: data.contractor ?? '-', span: 2 },
+              { key: 'contractor', label: 'Contractor', children: data.contractor ?? '-', span: 2 },
               { key: 'immediate', label: 'Immediate action', children: data.immediateAction ?? '-', span: 2 },
               { key: 'root', label: 'Root cause', children: data.rootCause ?? <Typography.Text type="secondary">not yet recorded</Typography.Text>, span: 2 },
               { key: 'action', label: 'Corrective action', children: data.correctiveAction ?? <Typography.Text type="secondary">not yet recorded</Typography.Text>, span: 2 },
@@ -142,10 +138,10 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
       )}
       <FormShell open={closing} onClose={() => setClosing(false)} form={form} layout="modal" width={520} title={data ? `Close ${data.incidentNo}` : 'Close'} okText="Close incident" onSubmit={(v) => close.mutateAsync(v)}>
         <Form form={form} layout="vertical" initialValues={{ rootCause: data?.rootCause ?? '', correctiveAction: data?.correctiveAction ?? '' }}>
-          <Form.Item name="rootCause" label="Root cause" rules={[{ required: true, whitespace: true, message: 'Why did it happen?' }]}>
+          <Form.Item name="rootCause" label="Root cause" rules={[{ required: true, whitespace: true, message: 'Enter the root cause' }]}>
             <Input.TextArea rows={2} maxLength={2000} />
           </Form.Item>
-          <Form.Item name="correctiveAction" label="Corrective action" rules={[{ required: true, whitespace: true, message: 'What stops it happening again?' }]}>
+          <Form.Item name="correctiveAction" label="Corrective action" rules={[{ required: true, whitespace: true, message: 'Enter the corrective action' }]}>
             <Input.TextArea rows={2} maxLength={2000} />
           </Form.Item>
           <Form.Item name="closureNote" label="Note">

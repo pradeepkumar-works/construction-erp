@@ -2,8 +2,7 @@ import dayjs from 'dayjs';
 import { readPref, writePref } from '@/lib/prefs';
 
 /**
- * A new form's unsaved values, kept in this browser so a refresh or a closed tab does not lose them (UI roadmap item
- * 60). Per user, so two people sharing a site laptop do not see each other's drafts. Dates (dayjs) are stored as
+ * A new form's unsaved values, kept in this browser so a refresh or a closed tab does not lose them. Per user, so two people sharing a site laptop do not see each other's drafts. Dates (dayjs) are stored as
  * `{ $date: ISO }` and come back as dayjs.
  */
 export interface Draft<T = unknown> {

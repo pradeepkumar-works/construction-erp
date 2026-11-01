@@ -14,7 +14,7 @@ import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { StockPanel } from '@/components/stock/StockPanel';
 
-/** One central store (v6 item 106): its stock, register, value and ageing, and the transfers coming in to receive. */
+/** One central store: its stock, register, value and ageing, and the transfers coming in to receive. */
 export default function StorePage() {
   const { token } = theme.useToken();
   const { user } = useAuth();

@@ -1,5 +1,5 @@
 /**
- * Bill checks' tests (AI item 69). First each rule on its own, passing and failing, with no database. Then, when
+ * Bill checks' tests. First each rule on its own, passing and failing, with no database. Then, when
  * DATABASE_URL is set, the demo company: every seeded anomaly must be flagged by the rule meant to catch it, and every
  * other bill and expense must show no flag (the false-positive check). CI runs it after the seed:
  *
@@ -29,7 +29,6 @@ const flags = (checks: Check[]) => checks.filter((c) => !c.ok);
 const flagged = (checks: Check[], keyStart: string) => flags(checks).filter((c) => c.key.startsWith(keyStart));
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Vendor bills
 
 const vb: VendorBillFacts = {
@@ -92,7 +91,7 @@ test('vendor bill: freight above what is left on the PO', () => {
   assert.equal(flagged(vendorBillChecks(f), 'freight:')[0].title, 'Freight ₹1,000 is above the ₹400 left on the PO');
 });
 
-// Hire and service bills without a PO (v5 item 91)
+// Hire and service bills without a PO
 
 const hire: OtherVendorBillFacts = {
   invoiceNo: 'SRH/221',
@@ -131,7 +130,7 @@ test('hire bill: diesel issued to an owner-fuelled machine not recovered', () =>
   f.hire!.fuelRecovered = 22200;
   assert.equal(flagged(otherVendorBillChecks(f), 'fuel:').length, 0);
 });
-test("hire bill: logged hours above the engine's, from the tracker (item 146)", () => {
+test("hire bill: logged hours above the engine's, from the tracker", () => {
   const f = clone(hire);
   f.hire!.engine = { days: 20, loggedHours: 180, engineHours: 171, deadDays: [] };
   assert.equal(flagged(otherVendorBillChecks(f), 'hire-engine:')[0].title, "180 hours logged on 20 tracked days; the engine ran 171");
@@ -169,7 +168,6 @@ test('vendor bill: rounding within a rupee passes', () => {
   assert.equal(flagged(vendorBillChecks(f), 'totals').length, 0);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Subcontract bills
 
 const sb: SubcontractBillFacts = {
@@ -225,7 +223,7 @@ test('subcontract bill: advance recovery above its %', () => {
   f.netPayable = 29100;
   assert.match(flagged(subcontractBillChecks(f), 'totals')[0].detail!, /Advance recovery is ₹3,500, should be ₹3,000/);
 });
-test('subcontract bill: man-days above the attendance, counts only (item 124)', () => {
+test('subcontract bill: man-days above the attendance, counts only', () => {
   const f = clone(sb);
   const line = { lineId: 'l1', no: 1, description: 'Helper (man-day)', billed: 96, supported: 87, excess: 9, excessInr: 4950, flagged: true, sources: 'head count 87, roll call 86, punched 83', span: '18 Oct to 23 Oct', link: { label: 'Attendance cross-check', href: '/attendance-check' } };
   f.manDays = [line];
@@ -242,7 +240,6 @@ test('subcontract bill: invoice already billed', () => {
   assert.equal(flagged(subcontractBillChecks(f), 'duplicate:').length, 1);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // RA bills
 
 const ra: RaBillFacts = {
@@ -313,7 +310,6 @@ test('RA bill: net payable wrong', () => {
   assert.match(flagged(raBillChecks(f), 'totals')[0].detail!, /Net payable/);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Expenses
 
 const gstin = `27AAPFU0939F1Z${gstinCheckChar('27AAPFU0939F1Z')}`;
@@ -347,8 +343,6 @@ test('summary from the rules', () => {
   assert.equal(rulesSummary(expenseChecks({ ...ex, amount: 14500, gstRate: 0, gstAmount: 0, totalAmount: 14500 })), '1 thing to look at: ₹14,500 paid in cash, above the ₹10,000 limit.');
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
-
 function runRules(): number {
   let failed = 0;
   for (const [name, fn] of cases) {
@@ -370,7 +364,7 @@ const ANOMALIES: { kind: 'vendor-bill' | 'expense' | 'subcontract-bill'; find: s
   { kind: 'expense', find: 'Hydraulic hose for grader GRD-01', expect: ['duplicate:'] },
   { kind: 'expense', find: 'JCB hire for trench backfilling, 1 day', expect: ['cash:'] },
   { kind: 'expense', find: 'Waterproofing compound, 2 buckets', expect: ['gstin:'] },
-  // Attendance cross-check (item 124): 9 more helper man-days than the head count.
+  // Attendance cross-check: 9 more helper man-days than the head count.
   { kind: 'subcontract-bill', find: 'SJC/LAB/26/014', expect: ['mandays:'] },
 ];
 

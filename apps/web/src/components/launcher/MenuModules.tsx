@@ -6,6 +6,7 @@ import type { AuthUser, NavLook, NavMenuModule, NavMenuSub } from '@erp/shared';
 import { NAV_MENU_GROUPS, mayApprove, moduleScreenHref, navDestination, navMenuGroup, navNode } from '@erp/shared';
 import { familyColors } from '@/lib/brand';
 import { useAppearance } from '@/lib/appearance';
+import { inSentence } from '@/lib/format';
 import { useLauncherBadges, usePendingApprovals } from '@/lib/queries';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import { moduleWaiting } from '@/components/shell/menu';
@@ -74,7 +75,7 @@ export function MenuModules({ menu, look, waiting, label, menuFor }: { menu: Nav
                     </span>
                   )}
                 </div>
-                <ul className={s.subs} aria-label={`In ${m.label.toLowerCase()}`}>
+                <ul className={s.subs} aria-label={`In ${inSentence(m.label)}`}>
                   {m.subs.map((sub) => (
                     <li key={sub.key}>
                       <Link href={subHref(m, sub)} className={s.sub}>

@@ -8,7 +8,7 @@ const now = new Date(Date.now() + 330 * 60_000);
 const month = now.toISOString().slice(0, 7);
 const monthLabel = now.toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 
-/** Payroll inputs (v3 item 30): HR exports the month's sheet; the labour contractors' month is priced at trade rates. */
+/** Payroll inputs: HR exports the month's sheet; the labour contractors' month is priced at trade rates. */
 test('HR exports the payroll inputs and sees the labour contractors month', async ({ page }) => {
   const hr = await apiToken('hr@demo.com');
   const sheet = await api<Payroll>(hr, `/payroll/staff?month=${month}`);
@@ -26,7 +26,7 @@ test('HR exports the payroll inputs and sees the labour contractors month', asyn
   await expect(row.getByRole('cell', { name: String(priya.paidDays), exact: true }).first()).toBeVisible();
 
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export Excel' }).click();
+  await page.getByRole('button', { name: 'Export to Excel' }).click();
   expect((await download).suggestedFilename()).toBe(`payroll-inputs-${month}.xlsx`);
 
   await page.getByRole('tab', { name: 'Labour contractors' }).click();
@@ -42,7 +42,7 @@ type Run = { id: string; runNo: string; month: string; status: string; employees
 type File = { fileName: string; content: string; missing: string[] };
 
 /**
- * Salary runs (v6 item 100): HR prepares the month from attendance and salary structures and adds a bonus by hand,
+ * Salary runs: HR prepares the month from attendance and salary structures and adds a bonus by hand,
  * management approves (HR cannot), the bank, PF and ESI files come out of the approved run, and each person sees their own
  * payslip; the run goes back to HR and is deleted so the month is free again.
  */
@@ -109,7 +109,7 @@ test('HR prepares the salary run, management approves it and staff see their pay
 type Settlement = { id: string; settlementNo: string; employeeCode: string; status: string; noticeShortDays: number; loanRecovery: string; net: string };
 
 /**
- * Full and final (v6 item 100): once someone's resignation is recorded they are due a settlement; HR works it out on the page
+ * Full and final: once someone's resignation is recorded they are due a settlement; HR works it out on the page
  * (notice short, the loan still owed), only management approves it, and the exit cannot be taken back while it exists.
  */
 test('HR works out a full and final settlement for someone who resigned', async ({ page }) => {
@@ -123,8 +123,8 @@ test('HR works out a full and final settlement for someone who resigned', async 
   await signIn(page, 'hr@demo.com');
   await page.goto('/payroll?tab=settlements');
   await expect(page.getByRole('tab', { name: 'Full and final', selected: true })).toBeVisible();
-  await page.getByRole('button', { name: `Work out ${ramesh.fullName}'s settlement` }).click();
-  await page.getByRole('dialog', { name: `Full and final settlement for ${ramesh.fullName}` }).getByRole('button', { name: 'Work it out' }).click();
+  await page.getByRole('button', { name: `Prepare settlement for ${ramesh.fullName}` }).click();
+  await page.getByRole('dialog', { name: `Full and final settlement for ${ramesh.fullName}` }).getByRole('button', { name: 'Prepare settlement' }).click();
   await expect(page.getByText(/FNF-EMP-008 worked out/)).toBeVisible();
 
   const s = (await api<Settlement[]>(hr, '/payroll/settlements')).find((x) => x.employeeCode === 'EMP-008')!;

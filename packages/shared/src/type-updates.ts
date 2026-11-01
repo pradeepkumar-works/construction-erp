@@ -1,5 +1,5 @@
 /**
- * Bringing a running project up to its type (item 134 part 3, ARCHITECTURE "Project types", Updating projects): what a
+ * Bringing a running project up to its type (ARCHITECTURE "Project types", Updating projects): what a
  * project of a type would gain from the type's breakdown, its component kinds' steps and its loose activities as they
  * are now. Pure, so the preview the admin reads is the change the API makes.
  *
@@ -18,7 +18,7 @@ export interface UpdateElement {
   id: string;
   parentId: string | null;
   name: string;
-  /** null for one made before item 134: its kind is the built-in one of its element type */
+  /** null for one made before project types: its kind is the built-in one of its element type */
   kindCode: string | null;
   elementType: WorkElementType;
   specs: ElementSpecs | null;
@@ -92,7 +92,7 @@ export const copiesOf = <T extends Pick<UpdateElement, 'name'>>(name: string, el
 };
 
 /**
- * The kind a component was laid out from. One made before item 134, or made by hand, names none, and its activities are
+ * The kind a component was laid out from. One made before project types, or made by hand, names none, and its activities are
  * the planner's own: a kind's steps are offered only to the components laid out from it.
  */
 const kindOf = (e: Pick<UpdateElement, 'kindCode'>, kinds: Map<string, ComponentKindDef>) => (e.kindCode ? kinds.get(e.kindCode) : undefined);
@@ -186,14 +186,12 @@ export const planSize = (p: ProjectUpdatePlan) => ({
 
 export const planIsEmpty = (p: ProjectUpdatePlan) => !p.components.length && !p.activities.length && !p.loose.length;
 
-/* ---------- API shapes ---------- */
-
 export interface ProjectUpdateRowDto {
   projectId: string;
   code: string;
   name: string;
   status: string;
-  /** The type's version the project was made with or last brought up to; null before item 134 */
+  /** The type's version the project was made with or last brought up to; null for a project made before project types */
   typeVersion: number | null;
   plan: ProjectUpdatePlan;
   /** Physical progress now and once the plan is added, % to one decimal: the same unless the project weighs by value alone */

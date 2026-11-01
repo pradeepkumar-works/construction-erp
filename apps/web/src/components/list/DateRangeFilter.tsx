@@ -14,7 +14,6 @@ export function DateRangeFilter({ from, to, onChange, placeholder = ['From', 'To
       allowEmpty={[true, true]}
       presets={rangePresets()}
       placeholder={placeholder}
-      format="D MMM YYYY"
       value={value}
       onChange={(v) => onChange(v?.[0]?.format('YYYY-MM-DD'), v?.[1]?.format('YYYY-MM-DD'))}
       style={{ width: 260 }}

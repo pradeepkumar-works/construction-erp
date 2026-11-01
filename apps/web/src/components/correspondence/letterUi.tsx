@@ -22,7 +22,7 @@ export const LetterStatusTag = ({ status }: { status: LetterStatus }) => (
 export const letterHref = (id: string) => `/correspondence/${id}`;
 
 /** Its number, or what it is until it has one (an outward draft is numbered when issued). */
-export const letterLabel = (l: Pick<LetterDto | LetterRefDto, 'letterNo'> & { status?: LetterStatus }) => l.letterNo ?? (l.status === 'AWAITING_APPROVAL' ? 'Awaiting approval' : 'Draft');
+export const letterLabel = (l: Pick<LetterDto | LetterRefDto, 'letterNo'> & { status?: LetterStatus }) => l.letterNo ?? (l.status === 'AWAITING_APPROVAL' ? LETTER_STATUS_LABELS.AWAITING_APPROVAL : LETTER_STATUS_LABELS.DRAFT);
 
 /** Everything that shows letters: the registers, the record, My work, the documents and delay counts. */
 export function useInvalidateLetters() {

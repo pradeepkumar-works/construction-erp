@@ -60,7 +60,7 @@ export class MaterialRequestsService {
       projectId: r.projectId,
       projectName: r.project.name,
       requestNo: r.requestNo,
-      requiredDate: dateOnly(r.requiredDate)!,
+      requiredDate: dateOnly(r.requiredDate),
       priority: r.priority,
       remarks: r.remarks,
       items: r.items.map((i) => ({
@@ -68,11 +68,11 @@ export class MaterialRequestsService {
         itemName: i.itemName,
         specification: i.specification,
         unit: i.unit,
-        quantity: dec(i.quantity)!,
-        receivedQty: dec(i.stockTxns.reduce((s, t) => s.add(t.quantity), new Prisma.Decimal(0)))!,
-        orderedQty: dec(sum(i.poLines, orderedOn))!,
-        coveredQty: dec(sum(i.covers, (c) => c.quantity))!,
-        toOrderQty: dec(toOrderOf(i))!,
+        quantity: dec(i.quantity),
+        receivedQty: dec(i.stockTxns.reduce((s, t) => s.add(t.quantity), new Prisma.Decimal(0))),
+        orderedQty: dec(sum(i.poLines, orderedOn)),
+        coveredQty: dec(sum(i.covers, (c) => c.quantity)),
+        toOrderQty: dec(toOrderOf(i)),
       })),
       status: r.status,
       submittedById: r.submittedById,
@@ -83,8 +83,8 @@ export class MaterialRequestsService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

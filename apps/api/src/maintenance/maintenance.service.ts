@@ -71,7 +71,7 @@ const nonNegative = (v: Prisma.Decimal | null, what: string) => {
 };
 
 /**
- * Machinery maintenance (v4 item 42): job cards for services and breakdowns, spares issued from the store against
+ * Machinery maintenance: job cards for services and breakdowns, spares issued from the store against
  * them, service schedules by working hours or days, the register of vehicle papers that expire, and drivers.
  * Site staff report breakdowns; the store manager or an approver raises services, closes job cards and keeps the
  * papers. A closed service resets the machine's schedule. Papers and licences expiring and services falling due are
@@ -93,7 +93,7 @@ export class MaintenanceService {
     undo.register('DRIVER', { entityType: 'DRIVER', check: (user) => this.access.assertCanManageMaintenance(user, null) });
   }
 
-  /* ---------- job cards ---------- */
+  // Job cards
 
   private jobDto(r: JobRow): MaintenanceJobDto {
     const spares = r.spareIssues.flatMap((e) =>
@@ -102,11 +102,11 @@ export class MaintenanceService {
         return {
           entryId: e.id,
           entryNo: e.entryNo,
-          date: dateOnly(e.date)!,
+          date: dateOnly(e.date),
           itemId: l.itemId,
           itemName: l.item.name,
           unit: l.item.unit,
-          quantity: dec(qty)!,
+          quantity: dec(qty),
           value: l.item.rate ? money(qty.mul(l.item.rate)) : null,
         };
       }),
@@ -122,17 +122,17 @@ export class MaintenanceService {
       projectName: r.project?.name ?? null,
       kind: r.kind,
       status: r.status,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       meterReading: dec(r.meterReading),
       description: r.description,
       workshop: r.workshop,
       workDone: r.workDone,
       closedDate: dateOnly(r.closedDate),
       downtimeHours: dec(r.downtimeHours),
-      labourCost: money(r.labourCost)!,
-      partsCost: money(r.partsCost)!,
-      sparesValue: money(sparesValue)!,
-      totalCost: money(r.labourCost.plus(r.partsCost).plus(sparesValue))!,
+      labourCost: money(r.labourCost),
+      partsCost: money(r.partsCost),
+      sparesValue: money(sparesValue),
+      totalCost: money(r.labourCost.plus(r.partsCost).plus(sparesValue)),
       spares,
       reportedById: r.reportedById,
       reportedByName: r.reportedBy.fullName,
@@ -140,8 +140,8 @@ export class MaintenanceService {
       vendorBillId: r.vendorBillId,
       vendorBillNo: r.vendorBill?.billNo ?? null,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -334,7 +334,7 @@ export class MaintenanceService {
     }
   }
 
-  /* ---------- summary ---------- */
+  // Summary
 
   /** Machines a user's summary covers: all for company-wide roles; others the machines at their projects (and the yard for maintenance managers). */
   private equipmentWhere(user: RequestUser, projectId?: string): Prisma.EquipmentWhereInput {
@@ -370,15 +370,15 @@ export class MaintenanceService {
       openJobs,
       openBreakdowns,
       closedThisMonth: closedDtos.length,
-      downtimeHoursThisMonth: dec(closedDtos.reduce((s, j) => s.plus(j.downtimeHours ?? 0), ZERO))!,
-      costThisMonth: money(closedDtos.reduce((s, j) => s.plus(j.totalCost), ZERO))!,
+      downtimeHoursThisMonth: dec(closedDtos.reduce((s, j) => s.plus(j.downtimeHours ?? 0), ZERO)),
+      costThisMonth: money(closedDtos.reduce((s, j) => s.plus(j.totalCost), ZERO)),
     };
   }
 
-  /* ---------- documents ---------- */
+  // Documents
 
   private docDto(r: DocRow, today = todayIn()): EquipmentDocumentDto {
-    const validTo = dateOnly(r.validTo)!;
+    const validTo = dateOnly(r.validTo);
     const e = expiryState(validTo, today)!;
     return {
       id: r.id,
@@ -394,7 +394,7 @@ export class MaintenanceService {
       state: e.state,
       daysLeft: e.daysLeft,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -482,7 +482,7 @@ export class MaintenanceService {
     return { ok: true };
   }
 
-  /* ---------- drivers ---------- */
+  // Drivers
 
   private driverDto(r: DriverRow, today = todayIn()): DriverDto {
     const validTo = dateOnly(r.licenceValidTo);

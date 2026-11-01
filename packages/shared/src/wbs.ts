@@ -1,5 +1,5 @@
 /**
- * Work breakdown roll-up (item 125, ARCHITECTURE "Work breakdown"). Pure, so the API, the web and the phone agree:
+ * Work breakdown roll-up (ARCHITECTURE "Work breakdown"). Pure, so the API, the web and the phone agree:
  *
  * - a leaf activity is approved quantity ÷ planned quantity, 0 to 100;
  * - an activity with sub-activities has no progress of its own: it is the weighted progress of its sub-activities;
@@ -8,7 +8,7 @@
  *
  * Weights are shares, %. Among siblings, the ones without a weight share what the others leave of 100 in proportion
  * to their value (BOQ amount, else planned quantity); when none has a weight, all are weighed by value, which for a
- * project with no breakdown is the same as before item 125.
+ * project with no breakdown is the same as before the work breakdown.
  */
 import type { ContractModel, WorkElementLevel, WorkElementType } from './enums';
 
@@ -119,7 +119,6 @@ export function rollUp(elements: RollupElement[], activities: RollupActivity[]):
   return { projectPct: round1(projectPct), pct, value, summaries };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // What the Structure tab reads
 
 
@@ -131,7 +130,7 @@ export interface WorkElementDto {
   code: string;
   name: string;
   elementType: WorkElementType;
-  /** The component kind it was laid out from (item 134); null for one made before item 134 or by import */
+  /** The component kind it was laid out from; null for one made before project types or by import */
   kindCode: string | null;
   specs: Record<string, number> | null;
   /** Share of its parent or of the project, %; null shares what is left by value */

@@ -35,6 +35,7 @@ type FormValues = {
   ldRatePct?: number | null;
   ldPeriod?: LdPeriod;
   ldCapPct?: number | null;
+  securityDepositCapPct?: number | null;
 } & Partial<Record<ContractPercentField, number | null>>;
 
 const PCT_HELP: Record<ContractPercentField, string> = {
@@ -44,7 +45,7 @@ const PCT_HELP: Record<ContractPercentField, string> = {
   tdsPct: 'Section 194C, usually 1% or 2%',
   gstTdsPct: 'Government clients deduct 2%',
   labourCessPct: 'BOCW cess, usually 1%',
-  gstRate: 'Charged on the work value',
+  gstRate: 'Charged on the work done',
 };
 
 /** Edit a project's contract terms: client, agreement, value and dates, advance and the bill percentages. */
@@ -56,7 +57,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
   const found = useNoticePeriod(contract.projectId, open).data?.found ?? null;
   const currency = Form.useWatch('currency', form) ?? 'INR';
   const rate = Form.useWatch('exchangeRate', form);
-  // Amounts are typed in the contract currency and kept in rupees at the contract rate (item 130).
+  // Amounts are typed in the contract currency and kept in rupees at the contract rate.
   const typed = { currency, exchangeRate: rate ? String(rate) : null };
 
   useEffect(() => {
@@ -80,6 +81,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       ldRatePct: Number(contract.ldRatePct),
       ldPeriod: contract.ldPeriod,
       ldCapPct: Number(contract.ldCapPct),
+      securityDepositCapPct: contract.securityDepositCapPct !== null ? Number(contract.securityDepositCapPct) : null,
       ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, Number(contract[k])])),
     });
   }, [open, contract, form]);
@@ -106,6 +108,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
         ldRatePct: String(v.ldRatePct ?? 0),
         ldPeriod: v.ldPeriod ?? 'WEEK',
         ldCapPct: String(v.ldCapPct ?? 0),
+        securityDepositCapPct: v.securityDepositCapPct ? String(v.securityDepositCapPct) : null,
         ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, String(v[k] ?? 0)])),
       };
       return (await api.put<ProjectContractDto>(`/projects/${contract.projectId}/contract`, body)).data;
@@ -146,7 +149,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
                 <Input />
               </Form.Item>
               <Form.Item name="agreementNo" label="Agreement no.">
-                <Input placeholder="04/EE/R&B/2025-26" />
+                <Input placeholder="e.g. 04/EE/RD/2025-26" />
               </Form.Item>
               <Form.Item name="agreementDate" label="Agreement date">
                 <DatePicker style={{ width: '100%' }} />
@@ -176,7 +179,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               </Form.Item>
             </FormGrid>
           </FormSection>
-          <FormSection title="Deductions and GST on each bill (% of the work value)">
+          <FormSection title="Deductions and GST on each bill (% of the work done this bill)">
             <FormGrid cols={4}>
               {CONTRACT_PERCENT_FIELDS.map((k) => (
                 <Form.Item key={k} name={k} label={`${CONTRACT_PERCENT_LABELS[k]} %`} tooltip={PCT_HELP[k]}>
@@ -185,7 +188,16 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               ))}
             </FormGrid>
             <FormGrid cols={3}>
-              <Form.Item name="mobilisationAdvance" label="Mobilisation advance" tooltip="Advance received from the client; recovered from bills at the advance recovery %">
+              <Form.Item
+                name="securityDepositCapPct"
+                label="Security deposit stops at (% of contract value)"
+                tooltip="Where the contract takes the deposit from each bill only up to a share of the contract value (or of the work billed, if larger). Leave empty for no cap."
+              >
+                <InputNumber<number> style={{ width: '100%' }} min={0.01} max={100} step={0.5} suffix="%" />
+              </Form.Item>
+            </FormGrid>
+            <FormGrid cols={3}>
+              <Form.Item name="mobilisationAdvance" label="Mobilisation advance" tooltip="Advance received from the client; recovered from bills at the mobilisation advance recovery %">
                 <MoneyInput prefix={moneyPrefix(typed)} />
               </Form.Item>
               <Form.Item name="defectLiabilityMonths" label="Defect liability (months)">
@@ -233,7 +245,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               </Form.Item>
             </FormGrid>
             <Form.Item name="priceVariation" label="Price variation" valuePropName="checked">
-              <Checkbox>Contract has a price variation clause</Checkbox>
+              <Checkbox>Contract has a price variation (price adjustment) clause</Checkbox>
             </Form.Item>
           </FormSection>
         </Form>

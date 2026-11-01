@@ -65,7 +65,7 @@ const COST_CENTRE_KEYS = new Set([
   'STAFF_RECOVERIES',
 ]);
 /**
- * Tally export (v3 item 24). Sends Tally the vouchers of the posting service (v6 item 102) as TallyPrime XML. Every
+ * Tally export. Sends Tally the vouchers of the posting service as TallyPrime XML. Every
  * record goes once: an export marks what it took, and undoing the export releases it.
  */
 @Injectable()
@@ -79,8 +79,6 @@ export class TallyService {
   private config(db: Tx, organizationId: string) {
     return this.posting.config(db, organizationId);
   }
-
-  // ----- Settings and ledger names -----
 
   async settings(user: RequestUser): Promise<TallySettingsDto> {
     this.assertCan(user);
@@ -164,8 +162,6 @@ export class TallyService {
     );
   }
 
-  // ----- Vouchers -----
-
   private range(q: TallyRangeQuery) {
     const upTo = parseDate(q.upTo);
     const from = q.from ? parseDate(q.from) : null;
@@ -178,12 +174,12 @@ export class TallyService {
       key: `${v.kind}:${v.sourceId}`,
       kind: v.kind,
       sourceId: v.sourceId,
-      date: dateOnly(v.date)!,
+      date: dateOnly(v.date),
       number: v.number,
       party: v.party,
       projectCode: v.projectCode,
       projectName: v.projectName,
-      amount: money(debits(v.lines))!,
+      amount: money(debits(v.lines)),
       narration: v.narration,
       entries: v.lines.map((l) => ({ ledgerKey: l.ledgerKey, ledger: l.ledger, debit: l.amount.gt(0) ? money(l.amount) : null, credit: l.amount.lt(0) ? money(l.amount.neg()) : null })),
     };
@@ -205,12 +201,12 @@ export class TallyService {
   private exportDto(r: Prisma.TallyExportGetPayload<{ include: { createdBy: { select: { fullName: true } } } }>): TallyExportDto {
     return {
       id: r.id,
-      upTo: dateOnly(r.upTo)!,
+      upTo: dateOnly(r.upTo),
       fromDate: dateOnly(r.fromDate),
       voucherCount: r.voucherCount,
       counts: r.counts as TallyExportDto['counts'],
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 

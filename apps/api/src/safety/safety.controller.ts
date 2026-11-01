@@ -34,8 +34,6 @@ export class SafetyController {
     return this.safety.summary(user, q.projectId);
   }
 
-  /* ---------- incidents ---------- */
-
   @ApiOperation({ summary: 'Incident and near-miss register', description: 'Newest first.' })
   @Get('incidents')
   listIncidents(@CurrentUser() user: RequestUser, @Query() q: ListIncidentsQuery) {
@@ -84,8 +82,6 @@ export class SafetyController {
     return this.safety.removeIncident(user, id);
   }
 
-  /* ---------- toolbox talks ---------- */
-
   @Get('talks')
   listTalks(@CurrentUser() user: RequestUser, @Query() q: ListTalksQuery) {
     return this.safety.listTalks(user, q);
@@ -117,8 +113,6 @@ export class SafetyController {
   removeTalk(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.safety.removeTalk(user, id);
   }
-
-  /* ---------- permits to work ---------- */
 
   @ApiOperation({ summary: 'Permits to work', description: '`active` lists those requested or issued; `expired` on each says an issued permit is past its end.' })
   @Get('permits')

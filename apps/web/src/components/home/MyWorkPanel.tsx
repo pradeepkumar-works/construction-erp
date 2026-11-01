@@ -36,12 +36,12 @@ import type { MyWorkKey } from './layout';
 
 export const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: React.ReactNode; href: string | null; tone: 'warning' | 'error' | 'info' }> = {
   watchList: { title: 'Watch list', icon: <EyeOutlined />, href: '/watch-list', tone: 'warning' },
-  dprsMissing: { title: 'DPRs not filed today', icon: <FileTextOutlined />, href: '/dpr', tone: 'warning' },
+  dprsMissing: { title: 'Daily reports not filed today', icon: <FileTextOutlined />, href: '/dpr', tone: 'warning' },
   sentBack: { title: 'Sent back to you', icon: <RollbackOutlined />, href: null, tone: 'warning' },
   waitingWithOthers: { title: 'Waiting with others', icon: <HourglassOutlined />, href: null, tone: 'info' },
-  receivables: { title: 'Bills awaiting payment', icon: <WalletOutlined />, href: '/receivables', tone: 'info' },
+  receivables: { title: 'Bills waiting for payment', icon: <WalletOutlined />, href: '/receivables', tone: 'info' },
   payablesDue: { title: 'Payments due this week', icon: <CreditCardOutlined />, href: '/payables', tone: 'error' },
-  expiring: { title: 'Guarantees and policies expiring', icon: <SafetyCertificateOutlined />, href: '/compliance', tone: 'warning' },
+  expiring: { title: 'Guarantees and licences expiring', icon: <SafetyCertificateOutlined />, href: '/compliance', tone: 'warning' },
   lateDeliveries: { title: 'Late deliveries', icon: <TruckOutlined />, href: '/purchase-orders', tone: 'error' },
   lowStock: { title: 'Below minimum stock', icon: <InboxOutlined />, href: '/stock', tone: 'warning' },
   meetingActions: { title: 'Your actions from meetings', icon: <CarryOutOutlined />, href: '/meetings?view=actions&mine=1', tone: 'warning' },
@@ -50,7 +50,7 @@ export const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; ico
   dueThisWeek: { title: 'Deliveries due this week', icon: <ScheduleOutlined />, href: '/purchase-orders?tab=status', tone: 'info' },
   staffToDecide: { title: 'Leave and overtime to decide', icon: <TeamOutlined />, href: '/staff?tab=leave', tone: 'warning' },
   certifiedToReceive: { title: 'Certified, payment to come', icon: <FileDoneOutlined />, href: '/receivables', tone: 'error' },
-  toMatch: { title: 'Goods received, no bill yet', icon: <ReconciliationOutlined />, href: '/vendor-bills?tab=to-bill', tone: 'warning' },
+  toMatch: { title: 'Received, not billed', icon: <ReconciliationOutlined />, href: '/vendor-bills?tab=to-bill', tone: 'warning' },
   grnsToCheck: { title: 'Material to check', icon: <AuditOutlined />, href: '/inspections?tab=grns', tone: 'warning' },
   findingsToClose: { title: 'Audit findings to close', icon: <FileSearchOutlined />, href: '/qa-audits?open=1', tone: 'warning' },
   toDebit: { title: 'Debit notes to raise', icon: <SyncOutlined />, href: '/payables?tab=debit-notes&sub=to-raise', tone: 'warning' },
@@ -85,7 +85,7 @@ const CLEAR: Record<MyWorkKey, string> = {
 };
 
 /**
- * How pressing a card is, in days overdue, late or waiting (UX item 85): the API's `urgencyDays`, and for approvals how
+ * How pressing a card is, in days overdue, late or waiting: the API's `urgencyDays`, and for approvals how
  * long the oldest has waited. A card with no figure (an older API) ranks as due today.
  */
 export function urgencyOf(data: MyWorkDto, k: MyWorkKey): number {
@@ -94,7 +94,7 @@ export function urgencyOf(data: MyWorkDto, k: MyWorkKey): number {
 }
 
 /**
- * The cards that have something waiting, most urgent first (UX item 85): longest overdue or waiting first; cards
+ * The cards that have something waiting, most urgent first: longest overdue or waiting first; cards
  * equally urgent keep the order of the role's layout (`homeLayout`). Cards with nothing waiting are left out.
  */
 export function myWorkOrder(data: MyWorkDto, order: MyWorkKey[], count: (k: MyWorkKey) => number): MyWorkKey[] {
@@ -106,7 +106,7 @@ export function myWorkOrder(data: MyWorkDto, order: MyWorkKey[], count: (k: MyWo
 }
 
 /**
- * What needs this user now (UI roadmap item 59), most urgent first (UX item 85). Cards with nothing waiting fold into
+ * What needs this user now, most urgent first. Cards with nothing waiting fold into
  * one "Nothing else waiting" line; when everything is clear one line says so.
  */
 export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefined; loading: boolean; order: MyWorkKey[] }) {
@@ -155,13 +155,12 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
 
 function Frame({ title, icon, href, count, tone, children, amount, overdue }: { title: string; icon: React.ReactNode; href: string | null; count: number; tone: 'warning' | 'error' | 'info'; amount?: string | null; overdue?: boolean; children: React.ReactNode }) {
   const { token } = theme.useToken();
-  // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade (UX item
-  // 82), and only while something in it is actually overdue (UX item 85): payments due later this week stay neutral.
+  // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade, and only while something in it is actually overdue: payments due later this week stay neutral.
   const figure = tone === 'error' && overdue !== false ? token.colorErrorText : token.colorText;
   return (
     <section
       aria-label={title}
-      // A part of the My work card, so a hairline above it rather than a box around it (UX item 82: no cards inside cards).
+      // A part of the My work card, so a hairline above it rather than a box around it (no cards inside cards).
       style={{ height: '100%', paddingTop: token.paddingSM, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}
     >
       <Flex align="center" gap={token.marginSM} style={{ marginBottom: token.marginXS }}>

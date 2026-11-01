@@ -65,17 +65,17 @@ export class ExpensesService {
       projectId: r.projectId,
       projectName: r.project.name,
       expenseNo: r.expenseNo,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       category: r.category,
       description: r.description,
       vendor: r.vendor,
       vendorGstin: r.vendorGstin,
       vendorId: r.vendorId,
       billNo: r.billNo,
-      amount: money(r.amount)!,
+      amount: money(r.amount),
       gstRate: r.gstRate.toString(),
-      gstAmount: money(r.gstAmount)!,
-      totalAmount: money(r.totalAmount)!,
+      gstAmount: money(r.gstAmount),
+      totalAmount: money(r.totalAmount),
       paymentMode: r.paymentMode,
       activityId: r.activityId,
       activityName: r.activity?.name ?? null,
@@ -89,8 +89,8 @@ export class ExpensesService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -134,13 +134,13 @@ export class ExpensesService {
     const statusTotal = (s: string) => byStatus.find((b) => b.status === s)?._sum.totalAmount ?? 0;
     return {
       count: all._count,
-      amount: money(all._sum.amount ?? 0)!,
-      gstAmount: money(all._sum.gstAmount ?? 0)!,
-      totalAmount: money(all._sum.totalAmount ?? 0)!,
-      approvedTotal: money(statusTotal('APPROVED'))!,
-      pendingTotal: money(statusTotal('SUBMITTED'))!,
+      amount: money(all._sum.amount ?? 0),
+      gstAmount: money(all._sum.gstAmount ?? 0),
+      totalAmount: money(all._sum.totalAmount ?? 0),
+      approvedTotal: money(statusTotal('APPROVED')),
+      pendingTotal: money(statusTotal('SUBMITTED')),
       byCategory: byCategory
-        .map((c) => ({ category: c.category, count: c._count, totalAmount: money(c._sum.totalAmount ?? 0)! }))
+        .map((c) => ({ category: c.category, count: c._count, totalAmount: money(c._sum.totalAmount ?? 0) }))
         .sort((a, b) => Number(b.totalAmount) - Number(a.totalAmount)),
     };
   }

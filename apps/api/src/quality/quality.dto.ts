@@ -21,8 +21,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 /** An empty string clears a number. */
 const num = () => Transform(({ value }) => (value === '' ? null : typeof value === 'number' ? String(value) : value));
 
-/* ---------- tests ---------- */
-
 export class TestReadingInputDto {
   @ApiPropertyOptional({ description: 'An existing reading; omitted = a new one' }) @IsOptional() @IsUUID() id?: string;
   @ApiProperty({ example: '28 days' }) @trim() @IsString() @IsNotEmpty() @MaxLength(60) label: string;
@@ -69,7 +67,7 @@ export class CreateTestDto {
   @ArrayMaxSize(200)
   @IsUUID('all', { each: true })
   segmentIds?: string[];
-  @ApiPropertyOptional({ example: 'CUBE', description: "The test type it is taken as (item 137); counts it under the project's quality plan" })
+  @ApiPropertyOptional({ example: 'CUBE', description: "The test type it is taken as; counts it under the project's quality plan" })
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
   @trim()
@@ -82,7 +80,7 @@ export class CreateTestDto {
   @IsUUID()
   planLineId?: string | null;
   @ApiPropertyOptional({ description: 'Cubes taken at a pour of the same project' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pourId?: string | null;
-  @ApiPropertyOptional({ description: 'The lab the sample went to (item 137 part 2)' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() labId?: string | null;
+  @ApiPropertyOptional({ description: 'The lab the sample went to' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() labId?: string | null;
   @ApiPropertyOptional({ example: '2026-10-21', description: 'The day the sample went to the lab' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() sentOn?: string | null;
   @ApiPropertyOptional({ example: 'KTL/2026/4471' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) labReportNo?: string | null;
   @ApiPropertyOptional({ example: '2026-11-19', description: "The day of the lab's report" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() reportOn?: string | null;
@@ -102,8 +100,6 @@ export class ListTestsQuery extends PageQuery {
   @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() to?: string;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.qualityTests, default: 'sampledOn' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.qualityTests as unknown as string[]) sortBy?: QualityTestSortField;
 }
-
-/* ---------- NCRs ---------- */
 
 export class CreateNcrDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;

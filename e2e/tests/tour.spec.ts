@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { signIn, homeHeading, menuSettled } from './helpers';
 
 /**
- * The product tour (v4 item 51): it starts by itself the first time someone signs in on a browser, steps over the
+ * The product tour: it starts by itself the first time someone signs in on a browser, steps over the
  * shell, and comes back from Help. Test browsers report navigator.webdriver, which keeps the tour off
  * every other test; this one hides it.
  */

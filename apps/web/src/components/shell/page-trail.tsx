@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect } from 'react';
 
 /**
- * One breadcrumb per page (UX item 81). Where the header shows "Site › Daily reports", a page's own crumbs would repeat
+ * One breadcrumb per page. Where the header shows "Site › Daily reports", a page's own crumbs would repeat
  * it, so `PageHeader` hands its last crumb (the record's kind, the project's code) to the header instead of drawing a
  * second breadcrumb. Where the header has none (phones, pages outside the sidebar), the page draws its own.
  */

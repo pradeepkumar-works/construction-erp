@@ -1,5 +1,5 @@
 /**
- * Demo connections (item 139): a web address that the fleet's GPS service posts to, with the two trackers it has
+ * Demo connections: a web address that the fleet's GPS service posts to, with the two trackers it has
  * reported on (the excavator's matched, the roller's not yet) and a few messages in the log, and a Connector on the
  * road site's office computer reading its own check. The secrets are random and never shown, so to see a message come
  * in, make a new web address in Admin › Connections. Runs once per company (when it has none yet).

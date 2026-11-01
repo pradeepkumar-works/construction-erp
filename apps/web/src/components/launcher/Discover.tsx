@@ -18,7 +18,7 @@ const TAGS: Record<DiscoverEntry['reason'], TileEntry['tag']> = {
   new: { text: 'New', tone: 'new' },
   featured: { text: 'Featured', tone: 'featured' },
   unopened: { text: 'Not opened yet' },
-  locked: { text: 'Ask for access' },
+  locked: { text: 'Request access' },
 };
 
 /** The pages a Discover tile's drawer lists: those the user can open, or for a module they cannot, every page it has. */
@@ -128,7 +128,7 @@ function DiscoverDrawer({ user, entry, onClose }: { user: AuthUser; entry: Disco
 }
 
 /**
- * Discover on Home (launcher phase 3): modules marked New or Featured (by the tree, or the company's admins in Admin › Home
+ * Discover on Home: modules marked New or Featured (by the tree, or the company's admins in Admin › Home
  * tiles), modules the user can open but never has, and, unless the company turned it off, modules their role cannot open,
  * greyed, with Request access. Each tile opens a drawer saying what the module is for.
  */

@@ -15,7 +15,7 @@ import type { RecordSection } from '@/components/record/RecordFrame';
 const isPhoto = (a: AttachmentDto) => a.mimeType?.startsWith('image/');
 
 /**
- * A record's photos with what Ask Nirmaan saw in each (AI item 76): a caption, and flags such as workers without
+ * A record's photos with what Ask Nirmaan saw in each: a caption, and flags such as workers without
  * helmets or a photo of other work than the entry says. Photos not looked at yet are checked when the record opens,
  * while Ask Nirmaan is on for the company. Advisory only; the project's safety officer can switch the flags off.
  */

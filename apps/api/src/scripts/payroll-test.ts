@@ -1,5 +1,5 @@
 /**
- * Payroll's tests (v6 item 100): payslips, PF, ESI, professional tax, TDS and full and final settlement, with no
+ * Payroll's tests: payslips, PF, ESI, professional tax, TDS and full and final settlement, with no
  * database. CI runs it after the build:
  *
  *   node dist/scripts/payroll-test.js

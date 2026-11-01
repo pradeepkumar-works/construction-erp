@@ -31,12 +31,12 @@ export function CopyStateTag({ copy }: { copy: Pick<ControlledCopyDto, 'state' |
   if (copy.recallLate)
     return (
       <AppTag tone="danger">
-        {`Recall, ${copy.recallDays} days out`}
+        {`To withdraw, ${copy.recallDays} days out`}
       </AppTag>
     );
   return (
     <AppTag tone={STATE_TONE[copy.state]}>
-      {copy.state === 'TO_RECALL' ? 'To recall' : COPY_STATE_LABELS[copy.state]}
+      {copy.state === 'TO_RECALL' ? 'To withdraw' : COPY_STATE_LABELS[copy.state]}
     </AppTag>
   );
 }
@@ -151,8 +151,8 @@ export function TakeBackDialog({ copy, open, onClose }: { copy: ControlledCopyDt
       form={form}
       layout="modal"
       projectDefault={false}
-      title={`Take back ${copyLabel(copy.copyNo)} of ${copy.docNo} ${copy.revision}`}
-      okText="Record"
+      title={`Withdraw ${copyLabel(copy.copyNo)} of ${copy.docNo} ${copy.revision}`}
+      okText="Withdraw"
       onSubmit={async (v) => {
         await act.mutateAsync({ path: `/design/copies/${copy.id}/take-back`, body: { disposedOn: ymd(v.disposedOn), disposal: v.disposal, note: v.note?.trim() || null } });
         notify.saved(`${copyName(copy)}: ${COPY_DISPOSAL_LABELS[v.disposal].toLowerCase()}`);
@@ -190,7 +190,7 @@ export function ReissueDialog({ copy, open, onClose }: { copy: ControlledCopyDto
       form={form}
       layout="modal"
       projectDefault={false}
-      title={`Give ${copy.holder} ${copy.docNo} ${copy.currentRevision ?? ''}`}
+      title={`Issue ${copy.docNo} ${copy.currentRevision ?? ''} to ${copy.holder}`}
       okText="Issue"
       onSubmit={async (v) => {
         await act.mutateAsync({ path: `/design/copies/${copy.id}/reissue`, body: { issuedOn: ymd(v.issuedOn) } });

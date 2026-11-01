@@ -1,7 +1,7 @@
 import type { AttachmentDto } from './types';
 
 /**
- * Material approvals (v6 item 113): each project's list of approved makes (from the contract, or approved on request),
+ * Material approvals: each project's list of approved makes (from the contract, or approved on request),
  * and requests to the client's engineer or consultant to approve a make or a sample, each submission a revision with
  * its outcome, so what is waiting, for how long, and what may be bought are known. A purchase order line for a listed
  * material in a make not on the list is flagged.

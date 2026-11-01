@@ -27,7 +27,7 @@ const floatText = (a: GanttActivityDto) =>
   a.totalFloat === null ? '-' : a.totalFloat < 0 ? `${-a.totalFloat} days short` : a.totalFloat === 0 ? 'None' : `${a.totalFloat} day${a.totalFloat === 1 ? '' : 's'}`;
 
 /**
- * One activity's place in the network (v6 item 114): what it waits on and what waits on it, the dates the links give and
+ * One activity's place in the network: what it waits on and what waits on it, the dates the links give and
  * its float. Project editors add, change and remove its links here.
  */
 export function LinksDrawer({ projectId, data, activity, editor, onClose }: { projectId: string; data: GanttDto; activity: GanttActivityDto | null; editor: boolean; onClose: () => void }) {
@@ -79,7 +79,10 @@ export function LinksDrawer({ projectId, data, activity, editor, onClose }: { pr
           />
           <div>
             <Flex justify="space-between" align="center">
-              <Typography.Title level={3} style={{ fontSize: token.fontSize, margin: 0 }}>{`Waits on (${preds.length})`}</Typography.Title>
+              <Typography.Title level={3} style={{ fontSize: token.fontSize, margin: 0 }}>Waits on{' '}
+                <Typography.Text type="secondary" translate="no">
+                  {preds.length}
+                </Typography.Text></Typography.Title>
               {editor ? (
                 <Button size="small" icon={<PlusOutlined />} onClick={() => setForm({ link: null, side: 'pred' })}>
                   Add predecessor
@@ -90,7 +93,10 @@ export function LinksDrawer({ projectId, data, activity, editor, onClose }: { pr
           </div>
           <div>
             <Flex justify="space-between" align="center">
-              <Typography.Title level={3} style={{ fontSize: token.fontSize, margin: 0 }}>{`Followed by (${succs.length})`}</Typography.Title>
+              <Typography.Title level={3} style={{ fontSize: token.fontSize, margin: 0 }}>Followed by{' '}
+                <Typography.Text type="secondary" translate="no">
+                  {succs.length}
+                </Typography.Text></Typography.Title>
               {editor ? (
                 <Button size="small" icon={<PlusOutlined />} onClick={() => setForm({ link: null, side: 'succ' })}>
                   Add successor

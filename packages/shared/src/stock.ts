@@ -11,7 +11,7 @@ export const STOCK_ENTRY_PREFIX: Record<StockEntryType, string> = {
   RETURN_FROM_SITE: 'RFS',
 };
 
-/** The types the store register had before v4 item 39; older phone builds only know these. */
+/** The types the store register had before transfers, returns and counts; older phone builds only know these. */
 export const LEGACY_STOCK_ENTRY_TYPES: StockEntryType[] = ['RECEIPT', 'ISSUE', 'ADJUSTMENT'];
 
 /** Days of the stock ageing buckets: up to 30, 31 to 90, 91 to 180, over 180. */
@@ -34,7 +34,7 @@ export function isLowStock(balance: string | number, minQty: string | number | n
 export const crossesBelowMin = (before: string | number, after: string | number, minQty: string | number | null | undefined): boolean =>
   !isLowStock(before, minQty) && isLowStock(after, minQty);
 
-/** GET /stock/stores: a central store or yard (v6 item 106) with what it holds and what is on the road. */
+/** GET /stock/stores: a central store or yard with what it holds and what is on the road. */
 export interface StoreSummaryDto {
   id: string;
   code: string;

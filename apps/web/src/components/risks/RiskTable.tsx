@@ -100,7 +100,7 @@ export function riskColumns({
       render: (_, r) =>
         user && canEditRisk(user, r) ? (
           <Button size="small" onClick={() => onEdit(r)}>
-            Update
+            Edit
           </Button>
         ) : null,
     },

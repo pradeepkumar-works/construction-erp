@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openProjectTab, projectTabs, signIn } from './helpers';
 
-/** Billing: the client master and a project's contract terms (v3 item 17). */
+/** Billing: the client master and a project's contract terms. */
 test('the project manager sees the client master and the road contract', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/clients');
@@ -26,6 +26,6 @@ test('a site engineer has no Contract tab', async ({ page }) => {
   await openProjectTab(page, 'Plan');
   await expect(projectTabs(page, 'Plan').getByText('BOQ', { exact: true })).toBeVisible();
   await openProjectTab(page, 'Money');
-  await expect(projectTabs(page, 'Money').getByText('Expenses', { exact: true })).toBeVisible();
+  await expect(projectTabs(page, 'Money').getByText('Site expenses', { exact: true })).toBeVisible();
   await expect(projectTabs(page, 'Money').getByText('Contract', { exact: true })).toHaveCount(0);
 });

@@ -1,5 +1,5 @@
 /**
- * Project types and component kinds a company sets up itself (item 134, ARCHITECTURE "Project types"). A type is built
+ * Project types and component kinds a company sets up itself (ARCHITECTURE "Project types"). A type is built
  * on one of the built-in kinds (`ProjectType`), which every rule that reads `Project.type` keeps reading; the type adds
  * its name, where its work is located, whether it has a pipe network, the component kinds it offers first, its starting
  * breakdown and its loose activities. A component kind is built on a `WorkElementType` (pipe network, reconciliation and
@@ -196,7 +196,7 @@ export const STANDARD_PROJECT_TYPES: ProjectTypeDef[] = [
   },
 ];
 
-/** The standard type a project of a built-in kind belongs to when it names none (projects made before item 134). */
+/** The standard type a project of a built-in kind belongs to when it names none (projects made before project types). */
 export const STANDARD_TYPE_FOR: Record<ProjectType, string | null> = {
   ROAD: 'ROAD',
   BUILDING: 'BUILDING',
@@ -223,7 +223,7 @@ export function overlay<T extends { code: string }>(standard: T[], own: T[]): (T
   ];
 }
 
-/** What a project's type turns on (item 134): its places and its pipe network. One answer for the API, web and phone. */
+/** What a project's type turns on: its places and its pipe network. One answer for the API, web and phone. */
 export function projectFeatures(type: ProjectType, def: Pick<ProjectTypeDef, 'locations' | 'pipeNetwork'> | null | undefined): { locations: WorkLocation[]; pipeNetwork: boolean } {
   if (!def || !isTypeBase(type)) return { locations: LOCATIONS_OF_BASE[type], pipeNetwork: type === 'WATER_SUPPLY' || type === 'SEWERAGE' };
   return { locations: def.locations, pipeNetwork: def.pipeNetwork };
@@ -342,7 +342,7 @@ export interface BreakdownPick {
 }
 
 /**
- * The components a new project gets from its type (item 134): each picked component `count` times ("Overhead tank 1",
+ * The components a new project gets from its type: each picked component `count` times ("Overhead tank 1",
  * "Overhead tank 2"), each copy taking the weight given (per copy), and its sub-components under every copy. Kinds the company
  * archived or no longer has are skipped with the rest of their branch. When every component laid out has a weight and
  * the counts picked differ from the usual ones (three piers, not four), the weights are scaled to add up to 100% again.
@@ -395,7 +395,7 @@ export const kindFrom = (code: string, name: string, elementType: WorkElementTyp
 export const STANDARD_RCC_PARTS = RCC_PARTS.map(({ name, unit, weightPct }) => ({ name, unit, weightPct }));
 export { MAX_LIFTS };
 
-/* ---------- API shapes ---------- */
+// API shapes
 
 export interface ProjectTypeDto extends ProjectTypeDef {
   /** A standard type (the company may have its own copy of it) */

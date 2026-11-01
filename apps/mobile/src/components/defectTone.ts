@@ -1,7 +1,7 @@
 import type { DefectPriority, DefectStatus } from '@erp/shared';
 import { colors, toneIcon, type Tone } from '../theme';
 
-/** Each priority and status with a shape as well as a colour (UX item 88). */
+/** Each priority and status with a shape as well as a colour. */
 export const DEFECT_TONE: Record<DefectPriority, Tone> = {
   LOW: { fg: colors.neutral, bg: colors.neutralSoft, icon: 'arrow-down-circle-outline' },
   MEDIUM: { fg: colors.warning, bg: colors.warningSoft, icon: 'remove-circle-outline' },

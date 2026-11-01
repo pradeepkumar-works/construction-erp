@@ -36,7 +36,7 @@ function entryOf(data: MyWorkDto, k: MyWorkKey) {
 }
 
 /**
- * Home's first section (finding 8 of the October review): the three most pressing of My work's cards for the caller's
+ * Home's first section: the three most pressing of My work's cards for the caller's
  * role (approvals, money due, the watch list, a desk's own queue), each opening its list, and a link to the rest.
  */
 export function WaitingForYou({ user }: { user: AuthUser }) {

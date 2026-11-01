@@ -29,7 +29,7 @@ async function takeFacePhoto(api: ReturnType<typeof useApi>): Promise<string> {
 /**
  * Face attendance: Mark in and Mark out each open the front camera, and the person's photo goes with the mark, kept on
  * the day for HR to see in the staff register. Mark in also sends where the phone is when the site has a location to
- * measure from (v5 item 97). Closing the camera marks nothing. Home's day card and My attendance and leave share it.
+ * measure from. Closing the camera marks nothing. Home's day card and My attendance and leave share it.
  */
 export function useFaceMark(reload: () => Promise<unknown>) {
   const api = useApi();

@@ -61,18 +61,18 @@ export function contextNote(args: {
   if (args.phone) lines.push('They are asking from the site app on a phone: keep the answer to a few short lines, five at most; for a long list give the count, the three oldest or largest, and a link to the whole list.');
   if (args.whatsapp)
     lines.push(
-      'They are writing on WhatsApp from site (item 120), often from a voice note written down by a machine: when they say what was done, what material is needed, money spent or progress on an activity, fill it in with the matching draft tool (one draft, the project they name or the one picked for them) and say in two lines what you filled and what to check; for a day\'s work with hold-ups, put the hold-ups in the DPR\'s issues. Otherwise answer in three short lines at most. Plain text: no tables, no headings.',
+      'They are writing on WhatsApp from site, often from a voice note written down by a machine: when they say what was done, what material is needed, money spent or progress on an activity, fill it in with the matching draft tool (one draft, the project they name or the one picked for them) and say in two lines what you filled and what to check; for a day\'s work with hold-ups, put the hold-ups in the DPR\'s issues. Otherwise answer in three short lines at most. Plain text: no tables, no headings.',
     );
   if (args.language === 'hi') lines.push('Their app is in Hindi: answer a question in Hindi or English in Hindi, in Devanagari script, and a question in Hinglish (Hindi in Roman letters) in the same Hinglish, the way a site engineer speaks; keep record numbers, codes, names of items, people and places, and links as they are, and write every figure with the digits 0-9.');
   return lines.join(' ');
 }
 
-/** Bill checks (AI item 69): one line for the approver from the rules' findings. */
+/** Bill checks: one line for the approver from the rules' findings. */
 export const CHECK_SUMMARY_PROMPT = `You write the one-line summary at the top of a bill's checks in ${PRODUCT_NAME}, a construction ERP, for the person about to approve the bill. You get the bill, the flags the rules raised (with any an approver already accepted) and the checks that passed, as JSON, and a plain draft line.
 
 Write one sentence, at most 30 words, in plain English: what most needs a look before approving, and why it matters (paying above the agreed rate, paying for material not received, paying twice, a tax problem). Mention a second flag only if it is as serious. Use only figures that appear in the flags, as written there. No greeting, no Markdown, no advice to approve or reject. If every flag is accepted, say so in a few words.`;
 
-/** Reading invoices, challans and drawings (AI item 70): what each kind's fields mean. */
+/** Reading invoices, challans and drawings: what each kind's fields mean. */
 const DOC_READ_GUIDE = {
   invoice: `A supplier's tax invoice. fields: vendorName (the seller who issued it), gstin (the seller's GSTIN, not the buyer's), invoiceNo, invoiceDate, poNo (the buyer's purchase order number, only if printed), subtotal (taxable value before GST), cgst, sgst, igst (tax in rupees; when one figure is printed for CGST + SGST together, half in cgst and half in sgst), freight (freight or transport charged, if any), total (the invoice total). lines, one per item row: description, hsn, quantity, unit, rate (per unit, before GST), gstRate (per cent), amount (the row's taxable value).`,
   challan: `A delivery challan or goods delivery note. fields: supplierName, gstin (the supplier's), challanNo (the challan, DC or GDN number), date, vehicleNo, poNo (the buyer's purchase order number, only if printed). lines, one per item row: description, quantity, unit.`,

@@ -87,9 +87,9 @@ export class AuthService {
     const userId = await this.prisma.$transaction(async (tx) => {
       const billing = billingConfig();
       const trialEndsAt = billing ? new Date(Date.parse(`${todayIn()}T00:00:00Z`) + billing.trialDays * 86_400_000) : null;
-      // New companies pay bills only against approved payment requests (v5 item 90) and record progress only in the DPR
-      // (item 127); older ones switch these on themselves.
-      const org = await tx.organization.create({ data: { name: dto.organizationName.trim(), code, trialEndsAt, paymentsNeedRequest: true, progressFromDpr: true } });
+      // New companies pay bills only against approved payment requests and record progress only in the DPR;
+      // older ones switch these on themselves.
+      const org = await tx.organization.create({ data: { name: dto.organizationName.trim(), code, trialEndsAt, paymentsNeedRequest: true, progressFromDpr: true, ordersNeedApprovedChoice: true } });
       await tx.role.createMany({ data: ROLE_KEYS.map((key) => ({ organizationId: org.id, key, name: ROLE_LABELS[key] })) });
       const admin = await tx.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: org.id, key: 'ADMIN' } } });
       const login = await tx.login.create({ data: { email, passwordHash, lastOrganizationId: org.id } });
@@ -161,7 +161,7 @@ export class AuthService {
       fullName: user.fullName,
       phone: user.phone,
       roleKey: user.role.key as RoleKey,
-      roleName: user.role.name,
+      roleName: ROLE_LABELS[user.role.key as RoleKey],
       organizationId: user.organizationId,
       organizationName: user.organization.name,
       approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
@@ -188,7 +188,7 @@ export class AuthService {
         this.prisma.groupAdmin.findUnique({ where: { groupId_loginId: { groupId, loginId: user.loginId } }, select: { id: true } }),
         this.prisma.user.findMany({
           where: { loginId: user.loginId, isActive: true, organization: { groupId, suspendedAt: null } },
-          select: { organizationId: true, role: { select: { name: true } }, organization: { select: { name: true, kind: true } } },
+          select: { organizationId: true, role: { select: { key: true } }, organization: { select: { name: true, kind: true } } },
           orderBy: { organization: { name: 'asc' } },
         }),
       ]),
@@ -197,7 +197,7 @@ export class AuthService {
       ...kind,
       group: { id: group.id, name: group.name, admin: !!admin },
       ...(places.length > 1
-        ? { companies: places.map((p) => ({ id: p.organizationId, name: p.organization.name, kind: p.organization.kind, roleName: p.role.name, current: p.organizationId === user.organizationId })) }
+        ? { companies: places.map((p) => ({ id: p.organizationId, name: p.organization.name, kind: p.organization.kind, roleName: ROLE_LABELS[p.role.key as RoleKey], current: p.organizationId === user.organizationId })) }
         : {}),
     };
   }
@@ -213,7 +213,7 @@ const billingOf = (org: BillingOrg): Pick<AuthUser, 'billing'> => {
 };
 
 type ModulesOrg = { modulesOff: string[]; moduleTier: ModuleTier | null };
-/** The modules the company does not use (v6 item 117), when there are any. */
+/** The modules the company does not use, when there are any. */
 const modulesOf = (org: ModulesOrg): Pick<AuthUser, 'modulesOff'> => {
   const off = modulesOffFor(org);
   return off.length ? { modulesOff: off } : {};

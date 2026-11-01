@@ -22,7 +22,7 @@ import {
 } from './stage-billing-rules';
 
 /*
- * The parts of stage billing (item 129) that the demo seed runs too, so they take a database client and no user: the
+ * The parts of stage billing that the demo seed runs too, so they take a database client and no user: the
  * standard break-up, the grid proposed from the schedule, and what a bill takes from the break-up. `StageBillingService`
  * checks the caller's rights and calls them.
  */
@@ -48,7 +48,7 @@ export const PROJECT_SELECT = {
   endDate: true,
 } satisfies Prisma.ProjectSelect;
 
-/** What a bill takes from the break-up (item 129): its stage lines, the slippage withheld, and how its measured items are priced. */
+/** What a bill takes from the break-up: its stage lines, the slippage withheld, and how its measured items are priced. */
 export interface BillStagePlan {
   lines: {
     stageId: string;
@@ -186,7 +186,7 @@ export async function stagePlan(tx: Db, bill: { id: string; projectId: string; b
   const components = await tx.billingComponent.findMany({ where: { projectId: bill.projectId }, include: { stages: { select: { ...EVIDENCE_STAGE_SELECT, pct: true, sortOrder: true, componentId: true }, orderBy: { sortOrder: 'asc' } } } });
   if (!components.length) return null;
   components.sort(compareCodes);
-  const upTo = dateOnly(bill.measuredUpTo)!;
+  const upTo = dateOnly(bill.measuredUpTo);
   const lumpSum = project.lumpSumValue ?? project.contractValue ?? ZERO;
   const shares = componentShares(lumpSum, components);
   const leaves = components.filter((c) => c.basis === 'STAGES' && !components.some((k) => k.parentId === c.id));
@@ -274,7 +274,7 @@ export async function stagePlan(tx: Db, bill: { id: string; projectId: string; b
           code: c.code,
           name: c.name,
           value,
-          targetPct: targetAt(targets.filter((t) => t.componentId === c.id).map((t) => ({ month: dateOnly(t.month)!, pct: num(t.cumulativePct) })), upTo),
+          targetPct: targetAt(targets.filter((t) => t.componentId === c.id).map((t) => ({ month: dateOnly(t.month), pct: num(t.cumulativePct) })), upTo),
           actualPct: value.gt(0) ? billed.mul(100).div(value).toNumber() : 0,
         };
       }),
@@ -287,7 +287,7 @@ export async function stagePlan(tx: Db, bill: { id: string; projectId: string; b
     lines,
     stageAmount,
     stagePrevious,
-    slippageLines: slip.lines.map((l) => ({ ...l, withheld: money(l.withheld)! })),
+    slippageLines: slip.lines.map((l) => ({ ...l, withheld: money(l.withheld) })),
     slippageWithheld: slip.total.sub(withheldBefore._sum.slippageWithheld ?? ZERO),
     lumpSumBoqItemIds,
     unitRateBoqItemIds,

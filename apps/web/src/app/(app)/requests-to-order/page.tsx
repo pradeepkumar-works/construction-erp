@@ -9,7 +9,7 @@ import { RequestsToOrderList } from '@/components/purchasing/RequestsToOrderList
 function RequestsToOrderPage() {
   return (
     <div className="page-container">
-      <PageHeader title="Requests to order" subtitle="Approved material requests with something still to buy, by the day they are needed. Open one to send the enquiry, record quotations, finalise L1 and raise the order." />
+      <PageHeader title="Requests to order" subtitle="Approved indents with something still to buy, by the day they are needed. Open one to send the enquiry, record quotations, finalise L1 and make the purchase order." />
       <Card size="small">
         <RequestsToOrderList />
       </Card>

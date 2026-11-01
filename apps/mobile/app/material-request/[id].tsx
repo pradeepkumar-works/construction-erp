@@ -20,7 +20,7 @@ export default function MaterialRequestDetailScreen() {
   const router = useRouter();
   const t = useT();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<MaterialRequestDto>((api) => api.get(`/material-requests/${id}`), [id], { enabled: !!id });
-  // Stock first (v5 item 95): what this site and the others hold of each item, once the request is approved.
+  // Stock first: what this site and the others hold of each item, once the request is approved.
   const approved = data?.status === 'APPROVED';
   const stock = useFetch<MaterialRequestStockDto>((api) => api.get(`/material-requests/${id}/stock`), [id, approved], { enabled: !!id && approved });
 

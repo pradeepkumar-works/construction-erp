@@ -3,7 +3,7 @@ import { API_URL, api, apiToken, chooseOption, localToday, PASSWORD, signIn } fr
 
 type Imprest = { id: string; cashInHand: string; topUpDue: string; openRequest: { id: string } | null; ledger?: { ref: string | null; balance: string }[] };
 
-/** Site imprest (v4 item 45): a float, cash expenses spending it, a top-up asked for and paid, and closing it. */
+/** Site imprest: a float, cash expenses spending it, a top-up asked for and paid, and closing it. */
 test('accounts give a site a petty cash float and top it back up after its cash expenses', async ({ page }) => {
   // A company of its own: its owner (an admin) both runs the imprest and holds it.
   const stamp = Date.now();

@@ -22,7 +22,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 /**
- * At the top of a form filled in on the Ask tab (AI item 72): where it came from, that nothing is sent until the user
+ * At the top of a form filled in on the Ask tab: where it came from, that nothing is sent until the user
  * sends it, and what the drafting flagged to check.
  */
 export function AskDraftNotice({ draft }: { draft: AiDraftDto }) {

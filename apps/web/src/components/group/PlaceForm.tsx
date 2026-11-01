@@ -40,7 +40,7 @@ export function PlaceForm({ person, companies, onClose }: { person: GroupPersonD
   };
 
   return (
-    <FormShell open={!!person} onClose={onClose} form={form} layout="modal" width={480} title={person ? `Give ${person.fullName} a place` : 'Give a place'} okText="Give place" projectDefault={false} onSubmit={submit}>
+    <FormShell open={!!person} onClose={onClose} form={form} layout="modal" width={480} title={person ? `Add ${person.fullName} to a company` : 'Add to company'} okText="Add to company" projectDefault={false} onSubmit={submit}>
       <Form form={form} layout="vertical">
         <Form.Item name="organizationId" label="Company" rules={[{ required: true, message: 'Choose the company' }]} extra={choices.length ? undefined : 'They already work in every company of the group.'}>
           <Select showSearch={{ optionFilterProp: 'label' }} options={choices.map((c) => ({ value: c.id, label: c.name }))} />

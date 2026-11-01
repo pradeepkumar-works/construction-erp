@@ -15,7 +15,7 @@ test.describe.serial('progress entry from submission to approval', () => {
     const modal = page.locator('.ant-modal').filter({ hasText: 'New progress entry' });
     await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
     await chooseOption(modal.getByLabel('Activity'));
-    await modal.getByLabel(/Quantity executed/).fill(qty);
+    await modal.getByLabel(/Quantity done/).fill(qty);
     await modal.getByLabel('Remarks').fill(remarks);
     await modal.getByRole('button', { name: 'Submit' }).click();
     await expect(page.getByText('Progress entry submitted for approval')).toBeVisible();

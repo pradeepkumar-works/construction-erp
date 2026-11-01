@@ -16,9 +16,9 @@ import type {
   StructureItemDto,
   StructureLineDto,
 } from '@erp/shared';
-import { ISSUE_WORK_DAYS, KIT_STATUS_LABELS, PIPE_FLAG_HINTS, PIPE_FLAG_LABELS, RECONCILIATION_STATUS_LABELS, RECON_EXCEPTION_LABELS, USE_ISSUE_DAYS } from '@erp/shared';
+import { ISSUE_WORK_DAYS, KIT_STATUS_LABELS, PIPE_FLAG_HINTS, PIPE_FLAG_LABELS, RECONCILIATION_STATUS_LABELS, RECON_EXCEPTION_LABELS, USE_ISSUE_DAYS, unitLabel } from '@erp/shared';
 import { useKitRecon, usePipeRecon, useReconExceptions, useStructureRecon } from '@/lib/queries';
-import { formatDate, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
@@ -31,7 +31,7 @@ import { StatusCell, qty } from './ReconciliationPanel';
 const RED = themeColor('colorErrorText');
 const small = { fontSize: themeFontSize('fontSizeSM') };
 const statStyle = { content: { fontSize: themeFontSize('fontSizeXL') } };
-const metres = (v: number | null) => (v === null ? <span className="text-muted">-</span> : qty(String(v), 'm'));
+const metres = (v: number | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : qty(String(v), 'm'));
 const pct = (v: number | null) => (v === null ? null : `${v > 0 ? '+' : ''}${v}%`);
 const n = (v: string | null) => (v === null ? null : toNumber(v));
 
@@ -54,11 +54,10 @@ const Note = ({ children }: { children: React.ReactNode }) => (
   </Typography.Paragraph>
 );
 
-// ---------------------------------------------------------------------------------------------------------------------
 // R2: structure
 
 /**
- * Per component (item 128): each normed material's design need, what the DPR lines approved in the period needed and
+ * Per component: each normed material's design need, what the DPR lines approved in the period needed and
  * used, what was issued to the component and what should still be there, with the use per unit each activity achieved
  * (bags of cement per m³ against the mix, steel per MT).
  */
@@ -127,7 +126,7 @@ export function StructureView({ projectId }: { projectId: string }) {
       align: 'right',
       render: (v: string | null, r) =>
         v === null ? (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ) : (
           <Tooltip title="Issued to the component from a week before the first DPR that reported material, less all its DPR lines used since">
             <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : undefined }}>
@@ -139,7 +138,7 @@ export function StructureView({ projectId }: { projectId: string }) {
   ];
   const lineColumns = (unit: string): TableProps<StructureLineDto>['columns'] => [
     { title: 'Activity', dataIndex: 'activityName', ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}>{v}</Tooltip> },
-    { title: 'Placed', dataIndex: 'placedQty', width: 160, align: 'right', render: (v: string, l) => <span className="mono" translate="no">{`${formatQty(v)} of ${formatQty(l.plannedQty)} ${l.unit}`}</span> },
+    { title: 'Placed', dataIndex: 'placedQty', width: 160, align: 'right', render: (v: string, l) => <span className="mono" translate="no">{`${formatQty(v)} of ${formatQty(l.plannedQty)} ${unitLabel(l.unit)}`}</span> },
     { title: 'Norm', dataIndex: 'qtyPerUnit', width: 160, align: 'right', render: (v: string, l) => <span className="mono" translate="no">{`${v} ${unit} / ${l.unit}`}</span> },
     { title: 'Used', dataIndex: 'usedQty', width: 120, align: 'right', render: (v: string) => qty(v, unit) },
     {
@@ -149,10 +148,10 @@ export function StructureView({ projectId }: { projectId: string }) {
       align: 'right',
       render: (v: string | null, l) =>
         v === null ? (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ) : (
           <span className="mono" translate="no" style={{ color: toNumber(v) > toNumber(l.qtyPerUnit) * (1 + toNumber(l.wastagePct) / 100) ? RED : undefined }}>
-            {`${formatQty(v)} ${unit} / ${l.unit}`}
+            {`${formatQty(v)} ${unitLabel(unit)} / ${l.unit}`}
           </span>
         ),
     },
@@ -228,11 +227,10 @@ export function StructureView({ projectId }: { projectId: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // R3: pipe
 
 function PipeFlags({ flags }: { flags: PipeFlag[] }) {
-  if (!flags.length) return <span className="text-muted">-</span>;
+  if (!flags.length) return <span className="text-muted">{NO_VALUE}</span>;
   return (
     <Space size={4} wrap>
       {flags.map((f) => (
@@ -258,7 +256,7 @@ function WastageCell({ r }: { r: PipeReconRowDto }) {
 }
 
 /**
- * Pipe by size (item 128), since the start, in metres: over the project (scope, ordered, received, in store, issued,
+ * Pipe by size, since the start, in metres: over the project (scope, ordered, received, in store, issued,
  * laid, tested, to lay, to buy) and per zone (issued to it, laid, cut wastage on the DPR lines, at site not laid).
  */
 export function PipeView({ projectId }: { projectId: string }) {
@@ -398,12 +396,11 @@ export function PipeView({ projectId }: { projectId: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // R5: kits
 
 const KIT_COLOR: Record<KitStatus, string> = { SHORT: 'error', OVER: 'warning', OK: 'success' };
 
-/** House-connection kits (item 128): connections done × the kit (the activity's norms) against what was issued. */
+/** House-connection kits: connections done × the kit (the activity's norms) against what was issued. */
 export function KitsView({ projectId }: { projectId: string }) {
   const { data, isLoading, error, refetch } = useKitRecon(projectId);
 
@@ -505,12 +502,11 @@ export function KitsView({ projectId }: { projectId: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // R6: exceptions
 
 const EXCEPTION_COLOR: Record<ReconExceptionKind, string> = { USE_WITHOUT_ISSUE: 'error', ISSUE_WITHOUT_WORK: 'warning', LAID_ABOVE_ISSUED: 'error' };
 
-/** The day-to-day exceptions between stock and the DPR (item 128), newest first, each with the DPR or issue to open. */
+/** The day-to-day exceptions between stock and the DPR, newest first, each with the DPR or issue to open. */
 export function ExceptionsView({ projectId }: { projectId: string }) {
   const [period, setPeriod] = useState<PeriodState>({ preset: 'month', range: null });
   const [entryId, setEntryId] = useState<string | null>(null);

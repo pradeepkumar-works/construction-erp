@@ -8,12 +8,12 @@ import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractCurrency, RaBillDto, RaBillItemDto, RaBillStageLineDto, ReceiptDto } from '@erp/shared';
-import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign } from '@erp/shared';
+import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit, isForeign, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useBill } from '@/lib/queries';
-import { formatDate, formatINR, formatMoney, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatMoney, formatPct, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -25,6 +25,7 @@ import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
 import { BillStages, SlippageNotes } from './BillStages';
+import { ObligationRecoveryNotes } from './BillRecoveries';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
@@ -38,7 +39,7 @@ import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type StageAction = 'send' | 'certify';
 type CertifyValues = { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null>; stagePct?: Record<string, number | null> };
-const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
+const ACTION_TITLES: Record<StageAction, string> = { send: 'Record sent to client', certify: 'Record certificate' };
 
 const money = (v: string, c: ContractCurrency) => <span className="mono" translate="no">{formatMoney(v, c, true)}</span>;
 
@@ -79,7 +80,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const stage = useMutation({
     mutationFn: async ({ act, body }: { act: StageAction; body: object }) => (await api.post<RaBillDto>(`/ra-bills/${id}/${act}`, body)).data,
     onSuccess: (b, { act }) => {
-      done(act === 'send' ? `${b.billLabel} recorded as sent` : `${b.billLabel} certified for ${formatMoney(b.netPayable, b, true)} net`);
+      done(act === 'send' ? `${b.billLabel} recorded as sent to the client` : `${b.billLabel} certified for ${formatMoney(b.netPayable, b, true)} net`);
     },
     meta: FAIL_NOTICE,
   });
@@ -129,7 +130,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const stageAt = data ? (['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const).indexOf(data.stage) : 0;
 
   const dateItem = (
-    <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Pick the date' }]}>
+    <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Choose the date' }]}>
       <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
     </Form.Item>
   );
@@ -177,7 +178,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   type="warning"
                   showIcon
                   style={{ marginBottom: 12 }}
-                  title={`Left out until the client approves a variation: ${data.heldExtraItems.map((i) => `${i.itemNo} ${i.description} (${formatQty(i.qty)} ${i.unit} measured)`).join('; ')}`}
+                  title={`Left out until the client approves a variation: ${data.heldExtraItems.map((i) => `${i.itemNo} ${i.description} (${formatQty(i.qty)} ${unitLabel(i.unit)} measured)`).join('; ')}`}
                   description={<Link href={`/projects/${data.projectId}?tab=variations`}>Open the project&apos;s variations</Link>}
                 />
               ) : null}
@@ -185,7 +186,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           ),
           facts: [
             { key: 'net', label: 'Net payable', children: <strong>{money(data.netPayable, data)}</strong> },
-            ...(isForeign(data) ? [{ key: 'fx', label: 'Contract rate', children: <span className="mono" translate="no">{`₹ ${data.exchangeRate} to 1 ${data.currency}; ${formatINR(data.netPayable, true)} net`}</span> }] : []),
+            ...(isForeign(data) ? [{ key: 'fx', label: 'Contract rate', children: <span className="mono" translate="no">{`${formatINR(data.exchangeRate, true)} to 1 ${data.currency}; ${formatINR(data.netPayable, true)} net`}</span> }] : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}?tab=bills`}>{data.projectName}</Link>, span: 2 },
             { key: 'billDate', label: 'Bill date', children: formatDate(data.billDate) },
             {
@@ -198,14 +199,14 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   {data.client.gstin && <span className="text-muted"> · GSTIN <span translate="no">{data.client.gstin}</span>{data.client.stateCode ? ` (${GST_STATES[data.client.stateCode] ?? data.client.stateCode})` : ''}</span>}
                 </span>
               ) : (
-                data.clientName ?? '-'
+                data.clientName ?? NO_VALUE
               ),
             },
             data.om
               ? { key: 'upto', label: 'O&M period', children: `${data.om.label}, to ${formatDate(data.om.to)}` }
               : { key: 'upto', label: 'Measurements up to', children: formatDate(data.measuredUpTo) },
-            { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : '-' },
-            { key: 'wo', label: 'Work order', children: data.workOrderNo ?? '-' },
+            { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : NO_VALUE },
+            { key: 'wo', label: 'Work order', children: data.workOrderNo ?? NO_VALUE },
             ...(data.om ? [] : [{ key: 'sheets', label: 'Measurement sheets', children: data.measurementCount }]),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 3 }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
@@ -223,6 +224,9 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               : []),
             ...(data.slippageLines.length || toNumber(data.slippageWithheld) !== 0
               ? [{ key: 'slippage', title: 'Milestone slippage', children: <SlippageNotes lines={data.slippageLines} withheld={data.slippageWithheld} c={data} /> }]
+              : []),
+            ...(data.obligationLines.length
+              ? [{ key: 'obligations', title: 'Contract recoveries', count: data.obligationLines.length, children: <ObligationRecoveryNotes lines={data.obligationLines} total={data.obligationRecovery} c={data} projectId={data.projectId} /> }]
               : []),
             {
               key: 'abstract',
@@ -267,26 +271,27 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               children: (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
                   <Section title="Bill amount">
-                    <Row c={data} label="Work up to the previous bill" value={data.grossPrevious} muted />
-                    <Row c={data} label="Work in this bill" value={data.grossAmount} strong />
-                    <Row c={data} label="Work up to date" value={data.grossUpto} muted />
+                    <Row c={data} label="Work done up to the previous bill" value={data.grossPrevious} muted />
+                    <Row c={data} label="Work done this bill" value={data.grossAmount} strong />
+                    <Row c={data} label="Work done up to date" value={data.grossUpto} muted />
                     {data.pvLines.length ? <Row c={data} label="Price variation" value={data.pvAmount} strong /> : null}
                     <Divider style={{ margin: '6px 0' }} />
                     <Row c={data} label={`GST @ ${formatPct(data.gstRate)}`} value={data.gstAmount} />
+                    <Row c={data} label="Bill amount with GST" value={data.invoiceAmount} strong />
                     <Row c={data} label="Less deductions" value={data.totalDeductions} />
                     <Divider style={{ margin: '6px 0' }} />
                     <Row c={data} label={<span style={{ fontSize: themeFontSize('fontSizeLG') }}>Net payable</span>} value={data.netPayable} strong />
                     {approved && data.stage !== 'NOT_SENT' && (
                       <>
                         <Divider style={{ margin: '6px 0' }} />
-                        <Row c={data} label="Received in the bank" value={data.receivedAmount} />
-                        <Row c={data} label="Settled (received + deducted)" value={data.settledAmount} muted />
+                        <Row c={data} label="Money received" value={data.receivedAmount} />
+                        <Row c={data} label="Settled (received and deducted)" value={data.settledAmount} muted />
                         <Row c={data} label="Outstanding" value={data.outstanding} strong />
                       </>
                     )}
                     {data.claimedNet !== null && (
                       <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-                        Claimed {formatMoney(data.claimedGross, data, true)} of work, {formatMoney(data.claimedNet, data, true)} net. The client passed {formatMoney(toNumber(data.claimedNet) - toNumber(data.netPayable), data, true)} less; the quantities it cut come back in the next bill.
+                        Claimed {formatMoney(data.claimedGross, data, true)} of work, {formatMoney(data.claimedNet, data, true)} net. The client certified {formatMoney(toNumber(data.claimedNet) - toNumber(data.netPayable), data, true)} less; the quantities it cut come back in the next bill.
                       </Typography.Text>
                     )}
                   </Section>
@@ -309,7 +314,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               ? [
                   {
                     key: 'payments',
-                    title: 'Payments received',
+                    title: 'Money received',
                     count: data.receipts.length,
                     children: (
                       <Table<ReceiptDto>
@@ -317,11 +322,11 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         size="small"
                         pagination={false}
                         dataSource={data.receipts}
-                        locale={{ emptyText: 'No payment recorded yet' }}
+                        locale={{ emptyText: 'No money received yet' }}
                         columns={[
                           { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
                           { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
-                          { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
+                          { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono" translate="no">{v}</span> : NO_VALUE) },
                           { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatMoney(v, data, true)}</strong> },
                           { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono" translate="no">{formatMoney(v, data, true)}</span> },
                           { title: 'By', dataIndex: 'createdByName', width: 140 },
@@ -374,7 +379,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               <ReviewActions type="bill" id={data.id} status={data.status} amount={data.grossAmount} size={size} />
               {approved && preparer && (data.stage === 'NOT_SENT' || data.stage === 'SENT') ? (
                 <Button size={size} type={data.stage === 'NOT_SENT' ? 'primary' : 'default'} onClick={() => openAction('send', data)}>
-                  {data.stage === 'NOT_SENT' ? 'Mark sent' : 'Change date sent'}
+                  {data.stage === 'NOT_SENT' ? 'Record sent to client' : 'Change date sent'}
                 </Button>
               ) : null}
               {approved && preparer && !data.exportedToTally && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
@@ -384,12 +389,12 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               ) : null}
               {approved && accounts && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
                 <Button size={size} onClick={() => setPaying(true)}>
-                  Record payment
+                  Record money received
                 </Button>
               ) : null}
             </>
           ),
-          // Delete is a tap from Approve no longer (finding 15 of the October review).
+          // Delete is a tap from Approve no longer.
           more: editable ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: data.billLabel, description: 'Its measurements become billable again.', onConfirm: () => remove.mutateAsync() }) }] : [],
         }
       }
@@ -399,7 +404,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           {action === 'certify' ? (
             <FormGrid cols={2}>
               {dateItem}
-              <Form.Item name="certificateNo" label="Certificate / MB check reference">
+              <Form.Item name="certificateNo" label="Certificate no." extra="The client's payment certificate or MB check reference">
                 <Input maxLength={100} placeholder="e.g. EE/RD/2026/114" />
               </Form.Item>
             </FormGrid>
@@ -408,7 +413,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           )}
           {action === 'certify' && data && (
             <>
-              <Typography.Paragraph type="secondary">Change only the quantities and stages the client cut. The bill is re-priced on what it passed and the claim is kept for reference.</Typography.Paragraph>
+              <Typography.Paragraph type="secondary">Change only the quantities and stages the client cut. The bill is re-priced on what it certified and the claim is kept for reference.</Typography.Paragraph>
               <Table<RaBillItemDto>
                 rowKey="boqItemId"
                 size="small"
@@ -422,7 +427,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                     title: 'Certified',
                     width: 150,
                     render: (_, i) => (
-                      <Form.Item name={['qty', i.boqItemId]} noStyle rules={[{ required: true, message: 'Enter the quantity passed' }]}>
+                      <Form.Item name={['qty', i.boqItemId]} noStyle rules={[{ required: true, message: 'Enter the certified quantity' }]}>
                         <QuantityInput unit={i.unit} max={toNumber(i.thisQty)} aria-label={`Certified quantity of ${i.itemNo}`} />
                       </Form.Item>
                     ),
@@ -438,13 +443,13 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   dataSource={stageClaims}
                   columns={[
                     { title: 'Stage', render: (_, l) => <span><span className="mono" translate="no">{l.componentCode}</span> {l.stageName}</span> },
-                    { title: 'Claimed', dataIndex: 'thisPct', width: 120, align: 'right', render: (v) => <span className="mono" translate="no">{formatPct(v, { digits: 2 })}</span> },
+                    { title: 'Claimed (%)', dataIndex: 'thisPct', width: 120, align: 'right', render: (v) => <span className="mono" translate="no">{formatPct(v, { digits: 2 })}</span> },
                     {
-                      title: 'Passed (%)',
+                      title: 'Certified (%)',
                       width: 150,
                       render: (_, l) => (
-                        <Form.Item name={['stagePct', l.stageId]} noStyle rules={[{ required: true, message: 'Enter the % passed' }]}>
-                          <InputNumber min={0} max={toNumber(l.thisPct)} style={{ width: '100%' }} aria-label={`% of ${l.componentCode} ${l.stageName} passed`} />
+                        <Form.Item name={['stagePct', l.stageId]} noStyle rules={[{ required: true, message: 'Enter the certified %' }]}>
+                          <InputNumber min={0} max={toNumber(l.thisPct)} style={{ width: '100%' }} aria-label={`% of ${l.componentCode} ${l.stageName} certified`} />
                         </Form.Item>
                       ),
                     },

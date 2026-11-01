@@ -77,8 +77,6 @@ export const isInterState = (ours: string | null | undefined, theirs: string | n
 /** The ledger for money in or out: cash, else the bank (bank transfer, UPI, card). */
 export const moneyLedger = (mode: string) => (mode === 'CASH' ? 'CASH' : 'BANK');
 
-// ----- XML -----
-
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 /** Tally keeps debits negative and credits positive in AMOUNT, with ISDEEMEDPOSITIVE Yes on debits. */
 const amt = (v: Prisma.Decimal) => v.neg().toFixed(2);

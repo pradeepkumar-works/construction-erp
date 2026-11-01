@@ -1,5 +1,5 @@
 /**
- * O&M tests (item 131). The contract's instalment periods and their labels, the terms a contract must hold to, a day's
+ * O&M tests. The contract's instalment periods and their labels, the terms a contract must hold to, a day's
  * service level failures, a month's figures (days due and missing, failures beyond the allowance, MONTH benchmarks only
  * once the month is over, staff short at the monthly pay), the bill of a period, what stops a period being billed, and a
  * chemical's use against its norm.
@@ -85,6 +85,13 @@ test('periods: labels follow the instalments a year, and a contract with no valu
   assert.equal(monthly[10].from, '2026-02-01');
   assert.equal(monthly[10].to, '2026-02-28');
   assert.ok(monthly.every((p) => p.amount === 0));
+});
+
+test('periods: an instalment rounds half a paisa up, as the bill’s Decimal arithmetic does', () => {
+  const yearly = omPeriods({ ...TERMS, years: 1, yearPcts: [5], instalmentsPerYear: 1, contractValue: 12_345_678.9 });
+  assert.equal(yearly[0].amount, 617_283.95);
+  const thirds = omPeriods({ ...TERMS, years: 1, yearPcts: [5], instalmentsPerYear: 3, contractValue: 12_345_678.9 });
+  assert.equal(thirds[0].amount, 205_761.32);
 });
 
 test('terms: start on a first, whole-month instalments, a % for each year, and a population', () => {

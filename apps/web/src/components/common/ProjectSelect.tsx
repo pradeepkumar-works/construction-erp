@@ -8,7 +8,7 @@ import { useProjects } from '@/lib/queries';
 /** The projects the signed-in person works on, as picker options. */
 function useProjectOptions(exclude?: string) {
   const { data, isLoading } = useProjects();
-  return { isLoading, options: (data ?? []).filter((p) => p.id !== exclude).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` })) };
+  return { isLoading, options: (data ?? []).filter((p) => p.id !== exclude).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` })) };
 }
 
 /** `exclude` leaves one project out (the one being copied into). */
@@ -28,7 +28,7 @@ export function ProjectSelect({ exclude, ...props }: SelectProps<string> & { exc
   );
 }
 
-/** Several projects at once: the teams a new user joins (finding 17 of the October review). */
+/** Several projects at once: the teams a new user joins. */
 export function ProjectMultiSelect(props: SelectProps<string[]>) {
   const { options, isLoading } = useProjectOptions();
   return (

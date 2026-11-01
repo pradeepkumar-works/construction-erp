@@ -1,7 +1,7 @@
 import { defaultApproverRoles, hasAmount, levelsNeeded, type ApprovalStepAction, type RoleKey, type SubmissionType } from '@erp/shared';
 
 /**
- * Approval levels (v5 item 94), as pure functions over the organisation's rules and one entry's steps, so the queue,
+ * Approval levels, as pure functions over the organisation's rules and one entry's steps, so the queue,
  * the review endpoint, the stage card and the escalation job all decide alike (tested in scripts/approval-levels-test).
  */
 

@@ -13,6 +13,8 @@ import { usePageTitle } from '@/lib/page-title';
 import { FormGrid } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { BrandMark } from '@/components/shell/BrandMark';
+import { ResultMark } from '@/components/common/ResultMark';
+import { CheckCircleOutlined, DisconnectOutlined } from '@/components/common/icons';
 
 interface FormValues {
   rates: Record<string, { rate?: number | null; gstRate?: number; remarks?: string }>;
@@ -25,7 +27,7 @@ interface FormValues {
 }
 
 /**
- * The supplier's quote page (v5 item 95), opened from an enquiry email or WhatsApp link: no sign-in, the link is the
+ * The supplier's quote page, opened from an enquiry email or WhatsApp link: no sign-in, the link is the
  * key. It shows the company's items and takes a rate and GST per item plus freight, delivery and terms, once.
  */
 export default function QuotePage() {
@@ -84,11 +86,11 @@ export default function QuotePage() {
         </Flex>
         <h1 style={{ fontSize: t.fontSizeHeading3, margin: `0 0 ${t.marginXS}px` }}>{e ? <span translate="no">{e.organizationName}</span> : 'Send your quote'}</h1>
         {!token || info.error ? (
-          <Result status="warning" title="This link cannot be used" subTitle={errorMessage(info.error)} />
+          <Result icon={<ResultMark icon={<DisconnectOutlined />} />} title="This link cannot be used" subTitle={errorMessage(info.error)} />
         ) : info.isLoading || !e ? (
           <Skeleton active />
         ) : done ? (
-          <Result status="success" title="Your quote was received" subTitle={`${e.organizationName} has your rates for ${e.requestNo} (sent ${formatDateTime(done)}). They will contact you about the order.`} />
+          <Result icon={<ResultMark icon={<CheckCircleOutlined />} />} title="Your quote was received" subTitle={`${e.organizationName} has your rates for ${e.requestNo} (sent ${formatDateTime(done)}). They will contact you about the order.`} />
         ) : (
           <>
             <Typography.Paragraph>

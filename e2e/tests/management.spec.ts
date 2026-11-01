@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Management dashboard and reports (item 132). The MD sees every contract project with its health and money, opens one
+ * Management dashboard and reports. The MD sees every contract project with its health and money, opens one
  * to see why, and opens the Monthly MIS with Print and Excel; the totals add up to the projects; an engineer, who does
  * not see project cost, is refused.
  */

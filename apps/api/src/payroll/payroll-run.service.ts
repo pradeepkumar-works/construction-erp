@@ -37,7 +37,7 @@ const ORDER = Object.keys(PAYSLIP_CODES) as PayslipCode[];
 const isManual = (c: string): c is ManualPayslipCode => (MANUAL_PAYSLIP_CODES as readonly string[]).includes(c);
 
 /**
- * Salary runs (v6 item 100): HR prepares a month's run for the company or one site from approved attendance and each
+ * Salary runs: HR prepares a month's run for the company or one site from approved attendance and each
  * person's salary structure, adds arrears or deductions by hand, and submits it; management approves or sends it back;
  * accounts pays it with the bank file and the run is locked. Every step is in the audit log. Staff see their own payslips
  * once the run is approved.
@@ -60,10 +60,10 @@ export class PayrollRunService {
       projectName: r.project?.name ?? null,
       status: r.status,
       employees: r._count.payslips,
-      gross: money(r.gross)!,
-      deductions: money(r.deductions)!,
-      net: money(r.net)!,
-      employerCost: money(r.employerCost)!,
+      gross: money(r.gross),
+      deductions: money(r.deductions),
+      net: money(r.net),
+      employerCost: money(r.employerCost),
       preparedByName: r.preparedBy.fullName,
       submittedAt: iso(r.submittedAt),
       approvedByName: r.approvedBy?.fullName ?? null,
@@ -72,7 +72,7 @@ export class PayrollRunService {
       paidOn: dateOnly(r.paidOn),
       paymentRef: r.paymentRef,
       paidByName: r.paidBy?.fullName ?? null,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
       can: {
         edit: r.status === 'DRAFT' && canRunPayroll(user.roleKey),
         submit: r.status === 'DRAFT' && canRunPayroll(user.roleKey) && r._count.payslips > 0,
@@ -101,17 +101,17 @@ export class PayrollRunService {
       bankName: s.bankName,
       bankAccountNo: s.bankAccountNo,
       bankIfsc: s.bankIfsc,
-      monthDays: dec(s.monthDays)!,
-      paidDays: dec(s.paidDays)!,
-      lopDays: dec(s.lopDays)!,
-      overtimeHours: dec(s.overtimeHours)!,
-      gross: money(s.gross)!,
-      deductions: money(s.deductions)!,
-      net: money(s.net)!,
-      employerCost: money(s.employerCost)!,
-      pfWages: money(s.pfWages)!,
-      esiWages: money(s.esiWages)!,
-      lines: s.lines.map((l) => ({ id: l.id, kind: l.kind, code: l.code, label: l.label, amount: money(l.amount)!, manual: l.manual })),
+      monthDays: dec(s.monthDays),
+      paidDays: dec(s.paidDays),
+      lopDays: dec(s.lopDays),
+      overtimeHours: dec(s.overtimeHours),
+      gross: money(s.gross),
+      deductions: money(s.deductions),
+      net: money(s.net),
+      employerCost: money(s.employerCost),
+      pfWages: money(s.pfWages),
+      esiWages: money(s.esiWages),
+      lines: s.lines.map((l) => ({ id: l.id, kind: l.kind, code: l.code, label: l.label, amount: money(l.amount), manual: l.manual })),
     };
   }
 
@@ -320,8 +320,6 @@ export class PayrollRunService {
     if (!statuses.length) return [];
     return this.prisma.payrollRun.findMany({ where: { organizationId: user.organizationId, status: { in: [...statuses] } }, select: { status: true, net: true, runNo: true } });
   }
-
-  /* ---------- files ---------- */
 
   private async filesFor(user: RequestUser, id: string) {
     this.salary.assertView(user);

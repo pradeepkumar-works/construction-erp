@@ -2,8 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { api, apiToken, formPanel, settle, signIn, webVitalBudgets } from './helpers';
 
 /**
- * Speed you can feel (item 83): lists keep their rows while paging, pickers search as you type, home does not jump, and
- * the main pages keep to the Web Vitals budgets (item 89).
+ * Speed you can feel: lists keep their rows while paging, pickers search as you type, home does not jump, and
+ * the main pages keep to the Web Vitals budgets.
  */
 
 const rows = (page: Page) => page.locator('.ant-table-tbody .ant-table-row');
@@ -45,9 +45,9 @@ test('a picker searches as you type and never loads the whole master', async ({ 
   const manager = form.getByLabel('Project manager');
   await manager.click();
   await manager.fill('kavi');
-  await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').getByText('Kavita Rao (Project Manager)')).toBeVisible();
+  await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').getByText('Kavita Rao (Project manager)')).toBeVisible();
   await manager.press('Enter');
-  await expect(form.locator('.ant-form-item').filter({ hasText: 'Project manager' })).toContainText('Kavita Rao (Project Manager)');
+  await expect(form.locator('.ant-form-item').filter({ hasText: 'Project manager' })).toContainText('Kavita Rao (Project manager)');
 
   // The search went to the server, and no picker asked for a whole master (the header's project list is the one large page).
   expect(asked.some((u) => /\/api\/users\?.*q=kavi/.test(u))).toBe(true);
@@ -75,7 +75,7 @@ test('My work draws without layout shift above the charts', async ({ page }) => 
 });
 
 /**
- * The budgets in `apps/web/src/lib/vitals.ts` (item 83), measured by the app's own reporting (next/web-vitals into
+ * The budgets in `apps/web/src/lib/vitals.ts`, measured by the app's own reporting (next/web-vitals into
  * `reportWebVital`, which sends `POST /api/vitals` when the tab is hidden) on home, a list, a record and Approvals, each
  * opened fresh and used once (the search palette, and a row on the list).
  * CI shares two to four slow cores between Postgres, the API, the web server and the browser, with no GPU, so the timed

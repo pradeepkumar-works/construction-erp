@@ -37,7 +37,7 @@ interface FormValues {
 
 /**
  * Opening stock, wastage, damage or a count correction (approvers). Quantities are signed; a line can add a new item.
- * The reason feeds the wastage report (v5 item 92).
+ * The reason feeds the wastage report.
  */
 export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
   const [form] = Form.useForm<FormValues>();
@@ -83,10 +83,10 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={760} title="Adjust stock" okText="Save adjustment" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose a project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="reason" label="Reason" rules={[{ required: true, message: 'Choose the reason, e.g. Wastage' }]}>
@@ -109,7 +109,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                   const bal = itemId ? balanceOf.get(itemId) : undefined;
                   return (
                     <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                      <Form.Item name={[f.name, 'itemId']} style={{ flex: '3 1 220px', marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
+                      <Form.Item name={[f.name, 'itemId']} style={{ flex: '3 1 220px', marginBottom: 0 }} rules={[{ required: true, message: 'Choose an item' }]}>
                         <SearchSelect<ItemDto>
                           source="items"
                           toOption={itemOption}
@@ -140,7 +140,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                                 ? !v || !bal || Number(bal.balance) + Number(v) >= 0
                                   ? Promise.resolve()
                                   : Promise.reject(new Error(`Only ${formatQty(bal.balance)} in stock`))
-                                : Promise.reject(new Error('Not zero')),
+                                : Promise.reject(new Error('Enter a quantity other than zero')),
                           },
                         ]}
                       >

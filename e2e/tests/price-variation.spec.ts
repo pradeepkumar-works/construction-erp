@@ -27,7 +27,7 @@ async function roadProject(token: string) {
   return (await api<Page<Project>>(token, '/projects?pageSize=100')).items.find((p) => p.code === 'RD-2026-01')!;
 }
 
-/** Price variation (v4 item 50): the formula on the contract tab, each component a share of the work value with a base index. */
+/** Price variation: the formula on the contract tab, each component a share of the work value with a base index. */
 test('a project manager sets the price variation formula', async ({ page }) => {
   const pm = await apiToken('pm@demo.com');
   const road = await roadProject(pm);
@@ -89,7 +89,7 @@ test('price variation on an RA bill from the indices', async ({ page }) => {
     await signIn(page, 'qs@demo.com');
     await page.goto(`/bills?id=${bill.id}`);
     const drawer = page.locator('.ant-drawer').filter({ hasText: 'Abstract of cost' });
-    await drawer.getByRole('button', { name: 'Fill in indices' }).click();
+    await drawer.getByRole('button', { name: 'Enter indices' }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: `Price variation on ${bill.billLabel}` });
     // The first component's index is up 10%; the others did not move.
     const up = (Number(first.baseIndex) * 1.1).toFixed(3);

@@ -1,5 +1,5 @@
 /**
- * Payroll arithmetic (v6 item 100), pure so that `src/scripts/payroll-test.ts` can check it: a month's payslip from the
+ * Payroll arithmetic, pure so that `src/scripts/payroll-test.ts` can check it: a month's payslip from the
  * salary structure, the days paid and the company's settings, the income tax a month under either regime, and the full
  * and final settlement of someone who has left. Amounts are rupees; payslip lines are rounded to the rupee.
  */

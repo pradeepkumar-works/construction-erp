@@ -77,7 +77,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
         title="Labour daily rates"
         onCancel={onClose}
         footer={
-          <Button type="primary" onClick={onClose}>
+          <Button onClick={onClose}>
             Close
           </Button>
         }

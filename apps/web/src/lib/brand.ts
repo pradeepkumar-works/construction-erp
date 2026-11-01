@@ -61,11 +61,10 @@ export const BRAND = {
     accentSoft: '#EEF4FD',
     /** A chosen table row or option: a step deeper than `accentSoft`, so it still shows under the pointer's hover. */
     accentChosen: '#E2ECFB',
-    /** Series colours in charts, beside the primary blue (cost heads: expenses, machinery, labour, subcontract). */
-    chartViolet: '#7C3AED',
-    chartAmber: '#D97706',
-    chartTeal: '#0F766E',
-    chartPink: '#BE185D',
+    costSubcontract: '#0F766E',
+    costLabour: '#D97706',
+    costMachinery: '#64748B',
+    costExpenses: '#94A3B8',
     /** The management trend's billed, received and cost lines, on white and on the night surface (checked for colour-blind
      *  separation with the dataviz palette check). */
     trendBilled: '#1E63D6',
@@ -80,12 +79,12 @@ export const BRAND = {
     progressFinancial: '#0D9488',
     progressPhysicalNight: '#5B93F0',
     progressFinancialNight: '#14A093',
-    /** Drawing markup ink (item 109), on the white of a drawing sheet in either theme. */
+    /** Drawing markup ink, on the white of a drawing sheet in either theme. */
     markupRed: '#D92D20',
     markupBlue: '#1E63D6',
     markupGreen: '#167A3E',
     markupOrange: '#C2410C',
-    /** Measures and the scale on a drawing (item 118): a violet no mark uses, and the scale's dark slate. */
+    /** Measures and the scale on a drawing: a violet no mark uses, and the scale's dark slate. */
     takeoff: '#7A3DD8',
     takeoffScale: '#334155',
     /** Comparing revisions: lines only on the older one, only on the newer one, and on both. */

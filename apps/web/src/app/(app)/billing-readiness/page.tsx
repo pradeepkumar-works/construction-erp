@@ -19,7 +19,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ResultMark } from '@/components/common/ResultMark';
 
 /**
- * The next bill (intelligence quick win Q7): what the project could bill today (measured, approved and not measured, stages
+ * The next bill: what the project could bill today (measured, approved and not measured, stages
  * done) and, at the pace of the last days' approved work, what it will be worth by the month end the next bill runs to.
  */
 function NextBill({ next, projectId }: { next: NextBillDto; projectId: string }) {
@@ -51,7 +51,7 @@ function NextBill({ next, projectId }: { next: NextBillDto; projectId: string })
 }
 
 /**
- * Billing readiness (AI item 122): per project, money earned and not yet asked for (approved measurements in no RA bill,
+ * Billing readiness: per project, money earned and not yet asked for (approved measurements in no RA bill,
  * approved bills not sent) and money asked for and not paid, late once past the days the client takes. Draft reminder
  * opens a letter filled in from the bill and the contract's payment clause, for the project manager to check and send.
  */

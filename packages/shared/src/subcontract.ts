@@ -1,4 +1,4 @@
-/** Subcontractor work orders and their bills (v3 item 22). */
+/** Subcontractor work orders and their bills. */
 
 /** "WO-2026-0003 bill 2", or "WO-2026-0003 bill 5 (final)". */
 export const subBillLabel = (woNo: string, billNo: number, isFinal: boolean): string => `${woNo} bill ${billNo}${isFinal ? ' (final)' : ''}`;

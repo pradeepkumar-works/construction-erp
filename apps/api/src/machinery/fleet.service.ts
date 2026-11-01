@@ -47,7 +47,7 @@ const partInclude = {
 type PartRow = Prisma.EquipmentPartGetPayload<{ include: typeof partInclude }>;
 
 /**
- * Fuel and fleet use (v5 item 93): each site's daily fuel position and the fuel issued into machines (stock entries of
+ * Fuel and fleet use: each site's daily fuel position and the fuel issued into machines (stock entries of
  * fuel items with `equipmentId`), utilisation from the approved logs, and the tyres and batteries on each machine. The
  * fuel issue itself is `StockService.fuelIssue`, so it keeps the store's lock, numbering and stock checks.
  */
@@ -59,21 +59,19 @@ export class FleetService {
     private audit: AuditService,
   ) {}
 
-  /* ---------- fuel ---------- */
-
   private toIssue(e: IssueRow): FuelIssueDto {
     const line = e.lines[0];
     return {
       entryId: e.id,
       entryNo: e.entryNo,
-      date: dateOnly(e.date)!,
+      date: dateOnly(e.date),
       projectId: e.projectId,
       equipmentId: e.equipmentId,
       equipmentCode: e.equipment?.code ?? null,
       equipmentName: e.equipment?.name ?? null,
       itemName: line?.item.name ?? '',
       unit: line?.item.unit ?? '',
-      litres: dec(e.lines.reduce((s, l) => s.sub(l.quantity), ZERO))!,
+      litres: dec(e.lines.reduce((s, l) => s.sub(l.quantity), ZERO)),
       meterReading: dec(e.meterReading),
       issuedTo: e.issuedTo,
       createdByName: e.createdBy.fullName,
@@ -126,11 +124,11 @@ export class FleetService {
           itemId: i.id,
           itemName: i.name,
           unit: i.unit,
-          opening: dec(opening)!,
-          received: dec(received)!,
-          issuedToMachines: dec(toMachines)!,
-          otherOut: dec(otherOut)!,
-          closing: dec(opening.add(received).sub(toMachines).sub(otherOut))!,
+          opening: dec(opening),
+          received: dec(received),
+          issuedToMachines: dec(toMachines),
+          otherOut: dec(otherOut),
+          closing: dec(opening.add(received).sub(toMachines).sub(otherOut)),
           minLevel: dec(minOf.get(k(p.id, i.id))),
         });
       }
@@ -154,8 +152,6 @@ export class FleetService {
     });
     return rows.map((e) => this.toIssue(e));
   }
-
-  /* ---------- utilisation ---------- */
 
   /** GET /fleet/utilisation: each machine's approved logs in a period against the shift on the days it was on site. */
   async utilisation(user: RequestUser, q: FleetPeriodQuery): Promise<FleetUtilisationDto> {
@@ -182,7 +178,7 @@ export class FleetService {
       // A day on site is the shift, or the hours logged when the machine ran longer (two shifts, a long pour).
       const perDay = new Map<string, Decimal>();
       for (const l of ls) {
-        const d = dateOnly(l.date)!;
+        const d = dateOnly(l.date);
         perDay.set(d, (perDay.get(d) ?? ZERO).add(l.hoursWorked).add(l.idleHours).add(l.breakdownHours));
       }
       const days = perDay.size;
@@ -201,13 +197,13 @@ export class FleetService {
         ownership: eq.ownership,
         projectName: projectsSeen.length === 1 ? projectsSeen[0] : `${projectsSeen.length} projects`,
         daysOnSite: days,
-        availableHours: dec(available)!,
-        workedHours: dec(worked)!,
-        idleHours: dec(idle)!,
-        breakdownHours: dec(breakdown)!,
+        availableHours: dec(available),
+        workedHours: dec(worked),
+        idleHours: dec(idle),
+        breakdownHours: dec(breakdown),
         utilisationPct: share(worked, available),
         availabilityPct: share(available.sub(breakdown), available),
-        fuelLitres: dec(fuel)!,
+        fuelLitres: dec(fuel),
         fuelPerHour: worked.gt(0) && fuel.gt(0) ? dec(fuel.div(worked).toDecimalPlaces(2)) : null,
         _a: available,
         _w: worked,
@@ -223,10 +219,10 @@ export class FleetService {
       return {
         category,
         machines: rs.length,
-        availableHours: dec(a)!,
-        workedHours: dec(w)!,
-        idleHours: dec(rs.reduce((s, r) => s.add(r._i), ZERO))!,
-        breakdownHours: dec(b)!,
+        availableHours: dec(a),
+        workedHours: dec(w),
+        idleHours: dec(rs.reduce((s, r) => s.add(r._i), ZERO)),
+        breakdownHours: dec(b),
         utilisationPct: share(w, a),
         availabilityPct: share(a.sub(b), a),
       };
@@ -241,8 +237,6 @@ export class FleetService {
       fleet: group(null, rows),
     };
   }
-
-  /* ---------- tyres and batteries ---------- */
 
   private async machine(user: RequestUser, equipmentId: string) {
     const eq = await this.prisma.equipment.findFirst({ where: { id: equipmentId, organizationId: user.organizationId }, select: { id: true, code: true, name: true, fuelNormUnit: true } });
@@ -272,7 +266,7 @@ export class FleetService {
       position: r.position,
       make: r.make,
       serialNo: r.serialNo,
-      fittedOn: dateOnly(r.fittedOn)!,
+      fittedOn: dateOnly(r.fittedOn),
       fittedMeter: dec(r.fittedMeter),
       removedOn: dateOnly(r.removedOn),
       removedMeter: dec(r.removedMeter),

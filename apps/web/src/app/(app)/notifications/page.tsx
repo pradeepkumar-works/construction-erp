@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Flex, Pagination, Segmented, Space, Spin } from 'antd';
+import { Badge, Button, Card, Flex, Pagination, Segmented, Space } from 'antd';
 import { AppTabs } from '@/components/common/AppTabs';
 import { CheckOutlined, MessageOutlined } from '@/components/common/icons';
 import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shared';
@@ -10,7 +10,7 @@ import { canViewMessageLog, NOTIFICATION_TABS, NOTIFICATION_TAB_LABELS, SUBMISSI
 import { useAuth } from '@/lib/auth';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { SubmissionRecordDrawer, type OpenSubmission } from '@/components/notifications/SubmissionRecordDrawer';
 import { NotificationFeed } from '@/components/notifications/NotificationFeed';
 import { submissionOf } from '@/components/notifications/NotificationBell';
@@ -22,6 +22,16 @@ import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor } from '@/lib/theme';
 
 const PAGE_SIZE = 25;
+
+/** A filter's name with its unread count beside it, said as "3 unread". */
+function Counted({ label, count }: { label: string; count: number }) {
+  return (
+    <Flex align="center" gap={6}>
+      {label}
+      {count > 0 && <Badge count={count} size="small" aria-label={`${count} unread`} />}
+    </Flex>
+  );
+}
 
 function NotificationsPageInner() {
   const router = useRouter();
@@ -69,24 +79,29 @@ function NotificationsPageInner() {
             setKind(v as NotificationTab | 'ALL');
             setPage(1);
           }}
-          options={[{ value: 'ALL', label: 'All' }, ...NOTIFICATION_TABS.map((t) => ({ value: t, label: data?.unreadByTab?.[t] ? `${NOTIFICATION_TAB_LABELS[t]} (${data.unreadByTab[t]})` : NOTIFICATION_TAB_LABELS[t] }))]}
+          aria-label="Kind"
+          options={[{ value: 'ALL', label: 'All' }, ...NOTIFICATION_TABS.map((t) => ({ value: t, label: <Counted label={NOTIFICATION_TAB_LABELS[t]} count={data?.unreadByTab?.[t] ?? 0} /> }))]}
         />
         <Segmented
           value={filter}
+          aria-label="Read or unread"
           onChange={(v) => {
             setFilter(v as 'ALL' | 'UNREAD');
             setPage(1);
           }}
           options={[
             { value: 'ALL', label: 'Read and unread' },
-            { value: 'UNREAD', label: `Unread (${unread})` },
+            { value: 'UNREAD', label: <Counted label="Unread" count={unread} /> },
           ]}
         />
       </CardToolbar>
-      <Spin spinning={isLoading}>
+      {isLoading ? (
+        <PageSkeleton shape="list" header={false} />
+      ) : (
+        <>
         {items.length ? (
           <NotificationFeed items={items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)} onOpen={onClick} />
-        ) : isLoading ? null : (
+        ) : (
           <Flex justify="center" style={{ padding: 16, color: themeColor('colorTextDescription') }}>
             {filter === 'UNREAD' ? <EmptyArt art="approved" title="You are all caught up." /> : 'No notifications yet. You will be told here when your submissions are reviewed.'}
           </Flex>
@@ -94,7 +109,8 @@ function NotificationsPageInner() {
         <Flex justify="flex-end" style={{ padding: items.length > PAGE_SIZE ? 16 : 0 }}>
           <Pagination current={page} pageSize={PAGE_SIZE} total={items.length} hideOnSinglePage onChange={setPage} />
         </Flex>
-      </Spin>
+        </>
+      )}
     </>
   );
 
@@ -102,11 +118,11 @@ function NotificationsPageInner() {
     <div className="page-container">
       <PageHeader
         title="Notifications"
-        subtitle="Approvals, rejections, change requests, DPR reminders, low-stock alerts and your daily approvals digest"
+        subtitle="What happened to your entries, what waits for your decision, and what falls due."
         extra={
           <Space wrap>
             <Button icon={<MessageOutlined />} onClick={() => setSettings(true)}>
-              Alerts
+              Email, WhatsApp and SMS alerts
             </Button>
             <Button icon={<CheckOutlined />} disabled={unread === 0} loading={markAll.isPending} onClick={() => markAll.mutate(kind === 'ALL' ? undefined : kind)}>
               Mark all as read

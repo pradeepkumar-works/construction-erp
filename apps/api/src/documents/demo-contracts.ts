@@ -1,5 +1,5 @@
 /**
- * Three sample contracts for the demo company (AI item 75), one per demo project, and the questions they are tested
+ * Three sample contracts for the demo company, one per demo project, and the questions they are tested
  * with. The seed files them as CONTRACT documents with a generated text PDF, and `src/scripts/contract-search-test.ts`
  * checks that each question finds its clause on the expected page. The terms match the projects' contract terms in the
  * seed (retention, advance, defects liability, price variation, liquidated damages).
@@ -272,8 +272,6 @@ export const LETTER_QUESTIONS: { question: string; subject: string }[] = [
   { question: 'Did we notify the client about the land delay?', subject: 'Hindrance: encroachment inside the ROW at Ch 12+300 to 12+650' },
   { question: 'Have we asked for an extension of time for the encroachment?', subject: 'Request for extension of time: encroachment at Ch 12+300' },
 ];
-
-/* ---------------- a plain text PDF ---------------- */
 
 const PAGE_W = 595;
 const PAGE_H = 842;

@@ -20,7 +20,7 @@ export class EnquiriesController {
 
   @ApiOperation({
     summary: 'Send an enquiry to vendors',
-    description: 'v5 item 95. One-time link per vendor to a page where they type rates, GST, freight and delivery days; emailed when the vendor has an email. The answer carries the links (only here) to pass on by hand.',
+    description: 'One-time link per vendor to a page where they type rates, GST, freight and delivery days; emailed when the vendor has an email. The answer carries the links (only here) to pass on by hand.',
   })
   @Post()
   create(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateEnquiryDto, @Headers('origin') origin?: string) {
@@ -43,7 +43,7 @@ function limit(req: { ip?: string; headers: Record<string, string | string[] | u
   else if (++t.n > MAX_TRIES) throw new HttpException('Too many tries from this connection. Wait a few minutes and try again.', HttpStatus.TOO_MANY_REQUESTS);
 }
 
-/** The supplier's quote page (v5 item 95): no sign-in, the link's token is the key. */
+/** The supplier's quote page: no sign-in, the link's token is the key. */
 @ApiTags('purchasing')
 @Public()
 @AllowWhenUnpaid()

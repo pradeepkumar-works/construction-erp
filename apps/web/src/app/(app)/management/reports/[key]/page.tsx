@@ -18,9 +18,10 @@ import { FigureStrip } from '@/components/management/FigureStrip';
 import { ReportSection } from '@/components/management/ReportSection';
 import { cellText } from '@/components/management/report-format';
 import { exportManagementReport, openManagementReportPrint } from '@/components/management/reportOutput';
+import { MONTH_PICKER_FORMAT } from '@/lib/format';
 
 const isKey = (k: string | undefined): k is ManagementReportKey => !!k && (MANAGEMENT_REPORT_KEYS as readonly string[]).includes(k);
-const crumbs = [{ title: 'Management dashboard', href: '/management' }];
+const crumbs = [{ title: 'Reports', href: '/modules/reports' }];
 
 /**
  * A management report (ARCHITECTURE "Management dashboard and reports"): its period (a month, a range of dates, or today),
@@ -62,7 +63,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
   const month = search.get('month') ?? undefined;
   const from = search.get('from') ?? undefined;
   const to = search.get('to') ?? undefined;
-  // The header's vertical (item 167) narrows a report over every project.
+  // The header's vertical narrows a report over every project.
   const [vertical] = useVerticalScope();
   const scope = projectId ? { projectId } : { vertical };
   const params = info.period === 'month' ? { month, ...scope } : info.period === 'range' ? { from, to, ...scope } : scope;
@@ -82,7 +83,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
     () =>
       (projects ?? [])
         .filter((p) => reportKey === 'stock' || (p.type !== 'STORE' && p.type !== 'PLANT'))
-        .map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` })),
+        .map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` })),
     [projects, reportKey],
   );
 
@@ -108,7 +109,7 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
         picker="month"
         aria-label="Month"
         allowClear={false}
-        format="MMMM YYYY"
+        format={MONTH_PICKER_FORMAT}
         value={dayjs(month ? `${month}-01` : undefined)}
         disabledDate={(d: Dayjs) => d.isAfter(dayjs(), 'month')}
         onChange={(d) => setParams({ month: d ? d.format('YYYY-MM') : undefined })}
@@ -117,7 +118,6 @@ function Report({ reportKey }: { reportKey: ManagementReportKey }) {
       <DatePicker.RangePicker
         aria-label="Period"
         allowClear={false}
-        format="D MMM YYYY"
         value={[from ? dayjs(from) : data?.from ? dayjs(data.from) : null, to ? dayjs(to) : data ? dayjs(data.to) : null]}
         disabledDate={(d: Dayjs) => d.isAfter(dayjs(), 'day')}
         onChange={(v) =>

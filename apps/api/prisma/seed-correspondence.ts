@@ -1,18 +1,13 @@
 /**
- * Demo correspondence (item 136): the address book, the road project's letters given their categories, marks, dispatch and
+ * Demo correspondence: the address book, the road project's letters given their categories, marks, dispatch and
  * proof, a reply waiting for the project manager's signature, and a head office letter from the bank. Numbers come from
  * the same series the service uses, so the next letter recorded continues them. Runs once per company (when it has no
  * address book yet), after `seedDocuments` made the road project's letters.
  */
 import { PrismaClient } from '@prisma/client';
 import { HEAD_OFFICE_PREFIX, LETTER_NUMBER_PATTERN, formatLetterNo, letterFy, letterPrefixOf, type LetterDirection } from '@erp/shared';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
 export async function seedCorrespondence(prisma: PrismaClient, organizationId: string) {

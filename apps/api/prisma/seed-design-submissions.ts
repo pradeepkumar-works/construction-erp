@@ -1,18 +1,15 @@
 /**
- * Demo design submissions (item 138 part 2): on the road, which we design, the typical cross sections approved by the
+ * Demo design submissions: on the road, which we design, the typical cross sections approved by the
  * Authority's Engineer, the pipe culvert vetted by a state engineering college with one remark and then sent for approval,
  * now late with the reviewer; on the hospital, the slab concreting method statement approved with comments (one still to
  * answer) and the plumbing riser shop drawing with the architect. Dates sit against the register's revisions. Runs once
  * per company (when it has none yet), after the demo documents and the drawing schedule.
  */
 import { Prisma, PrismaClient } from '@prisma/client';
+import { day } from './seed-clock';
 
 const plus = (d: Date, days: number) => new Date(d.getTime() + days * 86_400_000);
-const today = () => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
-};
+const today = () => day(0);
 const notAfterToday = (d: Date) => (d > today() ? today() : d);
 
 const ENGINEER = 'The Authority’s Engineer, four-laning project';

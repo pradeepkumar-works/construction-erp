@@ -18,7 +18,7 @@ type Today = {
 };
 
 /**
- * Management view on the phone (v5 item 96): `GET /dashboard/company-today` gives owners, directors, accounts and
+ * Management view on the phone: `GET /dashboard/company-today` gives owners, directors, accounts and
  * project managers the company's day, each part only where the role sees its module and only for its projects; a
  * payment made today counts at once. Site roles are refused (their Home stays as it was).
  */

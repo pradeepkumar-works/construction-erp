@@ -16,7 +16,7 @@ import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import type { RecordSection } from '@/components/record/RecordFrame';
 
 /**
- * Checks before approval on a bill or expense (AI item 69): one line on top (the model's when Ask Nirmaan is on and
+ * Checks before approval on a bill or expense: one line on top (the model's when Ask Nirmaan is on and
  * something is flagged), then the flags with what they are about, and a tick for each rule that passed. Someone who may
  * approve the bill can accept a flag with a note. The record puts it first among its sections; the approvals inbox
  * shows it through the record's pane.

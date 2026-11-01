@@ -62,7 +62,7 @@ const checkNotFuture = (date: string, what: string) => {
 const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 86400000);
 
 /**
- * Subcontractor bills (v3 item 22), running bills under a work order. A bill takes the approved measurements of the
+ * Subcontractor bills, running bills under a work order. A bill takes the approved measurements of the
  * contractor's work up to a date that no earlier bill took (BOQ lines) and the quantities entered for the order's own
  * items, priced at the work order rates with previous / this bill / up to date per line; adds GST at the order's rate;
  * and recovers retention, the advance (capped at what is still outstanding), TDS and the material issued to them from
@@ -83,14 +83,14 @@ export class SubcontractBillsService {
   toDto(r: Row): SubcontractBillDto {
     const deductions: SubcontractBillDeductionDto[] = [];
     const pct = (key: 'retention' | 'advanceRecovery' | 'tds', p: Prisma.Decimal, amount: Prisma.Decimal) => {
-      if (!amount.isZero()) deductions.push({ key, label: SUB_BILL_DEDUCTION_LABELS[key], pct: pctStr(p), amount: money(amount)! });
+      if (!amount.isZero()) deductions.push({ key, label: SUB_BILL_DEDUCTION_LABELS[key], pct: pctStr(p), amount: money(amount) });
     };
     pct('retention', r.retentionPct, r.retentionAmount);
     pct('advanceRecovery', r.advanceRecoveryPct, r.advanceRecoveryAmount);
     pct('tds', r.tdsPct, r.tdsAmount);
-    if (!r.materialRecovery.isZero()) deductions.push({ key: 'material', label: SUB_BILL_DEDUCTION_LABELS.material, pct: null, amount: money(r.materialRecovery)! });
-    if (!r.excessRecovery.isZero()) deductions.push({ key: 'excessMaterial', label: SUB_BILL_DEDUCTION_LABELS.excessMaterial, pct: null, amount: money(r.excessRecovery)! });
-    if (!r.otherDeduction.isZero()) deductions.push({ key: 'other', label: r.otherDeductionNote || SUB_BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction)! });
+    if (!r.materialRecovery.isZero()) deductions.push({ key: 'material', label: SUB_BILL_DEDUCTION_LABELS.material, pct: null, amount: money(r.materialRecovery) });
+    if (!r.excessRecovery.isZero()) deductions.push({ key: 'excessMaterial', label: SUB_BILL_DEDUCTION_LABELS.excessMaterial, pct: null, amount: money(r.excessRecovery) });
+    if (!r.otherDeduction.isZero()) deductions.push({ key: 'other', label: r.otherDeductionNote || SUB_BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction) });
     const w = r.workOrder;
     return {
       id: r.id,
@@ -107,28 +107,28 @@ export class SubcontractBillsService {
       vendorGstin: w.vendor.gstin,
       vendorPan: w.vendor.pan,
       vendorMsme: w.vendor.msmeCategory,
-      billDate: dateOnly(r.billDate)!,
-      measuredUpTo: dateOnly(r.measuredUpTo)!,
+      billDate: dateOnly(r.billDate),
+      measuredUpTo: dateOnly(r.measuredUpTo),
       invoiceNo: r.invoiceNo,
-      dueDate: dateOnly(r.dueDate)!,
-      grossPrevious: money(r.grossPrevious)!,
-      grossAmount: money(r.grossAmount)!,
-      grossUpto: money(r.grossUpto)!,
+      dueDate: dateOnly(r.dueDate),
+      grossPrevious: money(r.grossPrevious),
+      grossAmount: money(r.grossAmount),
+      grossUpto: money(r.grossUpto),
       gstRate: pctStr(r.gstRate),
-      gstAmount: money(r.gstAmount)!,
+      gstAmount: money(r.gstAmount),
       retentionPct: pctStr(r.retentionPct),
       advanceRecoveryPct: pctStr(r.advanceRecoveryPct),
       tdsPct: pctStr(r.tdsPct),
-      materialRecovery: money(r.materialRecovery)!,
-      excessRecovery: money(r.excessRecovery)!,
-      otherDeduction: money(r.otherDeduction)!,
+      materialRecovery: money(r.materialRecovery),
+      excessRecovery: money(r.excessRecovery),
+      otherDeduction: money(r.otherDeduction),
       otherDeductionNote: r.otherDeductionNote,
       deductions,
-      totalDeductions: money(r.totalDeductions)!,
-      netPayable: money(r.netPayable)!,
-      debitNoteAmount: money(r.debitNoteAmount)!,
-      paidAmount: money(r.paidAmount)!,
-      outstanding: money(Prisma.Decimal.max(subBillPayable(r).sub(r.paidAmount), 0))!,
+      totalDeductions: money(r.totalDeductions),
+      netPayable: money(r.netPayable),
+      debitNoteAmount: money(r.debitNoteAmount),
+      paidAmount: money(r.paidAmount),
+      outstanding: money(Prisma.Decimal.max(subBillPayable(r).sub(r.paidAmount), 0)),
       paidDate: dateOnly(r.paidDate),
       remarks: r.remarks,
       measurementCount: r._count.measurements,
@@ -144,18 +144,18 @@ export class SubcontractBillsService {
           itemNo: wl.boqItem?.itemNo ?? null,
           description: wl.description,
           unit: wl.unit,
-          woQty: dec(wl.quantity)!,
-          rate: money(l.rate)!,
-          prevQty: dec(l.prevQty)!,
-          thisQty: dec(l.thisQty)!,
-          uptoQty: dec(l.uptoQty)!,
-          prevAmount: money(prevAmount)!,
-          amount: money(l.amount)!,
-          uptoAmount: money(prevAmount.add(l.amount))!,
-          excessQty: excess.gt(0) ? dec(excess)! : '0',
+          woQty: dec(wl.quantity),
+          rate: money(l.rate),
+          prevQty: dec(l.prevQty),
+          thisQty: dec(l.thisQty),
+          uptoQty: dec(l.uptoQty),
+          prevAmount: money(prevAmount),
+          amount: money(l.amount),
+          uptoAmount: money(prevAmount.add(l.amount)),
+          excessQty: excess.gt(0) ? dec(excess) : '0',
         };
       }),
-      materials: r.materials.map((m) => ({ itemId: m.itemId, itemName: m.item.name, unit: m.item.unit, quantity: dec(m.quantity)!, rate: money(m.rate)!, amount: money(m.amount)! })),
+      materials: r.materials.map((m) => ({ itemId: m.itemId, itemName: m.item.name, unit: m.item.unit, quantity: dec(m.quantity), rate: money(m.rate), amount: money(m.amount) })),
       status: r.status,
       submittedById: r.submittedById,
       submittedByName: r.submittedBy.fullName,
@@ -165,8 +165,8 @@ export class SubcontractBillsService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -224,8 +224,8 @@ export class SubcontractBillsService {
     ]);
     return {
       ...this.toDto(row),
-      measurements: sheets.map((s) => ({ id: s.id, mbNo: s.mbNo, date: dateOnly(s.date)!, boqItemNo: s.boqItem.itemNo, unit: s.boqItem.unit, location: s.location, totalQty: dec(s.totalQty)! })),
-      issues: issues.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date)!, lines: e._count.lines })),
+      measurements: sheets.map((s) => ({ id: s.id, mbNo: s.mbNo, date: dateOnly(s.date), boqItemNo: s.boqItem.itemNo, unit: s.boqItem.unit, location: s.location, totalQty: dec(s.totalQty) })),
+      issues: issues.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date), lines: e._count.lines })),
     };
   }
 
@@ -256,7 +256,7 @@ export class SubcontractBillsService {
     await tx.stockEntry.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.measurementSheet.updateMany({ where: { workOrderId: wo.id, status: 'APPROVED', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
     await tx.stockEntry.updateMany({ where: { workOrderId: wo.id, type: 'ISSUE', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
-    // Material used over the norm, raised from the reconciliation and not yet on a bill (v5 item 92).
+    // Material used over the norm, raised from the reconciliation and not yet on a bill.
     await tx.excessMaterialRecovery.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.excessMaterialRecovery.updateMany({ where: { workOrderId: wo.id, subcontractBillId: null }, data: { subcontractBillId: id } });
 
@@ -292,7 +292,7 @@ export class SubcontractBillsService {
     const grossAmount = sum(lines, (l) => l.amount);
     const grossPrevious = sum(lines, (l) => round2(l.prevQty.mul(l.rate)));
     const base = Prisma.Decimal.max(grossAmount, ZERO);
-    // Recovered from what was actually paid against the order once an advance payment is on record (v5 item 90).
+    // Recovered from what was actually paid against the order once an advance payment is on record.
     const advanceBase = await workOrderAdvanceBase(tx, wo);
     const outstanding = Prisma.Decimal.max(advanceBase.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
     const materialRecovery = sum(materials, (m) => m.amount);
@@ -326,7 +326,7 @@ export class SubcontractBillsService {
   }
 
   /**
-   * After a recovery is raised or cancelled on a work order (v5 item 92): re-take the bill being prepared on it, if one
+   * After a recovery is raised or cancelled on a work order: re-take the bill being prepared on it, if one
    * can still be edited, so the recovery shows on it now. Returns that bill's id, or null when none was re-taken.
    */
   async retakeOpenBill(workOrderId: string): Promise<string | null> {
@@ -378,7 +378,7 @@ export class SubcontractBillsService {
         if (open) throw new ConflictException(`Bill ${open.billNo} on ${wo.woNo} is not approved yet. Finish or delete it before preparing the next one.`);
         if (bills.some((b) => b.isFinal)) throw new ConflictException(`The final bill on ${wo.woNo} has already been made`);
         const last = bills[0];
-        if (last && dateOnly(last.measuredUpTo)! > measuredUpTo) throw new BadRequestException(`Bill ${last.billNo} already took work up to ${dateOnly(last.measuredUpTo)}`);
+        if (last && dateOnly(last.measuredUpTo) > measuredUpTo) throw new BadRequestException(`Bill ${last.billNo} already took work up to ${dateOnly(last.measuredUpTo)}`);
         const row = await tx.subcontractBill.create({
           data: {
             id: dto.id,
@@ -438,14 +438,14 @@ export class SubcontractBillsService {
     await this.assertCanPrepare(user, row.projectId);
     await this.lifecycle.assertEditable(user, row);
     const cur = await this.prisma.subcontractBill.findUniqueOrThrow({ where: { id }, select: { billDate: true, measuredUpTo: true, billNo: true, workOrderId: true } });
-    const billDate = dto.billDate ?? dateOnly(cur.billDate)!;
-    const measuredUpTo = dto.measuredUpTo ?? dateOnly(cur.measuredUpTo)!;
+    const billDate = dto.billDate ?? dateOnly(cur.billDate);
+    const measuredUpTo = dto.measuredUpTo ?? dateOnly(cur.measuredUpTo);
     this.checkDates(billDate, measuredUpTo);
     const data: Prisma.SubcontractBillUncheckedUpdateInput = {};
     if (dto.billDate !== undefined) data.billDate = parseDate(dto.billDate);
     if (dto.measuredUpTo !== undefined) {
       const before = await this.prisma.subcontractBill.findFirst({ where: { workOrderId: cur.workOrderId, billNo: cur.billNo - 1 }, select: { measuredUpTo: true } });
-      if (before && dateOnly(before.measuredUpTo)! > measuredUpTo) throw new BadRequestException(`Bill ${cur.billNo - 1} already took work up to ${dateOnly(before.measuredUpTo)}`);
+      if (before && dateOnly(before.measuredUpTo) > measuredUpTo) throw new BadRequestException(`Bill ${cur.billNo - 1} already took work up to ${dateOnly(before.measuredUpTo)}`);
       data.measuredUpTo = parseDate(dto.measuredUpTo);
     }
     if (dto.isFinal !== undefined) data.isFinal = dto.isFinal;

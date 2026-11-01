@@ -1,5 +1,5 @@
 /**
- * Earned value's tests (v6 item 115): planned value spread over the days, month ends, the earned schedule, the indices and
+ * Earned value's tests: planned value spread over the days, month ends, the earned schedule, the indices and
  * forecasts, and the finish the pace points to, with no database. CI runs it after the build:
  *
  *   node dist/scripts/earned-value-test.js

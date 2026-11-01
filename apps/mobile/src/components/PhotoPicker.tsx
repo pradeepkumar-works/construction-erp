@@ -51,7 +51,7 @@ function guessType(uri: string, mime?: string | null): string {
  * Camera + library picker that uploads each photo immediately and keeps the returned attachment ids.
  * Without a connection the photo stays on the phone (`queued`) and travels with the entry through the outbox.
  *
- * Several at a time (UX item 88): the library picks many in one go, and the camera opens again after each shot until
+ * Several at a time: the library picks many in one go, and the camera opens again after each shot until
  * Back is pressed, so a walk round the site is one tap. Each photo keeps the time it was taken (the camera's EXIF time,
  * or the moment of the shot) in its file name, shown on its thumbnail and kept with the attachment.
  */
@@ -153,7 +153,7 @@ export function PhotoPicker({ label, photos, onChange, max = 10 }: Props) {
   }, [addAssets, max, t]);
 
   // Android may close the app while the camera is open; the photo taken then is handed back once the app restarts, to
-  // the next photo field opened, which is the form with the reopened draft (UX item 80).
+  // the next photo field opened, which is the form with the reopened draft.
   const recovered = useRef(false);
   useEffect(() => {
     if (recovered.current) return;

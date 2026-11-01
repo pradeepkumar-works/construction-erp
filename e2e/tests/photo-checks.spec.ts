@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { API_URL, api, apiToken, localToday, signIn, uniqueQty } from './helpers';
 
 /**
- * Site photo checks (AI item 76). The test model reads a photo from words in its file name, so "nohelmet" in the name
+ * Site photo checks. The test model reads a photo from words in its file name, so "nohelmet" in the name
  * stands for workers without helmets, and "leak" for a leaking bathroom slab.
  */
 
@@ -48,7 +48,7 @@ test('Describe from photo fills in a new snag from its photo, and nothing is sav
   await signIn(page, 'engineer2@demo.com');
   await page.goto(`/projects/${building.id}?tab=handover`);
   await page.getByRole('button', { name: 'Report snag' }).click();
-  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Report a snag or defect' });
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Report snag' });
   await form.locator('input[type=file]').setInputFiles({ name: 'bathroom-leak.png', mimeType: 'image/png', buffer: PNG });
   await form.getByRole('button', { name: 'Describe from photo' }).click();
   await expect(form.getByLabel('What is wrong')).toHaveValue('Water leak below the bathroom slab');

@@ -40,7 +40,7 @@ type TestTypeRow = Prisma.TestTypeGetPayload<object>;
 const num = (v: Prisma.Decimal | null) => (v === null ? null : Number(v));
 
 /**
- * QA/QC plans (item 137, ARCHITECTURE "QA/QC"): the company's test types over the standard ones, each project's quality
+ * QA/QC plans (ARCHITECTURE "QA/QC"): the company's test types over the standard ones, each project's quality
  * plan, the tests due under it and the IS 456 acceptance of cubes by grade. The arithmetic is pure in `@erp/shared/qa-plan.ts`;
  * this service loads the approved work, the receipts and the tests for it.
  */
@@ -51,8 +51,6 @@ export class QaService {
     private access: ProjectAccessService,
     private audit: AuditService,
   ) {}
-
-  /* ---------- test types ---------- */
 
   private toDef(r: TestTypeRow): TestTypeDef {
     return {
@@ -145,8 +143,6 @@ export class QaService {
     await this.audit.log(user, 'TEST_TYPE', code, standard ? 'RESET' : 'DELETED');
     return { ok: true };
   }
-
-  /* ---------- the quality plan ---------- */
 
   private lineDef(r: PlanLineRow): QaPlanLineDef {
     return {
@@ -259,8 +255,6 @@ export class QaService {
     return planLineFor(testTypeCode, title, lines)?.id ?? null;
   }
 
-  /* ---------- tests due ---------- */
-
   /** Approved work on the projects, with what it is called (activity and BOQ item) for the plan lines' words. */
   private async workDone(projectIds: string[]): Promise<Map<string, WorkDone[]>> {
     const rows = await this.prisma.progressEntry.findMany({
@@ -270,7 +264,7 @@ export class QaService {
     const by = new Map<string, WorkDone[]>();
     for (const r of rows) {
       const list = by.get(r.projectId) ?? [];
-      list.push({ date: dateOnly(r.date)!, quantity: Number(r.quantity), unit: r.activity.unit, text: `${r.activity.name} ${r.activity.boqItem?.description ?? ''}` });
+      list.push({ date: dateOnly(r.date), quantity: Number(r.quantity), unit: r.activity.unit, text: `${r.activity.name} ${r.activity.boqItem?.description ?? ''}` });
       by.set(r.projectId, list);
     }
     return by;
@@ -287,7 +281,7 @@ export class QaService {
       const q = Number(r.quantity) - Number(r.rejectedQty ?? 0);
       if (q <= 0) continue;
       const list = by.get(r.projectId) ?? [];
-      list.push({ entryId: r.entryId, date: dateOnly(r.date)!, quantity: q, unit: r.item.unit, itemName: r.item.name, category: r.item.category });
+      list.push({ entryId: r.entryId, date: dateOnly(r.date), quantity: q, unit: r.item.unit, itemName: r.item.name, category: r.item.category });
       by.set(r.projectId, list);
     }
     return by;
@@ -312,7 +306,7 @@ export class QaService {
     ]);
     const names = new Map(planned.map((p) => [p.id, p.name]));
     const rows: TestsDueRowDto[] = lines.map((r) => {
-      const taken = tests.filter((x) => x.planLineId === r.id).map((x) => ({ planLineId: x.planLineId, sampledOn: dateOnly(x.sampledOn)! }));
+      const taken = tests.filter((x) => x.planLineId === r.id).map((x) => ({ planLineId: x.planLineId, sampledOn: dateOnly(x.sampledOn) }));
       return { line: this.toLineDto(r, types), projectName: names.get(r.projectId) ?? '', ...testsOwed(this.lineDef(r), work.get(r.projectId) ?? [], lots.get(r.projectId) ?? [], taken) };
     });
     const shown = q.short ? rows.filter((r) => r.short > 0) : rows;
@@ -329,8 +323,6 @@ export class QaService {
   async shortCount(user: RequestUser): Promise<number> {
     return (await this.testsDue(user, {})).short;
   }
-
-  /* ---------- cube acceptance ---------- */
 
   /**
    * The IS 456 acceptance of each grade's cubes on each project: the 28-day results of cube tests (the last reading of
@@ -359,7 +351,7 @@ export class QaService {
       if (!grade || !last || last.value === null) continue;
       const key = `${r.projectId}:${grade}`;
       const g = groups.get(key) ?? { projectId: r.projectId, projectName: r.project.name, grade, results: [], acceptance: cubeAcceptance([], gradeFck(grade)!) };
-      g.results.push({ id: r.id, date: dateOnly(r.sampledOn)!, value: Number(dec(last.value)), testNo: r.testNo, pourNo: r.pour?.pourNo ?? null });
+      g.results.push({ id: r.id, date: dateOnly(r.sampledOn), value: Number(dec(last.value)), testNo: r.testNo, pourNo: r.pour?.pourNo ?? null });
       groups.set(key, g);
     }
     return [...groups.values()]

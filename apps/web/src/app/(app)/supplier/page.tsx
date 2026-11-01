@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
 
-/** The supplier portal's home (v6 item 105): what waits on the supplier, and what is due to them. */
+/** The supplier portal's home: what waits on the supplier, and what is due to them. */
 export default function SupplierHomePage() {
   const { token } = theme.useToken();
   const { data, isLoading, error, refetch } = useSupplierHome();
@@ -26,7 +26,7 @@ export default function SupplierHomePage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Supplier home"
+        title="Home"
         subtitle={data ? <span translate="no">{`${data.vendor.name} with ${data.organizationName}`}</span> : 'Your orders, invoices and payments'}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

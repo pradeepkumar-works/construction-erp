@@ -9,7 +9,7 @@ import { formatMoney, formatMonth } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
 /**
- * The signed-in person's payslips (v6 item 100), once HR's month is approved: net pay first, then the days paid and each
+ * The signed-in person's payslips, once HR's month is approved: net pay first, then the days paid and each
  * earning and deduction. Needs a connection.
  */
 export default function PayslipsScreen() {

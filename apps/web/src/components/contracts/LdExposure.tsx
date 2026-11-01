@@ -7,13 +7,13 @@ import { AppTag } from '@/components/common/AppTag';
 import type { LdExposureDto } from '@erp/shared';
 import { LD_PERIOD_LABELS, PROJECT_STATUS_LABELS } from '@erp/shared';
 import { useLdExposure } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { themeFontSize } from '@/lib/theme';
 
 const rateLine = (ld: LdExposureDto) => (Number(ld.ldRatePct) > 0 ? `${ld.ldRatePct}% ${LD_PERIOD_LABELS[ld.ldPeriod]}, capped at ${ld.ldCapPct}%` : 'No LD rate in the contract');
 
-/** One project's liquidated damages exposure (v4 item 50), on its Contract tab. */
+/** One project's liquidated damages exposure, on its Contract tab. */
 export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
   const { token } = theme.useToken();
   const noRate = Number(ld.ldRatePct) === 0;
@@ -54,7 +54,7 @@ export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
   );
 }
 
-/** Liquidated damages exposure across projects (v4 item 50), on the Delays and risks page. */
+/** Liquidated damages exposure across projects, on the Delays and risks page. */
 export function LdExposureTable() {
   const { data, isLoading, error, refetch } = useLdExposure();
   const rows = data ?? [];
@@ -96,7 +96,7 @@ export function LdExposureTable() {
           { title: 'Forecast late', dataIndex: 'forecastDaysLate', width: 110, align: 'right' },
           { title: 'LD to date', dataIndex: 'ldToDate', width: 140, align: 'right', render: (v: string) => formatINR(v) },
           { title: 'Forecast LD', dataIndex: 'ldForecast', width: 150, align: 'right', render: (v: string, r) => <span>{formatINR(v)} {r.capReached ? <AppTag tone="danger">cap</AppTag> : null}</span> },
-          { title: 'Extension to claim', dataIndex: 'eotPendingDays', width: 140, align: 'right', render: (v: number) => (v ? <Typography.Text type="warning">{v} days</Typography.Text> : '-') },
+          { title: 'Extension to claim', dataIndex: 'eotPendingDays', width: 140, align: 'right', render: (v: number) => (v ? <Typography.Text type="warning">{v} days</Typography.Text> : NO_VALUE) },
         ]}
       />
     </Flex>

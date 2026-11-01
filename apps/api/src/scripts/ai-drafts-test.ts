@@ -1,5 +1,5 @@
 /**
- * Tests for drafts from a sentence (AI item 71):
+ * Tests for drafts from a sentence:
  *
  * - No AI path writes a record: every call in `src/ai` whose name creates, changes, submits, approves, pays or deletes
  *   goes to the assistant's own tables (threads, messages, document reads), its company switch, or nowhere.

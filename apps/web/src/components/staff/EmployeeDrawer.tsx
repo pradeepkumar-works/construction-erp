@@ -11,7 +11,7 @@ import { EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, LEAVE_TYPE_LABELS, canManageStaf
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useEmployee, useEmployeeDocuments, useLeave, useLeaveBalances, useSetEmployeeDocuments, useStaffAttendance } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -19,7 +19,7 @@ import { AttendanceTag, LeaveStatusTag, clock, leaveSpan } from './staffUi';
 import { EmployeeFormModal } from './EmployeeFormModal';
 import { EmployeeService } from './EmployeeService';
 
-const none = <Typography.Text type="secondary">-</Typography.Text>;
+const none = <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>;
 const val = (x: string | number | null | undefined) => (x === null || x === undefined || x === '' ? none : x);
 
 /** Job and terms for everyone who sees the record; personal, statutory and bank details for HR, payroll and the person. */
@@ -161,7 +161,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
               children: (
                 <>
                   <Space style={{ marginBottom: 8 }} wrap>
-                    <DatePicker picker="month" format="MMM YYYY" allowClear={false} aria-label="Month" value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
+                    <DatePicker picker="month" format={MONTH_PICKER_FORMAT} allowClear={false} aria-label="Month" value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
                     <Typography.Text>
                       {totals.present} days present, {totals.absent} absent{totals.overtime ? `, ${totals.overtime} h overtime` : ''}
                     </Typography.Text>
@@ -176,8 +176,8 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
                     columns={[
                       { title: 'Date', dataIndex: 'date', width: 130, render: (v: string) => dayjs(v).format('ddd DD MMM') },
                       { title: 'Status', dataIndex: 'status', width: 100, render: (v: StaffAttendanceDto['status']) => <AttendanceTag status={v} /> },
-                      { title: 'In / out', key: 'io', width: 110, render: (_, r) => (r.checkIn ? `${clock(r.checkIn)} - ${clock(r.checkOut)}` : '-') },
-                      { title: 'OT h', dataIndex: 'overtimeHours', width: 60, align: 'right', render: (v: string | null) => (v && Number(v) ? v : '') },
+                      { title: 'In and out', key: 'io', width: 130, render: (_, r) => (r.checkIn ? `${clock(r.checkIn)} to ${clock(r.checkOut)}` : NO_VALUE) },
+                      { title: 'Overtime (h)', dataIndex: 'overtimeHours', width: 100, align: 'right', render: (v: string | null) => (v && Number(v) ? v : '') },
                       { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
                       { title: 'Note', dataIndex: 'note', ellipsis: true },
                     ]}

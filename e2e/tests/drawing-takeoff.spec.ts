@@ -27,7 +27,7 @@ async function atMm(page: Page, x: number, y: number) {
 }
 
 /**
- * Measuring on drawings (v6 item 118), on the hospital's toilet block DXF (ARC-110: its scale along the 12 m wall and four
+ * Measuring on drawings, on the hospital's toilet block DXF (ARC-110: its scale along the 12 m wall and four
  * measures seeded). The project manager reads the measures and their totals, measures the 12 m wall and counts two
  * columns, and puts the wall into the measurement book; through the API, a new scale works the lengths out again, a length
  * needs a scale, a BOQ quantity comes from measures of one kind and only those who keep the BOQ set it.

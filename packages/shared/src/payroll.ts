@@ -1,5 +1,5 @@
 /**
- * Payroll (v6 item 100): salary structures, salary runs with payslips, loans and advances, the statutory returns, and
+ * Payroll: salary structures, salary runs with payslips, loans and advances, the statutory returns, and
  * full and final settlement. The arithmetic is in the API's `payroll-rules.ts`; this holds the labels, the professional
  * tax slabs and the shapes the screens use.
  */

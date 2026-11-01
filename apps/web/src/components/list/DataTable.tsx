@@ -22,10 +22,11 @@ import {
 import { readPref, writePref } from "@/lib/prefs";
 import { useStickyTop } from "@/lib/sticky";
 import { useSingleKeys } from "@/lib/shortcuts";
-import { EmptyArt } from "@/components/common/EmptyArt";
+import { EmptyLine } from "@/components/common/EmptyArt";
 import { HOVER_INTENT_MS, usePrefetch } from "@/lib/prefetch";
 import { useIsPhone, useWidthsReached } from "@/lib/screen";
 import { ListCards, type CardRole } from "./ListCards";
+import { ROW_OWN_CONTROLS } from "./openableRow";
 
 /** A list column: antd's, with a stable `key`, a plain-text `label` for the column chooser, and an optional page total. */
 export type ListColumn<T> = TableColumnType<T> & {
@@ -38,7 +39,7 @@ export type ListColumn<T> = TableColumnType<T> & {
   defaultHidden?: boolean;
   /**
    * A lower-priority column: on by default only on a window at least this wide (CSS pixels), so the default view fits
-   * without sideways scrolling (UX item 84). The column chooser still turns it on anywhere.
+   * without sideways scrolling. The column chooser still turns it on anywhere.
    */
   defaultFrom?: number;
   /** What it is on a phone's card (see `cardFields`); false keeps it off the card. */
@@ -100,9 +101,9 @@ export interface BulkAction<T> {
 }
 
 /**
- * The table of a list page (UI roadmap item 55): the column chooser and wrap switch, a header that stays in view,
+ * The table of a list page: the column chooser and wrap switch, a header that stays in view,
  * click a row to open it, select rows for the bulk bar, and a totals row for the figures on the page.
- * From the keyboard (UX item 81) the rows are one Tab stop: ↑ ↓ (or J K) move between them, Enter opens one and X ticks it.
+ * From the keyboard the rows are one Tab stop: ↑ ↓ (or J K) move between them, Enter opens one and X ticks it.
  */
 export function DataTable<T extends { id: string }>({
   columns,
@@ -150,7 +151,7 @@ export function DataTable<T extends { id: string }>({
 }) {
   const { token } = theme.useToken();
   const stickyTop = useStickyTop();
-  // Below 768 px each row is a card (UX item 84).
+  // Below 768 px each row is a card.
   const phone = useIsPhone();
   const [wrap, setWrap] = useState(() =>
     readPref<boolean>("nirmaan.table.wrap", false),
@@ -164,7 +165,7 @@ export function DataTable<T extends { id: string }>({
   const tabRow = Math.min(activeRow, Math.max(rows.length - 1, 0));
   const tableRef = useRef<HTMLDivElement>(null);
   const [singleKeys] = useSingleKeys();
-  // A row the pointer rests on, or that takes focus, fetches its record ahead (item 83) through its RecordLink.
+  // A row the pointer rests on, or that takes focus, fetches its record ahead through its RecordLink.
   const prefetch = usePrefetch();
   const hoverTimer = useRef<number | undefined>(undefined);
   const fetchRowAhead = (tr: HTMLElement) =>
@@ -246,11 +247,11 @@ export function DataTable<T extends { id: string }>({
     </div>
   ) : failed ? (
     <Typography.Text type="secondary">
-      The list could not be loaded.
+      The list could not load. Try again in a moment.
     </Typography.Text>
   ) : (
     <div>
-      {emptyText ?? <EmptyArt art="entries" title="Nothing here yet" />}
+      {emptyText ?? <EmptyLine title="Nothing here yet" />}
       {emptyNext ? (
         <div
           style={{ marginTop: -token.marginXS, paddingBottom: token.padding }}
@@ -393,8 +394,8 @@ export function DataTable<T extends { id: string }>({
           >
             <Button
               size="small"
-              type={wrap ? "primary" : "default"}
-              ghost={wrap}
+              color="default"
+              variant={wrap ? "filled" : "outlined"}
               icon={<LineHeightOutlined />}
               aria-pressed={wrap}
               aria-label="Wrap long text"
@@ -469,7 +470,7 @@ export function DataTable<T extends { id: string }>({
                       // Links, buttons, checkboxes, switches and menus in the row do their own thing.
                       if (
                         (e.target as HTMLElement).closest(
-                          "a, button, input, label, .ant-dropdown, .ant-checkbox-wrapper, .ant-image, .ant-switch",
+                          ROW_OWN_CONTROLS,
                         )
                       )
                         return;
@@ -500,7 +501,7 @@ export function DataTable<T extends { id: string }>({
                               </span>
                             ) : i === 0 ? (
                               <Typography.Text type="secondary">
-                                Total, this page
+                                Page total
                               </Typography.Text>
                             ) : null}
                           </Table.Summary.Cell>

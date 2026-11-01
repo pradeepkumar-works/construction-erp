@@ -126,7 +126,7 @@ function useShellMessages(user: AuthUser): ShellMessage[] {
 }
 
 /**
- * Page-level messages (UI roadmap item 63, after Cloudscape's flashbar): one bar above every page instead of a stack of
+ * Page-level messages (after Cloudscape's flashbar): one bar above every page instead of a stack of
  * alerts. The most serious message shows; the rest fold behind "N more" until opened.
  */
 export function MessageBar({ user }: { user: AuthUser }) {

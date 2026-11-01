@@ -74,7 +74,7 @@ export class RecoverExcessDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) note?: string;
 }
 
-/** Adopting the standard norms library (finding 16 of the October review). */
+/** Adopting the standard norms library. */
 export class AdoptStandardNormsDto {
   @ApiPropertyOptional({ default: false, description: "Overwrite the norms a BOQ item already has; left out, those items are kept as the quantity surveyor set them" })
   @IsOptional()

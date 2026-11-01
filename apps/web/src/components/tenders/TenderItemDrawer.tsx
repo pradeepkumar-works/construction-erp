@@ -7,7 +7,7 @@ import type { ItemDto, SorItemDto, TenderDetailDto, TenderItemDto, TenderLineKin
 import { TENDER_LINE_KINDS, TENDER_LINE_KIND_LABELS, sorPctLabel } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useTenderAction } from '@/lib/queries';
-import { formatINR, toNumber } from '@/lib/format';
+import { formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { CODE_INPUT, MoneyInput, QuantityInput } from '@/components/form/inputs';
@@ -52,7 +52,7 @@ function costOf(lines: Line[] | undefined) {
 }
 
 /**
- * A bid item and its rate analysis (v6 item 110): what one unit takes in materials (with wastage), labour man-days and
+ * A bid item and its rate analysis: what one unit takes in materials (with wastage), labour man-days and
  * machine hours, each at a rate. A line left without a rate takes the store item's, the trade's labour rate or the
  * machines' rate on saving. The starter library fills a common item in one go.
  */
@@ -298,7 +298,7 @@ export function TenderItemDrawer({ open, onClose, tender, item }: { open: boolea
                           <InputNumber aria-label="Wastage" min={0} max={100} precision={2} suffix="%" style={{ width: '100%' }} />
                         </Form.Item>
                       ) : (
-                        <Typography.Text type="secondary">-</Typography.Text>
+                        <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>
                       )
                     }
                   </Form.Item>

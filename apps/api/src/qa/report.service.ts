@@ -11,7 +11,7 @@ import { QaRegistersService } from './registers.service';
 import { QaReportQuery } from './report.dto';
 
 /**
- * The monthly quality report (item 137 part 3): per project, the month's tests and pass rate, the tests the plan is short
+ * The monthly quality report: per project, the month's tests and pass rate, the tests the plan is short
  * of today, NCRs raised and closed with the open ones by age, rework cost, audits and open findings, and the grades whose
  * cubes fail; and for the company, NCRs by category and root cause, calibration, late reports and missing certificates.
  * The plan, cubes and registers are read through their own services; the totals are `reportTotals`.
@@ -79,7 +79,7 @@ export class QaReportService {
         ncrsRaised: count(raised, p.id),
         ncrsClosed: grouped(closed, p.id),
         ncrsOpen: openHere.length,
-        ncrsOver30: openHere.filter((x) => ncrAgeBand(dateOnly(x.raisedOn)!, today) === 'OVER_30').length,
+        ncrsOver30: openHere.filter((x) => ncrAgeBand(dateOnly(x.raisedOn), today) === 'OVER_30').length,
         reworkCost: raised
           .filter((x) => x.projectId === p.id)
           .reduce((s, x) => s + Number(x.reworkCost ?? 0), 0)
@@ -91,7 +91,7 @@ export class QaReportService {
     });
     const rows = all.filter(reportRowHasWork);
     const bands = Object.keys(NCR_AGE_BAND_LABELS) as NcrAgeBand[];
-    const ages = open.map((x) => ncrAgeBand(dateOnly(x.raisedOn)!, today));
+    const ages = open.map((x) => ncrAgeBand(dateOnly(x.raisedOn), today));
     const nameIn = (list: { code: string; name: string }[]) => (code: string) => list.find((e) => e.code === code)?.name ?? code;
     return {
       month,

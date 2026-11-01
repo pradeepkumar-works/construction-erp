@@ -14,6 +14,7 @@ import {
   type RateBenchmarksDto,
   type RateQuote,
   awardLowestPerItem,
+  choiceProblem,
   siteDeliveryAddress,
   type AwardPlan,
   type Paginated,
@@ -65,7 +66,7 @@ const include = {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
     include: { stockTxns: { select: { quantity: true } }, billLines: { where: { bill: { status: { not: 'REJECTED' as const } } }, select: { quantity: true } } },
   },
-  // Advances (v5 item 90): paid with no bill, asked for on open requests, taken off its bills.
+  // Advances: paid with no bill, asked for on open requests, taken off its bills.
   advances: { where: { vendorBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
   paymentRequests: { where: { kind: 'PO_ADVANCE' as const, status: { in: ['SUBMITTED' as const, 'APPROVED' as const] } }, select: { amount: true } },
   vendorBills: { where: { status: { not: 'REJECTED' as const } }, select: { advanceAdjusted: true, status: true } },
@@ -131,13 +132,13 @@ export class PurchaseOrdersService {
       specification: l.specification,
       make: l.make,
       unit: l.unit,
-      quantity: dec(l.quantity)!,
-      rate: money(l.rate)!,
+      quantity: dec(l.quantity),
+      rate: money(l.rate),
       gstRate: l.gstRate.toString(),
-      amount: money(l.amount)!,
-      gstAmount: money(l.gstAmount)!,
-      receivedQty: dec(sum(l.stockTxns, (t) => t.quantity))!,
-      billedQty: dec(sum(l.billLines, (b) => b.quantity))!,
+      amount: money(l.amount),
+      gstAmount: money(l.gstAmount),
+      receivedQty: dec(sum(l.stockTxns, (t) => t.quantity)),
+      billedQty: dec(sum(l.billLines, (b) => b.quantity)),
     }));
     // By value, since lines are in different units
     const ordered = sum(r.lines, (l) => l.amount);
@@ -148,7 +149,7 @@ export class PurchaseOrdersService {
       projectId: r.projectId,
       projectName: r.project.name,
       poNo: r.poNo,
-      poDate: dateOnly(r.poDate)!,
+      poDate: dateOnly(r.poDate),
       vendorId: r.vendorId,
       vendorName: r.vendor.name,
       vendorGstin: r.vendor.gstin,
@@ -160,10 +161,10 @@ export class PurchaseOrdersService {
       deliveryAddress: r.deliveryAddress,
       paymentTerms: r.paymentTerms,
       paymentDays: r.paymentDays,
-      freight: money(r.freight)!,
-      subtotal: money(r.subtotal)!,
-      gstAmount: money(r.gstAmount)!,
-      total: money(r.total)!,
+      freight: money(r.freight),
+      subtotal: money(r.subtotal),
+      gstAmount: money(r.gstAmount),
+      total: money(r.total),
       remarks: r.remarks,
       supplierAcceptedAt: iso(r.supplierAcceptedAt),
       supplierAcceptedBy: r.supplierAcceptedBy?.fullName ?? null,
@@ -177,9 +178,9 @@ export class PurchaseOrdersService {
       open: r.status === 'APPROVED' && !r.closedAt && pending,
       receivedPct: ordered.isZero() ? 0 : Math.min(100, Math.round(received.div(ordered).mul(100).toNumber())),
       lines,
-      advancePaid: money(sum(r.advances, (p) => p.amount.add(p.tdsAmount).add(p.otherDeduction)))!,
-      advanceRequested: money(sum(r.paymentRequests, (p) => p.amount))!,
-      advanceAdjusted: money(sum(r.vendorBills.filter((b) => b.status !== 'REJECTED'), (b) => b.advanceAdjusted))!,
+      advancePaid: money(sum(r.advances, (p) => p.amount.add(p.tdsAmount).add(p.otherDeduction))),
+      advanceRequested: money(sum(r.paymentRequests, (p) => p.amount)),
+      advanceAdjusted: money(sum(r.vendorBills.filter((b) => b.status !== 'REJECTED'), (b) => b.advanceAdjusted)),
       status: r.status,
       submittedById: r.submittedById,
       submittedByName: r.submittedBy.fullName,
@@ -189,8 +190,8 @@ export class PurchaseOrdersService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
@@ -203,7 +204,7 @@ export class PurchaseOrdersService {
     await this.access.assertCanAccessProject(user, projectId);
   }
 
-  /** Where the order's goods go when it names no address: the project's site store (finding 12 of the October review). */
+  /** Where the order's goods go when it names no address: the project's site store. */
   private async siteAddress(organizationId: string, projectId: string) {
     const p = await this.prisma.project.findFirst({ where: { id: projectId, organizationId }, select: { siteAddress: true, location: true } });
     return siteDeliveryAddress(p);
@@ -241,7 +242,7 @@ export class PurchaseOrdersService {
   }
 
   /**
-   * The last approved orders of each item (v5 item 95), newest first: vendor, date, project and rate, for the
+   * The last approved orders of each item, newest first: vendor, date, project and rate, for the
    * quotation, comparative and PO forms. Items are matched by name and unit, ignoring case; only orders the user may see.
    */
   async lastRates(user: RequestUser, q: LastRatesQuery): Promise<LastRatesDto> {
@@ -269,11 +270,11 @@ export class PurchaseOrdersService {
         out[key] = rows.map((r) => ({
           purchaseOrderId: r.purchaseOrder.id,
           poNo: r.purchaseOrder.poNo,
-          poDate: dateOnly(r.purchaseOrder.poDate)!,
+          poDate: dateOnly(r.purchaseOrder.poDate),
           vendorName: r.purchaseOrder.vendor.name,
           projectName: r.purchaseOrder.project.name,
-          quantity: dec(r.quantity)!,
-          rate: money(r.rate)!,
+          quantity: dec(r.quantity),
+          rate: money(r.rate),
           gstRate: r.gstRate.toString(),
         }));
       }),
@@ -283,7 +284,7 @@ export class PurchaseOrdersService {
 
   /**
    * Approved orders of the items (matched by name and unit, ignoring case) dated `from` to `to`, keyed by `lastRateKey`:
-   * what a rate is checked against (item 121). `scope` limits the orders to those the caller may see.
+   * what a rate is checked against. `scope` limits the orders to those the caller may see.
    */
   async quotesFor(scope: Prisma.PurchaseOrderWhereInput, items: { name: string; unit: string }[], from: string, to: string, excludePoId?: string): Promise<Map<string, RateQuote[]>> {
     const wanted = new Map<string, { name: string; unit: string }>();
@@ -300,7 +301,7 @@ export class PurchaseOrdersService {
     for (const r of rows) {
       const key = lastRateKey(r.itemName, r.unit);
       const o = r.purchaseOrder;
-      out.set(key, [...(out.get(key) ?? []), { purchaseOrderId: o.id, poNo: o.poNo, poDate: dateOnly(o.poDate)!, projectId: o.projectId, projectName: o.project.name, vendorName: o.vendor.name, rate: r.rate.toNumber() }]);
+      out.set(key, [...(out.get(key) ?? []), { purchaseOrderId: o.id, poNo: o.poNo, poDate: dateOnly(o.poDate), projectId: o.projectId, projectName: o.project.name, vendorName: o.vendor.name, rate: r.rate.toNumber() }]);
     }
     return out;
   }
@@ -319,18 +320,18 @@ export class PurchaseOrdersService {
     return out;
   }
 
-  /** Each line's check against other sites (item 121), for the order's record and the approval pane. */
+  /** Each line's check against other sites, for the order's record and the approval pane. */
   private async lineRateChecks(user: RequestUser, r: { id: string; projectId: string; poDate: Date; lines: { id: string; itemName: string; unit: string; rate: Prisma.Decimal; quantity: Prisma.Decimal }[] }): Promise<Map<string, PoLineRateCheckDto>> {
-    const poDate = dateOnly(r.poDate)!;
+    const poDate = dateOnly(r.poDate);
     const quotes = await this.quotesFor(this.access.submissionWhere(user), r.lines.map((l) => ({ name: l.itemName, unit: l.unit })), windowStart(poDate), poDate, r.id);
     const out = new Map<string, PoLineRateCheckDto>();
     for (const l of r.lines) {
       const hit = rateAboveOthers({ rate: l.rate.toNumber(), projectId: r.projectId, poDate }, quotes.get(lastRateKey(l.itemName, l.unit)) ?? []);
       if (!hit) continue;
       out.set(l.id, {
-        bestRate: money(new Prisma.Decimal(hit.best.rate))!,
+        bestRate: money(new Prisma.Decimal(hit.best.rate)),
         abovePct: Math.round(hit.abovePct * 10) / 10,
-        extra: money(l.rate.minus(hit.best.rate).mul(l.quantity).toDecimalPlaces(2))!,
+        extra: money(l.rate.minus(hit.best.rate).mul(l.quantity).toDecimalPlaces(2)),
         purchaseOrderId: hit.best.purchaseOrderId,
         poNo: hit.best.poNo,
         poDate: hit.best.poDate,
@@ -358,9 +359,9 @@ export class PurchaseOrdersService {
     return {
       ...dto,
       lines: dto.lines.map((l) => ({ ...l, rateCheck: checks.get(l.id) ?? null })),
-      grns: row.stockEntries.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date)!, lines: e._count.lines })),
-      dispatches: row.dispatches.map((d) => ({ id: d.id, dispatchNo: d.dispatchNo, date: dateOnly(d.date)!, vehicleNo: d.vehicleNo, status: d.cancelledAt ? 'CANCELLED' : d.grn ? 'RECEIVED' : 'ON_THE_WAY', grnNo: d.grn?.entryNo ?? null })),
-      bills: row.vendorBills.map((b) => ({ id: b.id, billNo: b.billNo, invoiceNo: b.invoiceNo, invoiceDate: dateOnly(b.invoiceDate)!, total: money(b.total)!, status: b.status, matched: b.matched })),
+      grns: row.stockEntries.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date), lines: e._count.lines })),
+      dispatches: row.dispatches.map((d) => ({ id: d.id, dispatchNo: d.dispatchNo, date: dateOnly(d.date), vehicleNo: d.vehicleNo, status: d.cancelledAt ? 'CANCELLED' : d.grn ? 'RECEIVED' : 'ON_THE_WAY', grnNo: d.grn?.entryNo ?? null })),
+      bills: row.vendorBills.map((b) => ({ id: b.id, billNo: b.billNo, invoiceNo: b.invoiceNo, invoiceDate: dateOnly(b.invoiceDate), total: money(b.total), status: b.status, matched: b.matched })),
     };
   }
 
@@ -395,18 +396,18 @@ export class PurchaseOrdersService {
             itemName: l.itemName,
             specification: l.specification,
             unit: l.unit,
-            ordered: dec(l.quantity)!,
-            received: dec(received)!,
-            pending: dec(pending.gt(0) ? pending : ZERO)!,
+            ordered: dec(l.quantity),
+            received: dec(received),
+            pending: dec(pending.gt(0) ? pending : ZERO),
           };
         }),
-        dispatches: r.dispatches.map((d) => ({ id: d.id, dispatchNo: d.dispatchNo, date: dateOnly(d.date)!, vehicleNo: d.vehicleNo, lines: d.lines.map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, quantity: dec(l.quantity)! })) })),
+        dispatches: r.dispatches.map((d) => ({ id: d.id, dispatchNo: d.dispatchNo, date: dateOnly(d.date), vehicleNo: d.vehicleNo, lines: d.lines.map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, quantity: dec(l.quantity) })) })),
       }))
       .filter((r) => r.lines.some((l) => Number(l.pending) > 0));
   }
 
   /**
-   * Procurement status (v4 item 48): approved orders with what has been received and what is still to come, late ones
+   * Procurement status: approved orders with what has been received and what is still to come, late ones
    * (past the delivery date) first, with totals and a line per vendor. Received quantity is net of returns to vendor.
    */
   async status(user: RequestUser, q: ProcurementStatusQuery): Promise<ProcurementStatusDto> {
@@ -443,7 +444,7 @@ export class PurchaseOrdersService {
           if (!lastReceipt || t.date > lastReceipt) lastReceipt = t.date;
           if (!t.entry.qcStatus) awaiting.add(t.entry.id);
         }
-        return { purchaseOrderLineId: l.id, itemName: l.itemName, unit: l.unit, ordered: dec(l.quantity)!, received: dec(received)!, pending: dec(pending)!, pendingValue: money(pending.mul(l.rate))! };
+        return { purchaseOrderLineId: l.id, itemName: l.itemName, unit: l.unit, ordered: dec(l.quantity), received: dec(received), pending: dec(pending), pendingValue: money(pending.mul(l.rate)) };
       });
       const pendingValue = r.closedAt ? ZERO : Prisma.Decimal.max(orderValue.sub(receivedValue), ZERO);
       const anyPending = r.lines.some((l) => sum(l.stockTxns, (t) => t.quantity).lt(l.quantity));
@@ -455,7 +456,7 @@ export class PurchaseOrdersService {
       return {
         purchaseOrderId: r.id,
         poNo: r.poNo,
-        poDate: dateOnly(r.poDate)!,
+        poDate: dateOnly(r.poDate),
         projectId: r.projectId,
         projectName: r.project.name,
         vendorId: r.vendorId,
@@ -463,9 +464,9 @@ export class PurchaseOrdersService {
         deliveryBy,
         state,
         daysLate,
-        orderValue: money(orderValue)!,
-        receivedValue: money(receivedValue)!,
-        pendingValue: money(open ? pendingValue : ZERO)!,
+        orderValue: money(orderValue),
+        receivedValue: money(receivedValue),
+        pendingValue: money(open ? pendingValue : ZERO),
         receivedPct: orderValue.isZero() ? 0 : Math.min(100, Math.round(receivedValue.div(orderValue).mul(100).toNumber())),
         lastReceiptOn: dateOnly(lastReceipt),
         awaitingQc: awaiting.size,
@@ -518,6 +519,34 @@ export class PurchaseOrdersService {
     return { vendor, mr };
   }
 
+  /**
+   * When the company has orders wait for an approved supplier choice (`ordersNeedApprovedChoice`), an order on a material
+   * request needs the request's choice approved and goes to its vendor, or to one the approved split orders from
+   * (`choiceProblem`). Checked when the order is made and again when it is sent for approval, as its vendor may change.
+   */
+  private async assertChoiceAllows(user: RequestUser, materialRequestId: string, vendor: { id: string; name: string }) {
+    const org = await this.prisma.organization.findUnique({ where: { id: user.organizationId }, select: { ordersNeedApprovedChoice: true } });
+    if (!org?.ordersNeedApprovedChoice) return;
+    const mr = await this.prisma.materialRequest.findFirstOrThrow({
+      where: { id: materialRequestId, organizationId: user.organizationId },
+      select: { requestNo: true, supplierChoice: { select: { status: true, split: true, quotation: { select: { vendorId: true, vendor: { select: { name: true } } } } } } },
+    });
+    const c = mr.supplierChoice;
+    let splitVendorIds: string[] = [];
+    if (c?.split && c.status === 'APPROVED') {
+      // The split's vendors over the whole request (each item to its lowest), so orders raised one by one all stay in it.
+      const cs = await this.quotations.comparative(user, materialRequestId);
+      splitVendorIds = awardLowestPerItem(cs, Object.fromEntries(cs.lines.map((l) => [l.materialRequestItemId, l.quantity]))).orders.map((o) => o.vendorId);
+    }
+    const problem = choiceProblem(
+      mr.requestNo,
+      c && { status: c.status, split: c.split, vendorId: c.quotation?.vendorId ?? null, vendorName: c.quotation?.vendor.name ?? null },
+      { vendorId: vendor.id, vendorName: vendor.name },
+      splitVendorIds,
+    );
+    if (problem) throw new ConflictException(problem);
+  }
+
   /** Payment days: at most 45 for micro and small enterprises (MSMED Act). */
   private paymentDays(days: number | null | undefined, vendor: { name: string; msmeCategory: string | null }) {
     if (days != null && days > MSME_MAX_PAYMENT_DAYS && (vendor.msmeCategory === 'MICRO' || vendor.msmeCategory === 'SMALL'))
@@ -528,10 +557,10 @@ export class PurchaseOrdersService {
   /**
    * Priced lines. A line raised from a request line takes its name, unit and specification and may order at most what
    * the request still needs: requested, less what other orders hold (see `orderedOn`), what was received without one
-   * and what stock met (v5 item 95).
+   * and what stock met.
    */
   private async lines(tx: Tx | PrismaService, organizationId: string, mr: Prisma.MaterialRequestGetPayload<{ include: { items: true } }> | null, input: PoLineInput[], excludePoId?: string): Promise<LineData[]> {
-    // A line of its own names its item as the master has it (finding 3 of the October review).
+    // A line of its own names its item as the master has it.
     const typed = await asMasterNames(tx, organizationId, input.map((l) => ({ itemName: l.itemName ?? '', unit: l.unit ?? '' })));
     input = input.map((l, i) => (l.materialRequestItemId || !l.itemName || !l.unit ? l : { ...l, itemName: typed[i].itemName, unit: typed[i].unit }));
     const linked = input.map((l) => l.materialRequestItemId).filter((x): x is string => !!x);
@@ -584,6 +613,7 @@ export class PurchaseOrdersService {
     if (existing) return existing;
     await this.assertCanPurchase(user, dto.projectId);
     const { vendor, mr } = await this.refs(user, dto.projectId, dto.vendorId, dto.materialRequestId ?? null, dto.quotationId ?? null);
+    if (mr) await this.assertChoiceAllows(user, mr.id, vendor);
     const paymentDays = this.paymentDays(dto.paymentDays, vendor);
     const freight = parseFreight(dto.freight);
     const deliveryAddress = dto.deliveryAddress?.trim() || (await this.siteAddress(user.organizationId, dto.projectId));
@@ -603,7 +633,7 @@ export class PurchaseOrdersService {
             projectId: dto.projectId,
             vendorId: vendor.id,
             poNo,
-            poDate: dto.poDate ? parseDate(dto.poDate) : parseDate(new Date().toISOString().slice(0, 10)),
+            poDate: dto.poDate ? parseDate(dto.poDate) : parseDate(todayIn()),
             materialRequestId: mr?.id ?? null,
             quotationId: dto.quotationId ?? null,
             deliveryBy: dto.deliveryBy ? parseDate(dto.deliveryBy) : null,
@@ -637,7 +667,7 @@ export class PurchaseOrdersService {
   }
 
   /**
-   * The split of a request between the vendors who quoted lowest for each item (finding 12 of the October review):
+   * The split of a request between the vendors who quoted lowest for each item:
    * what is still to order, at each winner's rate. The screen previews it with the same rules; `awardLowest` draws it
    * again here rather than trusting what was sent.
    */
@@ -652,7 +682,7 @@ export class PurchaseOrdersService {
         covers: { select: { quantity: true } },
       },
     });
-    return awardLowestPerItem(cs, Object.fromEntries(items.map((i) => [i.id, dec(toOrderOf(i))!])));
+    return awardLowestPerItem(cs, Object.fromEntries(items.map((i) => [i.id, dec(toOrderOf(i))])));
   }
 
   /** Raises one draft order per winning vendor. Nothing to award is a conflict, not an empty answer. */
@@ -727,8 +757,9 @@ export class PurchaseOrdersService {
 
   /** Every way an order goes for approval: one not from the lowest complete quotation on its request says why first. */
   private async submitOrder(user: RequestUser, id: string) {
-    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, vendor: { select: { name: true } } } });
+    const po = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id }, select: { materialRequestId: true, quotationId: true, selectionReason: true, vendor: { select: { id: true, name: true } } } });
     if (po.materialRequestId) {
+      await this.assertChoiceAllows(user, po.materialRequestId, po.vendor);
       const lowest = await this.quotations.lowestFor(user.organizationId, po.materialRequestId);
       const problem = selectionProblem(lowest && { id: lowest.id, vendorName: lowest.vendorName, total: lowest.total }, { quotationId: po.quotationId, vendorName: po.vendor.name }, po.selectionReason);
       if (problem) throw new BadRequestException(problem);
@@ -763,7 +794,7 @@ export class PurchaseOrdersService {
       const mail = poEmail({
         orgName: po.organization.name,
         poNo: po.poNo,
-        poDate: dateOnly(po.poDate)!,
+        poDate: dateOnly(po.poDate),
         vendorName: po.vendor.name,
         contactPerson: po.vendor.contactPerson,
         projectName: po.project.name,
@@ -773,11 +804,11 @@ export class PurchaseOrdersService {
         paymentTerms: po.paymentTerms,
         paymentDays: po.paymentDays,
         remarks: po.remarks,
-        subtotal: money(po.subtotal)!,
-        gstAmount: money(po.gstAmount)!,
-        freight: money(po.freight)!,
-        total: money(po.total)!,
-        lines: po.lines.map((l) => ({ itemName: l.itemName, specification: l.specification, make: l.make, unit: l.unit, quantity: dec(l.quantity)!, rate: money(l.rate)!, gstRate: l.gstRate.toString(), amount: money(l.amount)! })),
+        subtotal: money(po.subtotal),
+        gstAmount: money(po.gstAmount),
+        freight: money(po.freight),
+        total: money(po.total),
+        lines: po.lines.map((l) => ({ itemName: l.itemName, specification: l.specification, make: l.make, unit: l.unit, quantity: dec(l.quantity), rate: money(l.rate), gstRate: l.gstRate.toString(), amount: money(l.amount) })),
         buyer: { name: po.submittedBy.fullName, email: po.submittedBy.email, phone: po.submittedBy.phone },
         portalUrl: base && po.vendor.portalLogins.length ? `${base}/supplier/orders` : null,
       });

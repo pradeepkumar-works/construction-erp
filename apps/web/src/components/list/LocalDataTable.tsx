@@ -9,7 +9,7 @@ const NO_KEYS: string[] = [];
 
 /**
  * A list worked out in the browser from a summary the page already has (an ageing table in a tab of Payables or
- * Receivables, UX item 84): the list template's columns, column choice, phone cards and paging (25 rows a page), with
+ * Receivables): the list template's columns, column choice, phone cards and paging (25 rows a page), with
  * nothing in the address bar.
  */
 export function LocalDataTable<T extends { id: string }>({

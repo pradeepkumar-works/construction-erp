@@ -43,7 +43,7 @@ export function toOutboxPhotos(photos: LocalPhoto[], line?: string): OutboxPhoto
 export function SubmitSuccess({ title, subtitle, detailHref, onAnother }: { title: string; subtitle: string; detailHref?: string; onAnother?: () => void }) {
   const router = useRouter();
   const t = useT();
-  // A vibration and a spoken line, so the result is clear without reading the screen (UX item 80).
+  // A vibration and a spoken line, so the result is clear without reading the screen.
   useEffect(() => confirmResult(`${title}. ${subtitle}`), [title, subtitle]);
   return (
     <Screen style={styles.center} edges={['left', 'right', 'bottom']}>

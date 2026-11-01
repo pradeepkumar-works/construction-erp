@@ -83,7 +83,7 @@ export default function MyWorkPage() {
       width: 170,
       render: (v: number) => <Progress percent={v} size="small" status={progressStatus(v)} format={() => formatPct(v)} aria-label={`${formatPct(v)} done`} />,
     },
-    // No pending-approvals column: that count is My work's and the sidebar's (UX item 85).
+    // No pending-approvals column: that count is My work's and the sidebar's.
     { title: 'End date', dataIndex: 'endDate', key: 'end', width: 110, render: (v) => formatDate(v) },
   ];
 
@@ -92,7 +92,7 @@ export default function MyWorkPage() {
   const trends = useHomeTrends();
   const t = trends.data;
   const gettingStarted = useGettingStarted();
-  // The page draws once everything above the charts is known (item 83): the setup checklist, My work, the KPI tiles (some
+  // The page draws once everything above the charts is known: the setup checklist, My work, the KPI tiles (some
   // need the trends) and the chart row. Drawing each as it arrived pushed what was already on screen down (CLS 0.22).
   // The four requests go out together, so this waits for the slowest, not their sum; a failed one does not hold it up.
   const ready = !isPending && !myWork.isPending && !trends.isPending && gettingStarted.settled;
@@ -182,7 +182,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 
 /**
  * A tile for this month's figure of a series (work done, billed, cost, received): the figure with its trend, or, while
- * the month has nothing yet, that said in words with no trend (UX item 85), so a new month is not a red "100% down".
+ * the month has nothing yet, that said in words with no trend, so a new month is not a red "100% down".
  */
 function MonthTile({ href, icon, title, series, months, upIsGood = true, none, children }: { href: string; icon: React.ReactNode; title: string; series: string[]; months: string[]; upIsGood?: boolean; none: string; children?: React.ReactNode }) {
   const now = toNumber(series[series.length - 1]);
@@ -214,7 +214,7 @@ function Kpi({ k, data, trends }: { k: KpiKey; data: CompanyDashboard; trends: H
   const last = (xs?: string[]) => toNumber(xs?.[xs.length - 1]);
   switch (k) {
     case 'contract': {
-      // Billed against the contract (UX item 85): the figure against its plan, not the contract value alone.
+      // Billed against the contract: the figure against its plan, not the contract value alone.
       const fp = data.financialProgress;
       return fp && toNumber(fp.contractValue) > 0 ? (
         <KpiTile href="/bills" icon={<FundProjectionScreenOutlined />}>
@@ -335,7 +335,7 @@ function HomeChart({ c, trends }: { c: ChartKey; trends: HomeTrendsDto }) {
   // On a phone the card's note would squeeze its title, so it is left out there.
   const wide = Grid.useBreakpoint().sm !== false;
   const note = (text: string) => (wide ? <Typography.Text type="secondary" style={small}>{text}</Typography.Text> : undefined);
-  // A chart with nothing in it says so, and what will appear there (UX item 85), instead of drawing zeros.
+  // A chart with nothing in it says so, and what will appear there, instead of drawing zeros.
   const empty = (title: string, extra: string, description: string) => (
     <Col xs={24} xl={12}>
       <Card size="small" title={title} extra={note(extra)} style={{ height: '100%' }}>

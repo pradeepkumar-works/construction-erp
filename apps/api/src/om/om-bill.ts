@@ -6,7 +6,7 @@ import { loadOm, priceOmPeriod } from './om-load';
 import { addMonths, type OmBillDetail } from './om-rules';
 
 /*
- * An O&M bill (item 131) is an RA bill with `omYear` and `omInstalment`: receipts, receivables, the books, Tally and the
+ * An O&M bill is an RA bill with `omYear` and `omInstalment`: receipts, receivables, the books, Tally and the
  * client portal take it like any other bill. `RaBillsService` prices it here instead of from measurements.
  */
 

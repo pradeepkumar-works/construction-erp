@@ -10,8 +10,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : value));
 const nullable = () => ValidateIf((_, v) => v !== null);
 
-/* ---------- work orders ---------- */
-
 export class WoLineInput {
   @ApiPropertyOptional({ description: 'A BOQ item of the project; description and unit come from it, and their work on it is measured in the measurement book' })
   @IsOptional()
@@ -80,8 +78,6 @@ export class ListWorkOrdersQuery extends PageQuery {
 export class MarginQuery {
   @ApiProperty() @IsUUID() projectId: string;
 }
-
-/* ---------- subcontractor bills ---------- */
 
 export class OwnItemQtyInput {
   @ApiProperty({ description: "A work order line without a BOQ item (its quantity is not measured)" }) @IsUUID() workOrderLineId: string;

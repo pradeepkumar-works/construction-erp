@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Tooltip, Typography } from 'antd';
-import { formatChainage, type ChainageLayer } from '@erp/shared';
+import { formatChainage, type ChainageLayer, unitLabel } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { formatDate, formatQty } from '@/lib/format';
@@ -60,7 +60,7 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
                 const point = s.to - s.from < length / 400;
                 const colour = s.status === 'APPROVED' ? BRAND.colors.success : BRAND.colors.pending;
                 return (
-                  <Tooltip key={s.entryId} title={`${s.from === s.to ? `Ch ${formatChainage(s.from)}` : `Ch ${formatChainage(s.from)} to ${formatChainage(s.to)}`}: ${formatQty(s.quantity)} ${l.unit}, ${formatDate(s.date)}${s.status === 'APPROVED' ? '' : ' (waiting for approval)'}`}>
+                  <Tooltip key={s.entryId} title={`${s.from === s.to ? `Ch ${formatChainage(s.from)}` : `Ch ${formatChainage(s.from)} to ${formatChainage(s.to)}`}: ${formatQty(s.quantity)} ${unitLabel(l.unit)}, ${formatDate(s.date)}${s.status === 'APPROVED' ? '' : ' (waiting for approval)'}`}>
                     <span
                       className={`strip-seg strip-${s.status.toLowerCase()}`}
                       style={{
@@ -89,7 +89,7 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
                 <>
                   <div style={{ fontWeight: 600 }}>{start !== null && end !== null ? `${Math.round((l.coveredM / length) * 100)}%` : `${formatQty(l.coveredM)} m`}</div>
                   <div className="text-muted">
-                    {(l.coveredM / 1000).toFixed(2)} km{l.pendingM ? ` + ${(l.pendingM / 1000).toFixed(2)} waiting` : ''}
+                    {formatQty(l.coveredM / 1000)} km{l.pendingM ? ` + ${formatQty(l.pendingM / 1000)} waiting` : ''}
                   </div>
                 </>
               )}

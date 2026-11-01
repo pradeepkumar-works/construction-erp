@@ -23,6 +23,7 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   WORK_ORDER: 'hammer',
   SUBCONTRACT_BILL: 'reader',
   PAYMENT_REQUEST: 'card',
+  SUPPLIER_CHOICE: 'trophy',
   INSPECTION: 'shield-checkmark',
   ATTENDANCE: 'people',
   RISK: 'alert-circle',

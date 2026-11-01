@@ -3,7 +3,7 @@ import type { BillingBreakupDto, EpcDto, ProjectContractDto, RaBillDto, ReceiptD
 import { api, apiToken, axeViolations, signIn } from './helpers';
 
 /**
- * EPC (item 130) on the island sewerage scheme, an EPC contract in US dollars kept in rupees at ₹ 83.25: the seed gives
+ * EPC on the island sewerage scheme, an EPC contract in US dollars kept in rupees at ₹ 83.25: the seed gives
  * it 24 design deliverables, ten equipment packages (the air blowers at sea, late for erection), five client inputs (the
  * 11 kV supply overdue) and three milestone bills, two paid at the day's rate. Everything a test adds is removed again.
  */
@@ -93,11 +93,11 @@ test('deliverables, packages and client inputs drive the milestone payments of a
   await page.goto(`/projects/${epc.id}?tab=epc`);
   await expect(page.getByText('Engineering approved')).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
-  await page.getByText(/^Packages \(/).click();
+  await page.getByText(/^Packages \d+$/).click();
   await expect(page.getByText(/days late for site/).first()).toBeVisible();
   await expect(page.getByText(/reach(es)? site after it is needed/)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
-  await page.getByText(/^Client inputs \(/).click();
+  await page.getByText(/^Client inputs \d+$/).click();
   await expect(page.getByRole('button', { name: 'Record delay' })).toBeVisible();
   await page.goto(`/bills/${first.id}`);
   await expect(page.getByText(/^US\$/).first()).toBeVisible();

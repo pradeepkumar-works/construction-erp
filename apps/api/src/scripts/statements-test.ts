@@ -1,5 +1,5 @@
 /**
- * The statements' tests (v6 item 103): where accounts land in Schedule III, the comparative year, the year's closing
+ * The statements' tests: where accounts land in Schedule III, the comparative year, the year's closing
  * lines, reading bank statements as banks give them, matching them to the bank book and the reconciliation, with no
  * database. CI runs it after the build:
  *

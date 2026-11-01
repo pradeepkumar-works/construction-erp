@@ -34,7 +34,7 @@ export default function DprDetailScreen() {
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
-  // The company's own fields of the form it was made on (item 134 part 2), in the phone's language.
+  // The company's own fields of the form it was made on, in the phone's language.
   const def = data.form?.def ?? STANDARD_DPR_FORM;
   // Named and shown as on the form it was made on: the company's own name as typed, else the web's in the phone's language.
   const L = (key: DprBuiltInKey) => dprSetting(def, key).label ?? t(DPR_BUILT_INS[key].label);

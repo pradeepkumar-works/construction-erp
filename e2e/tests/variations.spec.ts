@@ -8,7 +8,7 @@ type Boq = { id: string; itemNo: string; originalQty: string; revisedQty: string
 type Summary = { projectId: string; approved: string; revisedContractValue: string | null };
 
 /**
- * Variation register (v4 item 37): the QS claims more WMM and a new item on the road project, sends it to the client
+ * Variation register: the QS claims more WMM and a new item on the road project, sends it to the client
  * and records the client's approval at a lower rate for the new item. The BOQ gets the quantities and the new item,
  * and the revised contract value goes up by what was approved.
  */
@@ -35,21 +35,21 @@ test('a variation approved by the client revises the BOQ and the contract value'
   await lines.nth(1).getByLabel('Unit').fill('Rmt');
   await lines.nth(1).getByLabel('Quantity').fill('20');
   await lines.nth(1).getByLabel('Proposed rate').fill('1500');
-  await modal.getByRole('button', { name: 'Prepare' }).click();
+  await modal.getByRole('button', { name: 'Save draft' }).click();
 
   const drawer = page.locator('.ant-drawer').filter({ hasText: 'E2E: more WMM and a drain' });
   await expect(drawer.getByText('Draft', { exact: true })).toBeVisible();
   await drawer.getByRole('button', { name: 'Send to client' }).click();
   const send = page.locator('.ant-modal').filter({ hasText: 'to the client' });
   await send.getByLabel('Our letter reference').fill('E2E/VAR/1');
-  await send.getByRole('button', { name: 'Record' }).click();
+  await send.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(drawer.getByText('With client', { exact: true })).toBeVisible();
 
   await drawer.getByRole('button', { name: 'Record decision' }).click();
-  const decide = page.locator('.ant-modal').filter({ hasText: "Client's decision" });
+  const decide = page.locator('.ant-modal').filter({ hasText: 'Record decision on' });
   await decide.getByLabel("Client's order or letter").fill('EE/E2E/9');
   await decide.getByLabel('Rate', { exact: true }).fill('1400');
-  await decide.getByRole('button', { name: 'Record' }).click();
+  await decide.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(drawer.getByText('Approved by client', { exact: true })).toBeVisible();
 
   const boqAfter = await api<Boq[]>(qs, `/projects/${road.id}/boq`);

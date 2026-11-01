@@ -11,12 +11,13 @@ import { canRunPayroll } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayrollAction, useSettlements, useSettlementsDue } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { Rupees, SettlementStatusTag } from './payrollUi';
 import { openSettlement } from './payslipPrint';
+import { openableRow } from '@/components/list/openableRow';
 
 interface PrepareValues {
   otherEarnings?: number;
@@ -39,7 +40,7 @@ function PrepareModal({ who, onClose }: { who: { employeeId: string; name: strin
       width={560}
       projectDefault={false}
       title={`Full and final settlement for ${who?.name ?? ''}`}
-      okText={from ? 'Work out again' : 'Work it out'}
+      okText={from ? 'Prepare again' : 'Prepare settlement'}
       onSubmit={async (v) => {
         const s = await act.mutateAsync({ path: '/payroll/settlements', body: { employeeId: who!.employeeId, otherEarnings: v.otherEarnings ?? 0, otherDeductions: v.otherDeductions ?? 0, note: v.note?.trim() || null } });
         message.success(`${s.settlementNo} worked out: ${Number(s.net) >= 0 ? 'net payable' : 'they owe'} ${formatINR(Math.abs(Number(s.net)))}`);
@@ -62,7 +63,7 @@ function PrepareModal({ who, onClose }: { who: { employeeId: string; name: strin
             <MoneyInput />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="note" label="Note (optional)">
+        <Form.Item name="note" label="Note">
           <Input.TextArea rows={2} maxLength={500} />
         </Form.Item>
       </Form>
@@ -90,10 +91,10 @@ function PayModal({ s, onClose }: { s: FinalSettlementDto | null; onClose: () =>
       }}
     >
       <Form form={form} layout="vertical" initialValues={{ paidOn: dayjs() }}>
-        <Form.Item name="paidOn" label={s && Number(s.net) < 0 ? 'Received on' : 'Paid on'} rules={[{ required: true, message: 'Pick the day it was settled' }]}>
+        <Form.Item name="paidOn" label={s && Number(s.net) < 0 ? 'Received on' : 'Paid on'} rules={[{ required: true, message: 'Choose the day it was settled' }]}>
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="paymentRef" label="Bank reference (optional)">
+        <Form.Item name="paymentRef" label="Bank reference">
           <Input maxLength={80} placeholder="UTR or cheque number" />
         </Form.Item>
       </Form>
@@ -129,7 +130,7 @@ function SettlementModal({ s, onClose, onRedo, onPay }: { s: FinalSettlementDto 
               <Button danger>Delete</Button>
             </Popconfirm>
           )}
-          {s.can.edit && <Button onClick={onRedo}>Work out again</Button>}
+          {s.can.edit && <Button onClick={onRedo}>Prepare again</Button>}
           <Button icon={<PrinterOutlined />} onClick={() => openSettlement(s, user?.organizationName ?? '')}>
             Print
           </Button>
@@ -153,11 +154,11 @@ function SettlementModal({ s, onClose, onRedo, onPay }: { s: FinalSettlementDto 
     >
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
         <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered>
-          <Descriptions.Item label="Stage">
+          <Descriptions.Item label="Status">
             <SettlementStatusTag status={s.status} />
           </Descriptions.Item>
           <Descriptions.Item label="Designation">{s.designation}</Descriptions.Item>
-          <Descriptions.Item label="Joined on">{s.joinedOn ? formatDate(s.joinedOn) : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Joined on">{s.joinedOn ? formatDate(s.joinedOn) : NO_VALUE}</Descriptions.Item>
           <Descriptions.Item label="Last working day">{formatDate(s.lastWorkingDay)}</Descriptions.Item>
         </Descriptions>
         <Descriptions size="small" column={1} bordered title="Owed to them">
@@ -223,8 +224,8 @@ export function Settlements() {
     { title: 'Settlement', dataIndex: 'settlementNo', width: 140, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Employee', key: 'e', width: 220, render: (_, s) => <span translate="no">{`${s.employeeName} (${s.employeeCode})`}</span> },
     { title: 'Last day', dataIndex: 'lastWorkingDay', width: 120, render: (v: string) => formatDate(v) },
-    { title: 'Stage', dataIndex: 'status', width: 150, render: (v: FinalSettlementDto['status']) => <SettlementStatusTag status={v} /> },
-    { title: 'Gratuity', dataIndex: 'gratuity', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : '-') },
+    { title: 'Status', dataIndex: 'status', width: 150, render: (v: FinalSettlementDto['status']) => <SettlementStatusTag status={v} /> },
+    { title: 'Gratuity', dataIndex: 'gratuity', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
     {
       title: 'Net',
       dataIndex: 'net',
@@ -232,7 +233,7 @@ export function Settlements() {
       align: 'right',
       render: (v: string) => (Number(v) >= 0 ? <Rupees value={v} /> : <span>owes <Rupees value={Math.abs(Number(v))} /></span>),
     },
-    { title: 'Settled on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : '-') },
+    { title: 'Settled on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : NO_VALUE) },
   ];
 
   return (
@@ -254,8 +255,8 @@ export function Settlements() {
                     {d.designation}
                     {d.leftOn ? `, left ${formatDate(d.leftOn)}` : ''}
                   </Typography.Text>
-                  <Button size="small" onClick={() => setPreparing({ employeeId: d.employeeId, name: d.fullName })} aria-label={`Work out ${d.fullName}'s settlement`}>
-                    Work it out
+                  <Button size="small" onClick={() => setPreparing({ employeeId: d.employeeId, name: d.fullName })} aria-label={`Prepare settlement for ${d.fullName}`}>
+                    Prepare settlement
                   </Button>
                 </div>
               ))}
@@ -274,7 +275,8 @@ export function Settlements() {
           dataSource={data ?? []}
           pagination={false}
           scroll={{ x: 1020 }}
-          onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
+          rowClassName="row-click"
+          onRow={(r) => openableRow(() => setOpenId(r.id))}
           locale={{ emptyText: 'No settlements yet. When someone leaves, record their exit on the staff record and work it out here.' }}
         />
       )}

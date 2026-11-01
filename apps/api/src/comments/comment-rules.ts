@@ -1,5 +1,5 @@
 /**
- * Comments and mentions (v6 item 116) as pure functions, tested in `src/scripts/comments-test.ts`: what a comment needs,
+ * Comments and mentions as pure functions, tested in `src/scripts/comments-test.ts`: what a comment needs,
  * who hears of it, who may change it, and the order threads are shown in.
  */
 import { COMMENT_MAX_LENGTH, COMMENT_MAX_MENTIONS } from '@erp/shared';

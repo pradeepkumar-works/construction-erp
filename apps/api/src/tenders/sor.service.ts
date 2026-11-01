@@ -20,11 +20,11 @@ export const sorItemDto = (r: ItemRow): SorItemDto => ({
   chapter: r.chapter,
   description: r.description,
   unit: r.unit,
-  rate: money(r.rate)!,
+  rate: money(r.rate),
 });
 
 /**
- * Schedules of rates (v6 item 110): a state SOR, the CPWD DSR or the company's own rates, each a book of items with a
+ * Schedules of rates: a state SOR, the CPWD DSR or the company's own rates, each a book of items with a
  * code, unit and rate, imported from Excel (a row with a code already in the book updates it). A tender is priced
  * against one book. Kept by those who price tenders; seen by those who see the tender register.
  */
@@ -52,7 +52,7 @@ export class SorService {
   async books(user: RequestUser): Promise<SorBookDto[]> {
     this.assertView(user);
     const rows = await this.prisma.sorBook.findMany({ where: { organizationId: user.organizationId }, include: { _count: { select: { items: true, tenders: true } } }, orderBy: [{ kind: 'asc' }, { name: 'asc' }] });
-    return rows.map((b) => ({ id: b.id, name: b.name, kind: b.kind, edition: b.edition, region: b.region, note: b.note, itemCount: b._count.items, tenderCount: b._count.tenders, updatedAt: iso(b.updatedAt)! }));
+    return rows.map((b) => ({ id: b.id, name: b.name, kind: b.kind, edition: b.edition, region: b.region, note: b.note, itemCount: b._count.items, tenderCount: b._count.tenders, updatedAt: iso(b.updatedAt) }));
   }
 
   async createBook(user: RequestUser, dto: SorBookInput): Promise<SorBookDto> {
@@ -60,7 +60,7 @@ export class SorService {
     try {
       const b = await this.prisma.sorBook.create({ data: { organizationId: user.organizationId, name: dto.name, kind: dto.kind, edition: dto.edition ?? null, region: dto.region ?? null, note: dto.note ?? null, createdById: user.id } });
       await this.audit.log(user, 'SOR_BOOK', b.id, 'CREATED', b.name);
-      return { id: b.id, name: b.name, kind: b.kind, edition: b.edition, region: b.region, note: b.note, itemCount: 0, tenderCount: 0, updatedAt: iso(b.updatedAt)! };
+      return { id: b.id, name: b.name, kind: b.kind, edition: b.edition, region: b.region, note: b.note, itemCount: 0, tenderCount: 0, updatedAt: iso(b.updatedAt) };
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`There is already a schedule called ${dto.name}`);
       throw e;

@@ -15,7 +15,7 @@ const machine = async (token: string, code: string) => (await api<Page<Equipment
 const today = localToday;
 
 /**
- * Maintenance (v4 item 42): a site engineer reports a breakdown; the store manager hears of it, issues spares from the
+ * Maintenance: a site engineer reports a breakdown; the store manager hears of it, issues spares from the
  * project store against the job card and closes it with the labour cost. Older phone builds do not get the new type.
  */
 test('a breakdown is reported at site, spares issued and the job card closed', async ({ page }) => {

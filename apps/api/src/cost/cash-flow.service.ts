@@ -11,6 +11,7 @@ import { PayablesService } from '../payables/payables.service';
 import { BudgetService } from './budget.service';
 import { ZERO } from './cost.service';
 import { CashFlowQuery } from './cost.dto';
+import { todayIn } from '../notifications/time';
 
 type D = Prisma.Decimal;
 const Dec = Prisma.Decimal;
@@ -32,7 +33,7 @@ interface Period {
 }
 
 /**
- * Cash-flow forecast (v4 item 38), by month or week from today. Money in: RA bills not yet paid, expected the client's
+ * Cash-flow forecast, by month or week from today. Money in: RA bills not yet paid, expected the client's
  * payment days after they were sent; retention and deposit released at the end of the defect liability period; and the
  * work still to bill, spread evenly to completion and paid the client's payment days later, net of the deductions the
  * contract sets. Money out: vendor and subcontractor bills by due date, and the forecast to complete spread evenly to
@@ -65,7 +66,7 @@ export class CashFlowService {
     if (!canViewCost(user.roleKey)) throw new ForbiddenException('The cash-flow forecast is for approvers and accounts');
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
     const granularity = q.granularity ?? 'MONTH';
-    const asOf = new Date().toISOString().slice(0, 10);
+    const asOf = todayIn();
     const today = parseDate(asOf);
     const periods = this.periods(today, granularity);
     const horizonEnd = periods[periods.length - 1].end;
@@ -187,21 +188,21 @@ export class CashFlowService {
         const net = inTotal.minus(outTotal);
         cumulative = cumulative.plus(net);
         return {
-          start: dateOnly(p.start)!,
-          end: dateOnly(p.end)!,
-          clientBills: money(p.clientBills)!,
-          retentionRelease: money(p.retentionRelease)!,
-          futureBilling: money(p.futureBilling)!,
-          inTotal: money(inTotal)!,
-          vendorBills: money(p.vendorBills)!,
-          remainingBudget: money(p.remainingBudget)!,
-          outTotal: money(outTotal)!,
-          net: money(net)!,
-          cumulative: money(cumulative)!,
+          start: dateOnly(p.start),
+          end: dateOnly(p.end),
+          clientBills: money(p.clientBills),
+          retentionRelease: money(p.retentionRelease),
+          futureBilling: money(p.futureBilling),
+          inTotal: money(inTotal),
+          vendorBills: money(p.vendorBills),
+          remainingBudget: money(p.remainingBudget),
+          outTotal: money(outTotal),
+          net: money(net),
+          cumulative: money(cumulative),
         };
       }),
-      overdueIn: money(overdueIn)!,
-      overdueOut: money(overdueOut)!,
+      overdueIn: money(overdueIn),
+      overdueOut: money(overdueOut),
       projectsWithoutBudget,
       projectsWithoutEndDate,
     };

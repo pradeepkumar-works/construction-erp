@@ -8,7 +8,7 @@ import { canBillRmc } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useRmcAction, useRmcBatches, useRmcOrder } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BatchStatusTag, M3, OrderStatusTag, Rupees } from './rmcUi';
 import { OrderForm } from './OrderForm';
@@ -55,7 +55,7 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
             )}
             {o.canDispatch && (
               <Button size="small" type="primary" icon={<CarOutlined />} onClick={() => setDispatching(true)}>
-                Send a truck
+                New challan
               </Button>
             )}
             {user && canBillRmc(user.roleKey) && o.clientId && Number(o.unbilled) > 0 && (
@@ -89,17 +89,17 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
               { key: 's', label: 'Status', children: <OrderStatusTag status={o.status} /> },
               { key: 'c', label: 'Customer', children: <span translate="no">{o.customer}</span> },
               { key: 'p', label: 'Plant', children: <span translate="no">{o.plantName}</span> },
-              { key: 'w', label: 'Pour at', children: o.site ?? '-' },
+              { key: 'w', label: 'Pour at', children: o.site ?? NO_VALUE },
               { key: 'g', label: 'Grade', children: <span translate="no">{`${o.grade} (${o.mixDesignCode})`}</span> },
               { key: 'q', label: 'Quantity', children: <M3 value={o.quantity} /> },
-              { key: 'r', label: 'Rate a m³', children: <Rupees value={o.rate} /> },
+              { key: 'r', label: 'Rate per m³', children: <Rupees value={o.rate} /> },
               { key: 'pr', label: 'Pumping a m³', children: o.pumpRate ? <Rupees value={o.pumpRate} /> : 'Not pumped' },
-              { key: 'v', label: 'Worth before GST', children: <Rupees value={o.value} /> },
+              { key: 'v', label: 'Value before GST', children: <Rupees value={o.value} /> },
               { key: 'd', label: 'Date', children: formatDate(o.date) },
               { key: 'pd', label: 'Pour on', children: formatDate(o.pourDate) },
               ...(o.status === 'QUOTED' ? [{ key: 'vu', label: 'Quote valid until', children: formatDate(o.validUntil) }] : []),
               { key: 'dl', label: 'Delivered', children: <M3 value={o.delivered} /> },
-              { key: 'ow', label: 'On the way', children: <M3 value={o.onTheWay} /> },
+              { key: 'ow', label: 'In transit', children: <M3 value={o.onTheWay} /> },
               ...(o.clientId ? [{ key: 'ub', label: 'Delivered, not billed', children: <M3 value={o.unbilled} /> }] : []),
             ]}
           />
@@ -119,10 +119,10 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
             columns={[
               { title: 'Challan', dataIndex: 'batchNo', width: 140, render: (n: string) => <span translate="no">{n}</span> },
               { title: 'Left the plant', dataIndex: 'dispatchedAt', width: 170, render: (d: string) => formatDateTime(d) },
-              { title: 'Truck', dataIndex: 'truck', render: (t: string | null) => <span translate="no">{t ?? '-'}</span> },
+              { title: 'Truck', dataIndex: 'truck', render: (t: string | null) => <span translate="no">{t ?? NO_VALUE}</span> },
               { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
               { title: 'Status', dataIndex: 'status', width: 120, render: (s: RmcBatchDto['status']) => <BatchStatusTag status={s} /> },
-              { title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? '-'}</span> },
+              { title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? NO_VALUE}</span> },
             ]}
           />
         </>

@@ -7,7 +7,7 @@ type Worker = { id: string; workerNo: string; name: string; idNumber: string | n
 
 const shift = (date: string, days: number) => new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
-/** Named worker register (v4 item 44): workers by name, the roll call, the head count it keeps in step, and the muster. */
+/** Named worker register: workers by name, the roll call, the head count it keeps in step, and the muster. */
 test('a site team marks the roll call of named workers and the head count follows', async ({ page }) => {
   // A company of its own, so the roll call does not touch the demo head counts.
   const stamp = Date.now();

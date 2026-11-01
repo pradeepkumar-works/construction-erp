@@ -5,7 +5,7 @@ import { PRODUCT_NAME, api, apiToken, axeViolations, measureTargets, pageOverflo
 import { SCREENS_DIR, WALK_ROLES, WALK_VIEWS, navHrefs, routesFile, stateFile, type WalkRole, type WalkView } from './route-walk';
 
 /**
- * The route walk (UX item 89): every page in the sidebar, for each role whose sidebar differs, at 1440×900 and 390×844
+ * The route walk: every page in the sidebar, for each role whose sidebar differs, at 1440×900 and 390×844
  * (a touch screen) in the light and the dark theme, plus every tab of a project page for the project manager.
  *
  * The pages come from the app itself: one test per sidebar link (the navigation tree) and per tab key in the project page's source, and

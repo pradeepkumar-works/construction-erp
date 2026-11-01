@@ -1,5 +1,5 @@
 /**
- * Today's toolbox talk (intelligence quick win Q8): a five-minute talk in Hindi and English, written from the day's work on
+ * Today's toolbox talk: a five-minute talk in Hindi and English, written from the day's work on
  * the project (activities planned for today or reported in the last days), the permits to work valid today and the
  * project's recent incidents. Pure; `SafetyService.talkForToday` loads the records and the screens read the draft. The
  * points are fixed words per hazard, never a model's, so a supervisor can read them out as they are. Tested in

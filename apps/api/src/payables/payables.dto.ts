@@ -66,8 +66,6 @@ export class PayablesQuery {
   @ApiPropertyOptional({ description: 'Only this vendor' }) @IsOptional() @IsUUID() vendorId?: string;
 }
 
-/* ---------- payment requests (v5 item 90) ---------- */
-
 class PaymentRequestFields {
   @ApiPropertyOptional({ enum: RECEIPT_MODES, default: 'BANK' }) @IsOptional() @IsIn(RECEIPT_MODES as unknown as string[]) mode?: PaymentMode;
   @ApiPropertyOptional({ example: '2026-10-25', nullable: true }) @IsOptional() @IsDateString() neededBy?: string | null;
@@ -96,7 +94,7 @@ export class UpdatePaymentRequestDto extends PaymentRequestFields {
   @ApiPropertyOptional({ enum: FUND_PURPOSES, description: 'FUND_REQUEST only' }) @IsOptional() @IsIn(FUND_PURPOSES as unknown as string[]) purpose?: FundPurpose;
 }
 
-/** Release an approved fund request (v6 item 107) into its imprest: a paid advance on it. */
+/** Release an approved fund request into its imprest: a paid advance on it. */
 export class ReleaseFundsDto {
   @ApiProperty({ example: '2026-10-22' }) @IsDateString() date: string;
   @ApiPropertyOptional({ example: '50000.00', description: 'Defaults to what the request has left to release' }) @IsOptional() @num() @IsNumberString() amount?: string;
@@ -119,8 +117,6 @@ export class ListPaymentRequestsQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.paymentRequests, default: 'requestNo' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.paymentRequests as unknown as string[]) sortBy?: PaymentRequestSortField;
 }
-
-/* ---------- debit notes (v5 item 91) ---------- */
 
 export class DebitNoteLineInput {
   @ApiProperty({ example: 'Cement OPC 53, 20 bags short' }) @trim() @IsString() @IsNotEmpty() @MaxLength(200) description: string;

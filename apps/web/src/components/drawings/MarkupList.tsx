@@ -1,5 +1,6 @@
 'use client';
 
+import { revLabel } from '@/components/documents/docUi';
 import React, { useEffect } from 'react';
 import { App, Button, Empty, Flex, Form, Input, Segmented, Space, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
@@ -17,7 +18,7 @@ import { MARKUP_INK } from './MarkupLayer';
 export type ListScope = 'sheet' | 'all';
 
 /**
- * The marks beside the drawing (item 109): this sheet's own and the open ones carried from earlier revisions, or every
+ * The marks beside the drawing: this sheet's own and the open ones carried from earlier revisions, or every
  * mark on the drawing. Picking one shows it on the sheet; its maker and document control resolve or delete it, and
  * anyone can raise an RFI from it.
  */
@@ -100,7 +101,7 @@ export function MarkupList({
                     {m.status === 'RESOLVED' ? <AppTag tone="success">Resolved</AppTag> : null}
                     {carriedIds.has(m.id) || scope === 'all' ? (
                       <AppTag translate="no" style={{ margin: 0 }}>
-                        Rev {m.revision}
+                        {revLabel(m.revision)}
                         {m.page > 1 ? `, p ${m.page}` : ''}
                       </AppTag>
                     ) : null}

@@ -4,15 +4,15 @@ import React, { useState } from 'react';
 import { App, Button, Card, Col, Empty, Flex, Form, Grid, Input, Row, Space, Statistic, Table, Typography, theme } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { CheckCircleOutlined, DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@/components/common/icons';
+import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleFilled, DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@/components/common/icons';
 import type { ComparativeStatementDto, EnquiryDto, MaterialRequestDto, MaterialRequestItemDto, QuotationDto, RankedQuote, RequestToOrderDto } from '@erp/shared';
-import { ORDER_STAGES, awardLowestPerItem, canPurchase, enquiryOpen, finaliseProblem, lastRateKey, rankLabel, type OrderStage } from '@erp/shared';
+import { awardLowestPerItem, canPurchase, enquiryOpen, finaliseProblem, lastRateKey, rankLabel, type OrderStage } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useUrlTab } from '@/lib/url-state';
 import { useComparative, useFinaliseL1, useLastRates, useMaterialRequest, useRequestToOrder } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
@@ -28,12 +28,13 @@ import { PurchaseOrderFormModal, type PoStart } from './PurchaseOrderFormModal';
 import { PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { AwardLowestModal } from './AwardLowestModal';
 import { ComparativeTable, RequestOrders, poStartFrom, ranksFor, toOrderOfRequest } from './RequestBuying';
-import { StageTag } from './RequestsToOrderList';
 
 const STEPS = ['enquiries', 'quotations', 'finalise', 'orders'] as const;
 type Step = (typeof STEPS)[number];
 /** The step a request opens on: the one its stage waits on. */
-const STEP_OF: Record<OrderStage, Step> = { TO_ENQUIRE: 'enquiries', AWAITING_QUOTES: 'enquiries', TO_FINALISE: 'finalise', READY: 'orders' };
+const STEP_OF: Record<OrderStage, Step> = { TO_ENQUIRE: 'enquiries', AWAITING_QUOTES: 'enquiries', TO_FINALISE: 'finalise', AWAITING_APPROVAL: 'finalise', READY: 'orders' };
+/** Where each stage sits on the four-step bar: a choice waiting for approval is still on Finalise L1. */
+const BAR_AT: Record<OrderStage, number> = { TO_ENQUIRE: 0, AWAITING_QUOTES: 1, TO_FINALISE: 2, AWAITING_APPROVAL: 2, READY: 3 };
 
 function Muted({ children }: { children: React.ReactNode }) {
   return <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{children}</div>;
@@ -60,7 +61,7 @@ export function RequestToOrderScreen({ id }: { id: string }) {
     );
   const request = mr.data;
   const buyer = !!user && canPurchase(user.roleKey);
-  const at = ORDER_STAGES.indexOf(r.stage);
+  const at = BAR_AT[r.stage];
   const done = r.itemsLeft === 0;
 
   return (
@@ -75,31 +76,37 @@ export function RequestToOrderScreen({ id }: { id: string }) {
             {r.approvedAt ? `, approved ${formatDate(r.approvedAt)}` : ''}
           </span>
         }
-        extra={<LinkButton href={`/material-requests/${r.id}`}>Open the request</LinkButton>}
+        extra={<LinkButton href={`/material-requests/${r.id}`}>Open the indent</LinkButton>}
       />
       <Card size="small">
         <StageBar
-          label="Where this request stands"
+          label="Where this indent stands"
           current={done ? 3 : at}
           status={done ? 'finish' : 'process'}
           style={{ marginBottom: 12 }}
           items={[
             { title: 'Enquiry', content: r.enquiry ? `${r.enquiry.replied} of ${r.enquiry.invited} replied` : 'Not sent' },
-            { title: 'Quotations', content: `${r.quotations} in` },
-            { title: 'Finalise L1', content: r.final ? (r.final.split ? 'Split per item' : (r.final.vendorName ?? 'Finalised')) : r.l1 ? `L1 ${r.l1.vendorName}` : 'Waiting for quotes' },
-            { title: 'Purchase order', content: done ? 'Everything ordered' : r.orders ? `${r.orders} raised, ${r.itemsLeft} item${r.itemsLeft === 1 ? '' : 's'} left` : 'To raise' },
+            { title: 'Quotations', content: `${r.quotations} quotation${r.quotations === 1 ? '' : 's'} in` },
+            {
+              title: 'Finalise L1',
+              content: r.final
+                ? `${r.final.split ? 'L1 per item' : (r.final.vendorName ?? 'Finalised')}${r.stage === 'AWAITING_APPROVAL' ? ', waiting for approval' : r.final.approval?.status === 'APPROVED' ? ', approved' : ''}`
+                : r.l1
+                  ? `L1 ${r.l1.vendorName}`
+                  : 'Waiting for quotations',
+            },
+            { title: 'Purchase order', content: done ? 'Everything ordered' : r.orders ? `${r.orders} made, ${r.itemsLeft} item${r.itemsLeft === 1 ? '' : 's'} left` : 'To make' },
           ]}
         />
         <AppTabs
           variant="page"
           activeKey={tab}
           onChange={(k) => setTab(k as Step)}
-          extra={done ? <AppTag tone="success">Everything ordered or received</AppTag> : <StageTag stage={r.stage} />}
           items={[
-            { key: 'enquiries', label: '1. Enquiry', children: <EnquiryStep request={request} row={r} buyer={buyer} onNext={() => setTab('quotations')} /> },
-            { key: 'quotations', label: '2. Quotations', count: r.quotations, countLabel: r.quotations === 1 ? 'quotation' : 'quotations', children: <QuotationsStep request={request} cs={cs.data} loading={cs.isLoading} buyer={buyer} onNext={() => setTab('finalise')} /> },
-            { key: 'finalise', label: '3. Finalise L1', attention: r.stage === 'TO_FINALISE', children: <FinaliseStep request={request} row={r} cs={cs.data} buyer={buyer} onNext={() => setTab('orders')} /> },
-            { key: 'orders', label: '4. Purchase order', count: r.orders || undefined, countLabel: r.orders === 1 ? 'order' : 'orders', attention: r.stage === 'READY', children: <OrdersStep request={request} row={r} cs={cs.data} buyer={buyer} onFinalise={() => setTab('finalise')} /> },
+            { key: 'enquiries', label: 'Enquiry', children: <EnquiryStep request={request} row={r} buyer={buyer} onNext={() => setTab('quotations')} /> },
+            { key: 'quotations', label: 'Quotations', count: r.quotations, countLabel: r.quotations === 1 ? 'quotation' : 'quotations', children: <QuotationsStep request={request} cs={cs.data} loading={cs.isLoading} buyer={buyer} onNext={() => setTab('finalise')} /> },
+            { key: 'finalise', label: r.needsApproval ? 'Finalise and approve' : 'Finalise L1', attention: r.stage === 'TO_FINALISE', children: <FinaliseStep request={request} row={r} cs={cs.data} buyer={buyer} onNext={() => setTab('orders')} /> },
+            { key: 'orders', label: 'Purchase order', count: r.orders || undefined, countLabel: r.orders === 1 ? 'order' : 'orders', attention: r.stage === 'READY', children: <OrdersStep request={request} row={r} cs={cs.data} buyer={buyer} onFinalise={() => setTab('finalise')} /> },
           ]}
         />
       </Card>
@@ -107,7 +114,7 @@ export function RequestToOrderScreen({ id }: { id: string }) {
   );
 }
 
-/* ---------- 1. Enquiry ---------- */
+// 1. Enquiry
 
 function EnquiryStep({ request, row, buyer, onNext }: { request: MaterialRequestDto; row: RequestToOrderDto; buyer: boolean; onNext: () => void }) {
   const { token } = theme.useToken();
@@ -137,15 +144,15 @@ function EnquiryStep({ request, row, buyer, onNext }: { request: MaterialRequest
           <Flex justify="space-between" align="center" wrap gap={token.marginXS}>
             <Typography.Text type="secondary">
               {waiting
-                ? `${row.enquiry.replied} of ${row.enquiry.invited} suppliers have replied. The links work until ${formatDate(row.enquiry.closesOn)}; replies land on the quotations.`
-                : `${row.enquiry.replied} of ${row.enquiry.invited} suppliers replied.`}
+                ? `${row.enquiry.replied} of ${row.enquiry.invited} vendors have replied. The links work until ${formatDate(row.enquiry.closesOn)}; replies land on the quotations.`
+                : `${row.enquiry.replied} of ${row.enquiry.invited} vendors replied.`}
             </Typography.Text>
             {row.quotations > 0 ? <Button onClick={onNext}>See the quotations</Button> : null}
           </Flex>
         </>
       ) : (
         <Typography.Paragraph type="secondary">
-          No enquiry sent yet. Each supplier you choose gets a link to type their rates, GST, freight and delivery days, with no sign-in. A quotation that came by
+          No enquiry sent yet. Each vendor you choose gets a link to type their rates, GST, freight and delivery days, with no sign-in. A quotation that came by
           email or phone is recorded under Quotations.
         </Typography.Paragraph>
       )}
@@ -188,7 +195,7 @@ function ItemsToBuy({ items }: { items: MaterialRequestItemDto[] }) {
   );
 }
 
-/* ---------- 2. Quotations ---------- */
+// 2. Quotations
 
 function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: MaterialRequestDto; cs: ComparativeStatementDto | undefined; loading: boolean; buyer: boolean; onNext: () => void }) {
   const { token } = theme.useToken();
@@ -230,24 +237,24 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
         locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No quotations yet" /> }}
         columns={[
           {
-            title: 'Supplier',
+            title: 'Vendor',
             key: 'vendor',
             render: (_, q) => (
               <div>
                 <span translate="no">{q.vendorName}</span>
-                <Muted>{q.fromSupplier ? 'Typed by the supplier on the enquiry link' : `Recorded by ${q.createdByName}`}</Muted>
+                <Muted>{q.fromSupplier ? 'Typed by the vendor on the enquiry link' : `Recorded by ${q.createdByName}`}</Muted>
               </div>
             ),
           },
-          { title: 'Quote', key: 'ref', width: 150, render: (_, q) => <div>{q.quoteRef ? <span className="mono" translate="no">{q.quoteRef}</span> : <span className="text-muted">No ref.</span>}<Muted>{formatDate(q.quoteDate)}</Muted></div> },
+          { title: 'Quotation', key: 'ref', width: 150, render: (_, q) => <div>{q.quoteRef ? <span className="mono" translate="no">{q.quoteRef}</span> : <span className="text-muted">No ref.</span>}<Muted>{formatDate(q.quoteDate)}</Muted></div> },
           {
             title: 'Valid until',
             dataIndex: 'validUntil',
             width: 130,
-            render: (v: string | null) => (v ? v < today ? <AppTag tone="danger" style={{ margin: 0 }}>Expired {formatDate(v)}</AppTag> : formatDate(v) : <span className="text-muted">-</span>),
+            render: (v: string | null) => (v ? v < today ? <AppTag tone="danger" style={{ margin: 0 }}>Expired {formatDate(v)}</AppTag> : formatDate(v) : <span className="text-muted">{NO_VALUE}</span>),
           },
-          { title: 'Delivery', dataIndex: 'deliveryDays', width: 100, align: 'right', render: (v: number | null) => (v != null ? `${v} days` : <span className="text-muted">-</span>) },
-          { title: 'Payment', dataIndex: 'paymentTerms', width: 150, ellipsis: true, render: (v: string | null) => v ?? <span className="text-muted">-</span> },
+          { title: 'Delivery', dataIndex: 'deliveryDays', width: 100, align: 'right', render: (v: number | null) => (v != null ? `${v} days` : <span className="text-muted">{NO_VALUE}</span>) },
+          { title: 'Payment', dataIndex: 'paymentTerms', width: 150, ellipsis: true, render: (v: string | null) => v ?? <span className="text-muted">{NO_VALUE}</span> },
           {
             title: 'Items quoted',
             key: 'covers',
@@ -266,7 +273,7 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
               const x = ranked.get(q.id);
               return (
                 <div>
-                  <strong className="mono" translate="no">{x ? formatINR(x.total, true) : '-'}</strong>
+                  <strong className="mono" translate="no">{x ? formatINR(x.total, true) : NO_VALUE}</strong>
                   {x?.rank ? <div><AppTag tone={x.rank === 1 ? 'success' : 'neutral'} style={{ margin: 0 }}>{rankLabel(x.rank)}</AppTag></div> : null}
                 </div>
               );
@@ -296,7 +303,7 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
   );
 }
 
-/* ---------- 3. Finalise L1 ---------- */
+// 3. Finalise L1
 
 function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRequestDto; row: RequestToOrderDto; cs: ComparativeStatementDto | undefined; buyer: boolean; onNext: () => void }) {
   const { token } = theme.useToken();
@@ -327,8 +334,12 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
   const pct = (a: number, b: number) => (b ? `${(((a - b) / b) * 100).toFixed(1)}%` : '');
 
   const pick = async (body: { quotationId?: string; split?: boolean; reason?: string | null }, what: string) => {
-    await finalise.mutateAsync(body);
-    message.success(`Finalised: ${what}. Raise the order next.`);
+    const after = await finalise.mutateAsync(body);
+    if (after.stage === 'AWAITING_APPROVAL') {
+      message.success(`Finalised: ${what}. It is sent for approval; make the purchase order once it is approved.`);
+      return;
+    }
+    message.success(`Finalised: ${what}. Make the purchase order next.`);
     onNext();
   };
 
@@ -337,47 +348,19 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
 
   return (
     <>
-      {row.final ? (
-        <Flex
-          align="center"
-          justify="space-between"
-          wrap
-          gap={token.marginSM}
-          style={{ padding: token.paddingSM, marginBottom: token.margin, background: token.colorSuccessBg, borderRadius: token.borderRadius }}
-        >
-          <Flex align="center" gap={token.marginXS}>
-            <CheckCircleOutlined style={{ color: token.colorSuccessText }} aria-hidden />
-            <Typography.Text>
-              <strong>Finalised: {row.final.split ? 'the lowest per item, split between vendors' : <span translate="no">{row.final.vendorName ?? 'a quotation since deleted'}</span>}</strong>
-              {row.final.rank ? ` (${rankLabel(row.final.rank)} when chosen)` : ''}
-              {row.final.byName ? `, by ${row.final.byName}` : ''}
-              {row.final.at ? ` on ${formatDateTime(row.final.at)}` : ''}.{row.final.reason ? ` Why: ${row.final.reason}` : ''}
-            </Typography.Text>
-          </Flex>
-          {buyer ? (
-            <Space wrap>
-              <Button loading={reopen.isPending} onClick={() => reopen.mutate()}>
-                Reopen
-              </Button>
-              <Button type="primary" icon={<ShoppingCartOutlined />} onClick={onNext}>
-                Raise the order
-              </Button>
-            </Space>
-          ) : null}
-        </Flex>
-      ) : null}
+      {row.final ? <FinalNotice row={row} buyer={buyer} reopening={reopen.isPending} onReopen={() => reopen.mutate()} onNext={onNext} /> : null}
 
       <Row gutter={[token.margin, token.margin]} style={{ marginBottom: token.margin }}>
         <Col xs={12} lg={6}>
-          <Statistic title="L1 for what is left" value={l1 ? formatINR(l1.total) : 'No complete quote'} valueRender={(v) => <span translate="no">{v}</span>} />
+          <Statistic title="L1 for what is left" value={l1 ? formatINR(l1.total) : 'No complete quotation'} valueRender={(v) => <span translate="no">{v}</span>} />
           <Muted>{l1 ? <span translate="no">{l1.vendorName}</span> : 'Every quotation leaves out an item'}</Muted>
         </Col>
         <Col xs={12} lg={6}>
-          <Statistic title="L2 is higher by" value={l1 && l2 ? formatINR(l2.total - l1.total) : '-'} valueRender={(v) => <span translate="no">{v}</span>} />
+          <Statistic title="L2 is higher by" value={l1 && l2 ? formatINR(l2.total - l1.total) : NO_VALUE} valueRender={(v) => <span translate="no">{v}</span>} />
           <Muted>{l1 && l2 ? <><span translate="no">{l2.vendorName}</span>, {pct(l2.total, l1.total)} more</> : 'Only one complete quotation'}</Muted>
         </Col>
         <Col xs={12} lg={6}>
-          <Statistic title="Lowest per item, split" value={split ? formatINR(split.total) : '-'} valueRender={(v) => <span translate="no">{v}</span>} />
+          <Statistic title="L1 per item" value={split ? formatINR(split.total) : NO_VALUE} valueRender={(v) => <span translate="no">{v}</span>} />
           <Muted>
             {split
               ? l1
@@ -389,7 +372,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
           </Muted>
         </Col>
         <Col xs={12} lg={6}>
-          <Statistic title="Against the last orders" value={priced.length && l1Same ? formatINR(l1OnPriced - atLast) : '-'} valueRender={(v) => <span translate="no">{v}</span>} />
+          <Statistic title="Against the last orders" value={priced.length && l1Same ? formatINR(l1OnPriced - atLast) : NO_VALUE} valueRender={(v) => <span translate="no">{v}</span>} />
           <Muted>
             {priced.length && l1Same
               ? `L1 is ${l1OnPriced >= atLast ? 'above' : 'below'} the last rates on ${priced.length} of ${lastLines.length} item${lastLines.length === 1 ? '' : 's'} (${pct(l1OnPriced, atLast)})`
@@ -419,9 +402,9 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
         scroll={{ x: 920 }}
         style={{ marginBottom: token.marginLG }}
         columns={[
-          { title: 'Rank', key: 'rank', width: 80, render: (_, x) => (x.rank ? <AppTag tone={x.rank === 1 ? 'success' : 'neutral'} style={{ margin: 0 }}>{rankLabel(x.rank)}</AppTag> : <span className="text-muted">Part quote</span>) },
+          { title: 'Rank', key: 'rank', width: 80, render: (_, x) => (x.rank ? <AppTag tone={x.rank === 1 ? 'success' : 'neutral'} style={{ margin: 0 }}>{rankLabel(x.rank)}</AppTag> : <span className="text-muted">Part quotation</span>) },
           {
-            title: 'Supplier',
+            title: 'Vendor',
             key: 'vendor',
             render: (_, x) => (
               <div>
@@ -436,10 +419,10 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
             key: 'gap',
             width: 150,
             align: 'right',
-            render: (_, x) => (l1 && x.rank && x.rank > 1 ? <span translate="no">{formatINR(x.total - l1.total)}<Muted>{pct(x.total, l1.total)}</Muted></span> : <span className="text-muted">-</span>),
+            render: (_, x) => (l1 && x.rank && x.rank > 1 ? <span translate="no">{formatINR(x.total - l1.total)}<Muted>{pct(x.total, l1.total)}</Muted></span> : <span className="text-muted">{NO_VALUE}</span>),
           },
-          { title: 'Delivery', key: 'days', width: 100, align: 'right', render: (_, x) => { const d = byId.get(x.quotationId)?.deliveryDays; return d != null ? `${d} days` : <span className="text-muted">-</span>; } },
-          { title: 'Payment', key: 'terms', width: 150, ellipsis: true, render: (_, x) => byId.get(x.quotationId)?.paymentTerms ?? <span className="text-muted">-</span> },
+          { title: 'Delivery', key: 'days', width: 100, align: 'right', render: (_, x) => { const d = byId.get(x.quotationId)?.deliveryDays; return d != null ? `${d} days` : <span className="text-muted">{NO_VALUE}</span>; } },
+          { title: 'Payment', key: 'terms', width: 150, ellipsis: true, render: (_, x) => byId.get(x.quotationId)?.paymentTerms ?? <span className="text-muted">{NO_VALUE}</span> },
           ...(buyer
             ? [
                 {
@@ -464,17 +447,20 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
       {split && buyer ? (
         <Flex justify="space-between" align="center" wrap gap={token.marginXS} style={{ marginBottom: token.marginLG }}>
           <Typography.Text type="secondary">
-            Splitting by the lowest rate per item gives {split.orders.length} orders ({split.orders.map((o) => o.vendorName).join(', ')}) for {formatINR(split.total)}.
+            Taking L1 per item gives {split.orders.length} orders ({split.orders.map((o) => o.vendorName).join(', ')}) for {formatINR(split.total)}.
           </Typography.Text>
-          <Button loading={finalise.isPending} onClick={() => pick({ split: true }, 'the lowest per item, split between vendors')}>
-            Finalise the split
+          <Button loading={finalise.isPending} onClick={() => pick({ split: true }, 'L1 per item')}>
+            Finalise L1 per item
           </Button>
         </Flex>
       ) : null}
 
       <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: `0 0 ${token.marginSM}px` }}>
-        Rates item by item
+        Comparative statement
       </Typography.Title>
+      <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+        Rates item by item
+      </Typography.Paragraph>
       {cs ? <ComparativeTable request={request} data={cs} /> : null}
       <ChooseInsteadModal
         choice={choosing}
@@ -485,6 +471,62 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
         }}
       />
     </>
+  );
+}
+
+/**
+ * What was finalised, and where its approval stands when the company has orders wait for an approved choice: waiting
+ * (the order waits too), approved (raise it) or rejected and sent back (finalise again, the ranking is below).
+ */
+function FinalNotice({ row, buyer, reopening, onReopen, onNext }: { row: RequestToOrderDto; buyer: boolean; reopening: boolean; onReopen: () => void; onNext: () => void }) {
+  const { token } = theme.useToken();
+  const final = row.final!;
+  const approval = final.approval;
+  const waiting = row.stage === 'AWAITING_APPROVAL';
+  const refused = approval?.status === 'REJECTED' || approval?.status === 'CHANGES_REQUESTED';
+  const tone = refused
+    ? { bg: token.colorErrorBg, fg: token.colorErrorText }
+    : waiting
+      ? { bg: token.colorWarningBg, fg: token.colorWarningText }
+      : { bg: token.colorSuccessBg, fg: token.colorSuccessText };
+  const chosen = final.split ? 'L1 per item, over more than one vendor' : <span translate="no">{final.vendorName ?? 'a quotation since deleted'}</span>;
+  return (
+    <Flex align="center" justify="space-between" wrap gap={token.marginSM} style={{ padding: token.paddingSM, marginBottom: token.margin, background: tone.bg, borderRadius: token.borderRadius }}>
+      <Flex align="flex-start" gap={token.marginXS} style={{ minWidth: 0, flex: '1 1 320px' }}>
+        {refused ? (
+          <CloseCircleFilled style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+        ) : waiting ? (
+          <ClockCircleOutlined style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+        ) : (
+          <CheckCircleOutlined style={{ color: tone.fg, marginTop: 4 }} aria-hidden />
+        )}
+        <Typography.Text>
+          <strong>
+            {refused ? (approval!.status === 'REJECTED' ? 'Choice rejected: ' : 'Choice sent back: ') : waiting ? 'Waiting for approval: ' : 'Finalised: '}
+            {chosen}
+          </strong>
+          {final.rank ? ` (${rankLabel(final.rank)} when chosen)` : ''}
+          {final.byName ? `, by ${final.byName}` : ''}
+          {final.at ? ` on ${formatDateTime(final.at)}` : ''}.{final.reason ? ` Why: ${final.reason}` : ''}
+          {approval?.status === 'APPROVED' && approval.reviewedByName ? ` Approved by ${approval.reviewedByName}${approval.reviewedAt ? ` on ${formatDateTime(approval.reviewedAt)}` : ''}.` : ''}
+          {refused ? ` ${approval!.reviewedByName ?? 'The approver'}${approval!.reviewNote ? ` wrote: ${approval!.reviewNote}` : ' gave no note'}. Finalise again from the ranking below.` : ''}
+          {waiting ? ' The purchase order can be made once the approver agrees.' : ''}
+        </Typography.Text>
+      </Flex>
+      <Space wrap>
+        {approval ? <LinkButton href={`/supplier-choices/${approval.choiceId}`}>Open the choice</LinkButton> : null}
+        {buyer && !refused ? (
+          <Button loading={reopening} onClick={onReopen}>
+            Reopen
+          </Button>
+        ) : null}
+        {buyer && row.stage === 'READY' ? (
+          <Button type="primary" icon={<ShoppingCartOutlined />} onClick={onNext}>
+            Go to the purchase order
+          </Button>
+        ) : null}
+      </Space>
+    </Flex>
   );
 }
 
@@ -508,7 +550,7 @@ function ChooseInsteadModal({ choice, ranked, onClose, onSubmit }: { choice: Ran
       <Form form={form} layout="vertical">
         <Form.Item
           name="reason"
-          label="Why this supplier"
+          label="Why this vendor"
           rules={[
             {
               validator: async (_, v: string | undefined) => {
@@ -526,7 +568,7 @@ function ChooseInsteadModal({ choice, ranked, onClose, onSubmit }: { choice: Ran
   );
 }
 
-/* ---------- 4. Purchase order ---------- */
+// 4. Purchase order
 
 function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: MaterialRequestDto; row: RequestToOrderDto; cs: ComparativeStatementDto | undefined; buyer: boolean; onFinalise: () => void }) {
   const { token } = theme.useToken();
@@ -543,26 +585,30 @@ function OrdersStep({ request, row, cs, buyer, onFinalise }: { request: Material
             ? 'Everything on this request is ordered or received.'
             : row.stage === 'READY'
               ? row.final!.split
-                ? 'The split is finalised: one draft order per vendor, each for the items it quoted lowest.'
+                ? 'L1 per item is finalised: one draft order per vendor, each for the items it quoted lowest.'
                 : `${row.final!.vendorName} is finalised. The order starts from their quotation for what is still to order.`
-              : 'Finalise L1 first, so the order is raised on the supplier you chose.'}
+              : row.stage === 'AWAITING_APPROVAL'
+                ? 'The supplier choice is waiting for approval. The purchase order is made once it is approved.'
+                : row.needsApproval
+                  ? 'Finalise L1 and have it approved first: purchase orders here are made only on an approved supplier choice.'
+                  : 'Finalise L1 first, so the order is made on the vendor you chose.'}
         </Typography.Text>
         {buyer && left ? (
           <Space wrap>
             {row.stage === 'READY' && row.final?.split && cs ? (
               <Button type="primary" icon={<ShoppingCartOutlined />} onClick={() => setAwarding(true)}>
-                Raise the split orders
+                Make the draft orders
               </Button>
             ) : row.stage === 'READY' && finalQuote ? (
               <Button type="primary" icon={<ShoppingCartOutlined />} onClick={() => setStart(poStartFrom(request, finalQuote, row.final?.reason))}>
-                Raise PO on {finalQuote.vendorName}
+                New purchase order on {finalQuote.vendorName}
               </Button>
             ) : (
               <Button type="primary" onClick={onFinalise}>
-                Go to Finalise L1
+                {row.stage === 'AWAITING_APPROVAL' ? 'See the choice' : 'Go to Finalise L1'}
               </Button>
             )}
-            <Button onClick={() => setStart(poStartFrom(request, null))}>Raise PO without a quotation</Button>
+            {row.needsApproval ? null : <Button onClick={() => setStart(poStartFrom(request, null))}>New purchase order without a quotation</Button>}
           </Space>
         ) : null}
       </Flex>

@@ -9,7 +9,7 @@ type Invoice = { id: string; invoiceNo: string; quantity: string; taxable: strin
 type Page<T> = { items: T[]; total: number };
 
 /**
- * RMC (v6 item 104): a quote is accepted, the plant sends a truck from the day (its materials leave the store), the site
+ * RMC: a quote is accepted, the plant sends a truck from the day (its materials leave the store), the site
  * receives it, accounts bill the challan with GST, and a role without RMC is refused.
  */
 test('a quote becomes an order, a truck goes from the day, and its challan is billed with GST', async ({ page }) => {
@@ -36,10 +36,10 @@ test('a quote becomes an order, a truck goes from the day, and its challan is bi
 
   // The plant sends a truck from the day.
   await page.goto('/rmc?tab=day');
-  await page.getByRole('row', { name: new RegExp(quote.orderNo) }).getByRole('button', { name: 'Send a truck' }).click();
-  const send = formPanel(page, `Send a truck on ${quote.orderNo}`);
+  await page.getByRole('row', { name: new RegExp(quote.orderNo) }).getByRole('button', { name: 'New challan' }).click();
+  const send = formPanel(page, `New challan · ${quote.orderNo}`);
   await send.getByLabel('Truck', { exact: true }).fill('od02e2e9999');
-  await send.getByRole('button', { name: 'Dispatch' }).click();
+  await send.getByRole('button', { name: 'Save challan' }).click();
   await expect(page.getByText(/^DC-\d{4}-\d{4} on its way: 6 m³ to Kalinga Homes LLP$/)).toBeVisible();
 
   const [truck] = (await api<Page<Batch>>(store, `/rmc/batches?orderId=${quote.id}`)).items;

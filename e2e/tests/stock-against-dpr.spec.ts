@@ -3,7 +3,7 @@ import type { DprWorkOptionsDto, ProjectKitReconDto, ProjectPipeReconDto, Projec
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Stock against the DPR (item 128) on the town water scheme: the seed plants one case of each kind. Cement on the
+ * Stock against the DPR on the town water scheme: the seed plants one case of each kind. Cement on the
  * 400 KL tank's concrete runs over its mix, HDPE 110 is cut above the allowed wastage, more DI pipe is laid than was
  * issued, four house connections went in without a saddle issued, and the store issued cement to a tank with no work.
  * A norm set on an activity shows in the Materials view and goes again; nothing else is saved.
@@ -63,6 +63,8 @@ test('the reports find the planted cases, and a norm can sit on an activity', as
   await page.goto(`/projects/${town.id}?tab=reconciliation&sub=kits`);
   await expect(page.getByText('4 kits short').first()).toBeVisible();
   await page.goto(`/projects/${town.id}?tab=reconciliation&sub=exceptions`);
+  // The planted DPRs are days old, so early in a month they sit before "This month".
+  await page.getByText('Last 3 months', { exact: true }).click();
   await expect(page.getByText('Issued with no work').first()).toBeVisible();
   await page.getByRole('link', { name: 'Open the DPR' }).first().click();
   await expect(page).toHaveURL(/\/dpr\//);

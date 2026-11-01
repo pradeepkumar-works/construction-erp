@@ -11,7 +11,7 @@ const GATE_SN = 'ZKDEMO0001';
 const HO_KEY = 'bio_demo_demo_headoffice';
 
 /**
- * Biometric attendance (v6 item 101): a ZKTeco-style device hands its punches over ADMS and they mark the staff member
+ * Biometric attendance: a ZKTeco-style device hands its punches over ADMS and they mark the staff member
  * enrolled under that number; the same upload again adds nothing; an unknown device or key is refused; a worker punching
  * on a device with no site is not marked; HR imports a punch file, matches an unknown number on the page and its punches
  * mark attendance.
@@ -77,7 +77,7 @@ test('device punches mark attendance, and HR matches the numbers it does not kno
 
   // The gate terminal's setup shows what to enter on the device.
   await page.getByRole('tab', { name: 'Devices', exact: true }).click();
-  await page.getByRole('button', { name: 'How to set up Gate terminal' }).click();
+  await page.getByRole('button', { name: 'Set up Gate terminal' }).click();
   await expect(page.getByRole('dialog', { name: 'Set up Gate terminal' }).getByText(GATE_SN)).toBeVisible();
 });
 
@@ -85,7 +85,7 @@ type Command = { kind: string; pin: string | null; status: string; note: string 
 type BioUser = { pin: string; onDevices: number; commandsWaiting: number };
 
 /**
- * Biometric device commands (item 150): HR puts a person on the gate terminal from the page and takes them off; the
+ * Biometric device commands: HR puts a person on the gate terminal from the page and takes them off; the
  * terminal is handed each command when it asks, and its answer closes it, done or refused. Only HR and the like may.
  */
 test('HR puts a person on the gate terminal and takes them off, and the terminal answers each command', async ({ page }) => {

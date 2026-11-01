@@ -7,7 +7,7 @@ import { ApiError } from '../api/client';
 const IDLE_TIMEOUT_MS = 45_000;
 
 /**
- * Asks Ask Nirmaan (AI item 72) and hands each server-sent event to `onEvent` as it arrives, like the web panel. Uses
+ * Asks Ask Nirmaan and hands each server-sent event to `onEvent` as it arrives, like the web panel. Uses
  * Expo's fetch, whose body can be read as it streams. A refusal before the answer starts (switched off, allowance used,
  * too many questions today) rejects with the server's message; no connection rejects with an `ApiError` of status 0.
  */

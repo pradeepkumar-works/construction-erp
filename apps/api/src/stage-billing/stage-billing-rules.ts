@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { siblingWeights, type BillingBasis, type StageTemplate } from '@erp/shared';
 
 /**
- * Stage billing (item 129, ARCHITECTURE "Stage billing"): pure arithmetic, tested in `src/scripts/stage-billing-test.ts`.
+ * Stage billing (ARCHITECTURE "Stage billing"): pure arithmetic, tested in `src/scripts/stage-billing-test.ts`.
  * A lump-sum bill pays each component's share of the lump sum by its stages; a stage's % on a bill comes from its
  * evidence (an event, progress, supply or testing), less what earlier bills took.
  */
@@ -16,7 +16,6 @@ export const round3 = (n: number) => Math.round(n * 1000) / 1000;
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const pctText = (n: number) => `${Math.round(n * 10) / 10}%`;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The break-up
 
 export interface ComponentInput {
@@ -109,7 +108,6 @@ export function sharesFromWeights(weights: (number | null)[]): number[] {
   return shares;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Evidence: what a stage has earned up to a day, % of the stage
 
 export type StageEvidenceInput =
@@ -174,7 +172,6 @@ export function progressOfActivities(rows: { pct: number; weightPct: number | nu
   return total > 0 ? round3(rows.reduce((s, r, i) => s + r.pct * w[i], 0) / total) : 0;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // A stage on a bill
 
 export interface StageLineResult {
@@ -216,7 +213,6 @@ export function certifiedAmount(value: D, prevPct: number, certifiedPct: number)
   return amounts(value, prevPct, certifiedPct, certifiedPct).amount;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Milestone slippage
 
 export interface SlippageInput {
@@ -311,7 +307,6 @@ export function plannedFraction(start: string | null, end: string | null, day: s
   return e > s ? clamp((Date.parse(day) - s) / (e - s), 0, 1) : 1;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Advance recovery in a window
 
 /**

@@ -1,5 +1,5 @@
 /**
- * Guarantees, insurance and licences register (v4 item 46): bank guarantees, EMDs, insurance policies and licences,
+ * Guarantees, insurance and licences register: bank guarantees, EMDs, insurance policies and licences,
  * company-wide or for one project, flagged as they near expiry (DOC_ALERT_DAYS, as for vehicle papers).
  */
 import type { ComplianceDocKind, ComplianceDocStatus } from './enums';

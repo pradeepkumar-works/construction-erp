@@ -8,7 +8,6 @@ const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
 const Amount = (message: string, min = 0) => (target: object, key: string) => [IsNumber({ maxDecimalPlaces: 2 }, { message }), Min(min, { message }), Max(1e13, { message })].forEach((d) => d(target, key));
 const Pct = (message: string) => (target: object, key: string) => [IsNumber({ maxDecimalPlaces: 2 }, { message }), Min(0, { message }), Max(100, { message })].forEach((d) => d(target, key));
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Schedules of rates
 
 export class SorBookInput {
@@ -55,7 +54,6 @@ export class UpdateSorItemDto {
   @ApiPropertyOptional() @IsOptional() @Amount('Enter the rate, zero or more') rate?: number;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Tenders
 
 export class TenderQuery {
@@ -64,7 +62,7 @@ export class TenderQuery {
   @IsIn(['open', 'closed', 'all', ...TENDER_STATUSES])
   status?: 'open' | 'closed' | 'all' | TenderStatus;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(100) q?: string;
-  @ApiPropertyOptional({ description: "A vertical's code (item 167), or `none` for tenders with none" }) @IsOptional() @IsString() @MaxLength(60) vertical?: string;
+  @ApiPropertyOptional({ description: "A vertical's code, or `none` for tenders with none" }) @IsOptional() @IsString() @MaxLength(60) vertical?: string;
 }
 
 export class TenderFieldsInput {
@@ -72,7 +70,7 @@ export class TenderFieldsInput {
   @ApiPropertyOptional() @IsOptional() @opt() @IsUUID('4', { message: 'Choose the client' }) clientId?: string | null;
   @ApiPropertyOptional({ description: 'Free text when the client is not in the client master' }) @IsOptional() @trim() @opt() @IsString() @MaxLength(160) clientName?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @opt() @IsString() @MaxLength(160) location?: string | null;
-  @ApiPropertyOptional({ description: 'Its vertical (item 167), a code of the vertical master' }) @IsOptional() @opt() @IsString() @MaxLength(60) verticalCode?: string | null;
+  @ApiPropertyOptional({ description: 'Its vertical, a code of the vertical master' }) @IsOptional() @opt() @IsString() @MaxLength(60) verticalCode?: string | null;
   @ApiPropertyOptional({ enum: TENDER_BID_TYPES }) @IsOptional() @IsIn(TENDER_BID_TYPES as unknown as string[]) bidType?: TenderBidType;
   @ApiPropertyOptional() @IsOptional() @opt() @IsUUID('4', { message: 'Choose the schedule of rates' }) sorBookId?: string | null;
   @ApiPropertyOptional({ example: 48500000 }) @IsOptional() @opt() @Amount('Enter the estimate (put-to-tender value)', 1) estimatedValue?: number | null;

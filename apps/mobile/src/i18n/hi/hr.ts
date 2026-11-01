@@ -1,4 +1,4 @@
-/** Hindi for the payslips screen (v6 item 100). */
+/** Hindi for the payslips screen. */
 export const HR: Record<string, string> = {
   'My payslips': 'मेरी सैलरी स्लिप',
   'No payslips yet': 'अभी कोई सैलरी स्लिप नहीं',

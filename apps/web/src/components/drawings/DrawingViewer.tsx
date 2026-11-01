@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, App, Button, Checkbox, Flex, Popover, Result, Segmented, Select, Space, Spin, Switch, Tooltip, Typography, theme } from 'antd';
+import { ResultMark } from '@/components/common/ResultMark';
 import {
   ArrowRightOutlined,
   BorderOuterOutlined,
@@ -44,6 +45,7 @@ import {
   takeoffLine,
   takeoffProblem,
   takeoffValue,
+  unitLabel,
 } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { BRAND } from '@/lib/brand';
@@ -68,7 +70,7 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { RfiFormModal } from '@/components/documents/RfiFormModal';
-import { RevisionStatusTag } from '@/components/documents/docUi';
+import { RevisionStatusTag, revLabel } from '@/components/documents/docUi';
 import { MeasurementFormModal, type MeasurementPrefill } from '@/components/measurements/MeasurementFormModal';
 import { MarkShape, MARKUP_INK, VB_W, type ShownMark } from './MarkupLayer';
 import { MarkupList, MarkupNoteForm, ResolveMarkupForm, type ListScope } from './MarkupList';
@@ -126,10 +128,10 @@ function thin(points: MarkupPoint[]) {
 }
 
 /**
- * The drawing viewer (item 109): a revision's PDF, image or DXF on a sheet that pans and zooms (drag, wheel, pinch,
+ * The drawing viewer: a revision's PDF, image or DXF on a sheet that pans and zooms (drag, wheel, pinch,
  * keys), with marks drawn over it in the sheet's own 0 to 1 coordinates. Open marks from earlier revisions show dashed
  * until resolved. Two revisions can be overlaid to show what changed, and the marked-up sheet saved as an image.
- * Lengths, areas and counts are measured on a sheet once its scale is set (v6 item 118), and go into the measurement
+ * Lengths, areas and counts are measured on a sheet once its scale is set, and go into the measurement
  * book or a BOQ item's quantity.
  */
 export function DrawingViewer({ documentId }: { documentId: string }) {
@@ -152,7 +154,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const toMeasurement = useTakeoffsToMeasurement(documentId);
   const toBoq = useTakeoffsToBoq(documentId, doc?.projectId);
 
-  /* ---------- which revision, file and page (in the URL) ---------- */
+  // Which revision, file and page (in the URL)
 
   const revisions = useMemo(() => doc?.revisions ?? [], [doc]);
   const revision: DocumentRevisionDto | undefined = revisions.find((r) => r.id === search.get('rev')) ?? revisions.find((r) => r.current) ?? revisions[0];
@@ -176,7 +178,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     [router, search],
   );
 
-  /* ---------- the sheet ---------- */
+  // The sheet
 
   // Each opened file is kept with its id, so a stale one never shows while the next opens.
   const [opened, setOpened] = useState<{ id: string; sheet: Sheet | null; error: string | null } | null>(null);
@@ -212,7 +214,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const hiddenLayers = useMemo(() => (layersOff.sheet === sheet ? layersOff.hidden : new Set<string>()), [layersOff, sheet]);
   const setHiddenLayers = (hidden: Set<string>) => setLayersOff({ sheet, hidden });
 
-  /* ---------- compare with another revision ---------- */
+  // Compare with another revision
 
   const [compareId, setCompareId] = useState<string | null>(null);
   const compareRev = revisions.find((r) => r.id === compareId && r.id !== revision?.id);
@@ -238,7 +240,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   /** The compared revision is the older one when it comes later in the newest-first list. */
   const compareIsOlder = !!compareRev && revisions.indexOf(compareRev) > revisions.findIndex((r) => r.id === revision?.id);
 
-  /* ---------- pan and zoom ---------- */
+  // Pan and zoom
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   // The viewport mounts after the document loads, so its size and wheel listener follow the element itself.
@@ -297,7 +299,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     return () => el.removeEventListener('wheel', onWheel);
   }, [zoomAt, viewportEl]);
 
-  /* ---------- drawing the page ---------- */
+  // Drawing the page
 
   const [drawing, setDrawing] = useState(false);
   useEffect(() => {
@@ -333,7 +335,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     };
   }, [sheet, compareSheet, compareIsOlder, page, renderZoom, baseW, baseH, hiddenLayers, message]);
 
-  /* ---------- marks ---------- */
+  // Marks
 
   const [carry, setCarry] = useState(true);
   const [scope, setScope] = useState<ListScope>('sheet');
@@ -365,7 +367,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const [resolving, setResolving] = useState<DrawingMarkupDto | null>(null);
   const [rfiFrom, setRfiFrom] = useState<DrawingMarkupDto | null>(null);
 
-  /* ---------- measures (v6 item 118) ---------- */
+  // Measures
 
   const [measuring, setMeasuring] = useState<Measuring | null>(null);
   const [hover, setHover] = useState<MarkupPoint | null>(null);
@@ -503,12 +505,12 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
       ids: ts.map((t) => t.id),
       prefill: {
         lines: lines.map((l) => ({ description: l.description.slice(0, 200), nos: l.nos, length: l.length, breadth: l.breadth })),
-        remarks: `Taken off ${doc.docNo} Rev ${revs.join(', ')}: ${ts.map((t) => `T${t.takeoffNo}`).join(', ')}`,
+        remarks: `Taken off ${doc.docNo} ${revs.map(revLabel).join(', ')}: ${ts.map((t) => `T${t.takeoffNo}`).join(', ')}`,
       },
     });
   };
 
-  /* ---------- pointer: pan, pinch and draw ---------- */
+  // Pointer: pan, pinch and draw
 
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<
@@ -640,7 +642,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     go({ mark: saved.id });
   };
 
-  /* ---------- save the marked-up sheet as an image ---------- */
+  // Save the marked-up sheet as an image
 
   const saveImage = async () => {
     const canvas = canvasRef.current;
@@ -674,7 +676,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     }
   };
 
-  /* ---------- page ---------- */
+  // Page
 
   if (isLoading) return <PageSkeleton shape="record" />;
   if (error || !doc) return <QueryError error={error ?? { response: { status: 404 } }} onRetry={() => refetch()} />;
@@ -761,7 +763,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
           aria-label="Compare with another revision"
           value={compareRev?.id}
           onChange={(v) => setCompareId(v ?? null)}
-          options={revisions.filter((r) => r.id !== revision?.id && r.attachments.some(canViewDrawingFile)).map((r) => ({ value: r.id, label: `Compare with Rev ${r.revision}` }))}
+          options={revisions.filter((r) => r.id !== revision?.id && r.attachments.some(canViewDrawingFile)).map((r) => ({ value: r.id, label: `Compare with ${revLabel(r.revision)}` }))}
           disabled={!sheet?.readable}
         />
       ) : null}
@@ -779,14 +781,14 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         subtitle={
           revision ? (
             <Space size={6} wrap>
-              <span translate="no">Rev {revision.revision}</span>
+              <span translate="no">{revLabel(revision.revision)}</span>
               <RevisionStatusTag status={revision.status} />
               {!revision.current ? <Typography.Text type="warning">Superseded</Typography.Text> : null}
               <span>{doc.projectName}</span>
             </Space>
           ) : null
         }
-        crumbs={[{ title: 'Documents', href: '/documents' }, { title: doc.docNo, href: `/documents?id=${doc.id}` }, { title: 'Drawing' }]}
+        crumbs={[{ title: 'Drawings and documents', href: '/documents' }, { title: doc.docNo, href: `/documents?id=${doc.id}` }, { title: 'Drawing' }]}
         extra={
           <Flex gap={token.marginXS} wrap>
             {revisions.length > 1 ? (
@@ -798,7 +800,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                   setCompareId(null);
                   go({ rev: v, file: null, page: 1, mark: null });
                 }}
-                options={revisions.map((r) => ({ value: r.id, label: `Rev ${r.revision} · ${r.current ? REVISION_STATUS_LABELS[r.status] : 'Superseded'}` }))}
+                options={revisions.map((r) => ({ value: r.id, label: `${revLabel(r.revision)} · ${r.current ? REVISION_STATUS_LABELS[r.status] : 'Superseded'}` }))}
               />
             ) : null}
             {viewable.length > 1 ? (
@@ -855,11 +857,11 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               <Flex gap={token.marginSM} wrap align="center" style={{ fontSize: token.fontSizeSM }}>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareOld, verticalAlign: 'middle', marginRight: 4 }} />
-                  Only on Rev {compareIsOlder ? compareRev.revision : revision.revision} (older)
+                  Only on {revLabel(compareIsOlder ? compareRev.revision : revision.revision)} (older)
                 </span>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareNew, verticalAlign: 'middle', marginRight: 4 }} />
-                  Only on Rev {compareIsOlder ? revision.revision : compareRev.revision} (newer)
+                  Only on {revLabel(compareIsOlder ? revision.revision : compareRev.revision)} (newer)
                 </span>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareBoth, verticalAlign: 'middle', marginRight: 4 }} />
@@ -871,7 +873,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
             <div
               ref={attachViewport}
               role="application"
-              aria-label={`Drawing ${doc.docNo} Rev ${revision.revision}${pages > 1 ? `, page ${page} of ${pages}` : ''}. Arrow keys move it, plus and minus zoom, 0 fits the sheet.${isMeasure(tool) ? ' Enter finishes a measure, Backspace removes its last point, Escape drops it.' : ''}`}
+              aria-label={`Drawing ${doc.docNo} ${revLabel(revision.revision)}${pages > 1 ? `, page ${page} of ${pages}` : ''}. Arrow keys move it, plus and minus zoom, 0 fits the sheet.${isMeasure(tool) ? ' Enter finishes a measure, Backspace removes its last point, Escape drops it.' : ''}`}
               aria-roledescription="drawing viewer"
               // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keys move and zoom the drawing, so it takes focus
               tabIndex={0}
@@ -890,7 +892,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               }}
             >
               {sheetError ? (
-                <Result status="warning" title="This file cannot be shown" subTitle={sheetError} />
+                <Result icon={<ResultMark kind="error" />} title="This file cannot be shown" subTitle={sheetError} />
               ) : !sheet || !aspect || !baseW ? (
                 <Flex align="center" justify="center" style={{ height: '100%' }}>
                   <Spin description="Opening the drawing…" />
@@ -1085,7 +1087,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         onClose={() => setToBoqOf(null)}
         onSubmit={async (v) => {
           await toBoq.mutateAsync({ ids: (toBoqOf ?? []).map((t) => t.id), boqItemId: v.boqItemId, field: v.field, factor: v.factor });
-          message.success(`${v.item.itemNo}'s ${v.field === 'ORIGINAL' ? 'original' : 'revised'} quantity is now ${formatQty(v.qty)} ${v.item.unit}`);
+          message.success(`${v.item.itemNo}'s ${v.field === 'ORIGINAL' ? 'original' : 'revised'} quantity is now ${formatQty(v.qty)} ${unitLabel(v.item.unit)}`);
           setChosen(new Set());
         }}
       />
@@ -1099,7 +1101,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
           rfiFrom
             ? {
                 subject: `${doc.docNo} M${rfiFrom.markupNo}: ${(rfiFrom.note ?? MARKUP_KIND_LABELS[rfiFrom.kind]).slice(0, 150)}`,
-                question: `${rfiFrom.note ? `${rfiFrom.note}\n\n` : ''}See mark M${rfiFrom.markupNo} on ${doc.docNo} Rev ${rfiFrom.revision}${rfiFrom.page > 1 ? `, page ${rfiFrom.page}` : ''}.`,
+                question: `${rfiFrom.note ? `${rfiFrom.note}\n\n` : ''}See mark M${rfiFrom.markupNo} on ${doc.docNo} ${revLabel(rfiFrom.revision)}${rfiFrom.page > 1 ? `, page ${rfiFrom.page}` : ''}.`,
               }
             : undefined
         }

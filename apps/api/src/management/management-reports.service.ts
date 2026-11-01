@@ -128,7 +128,7 @@ export class ManagementReportsService {
     const body = await this.build(key, user, projects, period, today, q.projectId);
     // Receivables, payables and stock read their own services by project, so a vertical does not narrow them.
     const notes = q.vertical && !q.projectId && OWN_SCOPE.has(key) ? [...body.notes, 'This report covers every vertical: it is read by project, not by vertical.'] : body.notes;
-    // The monthly MIS over every vertical adds up where each vertical stands (item 167).
+    // The monthly MIS over every vertical adds up where each vertical stands.
     const sections = key === 'mis' && !q.vertical && !q.projectId ? withVerticals(body.sections, projects, verticals) : body.sections;
     return { key, title: info.title, period: period.label, from: period.from, to: period.to, projectName, verticalName: OWN_SCOPE.has(key) ? null : verticalName, generatedAt: new Date().toISOString(), ...body, notes, sections };
   }
@@ -169,7 +169,6 @@ export class ManagementReportsService {
     }
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Monthly MIS
 
   private async mis(user: RequestUser, projects: ProjectSummary[], period: Period, today: string) {
@@ -287,7 +286,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Profit and loss
 
   private async profitLoss(user: RequestUser, projects: ProjectSummary[], period: Period, today: string) {
@@ -319,7 +317,7 @@ export class ManagementReportsService {
 
     const months = monthsBetween(period.from!, period.to);
     const monthRows = months.map((month) => {
-      const billed = bills.filter((b) => dateOnly(b.billDate)!.startsWith(month)).reduce((s, b) => s + N(b.grossAmount) + N(b.pvAmount), 0);
+      const billed = bills.filter((b) => dateOnly(b.billDate).startsWith(month)).reduce((s, b) => s + N(b.grossAmount) + N(b.pvAmount), 0);
       const heads = Object.fromEntries(COST_HEADS.map((h) => [h, r2([...acc.values()].reduce((s, a) => s + N(a.months.get(month)?.heads[h]), 0))]));
       const cost = COST_HEADS.reduce((s, h) => s + N(heads[h]), 0);
       return { month: monthName(month), billed: r2(billed), ...heads, cost: r2(cost), margin: r2(billed - cost), marginPct: billedMarginPct(billed, cost) } as ReportRowDto;
@@ -359,7 +357,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Work in progress
 
   private async wip(user: RequestUser, projects: ProjectSummary[], today: string) {
@@ -416,7 +413,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Receivables and payables
 
   private async receivablesReport(user: RequestUser, projectId?: string) {
@@ -479,7 +475,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Procurement
 
   private async procurement(user: RequestUser, projects: ProjectSummary[], period: Period) {
@@ -504,9 +499,9 @@ export class ManagementReportsService {
     const value = (o: (typeof pos)[number]) => N(o.subtotal) + N(o.freight);
     const toOrder = (o: (typeof pos)[number]) => {
       const at = o.materialRequest?.reviewedAt ?? o.materialRequest?.submittedAt;
-      return at ? Math.max(0, daysBetween(at.toISOString().slice(0, 10), dateOnly(o.poDate)!)) : null;
+      return at ? Math.max(0, daysBetween(at.toISOString().slice(0, 10), dateOnly(o.poDate))) : null;
     };
-    const toReceive = (o: (typeof pos)[number]) => (o.stockEntries[0] ? Math.max(0, daysBetween(dateOnly(o.poDate)!, dateOnly(o.stockEntries[0].date)!)) : null);
+    const toReceive = (o: (typeof pos)[number]) => (o.stockEntries[0] ? Math.max(0, daysBetween(dateOnly(o.poDate), dateOnly(o.stockEntries[0].date))) : null);
     const onTime = (os: typeof pos) => {
       const judged = os.filter((o) => o.deliveryBy && o.stockEntries[0]);
       return judged.length ? r1((judged.filter((o) => o.stockEntries[0].date <= o.deliveryBy!).length / judged.length) * 100) : null;
@@ -587,7 +582,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Labour and attendance
 
   private async labour(user: RequestUser, projects: ProjectSummary[], period: Period) {
@@ -650,7 +644,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Stock
 
   private async stockReport(user: RequestUser, projectId?: string) {
@@ -694,7 +687,6 @@ export class ManagementReportsService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Approvals
 
   private async approvals(user: RequestUser, projects: ProjectSummary[], today: string) {

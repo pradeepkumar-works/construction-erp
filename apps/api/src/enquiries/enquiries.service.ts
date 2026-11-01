@@ -55,7 +55,7 @@ function endOfDayIst(day: Date): Date {
 }
 
 /**
- * Enquiries (v5 item 95): an approved material request's lines sent to chosen vendors, each with a one-time link to a
+ * Enquiries: an approved material request's lines sent to chosen vendors, each with a one-time link to a
  * page where they type their rates (no sign-in). The raw token lives only in the link; the table keeps its SHA-256, as
  * for password links. The reply becomes that vendor's quotation on the request, marked as from the supplier, so it
  * lands on the comparative statement with the ones entered by hand.
@@ -83,10 +83,10 @@ export class EnquiriesService {
     return {
       id: r.id,
       materialRequestId: r.materialRequestId,
-      closesOn: dateOnly(r.closesOn)!,
+      closesOn: dateOnly(r.closesOn),
       message: r.message,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
       vendors: r.tokens.map((t) => ({
         vendorId: t.vendorId,
         vendorName: t.vendor.name,
@@ -172,7 +172,7 @@ export class EnquiriesService {
       const rows = mr.items
         .map(
           (i) =>
-            `<tr><td style="padding:6px 8px;border-bottom:1px solid ${EMAIL_COLORS.border}">${escapeHtml(i.itemName)}${i.specification ? `<br><span style="color:${EMAIL_COLORS.muted};font-size:13px">${escapeHtml(i.specification)}</span>` : ''}</td><td style="padding:6px 8px;border-bottom:1px solid ${EMAIL_COLORS.border};text-align:right;white-space:nowrap">${escapeHtml(dec(i.quantity)!)} ${escapeHtml(i.unit)}</td></tr>`,
+            `<tr><td style="padding:6px 8px;border-bottom:1px solid ${EMAIL_COLORS.border}">${escapeHtml(i.itemName)}${i.specification ? `<br><span style="color:${EMAIL_COLORS.muted};font-size:13px">${escapeHtml(i.specification)}</span>` : ''}</td><td style="padding:6px 8px;border-bottom:1px solid ${EMAIL_COLORS.border};text-align:right;white-space:nowrap">${escapeHtml(dec(i.quantity))} ${escapeHtml(i.unit)}</td></tr>`,
         )
         .join('');
       const sent = await this.email.deliver({
@@ -194,7 +194,7 @@ export class EnquiriesService {
     }
     await this.audit.log(user, 'ENQUIRY', enquiry.id, 'CREATED', `${mr.requestNo} to ${vendors.map((v) => v.name).join(', ')}`);
     const row = await this.prisma.enquiry.findUniqueOrThrow({ where: { id: enquiry.id }, include });
-    // A vendor with supplier-portal logins (v6 item 105) also finds it there.
+    // A vendor with supplier-portal logins also finds it there.
     for (const t of row.tokens)
       await this.notifications.notifyVendor(user.organizationId, t.vendorId, {
         title: `Enquiry for ${mr.requestNo}`,
@@ -205,8 +205,6 @@ export class EnquiriesService {
       });
     return this.toDto(row, links);
   }
-
-  /* ---------- the supplier's page (no sign-in) ---------- */
 
   /** The link's row, looked up across companies (the page has no signed-in user). */
   private async byToken(token: string) {
@@ -231,8 +229,6 @@ export class EnquiriesService {
     return this.info(row);
   }
 
-  /* ---------- the supplier portal (v6 item 105): the same enquiries, for a signed-in supplier ---------- */
-
   /** The enquiries sent to a vendor, newest first. */
   async forVendor(organizationId: string, vendorId: string): Promise<SupplierEnquiryDto[]> {
     const rows = await this.prisma.enquiryToken.findMany({ where: { organizationId, vendorId }, include: tokenInclude, orderBy: { enquiry: { createdAt: 'desc' } }, take: 100 });
@@ -254,11 +250,11 @@ export class EnquiriesService {
       siteAddress: siteDeliveryAddress(mr.project),
       vendorName: row.vendor.name,
       requestNo: mr.requestNo,
-      requiredDate: dateOnly(mr.requiredDate)!,
-      closesOn: dateOnly(row.enquiry.closesOn)!,
+      requiredDate: dateOnly(mr.requiredDate),
+      closesOn: dateOnly(row.enquiry.closesOn),
       message: row.enquiry.message,
       respondedAt: iso(row.respondedAt),
-      lines: mr.items.map((i) => ({ materialRequestItemId: i.id, itemName: i.itemName, specification: i.specification, unit: i.unit, quantity: dec(i.quantity)! })),
+      lines: mr.items.map((i) => ({ materialRequestItemId: i.id, itemName: i.itemName, specification: i.specification, unit: i.unit, quantity: dec(i.quantity) })),
     };
   }
 

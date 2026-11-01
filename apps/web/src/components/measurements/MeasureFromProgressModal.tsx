@@ -11,7 +11,7 @@ import { themeFontSize } from '@/lib/theme';
 import type { MeasurementPrefill } from './MeasurementFormModal';
 
 /**
- * Measure from progress (finding 14 of the October review): the quantities the site got approved on the daily
+ * Measure from progress: the quantities the site got approved on the daily
  * reports were read off them and typed into the measurement book again. This lists what each BOQ item has approved
  * that no sheet holds yet, and starts a sheet with those days as its lines.
  */

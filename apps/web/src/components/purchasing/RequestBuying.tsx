@@ -108,9 +108,9 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
                   </AppTag>
                 ) : null}
                 {q.fromSupplier && (
-                  <Tooltip title="Typed by the supplier on the enquiry link">
+                  <Tooltip title="Typed by the vendor on the enquiry link">
                     <AppTag tone="info" style={{ margin: 0, fontWeight: 400 }}>
-                      From supplier
+                      From vendor
                     </AppTag>
                   </Tooltip>
                 )}

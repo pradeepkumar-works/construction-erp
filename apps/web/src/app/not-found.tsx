@@ -7,7 +7,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { usePageTitle } from '@/lib/page-title';
 import { ResultMark } from '@/components/common/ResultMark';
 
-/** Any address the app does not have (UI roadmap item 64). */
+/** Any address the app does not have. */
 export default function NotFound() {
   usePageTitle('Page not found');
   return (

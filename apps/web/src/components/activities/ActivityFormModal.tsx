@@ -22,6 +22,7 @@ interface FormValues {
   responsibleId?: string | null;
   checklistTemplateId?: string | null;
   holdPoint?: boolean;
+  hiddenWork?: boolean;
   workElementId?: string | null;
   parentActivityId?: string | null;
   weightPct?: number | null;
@@ -61,6 +62,7 @@ export function ActivityFormModal({
         responsibleId: activity.responsibleId,
         checklistTemplateId: activity.checklistTemplateId,
         holdPoint: activity.holdPoint,
+        hiddenWork: activity.hiddenWork,
         workElementId: activity.workElementId,
         parentActivityId: activity.parentActivityId,
         weightPct: activity.weightPct !== null ? Number(activity.weightPct) : null,
@@ -82,6 +84,7 @@ export function ActivityFormModal({
         responsibleId: v.responsibleId || null,
         checklistTemplateId: v.checklistTemplateId || null,
         holdPoint: !!v.holdPoint,
+        hiddenWork: !!v.hiddenWork,
         workElementId: v.workElementId || null,
         parentActivityId: v.parentActivityId || null,
         weightPct: v.weightPct !== null && v.weightPct !== undefined ? String(v.weightPct) : null,
@@ -116,7 +119,7 @@ export function ActivityFormModal({
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? 'Edit activity' : 'New activity'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="boqItemId" label="Linked BOQ item">
-          <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Optional - pick a BOQ item to link" onChange={onBoqChange} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))} />
+          <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Pick the BOQ item it measures" onChange={onBoqChange} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))} />
         </Form.Item>
         <Form.Item name="name" label="Activity name" rules={[{ required: true, whitespace: true, message: 'Name the activity, e.g. GSB laying' }]}>
           <Input placeholder="GSB laying" />
@@ -128,7 +131,7 @@ export function ActivityFormModal({
           <Form.Item name="plannedQty" label="Planned qty" rules={[{ required: true, message: 'Enter the planned quantity' }]}>
             <QuantityInput unit={unit} />
           </Form.Item>
-          <Form.Item name="dates" label="Planned start / end">
+          <Form.Item name="dates" label="Planned start and finish">
             <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
           </Form.Item>
           <Form.Item name="responsibleId" label="Responsible">
@@ -141,7 +144,7 @@ export function ActivityFormModal({
               allowClear
               disabled={!!parentId}
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder={structure?.elements.length ? 'None' : 'No breakdown yet (Structure tab)'}
+              placeholder={structure?.elements.length ? 'None' : 'No components yet (Components tab)'}
               options={(structure?.elements ?? []).map((e) => ({ value: e.id, label: `${e.code} ${e.name}` }))}
             />
           </Form.Item>
@@ -160,10 +163,18 @@ export function ActivityFormModal({
         </FormGrid>
         <FormGrid cols={2}>
           <Form.Item name="checklistTemplateId" label="Inspection checklist">
-            <Select allowClear placeholder={checklists?.length ? 'None' : 'No checklist yet (Inspections > Checklists)'} options={(checklists ?? []).map((c) => ({ value: c.id, label: c.name }))} />
+            <Select allowClear placeholder={checklists?.length ? 'None' : 'No checklist yet (Quality › Checklists)'} options={(checklists ?? []).map((c) => ({ value: c.id, label: c.name }))} />
           </Form.Item>
           <Form.Item name="holdPoint" valuePropName="checked" style={{ alignSelf: 'end' }} tooltip="Progress of this activity is approved only after a passed inspection at the same location">
             <Checkbox>Hold point</Checkbox>
+          </Form.Item>
+          <Form.Item
+            name="hiddenWork"
+            valuePropName="checked"
+            style={{ alignSelf: 'end' }}
+            tooltip="Covered once done (foundations, reinforcement): progress is approved only after its inspection is signed off before cover-up and countersigned in the client portal"
+          >
+            <Checkbox>Hidden work</Checkbox>
           </Form.Item>
         </FormGrid>
       </Form>

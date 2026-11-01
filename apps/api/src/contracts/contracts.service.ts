@@ -34,7 +34,7 @@ export interface LdInputs {
 }
 
 /**
- * A project's contract with its client (v3 item 17): agreement, value, dates with the extensions of time granted in the
+ * A project's contract with its client: agreement, value, dates with the extensions of time granted in the
  * delay register, and the retention, advance, tax and cess percentages RA bills are built with.
  */
 @Injectable()
@@ -42,7 +42,7 @@ export class ContractsService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private templates: TemplatesService) {}
 
   toDto(p: Row, ld?: LdInputs): ProjectContractDto {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIn();
     const extensions = p.risks.map((r) => ({
       riskId: r.id,
       riskNo: r.riskNo,
@@ -67,7 +67,7 @@ export class ContractsService {
       agreementNo: p.agreementNo,
       agreementDate: dateOnly(p.agreementDate),
       contractValue: money(p.contractValue),
-      approvedVariations: money(approvedVariations)!,
+      approvedVariations: money(approvedVariations),
       revisedContractValue: p.contractValue ? money(p.contractValue.add(approvedVariations)) : null,
       startDate: dateOnly(p.startDate),
       endDate,
@@ -76,7 +76,8 @@ export class ContractsService {
       extensions,
       retentionPct: pctStr(p.retentionPct),
       securityDepositPct: pctStr(p.securityDepositPct),
-      mobilisationAdvance: money(p.mobilisationAdvance)!,
+      securityDepositCapPct: p.securityDepositCapPct ? pctStr(p.securityDepositCapPct) : null,
+      mobilisationAdvance: money(p.mobilisationAdvance),
       advanceRecoveryPct: pctStr(p.advanceRecoveryPct),
       defectLiabilityMonths: p.defectLiabilityMonths,
       clientPaymentDays: p.clientPaymentDays,
@@ -95,12 +96,12 @@ export class ContractsService {
       ld: ld ? ContractsService.ldExposure(p, approvedVariations, extensionDays, ld) : null,
       currency: p.currency,
       exchangeRate: fxRate(p.exchangeRate),
-      updatedAt: iso(p.updatedAt)!,
+      updatedAt: iso(p.updatedAt),
     };
   }
 
   /**
-   * Liquidated damages (v4 item 50): days past the completion date after extensions of time, at the contract's rate
+   * Liquidated damages: days past the completion date after extensions of time, at the contract's rate
    * per day, week or month (part periods pro rata) of the revised contract value, up to the cap. Also the forecast to
    * the schedule's last planned finish, and that forecast if the excusable days not yet granted are granted.
    */
@@ -138,7 +139,7 @@ export class ContractsService {
       ldRatePct: pctStr(p.ldRatePct),
       ldPeriod: p.ldPeriod,
       ldCapPct: pctStr(p.ldCapPct),
-      contractValue: money(value)!,
+      contractValue: money(value),
       endDate,
       extensionDays,
       revisedEndDate,
@@ -149,10 +150,10 @@ export class ContractsService {
       excusableDaysLost: excusable,
       contractorDaysLost: contractor,
       eotPendingDays,
-      ldToDate: money(ld(daysLate))!,
-      ldForecast: money(forecast)!,
-      ldForecastWithEot: money(ld(Math.max(0, forecastDaysLate - eotPendingDays)))!,
-      ldCap: money(cap)!,
+      ldToDate: money(ld(daysLate)),
+      ldForecast: money(forecast),
+      ldForecastWithEot: money(ld(Math.max(0, forecastDaysLate - eotPendingDays))),
+      ldCap: money(cap),
       capReached: p.ldRatePct.gt(0) && forecast.gte(cap) && cap.gt(0),
     };
   }
@@ -225,6 +226,11 @@ export class ContractsService {
       if (n.lt(0) || n.gt(max)) throw new BadRequestException(`${k} must be between 0 and ${max}`);
       data[k] = n;
     }
+    if (dto.securityDepositCapPct !== undefined) {
+      const n = dto.securityDepositCapPct === null ? null : new Prisma.Decimal(dto.securityDepositCapPct);
+      if (n && (n.lte(0) || n.gt(100))) throw new BadRequestException('Give the security deposit cap as more than 0 and at most 100%, or clear it for no cap');
+      data.securityDepositCapPct = n;
+    }
     if (dto.mobilisationAdvance !== undefined) {
       if (Number(dto.mobilisationAdvance) < 0) throw new BadRequestException('The mobilisation advance cannot be negative');
       data.mobilisationAdvance = new Prisma.Decimal(dto.mobilisationAdvance);
@@ -254,13 +260,13 @@ export class ContractsService {
     const hadStart = dateOnly((await this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: { startDate: true } })).startDate);
     await this.prisma.project.update({ where: { id: projectId }, data });
     await this.audit.log(user, 'PROJECT', projectId, 'CONTRACT_UPDATED');
-    // The dates arriving for the first time spread the activities that have none (finding 11 of the October review).
+    // The dates arriving for the first time spread the activities that have none.
     if (!hadStart && data.startDate) await this.templates.spreadUndated(user, projectId);
     return this.get(user, projectId);
   }
 
   /**
-   * The contract currency (item 130): a project in another currency keeps its figures in rupees at the contract rate, so
+   * The contract currency: a project in another currency keeps its figures in rupees at the contract rate, so
    * the rate is needed and cannot move once a bill or receipt has been kept at it.
    */
   private async currencyChange(projectId: string, dto: UpdateContractDto): Promise<Prisma.ProjectUncheckedUpdateInput> {
@@ -277,7 +283,7 @@ export class ContractsService {
   }
 
   /**
-   * The price variation formula (v4 item 50): the base date and the components, each a share of the work value that
+   * The price variation formula: the base date and the components, each a share of the work value that
    * moves with an index. Replaces the whole list; bills already prepared keep the components they copied until they
    * are filled in again.
    */

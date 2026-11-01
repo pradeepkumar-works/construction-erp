@@ -1,5 +1,5 @@
 /**
- * Project types and component kinds (item 134). The built-in kinds as data lay out what the code did, a company's own
+ * Project types and component kinds. The built-in kinds as data lay out what the code did, a company's own
  * kind (its RCC parts, a group of sub-activities, lifts of its height) lays out what it says, the checks name what an
  * admin must fix, the standard types are sound, a company's rows replace the standard ones by code, and a new project's
  * starting breakdown gives each copy and its sub-components.
@@ -33,7 +33,6 @@ const test = (name: string, fn: () => void) => tests.push([name, fn]);
 const sumTop = (lines: { parentKey: string | null; weightPct: number }[]) => lines.filter((l) => !l.parentKey).reduce((t, l) => t + l.weightPct, 0);
 const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 0.01, `${a} is not ${b}`);
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Component kinds
 
 test('every built-in kind as data lays out the same activities as elementPlan, and passes its own checks', () => {
@@ -97,13 +96,12 @@ test('the checks name what to fix: weights, parts, a spec a step reads, a bad co
   assert.match(p, /The steps add up to 90%, not 100%/);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Project types
 
 test('the six standard types are sound against the built-in kinds', () => {
   assert.deepEqual(STANDARD_PROJECT_TYPES.map((t) => t.code), ['ROAD', 'BUILDING', 'WATER_SUPPLY', 'TRANSMISSION_MAIN', 'SEWERAGE', 'GENERAL']);
   for (const t of STANDARD_PROJECT_TYPES) assert.deepEqual(projectTypeProblems(t, STANDARD_COMPONENT_KINDS), [], t.code);
-  // Every built-in kind of work has its standard type, so a project made before item 134 finds one.
+  // Every built-in kind of work has its standard type, so a project made before project types existed finds one.
   for (const code of Object.values(STANDARD_TYPE_FOR)) if (code) assert.ok(STANDARD_PROJECT_TYPES.some((t) => t.code === code), code);
 });
 
@@ -185,8 +183,6 @@ test("a new project's breakdown: each copy numbered, its sub-components under ev
   near(sumTop(three as { parentKey: string | null; weightPct: number }[]), 100);
   near(three.find((c) => c.name === 'Pier 1')!.weightPct!, 14.29);
 });
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 let failed = 0;
 for (const [name, fn] of tests) {

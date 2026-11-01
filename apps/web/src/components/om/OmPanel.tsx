@@ -11,6 +11,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DEFAULT_OM_BENCHMARKS,
   OM_BENCHMARK_INFO,
+  OM_CHEMICAL_STATE_LABELS,
+  OM_PERIOD_STATUS_LABELS,
   omLimitText,
   omRuleText,
   type ItemDto,
@@ -23,12 +25,13 @@ import {
   type ProjectDetail,
   type RaBillDto,
   type ServiceLevelDayDto,
+  unitLabel,
 } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useOm } from '@/lib/queries';
+import { useOm, WATCH_LIST_KEY } from '@/lib/queries';
 import { useUrlParam, useUrlTab } from '@/lib/url-state';
-import { formatDate, formatINR, formatMonth, formatPct, formatQty } from '@/lib/format';
+import { formatDate, formatDayMonth, formatINR, formatMonth, formatPct, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
@@ -39,20 +42,27 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 
+const counted = (label: string, n: number) => (
+  <>
+    {label}{' '}
+    <Typography.Text type="secondary" translate="no">
+      {n}
+    </Typography.Text>
+  </>
+);
+
 const VIEWS = ['service', 'periods', 'staff', 'chemicals', 'terms'] as const;
 type View = (typeof VIEWS)[number];
 const figure = { content: { fontSize: themeFontSize('fontSizeXL') } };
 const small = { fontSize: themeFontSize('fontSizeSM') };
 const PERIOD_COLORS: Record<OmPeriodStatus, string> = { FUTURE: 'default', RUNNING: 'blue', DUE: 'orange', BILLED: 'green' };
-const PERIOD_LABELS: Record<OmPeriodStatus, string> = { FUTURE: 'Not started', RUNNING: 'Running', DUE: 'Due to bill', BILLED: 'Billed' };
 const CHEMICAL_COLORS: Record<OmChemicalRowDto['status'], string> = { OVER: 'red', UNDER: 'orange', WITHIN: 'green', NO_WATER: 'default' };
-const CHEMICAL_LABELS: Record<OmChemicalRowDto['status'], string> = { OVER: 'Over the norm', UNDER: 'Under the norm', WITHIN: 'Within the norm', NO_WATER: 'No water logged' };
 const num = (v: string | number | null) => (v === null || v === '' ? '-' : <span translate="no">{formatQty(v)}</span>);
 const shiftMonth = (m: string, n: number) => dayjs(`${m}-01`).add(n, 'month').format('YYYY-MM');
 const toStr = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
 /**
- * O&M tab of a handed-over project (item 131, ARCHITECTURE "Operation and maintenance"): the contract's years paid in
+ * O&M tab of a handed-over project (ARCHITECTURE "Operation and maintenance"): the contract's years paid in
  * instalments, the daily service levels against the benchmarks with the month's failures and penalties, the staff
  * deployed against the minimum, the treatment chemicals against their norm, and each period's O&M bill. The open view is
  * `?sub=` and the month the log shows `?month=` in the URL.
@@ -108,7 +118,7 @@ export function OmPanel({ project }: { project: ProjectDetail }) {
         onChange={setView}
         options={[
           { value: 'service', label: 'Service levels' },
-          { value: 'periods', label: `Periods and bills (${data.periods.filter((p) => p.status !== 'FUTURE').length})` },
+          { value: 'periods', label: counted('Periods and bills', data.periods.filter((p) => p.status !== 'FUTURE').length) },
           { value: 'staff', label: 'Staff' },
           { value: 'chemicals', label: 'Chemicals' },
           { value: 'terms', label: 'Terms' },
@@ -151,13 +161,12 @@ function useOmSave<V>(projectId: string, call: (v: V) => Promise<OmDto>) {
     mutationFn: call,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['om', projectId] });
-      qc.invalidateQueries({ queryKey: ['warnings'] });
+      qc.invalidateQueries({ queryKey: WATCH_LIST_KEY });
     },
     meta: FAIL_NOTICE,
   });
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Service levels
 
 function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; benchmarks: OmBenchmarkMonthDto[]; missing: string[]; onEdit: (d: ServiceLevelDayDto | 'new') => void }) {
@@ -201,7 +210,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                   <span translate="no">{`${b.failures} (${b.allowed} allowed)`}</span>
                   {b.days.length ? (
                     <Typography.Text type="secondary" style={small} translate="no">
-                      {b.days.map((d) => dayjs(d).format('D MMM')).join(', ')}
+                      {b.days.map((d) => formatDayMonth(d)).join(', ')}
                     </Typography.Text>
                   ) : null}
                 </Flex>
@@ -215,7 +224,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
         {missing.length ? (
           <p>
             <Typography.Text type="warning">
-              {`${missing.length} ${missing.length === 1 ? 'day has' : 'days have'} no reading: ${missing.map((d) => dayjs(d).format('D MMM')).join(', ')}. Missing days are not penalised, but the client will ask for them.`}
+              {`${missing.length} ${missing.length === 1 ? 'day has' : 'days have'} no reading: ${missing.map((d) => formatDayMonth(d)).join(', ')}. Missing days are not penalised, but the client will ask for them.`}
             </Typography.Text>
           </p>
         ) : null}
@@ -228,8 +237,8 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
           locale={{ emptyText: 'No days logged this month' }}
           columns={[
             { key: 'date', title: 'Day', width: 110, render: (_, d) => <span translate="no" style={{ whiteSpace: 'nowrap' }}>{dayjs(d.date).format('ddd D MMM')}</span> },
-            { key: 'prod', title: 'Produced (kl)', width: 110, align: 'right', render: (_, d) => num(d.producedKl) },
-            { key: 'sup', title: 'Supplied (kl)', width: 110, align: 'right', render: (_, d) => num(d.suppliedKl) },
+            { key: 'prod', title: 'Produced (kL)', width: 110, align: 'right', render: (_, d) => num(d.producedKl) },
+            { key: 'sup', title: 'Supplied (kL)', width: 110, align: 'right', render: (_, d) => num(d.suppliedKl) },
             { key: 'lpcd', title: 'lpcd', width: 80, align: 'right', render: (_, d) => num(d.lpcd) },
             { key: 'loss', title: 'Lost', width: 80, align: 'right', render: (_, d) => (d.lossPct === null ? '-' : <span translate="no">{formatPct(d.lossPct)}</span>) },
             { key: 'cl', title: 'Chlorine (mg/l)', width: 120, align: 'right', render: (_, d) => num(d.residualChlorine) },
@@ -274,7 +283,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                         </Typography.Text>
                       ) : (
                         <Space size={0}>
-                          <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Change ${formatDate(d.date)}`} onClick={() => onEdit(d)} />
+                          <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${formatDate(d.date)}`} onClick={() => onEdit(d)} />
                           <ConfirmDelete what={`the reading of ${formatDate(d.date)}`} verb="Remove" notice={false} onConfirm={() => remove.mutateAsync(d.id)}>
                             <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Remove ${formatDate(d.date)}`} />
                           </ConfirmDelete>
@@ -351,7 +360,7 @@ function DayForm({ data, target, onClose }: { data: OmDto; target: ServiceLevelD
       layout="modal"
       width={680}
       projectDefault={false}
-      title={d ? `Change the reading of ${formatDate(d.date)}` : 'Record a day’s service levels'}
+      title={d ? `Edit the reading of ${formatDate(d.date)}` : 'Record a day’s service levels'}
       okText="Save reading"
       onSubmit={async (v) => {
         await save.mutateAsync(v);
@@ -418,7 +427,6 @@ function DayForm({ data, target, onClose }: { data: OmDto; target: ServiceLevelD
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Periods and their bills
 
 function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
@@ -460,7 +468,7 @@ function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
           { key: 's', title: 'Staff short', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.staffDeduction) ? `− ${formatINR(p.staffDeduction)}` : '-'}</span> },
           { key: 'pen', title: 'Penalties', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.penalty) ? `− ${formatINR(p.penalty)}` : '-'}</span> },
           { key: 'n', title: 'Net', width: 130, align: 'right', render: (_, p) => <Typography.Text strong translate="no">{formatINR(p.net)}</Typography.Text> },
-          { key: 'st', title: 'Status', width: 120, render: (_, p) => <AppTag color={PERIOD_COLORS[p.status]}>{PERIOD_LABELS[p.status]}</AppTag> },
+          { key: 'st', title: 'Status', width: 120, render: (_, p) => <AppTag color={PERIOD_COLORS[p.status]}>{OM_PERIOD_STATUS_LABELS[p.status]}</AppTag> },
           {
             key: 'bill',
             title: 'Bill',
@@ -489,7 +497,6 @@ function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Staff
 
 function Staff({ data, onRecord }: { data: OmDto; onRecord: () => void }) {
@@ -594,7 +601,6 @@ function StaffForm({ data, open, onClose }: { data: OmDto; open: boolean; onClos
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Chemicals
 
 function Chemicals({ data }: { data: OmDto }) {
@@ -609,15 +615,15 @@ function Chemicals({ data }: { data: OmDto }) {
         locale={{ emptyText: 'The contract sets no chemical norms' }}
         columns={[
           { key: 'i', title: 'Chemical', render: (_, r) => r.itemName },
-          { key: 'n', title: 'Norm per ML', width: 130, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.perMl)} ${r.unit}`}</span> },
+          { key: 'n', title: 'Norm per ML', width: 130, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.perMl)} ${unitLabel(r.unit)}`}</span> },
           { key: 'w', title: 'Water produced', width: 140, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.producedMl)} ML`}</span> },
-          { key: 'q', title: 'Norm', width: 120, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.normQty)} ${r.unit}`}</span> },
-          { key: 'c', title: 'Used', width: 120, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.consumedQty)} ${r.unit}`}</span> },
+          { key: 'q', title: 'Norm', width: 120, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.normQty)} ${unitLabel(r.unit)}`}</span> },
+          { key: 'c', title: 'Used', width: 120, align: 'right', render: (_, r) => <span translate="no">{`${formatQty(r.consumedQty)} ${unitLabel(r.unit)}`}</span> },
           {
             key: 's',
             title: 'Against the norm',
             width: 190,
-            render: (_, r) => <AppTag color={CHEMICAL_COLORS[r.status]}>{r.variancePct === null ? CHEMICAL_LABELS[r.status] : `${CHEMICAL_LABELS[r.status]} (${r.variancePct > 0 ? '+' : ''}${formatPct(r.variancePct)})`}</AppTag>,
+            render: (_, r) => <AppTag color={CHEMICAL_COLORS[r.status]}>{r.variancePct === null ? OM_CHEMICAL_STATE_LABELS[r.status] : `${OM_CHEMICAL_STATE_LABELS[r.status]} (${r.variancePct > 0 ? '+' : ''}${formatPct(r.variancePct)})`}</AppTag>,
           },
         ]}
       />
@@ -625,7 +631,6 @@ function Chemicals({ data }: { data: OmDto }) {
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Terms
 
 function Terms({ data, onEdit }: { data: OmDto; onEdit: () => void }) {
@@ -747,7 +752,7 @@ function TermsForm({ project, data, open, onClose }: { project: ProjectDetail; d
       form={form}
       layout="drawer"
       projectDefault={false}
-      title={c ? 'Change O&M terms' : `O&M terms for ${project.code}`}
+      title={c ? 'Edit O&M terms' : `O&M terms for ${project.code}`}
       okText="Save terms"
       onSubmit={async (v) => {
         await save.mutateAsync(v);

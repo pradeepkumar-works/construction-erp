@@ -22,15 +22,15 @@ export class DprController {
   }
 
   @ApiOperation({
-    summary: "What a project's DPR form offers (item 127)",
-    description: "The project type's DPR form (item 134 part 2) and the project's places; the activities and sub-activities that take progress (look-ahead ones first), each with its component, scope, quantity done and material norms; the store items; the open work orders; and whether the company records progress only in the DPR.",
+    summary: "What a project's DPR form offers",
+    description: "The project type's DPR form and the project's places; the activities and sub-activities that take progress (look-ahead ones first), each with its component, scope, quantity done and material norms; the store items; the open work orders; and whether the company records progress only in the DPR.",
   })
   @Get('work-options')
   workOptions(@CurrentUser() user: RequestUser, @Query() q: DprWorkOptionsQuery) {
     return this.dpr.workOptions(user, q);
   }
 
-  @ApiOperation({ summary: 'DPR form versions by id (item 134 part 2)', description: 'The forms the reports of a list were made on, so an export can name their own fields. `ids` is comma-separated; up to 200.' })
+  @ApiOperation({ summary: 'DPR form versions by id', description: 'The forms the reports of a list were made on, so an export can name their own fields. `ids` is comma-separated; up to 200.' })
   @Get('forms')
   formsById(@CurrentUser() user: RequestUser, @Query('ids') ids?: string) {
     return this.forms.byIds(user.organizationId, (ids ?? '').split(',').map((x) => x.trim()).filter((x) => /^[0-9a-f-]{36}$/i.test(x)));
@@ -52,7 +52,7 @@ export class DprController {
 
   @ApiOperation({
     summary: 'Record a DPR',
-    description: 'With `lines`, the work done line by line (item 127): each line becomes a progress entry of the DPR, submitted, approved and sent back with it. `workExecuted` is then written from the lines when left out.',
+    description: 'With `lines`, the work done line by line: each line becomes a progress entry of the DPR, submitted, approved and sent back with it. `workExecuted` is then written from the lines when left out.',
   })
   @Post()
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateDprDto) {

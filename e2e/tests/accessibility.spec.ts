@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import { axeViolations, setAppearance, signIn } from './helpers';
 
 /**
- * WCAG 2.2 AA (UI roadmap item 65): axe finds nothing on the main pages, in the light and the dark theme. The route walk
- * (`route-walk.spec.ts`, item 89) runs the same check on every sidebar page, at desktop and phone width.
+ * WCAG 2.2 AA: axe finds nothing on the main pages, in the light and the dark theme. The route walk
+ * (`route-walk.spec.ts`) runs the same check on every sidebar page, at desktop and phone width.
  */
 // The sign-in page rises in on load; axe measures colours mid-animation otherwise.
 test.use({ contextOptions: { reducedMotion: 'reduce' } });

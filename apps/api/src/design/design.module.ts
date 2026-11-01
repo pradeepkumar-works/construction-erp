@@ -10,7 +10,7 @@ import { DesignSubmissionsService } from './design-submissions.service';
 import { DesignControlController } from './design-control.controller';
 import { DesignControlService } from './design-control.service';
 
-/** Design and drawings (item 138), over the register in `DocumentsModule`. */
+/** Design and drawings, over the register in `DocumentsModule`. */
 @Module({
   imports: [CorrespondenceModule, DocumentsModule, EpcModule, RisksModule],
   controllers: [DrawingScheduleController, DesignSubmissionsController, DesignControlController],

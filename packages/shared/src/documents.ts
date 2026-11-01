@@ -53,4 +53,4 @@ export const TRANSMITTAL_PURPOSE_LABELS: Record<TransmittalPurpose, string> = {
 
 export const LETTER_DIRECTIONS = ['IN', 'OUT'] as const;
 export type LetterDirection = (typeof LETTER_DIRECTIONS)[number];
-export const LETTER_DIRECTION_LABELS: Record<LetterDirection, string> = { IN: 'Received', OUT: 'Sent' };
+export const LETTER_DIRECTION_LABELS: Record<LetterDirection, string> = { IN: 'Inward', OUT: 'Outward' };

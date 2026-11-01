@@ -3,7 +3,7 @@ import { MANPOWER_CATEGORIES } from './labels';
 import * as P from './permissions';
 
 /**
- * Masters (item 135, ARCHITECTURE "Masters"): the lists a company keeps itself. Each department's menu has a Masters
+ * Masters (ARCHITECTURE "Masters"): the lists a company keeps itself. Each department's menu has a Masters
  * sub-module naming the pages that are masters (items, vendors, the chart of accounts…), and Administration › Masters
  * lists them all. The simple lists here are words a form suggests (trades, designations, categories): their standard
  * entries live in code and a company's rows lay over them by code, so a company renames or switches off a standard entry
@@ -13,7 +13,7 @@ import * as P from './permissions';
  * new one and switch the old one off, as with units.
  */
 
-export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical'] as const;
+export const MASTER_LISTS = ['trade', 'designation', 'department', 'itemCategory', 'equipmentCategory', 'letterCategory', 'ncrCategory', 'ncrRootCause', 'instrumentKind', 'vertical', 'workTrade'] as const;
 export type MasterList = (typeof MASTER_LISTS)[number];
 
 export interface MasterStandardEntry {
@@ -280,12 +280,38 @@ export const MASTER_LIST_DEFS: Record<MasterList, MasterListDef> = {
     key: 'vertical',
     label: 'Verticals',
     singular: 'vertical',
-    description: "The company's business lines (item 167). Each project and tender belongs to one; the header, lists, department screens and reports can show one vertical at a time.",
+    description: "The company's business lines. Each project and tender belongs to one; the header, lists, department screens and reports can show one vertical at a time.",
     slug: 'vertical',
     node: 'projects.verticals',
     usedOn: 'projects and tenders',
     manage: (role) => P.canEditProjects(role),
     standard: entries(['Water', 'जल'], ['Buildings', 'भवन'], ['Irrigation', 'सिंचाई'], ['Roads and bridges', 'सड़क और पुल']),
+  },
+  workTrade: {
+    key: 'workTrade',
+    label: 'Work trades',
+    singular: 'work trade',
+    description: 'The trade a snag or defect belongs to, such as plaster, plumbing or electrical.',
+    slug: 'work-trade',
+    node: 'projects.workTrades',
+    usedOn: 'snags and defects',
+    manage: (role) => P.canManageHandover(role),
+    standard: entries(
+      ['Civil', 'सिविल'],
+      ['Plaster', 'प्लास्टर'],
+      ['Masonry', 'चिनाई'],
+      ['Tiling', 'टाइल'],
+      ['Painting', 'पेंटिंग'],
+      ['Plumbing', 'प्लंबिंग'],
+      ['Electrical', 'बिजली'],
+      ['Joinery', 'बढ़ईगीरी'],
+      ['Waterproofing', 'वॉटरप्रूफ़िंग'],
+      ['Fabrication', 'फ़ैब्रिकेशन'],
+      ['Road work', 'सड़क का काम'],
+      ['Drainage', 'नाली'],
+      ['Road marking', 'सड़क मार्किंग'],
+      ['Landscaping', 'लैंडस्केपिंग'],
+    ),
   },
 };
 

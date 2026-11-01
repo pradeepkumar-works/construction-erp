@@ -85,7 +85,7 @@ export type IntegrationHandler = (conn: { id: string; organizationId: string; pr
 const connInclude = { project: { select: { name: true } }, agent: { select: { name: true } }, _count: { select: { deviceLinks: true } } } as const;
 const agentInclude = { project: { select: { name: true } }, _count: { select: { connections: true } } } as const;
 
-/** The integration layer (item 139, ARCHITECTURE "Integration layer"): connections, Connectors, the hooks and the log. */
+/** The integration layer (ARCHITECTURE "Integration layer"): connections, Connectors, the hooks and the log. */
 @Injectable()
 export class IntegrationsService {
   constructor(
@@ -118,7 +118,7 @@ export class IntegrationsService {
     BATCHING_PLANT: (c, payload) => this.plantRow(c, payload),
   };
 
-  /** A row of the plant controller's batch report, read by the Connector: kept for a challan on the RMC page (item 149). */
+  /** A row of the plant controller's batch report, read by the Connector: kept for a challan on the RMC page. */
   private async plantRow(c: { id: string; organizationId: string; projectId: string | null }, payload: unknown): Promise<HandlerResult> {
     const r = readPlantRow(payload);
     if (!r.row) return { status: 'FAILED', summary: r.problem };
@@ -142,7 +142,7 @@ export class IntegrationsService {
     return { ...r.config };
   }
 
-  /** A weight the site's weighbridge held, read by the Connector: kept for the store to put on a ticket (item 148). */
+  /** A weight the site's weighbridge held, read by the Connector: kept for the store to put on a ticket. */
   private async weighing(c: { id: string; organizationId: string; projectId: string | null }, payload: unknown): Promise<HandlerResult> {
     // Checked against the clock now: a reading's own time is the weighing's, which the outbox may hold for a day.
     const read = readWeighing(payload, new Date());
@@ -160,7 +160,7 @@ export class IntegrationsService {
     return { ...r.config };
   }
 
-  /** A dispenser's fill: its tag listed under Devices, the fill kept once and issued as a slip when the tag is matched (item 147). */
+  /** A dispenser's fill: its tag listed under Devices, the fill kept once and issued as a slip when the tag is matched. */
   private async dispense(c: { id: string; organizationId: string }, payload: unknown, at: Date, ctx: HandlerContext): Promise<HandlerResult> {
     const read = readDispense(payload, at);
     if (!read.dispense) return { status: 'FAILED', summary: read.problem };
@@ -174,7 +174,7 @@ export class IntegrationsService {
     return { status: 'OK', summary: `${name}, slip ${out.entryNo}` };
   }
 
-  /** A tracker's or a feed's reading: its device listed, the reading kept, and the matched machine's day moved on (item 146). */
+  /** A tracker's or a feed's reading: its device listed, the reading kept, and the matched machine's day moved on. */
   private async machineReading(c: { organizationId: string }, read: ReadResult, ctx: HandlerContext): Promise<HandlerResult> {
     if (!read.reading) return { status: 'FAILED', summary: read.problem };
     const r = read.reading;
@@ -199,7 +199,7 @@ export class IntegrationsService {
     return process.env.INTEGRATION_KEY || null;
   }
 
-  /* ---------- connections ---------- */
+  // Connections
 
   private async connectionDtos(organizationId: string, rows: Connection[]): Promise<IntegrationConnectionDto[]> {
     const now = new Date();
@@ -352,7 +352,7 @@ export class IntegrationsService {
     return { ok: true };
   }
 
-  /* ---------- Connectors ---------- */
+  // Connectors
 
   private agentDto(a: Agent, now = new Date()): ConnectorAgentDto {
     return {
@@ -419,7 +419,7 @@ export class IntegrationsService {
     return this.agentDto(row);
   }
 
-  /* ---------- devices ---------- */
+  // Devices
 
   async devices(user: RequestUser): Promise<DeviceLinkDto[]> {
     this.assertManage(user);
@@ -455,16 +455,16 @@ export class IntegrationsService {
     }
     await this.checkRefs(user, dto.projectId);
     const row = await this.prisma.deviceLink.update({ where: { id }, data: { equipmentId: dto.equipmentId, projectId: dto.projectId, label: dto.label }, include: { connection: { select: { kind: true } } } });
-    // A tracker's kept readings follow the match, and the days they fall on are built again (item 146).
+    // A tracker's kept readings follow the match, and the days they fall on are built again.
     if (dto.equipmentId !== undefined && (row.connection.kind === 'GPS_TRACKER' || row.connection.kind === 'MACHINE_FEED'))
       await this.telematics.rematch(user.organizationId, { id, projectId: row.projectId }, d.equipmentId, row.equipmentId);
-    // A dispenser's tag: the fills it was given before the match become fuel slips (item 147).
+    // A dispenser's tag: the fills it was given before the match become fuel slips.
     if (row.connection.kind === 'FUEL_DISPENSER' && row.equipmentId && row.equipmentId !== d.equipmentId) await this.fuel.issuePending(id);
     await this.audit.log(user, 'DEVICE_LINK', id, 'UPDATED', dto.equipmentId ? 'Matched to a machine' : dto.equipmentId === null ? 'Match cleared' : null);
     return (await this.devices(user)).find((x) => x.id === id)!;
   }
 
-  /* ---------- the log ---------- */
+  // The log
 
   async events(user: RequestUser, q: EventQuery): Promise<IntegrationEventDto[]> {
     this.assertManage(user);
@@ -488,7 +488,7 @@ export class IntegrationsService {
     }));
   }
 
-  /* ---------- taking a message in ---------- */
+  // Taking a message in
 
   /**
    * One message for a connection: read by its kind, kept in the log, the device it names listed, the connection's
@@ -568,7 +568,7 @@ export class IntegrationsService {
     return { status: r.status === 'DUPLICATE' ? 'IGNORED' : r.status, summary: r.summary };
   }
 
-  /* ---------- the Connector's own calls ---------- */
+  // The Connector's own calls
 
   /** Pairing: the code shown in Connectors, typed on the site computer, gives it a token that only it keeps. */
   async pair(dto: PairConnectorDto): Promise<{ token: string; agentId: string; name: string }> {
@@ -640,7 +640,7 @@ export class IntegrationsService {
     return result;
   }
 
-  /* ---------- makers' feeds, read by Nirmaan (item 146) ---------- */
+  // Makers' feeds, read by Nirmaan
 
   /** A failure that is not about one message (the feed would not answer): kept in the log, the connection shown failing. */
   private async logFailure(c: { id: string; organizationId: string }, summary: string) {

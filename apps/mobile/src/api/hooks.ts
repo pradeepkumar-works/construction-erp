@@ -103,7 +103,6 @@ export function useFetch<T>(loader: (api: Api) => Promise<T>, deps: React.Depend
         }
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [api, enabled, cacheKey, ...deps],
   );
 

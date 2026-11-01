@@ -4,7 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { DesignControlService } from './design-control.service';
 import { CopiesQuery, DesignDashboardQuery, DisposeCopyDto, IssueCopiesDto, ReissueCopyDto } from './design-control.dto';
 
-/** Design and drawings part 3 (item 138): controlled copies, what a new revision changes and the design dashboard. */
+/** Design and drawings part 3: controlled copies, what a new revision changes and the design dashboard. */
 @ApiTags('design')
 @ApiBearerAuth()
 @Controller('design')

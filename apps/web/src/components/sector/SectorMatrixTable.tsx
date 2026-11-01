@@ -7,6 +7,7 @@ import type { SectorCell, SectorMatrix } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
+import { unitLabel } from '@erp/shared';
 
 type Row = { key: string; label: string; none?: boolean };
 
@@ -22,7 +23,7 @@ export function SectorMatrixTable({ matrix }: { matrix: SectorMatrix }) {
     ...matrix.activities.map((a) => ({
       key: a.id,
       title: (
-        <Tooltip title={`${formatQty(a.executedQty)} of ${formatQty(a.plannedQty)} ${a.unit} done in all`}>
+        <Tooltip title={`${formatQty(a.executedQty)} of ${formatQty(a.plannedQty)} ${unitLabel(a.unit)} done in all`}>
           <span>
             {a.name}
             <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), fontWeight: 400 }}>

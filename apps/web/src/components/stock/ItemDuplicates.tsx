@@ -85,7 +85,7 @@ function Group({ group }: { group: ItemDuplicateGroupDto }) {
 }
 
 /**
- * Items that look like one item written more ways (finding 3 of the October review): the store manager keeps one and
+ * Items that look like one item written more ways: the store manager keeps one and
  * folds the others into it once. Their names stay as old names, so a line typed the old way still lands on it.
  */
 export function ItemDuplicates({ open, onClose, groups }: { open: boolean; onClose: () => void; groups: ItemDuplicateGroupDto[] }) {

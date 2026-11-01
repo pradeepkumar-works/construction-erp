@@ -6,7 +6,7 @@ import type { PaymentRequestDto } from '@erp/shared';
 import { PaymentRequestRecord } from '@/components/payables/PaymentRequestRecord';
 import { PaymentRequestFormModal } from '@/components/payables/PaymentRequestFormModal';
 
-/** One payment request, as its own page (v5 item 90). */
+/** One payment request, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

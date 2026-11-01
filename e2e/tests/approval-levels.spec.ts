@@ -10,7 +10,7 @@ type Pending = { type: string; id: string; level?: number; levels?: number };
 const NAME = 'Shuttering plywood, second level (e2e)';
 
 /**
- * Approval levels (v5 item 94): above an amount a site expense needs a second approval by management after the first
+ * Approval levels: above an amount a site expense needs a second approval by management after the first
  * (the project manager's or accounts'). The entry waits at level 1, then level 2; the level-1 roles cannot decide the
  * second level; the submitter sees whose queue it is in. The matrix is put back as it was.
  */
@@ -37,7 +37,7 @@ test('a site expense above the amount goes to management after the project manag
     // The submitter sees it waiting at level 1 of 2, with the project manager.
     const mine = (await api<Waiting[]>(engineer, '/approvals/waiting')).find((w) => w.id === x.id);
     expect(mine).toMatchObject({ type: 'EXPENSE', level: 1, levels: 2 });
-    expect(mine!.waitingWith).toContain('Project Manager');
+    expect(mine!.waitingWith).toContain('Project manager');
     expect((await api<Pending[]>(accounts, '/approvals/pending')).find((p) => p.id === x.id), 'accounts approves level 1 too').toMatchObject({ level: 1, levels: 2 });
 
     // The project manager approves level 1 on the record page; it stays waiting, now for management.

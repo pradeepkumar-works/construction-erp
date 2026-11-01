@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openProjectTab, projectTabs, signIn } from './helpers';
 
-/** The project page (UI roadmap item 56): six groups, health in the header, a bar that stays, the last tab kept. */
+/** The project page: six groups, health in the header, a bar that stays, the last tab kept. */
 
 test('a project opens in groups, keeps its last tab and still takes old tab links', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
@@ -42,7 +42,7 @@ test('scrolled down, the bar stays with the project name and the table header si
   await signIn(page, 'pm@demo.com');
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
-  await openProjectTab(page, 'Site', 'Progress');
+  await openProjectTab(page, 'Site', 'Progress entries');
   await expect(page.locator('.ant-table-tbody .ant-table-row').nth(3)).toBeVisible();
   const bar = page.getByTestId('project-workspace-bar');
   await expect(bar).not.toContainText('RD-2026-01');

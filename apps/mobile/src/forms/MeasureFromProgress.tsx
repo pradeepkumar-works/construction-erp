@@ -35,7 +35,7 @@ export function progressPrefill(item: ToMeasureItemDto, t: T): ProgressPrefill {
 }
 
 /**
- * Measure from progress on the phone (finding 14 of the October review): the BOQ items with work approved on the
+ * Measure from progress on the phone: the BOQ items with work approved on the
  * daily reports that no sheet holds yet, from `GET /measurements/to-measure`. Start sheet fills the form; the
  * surveyor still checks the lines against the book and submits. Shows nothing while loading, when nothing waits,
  * or for someone the list is not for.

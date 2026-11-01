@@ -11,7 +11,7 @@ const post = (path: string, body: unknown, headers: Record<string, string> = {})
   fetch(`${API_URL}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 
 /**
- * Connections (item 139): an admin makes a web address for a service on the page, the address is shown once, a message
+ * Connections: an admin makes a web address for a service on the page, the address is shown once, a message
  * posted to it lands in the log once however often it is sent, and its device is matched to a machine. A Connector pairs
  * with its code (once), gets its settings, and a batch of readings sent twice is counted once. Others are refused.
  */

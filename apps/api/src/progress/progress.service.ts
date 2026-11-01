@@ -41,7 +41,7 @@ export async function assertTakesProgress(prisma: PrismaService, activityId: str
   if (activity._count.subActivities) throw new BadRequestException(`${activity.name} is made of sub-activities; record progress against one of them`);
 }
 
-/** The refusal for changing a DPR's work line on its own (item 127). */
+/** The refusal for changing a DPR's work line on its own. */
 export const DPR_LINE_NOTE = (date: Date) => `This entry is a work line of the DPR of ${dateOnly(date)}; change, submit or decide it in the DPR`;
 
 @Injectable()
@@ -73,8 +73,8 @@ export class ProgressService {
       activityId: r.activityId,
       activityName: r.activity.name,
       unit: r.activity.unit,
-      date: dateOnly(r.date)!,
-      quantity: dec(r.quantity)!,
+      date: dateOnly(r.date),
+      quantity: dec(r.quantity),
       remarks: r.remarks,
       location: r.location,
       chainageFrom: r.chainageFrom,
@@ -93,8 +93,8 @@ export class ProgressService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

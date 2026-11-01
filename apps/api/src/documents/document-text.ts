@@ -1,5 +1,5 @@
 /**
- * Ask the contract (AI item 75): reading a PDF's text page by page, and turning a question into a Postgres full-text
+ * Ask the contract: reading a PDF's text page by page, and turning a question into a Postgres full-text
  * query. Pure functions apart from the PDF reader, so they are tested without a database or a model
  * (src/scripts/contract-search-test.ts).
  */
@@ -51,9 +51,7 @@ function loadPdfJs(): Promise<PdfJs> {
     // leaves that native package out. Reading text never draws, so an identity matrix that ignores changes will do.
     g.DOMMatrix ??= TextOnlyMatrix;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const pdfjs = require('pdfjs-dist/legacy/build/pdf.mjs') as PdfJs;
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       g.pdfjsWorker ??= require('pdfjs-dist/legacy/build/pdf.worker.mjs');
       return pdfjs;
     } catch (e) {

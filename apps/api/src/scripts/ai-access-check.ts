@@ -1,5 +1,5 @@
 /**
- * Ask Nirmaan's access check (AI item 67): runs every assistant tool as every active user of the demo company and
+ * Ask Nirmaan's access check: runs every assistant tool as every active user of the demo company and
  * fails if a tool shows anyone a project they cannot open, or answers a role it is not meant for. CI runs it after
  * the seed, against the same database as the browser tests:
  *

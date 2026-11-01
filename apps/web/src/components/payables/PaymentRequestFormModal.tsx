@@ -19,7 +19,7 @@ import { recordPage } from '@/components/approvals/queue';
 import { PAYMENT_QUERY_KEYS } from './PaymentFormModal';
 import { FundRequestFormModal } from './FundRequestFormModal';
 
-/** What this form asks for; a site's fund request (v6 item 107) has its own form. */
+/** What this form asks for; a site's fund request has its own form. */
 const KINDS = PAYMENT_REQUEST_KINDS.filter((k) => k !== 'FUND_REQUEST');
 
 /** What a request is for, when the form is opened from that bill or order (its id goes in as the matching field). */
@@ -54,7 +54,7 @@ const ids = (t: RequestFor) => ({
 const keyOf = (t: RequestFor) => t.vendorBillId ?? t.subcontractBillId ?? t.purchaseOrderId ?? t.workOrderId ?? '';
 
 /**
- * Ask for a bill to be paid or an advance released on an order (v5 item 90), or (with `request`) fix a returned request
+ * Ask for a bill to be paid or an advance released on an order, or (with `request`) fix a returned request
  * and resubmit it. It goes to approval through the matrix; accounts pays it once approved. A returned fund request
  * opens its own form.
  */
@@ -171,7 +171,7 @@ function BillRequestFormModal({ open, onClose, target, request }: { open: boolea
       ).data;
     },
     onSuccess: (r) => {
-      notify.saved(`${r.requestNo} ${editing ? 'resubmitted' : 'sent'} for approval`, recordPage('PAYMENT_REQUEST', r.id));
+      notify.saved(`${r.requestNo} ${editing ? 'resubmitted' : 'submitted'} for approval`, recordPage('PAYMENT_REQUEST', r.id));
       for (const k of PAYMENT_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
       qc.invalidateQueries({ queryKey: ['approvals'] });
     },
@@ -193,7 +193,7 @@ function BillRequestFormModal({ open, onClose, target, request }: { open: boolea
       layout="modal"
       width={640}
       title={title}
-      okText={editing ? 'Resubmit for approval' : 'Send for approval'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing || target ? undefined : 'payment-request'}
     >

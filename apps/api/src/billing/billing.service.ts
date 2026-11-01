@@ -35,7 +35,7 @@ const fyCode = (date: string) => {
 const signature = (secret: string, payload: string) => createHmac('sha256', secret).update(payload).digest('hex');
 const sameSignature = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
-/** Plans and billing (v3 item 34): the trial, what the next payment is, Razorpay orders, and the GST invoice once paid. */
+/** Plans and billing: the trial, what the next payment is, Razorpay orders, and the GST invoice once paid. */
 @Injectable()
 export class BillingService {
   private readonly log = new Logger(BillingService.name);

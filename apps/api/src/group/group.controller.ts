@@ -4,7 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { GivePlaceDto, GroupCompanyDto, MakeGroupDto, SetGroupAdminDto, UpdateGroupCompanyDto } from './group.dto';
 import { GroupService } from './group.service';
 
-/** Group companies (phase 1): the group's companies and who works in which. The group's admins; a company admin to make one. */
+/** Group companies: the group's companies and who works in which. The group's admins; a company admin to make one. */
 @ApiTags('group')
 @ApiBearerAuth()
 @Controller('group')

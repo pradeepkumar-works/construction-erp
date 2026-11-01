@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Timeline, Typography, Skeleton } from 'antd';
-import type { SubmissionBase } from '@erp/shared';
+import { auditActionLabel, type SubmissionBase } from '@erp/shared';
 import { useAudit, type ApprovalTypeParam } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
@@ -16,12 +16,6 @@ const COLORS: Record<string, string> = {
   RESUBMITTED: 'orange',
   UPDATED: 'blue',
   DELETED: 'red',
-};
-
-/** "CHANGES_REQUESTED" reads "Changes requested". */
-export const auditActionLabel = (action: string) => {
-  const words = action.replace(/_/g, ' ').toLowerCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
 interface TrailEntry {

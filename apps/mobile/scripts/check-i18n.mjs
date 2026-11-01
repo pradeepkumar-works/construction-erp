@@ -1,5 +1,5 @@
 // Lists English text passed to t() with no Hindi, keys whose Hindi differs between files, and translations whose
-// {placeholders} do not match the English (v4 item 49). Run: npm run i18n:check
+// {placeholders} do not match the English. Run: npm run i18n:check
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -39,7 +39,7 @@ for (const file of [...walk(join(root, 'app')), ...walk(join(root, 'src'))].filt
   }
 }
 
-// The navigation tree's names, descriptions and groups reach t() as values (Home's tiles, the module screens, launcher phase 4).
+// The navigation tree's names, descriptions and groups reach t() as values (Home's tiles, the module screens).
 const shared = await import('@erp/shared');
 const { NAV_TREE, AREA_MODULES, DEPARTMENT_MODULES, HOME_TABS } = shared;
 for (const [name, file] of labelMaps) {

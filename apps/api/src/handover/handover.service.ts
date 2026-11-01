@@ -53,7 +53,7 @@ const blank = (v: string | null | undefined) => (v ? v : null);
 const daysBetween = (from: string, to: string) => Math.round((parseDate(to).getTime() - parseDate(from).getTime()) / DAY_MS);
 
 /**
- * Handover and defects (v4 item 47). Snags are logged before handover and defects during the defect liability period
+ * Handover and defects. Snags are logged before handover and defects during the defect liability period
  * (DLP); both are put right (fixed) by our team or a subcontractor and then accepted (closed) by QA/QC or an approver.
  * The project's approvers record the completion certificate, which starts the DLP, and keep the close-out checklist.
  * NotificationJobsService.handoverDue reminds them when the DLP is about to end, to claim back retention.
@@ -73,13 +73,13 @@ export class HandoverService {
     undo.register('CLOSEOUT_ITEM', { entityType: 'CLOSEOUT_ITEM', check: (user, row) => this.access.assertCanManageHandover(user, row.projectId as string) });
   }
 
-  /* ---------- the handover page ---------- */
+  // The handover page
 
   private handoverDto(r: HandoverRow, today: string): HandoverDto {
-    const dlpEndsOn = dateOnly(r.dlpEndsOn)!;
+    const dlpEndsOn = dateOnly(r.dlpEndsOn);
     return {
       id: r.id,
-      completedOn: dateOnly(r.completedOn)!,
+      completedOn: dateOnly(r.completedOn),
       certificateNo: r.certificateNo,
       certificateDate: dateOnly(r.certificateDate),
       certifiedBy: r.certifiedBy,
@@ -185,7 +185,7 @@ export class HandoverService {
     });
   }
 
-  /* ---------- close-out checklist ---------- */
+  // Close-out checklist
 
   /** Start the checklist from the standard lines (only while it is empty). */
   async addDefaultChecklist(user: RequestUser, projectId: string): Promise<CloseoutItemDto[]> {
@@ -242,7 +242,7 @@ export class HandoverService {
     return { ok: true, undo: this.undo.offer(user, 'CLOSEOUT_ITEM', { rows: [{ model: 'closeoutItem', data: row }] }) };
   }
 
-  /* ---------- snags and defects ---------- */
+  // Snags and defects
 
   private defectDto(r: DefectRow, today: string): DefectDto {
     const dueDate = dateOnly(r.dueDate);
@@ -258,7 +258,7 @@ export class HandoverService {
       trade: r.trade,
       priority: r.priority,
       status: r.status,
-      reportedOn: dateOnly(r.reportedOn)!,
+      reportedOn: dateOnly(r.reportedOn),
       reportedByName: r.reportedBy.fullName,
       foundBy: r.reportedByName,
       assignedToId: r.assignedToId,
@@ -274,7 +274,7 @@ export class HandoverService {
       closedByName: r.closedBy?.fullName ?? null,
       closeNote: r.closeNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -323,7 +323,7 @@ export class HandoverService {
     const reportedOn = dto.reportedOn ?? today;
     if (reportedOn > today) throw new BadRequestException('The date cannot be in the future');
     const handover = await this.prisma.projectHandover.findUnique({ where: { projectId: dto.projectId }, select: { completedOn: true } });
-    const phase = dto.phase ?? (handover && dateOnly(handover.completedOn)! <= reportedOn ? 'DEFECT' : 'SNAG');
+    const phase = dto.phase ?? (handover && dateOnly(handover.completedOn) <= reportedOn ? 'DEFECT' : 'SNAG');
     const kind = phase === 'SNAG' ? 'SNG' : 'DEF';
     let id: string | null;
     try {
@@ -424,7 +424,7 @@ export class HandoverService {
     if (current.status !== 'OPEN') throw new ConflictException(current.status === 'FIXED' ? 'It is already marked fixed' : 'It is closed');
     const fixedOn = dto.fixedOn ?? todayIn();
     if (fixedOn > todayIn()) throw new BadRequestException('The date cannot be in the future');
-    if (fixedOn < dateOnly(current.reportedOn)!) throw new BadRequestException('It cannot be fixed before it was reported');
+    if (fixedOn < dateOnly(current.reportedOn)) throw new BadRequestException('It cannot be fixed before it was reported');
     await this.prisma.defect.update({
       where: { id },
       data: { status: 'FIXED', fixedOn: parseDate(fixedOn), fixNote: blank(dto.fixNote), cost: dto.cost ? new Prisma.Decimal(dto.cost) : dto.cost === null ? null : undefined, fixedById: user.id },

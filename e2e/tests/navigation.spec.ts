@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { api, apiToken, signIn, homeHeading } from './helpers';
 
 /**
- * Navigation and words (UX item 87): each role's sidebar holds its own modules, sections remember being closed, Recent
+ * Navigation and words: each role's sidebar holds its own modules, sections remember being closed, Recent
  * lives in Search, every sidebar link is named like the page it opens, and the header's New is not the page's primary.
  */
 
@@ -12,7 +12,7 @@ const link = (page: Page, name: string) => sidebar(page).getByRole('link', { nam
 test("a site engineer's sidebar has no finance module", async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   // What the engineer works with is there, so the checks below are not passing on an empty sidebar.
-  for (const name of ['Daily reports', 'Progress entries', 'Attendance', 'Material requests', 'Safety']) await expect(link(page, name)).toBeVisible();
+  for (const name of ['Daily reports', 'Progress entries', 'Labour attendance', 'Indents', 'Safety']) await expect(link(page, name)).toBeVisible();
   for (const name of ['Vendor bills', 'Payables', 'RA bills', 'Receivables', 'Books', 'GST registers', 'Tally export', 'Project cost', 'Payroll', 'Approvals']) {
     await expect(link(page, name)).toHaveCount(0);
   }
@@ -22,7 +22,7 @@ test("a site engineer's sidebar has no finance module", async ({ page }) => {
 test("an accountant's sidebar has no site-only module", async ({ page }) => {
   await signIn(page, 'accounts@demo.com');
   for (const name of ['Payables', 'Receivables', 'Vendor bills', 'Books', 'GST registers', 'Tally export', 'Site expenses', 'Project cost']) await expect(link(page, name)).toBeVisible();
-  for (const name of ['Daily reports', 'Progress entries', 'Measurement book', 'Quality', 'Safety', 'Machinery', 'Material requests']) {
+  for (const name of ['Daily reports', 'Progress entries', 'Measurement book', 'Quality', 'Safety', 'Machinery', 'Indents']) {
     await expect(link(page, name)).toHaveCount(0);
   }
 });
@@ -47,8 +47,9 @@ test('a closed section stays closed after a reload, and opens itself on one of i
 });
 
 test('Search with nothing typed shows a record opened lately', async ({ page }) => {
-  const md = await apiToken('md@demo.com');
-  const bill = (await api<{ items: { id: string }[] }>(md, '/ra-bills?pageSize=1')).items[0];
+  // A bill the person signing in can open (the newest company-wide may be on a project they are not on).
+  const pm = await apiToken('pm@demo.com');
+  const bill = (await api<{ items: { id: string }[] }>(pm, '/ra-bills?pageSize=1')).items[0];
   await signIn(page, 'pm@demo.com');
   await page.goto(`/bills/${bill.id}`);
   await expect(page.getByRole('group', { name: 'Stage' })).toBeVisible();

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Ask the contract (AI item 75): a search of filed contracts lands on the page that says it, and the page view shows
+ * Ask the contract: a search of filed contracts lands on the page that says it, and the page view shows
  * that page's text with Previous and Next. The sample road contract (RD-AGR-01) has liquidated damages on page 4.
  */
 

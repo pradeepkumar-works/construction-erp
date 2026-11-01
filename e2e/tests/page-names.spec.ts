@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, menuSettled, signIn } from './helpers';
 
 /**
- * Every page named and reachable by keyboard (UX item 81): a tab title and one heading per page, one breadcrumb,
+ * Every page named and reachable by keyboard: a tab title and one heading per page, one breadcrumb,
  * focus on the new page's heading, rows that open from the keyboard, and single-key shortcuts that can be turned off.
  */
 
@@ -16,8 +16,9 @@ test('each page has its own tab title, one h1 and one breadcrumb', async ({ page
   await expect(page.locator('h1')).toHaveText('Daily reports');
 
   // A record's page is named after the record, and the header's breadcrumb carries its kind (no second one on the page).
-  const md = await apiToken('md@demo.com');
-  const bill = (await api<{ items: { id: string }[] }>(md, '/ra-bills?pageSize=1')).items[0];
+  // The bill is one the person signed in can open: the company's newest may be on a project they are not on.
+  const pm = await apiToken('pm@demo.com');
+  const bill = (await api<{ items: { id: string }[] }>(pm, '/ra-bills?pageSize=1')).items[0];
   await page.goto(`/bills/${bill.id}`);
   await expect(page.getByRole('group', { name: 'Stage' })).toBeVisible();
   const heading = (await page.locator('h1').innerText()).trim();

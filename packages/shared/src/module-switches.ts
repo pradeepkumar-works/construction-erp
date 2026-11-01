@@ -2,7 +2,7 @@ import type { RoleKey } from './enums';
 import type { ModuleKey } from './modules';
 
 /**
- * Module switches (v6 item 117): the parts of the product a company may not use. An admin turns one off; it leaves the
+ * Module switches: the parts of the product a company may not use. An admin turns one off; it leaves the
  * sidebar, Search, the New menu and Ask, its pages say it is off, and the API refuses its routes. Nothing is deleted, so
  * turning it on again brings everything back. The plan (`MODULE_TIERS`, set from the console) decides which a company has.
  * Daily reports, progress, requests, orders, bills and the rest of the core are never switched off.
@@ -38,10 +38,10 @@ export const SWITCHABLE_MODULE_INFO: Record<SwitchableModule, SwitchableModuleIn
   safety: { label: 'Safety', description: 'Incidents and near misses, toolbox talks, permits to work and PPE.', paths: ['/safety', '/ppe'], section: 'safety' },
   imprest: { label: 'Site imprest', description: 'Petty cash floats at sites, top-ups and fund requests.', paths: ['/imprest'], section: 'site' },
   compliance: { label: 'Guarantees and licences', description: 'Bank guarantees, insurance and licences with their expiry reminders.', paths: ['/compliance'], section: 'billing' },
-  tenders: { label: 'Tenders', description: 'Bids, their estimates and the schedule of rates.', paths: ['/tenders', '/schedule-of-rates'], section: 'billing' },
-  subcontract_enquiries: { label: 'Subcontract enquiries', description: 'Quotes from subcontractors set side by side.', paths: ['/subcontract-enquiries'], section: 'purchases' },
+  tenders: { label: 'Tenders', description: 'Bids, their estimates and the schedule of rates.', paths: ['/tenders', '/schedule-of-rates'], section: 'tenders' },
+  subcontract_enquiries: { label: 'Subcontract enquiries', description: 'Quotes from subcontractors set side by side.', paths: ['/subcontract-enquiries'], section: 'subcontracts' },
   books: { label: 'Books', description: 'Vouchers, cash and bank books, ledgers and the financial statements.', paths: ['/books', '/statements'], section: 'accounts' },
-  payroll: { label: 'Payroll', description: 'Salary and wage runs, payslips and statutory deductions.', paths: ['/payroll', '/payslips'], section: 'people' },
+  payroll: { label: 'Payroll', description: 'Salary and wage runs, payslips and statutory deductions.', paths: ['/payroll', '/payslips'], section: 'payroll' },
   biometric: { label: 'Biometric devices', description: 'Fingerprint and face machines that mark attendance.', paths: ['/biometric'], section: 'people' },
   rmc: { label: 'RMC plant', description: 'Ready-mix concrete: quotes, orders, batches, challans and cube tests.', paths: ['/rmc'], section: 'rmc' },
   machine_loans: { label: 'Machine loans', description: 'Equipment finance with its EMI schedule.', paths: ['/machine-loans'], section: 'accounts' },

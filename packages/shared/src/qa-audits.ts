@@ -1,13 +1,11 @@
 /**
- * QA/QC audits, visits and the monthly report (item 137 part 3, ARCHITECTURE "QA/QC"): internal audits and visits by the
+ * QA/QC audits, visits and the monthly report (ARCHITECTURE "QA/QC"): internal audits and visits by the
  * client, its consultant, a third-party inspector or the department, each with its findings; a finding is put right on
  * its own or through an NCR raised from it. The monthly report's figures are added up here too. Everything is pure.
  */
 import { daysBetween } from './maintenance';
 import type { NcrSeverity, NcrStatus } from './quality';
 import type { AttachmentDto } from './types';
-
-/* ---------- audits and visits ---------- */
 
 export const QA_AUDIT_KINDS = ['INTERNAL', 'CLIENT', 'CONSULTANT', 'TPI', 'DEPARTMENT'] as const;
 export type QaAuditKind = (typeof QA_AUDIT_KINDS)[number];
@@ -88,8 +86,6 @@ export interface QaAuditDto {
   createdAt: string;
   attachments: AttachmentDto[];
 }
-
-/* ---------- the monthly report ---------- */
 
 /** The first and last day of a YYYY-MM month. */
 export function monthBounds(month: string): { from: string; to: string } {

@@ -47,8 +47,8 @@ export class ClientsService {
       defectLiabilityMonths: r.defectLiabilityMonths,
       clientPaymentDays: r.clientPaymentDays,
       projectCount: r._count?.projects ?? 0,
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

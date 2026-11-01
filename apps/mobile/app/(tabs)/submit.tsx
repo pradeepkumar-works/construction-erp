@@ -36,7 +36,7 @@ export default function SubmitHub() {
   const t = useT();
   const role = user?.roleKey;
   const may = (allowed: boolean | undefined, ...forms: Form[]) => (allowed ? forms : []);
-  // Nothing from a module the company has turned off (v6 item 117).
+  // Nothing from a module the company has turned off.
   const groups = [
     {
       title: 'Site reports',

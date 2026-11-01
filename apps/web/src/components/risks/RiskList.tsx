@@ -128,7 +128,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., title, action"
-        searchLabel="Search risks"
+        searchLabel="Search delays and risks"
         extra={
           <>
             <ExportButton onExport={exportRows} />
@@ -149,6 +149,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
         }
       >
         <Segmented
+          aria-label="Show delays or risks"
           value={kind}
           onChange={(v) => page.setFilter('kind', v === 'ALL' ? undefined : v)}
           options={[

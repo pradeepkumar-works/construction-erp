@@ -1,5 +1,5 @@
 /**
- * Bid intelligence (intelligence quick win Q4): on a tender being priced, where L1 landed on the company's past openings
+ * Bid intelligence: on a tender being priced, where L1 landed on the company's past openings
  * of the same client and the same kind of work, against the SOR (or the estimate), and how the quote now on the tender
  * would have stood on them. Pure; `TendersService.pastOpenings` prices the past tenders through the register's own rules
  * and the screen reads the summary through these helpers. Tested in `src/scripts/intelligence-test.ts`.

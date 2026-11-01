@@ -20,7 +20,7 @@ function basisWords(level: BidLevelDto, data: PastOpeningsDto) {
 }
 
 /**
- * Bid intelligence on a tender (intelligence quick win Q4): where L1 landed on the company's past openings of the same
+ * Bid intelligence on a tender: where L1 landed on the company's past openings of the same
  * client and kind of work, against the SOR, and how the quote now on the tender would have stood on them. The figures
  * come from `GET /tenders/:id/past-openings`; nothing here is a rule of its own.
  */

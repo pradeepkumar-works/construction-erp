@@ -1,5 +1,5 @@
 /**
- * Demo weighbridge (item 148): the road site's weighbridge is read by the site office's Connector, and an order for 20 mm
+ * Demo weighbridge: the road site's weighbridge is read by the site office's Connector, and an order for 20 mm
  * aggregate comes in by truck. Three loads were weighed and received at their net weight, two of them short of their
  * challans (so the watch list names the supplier), one is weighed with its GRN still to make, one truck waits for its
  * second weight, and two weights on the bridge are on no ticket yet. Runs once per company (when it has no weighbridge).

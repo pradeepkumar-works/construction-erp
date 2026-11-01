@@ -26,7 +26,7 @@ const post = (token: string, path: string, body: unknown = {}) =>
   fetch(`${API_URL}${path}`, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 /**
- * Tender bidding (v6 item 110): the QS records a tender from Tenders, adds a bid item from the schedule of rates,
+ * Tender bidding: the QS records a tender from Tenders, adds a bid item from the schedule of rates,
  * quotes 2% below the SOR and records the bid submitted; the quote is the SOR value less 2%.
  */
 test('the QS records a tender, prices an item from the SOR, quotes below it and submits', async ({ page }) => {
@@ -37,13 +37,13 @@ test('the QS records a tender, prices an item from the SOR, quotes below it and 
   await signIn(page, 'qs@demo.com');
   await page.goto('/tenders');
   await expect(page.getByRole('heading', { level: 1, name: 'Tenders' })).toBeVisible();
-  await page.getByRole('button', { name: 'Record tender' }).first().click();
+  await page.getByRole('button', { name: 'New tender' }).first().click();
   const form = page.locator('.ant-drawer-open').filter({ hasText: 'New tender' });
   await form.getByLabel('Name of work').fill(title);
   await form.getByLabel('NIT number').fill('E2E/NIT/1');
   await form.getByLabel('Submit by').fill(typed(shift(today, 10)));
   await form.getByLabel('Submit by').press('Enter');
-  await form.getByRole('button', { name: 'Record tender' }).click();
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText(/Tender TND-\d{4}-\d{4} recorded: price its bid BOQ next/)).toBeVisible();
   await expect(page).toHaveURL(/\/tenders\/[0-9a-f-]{36}$/);
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();

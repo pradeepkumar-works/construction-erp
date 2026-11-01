@@ -35,7 +35,7 @@ const sum = (xs: Prisma.Decimal[]) => xs.reduce((a, b) => a.add(b), ZERO);
 const MAX_SEGMENTS = 2000;
 
 /**
- * Sector progress views (v4 item 41), built from approved and submitted progress entries: a chainage strip per
+ * Sector progress views, built from approved and submitted progress entries: a chainage strip per
  * activity for roads (and pipelines with a chainage range), a floor × activity matrix for buildings, and for water
  * supply a village × activity matrix with pipe ordered, supplied, laid and tested.
  */
@@ -65,7 +65,7 @@ export class SectorService {
     const approvedSum = (es: Entry[]) => sum(es.filter((e) => e.status === 'APPROVED').map((e) => e.quantity));
     const executed = new Map(activities.map((a) => [a.id, approvedSum(byActivity.get(a.id) ?? [])]));
 
-    // What the views draw follows the project's type (item 134): its places and its pipe network.
+    // What the views draw follows the project's type: its places and its pipe network.
     const features = (await this.types.featuresOf(project.organizationId, [project])).get(project.id)!;
     const k = sectorKinds({ type: project.type, locations: features.locations });
     const water = k.village;
@@ -90,12 +90,12 @@ export class SectorService {
             activityId: a.id,
             name: a.name,
             unit: a.unit,
-            plannedQty: dec(a.plannedQty)!,
-            executedQty: dec(executed.get(a.id)!)!,
+            plannedQty: dec(a.plannedQty),
+            executedQty: dec(executed.get(a.id)!),
             coveredM: covered,
             pendingM: all - covered,
-            unplacedQty: dec(approvedSum(es.filter((e) => e.chainageFrom === null)))!,
-            segments: placed.slice(0, MAX_SEGMENTS).map((e) => ({ ...seg(e), quantity: dec(e.quantity)!, status: e.status, date: dateOnly(e.date)!, entryId: e.id })),
+            unplacedQty: dec(approvedSum(es.filter((e) => e.chainageFrom === null))),
+            segments: placed.slice(0, MAX_SEGMENTS).map((e) => ({ ...seg(e), quantity: dec(e.quantity), status: e.status, date: dateOnly(e.date), entryId: e.id })),
           };
         });
     }
@@ -117,17 +117,17 @@ export class SectorService {
           cells.push({
             row,
             activityId: a.id,
-            approvedQty: dec(approvedSum(es))!,
-            pendingQty: dec(sum(es.filter((e) => e.status === 'SUBMITTED').map((e) => e.quantity)))!,
+            approvedQty: dec(approvedSum(es)),
+            pendingQty: dec(sum(es.filter((e) => e.status === 'SUBMITTED').map((e) => e.quantity))),
             lastDate: dateOnly(es[0].date),
           });
       }
       matrix = {
         rowLabel: water ? 'Village' : 'Floor',
         rows: [...listed, ...extra],
-        activities: used.map((a) => ({ id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty)!, executedQty: dec(executed.get(a.id)!)! })),
+        activities: used.map((a) => ({ id: a.id, name: a.name, unit: a.unit, plannedQty: dec(a.plannedQty), executedQty: dec(executed.get(a.id)!) })),
         cells,
-        unassigned: used.map((a) => ({ activityId: a.id, approvedQty: dec(approvedSum((byActivity.get(a.id) ?? []).filter((e) => !key(e))))! })).filter((u) => Number(u.approvedQty) !== 0),
+        unassigned: used.map((a) => ({ activityId: a.id, approvedQty: dec(approvedSum((byActivity.get(a.id) ?? []).filter((e) => !key(e)))) })).filter((u) => Number(u.approvedQty) !== 0),
       };
     }
 
@@ -143,17 +143,17 @@ export class SectorService {
       const villageNames = [...new Set([...project.villages, ...entries.map((e) => e.village).filter((v): v is string => !!v)])];
       const villages: VillagePipeline[] = villageNames.map((v) => ({
         village: v,
-        laidM: dec(sum(approvedOf('LAID').filter((e) => e.village === v).map((e) => e.quantity)))!,
-        testedM: dec(sum(approvedOf('TESTED').filter((e) => e.village === v).map((e) => e.quantity)))!,
+        laidM: dec(sum(approvedOf('LAID').filter((e) => e.village === v).map((e) => e.quantity))),
+        testedM: dec(sum(approvedOf('TESTED').filter((e) => e.village === v).map((e) => e.quantity))),
       }));
       pipeline = {
         stages: {
-          orderedM: dec(sum(poLines.filter((l) => isPipeItem(l.itemName, l.unit)).map((l) => l.quantity)))!,
+          orderedM: dec(sum(poLines.filter((l) => isPipeItem(l.itemName, l.unit)).map((l) => l.quantity))),
           // Returns to the supplier are stored negative.
-          suppliedM: dec(sum(receipts.filter((t) => isPipeItem(t.item.name, t.item.unit)).map((t) => t.quantity)))!,
-          laidM: dec(sum(approvedOf('LAID').map((e) => e.quantity)))!,
-          testedM: dec(sum(approvedOf('TESTED').map((e) => e.quantity)))!,
-          plannedM: dec(sum(laidActs.map((a) => a.plannedQty)))!,
+          suppliedM: dec(sum(receipts.filter((t) => isPipeItem(t.item.name, t.item.unit)).map((t) => t.quantity))),
+          laidM: dec(sum(approvedOf('LAID').map((e) => e.quantity))),
+          testedM: dec(sum(approvedOf('TESTED').map((e) => e.quantity))),
+          plannedM: dec(sum(laidActs.map((a) => a.plannedQty))),
         },
         villages,
       };

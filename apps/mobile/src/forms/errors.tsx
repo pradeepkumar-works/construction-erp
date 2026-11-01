@@ -6,7 +6,7 @@ import { useT } from '../i18n/LanguageContext';
 import { colors, maxFontScale, radius, spacing, typography } from '../theme';
 
 /**
- * After a failed submit (UX item 80): the form scrolls back to the top, where `ErrorSummary` lists what to fix, the
+ * After a failed submit: the form scrolls back to the top, where `ErrorSummary` lists what to fix, the
  * list is read aloud and the phone buzzes, because the Submit button sits at the bottom of a long form and the first
  * message is off screen. Pass `scrollRef` to the form's `Screen`.
  */

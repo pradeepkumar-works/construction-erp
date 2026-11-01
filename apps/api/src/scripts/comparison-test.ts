@@ -1,5 +1,5 @@
 /**
- * Subcontract enquiries' tests (v6 item 111): a quote's totals, the comparative statement (lowest rate per item, the
+ * Subcontract enquiries' tests: a quote's totals, the comparative statement (lowest rate per item, the
  * spread, complete quotes ranked with ties sharing a rank, the margin on the client's rates) and what stops an award
  * or a change to the items, with no database. CI runs it after the build:
  *

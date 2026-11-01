@@ -20,7 +20,7 @@ async function signInGuest(page: Page, email: string) {
 }
 
 /**
- * Client portal (v3 item 32): the client's engineer on the road project is told a bill was sent, certifies it with a cut
+ * Client portal: the client's engineer on the road project is told a bill was sent, certifies it with a cut
  * in the portal, and the QS hears of it; then they record attending an inspection the site requested. The rest of the
  * app stays closed to them.
  */
@@ -58,7 +58,7 @@ test('the client certifies a bill and attends an inspection in the portal', asyn
   await modal.getByLabel('Certificate no.').fill('EE/RD/PORTAL');
   await modal.getByLabel('Certified 3.02').fill('150');
   await modal.getByRole('button', { name: 'Certify' }).click();
-  await expect(page.getByText(new RegExp(`${bill.billLabel} certified: work value`))).toBeVisible();
+  await expect(page.getByText(new RegExp(`${bill.billLabel} certified: work done`))).toBeVisible();
 
   const qsNotes = await api<{ items: Note[] }>(qs, '/notifications?limit=20');
   expect(qsNotes.items.some((n) => n.type === 'PORTAL' && n.title === `${bill.billLabel} certified by the client` && n.entityId === bill.id)).toBe(true);

@@ -5,6 +5,9 @@ import { CALIBRATION_STATE_LABELS, QA_FREQUENCY_LABELS, QA_PLAN_SOURCE_LABELS, Q
 import { AppTag } from '@/components/common/AppTag';
 
 /** What a plan line covers, in words: "Work named concrete, rcc · M25" or "Cement received". */
+/** IS 456 clause 15.2.2 in words, for the quality plan and the pour register alike. */
+export const IS456_SAMPLING = 'one sample to 5 m³, two to 15, three to 30, four to 50, then one more for each 50 m³ (IS 456 clause 15.2.2)';
+
 export function lineCovers(l: Pick<QaPlanLineDef, 'source' | 'match' | 'grade' | 'itemCategory'>): string {
   const what = l.source === 'RECEIPT' ? [l.itemCategory, l.match && `named ${l.match}`].filter(Boolean).join(' or ') : `named ${l.match}`;
   return [`${QA_PLAN_SOURCE_LABELS[l.source]}: ${what}`, l.grade].filter(Boolean).join(' · ');

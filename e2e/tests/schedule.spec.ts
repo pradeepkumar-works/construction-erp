@@ -16,7 +16,7 @@ const iso = (offset: number) => {
 };
 const shown = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
-/** Gantt and baseline (v4 item 43): milestones on the road project, achieved from the Gantt tab. */
+/** Gantt and baseline: milestones on the road project, achieved from the Gantt tab. */
 test('the project manager adds a milestone and marks it achieved', async ({ page }) => {
   const pm = await apiToken('pm@demo.com');
   const road = (await api<{ items: { id: string; code: string }[] }>(pm, '/projects')).items.find((p) => p.code === 'RD-2026-01')!;
@@ -67,7 +67,7 @@ test('a frozen baseline shows how far the plan has moved since', async ({ page }
 
   await signIn(page, email);
   await page.goto(`/projects/${project.id}?tab=schedule`);
-  await page.locator('.baseline-info').getByRole('button', { name: 'Re-baseline' }).click();
+  await page.locator('.baseline-info').getByRole('button', { name: 'Replace baseline' }).click();
   const modal = page.locator('.ant-modal').filter({ hasText: 'Replace the baseline' });
   await modal.getByPlaceholder('Revised programme approved by the client').fill('Programme agreed at kick-off');
   await modal.getByRole('button', { name: 'Replace baseline' }).click();

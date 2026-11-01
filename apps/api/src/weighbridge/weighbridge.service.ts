@@ -35,7 +35,7 @@ const n = (v: Prisma.Decimal | null | undefined) => (v === null || v === undefin
 const DAY = 86_400_000;
 
 /**
- * Weighbridge (item 148, ARCHITECTURE "Weighbridge"): the weights the Connector reads from a site's indicator, and the
+ * Weighbridge (ARCHITECTURE "Weighbridge"): the weights the Connector reads from a site's indicator, and the
  * store's tickets, each a truck's first and second weight with the order and challan it brought. The net weight drafts
  * the GRN, which `StockService.receive` makes and ties to the ticket; short supply and the GRN against the net weight
  * are `shortSupply` and `grnAboveNet` (`@erp/shared/weighbridge.ts`).
@@ -82,7 +82,7 @@ export class WeighbridgeService {
       unit,
       challanNo: t.challanNo,
       challanQty: dec(t.challanQty),
-      first: { kg: dec(t.firstKg)!, at: t.firstAt.toISOString(), typed: !t.firstWeighingId && !t.cancelledAt },
+      first: { kg: dec(t.firstKg), at: t.firstAt.toISOString(), typed: !t.firstWeighingId && !t.cancelledAt },
       second: second === null || !t.secondAt ? null : { kg: dec(t.secondKg)!, at: t.secondAt.toISOString(), typed: !t.secondWeighingId && !t.cancelledAt },
       grossKg: net ? String(net.grossKg) : null,
       tareKg: net ? String(net.tareKg) : null,
@@ -133,7 +133,7 @@ export class WeighbridgeService {
     return {
       bridges,
       weighings: weighings.map(
-        (w): WeighingDto => ({ id: w.id, projectId: w.projectId, connectionId: w.connectionId, connectionName: w.connection.name, at: w.at.toISOString(), weightKg: dec(w.weightKg)!, stableSeconds: w.stableSeconds }),
+        (w): WeighingDto => ({ id: w.id, projectId: w.projectId, connectionId: w.connectionId, connectionName: w.connection.name, at: w.at.toISOString(), weightKg: dec(w.weightKg), stableSeconds: w.stableSeconds }),
       ),
       open: dtos.filter((t) => t.state === 'FIRST'),
       weighed: dtos.filter((t) => t.state === 'WEIGHED'),

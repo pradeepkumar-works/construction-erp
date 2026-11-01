@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AutoComplete, Button, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -9,7 +10,7 @@ import { STANDARD_DPR_FORM, WEATHER_LABELS, WEATHER_OPTIONS, dprLabel, dprMissin
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useAttendanceDay, useDpr, useDprList, useDprWorkOptions, useProjects } from '@/lib/queries';
+import { useAttendanceDay, useDpr, useDprList, useDprWorkOptions } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -35,18 +36,17 @@ interface FormValues {
   issues?: string;
   nextDayPlan?: string;
   photos?: AttachmentDto[];
-  /** The work done, line by line (item 127) */
+  /** The work done, line by line */
   lines?: DprLineValues[];
-  /** The day's fields of the company's own (item 134 part 2), by key */
+  /** The day's fields of the company's own, by key */
   extra?: Record<string, unknown>;
 }
 
 /** Create a DPR, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
-export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: DailyReportDto | null; /** Filled in by Ask Nirmaan from rough notes (AI item 71) */ prefill?: AiDraftDto | null }) {
+export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: DailyReportDto | null; /** Filled in by Ask Nirmaan from rough notes */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
   const draft = entry ? null : prefill;
@@ -63,7 +63,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
   const full = useDpr(open && entry && !entry.lines ? entry.id : undefined).data;
   const withLines = entry?.lines ? entry : full;
   const linesReady = !editing || !!withLines;
-  // The project type's form (item 134 part 2): a new report takes the type's latest, an edit keeps its own.
+  // The project type's form: a new report takes the type's latest, an edit keeps its own.
   const formDto = editing ? (withLines?.form ?? entry?.form) : options?.form;
   const def: DprFormDef = formDto?.def ?? STANDARD_DPR_FORM;
   const shows = (key: DprBuiltInKey) => dprShows(def, key, { progressFromDpr: options?.progressFromDpr });
@@ -96,7 +96,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
     setFilledFrom(attendanceSheet.id);
   }, [open, editing, attendanceSheet, manpowerEdited, filledFrom, form]);
 
-  // New DPR: what the gang and machines were on the project's previous report, said so, with Clear (UX item 79). The
+  // New DPR: what the gang and machines were on the project's previous report, said so, with Clear. The
   // day's attendance still wins for manpower.
   const prevDay = dayStr ? dayjs(dayStr).subtract(1, 'day').format('YYYY-MM-DD') : undefined;
   const previous = useDprList({ projectId: watchedProject, to: prevDay, pageSize: 1 }, open && !editing && !!watchedProject && !!prevDay).data?.items[0];
@@ -227,7 +227,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
       open={open}
       onClose={onClose}
       form={form}
-      title={entry ? `${editActionLabel(entry.status)} · DPR ${dayjs(entry.date).format('DD MMM YYYY')}` : 'New daily report'}
+      title={entry ? `${editActionLabel(entry.status)} · DPR ${formatDate(entry.date)}` : 'New daily report'}
       okText={editing ? 'Resubmit DPR' : 'Submit DPR'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing ? undefined : `dpr:${projectId ?? 'any'}`}
@@ -249,7 +249,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         )}
         <FormSection title="The day">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
           </Form.Item>
           <FormGrid cols={3}>
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the report' }]} {...aiFlagItem(draft, 'date', watchedDate)}>
@@ -288,7 +288,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           ) : null}
           <Form.Item
             name="workExecuted"
-            label={watchedLines?.some((l) => l?.activityId) ? 'Other work and notes' : 'Work executed'}
+            label={watchedLines?.some((l) => l?.activityId) ? 'Other work and notes' : 'Work done today'}
             extra={watchedLines?.some((l) => l?.activityId) ? 'Left empty, it is written from the lines.' : undefined}
             style={{ marginTop: 16 }}
             dependencies={['lines']}
@@ -306,7 +306,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
 
         {shows('manpower') || shows('machinery') ? (
           <FormSection
-            title="Manpower and machinery"
+            title="Labour and machinery"
             extra={
               !editing && attendanceSheet ? (
                 filledFrom === attendanceSheet.id && !manpowerEdited ? (
@@ -343,27 +343,27 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                 <Form.Item label={dprLabel(def, 'manpower')} required={dprRequires(def, 'manpower')}>
                   <LineTable
                     name="manpower"
-                    label="Manpower"
+                    label="Labour"
                     addText="Add category"
                     newLine={() => ({ count: 1 })}
                     columns={[
                       {
                         key: 'category',
-                        title: 'Category',
+                        title: 'Trade',
                         render: (f) => (
-                          <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: '' }]}>
-                            <Select style={{ width: '100%', minWidth: 120 }} placeholder="Category" aria-label={`Manpower category ${f.name + 1}`} options={def.lines.crewCategories.map((c) => ({ value: c, label: c }))} />
+                          <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: 'Choose the trade' }]}>
+                            <Select style={{ width: '100%', minWidth: 120 }} placeholder="Trade" aria-label={`Trade ${f.name + 1}`} options={def.lines.crewCategories.map((c) => ({ value: c, label: c }))} />
                           </Form.Item>
                         ),
                       },
                       {
                         key: 'count',
-                        title: 'Nos',
+                        title: 'Workers',
                         width: 90,
                         align: 'right',
                         render: (f) => (
-                          <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
-                            <InputNumber min={0} precision={0} placeholder="Nos" inputMode="numeric" aria-label={`Number of manpower category ${f.name + 1}`} style={{ width: '100%' }} />
+                          <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: 'Enter the number of workers' }]}>
+                            <InputNumber min={0} precision={0} placeholder="Workers" inputMode="numeric" aria-label={`Workers of trade ${f.name + 1}`} style={{ width: '100%' }} />
                           </Form.Item>
                         ),
                       },
@@ -381,10 +381,10 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                     columns={[
                       {
                         key: 'name',
-                        title: 'Equipment',
+                        title: 'Machine',
                         render: (f) => (
-                          <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: '' }]}>
-                            <AutoComplete placeholder="Equipment" aria-label={`Equipment ${f.name + 1}`} options={def.lines.machineNames.map((m) => ({ value: m }))} style={{ width: '100%', minWidth: 120 }} />
+                          <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: 'Enter the machine' }]}>
+                            <AutoComplete placeholder="Machine" aria-label={`Machine ${f.name + 1}`} options={def.lines.machineNames.map((m) => ({ value: m }))} style={{ width: '100%', minWidth: 120 }} />
                           </Form.Item>
                         ),
                       },
@@ -394,8 +394,8 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                         width: 90,
                         align: 'right',
                         render: (f) => (
-                          <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: '' }]}>
-                            <InputNumber min={0} max={24} placeholder="Hrs" inputMode="decimal" aria-label={`Hours of equipment ${f.name + 1}`} style={{ width: '100%' }} />
+                          <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: 'Enter the hours' }]}>
+                            <InputNumber min={0} max={24} placeholder="Hours" inputMode="decimal" aria-label={`Hours of machine ${f.name + 1}`} style={{ width: '100%' }} />
                           </Form.Item>
                         ),
                       },

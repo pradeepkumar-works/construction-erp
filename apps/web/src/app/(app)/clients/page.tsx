@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, Space, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
+import { PlusOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientDto } from '@erp/shared';
 import { GST_STATES, canEditContract } from '@erp/shared';
@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useClientsPage } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -19,7 +19,8 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { ClientFormModal } from '@/components/clients/ClientFormModal';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { MoreActions } from '@/components/record/MoreActions';
 
 type ClientSortField = 'name' | 'createdAt';
 const KEYS = ['inactive'] as const;
@@ -33,6 +34,7 @@ export default function ClientsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<ClientDto | null>(null);
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const [adding, setAdding] = useState(false);
   const editable = !!user && canEditContract(user.roleKey);
 
@@ -67,15 +69,15 @@ export default function ClientsPage() {
           </div>
         ),
       },
-      { key: 'gstin', title: 'GSTIN', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
-      { key: 'stateCode', title: 'State', dataIndex: 'stateCode', width: 170, render: (v: string | null) => (v ? `${v} ${GST_STATES[v] ?? ''}` : '-') },
+      { key: 'gstin', title: 'GSTIN', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : NO_VALUE) },
+      { key: 'stateCode', title: 'State', dataIndex: 'stateCode', width: 170, render: (v: string | null) => (v ? `${v} ${GST_STATES[v] ?? ''}` : NO_VALUE) },
       {
         title: 'Contact',
         key: 'contact',
         render: (_, c) => (
           <div>
             {c.contactPerson && <div>{c.contactPerson}</div>}
-            <Sub>{[c.phone, c.email].filter(Boolean).join(' · ') || (c.contactPerson ? '' : '-')}</Sub>
+            <Sub>{[c.phone, c.email].filter(Boolean).join(' · ') || (c.contactPerson ? '' : NO_VALUE)}</Sub>
           </div>
         ),
       },
@@ -90,14 +92,13 @@ export default function ClientsPage() {
               locked: true,
               width: 96,
               render: (_: unknown, c: ClientDto) => (
-                <Space size={4}>
-                  <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)} />
-                  {c.projectCount === 0 ? (
-                    <ConfirmDelete what={`client ${c.name}`} onConfirm={() => remove.mutateAsync(c.id)}>
-                      <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${c.name}`} />
-                    </ConfirmDelete>
-                  ) : null}
-                </Space>
+                <MoreActions inRow
+                  label={`Actions for ${c.name}`}
+                  items={[
+                    { key: 'edit', label: 'Edit', onSelect: () => setEditing(c) },
+                    ...(c.projectCount === 0 ? [{ key: 'delete', label: 'Delete', danger: true, onSelect: () => askDelete({ what: `client ${c.name}`, onConfirm: () => remove.mutateAsync(c.id) }) }] : []),
+                  ]}
+                />
               ),
             } satisfies ListColumn<ClientDto>,
           ]
@@ -147,6 +148,7 @@ export default function ClientsPage() {
           emptyAction={newButton}
         />
       </Card>
+      {deleteDialog}
       <ClientFormModal
         open={adding || !!editing}
         client={editing}

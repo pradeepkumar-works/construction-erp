@@ -68,7 +68,7 @@ export function monthElapsed(month: string, today = dayjs().format('YYYY-MM-DD')
 
 /**
  * Last six months of a series into a tile's trend: this month on last month. Last month is no base to compare with
- * when it was nil or under a tenth of the best month before it (UX item 85), so no percentage is shown then.
+ * when it was nil or under a tenth of the best month before it, so no percentage is shown then.
  */
 export function trendOf(series: (string | number)[], months: string[], upIsGood = true, today?: string): Trend {
   const values = series.map(Number);
@@ -87,7 +87,7 @@ export function trendOf(series: (string | number)[], months: string[], upIsGood 
 }
 
 /**
- * Whether a trend is bad news worth colour (UX items 82 and 85): a move the wrong way of 10% or more. A fall in a month
+ * Whether a trend is bad news worth colour: a move the wrong way of 10% or more. A fall in a month
  * still under way counts only when it is 10% or more behind last month's pace too, so the 3rd of the month is no alarm.
  */
 export function isBadTrend(t: Trend): boolean {
@@ -101,13 +101,13 @@ export function isBadTrend(t: Trend): boolean {
 
 /**
  * One KPI card: the figure keeps the card's full width and the tile's icon sits, plain and grey, in the top right
- * corner. With a trend it shows this month against last and a six-month sparkline (UI roadmap item 59). The page lays
+ * corner. With a trend it shows this month against last and a six-month sparkline. The page lays
  * the tiles out in even rows (see `kpiColumns`), and every card stretches to the tallest so a row reads as one band.
  */
 export function KpiTile({ href, icon, trend, children }: { href?: string; icon?: React.ReactNode; trend?: Trend; children: React.ReactNode }) {
   const { token } = theme.useToken();
   const delta = trend?.deltaPct ?? null;
-  // Colour marks an exception only (UX items 82 and 85): see `isBadTrend`. A rise, a small dip or a slow start stay neutral.
+  // Colour marks an exception only: see `isBadTrend`. A rise, a small dip or a slow start stay neutral.
   const bad = !!trend && isBadTrend(trend);
   const soFar = !!trend && trend.elapsed < 1 && delta !== null && delta < 0 ? ' so far' : '';
   const card = (

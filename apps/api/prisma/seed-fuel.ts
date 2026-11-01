@@ -1,5 +1,5 @@
 /**
- * Demo fuel sensors and dispenser (item 147): the excavator's tracker reads its 300-litre tank, and the road site's
+ * Demo fuel sensors and dispenser: the excavator's tracker reads its 300-litre tank, and the road site's
  * diesel dispenser posts its fills. Each morning before work the tank is filled at the dispenser, which makes the
  * day's fuel slip, except on the two latest days, whose slips the store wrote by hand. Three days ago 120 litres went
  * in with no slip at all, and two days ago 45 litres were drained at night with the engine off, so the Engine hours

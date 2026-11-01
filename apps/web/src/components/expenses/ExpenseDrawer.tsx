@@ -5,7 +5,7 @@ import { Typography } from 'antd';
 import type { ExpenseDto } from '@erp/shared';
 import { EXPENSE_CATEGORY_LABELS, PAYMENT_MODE_LABELS } from '@erp/shared';
 import { useExpense } from '@/lib/queries';
-import { formatDate, formatINR, formatPct } from '@/lib/format';
+import { formatDate, formatINR, formatPct, NO_VALUE } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -40,20 +40,20 @@ export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps &
       record={
         data && {
           href: `/expenses/${data.id}`,
-          title: `Site expense · ${data.expenseNo}`,
+          title: `${data.expenseNo} · ${data.description}`,
           tags: <StatusTag status={data.status} />,
           facts: [
             { key: 'desc', label: 'Expense', children: data.description },
             { key: 'date', label: 'Date', children: formatDate(data.date) },
             { key: 'cat', label: 'Category', children: EXPENSE_CATEGORY_LABELS[data.category] },
-            { key: 'vendor', label: 'Vendor', children: data.vendor ?? '-' },
-            { key: 'gstin', label: 'Vendor GSTIN', children: data.vendorGstin ? <span translate="no">{data.vendorGstin}</span> : '-' },
-            { key: 'bill', label: 'Bill no.', children: data.billNo ?? '-' },
+            { key: 'vendor', label: 'Vendor', children: data.vendor ?? NO_VALUE },
+            { key: 'gstin', label: 'Vendor GSTIN', children: data.vendorGstin ? <span translate="no">{data.vendorGstin}</span> : NO_VALUE },
+            { key: 'bill', label: 'Bill no.', children: data.billNo ?? NO_VALUE },
             { key: 'mode', label: 'Paid by', children: PAYMENT_MODE_LABELS[data.paymentMode] },
             { key: 'amount', label: 'Taxable value', children: <span className="mono" translate="no">{formatINR(data.amount, true)}</span> },
             { key: 'gst', label: `GST (${formatPct(data.gstRate)})`, children: <span className="mono" translate="no">{formatINR(data.gstAmount, true)}</span> },
             { key: 'total', label: 'Total', children: <strong className="mono" translate="no">{formatINR(data.totalAmount, true)}</strong> },
-            { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
+            { key: 'activity', label: 'Activity', children: data.activityName ?? NO_VALUE },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],
           lifecycle: submissionLifecycle(data),

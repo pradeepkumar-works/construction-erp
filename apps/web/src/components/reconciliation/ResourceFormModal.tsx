@@ -17,7 +17,7 @@ interface Values {
 const PER: Record<BoqResourceKind, string> = { LABOUR: 'Man-days', EQUIPMENT: 'Machine hours' };
 
 /**
- * Add or change a labour or machine line of a BOQ item's rate analysis (v5 item 92). The name is a trade, as labour
+ * Add or change a labour or machine line of a BOQ item's rate analysis. The name is a trade, as labour
  * rates are kept, or an equipment category, so the estimate can price it.
  */
 export function ResourceFormModal({

@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto, VendorBillKind } from '@erp/shared';
-import { GST_RATES, readNumber, readText } from '@erp/shared';
+import { GST_RATES, readNumber, readText, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { usePurchaseOrder, usePurchaseOrders } from '@/lib/queries';
@@ -53,7 +53,7 @@ export function VendorBillFormModal({
   open: boolean;
   bill?: VendorBillDto | null;
   purchaseOrderId?: string;
-  /** A supplier's invoice from the portal (v6 item 105): its number and date start the bill */
+  /** A supplier's invoice from the portal: its number and date start the bill */
   fromInvoice?: { invoiceNo: string; invoiceDate: string } | null;
   onClose: () => void;
   onSaved?: (b: VendorBillDto) => void;
@@ -68,13 +68,13 @@ export function VendorBillFormModal({
   const poId = bill?.purchaseOrderId ?? purchaseOrderId ?? watchedPo ?? undefined;
   const orders = usePurchaseOrders({ status: 'APPROVED', pageSize: 100, sortBy: 'poDate', sortOrder: 'desc' }, open && !bill && !purchaseOrderId);
   const { data: po, isLoading: poLoading } = usePurchaseOrder(open ? poId : undefined);
-  // Advance paid on the PO and not yet taken off its other bills (v5 item 90): this bill may adjust up to that.
+  // Advance paid on the PO and not yet taken off its other bills: this bill may adjust up to that.
   const advanceAvailable = bill ? toNumber(bill.poAdvanceAvailable) : po ? Math.max(toNumber(po.advancePaid) - toNumber(po.advanceAdjusted), 0) : 0;
   const [lines, setLines] = useState<Record<string, LineValue>>({});
-  // A scanned invoice read to fill the form (AI item 70): what came back, the line values waiting for its PO to load,
+  // A scanned invoice read to fill the form: what came back, the line values waiting for its PO to load,
   // and the field whose place on the page is shown.
   const [readState, setReadState] = useState<ReadState | null>(null);
-  // The invoice scan is kept on the bill, so nobody picks the same file twice (finding 13 of the October review).
+  // The invoice scan is kept on the bill, so nobody picks the same file twice.
   const keepScan = useKeepReadFile(form, 'docs');
   const [activeRead, setActiveRead] = useState<string | null>(null);
   const pendingLines = useRef<{ poId: string; lines: Record<string, LineValue> } | null>(null);
@@ -134,7 +134,7 @@ export function VendorBillFormModal({
       const v = lines[l.id];
       if (!v || !toNumber(v.quantity)) continue;
       const open = toNumber(l.receivedQty) - billedElsewhere(l);
-      if (toNumber(v.quantity) > open + 1e-9) out.push(`${l.itemName}: ${formatQty(v.quantity)} ${l.unit} billed, ${formatQty(Math.max(0, open))} received and not yet billed`);
+      if (toNumber(v.quantity) > open + 1e-9) out.push(`${l.itemName}: ${formatQty(v.quantity)} ${unitLabel(l.unit)} billed, ${formatQty(Math.max(0, open))} received and not yet billed`);
       if (toNumber(v.rate) > toNumber(l.rate)) out.push(`${l.itemName}: rate above the PO's ${formatINR(l.rate, true)}`);
       if (toNumber(v.gstRate) !== toNumber(l.gstRate)) out.push(`${l.itemName}: GST ${v.gstRate}% where the PO has ${l.gstRate}%`);
     }
@@ -190,7 +190,7 @@ export function VendorBillFormModal({
     return i >= 0 && readState!.result.lines[i][key]?.confidence === 'low';
   };
   const unmatched = readState ? readState.result.lines.filter((_, i) => !readState.result.match?.lines[i]) : [];
-  // A date the invoice cannot carry is left for accounts to type, in amber (finding 13 of the October review).
+  // A date the invoice cannot carry is left for accounts to type, in amber.
   const dateProblem = readDateReason(readText(readState?.result.fields.invoiceDate));
   const printedTotal = readState ? readNumber(readState.result.fields.total) : null;
 
@@ -235,7 +235,7 @@ export function VendorBillFormModal({
       allValues
       title={bill ? `Edit ${bill.billNo}` : 'Record vendor bill'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       okDisabled={!po}
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
     >
@@ -266,7 +266,7 @@ export function VendorBillFormModal({
         ) : null}
         <FormSection title="Invoice">
           <FormGrid cols={4}>
-            <Form.Item name="purchaseOrderId" label="Purchase order" rules={[{ required: true, message: 'Pick the PO this invoice is for' }]}>
+            <Form.Item name="purchaseOrderId" label="Purchase order" rules={[{ required: true, message: 'Choose the PO this invoice is for' }]}>
               {bill || purchaseOrderId ? (
                 <Select disabled options={po ? [{ value: po.id, label: `${po.poNo} · ${po.vendorName}` }] : []} />
               ) : (
@@ -282,7 +282,7 @@ export function VendorBillFormModal({
             <Form.Item name="invoiceNo" label="Vendor's invoice no." rules={[{ required: true, whitespace: true, message: 'Enter the invoice number' }]} {...readFieldProps(readState, 'invoiceNo', setActiveRead)}>
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead, dateProblem)}>
+            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Choose the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead, dateProblem)}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="freight" label="Freight" extra={po && toNumber(po.freight) > 0 ? `PO freight ${formatINR(po.freight, true)}` : undefined} {...readFieldProps(readState, 'freight', setActiveRead)}>
@@ -327,7 +327,7 @@ export function VendorBillFormModal({
                     );
                   },
                 },
-                { title: 'Ordered', dataIndex: 'quantity', width: 100, align: 'right', render: (v, l) => `${formatQty(v)} ${l.unit}` },
+                { title: 'Ordered', dataIndex: 'quantity', width: 100, align: 'right', render: (v, l) => `${formatQty(v)} ${unitLabel(l.unit)}` },
                 { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => formatQty(v) },
                 { title: 'Billed before', key: 'billed', width: 100, align: 'right', render: (_, l) => formatQty(billedElsewhere(l)) },
                 {
@@ -375,7 +375,7 @@ export function VendorBillFormModal({
               ]}
             />
           ) : (
-            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Pick the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
+            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Choose the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
           )}
         </FormSection>
         {po && (
@@ -458,7 +458,7 @@ export function VendorBillFormModal({
 }
 
 /**
- * Record or edit a vendor bill of any kind (v5 item 91): against a PO here, or a hire, workshop or other bill in
+ * Record or edit a vendor bill of any kind: against a PO here, or a hire, workshop or other bill in
  * `OtherBillFormModal`. An edited bill opens the form of its own kind.
  */
 export function VendorBillForm({

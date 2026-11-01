@@ -3,7 +3,7 @@ import type { DailyReportDto, DprFormVersionsDto } from '../../packages/shared/s
 import { API_URL, api, apiToken, chooseOption, formPanel, PASSWORD, settle, signIn } from './helpers';
 
 /**
- * The DPR form per project type (item 134 part 2, ARCHITECTURE "DPR form per project type"): an admin adds a field of
+ * The DPR form per project type (ARCHITECTURE "DPR form per project type"): an admin adds a field of
  * the company's own to the road's form, the site's report asks for it and refuses to go without it, the record shows
  * it, and the report keeps its version when the form goes back to standard. A fresh company keeps the demo data as it is.
  */
@@ -42,7 +42,7 @@ test('a field of the company’s own on the road’s DPR form, and a report keep
   const form = formPanel(page, 'New daily report');
   await chooseOption(form.getByLabel('Project', { exact: true }), 'E2E diaphragm wall road');
   await expect(form.getByLabel('Slurry level')).toBeVisible();
-  await form.getByLabel('Work executed').fill('Guide walls cast for panels 4 to 6');
+  await form.getByLabel('Work done today').fill('Guide walls cast for panels 4 to 6');
   await form.getByRole('button', { name: 'Submit DPR' }).click();
   await expect(form.getByText('Fill in Slurry level', { exact: true })).toBeVisible();
   const refused = await fetch(`${API_URL}/dpr`, {

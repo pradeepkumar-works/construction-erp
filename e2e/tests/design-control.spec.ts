@@ -8,7 +8,7 @@ type Doc = { id: string };
 type Dashboard = { totals: { copiesToRecall: number }; projects: { projectId: string; copiesToRecall: number }[] };
 
 /**
- * Design and drawings part 3 (item 138): the document controller issues numbered copies of a drawing good for
+ * Design and drawings part 3: the document controller issues numbered copies of a drawing good for
  * construction; a revision for approval cannot be issued; a new revision puts the old copies to recall and the revision
  * impact says so; the holder gets the new revision under the same number, the old print is taken back; the dashboard
  * counts the copies out; a site engineer cannot issue copies; the pages open.

@@ -5,7 +5,7 @@ import { Touchable } from '../components/Touchable';
 import { LANGUAGES, useLanguage } from './LanguageContext';
 
 /**
- * English / हिन्दी before signing in (UX item 80), on the intro and the sign-in screen, so a Hindi reader never has to
+ * English / हिन्दी before signing in, on the intro and the sign-in screen, so a Hindi reader never has to
  * find Profile in English first. Each language is written in its own script.
  */
 export function LanguageSwitch() {

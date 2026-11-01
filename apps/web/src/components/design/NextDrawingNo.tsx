@@ -7,7 +7,7 @@ import { api, errorMessage } from '@/lib/api';
 
 /**
  * Fills the number box with the next number in the company's scheme (project, discipline, serial: "BLD-2026-02-STR-007"),
- * on a tap, for a new drawing in the register or the schedule (item 138).
+ * on a tap, for a new drawing in the register or the schedule.
  */
 export function NextDrawingNo({ form, projectId }: { form: FormInstance; projectId?: string }) {
   const { message } = App.useApp();
