@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Card, Progress, Select, theme } from 'antd';
+import { Badge, Button, Card, Select, theme } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
 import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canManageProjects, isGuest } from '@erp/shared';
@@ -13,7 +13,7 @@ import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PROJECT_EXPORT } from '@/lib/exportColumns';
 import { ExportButton } from '@/components/common/ExportButton';
 import { useAuth } from '@/lib/auth';
-import { formatDate, formatINR, progressStatus, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -23,6 +23,7 @@ import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
+import { ProgressAgainstPlan } from '@/components/modules/ProjectProgress';
 import { BRAND } from '@/lib/brand';
 
 const KEYS = ['status', 'type'] as const;
@@ -66,7 +67,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
       ...sort('contractValue'),
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.contractValue), 0)),
     },
-    { key: 'physicalProgressPct', title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} aria-label={`${Math.round(v * 10) / 10}% done`} /> },
+    { key: 'physicalProgressPct', title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number, r) => <ProgressAgainstPlan pct={v} planned={r.plannedProgressPct} /> },
     { title: 'Start date', label: 'Start date', dataIndex: 'startDate', width: 120, defaultHidden: true, render: (v) => formatDate(v), ...sort('startDate') },
     { card: 'date', title: 'Completion date', label: 'Completion date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
     {

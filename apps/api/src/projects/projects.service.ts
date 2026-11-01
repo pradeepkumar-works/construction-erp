@@ -24,7 +24,8 @@ import {
   type CheckLevel,
 } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
-import { physicalProgress } from '../common/progress';
+import { physicalProgress, plannedProgress } from '../common/progress';
+import { todayIn } from '../notifications/time';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -85,7 +86,7 @@ export class ProjectsService {
     const [activities, elements, executed, progress, dprs, mrs, variations] = await Promise.all([
       this.prisma.activity.findMany({
         where: { projectId: { in: ids } },
-        select: { id: true, projectId: true, plannedQty: true, workElementId: true, parentActivityId: true, weightPct: true, boqItem: { select: { rate: true } } },
+        select: { id: true, projectId: true, plannedQty: true, plannedStart: true, plannedEnd: true, boqItemId: true, workElementId: true, parentActivityId: true, weightPct: true, boqItem: { select: { rate: true } } },
       }),
       this.prisma.workElement.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, parentId: true, weightPct: true } }),
       this.prisma.progressEntry.groupBy({ by: ['activityId'], where: { activity: { projectId: { in: ids } }, status: 'APPROVED' }, _sum: { quantity: true } }),
@@ -104,6 +105,16 @@ export class ProjectsService {
     const pending = new Map<string, number>();
     for (const g of [...progress, ...dprs, ...mrs]) pending.set(g.projectId, (pending.get(g.projectId) ?? 0) + g._count._all);
     const varied = new Map(variations.map((v) => [v.projectId, v._sum.approvedAmount]));
+    // Planned by today as the Projects screen reads it (ModuleHomeService.progress): the leaf activities, weighted by BOQ rate
+    const parents = new Set(activities.map((a) => a.parentActivityId).filter(Boolean));
+    const rates = new Map(activities.filter((a) => a.boqItemId && a.boqItem).map((a) => [a.boqItemId!, new Prisma.Decimal(a.boqItem!.rate)]));
+    const today = todayIn();
+    const plannedOf = (id: string) =>
+      plannedProgress(
+        (byProject.get(id) ?? []).filter((a) => !parents.has(a.id)).map((a) => ({ plannedQty: a.plannedQty.toString(), boqItemId: a.boqItemId, plannedStart: dateOnly(a.plannedStart), plannedEnd: dateOnly(a.plannedEnd) })),
+        rates,
+        today,
+      );
     const types = await this.types.featuresOf(rows[0]?.organizationId ?? '', rows);
     return rows.map((p) => ({
       id: p.id,
@@ -127,6 +138,7 @@ export class ProjectsService {
         (byProject.get(p.id) ?? []).map((a) => ({ ...a, rate: a.boqItem?.rate ?? null, executed: done.get(a.id) ?? new Prisma.Decimal(0) })),
         elementsOf.get(p.id) ?? [],
       ),
+      plannedProgressPct: plannedOf(p.id),
       pendingApprovals: pending.get(p.id) ?? 0,
     }));
   }

@@ -30,7 +30,7 @@ import { invoiceOf, RECEIPT_SUMS, settlement } from '../receivables/bill-settlem
 import { BudgetService } from '../cost/budget.service';
 import { CostService, total } from '../cost/cost.service';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
-import { plannedProgress } from '../dashboard/dashboard.service';
+import { plannedProgress } from '../common/progress';
 import { approvalAgeing, byUrgency, contractWorkDone, daysBetween, forecastCost, healthOf, lastMonths, paidWork, pctOf, scheduleOf, unbilledDays, workDoneValue } from './management-rules';
 
 const N = (v: Prisma.Decimal | number | string | null | undefined) => Number(v ?? 0);

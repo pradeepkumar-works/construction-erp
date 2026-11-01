@@ -58,6 +58,21 @@ function MeterLine({ label, pct, color, planned }: { label: string; pct: number 
   );
 }
 
+/** Physical progress in a list's cell: the meter with the tick where the plan stands today, and the figure. */
+export function ProgressAgainstPlan({ pct, planned }: { pct: number; planned: number | null }) {
+  const { token } = theme.useToken();
+  const colors = useProgressColors();
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 44px', alignItems: 'center', gap: token.marginXS }}>
+      <Meter pct={pct} color={colors.physical} planned={planned} />
+      <span className="mono" translate="no" style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+        {formatPct(pct)}
+        <span className="visually-hidden">{planned === null ? ' done' : ` done, ${formatPct(planned)} planned by today`}</span>
+      </span>
+    </div>
+  );
+}
+
 /** What the two bars stand for, said once above them. */
 function Legend({ seesFinancial }: { seesFinancial: boolean }) {
   const { token } = theme.useToken();
