@@ -53,7 +53,7 @@ export async function deductedByObligation(tx: Prisma.TransactionClient, where: 
   return out;
 }
 
-const toDto = (l: ObligationBillLine): ObligationBillLineDto => ({ ...l, upto: money(l.upto)!, previous: money(l.previous)!, amount: money(l.amount)! });
+const toDto = (l: ObligationBillLine): ObligationBillLineDto => ({ ...l, upto: money(l.upto), previous: money(l.previous), amount: money(l.amount) });
 
 /** A works bill's recovery lines and their total, priced at the bill's date against the contract value. */
 export async function obligationRecovery(tx: Prisma.TransactionClient, bill: { projectId: string; billNo: number; billDate: Date }, contractValue: Prisma.Decimal | null) {
@@ -69,7 +69,7 @@ export async function obligationRecovery(tx: Prisma.TransactionClient, bill: { p
       const terms = termsOf(o);
       return { ...terms, id: o.id, title: o.title, clause: o.clause, due: obligationDue(terms, anchors) };
     }),
-    dateOnly(bill.billDate)!,
+    dateOnly(bill.billDate),
     Number(contractValue ?? 0),
     previous,
   );
