@@ -10,6 +10,7 @@ import { RFI_PRIORITIES, RFI_PRIORITY_LABELS, rfiReplyBy } from '@erp/shared';
 import { useBoq, useCreateRfi, useDocuments, useProjects, useUpdateRfi } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { todayDate } from '@/lib/format';
 
 interface FormValues {
   projectId: string;
@@ -83,7 +84,7 @@ export function RfiFormModal({
         files: rfi.attachments,
       });
     else {
-      const today = dayjs().format('YYYY-MM-DD');
+      const today = todayDate();
       form.setFieldsValue({ projectId: fixedProject, priority: 'NORMAL', raisedOn: dayjs(today), replyBy: dayjs(rfiReplyBy(today, 'NORMAL')), documentId: defaultDocumentId, impacts: [], ...defaults });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- defaults are read when the form opens, not followed

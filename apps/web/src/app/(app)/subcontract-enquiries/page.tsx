@@ -11,7 +11,7 @@ import { useScEnquiries } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
 import { useNewIntent } from '@/lib/new-intent';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE, todayDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -27,7 +27,6 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
   { value: 'all', label: 'All enquiries' },
 ];
-const today = () => new Date().toLocaleDateString('en-CA');
 
 /**
  * Subcontract enquiries: work sent to several subcontractors to quote, the quotes compared and the chosen
@@ -85,7 +84,7 @@ function ScEnquiriesPage() {
         r.closesOn ? (
           <div>
             <span translate="no">{formatDate(r.closesOn)}</span>
-            {r.status === 'OPEN' && r.closesOn < today() ? <div><AppTag tone="pending">Past last day</AppTag></div> : null}
+            {r.status === 'OPEN' && r.closesOn < todayDate() ? <div><AppTag tone="pending">Past last day</AppTag></div> : null}
           </div>
         ) : (
           NO_VALUE

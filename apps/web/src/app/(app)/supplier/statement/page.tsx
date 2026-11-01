@@ -8,7 +8,7 @@ import { AppTabs } from '@/components/common/AppTabs';
 import dayjs, { type Dayjs } from 'dayjs';
 import { PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, type PaymentMode, SUPPLIER_STATEMENT_KIND_LABELS, type SupplierBillDto, type SupplierPaymentDto, type SupplierStatementRowDto } from '@erp/shared';
 import { useSupplierStatement } from '@/lib/queries';
-import { formatDate, formatINR, STATUS_COLORS, toNumber, NO_VALUE } from '@/lib/format';
+import { formatDate, formatINR, STATUS_COLORS, toNumber, NO_VALUE, todayDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Money } from '@/components/supplier/supplierUi';
@@ -29,7 +29,7 @@ export default function SupplierStatementPage() {
   // Only an approved bill is owed; one still with the approvers shows in the list without counting.
   const approved = data?.bills.filter((b) => b.status === 'APPROVED') ?? [];
   const due = approved.reduce((s, b) => s + toNumber(b.due), 0);
-  const overdue = approved.filter((b) => b.dueDate < dayjs().format('YYYY-MM-DD')).reduce((s, b) => s + toNumber(b.due), 0);
+  const overdue = approved.filter((b) => b.dueDate < todayDate()).reduce((s, b) => s + toNumber(b.due), 0);
   return (
     <div className="page-container">
       <PageHeader
@@ -94,7 +94,7 @@ function Rows({ rows }: { rows: SupplierStatementRowDto[] }) {
 }
 
 function Bills({ bills }: { bills: SupplierBillDto[] }) {
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = todayDate();
   return (
     <Table<SupplierBillDto>
       rowKey="id"

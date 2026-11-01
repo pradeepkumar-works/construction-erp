@@ -16,7 +16,7 @@ import {
 import { AppTag } from '@/components/common/AppTag';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
-import { PROJECT_STATUS_COLORS } from '@/lib/format';
+import { PROJECT_STATUS_COLORS, plural } from '@/lib/format';
 import { useApplyTypeUpdates, useTypeUpdates } from '@/lib/queries';
 
 /** Per project: whether it is updated, and what of its plan is left out. */
@@ -26,7 +26,6 @@ interface Values {
   choice: Choice;
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const sizeText = (p: ProjectUpdatePlan) => {
   const s = planSize(p);
   return [s.components ? plural(s.components, 'component') : null, s.activities ? plural(s.activities, 'activity', 'activities') : null].filter(Boolean).join(' and ') || 'nothing';

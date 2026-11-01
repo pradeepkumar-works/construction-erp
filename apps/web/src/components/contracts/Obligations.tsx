@@ -23,7 +23,7 @@ import {
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useContractObligations } from '@/lib/queries';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, todayDate } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTag, toneOf } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -228,7 +228,7 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
                         ],
                         onClick: ({ key: k }) => {
                           if (k === 'edit') setEditing(o);
-                          if (k === 'met') patch.mutate({ id: o.id, body: { metOn: dayjs().format('YYYY-MM-DD') } });
+                          if (k === 'met') patch.mutate({ id: o.id, body: { metOn: todayDate() } });
                           if (k === 'waive') patch.mutate({ id: o.id, body: { waived: true } });
                           if (k === 'reopen') patch.mutate({ id: o.id, body: { metOn: null } });
                           if (k === 'delete')

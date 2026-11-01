@@ -87,6 +87,12 @@ export function formatBytes(value: number | null | undefined): string {
   return `${(value / 1024 ** 3).toFixed(1)} GB`;
 }
 
+/** Today as YYYY-MM-DD in India, the day the API counts by (`todayIn`), whatever the browser's own time zone. */
+export const todayDate = (): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+
+/** "1 bill", "3 bills"; `many` for a plural that is not `one` + s ("activity", "activities"). */
+export const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return NO_VALUE;
   const d = dayjs(value);

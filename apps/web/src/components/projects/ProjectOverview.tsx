@@ -10,7 +10,7 @@ import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
 import { canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProjectCost, useProjectDashboard } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, formatPct, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, formatPct, formatQty, toNumber, plural } from '@/lib/format';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
 import { FigureBlock, Section } from '@/components/common/Section';
@@ -18,7 +18,6 @@ import { MembersCard } from './MembersCard';
 import { ProjectSetup } from './ProjectSetup';
 import { scheduleStatus, type ScheduleStatus } from './ProjectHealth';
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** "8 months left", "12 days left", "ended 3 days ago" */
 function timeLeft(end: string | null): string | null {

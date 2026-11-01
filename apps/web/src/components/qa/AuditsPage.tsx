@@ -29,7 +29,7 @@ import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useProject, useQaAudit, useQaAudits } from '@/lib/queries';
 import { useUrlParam } from '@/lib/url-state';
-import { formatDate } from '@/lib/format';
+import { formatDate, todayDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AppTag } from '@/components/common/AppTag';
@@ -122,7 +122,7 @@ function AuditFormDrawer({ open, onClose, audit, projectId, onSaved }: { open: b
         findings: (v.findings ?? []).map((f) => ({ id: f.id, text: f.text, severity: f.severity, dueOn: f.dueOn ? f.dueOn.format('YYYY-MM-DD') : null })),
         attachmentIds: (v.photos ?? []).map((a) => a.id),
       };
-      const problem = auditProblem(body, dayjs().format('YYYY-MM-DD'));
+      const problem = auditProblem(body, todayDate());
       if (problem) throw new Error(problem);
       return (audit ? await api.put<QaAuditDto>(`/qa/audits/${audit.id}`, body) : await api.post<QaAuditDto>('/qa/audits', body)).data;
     },

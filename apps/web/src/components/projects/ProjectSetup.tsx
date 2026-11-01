@@ -7,10 +7,9 @@ import { CheckCircleOutlined, ExclamationCircleOutlined } from '@/components/com
 import { sectorStepOf, type ProjectDetail, type ProjectSetupDto, type SetupStepDto } from '@erp/shared';
 import { useHideProjectSetup, useProjectSetup } from '@/lib/queries';
 import { useNotify } from '@/lib/notify';
-import { formatINRCompact } from '@/lib/format';
+import { formatINRCompact, plural } from '@/lib/format';
 import { Section } from '@/components/common/Section';
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
 
 /** What a step asks for, and what is left or done, in words. */

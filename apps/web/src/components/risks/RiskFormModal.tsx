@@ -14,6 +14,7 @@ import { useActivities, useProject, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { LEVEL_TAG, RATING_OPTIONS } from './riskUi';
 import { themeColor, themeFontSize } from '@/lib/theme';
+import { todayDate } from '@/lib/format';
 
 interface FormValues {
   projectId: string;
@@ -70,7 +71,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
   const eotClaimed = Form.useWatch('eotClaimed', form);
   const isDelay = kind === 'DELAY';
   const score = probability && impact ? riskScore(probability, impact) : null;
-  const counted = isDelay ? delayDays(ymd(delayStart), ymd(delayEnd), dayjs().format('YYYY-MM-DD')) : null;
+  const counted = isDelay ? delayDays(ymd(delayStart), ymd(delayEnd), todayDate()) : null;
 
   const owners = useMemo(() => {
     if (!project) return [];
@@ -101,7 +102,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
         delayStart: risk.delayStart ? dayjs(risk.delayStart) : null,
         delayEnd: risk.delayEnd ? dayjs(risk.delayEnd) : null,
         // Only an agreed figure is stored; a counted one is shown as the placeholder.
-        daysLost: risk.kind === 'DELAY' && risk.daysLost !== delayDays(risk.delayStart, risk.delayEnd, dayjs().format('YYYY-MM-DD')) ? risk.daysLost : null,
+        daysLost: risk.kind === 'DELAY' && risk.daysLost !== delayDays(risk.delayStart, risk.delayEnd, todayDate()) ? risk.daysLost : null,
         responsibleParty: risk.responsibleParty ?? undefined,
         eotClaimed: risk.eotClaimed,
         eotGrantedDays: risk.eotGrantedDays,
