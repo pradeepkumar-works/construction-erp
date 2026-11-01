@@ -9,6 +9,8 @@ OWNER_URL="${MIGRATE_DATABASE_URL:-$DATABASE_URL}"
 # A preview of the client portal PR (#39) tried a renamed copy of an applied migration and left it failed, which blocks
 # every later deploy (P3009). Marking that attempt rolled back is a no-op once done, and on a database without it.
 DATABASE_URL="$OWNER_URL" npx prisma migrate resolve --rolled-back 20261015180000_client_portal > /dev/null 2>&1 || true
+# The same for a renamed copy of contract obligations (#237), whose first name 20270510090000 the database already has.
+DATABASE_URL="$OWNER_URL" npx prisma migrate resolve --rolled-back 20270517090000_contract_obligations > /dev/null 2>&1 || true
 DATABASE_URL="$OWNER_URL" npx prisma migrate deploy
 if [ "$SEED_ON_BUILD" = "true" ]; then
   echo "SEED_ON_BUILD=true: seeding demo data (idempotent)"

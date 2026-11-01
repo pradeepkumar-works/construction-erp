@@ -1,5 +1,5 @@
 /**
- * Approval levels' tests (v5 item 94): how many levels an amount needs, which level an entry waits at, who may decide
+ * Approval levels' tests: how many levels an amount needs, which level an entry waits at, who may decide
  * it (and why not), whose queue it is in, and escalation. No database. CI runs it after the build:
  *
  *   node dist/scripts/approval-levels-test.js

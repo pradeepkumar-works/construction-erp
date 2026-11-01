@@ -22,6 +22,7 @@ pnpm dev:api | pnpm dev:web | pnpm dev:mobile
 pnpm typecheck                        # all packages, must pass before committing
 cd apps/web && npx next build         # web must build clean
 cd apps/web && npx tsx --tsconfig tsconfig.json scripts/nav-check.ts   # navigation tree: routes, icons, access, Concord
+cd apps/web && npx tsx --tsconfig tsconfig.json scripts/copy-check.ts  # shared labels and menu names against docs/WRITING.md
 pnpm --filter @erp/web lint           # ESLint (typescript-eslint, hooks, Next, jsx-a11y) on the web; 0 errors, CI runs it
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
 cd e2e && npx playwright test         # browser tests; needs API + web running (docs/TESTING.md), CI runs them on PRs
@@ -63,6 +64,14 @@ and the pre-delivery checklist.
   (`node .claude/skills/design-taste-frontend/scripts/inspect.mjs http://localhost:3000/welcome`, 0 FAIL). The rules in this
   file win where they differ (the navy sidebar, the canvas table header, the Nirmaan blue primary, the launcher's tiles).
   On the website: no eyebrows, index numbers, rules, boxes, shadows or gradients; screens shown as they are, no browser frame.
+- pstack (Lauren Tan's engineering skills from `cursor/plugins/pstack`, installed from its harness-neutral mirror
+  `backnotprop/pstack`, tracked in `skills-lock.json`; everything but `make-bot-ui`): `.claude/skills/poteto-mode` is the
+  entry point (it picks a playbook and calls `how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `tdd`, `unslop`,
+  `technical-writing`, the `principle-*` skills and the rest). They run only when asked for by name: the skills are marked
+  for the user to start, so when someone asks for pstack, poteto mode or one of its skills in words rather than a slash
+  command, read that skill's `SKILL.md` and follow it. It spends tokens on subagents and review panels, so keep it to the
+  work it was asked for. The rules in this file win where they differ (commands, checks, PR template, words); its
+  Cursor-only steps (Bugbot, Automations, `cursor-team-kit`) are skipped.
 - antd reference: the `antd` MCP server in `.mcp.json` (`@ant-design/cli mcp`: component docs, props, tokens for the
   installed version), and https://ant.design/llms.txt (index) or https://ant.design/llms-full.txt (every component with
   examples). Use antd components and theme tokens before custom CSS, and the antd 6 props (Select
@@ -176,7 +185,7 @@ and the pre-delivery checklist.
   `NavVisit`), never localStorage; a tile's menu comes from `usePins(user).tileMenu`, and a tile badge is a key of
   `LauncherBadgesDto.nodes` built from `HomeService.myWork`. A record page records its visit through `RecordFrame`.
   Discover (ARCHITECTURE "Discover and access requests") is `discoverFor` in `@erp/shared/launcher.ts` (keep
-  `src/scripts/launcher-test.ts` passing); a node is New by default with `newUntil`, and admins override it in Admin › Home tiles.
+  `src/scripts/launcher-test.ts` passing); a node is New by default with `newUntil`, and admins override it in Admin › Discover and access requests.
 - My work (`app/(app)/my-work/page.tsx`): what each role leads with is `homeLayout(role)` in `components/home/layout.ts` (order only;
   the API's `GET /dashboard/my-work` and `/dashboard/trends` in `HomeService` leave out what a role may not see). A new My work
   card is a key on `MyWorkDto`, a block in `HomeService.myWork`, a line in `MyWorkPanel`'s `CARDS` and `CLEAR`, its place in
@@ -360,6 +369,18 @@ and the pre-delivery checklist.
   `group-rules.ts`; keep `src/scripts/group-companies-test.ts` passing. A new company kind is a `CompanyKind` (schema +
   shared + label + Hindi) and its `COMPANY_KIND_INFO`. Reading across companies is `withoutTenant(async () => await …)`:
   a Prisma query returned unawaited from the callback runs later under the request's company, where RLS hides the rest.
+- Consultant checks (item 172, ARCHITECTURE "Consultant checks"): a client guest's level is only `ProjectMember.checkLevel`
+  read by `checkLevelOf`; check coverage is only `checkCoverage` / `sheetsToReach`, a certificate is held only by
+  `certifyCheckProblem` (through `ConsultantChecksService.assertMayCertify` in `certifyAsClient`), hidden work moves only
+  through `InspectionsService.signHidden` / `countersignHidden` (`hiddenSignProblem`, `countersignProblem`) and holds progress
+  only by `hiddenWorkCleared`, and a site order moves only through `SiteOrdersService` (`siteOrderState`,
+  `@erp/shared/consultant-checks.ts`). Keep `src/scripts/consultant-checks-test.ts` passing.
+- Programme and EOT (item 173, `apps/api/src/programme`, ARCHITECTURE "Programme and EOT"): a revision goes only through
+  `ProgrammeService.submit` and is answered only through `decide` (`programmeSubmitProblem`, `programmeDecisionProblem`); the
+  next one is due only by `programmeWatch` and the programme obligation is met only by `programmeMetOn`. An EOT application
+  moves only through `EotService` (`eotApplyProblem`, `eotForwardProblem`, `eotDecisionProblem`, `eotState`), time for a
+  variation is `variationEotDays`, and the days granted reach `Risk.eotGrantedDays` only by `allocateGranted` in
+  `EotService.decide` (`@erp/shared/programme-eot.ts`). Keep `src/scripts/programme-eot-test.ts` passing.
 - Official progress reports (item 174, `apps/api/src/official-reports`, ARCHITECTURE "Official progress reports"): the daily,
   weekly and monthly reports for the client are one `OfficialReportDto` from `OfficialReportsService.build`, drawn by the
   page, Print, PDF, Word and Excel in `components/reports/official/` (never a second set of figures); periods, numbers
@@ -393,6 +414,11 @@ and the pre-delivery checklist.
   `PlantBatchesService.take` (`readPlantRow`); a row is read only by `readBatchRow` through the plant's column map, which is
   checked only by `columnMapProblem` (`@erp/shared/batching.ts`), and becomes a challan only through `RmcService.dispatch`
   with `plantRowId` (one batch, one challan). Keep `src/scripts/batching-test.ts` and the Connector's `npm test` passing.
+- Contract obligations (item 171, `apps/api/src/contracts`, ARCHITECTURE "Contract obligations and recoveries"): a deadline is
+  only `obligationDue` over the project's anchors (`anchorsOf`, completion after the extensions granted) and what one costs
+  only `penaltyAsOf` (`@erp/shared/contract-obligations.ts`); a bill deducts them only through `billTotals`'
+  `obligationRecovery` (`billRecoveryLines` against what earlier bills took), and the security deposit stops at its cap only
+  by `cappedSecurityDeposit`. Keep `src/scripts/contract-obligations-test.ts` passing.
 - Attendance first (ARCHITECTURE "Attendance"): a day's head count and roll call stay open after its DPR is approved and
   lock only with an approved or paid payroll run for the month (`isAttendanceLocked`, `AttendanceService.lockingRuns`);
   anything that writes attendance calls `assertUnlocked`.

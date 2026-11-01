@@ -17,7 +17,7 @@ import { useFieldChain } from '../../src/forms/keyboard';
 const NUM = /^\d+(\.\d+)?$/;
 
 /**
- * Report a machine that has broken down at site (v4 item 42). The store manager and the project manager are told at
+ * Report a machine that has broken down at site. The store manager and the project manager are told at
  * once and keep the job card on the web. Needs a connection, since the point is to get the machine looked at now.
  */
 export default function BreakdownScreen() {

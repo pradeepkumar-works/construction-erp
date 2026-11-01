@@ -30,7 +30,7 @@ const TONE = {
 } as const;
 
 /**
- * Where a project stands against its schedule on the phone (finding 1 of the October review), from the same
+ * Where a project stands against its schedule on the phone, from the same
  * `scheduleReading` as the web's header and Overview: a plan that ends after the completion date is late however well
  * today's progress keeps to it, and a project with no dated activities has no plan yet. Shows nothing until the
  * dashboard has loaded, or for someone it is not for.

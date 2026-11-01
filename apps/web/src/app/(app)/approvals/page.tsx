@@ -37,11 +37,12 @@ import { WorkOrderDrawer } from '@/components/subcontracts/WorkOrderDrawer';
 import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionDrawer } from '@/components/inspections/InspectionDrawer';
 import { PaymentRequestDrawer } from '@/components/payables/PaymentRequestRecord';
+import { SupplierChoiceDrawer } from '@/components/purchasing/SupplierChoiceRecord';
 
 type Opened = { type: SubmissionType; id: string };
 
 /**
- * The Approvals inbox (UI roadmap item 58): the queue on the left in groups by type, the picked entry on the right with
+ * The Approvals inbox: the queue on the left in groups by type, the picked entry on the right with
  * Approve, Request changes and Reject under it, a selection of one type approved together, and J, K, A, C, R, X and O
  * on the keyboard. Phones get the queue alone, each entry opening in its drawer.
  */
@@ -58,7 +59,7 @@ export default function ApprovalsPage() {
   const { data, isLoading, error, refetch } = usePendingApprovals(approver);
   const approveMany = useApproveMany();
 
-  // The search, type and order are in the URL (UX item 84): a reload or a link sent on opens the same queue.
+  // The search, type and order are in the URL: a reload or a link sent on opens the same queue.
   const [typeParam, setTypeParam] = useUrlParam('type');
   const type = QUEUE_TYPES.some(([t]) => t === typeParam) ? (typeParam as SubmissionType) : undefined;
   const setType = (t?: SubmissionType) => setTypeParam(t);
@@ -152,7 +153,7 @@ export default function ApprovalsPage() {
       title: `Approve ${ids.length} ${ids.length === 1 ? 'entry' : 'entries'} in ${inSentence(QUEUE_TYPE_LABELS[t])}?`,
       content: 'Each is approved on its own, as if one by one: its submitter is told and its activity shows your approval.',
       okText: `Approve ${ids.length}`,
-      // They leave the queue at once (UX item 86) while they are sent one by one; a refusal brings back the rest.
+      // They leave the queue at once while they are sent one by one; a refusal brings back the rest.
       onOk: () => {
         setBulkRunning(true);
         void approveMany(approvalTypeParam[t], ids).finally(() => {
@@ -210,7 +211,17 @@ export default function ApprovalsPage() {
     return () => window.removeEventListener('resize', measure);
   });
 
-  const typeOptions = QUEUE_TYPES.filter(([t]) => rights.some((r) => r.type === t)).map(([t, label]) => ({ value: t, label: `${label} (${counts[t] ?? 0})` }));
+  const typeOptions = QUEUE_TYPES.filter(([t]) => rights.some((r) => r.type === t)).map(([t, label]) => ({
+    value: t,
+    label: (
+      <Flex justify="space-between" gap={token.marginSM}>
+        <span>{label}</span>
+        <Typography.Text type="secondary">{counts[t] ?? 0} waiting</Typography.Text>
+      </Flex>
+    ),
+  }));
+  const limitLine = limited.length > 0 ? ` Your approval limit: ${limited.map((r) => `${inSentence(SUBMISSION_TYPE_LABELS[r.type])} up to ${formatINR(r.maxAmount)}`).join(', ')}; anything above goes to a higher approver.` : '';
+  const subtitle = !approver ? 'Entries waiting for approval' : `${data ? `${data.length} waiting` : 'Entries waiting'} for your approval.${limitLine}`;
 
   const queue = (
     <>
@@ -270,17 +281,8 @@ export default function ApprovalsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Approvals" subtitle={approver ? `${data?.length ?? 0} waiting for your review` : 'Site submissions waiting for review'} extra={approver ? <ReviewedToday onOpen={(r) => setDrawer({ type: r.type, id: r.id })} /> : undefined} />
+      <PageHeader title="Approvals" subtitle={subtitle} extra={approver ? <ReviewedToday onOpen={(r) => setDrawer({ type: r.type, id: r.id })} /> : undefined} />
       {!approver && <Alert type="info" showIcon title="Your role cannot approve submissions. Submissions you create appear in the project pages with their current status." style={{ marginBottom: token.margin }} />}
-      {limited.length > 0 && (
-        <Alert
-          type="info"
-          showIcon
-          closable
-          title={`Your approval limit: ${limited.map((r) => `${inSentence(SUBMISSION_TYPE_LABELS[r.type])} up to ${formatINR(r.maxAmount)}`).join(', ')}. Anything above goes to a higher approver.`}
-          style={{ marginBottom: token.margin }}
-        />
-      )}
       {!!error && <QueryError error={error} onRetry={() => refetch()} />}
       <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.marginSM }}>
         <Input.Search allowClear placeholder="Search the queue" aria-label="Search the queue" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: screens.md ? 240 : '100%' }} />
@@ -332,6 +334,7 @@ export default function ApprovalsPage() {
       <SubBillDrawer id={drawer?.type === 'SUBCONTRACT_BILL' ? drawer.id : null} open={drawer?.type === 'SUBCONTRACT_BILL'} onClose={() => setDrawer(null)} />
       <InspectionDrawer id={drawer?.type === 'INSPECTION' ? drawer.id : null} open={drawer?.type === 'INSPECTION'} onClose={() => setDrawer(null)} />
       <PaymentRequestDrawer id={drawer?.type === 'PAYMENT_REQUEST' ? drawer.id : null} open={drawer?.type === 'PAYMENT_REQUEST'} onClose={() => setDrawer(null)} />
+      <SupplierChoiceDrawer id={drawer?.type === 'SUPPLIER_CHOICE' ? drawer.id : null} open={drawer?.type === 'SUPPLIER_CHOICE'} onClose={() => setDrawer(null)} />
     </div>
   );
 }

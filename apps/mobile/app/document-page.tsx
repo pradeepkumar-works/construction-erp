@@ -10,7 +10,7 @@ import { maxFontScale, spacing, typography } from '../src/theme';
 import { useT } from '../src/i18n/LanguageContext';
 
 /**
- * A page of a filed contract, specification or letter (Ask the contract, AI item 75): where a citation in an answer
+ * A page of a filed contract, specification or letter (Ask the contract): where a citation in an answer
  * leads on the phone. Shows the page's text, and opens the PDF at that page in the browser.
  */
 export default function DocumentPageScreen() {

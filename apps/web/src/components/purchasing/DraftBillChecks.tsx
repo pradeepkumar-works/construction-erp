@@ -6,7 +6,7 @@ import { useDraftVendorBillChecks, type DraftVendorBill } from '@/lib/queries';
 import { CheckRows } from '@/components/checks/ChecksSection';
 
 /**
- * Item 69's checks on a vendor bill being filled from a scanned invoice (AI item 70), before it is saved: against the
+ * The bill checks on a vendor bill being filled from a scanned invoice, before it is saved: against the
  * PO, what was received and the bills already entered. Re-run a moment after the figures stop changing.
  */
 export function DraftBillChecks({ draft }: { draft: DraftVendorBill }) {

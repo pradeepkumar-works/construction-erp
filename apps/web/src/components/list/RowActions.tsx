@@ -63,7 +63,7 @@ export function RowActions<T extends SubmissionBase & { id: string }>({
 
   return (
     <>
-      {/* Opening the menu fetches the entry ahead (item 83): Open and Open full page then show it at once. */}
+      {/* Opening the menu fetches the entry ahead: Open and Open full page then show it at once. */}
       <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight" onOpenChange={(o) => o && prefetch.record(href)}>
         <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label="Actions" />
       </Dropdown>

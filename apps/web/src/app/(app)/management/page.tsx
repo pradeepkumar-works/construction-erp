@@ -44,7 +44,7 @@ const day = (d: string) =>
 export default function Page() {
   const { user } = useAuth();
   const allowed = !!user && canSeeManagement(user.roleKey);
-  // The header's vertical (item 167) narrows the portfolio.
+  // The header's vertical narrows the portfolio.
   const [vertical] = useVerticalScope();
   const { data, isLoading, error, refetch } = useManagementPortfolio(allowed, vertical);
 
@@ -80,7 +80,7 @@ function Dashboard({ data }: { data: PortfolioDto }) {
     },
     {
       key: 'unbilled',
-      label: 'Done, not billed',
+      label: 'Work done, not billed',
       value: formatINRCompact(t.unbilled),
       note: 'Bill it to get paid',
       tone: toNumber(t.unbilled) > 0 && data.attention.some((a) => a.key === 'billing') ? 'danger' : undefined,

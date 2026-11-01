@@ -17,7 +17,7 @@ function ImprestPage() {
   const { user } = useAuth();
   // A top-up notification links here with ?id=...
   const id = params.get('id') ?? undefined;
-  // Fund requests (v6 item 107): a site asks head office for money, released into its imprest or paid to a party.
+  // Fund requests: a site asks head office for money, released into its imprest or paid to a party.
   const funds = !!user && (canRequestFunds(user.roleKey) || canViewPaymentRequests(user.roleKey));
   const tab = funds && params.get('tab') === 'funds' ? 'funds' : 'imprests';
   const setTab = (key: string) => {
@@ -37,7 +37,7 @@ function ImprestPage() {
             activeKey={tab}
             onChange={setTab}
             items={[
-              { key: 'imprests', label: 'Imprests', children: panel },
+              { key: 'imprests', label: 'Site imprest', children: panel },
               { key: 'funds', label: 'Fund requests', children: <PaymentRequestList fund /> },
             ]}
           />

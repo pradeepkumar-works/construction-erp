@@ -88,8 +88,6 @@ export const STANDARD_CHECKLISTS: { name: string; items: string[] }[] = [
   },
 ];
 
-/* ---------- tests and non-conformance reports ---------- */
-
 export const TEST_KINDS = ['CONCRETE_CUBE', 'FIELD_DENSITY', 'SOIL', 'AGGREGATE', 'BITUMEN', 'BRICK', 'STEEL', 'WATER', 'HYDRAULIC', 'OTHER'] as const;
 export type TestKind = (typeof TEST_KINDS)[number];
 

@@ -92,10 +92,7 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
           />
           {p.total > p.rows.length && (
             <Typography.Paragraph type="secondary" style={{ margin: '8px 0 0' }}>
-              The {p.rows.length} most urgent of {p.total}.{' '}
-              <Link href={p.href} className="text-link">
-                See them all
-              </Link>
+              The {p.rows.length} most urgent of {p.total}.
             </Typography.Paragraph>
           )}
         </>
@@ -109,7 +106,7 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
 }
 
 /**
- * A department's figures strip and its pipelines (item 168, `@erp/shared/department-home.ts`), for the header's project
+ * A department's figures strip and its pipelines (`@erp/shared/department-home.ts`), for the header's project
  * or every project the user sees. Nothing shows for a department with neither.
  */
 export function DepartmentPanel({ department }: { department: string }) {

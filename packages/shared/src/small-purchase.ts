@@ -1,5 +1,5 @@
 /**
- * Small purchase items (v5 item 95): stock on hand at every site for a material request's lines (issue or transfer
+ * Small purchase items: stock on hand at every site for a material request's lines (issue or transfer
  * first, buy the rest), the last purchase orders of an item, and enquiries emailed to vendors with a link to quote.
  */
 
@@ -16,7 +16,7 @@ export interface SiteStockDto {
   balance: string;
   /** This user keeps that site's store, so may send from it */
   canSend: boolean;
-  /** A central store (v6 item 106), listed to everyone who looks at a request */
+  /** A central store, listed to everyone who looks at a request */
   store?: boolean;
 }
 
@@ -77,7 +77,7 @@ export interface EnquiryVendorDto {
   vendorId: string;
   vendorName: string;
   email: string | null;
-  /** The vendor master's phone, for sending the link on WhatsApp (finding 12 of the October review) */
+  /** The vendor master's phone, for sending the link on WhatsApp */
   phone: string | null;
   state: EnquiryVendorState;
   emailedAt: string | null;

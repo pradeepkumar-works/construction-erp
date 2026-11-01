@@ -24,11 +24,11 @@ async function signInSupplier(page: Page) {
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/supplier$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Supplier home' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
 }
 
 /**
- * Supplier portal (v6 item 105): the supplier sends a dispatch note with a truck, the store receives the GRN from that
+ * Supplier portal: the supplier sends a dispatch note with a truck, the store receives the GRN from that
  * note, and the supplier sees it received. An invoice they send reaches accounts in the Supplier inbox, who return it with
  * what to fix; the supplier is told.
  */
@@ -83,11 +83,11 @@ test('a dispatch note becomes a GRN and a returned invoice reaches the supplier'
   await acc.goto('/supplier-inbox');
   await acc.getByRole('link', { name: invoiceNo }).or(acc.getByRole('button', { name: invoiceNo })).first().click();
   const inv = acc.locator('.ant-drawer').filter({ hasText: `Invoice ${invoiceNo}` });
-  await expect(inv.getByRole('button', { name: 'Record bill' })).toBeVisible();
+  await expect(inv.getByRole('button', { name: 'Record vendor bill' })).toBeVisible();
   await inv.getByRole('button', { name: 'Return', exact: true }).click();
   const back = acc.locator('.ant-modal').filter({ hasText: `Return invoice ${invoiceNo}` });
   await back.getByLabel('What to fix').fill('Our GSTIN is missing on the invoice');
-  await back.getByRole('button', { name: 'Return to supplier' }).click();
+  await back.getByRole('button', { name: 'Return to vendor' }).click();
   await expect(acc.getByText(`${invoiceNo} returned to`)).toBeVisible();
   await accContext.close();
 

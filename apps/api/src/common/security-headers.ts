@@ -8,7 +8,7 @@ const webOrigins = () =>
     .filter(Boolean);
 
 /**
- * Headers on every API answer (finding 5 of the October review). Nothing is sniffed as another type, and no page may
+ * Headers on every API answer. Nothing is sniffed as another type, and no page may
  * frame the API, except the web app framing a stored file in its document viewer. JSON answers forbid every kind of
  * content; the Swagger page keeps its own scripts. HSTS once the request came over HTTPS.
  */

@@ -15,7 +15,7 @@ import { colors, maxFontScale, spacing, touch, typography } from '../theme';
 import { phoneTarget, visitNode } from './routes';
 
 /**
- * Opens a node of the tree from the Home tab or a module screen (launcher phase 4): the phone's own screen, the module's
+ * Opens a node of the tree from the Home tab or a module screen: the phone's own screen, the module's
  * screen, or the page on the web (a project tab asks which project first). Opening a page counts as a visit, so Recent
  * on the web and the phone stay one list.
  */
@@ -32,7 +32,7 @@ export function useOpenNode(webUrl: string | null) {
         show(t('This page opens on the web. Ask your admin for the web address'), { tone: 'error' });
         return;
       }
-      void WebBrowser.openBrowserAsync(`${webUrl}${href}`);
+      WebBrowser.openBrowserAsync(`${webUrl}${href}`).catch(() => show(t('This page is on the web only. Open {webUrl} on a computer.', { webUrl }), { tone: 'error' }));
     },
     [webUrl, show, t],
   );

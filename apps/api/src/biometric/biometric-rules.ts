@@ -1,5 +1,5 @@
 /**
- * Biometric attendance (v6 item 101): reading what devices send and working out a person's day from their punches.
+ * Biometric attendance: reading what devices send and working out a person's day from their punches.
  * Pure functions, tested by `src/scripts/biometric-test.ts`.
  */
 
@@ -168,8 +168,6 @@ export const codeNumber = (code: string): string | null => {
   const m = /(\d+)\s*$/.exec(code);
   return m ? String(BigInt(m[1])) : null;
 };
-
-/* ---------- device commands over ADMS (item 150) ---------- */
 
 /** A command handed to the device and not answered is handed again after this long, up to `COMMAND_TRIES` times. */
 export const COMMAND_RESEND_MINUTES = 10;

@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { AI_DRAFT_LABELS, CAPTURE_SAVE_HOURS, isCaptureSaveKind, normalisePhone, type AiDraftDto, type CaptureSaveKind, type CaptureStatsDto } from '@erp/shared';
 
 /**
- * WhatsApp entries (AI item 120), the parts with no database or network: reading the providers' webhooks, telling a
+ * WhatsApp entries, the parts with no database or network: reading the providers' webhooks, telling a
  * Save or Discard reply from a new message, the reply text, and turning a draft's form values into the create body.
  * Tested in `src/scripts/whatsapp-capture-test.ts`.
  */

@@ -45,7 +45,7 @@ export interface MachineryPrefill {
   date: string;
 }
 
-/** The boxes the tracker's day fills (item 146), and only while no one has typed in them. */
+/** The boxes the tracker's day fills, and only while no one has typed in them. */
 const FROM_TRACKER = ['hoursWorked', 'idleHours', 'meterStart', 'meterEnd'] as const;
 
 /** Log a machine's day, or (with `log`) fix a returned log and resubmit it. */
@@ -63,7 +63,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
   const date = Form.useWatch('date', form);
   const worked = Form.useWatch('hoursWorked', form);
   const idle = Form.useWatch('idleHours', form);
-  // What the machine's tracker read that day, for a new log (item 146).
+  // What the machine's tracker read that day, for a new log.
   const day = useMachineDay(editing || !open ? undefined : equipmentId, date ? date.format('YYYY-MM-DD') : undefined).data ?? null;
   const filled = useRef<Partial<Record<(typeof FROM_TRACKER)[number], number | null>>>({});
 
@@ -161,14 +161,14 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
       form={form}
       layout="drawer"
       title={log ? `${editActionLabel(log.status)} · ${log.equipmentCode}` : 'New machinery log'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={submit}
     >
       <Form form={form} layout="vertical">
         {log?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${log.reviewedByName ?? 'approver'}`} description={log.reviewNote} />}
         <FormSection title="Machine and hours">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose a project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="equipmentId" label="Equipment" rules={[{ required: true, message: 'Choose the machine' }]}>
@@ -177,7 +177,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
                 selected={log ? { value: log.equipmentId, label: `${log.equipmentCode} - ${log.equipmentName}` } : prefill ? { value: prefill.equipmentId, label: prefill.equipmentLabel } : null}
               />
             </Form.Item>
-            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
           </FormGrid>
@@ -216,7 +216,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
             <Form.Item name="meterEnd" label="Hour meter end">
               <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
-            <Form.Item name="dieselLitres" label="Diesel filled">
+            <Form.Item name="dieselLitres" label="Fuel filled">
               <QuantityInput unit="L" />
             </Form.Item>
           </FormGrid>

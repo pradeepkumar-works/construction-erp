@@ -37,7 +37,7 @@ const readHidden = (orgId: string | undefined) => {
 
 /**
  * Whether the checklist shows, read as the page first draws (the hidden flag is this browser's, read at once), so the
- * home page can wait for it with everything else and draw once (item 83: nothing appears above what is already shown).
+ * home page can wait for it with everything else and draw once (nothing appears above what is already shown).
  */
 export function useGettingStarted() {
   const { user } = useAuth();

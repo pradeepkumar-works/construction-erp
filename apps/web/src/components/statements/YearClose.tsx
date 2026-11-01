@@ -125,7 +125,7 @@ function OpeningForm({
           },
         });
         message.success(
-          `The books begin on ${v.booksFrom.format("D MMM YYYY")}; opening balances saved`,
+          `The books begin on ${formatDate(v.booksFrom.format('YYYY-MM-DD'))}; opening balances saved`,
         );
       }}
     >

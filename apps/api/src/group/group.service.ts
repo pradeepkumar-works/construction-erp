@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { COMPANY_KIND_INFO, COMPANY_KIND_LABELS, GUEST_ROLES, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type GroupDto, type GroupPersonDto, type GroupStateDto, type RoleKey } from '@erp/shared';
+import { COMPANY_KIND_INFO, COMPANY_KIND_LABELS, GUEST_ROLES, ROLE_KEYS, ROLE_LABELS, canMakeGroup, orgCodeFrom, type GroupDto, type GroupPersonDto, type GroupStateDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { AuditService } from '../common/audit.service';
@@ -8,7 +8,7 @@ import { adminChangeProblem, placeProblem } from './group-rules';
 import { GivePlaceDto, GroupCompanyDto, UpdateGroupCompanyDto } from './group.dto';
 
 /**
- * Group companies (phase 1, ARCHITECTURE "Group companies"): a parent company's group, its companies and who works in
+ * Group companies (ARCHITECTURE "Group companies"): a parent company's group, its companies and who works in
  * which. Each company stays a tenant of its own; this service reads and writes across them only for the group's admins,
  * outside the request's tenant (`withoutTenant`), and never touches a company's business records.
  */
@@ -34,7 +34,7 @@ export class GroupService {
   /** The company's group for its admins; without a group, whether the caller (a company admin) may make one. */
   async state(req: RequestUser): Promise<GroupStateDto> {
     const me = await this.whoAmI(req);
-    if (!me.groupId) return { group: null, canMakeGroup: req.roleKey === 'ADMIN' };
+    if (!me.groupId) return { group: null, canMakeGroup: canMakeGroup(req.roleKey) };
     if (!me.admin) throw new ForbiddenException("Only the group's admins see its companies");
     return { group: await this.load(me.groupId, req.organizationId, me.loginId), canMakeGroup: false };
   }
@@ -57,7 +57,7 @@ export class GroupService {
         }),
         this.prisma.user.findMany({
           where: { organization: { groupId }, ...staff },
-          select: { loginId: true, fullName: true, email: true, isActive: true, organizationId: true, role: { select: { key: true, name: true } }, organization: { select: { name: true } } },
+          select: { loginId: true, fullName: true, email: true, isActive: true, organizationId: true, role: { select: { key: true } }, organization: { select: { name: true } } },
           orderBy: [{ fullName: 'asc' }, { organization: { name: 'asc' } }],
         }),
       ]);
@@ -66,9 +66,9 @@ export class GroupService {
       for (const u of users) {
         let p = people.get(u.loginId);
         if (!p) people.set(u.loginId, (p = { loginId: u.loginId, fullName: u.fullName, email: u.email, admin: admins.has(u.loginId), places: [] }));
-        p.places.push({ organizationId: u.organizationId, companyName: u.organization.name, roleKey: u.role.key as RoleKey, roleName: u.role.name, isActive: u.isActive });
+        p.places.push({ organizationId: u.organizationId, companyName: u.organization.name, roleKey: u.role.key as RoleKey, roleName: ROLE_LABELS[u.role.key as RoleKey], isActive: u.isActive });
       }
-      const mine = new Map(users.filter((u) => u.loginId === loginId && u.isActive).map((u) => [u.organizationId, u.role.name]));
+      const mine = new Map(users.filter((u) => u.loginId === loginId && u.isActive).map((u) => [u.organizationId, ROLE_LABELS[u.role.key as RoleKey]]));
       return {
         id: group.id,
         name: group.name,
@@ -80,7 +80,7 @@ export class GroupService {
 
   /** Make a group with the caller's company as its first: a company admin, who becomes the group's admin. */
   async make(req: RequestUser, name: string): Promise<GroupStateDto> {
-    if (req.roleKey !== 'ADMIN') throw new ForbiddenException('Only an admin can make a group');
+    if (!canMakeGroup(req.roleKey)) throw new ForbiddenException('Only an admin can make a group');
     const me = await this.whoAmI(req);
     if (me.groupId) throw new BadRequestException('This company is already in a group');
     await this.prisma.$transaction(async (tx) => {

@@ -4,6 +4,6 @@ import { StructureModule } from '../structure/structure.module';
 import { TypeUpdatesController } from './type-updates.controller';
 import { TypeUpdatesService } from './type-updates.service';
 
-/** Update projects from their type or a component kind (item 134 part 3). */
+/** Update projects from their type or a component kind. */
 @Module({ imports: [TemplatesModule, StructureModule], controllers: [TypeUpdatesController], providers: [TypeUpdatesService] })
 export class TypeUpdatesModule {}

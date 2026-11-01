@@ -63,7 +63,7 @@ export default function SubmissionsScreen() {
   const router = useRouter();
   const t = useT();
   const api = useApi();
-  // Home's tiles open a type (?type=DPR, launcher phase 4).
+  // Home's tiles open a type (?type=DPR).
   const params = useLocalSearchParams<{ type?: string }>();
   const [type, setType] = useState<SubmissionType>(SEGMENTS.find((s) => s.type === params.type)?.type ?? 'PROGRESS');
   const [text, setText] = useState('');
@@ -84,7 +84,7 @@ export default function SubmissionsScreen() {
     setMoreError(null);
   }, [first.data]);
 
-  // Waiting with others (v5 item 94): for an entry waiting for approval, whose queue it is in and since when.
+  // Waiting with others: for an entry waiting for approval, whose queue it is in and since when.
   const waiting = useFetch<WaitingEntryDto[]>((a) => a.get('/approvals/waiting'), [syncedCount], { cacheKey: 'approvals:waiting:v1' });
   const waitingOf = useMemo(() => new Map((waiting.data ?? []).map((w) => [`${w.type}:${w.id}`, w])), [waiting.data]);
   const metaOf = (r: Row) => {
@@ -120,7 +120,7 @@ export default function SubmissionsScreen() {
 
   return (
     <Screen scroll={false} padded={false}>
-      {/* A row of tabs that scrolls sideways, so each keeps a 48 dp target and its full label (UX item 88). */}
+      {/* A row of tabs that scrolls sideways, so each keeps a 48 dp target and its full label. */}
       <View style={styles.segmentsWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segments} accessibilityRole="tablist">
           {SEGMENTS.map((s) => {

@@ -23,7 +23,7 @@ export class CreateUserDto {
   @ApiPropertyOptional() @IsOptional() @IsString() phone?: string;
   @ApiProperty({ enum: ROLE_KEYS }) @IsIn(ROLE_KEYS as unknown as string[]) roleKey: RoleKey;
   @ApiPropertyOptional({ description: 'Leave out to invite the user by email / link instead' }) @IsOptional() @IsString() @MinLength(MIN_PASSWORD_LENGTH) @MaxLength(100) password?: string;
-  @ApiPropertyOptional({ type: [String], description: 'Projects whose team the new user joins (finding 17 of the October review)' })
+  @ApiPropertyOptional({ type: [String], description: 'Projects whose team the new user joins' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(100)

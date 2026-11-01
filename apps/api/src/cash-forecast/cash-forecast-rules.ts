@@ -14,7 +14,7 @@ import {
 } from '@erp/shared';
 
 /**
- * The 13-week cash forecast (AI item 122), the arithmetic with no database: how long a client takes to pay and how
+ * The 13-week cash forecast, the arithmetic with no database: how long a client takes to pay and how
  * widely that varies, when each receipt and payment may land (early, likely, late), the weeks with their low, likely and
  * high balance, why a short week is short, what to chase or hold, and how far an old forecast was out. Every rule takes
  * the day it is run for, so `src/scripts/cash-forecast-test.ts` can replay past weeks against what was paid.
@@ -39,7 +39,6 @@ export const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString(
 /** The Monday of the week `d` falls in. */
 export const mondayOf = (d: string) => addDays(d, -((new Date(toTime(d)).getUTCDay() + 6) % 7));
 
-// ---------------------------------------------------------------------------------------------------------------------
 // When clients pay
 
 /** A client's own days are used once this many of their bills have been paid. */
@@ -112,7 +111,6 @@ export function nextBillDate(lastBillDate: string | null, today: string): string
   return m === 12 ? at(y + 1, 1) : at(y, m + 1);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // When we pay
 
 /** A purchase order's unbilled balance: delivered by its date (two weeks after the order without one), paid its days after. */
@@ -164,7 +162,6 @@ export function statutoryDueDate(today: string): string {
   return m === 12 ? `${y + 1}-01-${dd}` : `${y}-${String(m + 1).padStart(2, '0')}-${dd}`;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The weeks
 
 /** The date an item lands on in each case: money in late and money out early is the low case; the reverse the high. */
@@ -273,7 +270,6 @@ export function totalsByKind(items: CashFlowItemDto[], weeks: CashWeekDto[]): { 
   return [...by.values()].sort((a, b) => (a.direction === b.direction ? b.amount - a.amount : a.direction === 'IN' ? -1 : 1));
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // How far out an old forecast was
 
 /** The forecast made on `madeOn` for the week ending `weekEnd`, against the books' balance that day. */
@@ -292,7 +288,6 @@ export function forecastError(madeOn: string, weeks: CashWeekDto[], weekEnd: str
   };
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // The payment clause, for a reminder
 
 /**
@@ -311,7 +306,6 @@ export function paymentClause(text: string): { no: string; text: string; days: n
   return null;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Replay: what the payment-timing rule would have said on a past day, against what was paid
 
 export interface PastBill {

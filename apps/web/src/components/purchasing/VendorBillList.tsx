@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Dropdown, Select, Space, theme } from 'antd';
+import { Button, Dropdown, Select, Space, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { DownOutlined, PlusOutlined } from '@/components/common/icons';
 import type { VendorBillDto, VendorBillKind, VendorBillSortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, VENDOR_BILL_KINDS, VENDOR_BILL_KIND_LABELS, canRecordVendorBill } from '@erp/shared';
+import { LIST_SORT_FIELDS, MATCH_STATE_LABELS, VENDOR_BILL_KINDS, VENDOR_BILL_KIND_LABELS, canRecordVendorBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useVendorBills, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -30,7 +30,7 @@ import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'exceptions', 'kind'] as const;
 
-/** What each kind of bill is recorded against, in the Record menu (v5 item 91). */
+/** What each kind of bill is recorded against, in the Record menu. */
 const KIND_HINTS: Record<VendorBillKind, string> = {
   PO: 'Matched against the order and its GRNs',
   HIRE: "A hired machine's month, from its approved logs",
@@ -45,7 +45,7 @@ function Sub({ children }: { children: React.ReactNode }) {
 
 function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: VendorBillDto) => void; sortOrderFor: (key: VendorBillSortField) => 'ascend' | 'descend' | null }): ListColumn<VendorBillDto>[] {
   const sort = (key: VendorBillSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
-  // What a window of each width leads with (finding 17 of the October review: at 1440 the table scrolled sideways and
+  // What a window of each width leads with (at 1440 the table scrolled sideways and
   // the fixed Status column lay over Match). The due date and the match carry the day's work, so the invoice date and
   // what the bill is against wait for a wider window; the column chooser turns any of them on at any width.
   return [
@@ -143,10 +143,10 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
     sortFields: LIST_SORT_FIELDS.vendorBills,
     fixedProject,
     columns: (sortOrderFor) => vendorBillColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
-    moreViews: [{ key: 'exceptions', label: 'With exceptions', filters: { exceptions: '1' } }],
+    moreViews: [{ key: 'exceptions', label: MATCH_STATE_LABELS.DOES_NOT_MATCH, filters: { exceptions: '1' } }],
     chipLabels: {
       vendorId: () => `Vendor: ${vendorName ?? 'one vendor'}`,
-      exceptions: () => 'With exceptions',
+      exceptions: () => MATCH_STATE_LABELS.DOES_NOT_MATCH,
       kind: (v) => VENDOR_BILL_KIND_LABELS[v as VendorBillKind] ?? 'One kind',
     },
   });
@@ -218,9 +218,6 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
           options={VENDOR_BILL_KINDS.map((k) => ({ value: k, label: VENDOR_BILL_KIND_LABELS[k] }))}
         />
         <DateRangeFilter {...frame.dateRange} placeholder={['Invoices from', 'To']} />
-        <Checkbox checked={!!filters.exceptions} onChange={(e) => page.setFilter('exceptions', e.target.checked ? '1' : undefined)}>
-          With exceptions
-        </Checkbox>
       </ListToolbar>
       <DataTable<VendorBillDto>
         columns={frame.columns}

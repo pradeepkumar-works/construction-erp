@@ -10,7 +10,7 @@ type Ledger = { opening: string; closing: string; entries: { voucherNo: string; 
 const sum = (xs: (string | null)[]) => Math.round(xs.reduce((s, x) => s + Number(x ?? 0), 0) * 100) / 100;
 
 /**
- * The books (v6 item 102): the modules' records are posted and the books balance; a vendor bill is a purchase voucher;
+ * The books: the modules' records are posted and the books balance; a vendor bill is a purchase voucher;
  * accounts make a payment voucher on the page and management approves it, after which it is in the office rent ledger;
  * a journal that moves money is refused; and a site role cannot see the books.
  */
@@ -56,7 +56,7 @@ test('the modules post into balanced books, and a hand-made voucher counts once 
   await form.getByLabel('Credit').nth(1).fill('2500');
   await form.getByLabel('Narration').fill(narration);
   await form.getByRole('button', { name: 'Submit for approval' }).click();
-  await expect(page.getByText(/^PV\/\d{4}-\d{2}\/\d{4} sent for approval$/)).toBeVisible();
+  await expect(page.getByText(/^PV\/\d{4}-\d{2}\/\d{4} submitted for approval$/)).toBeVisible();
   const mine = await api<Page<Voucher>>(accounts, `/books/vouchers?q=${encodeURIComponent(narration)}`);
   const v = mine.items[0];
   expect(v.status).toBe('SUBMITTED');

@@ -15,7 +15,7 @@ import {
 } from './material-approvals.dto';
 import { ModuleSwitch } from '../common/decorators';
 
-/** Material approvals (v6 item 113): requests to approve a make or a sample, and each project's approved makes. */
+/** Material approvals: requests to approve a make or a sample, and each project's approved makes. */
 @ApiTags('material-approvals')
 @ApiBearerAuth()
 @ModuleSwitch('material_approvals')

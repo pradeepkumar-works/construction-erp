@@ -1,5 +1,5 @@
 /**
- * Machine finance (v6 item 108): a loan taken on a machine from a bank or a finance company, its EMI schedule (each
+ * Machine finance: a loan taken on a machine from a bank or a finance company, its EMI schedule (each
  * month's interest on what is still owed, the rest of the EMI repaying the loan), the EMIs paid and those due. The loan
  * posts to the books as a secured loan, each EMI paid as a payment of principal and interest, and the interest is the
  * machine's cost of finance.

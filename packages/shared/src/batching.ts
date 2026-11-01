@@ -2,7 +2,7 @@ import { itemSimilarity } from './doc-read';
 import { kgPerUnit } from './weighbridge';
 
 /**
- * A batching plant's controller (item 149): the batch reports it writes to a folder, read by the Connector and taken in
+ * A batching plant's controller: the batch reports it writes to a folder, read by the Connector and taken in
  * as rows of named columns. What each column means is the plant's choice, made once from a real file (`BatchColumnMap`);
  * `readBatchRow` reads a row through it, `guessColumns` offers a first map, and `suggestOrder` the order a batch was for.
  * Pure: tested in `apps/api/src/scripts/batching-test.ts`.

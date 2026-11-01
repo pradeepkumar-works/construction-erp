@@ -5,7 +5,7 @@ type Project = { id: string };
 type Activity = { id: string; name: string; unit: string; plannedQty: string; boqItemId: string | null; plannedStart: string | null; plannedEnd: string | null };
 
 /**
- * Linking activities to BOQ items and spreading them (finding 11 of the October review): a project made before its
+ * Linking activities to BOQ items and spreading them: a project made before its
  * dates were known gets its activities spread the moment the contract dates arrive, and the BOQ's sections offer the
  * links the planner used to make one by one.
  */
@@ -44,7 +44,7 @@ test('dates arriving spread the activities, and the BOQ sections offer their lin
 
   await signIn(page, email);
   await page.goto(`/projects/${project.id}?tab=activities`);
-  await page.getByRole('button', { name: /Link to BOQ \(\d+\)/ }).click();
+  await page.getByRole('button', { name: /^Link \d+ activit(y|ies) to the BOQ$/ }).click();
   const dialog = page.getByRole('dialog', { name: 'Link the activities to BOQ items' });
   // The largest item of a section stands for it, under the section's own name.
   await expect(dialog.getByRole('row', { name: /Earthwork embankment/ })).toContainText('1.01 Earthwork in embankment with borrowed earth');

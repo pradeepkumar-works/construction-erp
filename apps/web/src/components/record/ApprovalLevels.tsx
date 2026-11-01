@@ -8,7 +8,7 @@ import { formatDateTime } from '@/lib/format';
 import { useApprovalStage, type ApprovalTypeParam } from '@/lib/queries';
 
 /**
- * Under a record's stage bar (v5 item 94): the approval levels the entry needs, who approved each so far, whose queue
+ * Under a record's stage bar: the approval levels the entry needs, who approved each so far, whose queue
  * it is in and since when (Waiting with others), whether it was escalated, and why this user cannot decide it now.
  * Nothing shows for an entry with one level that is not waiting.
  */

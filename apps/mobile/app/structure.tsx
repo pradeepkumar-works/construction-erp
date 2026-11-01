@@ -11,7 +11,7 @@ import { colors, maxFontScale, spacing, touch, typography } from '../src/theme';
 import { fmtQty } from '../src/utils/format';
 
 /**
- * The project's work breakdown on the phone (item 125), read only: components, their sub-components and activities,
+ * The project's work breakdown on the phone, read only: components, their sub-components and activities,
  * each with progress rolled up from the sub-activities. Changing it is on the web (Project › Structure).
  */
 export default function StructureScreen() {

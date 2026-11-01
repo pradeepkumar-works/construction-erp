@@ -10,11 +10,11 @@ import { APPROVER_ROLES } from './permissions';
 export interface ApprovalRightDto {
   type: SubmissionType;
   maxAmount: string | null;
-  /** v5 item 94: 2 or 3 for a higher level; absent or 1 for the first approval */
+  /** 2 or 3 for a higher level; absent or 1 for the first approval */
   level?: number;
 }
 
-/** Up to three approvals of one entry (v5 item 94): level 1 is the matrix; levels 2 and 3 apply above their amount. */
+/** Up to three approvals of one entry: level 1 is the matrix; levels 2 and 3 apply above their amount. */
 export const MAX_APPROVAL_LEVELS = 3;
 
 /** A higher level of one submission type: who approves it, and the amount from which it applies (null = always). */
@@ -41,7 +41,7 @@ export function levelsNeeded(type: SubmissionType, higher: ApprovalLevelRule[], 
   return levels;
 }
 
-/** Reminders and escalation for one submission type (v5 item 94); null hours = off. */
+/** Reminders and escalation for one submission type; null hours = off. */
 export interface ApprovalEscalationDto {
   type: SubmissionType;
   /** Remind the approvers once the entry has waited this many hours at its level */
@@ -93,6 +93,7 @@ export const APPROVAL_AMOUNT_BASIS: Partial<Record<SubmissionType, string>> = {
   WORK_ORDER: 'work order value before GST',
   SUBCONTRACT_BILL: 'value of work in the bill, before GST and recoveries',
   PAYMENT_REQUEST: 'amount asked to be paid',
+  SUPPLIER_CHOICE: 'what is still to order at the chosen rates, with GST and freight',
 };
 
 export const hasAmount = (type: SubmissionType): boolean => type in APPROVAL_AMOUNT_BASIS;
@@ -116,7 +117,7 @@ export const approvalRightsOf = (user: { roleKey: RoleKey; approvalRights?: Appr
 export const mayApprove = (user: { roleKey: RoleKey; approvalRights?: ApprovalRightDto[] }): boolean => approvalRightsOf(user).length > 0;
 
 /**
- * Might this user decide some entry of this type at some level (v5 item 94)? Management also takes escalated entries
+ * Might this user decide some entry of this type at some level? Management also takes escalated entries
  * of any type. Whether they may decide a given entry now is the API's stage (`GET /approvals/:type/:id/stage`).
  */
 export const mayApproveTypeAtAll = (user: { roleKey: RoleKey; approvalRights?: ApprovalRightDto[] }, type: SubmissionType): boolean =>

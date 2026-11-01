@@ -1,5 +1,5 @@
 /**
- * RMC's tests (v6 item 104): a batch's quantities at its mix design and how far the weighing strayed, how much more an
+ * RMC's tests: a batch's quantities at its mix design and how far the weighing strayed, how much more an
  * order may dispatch, a bill's GST, and what the day's orders need against the plant's stock, with no database. CI
  * runs it after the build:
  *

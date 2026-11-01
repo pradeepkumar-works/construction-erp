@@ -6,7 +6,7 @@ import { QaReportService } from './report.service';
 import { AuditsQuery, CloseFindingDto, FindingNcrDto, SaveAuditDto } from './audits.dto';
 import { QaReportQuery } from './report.dto';
 
-/** QA/QC part 3 (item 137): audits and visits with their findings, and the monthly quality report. */
+/** QA/QC part 3: audits and visits with their findings, and the monthly quality report. */
 @ApiTags('qa')
 @ApiBearerAuth()
 @Controller('qa')

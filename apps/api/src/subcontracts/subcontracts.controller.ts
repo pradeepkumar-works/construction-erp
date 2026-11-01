@@ -20,8 +20,6 @@ import {
 export class SubcontractsController {
   constructor(private orders: WorkOrdersService, private bills: SubcontractBillsService) {}
 
-  /* ---------- work orders ---------- */
-
   @ApiOperation({ summary: 'Work orders to subcontractors and labour contractors', description: '`open` lists approved orders that are not closed; `boqItemId` those with a line on that BOQ item.' })
   @Get('work-orders')
   list(@CurrentUser() user: RequestUser, @Query() q: ListWorkOrdersQuery) {
@@ -69,8 +67,6 @@ export class SubcontractsController {
   remove(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.orders.remove(user, id);
   }
-
-  /* ---------- subcontractor bills ---------- */
 
   @ApiOperation({ summary: 'Subcontractor bills' })
   @Get('subcontract-bills')

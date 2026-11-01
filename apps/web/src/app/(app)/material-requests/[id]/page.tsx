@@ -6,7 +6,7 @@ import type { MaterialRequestDto } from '@erp/shared';
 import { MrRecord } from '@/components/material/MrDrawer';
 import { MrFormModal } from '@/components/material/MrFormModal';
 
-/** One material request, as its own page (UI roadmap item 57). */
+/** One material request, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

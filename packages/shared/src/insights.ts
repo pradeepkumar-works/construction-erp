@@ -7,7 +7,7 @@ import { canViewContract } from './permissions';
 import { PRODUCT_NAME } from './brand';
 
 /**
- * The checks on the watch list's Other checks strip (intelligence quick win Q0): each of Nirmaan's own checks that lives on a
+ * The checks on the watch list's Other checks strip: each of Nirmaan's own checks that lives on a
  * page of its own, with its headline figure, so one page shows everything the rules and the assistant have found. A role sees
  * a check only when it may open that check's page (the same helper the page uses).
  */

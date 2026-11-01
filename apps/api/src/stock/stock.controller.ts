@@ -76,7 +76,7 @@ export class StockController {
   }
 
   @ApiOperation({
-    summary: 'Fuel into a machine (v5 item 93)',
+    summary: 'Fuel into a machine',
     description: 'An issue of a fuel item to one machine, with its meter reading. Same rules as an issue; the phone sends it through its outbox with its own id.',
   })
   @Post('fuel-issues')
@@ -126,7 +126,7 @@ export class StockController {
     return this.stock.postCount(user, dto);
   }
 
-  @ApiOperation({ summary: 'Central stores and yards', description: 'v6 item 106. Each store the user sees with its items, value (store managers, approvers, accounts), low items and transfers on the road.' })
+  @ApiOperation({ summary: 'Central stores and yards', description: 'Each store the user sees with its items, value (store managers, approvers, accounts), low items and transfers on the road.' })
   @Get('stores')
   stores(@CurrentUser() user: RequestUser) {
     return this.stock.stores(user);

@@ -98,7 +98,7 @@ export async function syncRequestPaid(tx: Prisma.TransactionClient, requestId: s
     tx.paymentRequest.findUniqueOrThrow({ where: { id: requestId }, select: { amount: true } }),
     tx.vendorPayment.aggregate({ where: { paymentRequestId: requestId }, _sum: { amount: true, tdsAmount: true, otherDeduction: true } }),
     tx.vendorPayment.findFirst({ where: { paymentRequestId: requestId }, orderBy: { paymentDate: 'desc' }, select: { paymentDate: true } }),
-    // A fund request released into an imprest (v6 item 107) is settled by the advances paid on it.
+    // A fund request released into an imprest is settled by the advances paid on it.
     tx.imprestEntry.aggregate({ where: released, _sum: { amount: true } }),
     tx.imprestEntry.findFirst({ where: released, orderBy: { date: 'desc' }, select: { date: true } }),
   ]);
@@ -112,12 +112,12 @@ const fundLabel = (purpose: FundPurpose | null, vendor: string | null, holder: s
   `${purpose ? FUND_PURPOSE_LABELS[purpose] : 'Funds'}, ${vendor ? `to ${vendor} on account` : `into ${holder ?? 'the site'}'s imprest`}`;
 
 /**
- * Payment requests (v5 item 90): before accounts releases money, someone asks for it to be paid (an approved bill) or
+ * Payment requests: before accounts releases money, someone asks for it to be paid (an approved bill) or
  * advanced (against an approved purchase order or work order), and the request goes through the approval matrix
  * (submission type PAYMENT_REQUEST). Payments then draw on an approved request up to its amount. A bill request asks
  * for at most what the bill still has unpaid less what other open requests on it already ask; an advance for at most
  * the order's value less advances already asked for. Both are checked again on submit and on approval, since the bill
- * may have been paid or another advance approved meanwhile. A site's fund request (v6 item 107) asks head office for
+ * may have been paid or another advance approved meanwhile. A site's fund request asks head office for
  * money for a purpose, with no bill or order: accounts release it into the site's imprest (`release`) or pay the
  * party on account through Payables.
  */
@@ -159,15 +159,15 @@ export class PaymentRequestsService {
       purchaseOrderId: r.purchaseOrderId,
       workOrderId: r.workOrderId,
       targetLabel: r.kind === 'FUND_REQUEST' ? fundLabel(r.purpose, r.vendor?.name ?? null, r.imprest?.holder.fullName ?? null) : targetLabel(r),
-      targetValue: money(value)!,
-      targetOpen: open === null ? null : money(Prisma.Decimal.max(open, ZERO))!,
+      targetValue: money(value),
+      targetOpen: open === null ? null : money(Prisma.Decimal.max(open, ZERO)),
       dueDate: dateOnly(r.vendorBill?.dueDate ?? r.subcontractBill?.dueDate ?? null),
-      amount: money(r.amount)!,
+      amount: money(r.amount),
       mode: r.mode,
       neededBy: dateOnly(r.neededBy),
       reason: r.reason,
-      paidAmount: money(r.paidAmount)!,
-      outstanding: money(r.status === 'APPROVED' ? Prisma.Decimal.max(r.amount.sub(r.paidAmount), ZERO) : ZERO)!,
+      paidAmount: money(r.paidAmount),
+      outstanding: money(r.status === 'APPROVED' ? Prisma.Decimal.max(r.amount.sub(r.paidAmount), ZERO) : ZERO),
       paidDate: dateOnly(r.paidDate),
       status: r.status,
       submittedById: r.submittedById,
@@ -178,12 +178,12 @@ export class PaymentRequestsService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 
-  /** Site staff who ask for funds (v6 item 107) but not for payments see only fund requests. */
+  /** Site staff who ask for funds but not for payments see only fund requests. */
   private assertCanView(user: RequestUser) {
     if (!canViewPaymentRequests(user.roleKey) && !canRequestFunds(user.roleKey)) throw new ForbiddenException('Your role cannot see payment requests');
   }
@@ -297,7 +297,7 @@ export class PaymentRequestsService {
   }
 
   /**
-   * A fund request (v6 item 107): a site the user's organisation has, and exactly one of an active imprest at that site
+   * A fund request: a site the user's organisation has, and exactly one of an active imprest at that site
    * or an active party to pay on account. Nothing caps the amount; the approval matrix decides.
    */
   private async fundTarget(db: Db, organizationId: string, ids: { vendorBillId?: string | null; subcontractBillId?: string | null; purchaseOrderId?: string | null; workOrderId?: string | null; projectId?: string | null; imprestId?: string | null; vendorId?: string | null }): Promise<RequestTarget> {
@@ -453,7 +453,7 @@ export class PaymentRequestsService {
   }
 
   /**
-   * Release an approved fund request (v6 item 107) into its imprest: a paid advance on the imprest, up to what the
+   * Release an approved fund request into its imprest: a paid advance on the imprest, up to what the
    * request has left, which raises the holder's cash in hand. A fund request to a party is paid under Payables instead.
    */
   async release(user: RequestUser, id: string, dto: ReleaseFundsDto): Promise<PaymentRequestDto> {

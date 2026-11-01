@@ -113,7 +113,7 @@ export function RfiList({ projectId: fixedProject, onOpen, onNew }: { projectId?
         },
         {
           key: 'links',
-          title: 'Led to',
+          title: 'Resulting change',
           width: 140,
           card: false,
           render: (_, r) => [r.variationLabel, r.riskNo].filter(Boolean).join(' · ') || <Sub>-</Sub>,

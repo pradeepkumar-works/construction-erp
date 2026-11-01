@@ -10,7 +10,7 @@ type Entry = { id: string; entryNo: string; type: string };
 type Enquiry = { id: string; vendors: { vendorName: string; state: string; link?: string | null }[] };
 
 /**
- * Stock first (v5 item 95): a request for an item the road site holds 20 of and the water site 50. The store issues
+ * Stock first: a request for an item the road site holds 20 of and the water site 50. The store issues
  * the 20 here from the request page, transfers the 50 from the water site, and only the rest is left to order;
  * deleting the issue gives its quantity back to the request.
  */
@@ -65,7 +65,7 @@ test('a request is met from stock here and at another site before buying', async
 });
 
 /**
- * Last orders and emailed enquiries (v5 item 95): the comparative shows an item's last approved order; procurement
+ * Last orders and emailed enquiries: the comparative shows an item's last approved order; procurement
  * sends an enquiry, the supplier opens the link signed out and quotes, and the quote lands on the comparative marked
  * from the supplier. The link then only says it was received.
  */
@@ -91,14 +91,14 @@ test('a supplier quotes through the enquiry link and it lands on the comparative
   await api(pm, `/approvals/material_request/${mr.id}/review`, { method: 'POST', body: { decision: 'APPROVE' } });
 
   await signIn(page, 'procurement@demo.com');
-  await page.goto(`/material-requests/${mr.id}`);
+  await page.goto(`/requests-to-order/${mr.id}`);
   await page.getByRole('button', { name: 'Send enquiry' }).click();
   const modal = formPanel(page, `Send enquiry for ${mr.requestNo}`);
-  await chooseOption(modal.getByLabel('Suppliers', { exact: true }), 'Sahoo');
+  await chooseOption(modal.getByLabel('Vendors', { exact: true }), 'Sahoo');
   await page.keyboard.press('Escape');
   await modal.getByRole('button', { name: 'Send enquiry' }).click();
   const sent = page.locator('.ant-modal').filter({ hasText: 'Enquiry sent' });
-  const linkBox = sent.getByLabel(/Quote link for /);
+  const linkBox = sent.getByLabel(/Quotation link for /);
   await expect(linkBox).toBeVisible();
   const link = await linkBox.inputValue();
   expect(link).toMatch(/\/quote\/[A-Za-z0-9_-]{40,}$/);
@@ -125,7 +125,7 @@ test('a supplier quotes through the enquiry link and it lands on the comparative
   expect(enquiries[0].vendors[0].state).toBe('QUOTED');
   const comparative = await api<{ quotations: { vendorName: string; fromSupplier: boolean; deliveryDays: number; lines: { rate: string }[] }[] }>(procurement, `/material-requests/${mr.id}/comparative`);
   expect(comparative.quotations).toEqual([expect.objectContaining({ fromSupplier: true, deliveryDays: 4, lines: [expect.objectContaining({ rate: '142.50' })] })]);
-  await page.reload();
-  await expect(page.getByText('From supplier').first()).toBeVisible();
+  await page.goto(`/material-requests/${mr.id}`);
+  await expect(page.getByText('From vendor').first()).toBeVisible();
   await expect(page.getByRole('button', { name: /Last order ₹/ }).first()).toBeVisible();
 });

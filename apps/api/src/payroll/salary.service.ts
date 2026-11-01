@@ -53,7 +53,7 @@ const loanInclude = { employee: { select: { fullName: true, employeeCode: true, 
 type LoanRow = Prisma.StaffLoanGetPayload<{ include: typeof loanInclude }>;
 
 /**
- * Payroll's masters (v6 item 100): the company's settings, each employee's salary structure from a date, and loans and
+ * Payroll's masters: the company's settings, each employee's salary structure from a date, and loans and
  * advances recovered from salary. HR keeps them; management, accounts and admins read them.
  */
 @Injectable()
@@ -66,8 +66,6 @@ export class SalaryService {
   assertRun(user: RequestUser) {
     if (!canRunPayroll(user.roleKey)) throw new ForbiddenException('Only HR or an admin can change salaries and loans');
   }
-
-  /* ---------- settings ---------- */
 
   async settingsRow(orgId: string) {
     return this.prisma.payrollSettings.findUnique({ where: { organizationId: orgId } });
@@ -85,11 +83,11 @@ export class SalaryService {
       pfEmployeePct: String(r.pfEmployeePct),
       pfEmployerPct: String(r.pfEmployerPct),
       epsPct: String(r.epsPct),
-      pfWageCeiling: money(r.pfWageCeiling)!,
+      pfWageCeiling: money(r.pfWageCeiling),
       pfCapAtCeiling: r.pfCapAtCeiling,
       esiEmployeePct: String(r.esiEmployeePct),
       esiEmployerPct: String(r.esiEmployerPct),
-      esiGrossCeiling: money(r.esiGrossCeiling)!,
+      esiGrossCeiling: money(r.esiGrossCeiling),
       ptState: r.ptState,
       paidDaysBasis: r.paidDaysBasis,
       overtimeMultiplier: String(r.overtimeMultiplier),
@@ -106,8 +104,6 @@ export class SalaryService {
     return this.settings(user);
   }
 
-  /* ---------- salary structures ---------- */
-
   private toStructureDto(s: StructureRow, st: RulesSettings): SalaryStructureDto {
     const r = toRulesStructure(s);
     const c = structureCost(r, st);
@@ -116,29 +112,29 @@ export class SalaryService {
       employeeId: s.employeeId,
       employeeCode: s.employee.employeeCode,
       employeeName: s.employee.fullName,
-      effectiveFrom: dateOnly(s.effectiveFrom)!,
-      basic: money(s.basic)!,
-      da: money(s.da)!,
-      hra: money(s.hra)!,
-      conveyance: money(s.conveyance)!,
-      special: money(s.special)!,
-      otherEarnings: money(s.otherEarnings)!,
-      gross: money(c.gross)!,
-      employeePf: money(c.employeePf)!,
-      employerPf: money(c.employerPf)!,
-      employeeEsi: money(c.employeeEsi)!,
-      employerEsi: money(c.employerEsi)!,
-      ctcAnnual: money(c.ctcAnnual)!,
+      effectiveFrom: dateOnly(s.effectiveFrom),
+      basic: money(s.basic),
+      da: money(s.da),
+      hra: money(s.hra),
+      conveyance: money(s.conveyance),
+      special: money(s.special),
+      otherEarnings: money(s.otherEarnings),
+      gross: money(c.gross),
+      employeePf: money(c.employeePf),
+      employerPf: money(c.employerPf),
+      employeeEsi: money(c.employeeEsi),
+      employerEsi: money(c.employerEsi),
+      ctcAnnual: money(c.ctcAnnual),
       pf: s.pf,
       esi: s.esi,
       pt: s.pt,
       taxRegime: s.taxRegime,
-      declaredDeductions: money(s.declaredDeductions)!,
-      otherIncome: money(s.otherIncome)!,
-      monthlyTds: money(monthlyTds(r, st, s.employee.gender))!,
+      declaredDeductions: money(s.declaredDeductions),
+      otherIncome: money(s.otherIncome),
+      monthlyTds: money(monthlyTds(r, st, s.employee.gender)),
       note: s.note,
       createdByName: s.createdBy.fullName,
-      createdAt: iso(s.createdAt)!,
+      createdAt: iso(s.createdAt),
     };
   }
 
@@ -217,8 +213,6 @@ export class SalaryService {
     return { ok: true };
   }
 
-  /* ---------- loans and advances ---------- */
-
   /** Recovered so far: in runs past draft, or all of it once their settlement is approved. */
   private recovered(l: LoanRow) {
     if (l.employee.settlement && l.employee.settlement.status !== 'DRAFT') return n(l.amount);
@@ -233,15 +227,15 @@ export class SalaryService {
       employeeCode: l.employee.employeeCode,
       employeeName: l.employee.fullName,
       kind: l.kind,
-      issuedOn: dateOnly(l.issuedOn)!,
-      amount: money(l.amount)!,
-      emi: money(l.emi)!,
+      issuedOn: dateOnly(l.issuedOn),
+      amount: money(l.amount),
+      emi: money(l.emi),
       startMonth: l.startMonth,
-      recovered: money(recovered)!,
-      balance: money(Math.max(0, n(l.amount) - recovered))!,
+      recovered: money(recovered),
+      balance: money(Math.max(0, n(l.amount) - recovered)),
       note: l.note,
       createdByName: l.createdBy.fullName,
-      createdAt: iso(l.createdAt)!,
+      createdAt: iso(l.createdAt),
     };
   }
 

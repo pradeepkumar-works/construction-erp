@@ -58,9 +58,9 @@ function milestoneColor(state: MilestoneState, token: ReturnType<typeof theme.us
 const slipText = (days: number | null) => (days === null ? null : days === 0 ? 'on the baseline' : days > 0 ? `${days} days later than the baseline` : `${-days} days earlier than the baseline`);
 
 /**
- * A plain Gantt (v4 item 43): one row per milestone and activity on a day scale, the current plan as a bar filled to
+ * A plain Gantt: one row per milestone and activity on a day scale, the current plan as a bar filled to
  * its progress, the frozen baseline as a thin grey bar under it, and a line for today. Names stay put while the
- * timeline scrolls sideways. With links (v6 item 114) a critical activity's bar has a thick top edge, its float shows
+ * timeline scrolls sideways. With links a critical activity's bar has a thick top edge, its float shows
  * as a dotted line after the bar, and the row opens the activity's links.
  */
 export function GanttChart({

@@ -33,7 +33,7 @@ export interface Forecast {
 }
 
 /**
- * Budget and forecast to complete (v4 item 38). A project's budget is set by cost head, and BOQ items can carry a
+ * Budget and forecast to complete. A project's budget is set by cost head, and BOQ items can carry a
  * budgeted cost per unit. % complete is the executed value (approved progress × BOQ rate) over the BOQ value, the budget
  * at completion is the cost-head total (else the BOQ budget), and the forecast at completion is the actual cost to date
  * plus the budget for the work still to do.
@@ -118,13 +118,13 @@ export class BudgetService {
         itemNo: b.itemNo,
         description: b.description,
         unit: b.unit,
-        qty: dec(qty)!,
-        rate: money(b.rate)!,
-        amount: money(qty.mul(b.rate))!,
+        qty: dec(qty),
+        rate: money(b.rate),
+        amount: money(qty.mul(b.rate)),
         budgetRate: money(b.budgetRate),
         budgetAmount: b.budgetRate !== null ? money(qty.mul(b.budgetRate)) : null,
         plannedMarginPct: b.budgetRate !== null && b.rate.gt(0) ? Math.round(b.rate.minus(b.budgetRate).div(b.rate).mul(1000).toNumber()) / 10 : null,
-        executedQty: dec(done)!,
+        executedQty: dec(done),
         earnedBudget: b.budgetRate !== null ? money(done.mul(b.budgetRate)) : null,
       };
     });
@@ -135,7 +135,7 @@ export class BudgetService {
       return {
         head,
         budget: money(budget),
-        actual: money(actual)!,
+        actual: money(actual),
         earned: money(earned),
         forecast: budget ? money(actual.plus(budget.minus(earned!))) : null,
         variance: earned ? money(earned.minus(actual)) : null,
@@ -151,12 +151,12 @@ export class BudgetService {
       boqBudget: money(f.boqBudget),
       boqItems,
       itemsWithoutBudgetRate: items.filter((b) => b.budgetRate === null && qtyOf(b).gt(0)).length,
-      boqValue: money(f.boqValue)!,
-      executedValue: money(f.executed)!,
+      boqValue: money(f.boqValue),
+      executedValue: money(f.executed),
       pctComplete: Math.round(f.pct.mul(1000).toNumber()) / 10,
       budgetAtCompletion: money(f.bac),
       earnedBudget: money(earned),
-      actualCost: money(f.actual)!,
+      actualCost: money(f.actual),
       costVariance: earned ? money(earned.minus(f.actual)) : null,
       forecastAtCompletion: money(f.eac),
       forecastToComplete: f.eac ? money(f.eac.minus(f.actual)) : null,

@@ -4,7 +4,7 @@ import React from 'react';
 import { Alert, App, Button, Input, Modal, Space, Typography } from 'antd';
 import { CopyOutlined } from '@/components/common/icons';
 import type { PasswordLinkDto } from '@erp/shared';
-import { MESSAGE_CHANNEL_LABELS } from '@erp/shared';
+import { MESSAGE_CHANNEL_LABELS, PRODUCT_NAME } from '@erp/shared';
 import { formatDateTime } from '@/lib/format';
 
 /** Shows a set-password link after an invite or reset, for the admin to share if it was not emailed. */
@@ -27,7 +27,7 @@ export function PasswordLinkModal({ result, onClose }: { result: { name: string;
           {link.emailed ? (
             <Alert type="success" showIcon title={`Emailed to ${result.email}.`} description="You can also share the link below yourself." />
           ) : (
-            <Alert type="info" showIcon title="Not emailed" description={`${link.emailError ? `The email could not be sent (${link.emailError})` : 'Email is not set up on this server'}, so send this link to ${result.email} yourself (WhatsApp, SMS or email).`} />
+            <Alert type="info" showIcon title="Not emailed" description={`${link.emailError ? `The email could not be sent (${link.emailError})` : `Email is not set up for your company yet`}, so send this link to ${result.email} yourself (WhatsApp, SMS or email).`} />
           )}
           {link.messaged ? <Alert type="success" showIcon title={`Also sent on ${MESSAGE_CHANNEL_LABELS[link.messaged]} to their mobile number.`} /> : null}
           {link.link ? (
@@ -38,7 +38,7 @@ export function PasswordLinkModal({ result, onClose }: { result: { name: string;
               </Button>
             </Space.Compact>
           ) : (
-            <Alert type="warning" showIcon title="The server does not know the web address, so it cannot make a link. Set WEB_URL on the API." />
+            <Alert type="warning" showIcon title="Links cannot be made yet" description={`Ask ${PRODUCT_NAME} support to finish setting up the web address.`} />
           )}
           <Typography.Text type="secondary">
             The link works once and expires on {formatDateTime(link.expiresAt)}. Making a new link cancels this one.

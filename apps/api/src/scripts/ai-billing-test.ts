@@ -1,5 +1,5 @@
 /**
- * Ask Nirmaan's usage, controls and pricing (AI item 77): the plan's AI allowance and the roles rule as unit tests, then
+ * Ask Nirmaan's usage, controls and pricing: the plan's AI allowance and the roles rule as unit tests, then
  * on the demo company billed as an ordinary customer: the allowance in the trial and once paid, the company's own cap
  * held under it, a used-up allowance, the read-only (unpaid) state stopping every AI call, roles an admin closed, use by
  * person and month, and the admins' conversation log with its export. No real model is called, nothing is charged, and

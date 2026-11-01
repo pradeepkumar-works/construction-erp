@@ -1,5 +1,5 @@
 /**
- * Built-in activity templates per kind of component (item 125, ARCHITECTURE "Work breakdown"). Adding a component from
+ * Built-in activity templates per kind of component (ARCHITECTURE "Work breakdown"). Adding a component from
  * the Structure tab lays out its activities and sub-activities with weights that add up to 100, and fills the planned
  * quantity where the component's specs say it (pipe length, number of connections, one lump sum).
  */
@@ -68,7 +68,7 @@ export const RCC_PARTS: { suffix: string; name: string; unit: string; weightPct:
 /** At most this many lifts are laid out for one wall, staging or steining. */
 export const MAX_LIFTS = 20;
 
-/** A part of an RCC step (item 134): the company may split RCC its own way; RCC_PARTS when not. */
+/** A part of an RCC step: the company may split RCC its own way; RCC_PARTS when not. */
 export interface RccPart {
   name: string;
   unit: string;
@@ -85,7 +85,7 @@ export interface StepPart {
 }
 
 /**
- * One step of a component kind (item 134, ARCHITECTURE "Project types"): what the kind lays out, in order. The built-in
+ * One step of a component kind (ARCHITECTURE "Project types"): what the kind lays out, in order. The built-in
  * kinds are these steps as data, and a company edits its own copy in Admin › Component kinds.
  */
 export type ComponentStep =
@@ -120,7 +120,7 @@ const pipeline = (restore: boolean): Step[] => [
   plain('Valves, specials and chambers', 'Nos', 8),
   plain('Backfilling and compaction', 'Rmt', 9, { qtyFrom: 'lengthM' }),
   plain('Hydraulic testing', 'Rmt', 7, { qtyFrom: 'lengthM' }),
-  // Restoration is measured along the trench, so a pipe sheet's "restored" column and each segment can show it (item 126).
+  // Restoration is measured along the trench, so a pipe sheet's "restored" column and each segment can show it.
   ...(restore ? [plain('Road restoration over the trench', 'Rmt', 10, { qtyFrom: 'lengthM' })] : [plain('Thrust blocks and anchors', 'Cum', 10)]),
   plain('Flushing, disinfection and commissioning', 'Rmt', 8, { qtyFrom: 'lengthM' }),
 ];
@@ -250,7 +250,7 @@ const stepQty = (step: { qtyFrom?: string; lumpSum?: boolean }, specs: ElementSp
 };
 
 /**
- * The activities and sub-activities a component of this kind starts with (item 134: the kind is data, the company's
+ * The activities and sub-activities a component of this kind starts with (the kind is data, the company's
  * own or a built-in one). Top-level weights add up to 100, and so do each RCC activity's parts and each group's
  * sub-activities. A run of lifts shares its weight equally (a remainder goes to the last lift so the sum stays exact).
  */
@@ -285,7 +285,7 @@ export function kindPlan(kind: KindSteps, rawSpecs?: ElementSpecs | null): Eleme
   return lines;
 }
 
-/** The built-in steps of each kind, as data (item 134): what a company starts from in Admin › Component kinds. */
+/** The built-in steps of each kind, as data: what a company starts from in Admin › Component kinds. */
 export const STANDARD_STEPS: Record<WorkElementType, ComponentStep[]> = TEMPLATES;
 
 /** The built-in plan of a kind; a company's own kind goes through `kindPlan`. */

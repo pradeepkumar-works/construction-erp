@@ -7,7 +7,7 @@ import { canRecordTest, type TestsDueRowDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useTestsDue } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatQty } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -21,7 +21,7 @@ const srOnly: React.CSSProperties = { position: 'absolute', width: 1, height: 1,
 const unitOf = (r: TestsDueRowDto) => (r.line.source === 'RECEIPT' ? `in ${r.occasions} lot${r.occasions === 1 ? '' : 's'}` : r.unit ?? '');
 
 /**
- * Tests due (item 137): what each line of the quality plans owes from the approved work and the material received,
+ * Tests due: what each line of the quality plans owes from the approved work and the material received,
  * against the tests taken under it; a short line records its test from here.
  */
 export function TestsDuePage() {
@@ -44,7 +44,7 @@ export function TestsDuePage() {
         <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} style={{ minWidth: 240, maxWidth: '100%' }} />
           <Checkbox checked={short} onChange={(e) => setShort(e.target.checked)}>
-            Only tests short
+            Only tests still owed
           </Checkbox>
         </Flex>
         {isLoading ? (
@@ -54,8 +54,8 @@ export function TestsDuePage() {
         ) : (
           <>
             <Flex gap={token.marginXL} wrap style={{ marginBottom: token.margin }}>
-              <Statistic title="Tests owed" value={data.required} />
-              <Statistic title="Taken" value={data.taken} />
+              <Statistic title="Owed" value={data.required} />
+              <Statistic title="Sampled" value={data.taken} />
               <Statistic title="Short" value={data.short} styles={{ content: data.short ? { color: token.colorErrorText } : undefined }} />
             </Flex>
             <Table<TestsDueRowDto>
@@ -84,10 +84,10 @@ export function TestsDuePage() {
                   key: 'done',
                   width: 150,
                   align: 'right',
-                  render: (_, r) => (r.quantity ? <span translate="no">{`${Number(r.quantity).toLocaleString('en-IN')} ${unitOf(r)}`}</span> : <Typography.Text type="secondary">Nothing yet</Typography.Text>),
+                  render: (_, r) => (r.quantity ? <span translate="no">{`${formatQty(r.quantity)} ${unitOf(r)}`}</span> : <Typography.Text type="secondary">Nothing yet</Typography.Text>),
                 },
                 { title: 'Owed', dataIndex: 'required', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
-                { title: 'Taken', dataIndex: 'taken', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
+                { title: 'Sampled', dataIndex: 'taken', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
                 {
                   title: 'Short',
                   dataIndex: 'short',

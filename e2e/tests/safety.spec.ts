@@ -14,7 +14,7 @@ type Summary = { toolboxTalksThisMonth: number; attendeesThisMonth: number; perm
 const building = async (token: string) => (await api<Page<Project>>(token, '/projects?pageSize=100')).items.find((p) => p.code === 'BL-2026-02')!;
 
 /**
- * Safety (v4 item 40): the site engineer reports an incident from the project's Safety tab; the safety officer hears of
+ * Safety: the site engineer reports an incident from the project's Safety tab; the safety officer hears of
  * it and closes it with the root cause and the corrective action. Older phone builds do not get the new notification type.
  */
 test('an incident is reported at site and closed by the safety officer', async ({ page }) => {
@@ -95,7 +95,7 @@ test('a permit to work is asked for, issued by the safety officer and closed', a
   await issue.getByLabel('Area cleared of flammable material').check();
   await issue.getByLabel('Conditions').fill('Fire watch till 30 minutes after.');
   await issue.getByRole('button', { name: 'Issue permit' }).click();
-  await expect(page.getByText(`${permit.permitNo} issued`)).toBeVisible();
+  await expect(page.getByText(`${permit.permitNo} issued`, { exact: true })).toBeVisible();
 
   const issued = await api<Permit>(engineer, `/safety/permits/${permit.id}`);
   expect(issued.status).toBe('ISSUED');

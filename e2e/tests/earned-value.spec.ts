@@ -25,7 +25,7 @@ const n = Number;
 const call = (token: string, path: string) => fetch(`${API_URL}${path}`, { headers: { authorization: `Bearer ${token}` } });
 
 /**
- * Earned value (v6 item 115) on the demo hospital, which has a cost budget, a baseline and approved progress behind plan:
+ * Earned value on the demo hospital, which has a cost budget, a baseline and approved progress behind plan:
  * the figures hang together (variances, indices, the S-curve ending on today's values, activities furthest behind first),
  * the tab shows them and switches to measured work, and only people who see cost get them.
  */
@@ -63,7 +63,7 @@ test('the hospital’s earned value hangs together and shows on its own tab', as
   await page.goto(`/projects/${hospital.id}`);
   await openProjectTab(page, 'Money', 'Earned value');
   await expect(page).toHaveURL(/tab=earned-value/);
-  await expect(page.getByText('Schedule (SPI)')).toBeVisible();
+  await expect(page.getByText('Schedule index (SPI)')).toBeVisible();
   await expect(page.getByText(ev.spi!.toFixed(2), { exact: true }).first()).toBeVisible();
   await expect(page.getByText(`${ev.daysLate} days after the planned`)).toBeVisible();
   await expect(page.locator('.ev-activities').getByRole('row').nth(1)).toContainText(ev.activities[0].name);

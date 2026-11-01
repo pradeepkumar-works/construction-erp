@@ -24,9 +24,9 @@ import { ClientFormModal } from '@/components/clients/ClientFormModal';
 interface FormValues {
   code: string;
   name: string;
-  /** A project type's code (item 134), or `kind:PLANT` / `kind:STORE` for the built-in kinds that have no type */
+  /** A project type's code, or `kind:PLANT` / `kind:STORE` for the built-in kinds that have no type */
   typeChoice: string;
-  /** Its vertical (item 167), a code of the vertical master */
+  /** Its vertical, a code of the vertical master */
   verticalCode?: string | null;
   /** New projects: how many of each top-level component of the type's starting breakdown (0 leaves it out) */
   breakdown?: Record<string, number | null>;
@@ -45,9 +45,9 @@ interface FormValues {
   contractValue?: number | null;
   projectManagerId?: string;
   applyTemplate?: boolean;
-  /** Copy the team and the contract terms from this project (finding 6 of the October review) */
+  /** Copy the team and the contract terms from this project */
   copyFromProjectId?: string;
-  /** Attendance extras (v5 item 97): where the site is, for GPS check-in */
+  /** Attendance extras: where the site is, for GPS check-in */
   siteLat?: number | null;
   siteLng?: number | null;
   siteRadiusM?: number | null;
@@ -80,7 +80,7 @@ export function ProjectFormModal({
   onClose: () => void;
   project?: ProjectDetail | null;
   onSaved?: (id: string) => void;
-  /** A new project's type to start with, e.g. a central store from Central stores (v6 item 106) */
+  /** A new project's type to start with, e.g. a central store from Central stores */
   initialType?: ProjectType;
 }) {
   const [form] = Form.useForm<FormValues>();
@@ -96,18 +96,18 @@ export function ProjectFormModal({
   const template = typeDef ? templates?.find((t) => t.typeCode === typeDef.code) : undefined;
   // What a change of type filled in (the contract, the breakdown picks, the activities box), so a box someone set stays.
   const typeFilled = useRef<{ contractModel?: ContractModel; applyTemplate?: boolean }>({});
-  // The next code in the company's series (finding 17 of the October review); `filledCode` keeps the one we filled in,
+  // The next code in the company's series; `filledCode` keeps the one we filled in,
   // so a code typed by hand is never written over, and a change of type moves our own suggestion along.
   const mayCreate = !!user && (MANAGER_ROLES as readonly string[]).includes(user.roleKey);
   const { data: nextCode } = useNextProjectCode(type as ProjectType | undefined, open && !isEdit && mayCreate);
   const filledCode = useRef<string | null>(null);
-  // The company's verticals (item 167); a new project's type fills its usual one, and `filledVertical` keeps what we
+  // The company's verticals; a new project's type fills its usual one, and `filledVertical` keeps what we
   // filled, so a vertical chosen by hand stays when the type changes.
   const { data: verticals } = useMasterList('vertical', false, open);
   const filledVertical = useRef<string | null>(null);
   // The saved project, handed to `onSaved` once the form has closed (e.g. to open it).
   const saved = useRef<string | null>(null);
-  // A work order or LoA read to fill a new project (finding 10 of the October review).
+  // A work order or LoA read to fill a new project.
   const [readState, setReadState] = useState<ReadState | null>(null);
   const [activeRead, setActiveRead] = useState<string | null>(null);
   const [addClient, setAddClient] = useState(false);
@@ -267,7 +267,7 @@ export function ProjectFormModal({
       form={form}
       layout="drawer"
       title={isEdit ? (project?.type === 'STORE' ? 'Edit store' : 'Edit project') : initialType === 'STORE' ? 'New central store' : 'New project'}
-      okText={isEdit ? 'Save changes' : 'Create project'}
+      okText="Save"
       onSubmit={(v) => mutation.mutateAsync(v)}
     >
       <Form form={form} layout="vertical">
@@ -338,7 +338,7 @@ export function ProjectFormModal({
         </FormSection>
         <FormSection title="Client and contract">
           <FormGrid cols={2}>
-            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'} {...(readState?.result.client ? read('clientName') : {})}>
+            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Client billing › Clients, or from the Contract tab.'} {...(readState?.result.client ? read('clientName') : {})}>
               <ClientSelect allowClear />
             </Form.Item>
             <Form.Item name="consultantName" label="Consultant / PMC">
@@ -363,13 +363,13 @@ export function ProjectFormModal({
                 </Form.Item>
               </>
             ) : null}
-            <Form.Item name="dates" label="Start / end date" {...read(readText(readState?.result.fields.completionDate) || !readText(readState?.result.fields.startDate) ? 'completionDate' : 'startDate')}>
+            <Form.Item name="dates" label="Start and completion dates" {...read(readText(readState?.result.fields.completionDate) || !readText(readState?.result.fields.startDate) ? 'completionDate' : 'startDate')}>
               <DatePicker.RangePicker style={{ width: '100%' }} allowEmpty={[true, true]} />
             </Form.Item>
             <Form.Item name="contractValue" label="Contract value" {...read('contractValue')}>
               <MoneyInput />
             </Form.Item>
-            <Form.Item name="contractModel" label="Contract type" tooltip="Item rate pays measured BOQ quantities. Lump sum and EPC pay in stages; their components are weighed by the billing breakup.">
+            <Form.Item name="contractModel" label="Contract type" tooltip="Item rate pays measured BOQ quantities. Lump sum and EPC pay in stages; each component's weight is its share in the contract's payment schedule.">
               <Select options={CONTRACT_MODELS.map((m) => ({ value: m, label: CONTRACT_MODEL_LABELS[m] }))} placeholder="Item rate" />
             </Form.Item>
           </FormGrid>
@@ -388,7 +388,7 @@ export function ProjectFormModal({
               name="copyFromProjectId"
               label="Copy from project"
               style={{ marginTop: 16, marginBottom: 0 }}
-              extra={`Its team and contract terms: deductions, GST, liquidated damages and periods. Without one, the client's usual terms, else ${STANDARD_TERMS.retentionPct}% retention, ${STANDARD_TERMS.tdsPct}% TDS, ${STANDARD_TERMS.gstTdsPct}% GST TDS and ${STANDARD_TERMS.labourCessPct}% cess.`}
+              extra={`Its team and contract terms: deductions, GST, liquidated damages and periods. Without one, the client's usual terms, else ${STANDARD_TERMS.securityDepositPct}% security deposit, ${STANDARD_TERMS.tdsPct}% TDS, ${STANDARD_TERMS.gstTdsPct}% GST TDS and ${STANDARD_TERMS.labourCessPct}% cess.`}
             >
               <ProjectSelect placeholder="None" style={{ width: '100%' }} aria-label={undefined} />
             </Form.Item>
@@ -397,7 +397,7 @@ export function ProjectFormModal({
         {!isEdit && typeDef && typeDef.breakdown.some((b) => !b.parentKey) ? (
           <FormSection title="Starting components">
             <Typography.Paragraph type="secondary">
-              Laid out on the Structure tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.
+              Laid out on the Components tab with their activities and weights. Set how many of each this project has; 0 leaves one out. More can be added later.
             </Typography.Paragraph>
             <FormGrid cols={3}>
               {typeDef.breakdown

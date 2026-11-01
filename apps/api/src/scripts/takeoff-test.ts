@@ -1,5 +1,5 @@
 /**
- * Measuring on drawings' tests (v6 item 118): the scale from two points, lengths along a line, areas inside an outline,
+ * Measuring on drawings' tests: the scale from two points, lengths along a line, areas inside an outline,
  * counts, what a measure needs, and the measurement book line each becomes, with no database. CI runs it after the build:
  *
  *   node dist/scripts/takeoff-test.js

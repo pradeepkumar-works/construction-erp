@@ -6,7 +6,7 @@ import { Public } from '../common/decorators';
 import { IntegrationsService } from './integrations.service';
 import { ConnectorReadingsDto, CreateAgentDto, CreateConnectionDto, EventQuery, MatchDeviceDto, PairConnectorDto, UpdateConnectionDto } from './integrations.dto';
 
-/** Connections to outside systems, the Connectors that read devices on site, the devices and the log (item 139). */
+/** Connections to outside systems, the Connectors that read devices on site, the devices and the log. */
 @ApiTags('integrations')
 @ApiBearerAuth()
 @Controller('integrations')
@@ -47,7 +47,7 @@ export class IntegrationsController {
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
   @ApiOperation({
-    summary: "Reads every makers' feed that is due (item 146) and removes machine readings past 90 days. Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the daily digest runs it too. Auth: Authorization: Bearer <CRON_SECRET>.",
+    summary: "Reads every makers' feed that is due and removes machine readings past 90 days. Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the daily digest runs it too. Auth: Authorization: Bearer <CRON_SECRET>.",
   })
   @Get('jobs/machine-feeds')
   pollFeeds() {

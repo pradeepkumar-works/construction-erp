@@ -17,7 +17,7 @@ interface AdmsDevice {
 }
 
 /**
- * Biometric device commands (item 150): HR puts a user number and its name on the company's ADMS devices or takes it off,
+ * Biometric device commands: HR puts a user number and its name on the company's ADMS devices or takes it off,
  * and sets a device's clock; each is a `BiometricCommand` handed to the device when it next asks (`GET /iclock/getrequest`)
  * and closed by its answer (`POST /iclock/devicecmd`). What goes over the wire is pure in `biometric-rules.ts`.
  */
@@ -143,8 +143,6 @@ export class BiometricCommandsService {
     if (!done.count) throw new BadRequestException('The device has it already; it cannot be taken back');
     return { cancelled: true };
   }
-
-  /* ---------- the device's side (ADMS) ---------- */
 
   /** A device saying hello: its clock is set once a day, so a drifting clock never moves a punch to the wrong day. */
   async onHandshake(d: AdmsDevice) {

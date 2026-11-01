@@ -10,7 +10,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useMyStaff } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { AttendanceTag, CheckInPlaceTag, FacePhotos, LeaveStatusTag, OvertimeTag, clock, currentPosition, leaveSpan, metres } from './staffUi';
 import { LeaveFormModal } from './LeaveFormModal';
@@ -27,7 +27,7 @@ export function MyStaff() {
   const act = useMutation({
     mutationFn: async (what: 'check-in' | 'check-out' | { cancel: string }) => {
       if (typeof what !== 'string') return (await api.post(`/staff/leave/${what.cancel}/cancel`)).data;
-      // Check-in sends where the browser is (v5 item 97) when the site has a location to measure from.
+      // Check-in sends where the browser is when the site has a location to measure from.
       const at = what === 'check-in' && data?.site ? await currentPosition() : null;
       return (await api.post(`/staff/me/${what}`, at ?? {})).data;
     },
@@ -54,7 +54,7 @@ export function MyStaff() {
     { title: 'Days', dataIndex: 'days', width: 70, align: 'right' },
     { title: 'Reason', dataIndex: 'reason', ellipsis: true, width: 200 },
     { title: 'Status', dataIndex: 'status', width: 110, render: (v: LeaveRequestDto['status']) => <LeaveStatusTag status={v} /> },
-    { title: 'Decided by', key: 'decided', width: 220, render: (_, r) => (r.decidedByName ? <span>{r.decidedByName}{r.decisionNote ? <Typography.Text type="secondary">: {r.decisionNote}</Typography.Text> : null}</span> : '-') },
+    { title: 'Decided by', key: 'decided', width: 220, render: (_, r) => (r.decidedByName ? <span>{r.decidedByName}{r.decisionNote ? <Typography.Text type="secondary">: {r.decisionNote}</Typography.Text> : null}</span> : NO_VALUE) },
     {
       title: '',
       key: 'actions',
@@ -121,7 +121,7 @@ export function MyStaff() {
           <Section
             title={`Leave left in ${data.year}`}
             extra={
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setApply(true)}>
+              <Button icon={<PlusOutlined />} onClick={() => setApply(true)}>
                 Apply for leave
               </Button>
             }

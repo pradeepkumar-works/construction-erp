@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useImprest, useImprests } from '@/lib/queries';
-import { STATUS_COLORS, formatDate, formatINR } from '@/lib/format';
+import { STATUS_COLORS, formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -36,7 +36,7 @@ function CashBar({ i }: { i: ImprestDto }) {
 }
 
 /**
- * Site imprests (v4 item 45): petty cash floats held at the sites, with the cash in hand after the holders' cash
+ * Site imprests: petty cash floats held at the sites, with the cash in hand after the holders' cash
  * expenses, top-ups waiting to be paid, and each imprest's cash ledger.
  */
 export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId?: string; initialId?: string }) {
@@ -79,7 +79,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       dataIndex: 'disallowed',
       width: 120,
       align: 'right',
-      render: (v) => (Number(v) ? <span className="text-danger">{rs(v)}</span> : <span className="text-muted">-</span>),
+      render: (v) => (Number(v) ? <span className="text-danger">{rs(v)}</span> : <span className="text-muted">{NO_VALUE}</span>),
     },
     {
       title: 'Top-up',
@@ -191,7 +191,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
         const text = [e.reason, e.paymentMode ? `${PAYMENT_MODE_LABELS[e.paymentMode]}${e.reference ? ` ${e.reference}` : ''}` : null, e.decisionNote, e.requestedByName ? `asked by ${e.requestedByName}` : null, e.decidedByName ? `by ${e.decidedByName}` : null]
           .filter(Boolean)
           .join(' · ');
-        // Released from a site's fund request (v6 item 107).
+        // Released from a site's fund request.
         return e.paymentRequestId ? (
           <span>
             <Link href={`/payment-requests/${e.paymentRequestId}`} className="mono" translate="no">
@@ -222,8 +222,8 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
             <Descriptions.Item label="Advanced">{rs(i.advanced)}</Descriptions.Item>
             <Descriptions.Item label="Returned">{rs(i.returned)}</Descriptions.Item>
             <Descriptions.Item label="Spent, approved">{rs(i.approvedSpend)}</Descriptions.Item>
-            <Descriptions.Item label="Awaiting approval">{rs(i.pendingSpend)}</Descriptions.Item>
-            <Descriptions.Item label="Disallowed">{Number(i.disallowed) ? <span className="text-danger">{rs(i.disallowed)}</span> : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Waiting for approval">{rs(i.pendingSpend)}</Descriptions.Item>
+            <Descriptions.Item label="Disallowed">{Number(i.disallowed) ? <span className="text-danger">{rs(i.disallowed)}</span> : NO_VALUE}</Descriptions.Item>
             <Descriptions.Item label="Opened">
               {formatDate(i.openedOn)}
               {i.closedOn ? `, closed ${formatDate(i.closedOn)}` : ''}

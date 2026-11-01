@@ -5,7 +5,7 @@ import type { Connection } from './state';
 import { readReport } from './csv';
 
 /**
- * The batching plant reader (item 149): the folder the plant's controller writes its batch reports to, read each run.
+ * The batching plant reader: the folder the plant's controller writes its batch reports to, read each run.
  * A file is read again only when it has changed (a day's file grows as trucks are batched), and each row goes as one
  * reading whose id is the row's key, so a row read twice is counted once by Nirmaan. Only the folder is read; nothing
  * is written to it, and the controller's own database is not touched.

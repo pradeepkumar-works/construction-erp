@@ -77,7 +77,7 @@ function LeaveRow({ l, mine, busy, onCancel, onApprove, onReject }: { l: LeaveRe
   );
 }
 
-/** Where a check-in was (v5 item 97): at the site, outside it, or a position with no site location to measure from. */
+/** Where a check-in was: at the site, outside it, or a position with no site location to measure from. */
 function PlacePill({ place }: { place: StaffAttendanceDto['checkInPlace'] }) {
   const t = useT();
   if (!place) return null;
@@ -90,7 +90,7 @@ function PlacePill({ place }: { place: StaffAttendanceDto['checkInPlace'] }) {
   );
 }
 
-/** A day's overtime waiting on the site manager or HR (v5 item 97). */
+/** A day's overtime waiting on the site manager or HR. */
 function OvertimeRow({ a, busy, onApprove, onReject }: { a: StaffAttendanceDto; busy: boolean; onApprove: () => void; onReject: () => void }) {
   const t = useT();
   return (

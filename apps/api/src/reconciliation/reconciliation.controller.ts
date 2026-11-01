@@ -55,7 +55,7 @@ export class ReconciliationController {
     return this.reconciliation.remove(user, id, normId);
   }
 
-  @ApiOperation({ summary: 'Add or change the norm of a store item on an activity', description: 'For work with no BOQ item of its own (item 128); it counts before the BOQ item\'s norms. QS, project manager, management or admin.' })
+  @ApiOperation({ summary: 'Add or change the norm of a store item on an activity', description: 'For work with no BOQ item of its own; it counts before the BOQ item\'s norms. QS, project manager, management or admin.' })
   @Put('projects/:id/activity-norms')
   saveActivityNorm(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveActivityNormDto) {
     return this.reconciliation.saveActivityNorm(user, id, dto);

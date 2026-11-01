@@ -22,7 +22,7 @@ const istDay = (offset = 0) => new Date(Date.now() + 330 * 60_000 + offset * 86_
 const fmt = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /**
- * GPS check-in (v5 item 97): the building site has a location and a 200 m radius. With the refusal switched on, a
+ * GPS check-in: the building site has a location and a 200 m radius. With the refusal switched on, a
  * check-in without a position or from a kilometre away is refused with a message that says what to do; one from 55 m
  * is inside. The site manager's register shows where it was.
  */
@@ -100,7 +100,7 @@ test('mark in and mark out keep the photo the person took', async () => {
 });
 
 /**
- * Overtime approval (v5 item 97): overtime the site supervisor marks waits for the project manager; the manager's own
+ * Overtime approval: overtime the site supervisor marks waits for the project manager; the manager's own
  * entries are approved as saved. Payroll pays approved overtime only and shows what still waits.
  */
 test('overtime waits for the site manager and payroll pays approved overtime only', async ({ page }) => {
@@ -163,7 +163,7 @@ test('overtime waits for the site manager and payroll pays approved overtime onl
 });
 
 /**
- * On duty and tour (v5 item 97): approved like leave, but there is no balance to run out and payroll counts the day
+ * On duty and tour: approved like leave, but there is no balance to run out and payroll counts the day
  * present and paid.
  */
 test('on-duty days count as present and paid, with no balance', async () => {

@@ -4,7 +4,7 @@ import { api, apiToken, signIn } from './helpers';
 type Project = { id: string; code: string; name: string; members: { userId: string; fullName: string }[] };
 
 /**
- * A project's overview in five seconds (UX item 85): on track or behind in words first, figures against their plan,
+ * A project's overview in five seconds: on track or behind in words first, figures against their plan,
  * no duplicated counts, and removing a team member behind a menu that asks first.
  */
 test('the overview leads with on track or behind, and figures against plan', async ({ page }) => {
@@ -36,7 +36,7 @@ test('the team card keeps remove in a menu that names the person and the project
 
   await signIn(page, 'pm@demo.com');
   await page.goto(`/projects/${road.id}?tab=overview`);
-  const team = page.locator('section').filter({ has: page.getByRole('heading', { name: /^Team \(\d+\)$/ }) });
+  const team = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Team', exact: true }) });
   await expect(team).toBeVisible();
   // No delete button on show: no red button, nothing named Remove until the menu is open.
   await expect(team.getByRole('button', { name: /remove/i })).toHaveCount(0);

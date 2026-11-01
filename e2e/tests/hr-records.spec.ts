@@ -7,7 +7,7 @@ type Event = { id: string; type: string; letterNo: string; fromDesignation: stri
 type Dashboard = { active: number; bySite: { label: string; count: number }[]; missingDetails: { employeeCode: string; missing: string[] }[] };
 
 /**
- * HR records (v6 item 99): HR sees the full record with personal and statutory details, the project manager does not; a
+ * HR records: HR sees the full record with personal and statutory details, the project manager does not; a
  * promotion changes the record and gets its letter number, and taking it back puts the record back; the People home shows
  * the HR dashboard and the Staff page lists every service event.
  */
@@ -57,7 +57,7 @@ test('HR keeps the full staff record, its service events and letters', async ({ 
   await form.getByLabel('What the warning is about').fill('Late to site three days running');
   await form.getByRole('button', { name: 'Record' }).click();
   await expect(page.getByText(/Warning recorded: warning letter HR-\d{4}-\d{4}/)).toBeVisible();
-  await drawer.getByRole('button', { name: 'Take back' }).click();
-  await page.getByRole('button', { name: 'Take back' }).last().click();
-  await expect(page.getByText('Warning taken back')).toBeVisible();
+  await drawer.getByRole('row').filter({ hasText: 'Warning' }).getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel it' }).click();
+  await expect(page.getByText('Warning letter cancelled')).toBeVisible();
 });

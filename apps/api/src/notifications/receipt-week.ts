@@ -26,7 +26,7 @@ export interface ReceiptWeekSummary {
 const round2 = (n: number) => n.toFixed(2);
 
 /**
- * What came in from clients over a week, for the Monday summary (finding 18 of the October review): one line per
+ * What came in from clients over a week, for the Monday summary: one line per
  * project, most money first. Null when nothing was received, because a week with no money in is not worth an email.
  * `projects` are the projects the reader may see; receipts of any other are left out by the caller.
  */

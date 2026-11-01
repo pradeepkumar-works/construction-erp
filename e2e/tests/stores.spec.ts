@@ -13,7 +13,7 @@ const balances = async (token: string, projectId: string) => (await api<Page<Bal
 const balanceOf = async (token: string, projectId: string, itemId: string) => Number((await balances(token, projectId)).find((b) => b.itemId === itemId)?.balance ?? 0);
 
 /**
- * Stores round-out (v4 item 39): the PM sends material from the road project to the water supply project, which
+ * Stores round-out: the PM sends material from the road project to the water supply project, which
  * receives it from the "on the way" banner on its stock tab. Stock leaves one store and arrives at the other.
  */
 test('a transfer leaves one store and is received at the other', async ({ page }) => {

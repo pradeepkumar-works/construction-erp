@@ -8,7 +8,7 @@ import { ModuleHome } from '@/components/modules/ModuleHome';
 import { DepartmentHome } from '@/components/modules/DepartmentHome';
 
 /**
- * A module's home page (v6 item 98): /modules/site, /modules/purchases, … and a department's (Menu and names). A key that
+ * A module's home page: /modules/site, /modules/purchases, … and a department's (Menu and names). A key that
  * is both (Correspondence) opens as the company's menu has it: the department with the department menu, else the module.
  */
 export default function Page() {

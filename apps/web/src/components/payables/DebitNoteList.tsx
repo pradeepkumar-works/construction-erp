@@ -23,7 +23,7 @@ import { DebitNoteDrawer, DebitNoteTag, debitNoteBillHref } from './DebitNoteRec
 const NO_KEYS: string[] = [];
 
 /**
- * Debit notes (v5 item 91) in the Payables page's tab: what vendors and subcontractors owe back, taken off their bills.
+ * Debit notes in the Payables page's tab: what vendors and subcontractors owe back, taken off their bills.
  * A note is raised from its bill (or a GRN rejected or returned), so the list has no New button.
  */
 export function DebitNoteList({ projectId, vendorId }: { projectId?: string; vendorId?: string }) {
@@ -109,7 +109,7 @@ export function DebitNoteList({ projectId, vendorId }: { projectId?: string; ven
       ),
       total: (all) => formatINR(all.filter((r) => !r.cancelledAt).reduce((n, r) => n + toNumber(r.total), 0)),
     },
-    { key: 'state', title: 'State', width: 160, render: (_, r) => <DebitNoteTag note={r} /> },
+    { key: 'state', title: 'Status', width: 160, render: (_, r) => <DebitNoteTag note={r} /> },
     { key: 'createdByName', title: 'Raised by', dataIndex: 'createdByName', width: 150, defaultHidden: true },
   ];
   const choice = useColumnChoice('payables-debit-notes', columns);

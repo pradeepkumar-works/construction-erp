@@ -21,7 +21,7 @@ async function newCompany(name: string) {
 }
 
 /**
- * Module switches (v6 item 117). The admin turns Meetings off from Admin > Modules: it leaves the sidebar and the New
+ * Module switches. The admin turns Meetings off from Admin > Modules: it leaves the sidebar and the New
  * menu, its page says it is off and its routes are refused; turned on again, it is all back.
  */
 test('an admin turns a module off and on, and it leaves and comes back everywhere', async ({ page }) => {

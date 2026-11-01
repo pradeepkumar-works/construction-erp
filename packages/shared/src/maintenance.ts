@@ -1,4 +1,4 @@
-/** Machinery maintenance and vehicle documents (v4 item 42): service due, papers and licences that expire. */
+/** Machinery maintenance and vehicle documents: service due, papers and licences that expire. */
 import type { EquipmentDocType, MaintenanceKind, MaintenanceStatus } from './enums';
 import type { AttachmentDto } from './types';
 
@@ -93,7 +93,7 @@ export interface MaintenanceJobDto {
   reportedById: string;
   reportedByName: string;
   closedByName: string | null;
-  /** The workshop's service bill for the job (v5 item 91) */
+  /** The workshop's service bill for the job */
   vendorBillId: string | null;
   vendorBillNo: string | null;
   attachments: AttachmentDto[];
@@ -145,7 +145,7 @@ export interface ServiceStatusDto {
   intervalDays: number | null;
   lastServiceDate: string | null;
   hoursSince: string;
-  /** Where the hours come from: the logs, or the machine's own hour meter through its tracker (item 146) */
+  /** Where the hours come from: the logs, or the machine's own hour meter through its tracker */
   hoursFrom?: 'LOGS' | 'METER';
   state: ServiceState;
   hoursLeft: number | null;

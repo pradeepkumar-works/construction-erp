@@ -2,7 +2,7 @@ import type { DelayParty, RiskCategory, RoleKey } from './enums';
 import { canApprove, canRaiseRisk, canViewLetters } from './permissions';
 
 /**
- * Hindrance register to notice (AI item 123): a DPR's hindrance remark is read for a delay (cause, party, start date),
+ * Hindrance register to notice: a DPR's hindrance remark is read for a delay (cause, party, start date),
  * the project manager records or dismisses it, and an open delay the contractor is not answerable for runs a notice
  * clock against the contract's notice period until an outgoing letter is linked to it.
  */

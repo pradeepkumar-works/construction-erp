@@ -55,7 +55,7 @@ export function PeriodPicker({ value, onChange }: { value: PeriodState; onChange
           { value: 'quarter', label: 'Last 3 months' },
           { value: 'fy', label: 'This FY' },
           { value: 'all', label: 'All time' },
-          { value: 'custom', label: 'Custom' },
+          { value: 'custom', label: 'Custom dates' },
         ]}
       />
       {value.preset === 'custom' ? (

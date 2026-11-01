@@ -45,7 +45,7 @@ export class MaterialRequestsController {
     return this.mr.submit(user, id);
   }
 
-  @ApiOperation({ summary: 'Stock of each line at its own site and the other sites (stock first)', description: 'v5 item 95. Items are matched to the item master by name and unit; other sites are those the user can see.' })
+  @ApiOperation({ summary: 'Stock of each line at its own site and the other sites (stock first)', description: 'Items are matched to the item master by name and unit; other sites are those the user can see.' })
   @Get(':id/stock')
   stockFor(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.stock.requestStock(user, id);
@@ -62,7 +62,7 @@ export class MaterialRequestsController {
 
   @ApiOperation({
     summary: 'Meet request lines from stock',
-    description: "v5 item 95. From the request's own site: an issue to whoever raised it. From another site: a transfer to the request's site. Each line at most what it still needs and what the site holds; store keepers of the sending site.",
+    description: "From the request's own site: an issue to whoever raised it. From another site: a transfer to the request's site. Each line at most what it still needs and what the site holds; store keepers of the sending site.",
   })
   @Post(':id/cover')
   cover(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CoverRequestDto) {

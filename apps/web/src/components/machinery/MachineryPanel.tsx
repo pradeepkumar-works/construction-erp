@@ -18,9 +18,9 @@ const PROJECT_TABS = ['logs', 'engine', 'fuel', 'utilisation', 'maintenance', 'e
 export type MachineryTab = (typeof FLEET_TABS)[number];
 
 /**
- * Daily logs, engine hours from trackers (item 146), fuel, utilisation, maintenance, papers and drivers, and the equipment master, for one project (project tab) or the whole
+ * Daily logs, engine hours from trackers, fuel, utilisation, maintenance, papers and drivers, and the equipment master, for one project (project tab) or the whole
  * fleet (Machinery page). Papers and drivers belong to the fleet, so a project shows only its maintenance. The open tab
- * is `?sub=` in the URL (UX item 84).
+ * is `?sub=` in the URL.
  */
 export function MachineryPanel({ projectId, initialTab, initialId }: { projectId?: string; initialTab?: MachineryTab; initialId?: string }) {
   const [tab, setTab] = useUrlTab<MachineryTab>(projectId ? PROJECT_TABS : FLEET_TABS, 'logs', { initial: initialTab });
@@ -32,7 +32,7 @@ export function MachineryPanel({ projectId, initialTab, initialId }: { projectId
       onChange={(k) => setTab(k as MachineryTab)}
       variant="page"
       items={[
-        { key: 'logs', label: 'Daily logs', children: <MachineryList projectId={projectId} /> },
+        { key: 'logs', label: 'Machinery logs', children: <MachineryList projectId={projectId} /> },
         { key: 'engine', label: 'Engine hours', children: <EngineHoursPanel projectId={projectId} /> },
         { key: 'fuel', label: 'Fuel', children: <FuelPanel projectId={projectId} /> },
         { key: 'utilisation', label: 'Utilisation', children: <UtilisationPanel projectId={projectId} /> },
@@ -45,7 +45,7 @@ export function MachineryPanel({ projectId, initialTab, initialId }: { projectId
           children: <MaintenancePanel projectId={projectId} initialOpenId={initialTab === 'maintenance' ? initialId : undefined} />,
         },
         ...(projectId ? [] : [{ key: 'papers', label: 'Papers and drivers', count: due, countLabel: 'due for renewal', attention: true, children: <PapersPanel /> }]),
-        { key: 'equipment', label: projectId ? 'Equipment here' : 'Equipment', children: <EquipmentTable projectId={projectId} /> },
+        { key: 'equipment', label: 'Equipment register', children: <EquipmentTable projectId={projectId} /> },
       ]}
     />
   );

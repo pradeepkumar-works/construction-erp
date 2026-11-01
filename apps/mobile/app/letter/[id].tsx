@@ -12,7 +12,7 @@ import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
 /**
- * One letter on the phone (item 136): read it, close one marked to you once it is dealt with, or approve one waiting for
+ * One letter on the phone: read it, close one marked to you once it is dealt with, or approve one waiting for
  * your signature (it gets its number then) or return it with what to change. Marking, writing and dispatch are on the web.
  */
 export default function LetterScreen() {

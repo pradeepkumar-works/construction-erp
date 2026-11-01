@@ -7,7 +7,7 @@ import { Table, Typography, theme } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { HEALTH_LABELS, PORTFOLIO_SCHEDULE_LABELS, type HealthLevel, type PortfolioProjectDto } from '@erp/shared';
 import { AppTag } from '@/components/common/AppTag';
-import { formatINRCompact, formatPct, toNumber } from '@/lib/format';
+import { formatINRCompact, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { ScheduleBullet } from './MoneyPipeline';
 import { HEALTH_TONES } from './report-format';
 
@@ -21,7 +21,7 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
   const router = useRouter();
   const money = (v: string | null) => (
     <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>
-      {v === null ? '–' : formatINRCompact(v)}
+      {v === null ? NO_VALUE : formatINRCompact(v)}
     </span>
   );
   const sub = (children: React.ReactNode, danger = false, wrap = false) => (
@@ -118,7 +118,7 @@ export function ProjectsHealthTable({ projects }: { projects: PortfolioProjectDt
     },
     {
       key: 'unbilled',
-      title: 'Not billed',
+      title: 'Work done, not billed',
       align: 'right',
       render: (_, p) => (
         <>

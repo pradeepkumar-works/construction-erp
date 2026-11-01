@@ -6,7 +6,7 @@ import type { RaBillDto } from '@erp/shared';
 import { BillRecord } from '@/components/bills/BillDrawer';
 import { BillFormModal } from '@/components/bills/BillFormModal';
 
-/** One RA bill, as its own page (UI roadmap item 57). */
+/** One RA bill, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

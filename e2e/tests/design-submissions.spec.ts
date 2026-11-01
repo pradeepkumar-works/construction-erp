@@ -16,7 +16,7 @@ type Doc = { id: string; projectId: string; revisions: { id: string; revision: s
 type Letter = { id: string; direction: string; status: string; subject: string };
 
 /**
- * Design and drawings part 2 (item 138): the document controller sends a new drawing for approval with a covering letter;
+ * Design and drawings part 2: the document controller sends a new drawing for approval with a covering letter;
  * the reviewer's code C comes back with two comments; the resubmission waits for our replies, and then for a new revision
  * of the drawing; code A closes the comments and approves the revision in the register. A site engineer cannot send one;
  * the pages open.

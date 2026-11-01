@@ -48,7 +48,7 @@ const addDays = (ymd: string, days: number) => new Date(Date.parse(`${ymd}T00:00
 
 function toState(r: DayRow): DayState {
   return {
-    date: dateOnly(r.date)!,
+    date: dateOnly(r.date),
     firstAt: r.firstAt,
     lastAt: r.lastAt,
     readings: r.readings,
@@ -78,7 +78,7 @@ type ReadingRow = Prisma.MachineReadingGetPayload<{ select: typeof readingFigure
 const figuresOf = (x: ReadingRow) => ({ at: x.at, hourMeter: n(x.hourMeter), idleMeter: n(x.idleMeter), fuelUsed: n(x.fuelUsed), fuelPct: n(x.fuelPct), fuelLitres: n(x.fuelLitres), lat: n(x.lat), lng: n(x.lng), engineOn: x.engineOn });
 
 /**
- * A day's tank (item 147) beside the fuel slips made out to the machine that day, and its litres an hour against its
+ * A day's tank beside the fuel slips made out to the machine that day, and its litres an hour against its
  * norm; null for a machine whose tracker reads no fuel level.
  */
 export function fuelOf(r: DayRow, slipLitres: number, norm: { fuelNorm: Prisma.Decimal | null; fuelNormUnit: string | null; fuelTolerancePct: Prisma.Decimal | null } | null): MachineFuelDto | null {
@@ -130,7 +130,7 @@ export function engineOf(r: DayRow): MachineEngineDto {
 }
 
 /**
- * Machine telematics (item 146, ARCHITECTURE "Machine telematics"): each reading a tracker or a maker's feed sends is
+ * Machine telematics (ARCHITECTURE "Machine telematics"): each reading a tracker or a maker's feed sends is
  * kept for READING_KEEP_DAYS and moves its machine's day on, through the pure `telematics-rules.ts`. The day's log, the
  * hire bill's checks and the service schedule read the days from here.
  */
@@ -249,8 +249,6 @@ export class TelematicsService {
     return r.count;
   }
 
-  /* ---------- what the screens read ---------- */
-
   private where(user: RequestUser): Prisma.MachineDayWhereInput {
     return this.access.submissionWhere(user);
   }
@@ -264,7 +262,7 @@ export class TelematicsService {
       equipmentName: r.equipment.name,
       projectId: r.projectId,
       projectName: r.project?.name ?? null,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       ...engine,
       siteRadiusM: r.project?.siteLat ? machineSiteRadius(r.project.siteRadiusM) : null,
       lastLat: dec(r.lastLat),
@@ -290,7 +288,7 @@ export class TelematicsService {
     return out;
   }
 
-  /** A fuel dispenser's fills not on a slip yet, whenever they were, at the sites the user sees (item 147). */
+  /** A fuel dispenser's fills not on a slip yet, whenever they were, at the sites the user sees. */
   async pendingDispenses(user: RequestUser, q: { projectId?: string }): Promise<FuelDispenseDto[]> {
     const rows = await this.prisma.fuelDispense.findMany({
       where: {
@@ -347,7 +345,7 @@ export class TelematicsService {
 
   /**
    * The days of the sites' machines whose tracker reads the tank, with each day's tank against its slips, for the
-   * watch list (item 147).
+   * watch list.
    */
   async fuelDays(projectIds: string[], from: string, to: string) {
     if (!projectIds.length) return [];
@@ -357,7 +355,7 @@ export class TelematicsService {
       orderBy: { date: 'asc' },
     });
     const slips = await this.slipsFor(rows);
-    return rows.map((r) => ({ equipmentId: r.equipmentId, code: r.equipment.code, name: r.equipment.name, projectId: r.projectId, date: dateOnly(r.date)!, fuel: fuelOf(r, slips.get(`${r.equipmentId}|${dateOnly(r.date)}`) ?? 0, r.equipment)! }));
+    return rows.map((r) => ({ equipmentId: r.equipmentId, code: r.equipment.code, name: r.equipment.name, projectId: r.projectId, date: dateOnly(r.date), fuel: fuelOf(r, slips.get(`${r.equipmentId}|${dateOnly(r.date)}`) ?? 0, r.equipment)! }));
   }
 
   /** Fuel burnt by the tank (or the maker's counter) on each day of the machines, `equipmentId|YYYY-MM-DD`, for the fuel norm. */
@@ -390,6 +388,6 @@ export class TelematicsService {
   async engineHoursOn(equipmentId: string, dates: Date[]): Promise<Map<string, number>> {
     if (!dates.length) return new Map();
     const rows = await this.prisma.machineDay.findMany({ where: { equipmentId, date: { in: dates } } });
-    return new Map(rows.map((r) => [dateOnly(r.date)!, engineHoursOf(toState(r))]));
+    return new Map(rows.map((r) => [dateOnly(r.date), engineHoursOf(toState(r))]));
   }
 }

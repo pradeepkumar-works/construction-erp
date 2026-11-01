@@ -11,7 +11,7 @@ import { TAX_REGIMES, TAX_REGIME_LABELS, canRunPayroll } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useEmployees, usePayrollAction, useSalaryStructures } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -81,7 +81,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
       layout="drawer"
       width={640}
       projectDefault={false}
-      title={from ? `New salary for ${from.employeeName}` : 'Set a salary'}
+      title={from ? `New salary for ${from.employeeName}` : 'New salary'}
       okText="Save salary"
       onSubmit={async (v) => {
         const s = await save.mutateAsync({ path: '/payroll/structures', body: { ...v, effectiveFrom: v.effectiveFrom.format('YYYY-MM-DD'), note: v.note?.trim() || null } });
@@ -94,7 +94,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
             <Form.Item name="employeeId" label="Employee" rules={[{ required: true, message: 'Choose the employee' }]}>
               <Select disabled={!!from} showSearch={{ optionFilterProp: 'label' }} options={(staff?.items ?? []).map((e) => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))} />
             </Form.Item>
-            <Form.Item name="effectiveFrom" label="From" rules={[{ required: true, message: 'Pick the first day it applies' }]} extra="Usually the 1st of a month">
+            <Form.Item name="effectiveFrom" label="From" rules={[{ required: true, message: 'Choose the first day it applies' }]} extra="Usually the 1st of a month">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
           </FormGrid>
@@ -127,7 +127,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
             <Form.Item name="taxRegime" label="Income tax regime">
               <Select options={TAX_REGIMES.map((t) => ({ value: t, label: TAX_REGIME_LABELS[t] }))} />
             </Form.Item>
-            <Form.Item name="otherIncome" label="Other income this year (optional)" extra="Salary from an earlier employer, for TDS">
+            <Form.Item name="otherIncome" label="Other income this year" extra="Salary from an earlier employer, for TDS">
               <MoneyInput />
             </Form.Item>
             {values?.taxRegime === 'OLD' && (
@@ -136,7 +136,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
               </Form.Item>
             )}
           </FormGrid>
-          <Form.Item name="note" label="Note (optional)">
+          <Form.Item name="note" label="Note">
             <Input maxLength={300} placeholder="For example, after the April increment" />
           </Form.Item>
         </FormSection>
@@ -202,8 +202,8 @@ export function Salaries() {
     { title: 'From', dataIndex: 'effectiveFrom', width: 120, render: (v: string) => formatDate(v) },
     { title: 'Gross a month', dataIndex: 'gross', width: 130, align: 'right', render: (v: string) => <Rupees value={v} /> },
     { title: 'PF', dataIndex: 'employeePf', width: 90, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'ESI', dataIndex: 'employeeEsi', width: 80, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : '-') },
-    { title: 'TDS a month', dataIndex: 'monthlyTds', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : '-') },
+    { title: 'ESI', dataIndex: 'employeeEsi', width: 80, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
+    { title: 'TDS a month', dataIndex: 'monthlyTds', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
     { title: 'Regime', dataIndex: 'taxRegime', width: 110, render: (v: TaxRegime) => TAX_REGIME_LABELS[v] },
     { title: 'CTC a year', dataIndex: 'ctcAnnual', width: 140, align: 'right', render: (v: string) => <Rupees value={v} /> },
     ...(admin
@@ -230,7 +230,7 @@ export function Salaries() {
         </Typography.Paragraph>
         {admin && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({ from: null })}>
-            Set a salary
+            New salary
           </Button>
         )}
       </div>

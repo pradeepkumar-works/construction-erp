@@ -1,4 +1,4 @@
-/** Hindi for the Ask tab (AI item 72), including the status lines the server sends while it reads. */
+/** Hindi for the Ask tab, including the status lines the server sends while it reads. */
 export const AI: Record<string, string> = {
   Ask: 'पूछें',
   'Ask {name}': '{name} से पूछें',
@@ -78,7 +78,7 @@ export const AI: Record<string, string> = {
   'Reading quality': 'क्वालिटी पढ़ रहा है',
   'Reading safety': 'सेफ़्टी पढ़ रहा है',
   'Reading machinery': 'मशीनरी पढ़ रहा है',
-  // Site photo checks (item 76)
+  // Site photo checks
   'Photo checks': 'फ़ोटो जाँच',
   'What Ask Nirmaan sees in the photos. It can be wrong and never holds up a submission.': 'फ़ोटो में Ask Nirmaan को क्या दिखा। यह गलत हो सकता है और किसी एंट्री को नहीं रोकता।',
   'No caption': 'कोई विवरण नहीं',

@@ -19,7 +19,7 @@ interface PlanLine extends ElementActivityLine {
 interface FormValues {
   parentId?: string | null;
   name: string;
-  /** The company's component kind (item 134) */
+  /** The company's component kind */
   kindCode: string;
   code?: string;
   weightPct?: number | null;
@@ -36,15 +36,15 @@ const kindOptions = (kinds: ComponentKindDto[], first: string[], current: string
   const rest = offered.filter((k) => !first.includes(k.code));
   return [
     ...(usual.length ? [{ label: 'Usual for this project', options: usual.map(opt) }] : []),
-    { label: usual.length ? 'Other kinds' : 'Kinds', options: rest.map(opt) },
+    { label: usual.length ? 'Other component types' : 'Component types', options: rest.map(opt) },
   ];
 };
 
-/** A component made before item 134 has no kind code: its built-in kind's code is its element type. */
+/** A component made before project types has no kind code: its built-in kind's code is its element type. */
 const kindCodeOf = (e: Pick<WorkElementDto, 'kindCode' | 'elementType'>) => e.kindCode ?? (e.elementType as WorkElementType);
 
 /**
- * Adds or changes a component or sub-component (item 125). A new one can lay out its kind's activities and
+ * Adds or changes a component or sub-component. A new one can lay out its kind's activities and
  * sub-activities with their weights; the planner fills or corrects the planned quantities before saving.
  */
 export function ElementFormDrawer({
@@ -59,7 +59,7 @@ export function ElementFormDrawer({
   open: boolean;
   onClose: () => void;
   projectId: string;
-  /** The project's type (item 134), whose component kinds are offered first */
+  /** The project's type, whose component kinds are offered first */
   typeCode: string | null;
   structure: StructureDto | undefined;
   element?: WorkElementDto | null;
@@ -166,11 +166,11 @@ export function ElementFormDrawer({
       <Form form={form} layout="vertical">
         <FormSection title="Component">
           <FormGrid cols={2}>
-            <Form.Item name="kindCode" label="Kind" rules={[{ required: true, message: 'Choose what it is, e.g. Overhead tank' }]} tooltip={isEdit ? 'Its activities stay as they are; the kind changes what it is counted as.' : undefined}>
+            <Form.Item name="kindCode" label="Component type" rules={[{ required: true, message: 'Choose what it is, e.g. Overhead tank' }]} tooltip={isEdit ? 'Its activities stay as they are; the kind changes what it is counted as.' : undefined}>
               <Select showSearch={{ optionFilterProp: 'label' }} loading={!kinds} placeholder="Overhead tank" options={kindOptions(kinds ?? [], typeKinds, element ? kindCodeOf(element) : undefined)} />
             </Form.Item>
-            <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, min: 2, message: 'Name it, e.g. OHT 650 KL, Ward 4' }]}>
-              <Input placeholder="OHT 650 KL, Ward 4" />
+            <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, min: 2, message: 'Enter the name, e.g. OHT 650 kL, Ward 4' }]}>
+              <Input placeholder="OHT 650 kL, Ward 4" />
             </Form.Item>
             <Form.Item name="parentId" label="Inside" tooltip={hasSubs ? 'It has sub-components of its own, so it stays a component' : 'Leave empty for a component of the project'}>
               <Select
@@ -185,7 +185,7 @@ export function ElementFormDrawer({
               <Form.Item name="code" label="Number" tooltip="Outline number, e.g. 8 or 8.1. Left empty, the next free one.">
                 <Input placeholder="Next free" />
               </Form.Item>
-              <Form.Item name="weightPct" label="Weight" tooltip="Share of the project, or of its component, %. Lump sum contracts usually take the billing breakup. Left empty, it shares what is left by BOQ value.">
+              <Form.Item name="weightPct" label="Weight" tooltip="Share of the project, or of its component, %. Lump sum contracts usually take its share in the payment schedule. Left empty, it shares what is left by BOQ value.">
                 <InputNumber min={0} max={100} step={0.5} suffix="%" style={{ width: '100%' }} placeholder="Auto" />
               </Form.Item>
             </FormGrid>
@@ -225,7 +225,7 @@ function PlanLines({ onQty }: { onQty: (key: string, qty: number | null) => void
   const form = Form.useFormInstance<FormValues>();
   // `preserve`: the lines are set before their table (the Form.List) is drawn.
   const lines: PlanLine[] = Form.useWatch('lines', { form, preserve: true }) ?? [];
-  if (!lines.length) return <Typography.Paragraph type="secondary">This kind has no activities of its own; add its parts as sub-components.</Typography.Paragraph>;
+  if (!lines.length) return <Typography.Paragraph type="secondary">This component type has no activities of its own; add its parts as sub-components.</Typography.Paragraph>;
   return (
     <>
       <Typography.Paragraph type="secondary">

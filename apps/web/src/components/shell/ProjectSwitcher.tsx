@@ -13,7 +13,7 @@ const V = 'v:';
 
 /**
  * The header's project context: All projects or one, applied to every list's project filter and remembered. Where the
- * company files its projects by vertical (item 167), the projects are grouped by vertical and a whole vertical can be
+ * company files its projects by vertical, the projects are grouped by vertical and a whole vertical can be
  * chosen, which narrows the projects offered here, the Projects list and the management dashboard and reports.
  */
 export function ProjectSwitcher({ width }: { width: number }) {
@@ -26,7 +26,7 @@ export function ProjectSwitcher({ width }: { width: number }) {
 
   const options = useMemo(() => {
     const projects = data ?? [];
-    const item = (p: (typeof projects)[number]) => ({ value: p.id, label: `${p.code} - ${p.name}` });
+    const item = (p: (typeof projects)[number]) => ({ value: p.id, label: `${p.code} · ${p.name}` });
     if (!usesVerticals) return [{ value: ALL, label: 'All projects' }, ...projects.map(item)];
     const groups = byVertical(projects, (p) => p.verticalCode, master?.entries ?? []);
     return [

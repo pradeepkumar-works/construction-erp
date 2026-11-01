@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { api, apiToken, localToday, queueItem, signIn, uniqueQty } from './helpers';
 
-/** The Approvals inbox (UI roadmap item 58): the queue beside the entry, decisions from the keyboard, bulk approval. */
+/** The Approvals inbox: the queue beside the entry, decisions from the keyboard, bulk approval. */
 
 type Project = { id: string; code: string };
 type Activity = { id: string; name: string };
@@ -36,9 +36,9 @@ test('the project manager works through the queue from the keyboard', async ({ p
   await expect(page.getByRole('group', { name: 'Stage' })).toContainText('Waiting');
 
   await page.keyboard.press('a');
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Note (optional)' });
-  await modal.getByLabel('Note (optional)').fill('Checked on site');
-  await modal.getByLabel('Note (optional)').press('Control+Enter');
+  const modal = page.getByRole('dialog', { name: 'Approve' });
+  await modal.getByLabel('Note', { exact: true }).fill('Checked on site');
+  await modal.getByLabel('Note', { exact: true }).press('Control+Enter');
   await expect(page.getByText('Approved', { exact: true }).first()).toBeVisible();
   await expect(one.item).toHaveCount(0);
   await expect(current).toHaveCount(1);
@@ -58,7 +58,7 @@ test('the project manager works through the queue from the keyboard', async ({ p
   expect(await statusOf(first.id)).toBe('APPROVED');
   expect(await statusOf(second.id)).toBe('REJECTED');
 
-  await page.getByRole('button', { name: /Approved today/ }).click();
+  await page.getByRole('button', { name: /Reviewed today/ }).click();
   const today = page.getByRole('list', { name: 'Reviewed today' });
   await expect(today.locator('li').filter({ hasText: `: ${first.qty} ` })).toContainText('Approved');
   await expect(today.locator('li').filter({ hasText: `: ${second.qty} ` })).toContainText('Rejected');
@@ -72,7 +72,7 @@ test('a selection of one type is approved together', async ({ page }) => {
 
   const bar = page.getByRole('toolbar', { name: 'Selection' });
   await expect(bar).toContainText('2 selected in progress');
-  const otherGroup = page.getByRole('checkbox', { name: 'Select all material requests' });
+  const otherGroup = page.getByRole('checkbox', { name: 'Select all indents' });
   if (await otherGroup.count()) await expect(otherGroup).toBeDisabled();
 
   await bar.getByRole('button', { name: /Approve 2/ }).click();

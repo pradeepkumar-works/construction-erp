@@ -1,16 +1,17 @@
 /**
- * Demo telematics (item 146): the fleet's GPS service becomes a tracker service, and the excavator's tracker has
- * read every day it was logged, half-hourly from eight in the morning. Two days ago the engine ran six hours though
+ * Demo telematics: the fleet's GPS service becomes a tracker service, and the excavator's tracker has
+ * read every day it was logged up to yesterday, half-hourly from eight in the morning. Two days ago the engine ran six hours though
  * the log says eight, and four days ago it went about seven kilometres from the road site after lunch, so the Engine
  * hours tab and the log show both. The days are rolled up by the same rules as live readings. Runs once per company.
  */
 import { PrismaClient } from '@prisma/client';
 import { machineSiteRadius } from '@erp/shared';
 import { dayRowData, rollUpDay, type Carry, type DayState, type ReadingFigures } from '../src/telematics/telematics-rules';
+import { seedToday } from './seed-clock';
 
 export async function seedTelematics(prisma: PrismaClient, organizationId: string) {
   if (await prisma.machineDay.count({ where: { organizationId } })) return;
-  // From item 146 on, the demo's GPS service is a tracker service, so its messages make machine days.
+  // The demo's GPS service is a tracker service, so its messages make machine days.
   await prisma.integrationConnection.updateMany({ where: { organizationId, name: 'Fleet GPS service', kind: 'GENERIC_WEBHOOK' }, data: { kind: 'GPS_TRACKER' } });
   const exc = await prisma.equipment.findFirst({ where: { organizationId, code: 'EXC-01' }, select: { id: true, projectId: true, project: { select: { siteLat: true, siteLng: true, siteRadiusM: true } } } });
   const link = await prisma.deviceLink.findFirst({ where: { organizationId, externalId: '867530912345678' } });
@@ -24,6 +25,9 @@ export async function seedTelematics(prisma: PrismaClient, organizationId: strin
   let fuel = 41_200;
   for (const [i, l] of logs.entries()) {
     const date = l.date.toISOString().slice(0, 10);
+    // Today's log claims the whole day while the tracker has only read up to the hour the seed ran, which halves the
+    // day's fuel and moves the fuel norm check with the time of day; the tracker's days stop at yesterday.
+    if (date >= seedToday()) continue;
     const start = carry?.meter ?? Number(l.meterStart ?? 1500 + i * 8);
     const short = i === logs.length - 3;
     const away = i === logs.length - 5;

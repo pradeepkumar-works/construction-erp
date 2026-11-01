@@ -15,7 +15,7 @@ export class ProjectAccessService {
   constructor(private prisma: PrismaService, private rights: ApprovalRightsService) {}
 
   /** Prisma where-clause restricting projects to those visible to the user. */
-  projectWhere(user: RequestUser): Prisma.ProjectWhereInput {
+  projectWhere(user: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>): Prisma.ProjectWhereInput {
     if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
     return {
       organizationId: user.organizationId,
@@ -24,7 +24,7 @@ export class ProjectAccessService {
   }
 
   /**
-   * Where stock can come from for a material request (v6 item 106): the projects the user sees, and every central store
+   * Where stock can come from for a material request: the projects the user sees, and every central store
    * of the company, so a site asking for material sees what the store holds even when no one there is a member of it.
    * Only the balance is shown; sending still needs a stock keeper of the store.
    */
@@ -44,6 +44,20 @@ export class ProjectAccessService {
     return project;
   }
 
+  async userSeesProject(u: Pick<RequestUser, 'id' | 'organizationId' | 'roleKey'>, projectId: string) {
+    return (await this.prisma.project.count({ where: { id: projectId, ...this.projectWhere(u) } })) > 0;
+  }
+
+  seesProjectWhere(projectId: string): Prisma.UserWhereInput {
+    return {
+      OR: [
+        { role: { key: { in: COMPANY_WIDE_ROLES } } },
+        { managedProjects: { some: { id: projectId } } },
+        { memberships: { some: { projectId } } },
+      ],
+    };
+  }
+
   /**
    * Inverse of the visibility rule: every active user who may approve submissions of this project
    * (company-wide approvers plus approvers who manage or are a member of it). With a submission type (and amount),
@@ -60,11 +74,7 @@ export class ProjectAccessService {
         organizationId,
         isActive: true,
         role: { key: { in: roleKeys } },
-        OR: [
-          { role: { key: { in: COMPANY_WIDE_ROLES } } },
-          { managedProjects: { some: { id: projectId } } },
-          { memberships: { some: { projectId } } },
-        ],
+        ...this.seesProjectWhere(projectId),
       },
       select: { id: true, email: true, fullName: true },
     });
@@ -77,7 +87,7 @@ export class ProjectAccessService {
 
   /**
    * Review a submission: the approval matrix must give the user's role this type at the level the entry waits at, up
-   * to its amount (or the entry escalated to the role); one person approves only one level of an entry (v5 item 94).
+   * to its amount (or the entry escalated to the role); one person approves only one level of an entry.
    */
   async assertCanApproveSubmission(user: RequestUser, type: SubmissionType, id: string, projectId: string) {
     await this.assertCanAccessProject(user, projectId);
@@ -164,7 +174,6 @@ export class ProjectAccessService {
     await this.assertCanAccessProject(user, projectId);
   }
 
-  /** Who looks after quality on a project: whoever passes its inspections (QA/QC by default, per the approval matrix). */
   /** Add drawings and revisions, send transmittals: document control roles on the project. */
   async assertCanManageDocuments(user: RequestUser, projectId: string) {
     if (!canManageDocuments(user.roleKey)) throw new ForbiddenException('Your role cannot change the document register');
@@ -177,7 +186,6 @@ export class ProjectAccessService {
     if (projectId) await this.assertCanAccessProject(user, projectId);
   }
 
-  /** Staff master and holidays: staff admins (admin, management, HR). */
   /**
    * The client portal: certify a bill or record attending an inspection. Only the client's engineer or the consultant,
    * and only on projects they are a member of (guests are never company-wide).
@@ -195,7 +203,7 @@ export class ProjectAccessService {
     });
   }
 
-  /** A supplier-portal login (v6 item 105): the vendor it acts for. Everything it sees is that vendor's. */
+  /** A supplier-portal login: the vendor it acts for. Everything it sees is that vendor's. */
   supplierVendor(user: RequestUser): string {
     if (!isSupplier(user.roleKey) || !user.vendorId) throw new ForbiddenException('The supplier portal is for supplier accounts');
     return user.vendorId;
@@ -234,7 +242,7 @@ export class ProjectAccessService {
    * anyone else only themselves.
    */
   staffWhere(user: RequestUser): Prisma.EmployeeWhereInput {
-    // Payroll (accounts) sees every employee too, for salaries and bank details (v6 item 99).
+    // Payroll (accounts) sees every employee too, for salaries and bank details.
     if (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) return { organizationId: user.organizationId };
     if (canMarkStaff(user.roleKey)) return { organizationId: user.organizationId, OR: [{ userId: user.id }, { project: this.projectWhere(user) }] };
     return { organizationId: user.organizationId, userId: user.id };
@@ -283,12 +291,8 @@ export class ProjectAccessService {
     const users = await this.approversForProject(organizationId, projectId, 'INSPECTION');
     if (!onProjectOnly) return users;
     // Routine reminders go to the people on the project, not to every company-wide approver.
-    const onProject = await this.prisma.user.findMany({
-      where: { id: { in: users.map((u) => u.id) }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
-      select: { id: true },
-    });
-    const ids = new Set(onProject.map((u) => u.id));
-    return users.filter((u) => ids.has(u.id));
+    const team = new Set(await this.projectPeople(projectId));
+    return users.filter((u) => team.has(u.id));
   }
 
   /** Raise a delay or risk: a raiser role with access to the project. */

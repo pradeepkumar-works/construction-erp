@@ -54,7 +54,7 @@ export default function MyWorkScreen() {
   );
   // What the role should act on now, as on the web home; pull to refresh reloads it with the rest.
   const myWork = useFetch<MyWorkDto>((api) => api.get('/dashboard/my-work'), [syncedCount], { cacheKey: 'my-work' });
-  // Owners, directors, accounts and project managers lead with the company's day (v5 item 96); site roles keep the rest.
+  // Owners, directors, accounts and project managers lead with the company's day; site roles keep the rest.
   const leads = !!user && seesCompanyToday(user.roleKey);
   const company = useFetch<CompanyTodayDto | null>((api) => (leads ? api.get('/dashboard/company-today') : Promise.resolve(null)), [syncedCount, leads], { cacheKey: 'company-today' });
   const launcher = useLauncher();

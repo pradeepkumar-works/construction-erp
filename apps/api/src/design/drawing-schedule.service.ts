@@ -49,11 +49,11 @@ type NeedRow = Prisma.DrawingNeedGetPayload<{ include: typeof needInclude }>;
 const plusDays = (day: string, n: number) => {
   const d = parseDate(day);
   d.setUTCDate(d.getUTCDate() + n);
-  return dateOnly(d)!;
+  return dateOnly(d);
 };
 
 /**
- * The drawing schedule (item 138 part 1, ARCHITECTURE "Design and drawings"): the drawings each project needs, matched to
+ * The drawing schedule (ARCHITECTURE "Design and drawings"): the drawings each project needs, matched to
  * the register by number as they arrive. A late one is chased by a draft letter through `CorrespondenceService.create`
  * (to be approved and numbered like any other) and recorded as a delay through `RisksService.create`, so the notice clock
  * and the extension of time claim run from the register.
@@ -73,8 +73,8 @@ export class DrawingScheduleService {
   }
 
   private toDto(r: NeedRow, today: string): DrawingNeedDto {
-    const days = revisionDays((r.document?.revisions ?? []).map((v) => ({ issuedOn: dateOnly(v.issuedOn)!, status: v.status as RevisionStatus })));
-    const facts = { neededBy: dateOnly(r.neededBy)!, dropped: r.dropped, ...days };
+    const days = revisionDays((r.document?.revisions ?? []).map((v) => ({ issuedOn: dateOnly(v.issuedOn), status: v.status as RevisionStatus })));
+    const facts = { neededBy: dateOnly(r.neededBy), dropped: r.dropped, ...days };
     return {
       id: r.id,
       projectId: r.projectId,
@@ -329,7 +329,7 @@ export class DrawingScheduleService {
       discipline: d.discipline as DocumentDiscipline,
       revision: d.currentRevision!.revision,
       status: d.currentRevision!.status as RevisionStatus,
-      issuedOn: dateOnly(d.currentRevision!.issuedOn)!,
+      issuedOn: dateOnly(d.currentRevision!.issuedOn),
     }));
   }
 }

@@ -39,7 +39,7 @@ const EXPORT: ExportColumn<WorkPermitDto>[] = [
 type View = 'ACTIVE' | WorkPermitStatus | 'ALL';
 const KEYS = ['view', 'type'] as const;
 const VIEWS: View[] = ['ACTIVE', 'REQUESTED', 'ISSUED', 'CLOSED', 'ALL'];
-const VIEW_LABELS: Record<string, string> = { ACTIVE: 'Waiting + live', REQUESTED: 'Waiting', ISSUED: 'Issued', CLOSED: 'Closed', ALL: 'All' };
+const VIEW_LABELS: Record<string, string> = { ACTIVE: `${WORK_PERMIT_STATUS_LABELS.REQUESTED} and ${WORK_PERMIT_STATUS_LABELS.ISSUED.toLowerCase()}`, ...WORK_PERMIT_STATUS_LABELS, ALL: 'All' };
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
@@ -125,7 +125,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
           </>
         }
       >
-        <Segmented<View> value={view} onChange={(v) => page.setFilter('view', v === 'ACTIVE' ? undefined : v)} options={VIEWS.map((v) => ({ value: v, label: VIEW_LABELS[v] }))} />
+        <Segmented<View> aria-label="Permits to show" value={view} onChange={(v) => page.setFilter('view', v === 'ACTIVE' ? undefined : v)} options={VIEWS.map((v) => ({ value: v, label: VIEW_LABELS[v] }))} />
         <Select<WorkPermitType> allowClear placeholder="All kinds of work" aria-label="Work" style={{ width: 200 }} value={type} onChange={(v) => page.setFilter('type', v)} options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} />
       </ListToolbar>
       <DataTable<WorkPermitDto>

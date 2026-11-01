@@ -14,7 +14,7 @@ export interface RequestUser {
   billingReadOnly?: boolean;
   /** A supplier-portal login (role SUPPLIER): the vendor it acts for */
   vendorId?: string;
-  /** The company's modules that are off (v6 item 117, `modulesOffFor`): their routes are refused (ModuleSwitchGuard) */
+  /** The company's modules that are off (`modulesOffFor`): their routes are refused (ModuleSwitchGuard) */
   modulesOff?: SwitchableModule[];
 }
 

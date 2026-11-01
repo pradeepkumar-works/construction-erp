@@ -109,7 +109,6 @@ export default function NewProgressScreen() {
     setPhotos(outboxToPhotos(refused.photos));
     setRefusedLoaded(true);
     draft.settle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refused, refusedLoaded, draft.settle]);
 
   // Editing: prefill the form from the loaded entry.
@@ -127,12 +126,11 @@ export default function NewProgressScreen() {
     setRemarks(e.remarks ?? '');
     setPhotos(attachmentsToPhotos(e.attachments));
     draft.settle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
   const activityOptions = useMemo<SelectOption[]>(
-    // An activity made of sub-activities takes no progress of its own (item 125).
+    // An activity made of sub-activities takes no progress of its own.
     () => (activities.data ?? []).filter((a) => !a.isSummary).map((a) => ({ value: a.id, label: `${a.boqItemNo ? `${a.boqItemNo} · ` : ''}${a.name}`, hint: t('{unit} · {done} of {planned} done ({pct}%)', { unit: a.unit, done: fmtQty(a.executedQty), planned: fmtQty(a.plannedQty), pct: Math.round(a.progressPct) }) })),
     [activities.data, t],
   );

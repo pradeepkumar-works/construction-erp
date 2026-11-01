@@ -1,9 +1,9 @@
 /**
- * Moving project types between companies (item 134 part 3, ARCHITECTURE "Project types", Export and import): a file of
+ * Moving project types between companies (ARCHITECTURE "Project types", Export and import): a file of
  * types, each with its loose activities and DPR form, and the component kinds they use. Reading a file is pure and
  * strict: anything it does not know is dropped, and what is left goes through the same checks as the editors
  * (`projectTypeProblems`, `componentKindProblems`, `dprFormProblems`), so an import can never save what an admin could
- * not have typed. Group sharing (item 133 phase 2) copies a type to a child company through the same file.
+ * not have typed. Group sharing copies a type to a child company through the same file.
  */
 import { CONTRACT_MODELS, WORK_ELEMENT_TYPES, WORK_LOCATIONS, type ContractModel, type WorkElementType, type WorkLocation } from './enums';
 import type { ComponentStep, ElementSpecField, ElementSpecs, RccPart, StepPart } from './element-templates';
@@ -121,8 +121,6 @@ export function readBundle(raw: unknown): { bundle: TypeBundle | null; problem: 
 
 /** The file name an export downloads as. */
 export const bundleFileName = (what: string, date: string) => `${what.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project-types'}-${date}.json`;
-
-/* ---------- import plan ---------- */
 
 export type ImportAction = 'CREATE' | 'REPLACE' | 'SAME' | 'REFUSED';
 export const IMPORT_ACTION_LABELS: Record<ImportAction, string> = {

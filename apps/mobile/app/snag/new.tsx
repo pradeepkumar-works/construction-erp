@@ -15,7 +15,7 @@ import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useFieldChain } from '../../src/forms/keyboard';
 
 /**
- * Report a snag (before handover) or a defect (in the defect liability period) with photos (v4 item 47). Which one it is
+ * Report a snag (before handover) or a defect (in the defect liability period) with photos. Which one it is
  * follows from whether completion is recorded for the project. Needs a connection, like a breakdown.
  */
 export default function ReportSnagScreen() {
@@ -44,7 +44,7 @@ export default function ReportSnagScreen() {
   const [described, setDescribed] = useState<string | null>(null);
   const photoId = photos.find((p) => p.attachmentId)?.attachmentId;
 
-  // Ask Nirmaan drafts the snag from its first photo (AI item 76) and fills in the fields still empty; nothing is sent.
+  // Ask Nirmaan drafts the snag from its first photo and fills in the fields still empty; nothing is sent.
   const describe = async () => {
     if (!photoId) return;
     if (!projectId) {

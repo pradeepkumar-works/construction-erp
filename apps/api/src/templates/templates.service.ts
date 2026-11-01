@@ -20,14 +20,14 @@ import { SaveTemplateDto } from './templates.dto';
 import { ProjectTypesService } from './project-types.service';
 
 /**
- * Loose activities per project type (item 134: keyed by the type's code, `ProjectTypesService`). A company edits its
+ * Loose activities per project type (keyed by the type's code, `ProjectTypesService`). A company edits its
  * own; until it does, the standard type's list in packages/shared applies (so nothing needs seeding).
  */
 @Injectable()
 export class TemplatesService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private types: ProjectTypesService) {}
 
-  /** A type's loose activities (item 134: by the type's code); the standard type's list until the company saves its own. */
+  /** A type's loose activities (by the type's code); the standard type's list until the company saves its own. */
   items(organizationId: string, typeCode: string, db: Prisma.TransactionClient = this.prisma): Promise<{ isDefault: boolean; items: ActivityTemplateItem[] }> {
     return this.types.activities(organizationId, typeCode, db);
   }
@@ -108,7 +108,7 @@ export class TemplatesService {
   }
 
   /**
-   * Dates for the activities that have none, once the project's own dates arrive (finding 11 of the October review):
+   * Dates for the activities that have none, once the project's own dates arrive:
    * a project made before its work order was in hand gets its template activities spread the moment its start and
    * completion dates are set, instead of staying undated. Returns how many were given dates.
    */

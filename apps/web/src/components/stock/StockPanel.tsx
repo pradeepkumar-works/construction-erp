@@ -57,17 +57,17 @@ export function StockActions({ projectId }: { projectId?: string }) {
             icon={<ImportOutlined />}
             onClick={() => setOpen("receipt")}
           >
-            Receive (GRN)
+            Receive material (GRN)
           </Button>
         ) : null}
         {keeper ? (
           <Button icon={<ExportOutlined />} onClick={() => setOpen("issue")}>
-            Issue
+            Issue material
           </Button>
         ) : null}
         {adjuster ? (
           <Button icon={<SlidersOutlined />} onClick={() => setOpen("adjust")}>
-            Adjust
+            Adjust stock
           </Button>
         ) : null}
         <Dropdown
@@ -79,7 +79,7 @@ export function StockActions({ projectId }: { projectId?: string }) {
                 ? [
                     { key: "transfer", label: "Transfer to a site or store" },
                     { key: "site", label: "Return from site" },
-                    { key: "vendor", label: "Return to supplier" },
+                    { key: "vendor", label: "Return to vendor" },
                   ]
                 : []),
               ...(adjuster ? [{ key: "count", label: "Stock count" }] : []),
@@ -142,7 +142,7 @@ export function StockPanel({
   // What is on order for the store, so the store keeper receives it from here (not from Purchase orders). The tab carries
   // no count: one arriving after the first paint would move the tab bar and its buttons under a click (My work counts them).
   const receiver = seesDeliveries(user?.roleKey);
-  // The open tab is `?sub=` in the URL (UX item 84), so a reload or a link keeps it.
+  // The open tab is `?sub=` in the URL, so a reload or a link keeps it.
   const tabs = [
     "balances",
     ...(receiver ? ["deliveries", "weighbridge"] : []),
@@ -188,7 +188,7 @@ export function StockPanel({
             : []),
           {
             key: "register",
-            label: "Register",
+            label: "Receipts and issues",
             children: <StockEntries projectId={projectId} />,
           },
           ...(valuer

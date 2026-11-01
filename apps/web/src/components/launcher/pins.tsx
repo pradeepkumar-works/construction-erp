@@ -22,7 +22,7 @@ export function pinEntry(pin: NavPinDto): TileEntry {
 const icon = (name: string) => <TreeIcon name={name} />;
 
 /**
- * Pinned on Home (launcher phase 2), kept on the server. Only pins the user can still open are shown: a node no longer in
+ * Pinned on Home, kept on the server. Only pins the user can still open are shown: a node no longer in
  * their menu is hidden, not deleted, so it comes back if access does. Pin, move and unpin show at once; unpin offers Undo.
  */
 export function usePins(user: AuthUser | null) {

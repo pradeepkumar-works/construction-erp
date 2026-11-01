@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { api, apiToken, homeHeading, signIn } from './helpers';
 
-/** Launcher Home (phase 2): modules as tiles with what waits, Pinned on the account, Recent, and the search box. */
+/** Launcher Home: modules as tiles with what waits, Pinned on the account, Recent, and the search box. */
 
 interface Launcher {
   pins: { id: string; label: string }[];

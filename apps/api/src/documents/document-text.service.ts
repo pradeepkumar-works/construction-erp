@@ -25,7 +25,7 @@ type PageRow = { attachmentId: string; page: number; text: string; projectId: st
 type LetterRow = { id: string; rank: number };
 
 /**
- * Ask the contract (AI item 75): the text of PDFs filed with document revisions and letters, a page per row in
+ * Ask the contract: the text of PDFs filed with document revisions and letters, a page per row in
  * `DocumentPage`, searched with Postgres full-text search. Files are read when first searched (and by the nightly
  * run), so nothing changes in how documents are filed. Who sees what is the documents register's own rule: the
  * projects the user can open, only the current revision of a document, and letters only for roles that see them.

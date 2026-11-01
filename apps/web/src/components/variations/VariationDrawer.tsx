@@ -1,11 +1,12 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
-import { CheckCircleOutlined, DeleteOutlined, EditOutlined, SendOutlined } from '@/components/common/icons';
+import { CheckCircleOutlined, EditOutlined, SendOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { VariationDto, VariationLineDto, VariationStatus } from '@erp/shared';
@@ -21,7 +22,6 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { VariationFormModal } from './VariationFormModal';
 import { themeFontSize } from '@/lib/theme';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
 
@@ -117,9 +117,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
               </Button>
             )}
             <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit variation" />
-            <ConfirmDelete what={data.label} onConfirm={() => remove.mutateAsync()}>
-              <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete variation" />
-            </ConfirmDelete>
+            <DeleteInMenu what={data.label} onConfirm={() => remove.mutateAsync()} />
           </Space>
         ) : null
       }
@@ -191,7 +189,7 @@ function SendModal({ open, onClose, variation }: { open: boolean; onClose: () =>
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Send ${variation.label} to the client`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Send ${variation.label} to the client`} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="date" label="Sent on" rules={[{ required: true, message: 'Pick the date it was sent' }]}>
           <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
@@ -259,7 +257,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
     meta: FAIL_NOTICE,
   });
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Client's decision on ${variation.label}`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)} width={760}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Record decision on ${variation.label}`} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)} width={760}>
       <Form form={form} layout="vertical">
         <FormGrid cols={3}>
           <Form.Item name="decision" label="Decision">

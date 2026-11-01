@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, formPanel, signIn } from './helpers';
 
 /**
- * Hindrance register to notice (AI item 123). The DPRs' remarks come up on Delays and risks for the project manager
+ * Hindrance register to notice. The DPRs' remarks come up on Delays and risks for the project manager
  * to record as delays (which start a notice clock), add to the open delay they belong to, or dismiss; Draft notice on
  * a delay opens the letter form filled in from the delay and the contract (nothing is saved); the watch list warns as
  * the notice falls due; and the delay register prints for an extension-of-time claim.

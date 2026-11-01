@@ -1,5 +1,6 @@
 'use client';
 
+import { revLabel } from '@/components/documents/docUi';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Checkbox, Empty, Flex, Form, Input, Radio, Segmented, Select, Space, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
@@ -20,7 +21,7 @@ import { TAKEOFF_INK } from './TakeoffLayer';
 export const takeoffFigure = (kind: TakeoffKind, value: string | number) => `${kind === 'COUNT' ? Number(value) : formatQty(value)} ${TAKEOFF_UNITS[kind]}`;
 
 /**
- * The measures beside the drawing (v6 item 118): the sheet's scale, the measures (this sheet's or the whole drawing's)
+ * The measures beside the drawing: the sheet's scale, the measures (this sheet's or the whole drawing's)
  * with their totals by kind, and the ones ticked put into the measurement book or set as a BOQ item's quantity.
  */
 export function TakeoffList({
@@ -256,7 +257,7 @@ export function TakeoffList({
                         </Typography.Text>
                         {scope === 'all' ? (
                           <AppTag translate="no" style={{ margin: 0 }}>
-                            Rev {t.revision}
+                            {revLabel(t.revision)}
                             {t.page > 1 ? `, p ${t.page}` : ''}
                           </AppTag>
                         ) : null}
@@ -477,7 +478,7 @@ export function TakeoffBoqForm({
           .
         </Typography.Paragraph>
         <Form.Item name="boqItemId" label="BOQ item" rules={[{ required: true, message: 'Choose the BOQ item' }]}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select BOQ item" options={options} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose the BOQ item" options={options} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="field" label="Quantity to set">

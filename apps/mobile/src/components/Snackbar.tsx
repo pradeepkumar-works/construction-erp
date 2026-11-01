@@ -7,7 +7,7 @@ import { colors, fontSize, maxFontScale, radius, shadow, spacing, touch } from '
 import { Touchable } from './Touchable';
 
 /**
- * Confirmation after something worked or failed (UX item 80): a short bar above the tab bar, the same words read by
+ * Confirmation after something worked or failed: a short bar above the tab bar, the same words read by
  * TalkBack or VoiceOver, and a tap of the phone's vibration motor, so a site engineer with gloves on, in sun, knows the
  * approval or the entry went through without reading the screen.
  */

@@ -30,13 +30,13 @@ export class SaveBillingStageDto {
   @ApiPropertyOptional({ type: [String], description: 'SUPPLY: the store items received against it' }) @IsOptional() @IsArray() @ArrayMaxSize(50) @IsUUID('4', { each: true }) itemIds?: string[];
   @ApiPropertyOptional({ example: '10100', description: 'SUPPLY: the scope in the items\' unit (metres for pipe)' }) @IsOptional() @num() @IsNumberString() scopeQty?: string | null;
   @ApiPropertyOptional({ example: '2026-02-12', description: 'EVENT: the day it happened' }) @IsOptional() @IsDateString() achievedOn?: string | null;
-  @ApiPropertyOptional({ type: [String], description: 'EVENT (item 130): engineering deliverables whose approval is the event, in place of a date' })
+  @ApiPropertyOptional({ type: [String], description: 'EVENT: engineering deliverables whose approval is the event, in place of a date' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(100)
   @IsUUID('4', { each: true })
   deliverableIds?: string[];
-  @ApiPropertyOptional({ type: [String], description: 'SUPPLY (item 130): equipment packages it is paid by, in place of items and a scope' })
+  @ApiPropertyOptional({ type: [String], description: 'SUPPLY: equipment packages it is paid by, in place of items and a scope' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(50)

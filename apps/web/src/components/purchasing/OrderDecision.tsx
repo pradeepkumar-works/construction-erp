@@ -9,7 +9,7 @@ import { formatINR, toNumber } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 
 /**
- * What an approver needs to decide a purchase order away from their desk (finding 15 of the October review: the
+ * What an approver needs to decide a purchase order away from their desk (the
  * approval card showed no quotes, no lowest bidder and no budget). Both read what the request and the project already
  * hold, so nothing new is stored.
  */

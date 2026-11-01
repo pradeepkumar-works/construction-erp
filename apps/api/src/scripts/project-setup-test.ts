@@ -1,5 +1,5 @@
 /**
- * Project setup tests (finding 6 of the October review): the checklist ticks itself from the records, each role sees
+ * Project setup tests: the checklist ticks itself from the records, each role sees
  * the steps it can do, a new project starts with its client's terms or the standard ones, and a BOQ far from the
  * contract value is flagged.
  *
@@ -104,8 +104,8 @@ test('a usual tender premium, a lump sum contract or a missing figure is not fla
 
 test('a new project starts with the standard deductions, or its client\'s own', () => {
   const std = termsFor(null);
-  assert.deepEqual([std.retentionPct, std.tdsPct, std.gstTdsPct, std.labourCessPct], ['5', '2', '2', '1']);
-  assert.equal(STANDARD_TERMS.securityDepositPct, '0');
+  assert.deepEqual([std.securityDepositPct, std.retentionPct, std.tdsPct, std.gstTdsPct, std.labourCessPct], ['5', '0', '2', '2', '1']);
+  assert.equal(STANDARD_TERMS.securityDepositPct, '5');
   const t = termsFor({ retentionPct: '10', gstTdsPct: '0', defectLiabilityMonths: 60, clientPaymentDays: null });
   assert.deepEqual([t.retentionPct, t.tdsPct, t.gstTdsPct, t.defectLiabilityMonths, t.clientPaymentDays], ['10', '2', '0', 60, null]);
 });

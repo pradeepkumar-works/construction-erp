@@ -34,6 +34,7 @@ import {
   type DprWorkOptionsDto,
   type MachineryLine,
   type ManpowerLine,
+  unitLabel,
 } from '@erp/shared';
 import { formatQty } from '@/lib/format';
 import { FormGrid } from '@/components/form/FormShell';
@@ -49,7 +50,7 @@ export interface DprLineValues {
   activityId?: string;
   quantity?: number | null;
   location?: string;
-  /** Where by the project's places (item 134): chainage typed as km+m, floor, village */
+  /** Where by the project's places: chainage typed as km+m, floor, village */
   chainageFrom?: string;
   chainageTo?: string;
   floor?: string;
@@ -57,7 +58,7 @@ export interface DprLineValues {
   /** The component and sub-component picked before the activity (the form's cascade); not sent */
   pickComponent?: string | null;
   pickSub?: string | null;
-  /** The pipe segment (item 126), or for a valve line the valve, the work was on */
+  /** The pipe segment, or for a valve line the valve, the work was on */
   pipeSegmentId?: string | null;
   pipeNodeId?: string | null;
   labour?: ManpowerLine[];
@@ -179,7 +180,7 @@ const crewText = (l: DprLineValues | undefined, items: Map<string, { name: strin
     .join(' · ');
 
 /**
- * The DPR's work done, line by line (item 127), as the project type's form asks (item 134 part 2): each line against an
+ * The DPR's work done, line by line, as the project type's form asks: each line against an
  * activity or sub-activity (picked component by component, or from one grouped list), where by the project's places,
  * how much today, and in a dialog per line what else the form takes (crew, machines, material, work order, remark,
  * photo and the company's own line fields). The activities planned this week come first.
@@ -232,7 +233,7 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
                         <span translate="no">{componentLabel(a)}</span> ·{' '}
                       </>
                     )}
-                    <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${a.unit}`}</span> done
+                    <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${unitLabel(a.unit)}`}</span> done
                     {a.holdPoint ? (
                       <AppTag tone="pending" style={{ marginInlineStart: 6 }}>
                         Hold point
@@ -294,7 +295,7 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
   );
 }
 
-/** The component, then the sub-component, before the activity (item 134 part 2). Picking an activity sets both. */
+/** The component, then the sub-component, before the activity. Picking an activity sets both. */
 function CascadePick({
   field: f,
   line,
@@ -364,7 +365,7 @@ function cascadeOptions(options: DprWorkOptionsDto, line: DprLineValues | undefi
 
 /** Activities for the line's picker: this week's first, then by component › sub-component. */
 /**
- * Where the line's work was. Pipe work (item 126) names the segment from the zone's network, junction to junction, or
+ * Where the line's work was. Pipe work names the segment from the zone's network, junction to junction, or
  * the valve for a valve line; the server writes the segment into the location and holds each stage to the pipe's length.
  * Anything else, or a zone with no network loaded, is free text.
  */
@@ -401,7 +402,7 @@ function WhereField({ field: f, activity: a, options }: { field: FormListFieldDa
     </Form.Item>
   );
   const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Give the chainage like 14+200'))) };
-  // Where by the project's places (item 134): a chainage from and to, a floor, a village; a note below.
+  // Where by the project's places: a chainage from and to, a floor, a village; a note below.
   const byPlace = placed ? (
     <Flex vertical gap={4}>
       {places.includes('CHAINAGE') ? (
@@ -540,10 +541,10 @@ function LineDetails({
         }
       >
         {shows('crew') ? (
-          <Form.Item label="Crew">
+          <Form.Item label="Labour">
             <LineTable
               name={[field.name, 'labour']}
-              label={`Line ${n} crew`}
+              label={`Line ${n} labour`}
               addText="Add trade"
               newLine={() => ({ count: 1 })}
               columns={[
@@ -558,12 +559,12 @@ function LineDetails({
                 },
                 {
                   key: 'count',
-                  title: 'Nos',
+                  title: 'Workers',
                   width: 100,
                   align: 'right',
                   render: (f) => (
                     <Form.Item name={[f.name, 'count']} noStyle>
-                      <InputNumber min={0} precision={0} inputMode="numeric" aria-label={`Number of trade ${f.name + 1}`} style={{ width: '100%' }} />
+                      <InputNumber min={0} precision={0} inputMode="numeric" aria-label={`Workers of trade ${f.name + 1}`} style={{ width: '100%' }} />
                     </Form.Item>
                   ),
                 },
@@ -572,7 +573,7 @@ function LineDetails({
           </Form.Item>
         ) : null}
         {shows('machines') ? (
-          <Form.Item label="Machines">
+          <Form.Item label="Machinery">
             <LineTable
               name={[field.name, 'machines']}
               label={`Line ${n} machine`}
@@ -581,7 +582,7 @@ function LineDetails({
               columns={[
                 {
                   key: 'name',
-                  title: 'Equipment',
+                  title: 'Machine',
                   render: (f) => (
                     <Form.Item name={[f.name, 'name']} noStyle>
                       <AutoComplete placeholder="JCB 3DX" aria-label={`Machine ${f.name + 1}`} options={def.lines.machineNames.map((m) => ({ value: m }))} style={{ width: '100%' }} />
@@ -650,7 +651,7 @@ function LineDetails({
         <FormGrid cols={2}>
           {shows('workOrder') && options?.workOrders.length ? (
             <Form.Item name={[field.name, 'workOrderId']} label="Work order">
-              <Select allowClear placeholder="Done by our own crew" options={options.workOrders.map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }))} />
+              <Select allowClear placeholder="Departmental (our own workers)" options={options.workOrders.map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }))} />
             </Form.Item>
           ) : null}
           {shows('remarks') ? (

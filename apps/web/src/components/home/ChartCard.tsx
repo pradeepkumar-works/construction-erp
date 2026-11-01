@@ -3,14 +3,14 @@
 import React, { useState } from 'react';
 import { Card, Flex, Segmented, Table, Typography, theme } from 'antd';
 import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
-import { formatINR, formatPct, toNumber } from '@/lib/format';
+import { formatINR, formatPct, toNumber, inSentence } from '@/lib/format';
 import { WhenInView } from './WhenInView';
 import { costHeadRows, monthLabel } from './chartData';
 
 type View = 'chart' | 'table';
 
 /**
- * A home chart in a card (UX item 81): the summary in words above it, the drawing named by that summary, and Chart / Table
+ * A home chart in a card: the summary in words above it, the drawing named by that summary, and Chart / Table
  * to read the same figures as a table instead. The chart itself comes from `charts.tsx`, loaded on its own.
  */
 export function ChartCard({ title, note, summary, chart, table }: { title: string; note?: React.ReactNode; summary: string; chart: React.ReactNode; table: React.ReactNode }) {
@@ -31,7 +31,7 @@ export function ChartCard({ title, note, summary, chart, table }: { title: strin
               { value: 'chart', label: 'Chart' },
               { value: 'table', label: 'Table' },
             ]}
-            aria-label={`Show ${title.toLowerCase()} as`}
+            aria-label={`Show ${inSentence(title)} as`}
           />
         </Flex>
       }

@@ -1,5 +1,5 @@
 /**
- * Site photo checks (AI item 76): the reply checks and the confidence bar as unit tests, the 50 labelled cases through
+ * Site photo checks: the reply checks and the confidence bar as unit tests, the 50 labelled cases through
  * the test model, then on the demo data a DPR's photos checked through the service (captions, flags, skipped files, the
  * safety officer's switch, a snag drafted from its photo, who sees what). No real model is called. CI runs it after the
  * seed:

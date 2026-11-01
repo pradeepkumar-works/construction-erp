@@ -5,7 +5,7 @@ import { PASSWORD } from './helpers';
 import { WALK_ROLES, navHrefs, routesFile, stateFile } from './route-walk';
 
 /**
- * The route walk's one sign-in per role (item 89): each role signs in once, its session is saved for the walk's
+ * The route walk's one sign-in per role: each role signs in once, its session is saved for the walk's
  * browsers, and the links its sidebar shows are written down, so the walk visits what that role can open.
  */
 setup.use({ viewport: { width: 1440, height: 900 } });

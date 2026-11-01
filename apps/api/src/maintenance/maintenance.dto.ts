@@ -11,8 +11,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : value));
 const nullable = () => ValidateIf((_, v) => v !== null);
 
-/* ---------- job cards ---------- */
-
 export class CreateJobDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() equipmentId: string;
@@ -67,8 +65,6 @@ export class SummaryQuery {
   @ApiPropertyOptional({ description: 'Machines deployed at this project only' }) @IsOptional() @IsUUID() projectId?: string;
 }
 
-/* ---------- documents ---------- */
-
 export class CreateDocumentDto {
   @ApiProperty() @IsUUID() equipmentId: string;
   @ApiProperty({ enum: EQUIPMENT_DOC_TYPES }) @IsIn(EQUIPMENT_DOC_TYPES as unknown as string[]) type: EquipmentDocType;
@@ -91,8 +87,6 @@ export class ListDocumentsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: EXPIRY_STATES, description: 'EXPIRING = within 30 days' }) @IsOptional() @IsIn(EXPIRY_STATES) state?: ExpiryState;
   @ApiPropertyOptional({ description: 'Only the latest paper of each type per machine (default true)' }) @IsOptional() @QueryBool() @IsBoolean() latestOnly?: boolean;
 }
-
-/* ---------- drivers ---------- */
 
 export class CreateDriverDto {
   @ApiProperty({ example: 'Sukanta Behera' }) @trim() @IsString() @IsNotEmpty() @MaxLength(120) name: string;

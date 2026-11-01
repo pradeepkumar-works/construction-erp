@@ -7,7 +7,13 @@ import { formatINR, toNumber } from '@/lib/format';
 import { BRAND } from '@/lib/brand';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
-export const HEAD_COLORS: Record<CostHead, string> = { expenses: BRAND.colors.chartViolet, material: BRAND.colors.primary, machinery: BRAND.colors.chartAmber, labour: BRAND.colors.chartTeal, subcontract: BRAND.colors.chartPink };
+export const HEAD_COLORS: Record<CostHead, string> = {
+  material: BRAND.colors.primary,
+  subcontract: BRAND.colors.costSubcontract,
+  labour: BRAND.colors.costLabour,
+  machinery: BRAND.colors.costMachinery,
+  expenses: BRAND.colors.costExpenses,
+};
 
 /** Horizontal stacked bar of the cost heads; `scale` is the value of a full-width bar. */
 export function CostBar({ cost, scale, height = 14 }: { cost: CostHeadsDto; scale: number; height?: number }) {

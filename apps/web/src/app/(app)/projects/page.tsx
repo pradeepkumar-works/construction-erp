@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, Progress, Select, theme } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
-import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canEditProjects, isGuest } from '@erp/shared';
+import { LIST_SORT_FIELDS, NO_VERTICAL, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canManageProjects, isGuest } from '@erp/shared';
 import { useMasterList, useProjectsPage, LIST_START } from '@/lib/queries';
 import { useVerticalScope } from '@/lib/project-scope';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -69,7 +69,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
     },
     { key: 'physicalProgressPct', title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} aria-label={`${Math.round(v * 10) / 10}% done`} /> },
     { title: 'Start date', label: 'Start date', dataIndex: 'startDate', width: 120, defaultHidden: true, render: (v) => formatDate(v), ...sort('startDate') },
-    { card: 'date', title: 'End date', label: 'End date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
+    { card: 'date', title: 'Completion date', label: 'Completion date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
     {
       key: 'pendingApprovals',
       title: 'Pending',
@@ -86,7 +86,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
 export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  // The header's vertical (item 167) narrows the list; the filter here is the same choice.
+  // The header's vertical narrows the list; the filter here is the same choice.
   const [vertical, setVertical] = useVerticalScope();
   const { data: verticals } = useMasterList('vertical', false, !!user && !isGuest(user.roleKey));
   const verticalName = (code: string | null) => (code ? (verticals?.entries.find((e) => e.code === code)?.name ?? code) : null);
@@ -115,7 +115,7 @@ export default function ProjectsPage() {
   const { data, isLoading, isFetching, error, refetch } = useProjectsPage(filters);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const canCreate = user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
+  const canCreate = user && canManageProjects(user.roleKey);
   const filtered = !!(type || status || vertical || page.params.q);
   const exportRows = async () => {
     const rows = await fetchAllPages<ProjectSummary>('/projects', filters);
@@ -133,7 +133,7 @@ export default function ProjectsPage() {
     <div className="page-container">
       <PageHeader
         title="Projects"
-        subtitle={`${data?.total ?? 0} project${data?.total === 1 ? '' : 's'} ${filtered ? 'match' : 'in your scope'}`}
+        subtitle={`${data?.total ?? 0} project${data?.total === 1 ? '' : 's'} ${filtered ? 'match' : 'you can see'}`}
         extra={newButton}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

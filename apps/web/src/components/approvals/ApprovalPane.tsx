@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Button, ConfigProvider, Descriptions, Divider, Flex, Space, Typography, theme } from 'antd';
 import { CheckOutlined, CloseOutlined, EditOutlined, FileSearchOutlined } from '@/components/common/icons';
-import type { PendingApprovalDto, ReviewDecision } from '@erp/shared';
+import { SUBMISSION_TYPE_LABELS, type PendingApprovalDto, type ReviewDecision } from '@erp/shared';
 import { approvalTypeParam } from '@/lib/queries';
 import { approveTheme, themeFontSize } from '@/lib/theme';
 import { formatDateTime, formatINR } from '@/lib/format';
@@ -22,7 +22,8 @@ import { WorkOrderRecord } from '@/components/subcontracts/WorkOrderDrawer';
 import { SubBillRecord } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionRecord } from '@/components/inspections/InspectionDrawer';
 import { PaymentRequestRecord } from '@/components/payables/PaymentRequestRecord';
-import { decidedInPlace, QUEUE_TYPE_LABELS } from './queue';
+import { SupplierChoiceRecord } from '@/components/purchasing/SupplierChoiceRecord';
+import { decidedInPlace } from './queue';
 import { TypeTag } from './ApprovalQueue';
 
 /** The record of the entry picked in the queue, then the decision bar. */
@@ -105,12 +106,14 @@ function PaneRecord({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenD
       return <InspectionRecord mode="pane" id={item.id} />;
     case 'PAYMENT_REQUEST':
       return <PaymentRequestRecord mode="pane" id={item.id} />;
+    case 'SUPPLIER_CHOICE':
+      return <SupplierChoiceRecord mode="pane" id={item.id} />;
     default:
       return <PendingSummary item={item} onOpenDetails={onOpenDetails} />;
   }
 }
 
-/** A type without a record page: what the queue knows, the activity, and the details a click away. Every type has one since item 61. */
+/** A type without a record page: what the queue knows, the activity, and the details a click away. Every type has one today. */
 function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenDetails: () => void }) {
   const { token } = theme.useToken();
   return (
@@ -120,7 +123,7 @@ function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onO
           <span role="heading" aria-level={2} style={{ fontSize: token.fontSizeLG, fontWeight: token.fontWeightStrong }}>
             {item.title}
           </span>
-          <TypeTag type={item.type} label={QUEUE_TYPE_LABELS[item.type]} />
+          <TypeTag type={item.type} label={SUBMISSION_TYPE_LABELS[item.type]} />
         </Space>
         <Button size="small" icon={<FileSearchOutlined />} onClick={onOpenDetails}>
           Open details

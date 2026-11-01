@@ -29,7 +29,7 @@ export function fakePhotoReply(text: string): string {
 }
 
 /**
- * Labelled cases for the checks (item 76's set of 50): a photo's file name, what it is filed with and the flags the
+ * Labelled cases for the checks (a set of 50): a photo's file name, what it is filed with and the flags the
  * record must show. The test model reads the file name, so these test the confidence bar, which flags apply to which
  * record and the switch, not the picture; `photo-eval.ts` scores a real model on real photos.
  */

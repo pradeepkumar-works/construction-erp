@@ -7,7 +7,7 @@ import { useSnackbar } from '../components/Snackbar';
 import { useT } from '../i18n/LanguageContext';
 
 /**
- * Pinned and Recent on the Home tab (launcher phase 4): the same pins as the web, kept on the account and cached on the
+ * Pinned and Recent on the Home tab: the same pins as the web, kept on the account and cached on the
  * phone so Home draws them offline. Pin, move and unpin show at once and are put back if the server refuses; unpin offers
  * Undo. Pins to pages the user can no longer open are hidden, not deleted, as on the web.
  */

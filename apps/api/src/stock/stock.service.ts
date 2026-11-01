@@ -136,7 +136,7 @@ interface Header {
   date: Date;
   materialRequestId?: string | null;
   purchaseOrderId?: string | null;
-  /** Receipts: the supplier's dispatch note it was filled from (v6 item 105) */
+  /** Receipts: the supplier's dispatch note it was filled from */
   supplierDispatchId?: string | null;
   supplier?: string | null;
   vendorId?: string | null;
@@ -149,11 +149,11 @@ interface Header {
   toProjectId?: string | null;
   transferOutId?: string | null;
   remarks?: string | null;
-  /** Adjustments: why (v5 item 92) */
+  /** Adjustments: why */
   adjustmentReason?: StockAdjustmentReason | null;
   /** Issues: spares for this maintenance job card */
   maintenanceJobId?: string | null;
-  /** Fuel issues: the machine and its meter (v5 item 93) */
+  /** Fuel issues: the machine and its meter */
   equipmentId?: string | null;
   meterReading?: Decimal | null;
 }
@@ -201,7 +201,7 @@ export class StockService {
     undo.register('ITEM', { entityType: 'ITEM', check: (user) => this.access.assertCanManageStore(user) });
   }
 
-  /* ---------- helpers ---------- */
+  // Helpers
 
   toDto(r: Row): StockEntryDto {
     return {
@@ -210,7 +210,7 @@ export class StockService {
       projectName: r.project.name,
       type: r.type,
       entryNo: r.entryNo,
-      date: dateOnly(r.date)!,
+      date: dateOnly(r.date),
       materialRequestId: r.materialRequestId,
       requestNo: r.materialRequest?.requestNo ?? null,
       purchaseOrderId: r.purchaseOrderId,
@@ -251,7 +251,7 @@ export class StockService {
         itemName: l.item.name,
         unit: l.item.unit,
         category: l.item.category,
-        quantity: dec(l.quantity)!,
+        quantity: dec(l.quantity),
         materialRequestItemId: l.materialRequestItemId,
         purchaseOrderLineId: l.purchaseOrderLineId,
         rejectedQty: dec(l.rejectedQty),
@@ -259,7 +259,7 @@ export class StockService {
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       createdById: r.createdById,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -427,7 +427,7 @@ export class StockService {
     }
   }
 
-  /* ---------- entries ---------- */
+  // Entries
 
   async list(user: RequestUser, q: ListStockEntriesQuery): Promise<Paginated<StockEntryDto>> {
     const where: Prisma.StockEntryWhereInput = { ...this.access.submissionWhere(user) };
@@ -517,7 +517,7 @@ export class StockService {
         for (const [lineId, quantity] of want) {
           const line = mr.items.find((i) => i.id === lineId)!;
           const received = got.find((g) => g.materialRequestItemId === lineId)?._sum.quantity ?? ZERO;
-          // What stock met (v5 item 95) is not received again.
+          // What stock met is not received again.
           const pending = line.quantity.sub(received).sub(covered.find((c) => c.materialRequestItemId === lineId)?._sum.quantity ?? ZERO);
           if (quantity.gt(pending))
             throw new ConflictException(
@@ -548,14 +548,14 @@ export class StockService {
     if (po.status !== 'APPROVED') throw new ConflictException(`Material can only be received against an approved PO. ${po.poNo} is ${SUBMISSION_STATUS_LABELS[po.status].toLowerCase()}.`);
     if (po.closedAt) throw new ConflictException(`${po.poNo} is closed; nothing more can be received against it.`);
     await this.access.assertCanKeepStock(user, po.projectId);
-    // Filled from the supplier's dispatch note (v6 item 105): it must be this order's, still on the way.
+    // Filled from the supplier's dispatch note: it must be this order's, still on the way.
     const dispatch = dto.supplierDispatchId
       ? await this.prisma.supplierDispatch.findFirst({ where: { id: dto.supplierDispatchId, purchaseOrderId: po.id }, select: { dispatchNo: true, cancelledAt: true, grn: { select: { entryNo: true } } } })
       : null;
     if (dto.supplierDispatchId && !dispatch) throw new BadRequestException(`The dispatch note is not one of ${po.poNo}'s`);
     if (dispatch?.cancelledAt) throw new ConflictException(`The supplier cancelled dispatch note ${dispatch.dispatchNo}`);
     if (dispatch?.grn) throw new ConflictException(`Dispatch note ${dispatch.dispatchNo} was already received as ${dispatch.grn.entryNo}`);
-    // Drafted from a weighbridge ticket (item 148): weighed, against this order, not received or cancelled.
+    // Drafted from a weighbridge ticket: weighed, against this order, not received or cancelled.
     const ticket = dto.weighTicketId
       ? await this.prisma.weighTicket.findFirst({
           where: { id: dto.weighTicketId, organizationId: user.organizationId },
@@ -647,7 +647,7 @@ export class StockService {
   }
 
   /**
-   * Fuel into a machine (v5 item 93): an issue of a fuel item with the machine and its meter, by whoever issues
+   * Fuel into a machine: an issue of a fuel item with the machine and its meter, by whoever issues
    * material. Offline phones send it through the outbox with their own id, so a retry returns the same entry.
    */
   async fuelIssue(user: RequestUser, dto: CreateFuelIssueDto): Promise<StockEntryDto> {
@@ -741,7 +741,7 @@ export class StockService {
   }
 
   /**
-   * QA/QC's check of material received (v4 item 48): accepted, partly accepted (with the rejected quantity per line) or
+   * QA/QC's check of material received: accepted, partly accepted (with the rejected quantity per line) or
    * rejected. It can be recorded again to correct it. The store balance is not changed: rejected material goes back to
    * the supplier with a return to vendor.
    */
@@ -795,7 +795,7 @@ export class StockService {
     }
   }
 
-  /* ---------- transfers, returns and counts ---------- */
+  // Transfers, returns and counts
 
   /** Items of the organisation by id, refusing unknown ones; quantities parsed and merged per item. */
   private async itemLines(user: RequestUser, raw: { itemId: string; quantity: string }[]) {
@@ -917,7 +917,7 @@ export class StockService {
   }
 
   /**
-   * Where an issue or a return goes (item 128): the activity's component when an activity is given, else the component
+   * Where an issue or a return goes: the activity's component when an activity is given, else the component
    * or pipe zone chosen. Both must be of the project.
    */
   private async placeOf(projectId: string, activityId: string | null | undefined, workElementId: string | null | undefined): Promise<string | null> {
@@ -1006,7 +1006,7 @@ export class StockService {
   async valuation(user: RequestUser, q: StockValuationQuery): Promise<StockValuationDto> {
     if (!canManageStore(user.roleKey) && !canViewCost(user.roleKey)) throw new ForbiddenException('Stock value is for store managers, approvers and accounts');
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
-    const asOf = new Date().toISOString().slice(0, 10);
+    const asOf = todayIn();
     const today = parseDate(asOf).getTime();
     const balances = (await this.buildBalances(user.organizationId, this.access.projectWhere(user), q.projectId)).filter((b) => Number(b.balance) > 0);
     const projectIds = [...new Set(balances.map((b) => b.projectId))];
@@ -1059,16 +1059,16 @@ export class StockService {
         category: b.category,
         balance: b.balance,
         rate: money(rate),
-        value: money(value)!,
-        ageingQty: ageing.map((a) => dec(a)!),
+        value: money(value),
+        ageingQty: ageing.map((a) => dec(a)),
         oldestDays,
       };
     });
     rows.sort((a, b) => Number(b.value) - Number(a.value) || a.itemName.localeCompare(b.itemName));
-    return { asOf, rows, totalValue: money(totalValue)!, ageingValue: ageingValue.map((v) => money(v.toDecimalPlaces(2))!), unpricedItems: unpriced };
+    return { asOf, rows, totalValue: money(totalValue), ageingValue: ageingValue.map((v) => money(v.toDecimalPlaces(2))), unpricedItems: unpriced };
   }
 
-  /* ---------- balances ---------- */
+  // Balances
 
   private async buildBalances(organizationId: string, project: Prisma.ProjectWhereInput, projectId?: string, itemId?: string): Promise<StockBalanceDto[]> {
     const scope = { organizationId, project, ...(projectId ? { projectId } : {}), ...(itemId ? { itemId } : {}) };
@@ -1112,11 +1112,11 @@ export class StockService {
         itemName: item.name,
         unit: item.unit,
         category: item.category,
-        received: dec(a.received)!,
-        issued: dec(a.issued)!,
-        adjusted: dec(a.adjusted)!,
-        transferred: dec(a.transferred)!,
-        balance: dec(balance)!,
+        received: dec(a.received),
+        issued: dec(a.issued),
+        adjusted: dec(a.adjusted),
+        transferred: dec(a.transferred),
+        balance: dec(balance),
         minQty: a.min && a.min.gt(0) ? dec(a.min) : null,
         low: isLowStock(balance.toString(), a.min?.toString()),
         lastMovement: dateOnly(a.last),
@@ -1184,7 +1184,7 @@ export class StockService {
         requestNo: r.requestNo,
         projectId: r.projectId,
         projectName: r.project.name,
-        requiredDate: dateOnly(r.requiredDate)!,
+        requiredDate: dateOnly(r.requiredDate),
         priority: r.priority,
         lines: r.items.map((i) => {
           const received = i.stockTxns.reduce((s, t) => s.add(t.quantity), ZERO);
@@ -1194,16 +1194,16 @@ export class StockService {
             itemName: i.itemName,
             specification: i.specification,
             unit: i.unit,
-            requested: dec(i.quantity)!,
-            received: dec(received)!,
-            pending: dec(pending.gt(0) ? pending : ZERO)!,
+            requested: dec(i.quantity),
+            received: dec(received),
+            pending: dec(pending.gt(0) ? pending : ZERO),
           };
         }),
       }))
       .filter((r) => r.lines.some((l) => Number(l.pending) > 0));
   }
 
-  /* ---------- a material request met from stock (v5 item 95) ---------- */
+  // A material request met from stock
 
   /** A request with what each line still needs, for stock first. */
   private async coverableRequest(user: RequestUser, id: string) {
@@ -1233,7 +1233,7 @@ export class StockService {
   }
 
   /**
-   * Indent checks (item 170, `@erp/shared/indent-check.ts`): each line of a request the caller may open (the caller has
+   * Indent checks (`@erp/shared/indent-check.ts`): each line of a request the caller may open (the caller has
    * loaded it through `MaterialRequestsService.get`) against its site's store and what the BOQ allows for the item, from
    * the project's norms. A line naming no item of the master is checked against nothing.
    */
@@ -1289,7 +1289,7 @@ export class StockService {
   }
 
   /**
-   * Stock first (v5 item 95): for each line of a request, what its own site holds and what the other sites the user can
+   * Stock first: for each line of a request, what its own site holds and what the other sites the user can
    * see hold, so the store issues or transfers before the rest is bought.
    */
   async requestStock(user: RequestUser, materialRequestId: string): Promise<MaterialRequestStockDto> {
@@ -1318,9 +1318,9 @@ export class StockService {
           itemName: i.itemName,
           unit: i.unit,
           itemId: item?.id ?? null,
-          toOrderQty: dec(toOrderOf(i))!,
-          coveredQty: dec(i.covers.reduce((s, c) => s.add(c.quantity), ZERO))!,
-          here: dec(at.find((s) => s.projectId === mr.projectId)?._sum.quantity ?? ZERO)!,
+          toOrderQty: dec(toOrderOf(i)),
+          coveredQty: dec(i.covers.reduce((s, c) => s.add(c.quantity), ZERO)),
+          here: dec(at.find((s) => s.projectId === mr.projectId)?._sum.quantity ?? ZERO),
           others: at
             .filter((s) => s.projectId !== mr.projectId)
             .sort((a, b) => (b._sum.quantity ?? ZERO).cmp(a._sum.quantity ?? ZERO))
@@ -1337,7 +1337,7 @@ export class StockService {
   }
 
   /**
-   * Meet request lines from stock (v5 item 95): from the request's own site an issue to whoever raised it, from another
+   * Meet request lines from stock: from the request's own site an issue to whoever raised it, from another
    * site a transfer to the request's site (received there as usual). Each line at most what it still needs; what is
    * met no longer needs ordering or receiving. Deleting the entry gives the need back.
    */
@@ -1416,7 +1416,7 @@ export class StockService {
     return this.get(user, saved.id);
   }
 
-  /* ---------- central stores (v6 item 106) ---------- */
+  // Central stores
 
   /** The central stores and yards the user sees, with what each holds, its value and what is on the road to or from it. */
   async stores(user: RequestUser): Promise<StoreSummaryDto[]> {
@@ -1458,7 +1458,7 @@ export class StockService {
   }
 
   /**
-   * Where a stock keeper can send material (v6 item 106): every open site and store of the company, not only the ones
+   * Where a stock keeper can send material: every open site and store of the company, not only the ones
    * they are a member of, as `transfer` already allows. The receiving site's own keepers receive it.
    */
   async destinations(user: RequestUser): Promise<StockDestinationDto[]> {
@@ -1471,7 +1471,7 @@ export class StockService {
     return rows.map((p) => ({ id: p.id, code: p.code, name: p.name, store: p.type === 'STORE' })).sort((a, b) => Number(b.store) - Number(a.store));
   }
 
-  /* ---------- item master ---------- */
+  // Item master
 
   async listItems(user: RequestUser, q: ListItemsQuery): Promise<Paginated<ItemDto>> {
     const where: Prisma.ItemWhereInput = { organizationId: user.organizationId };
@@ -1490,7 +1490,7 @@ export class StockService {
       ? await this.prisma.stockTxn.groupBy({ by: ['itemId', 'projectId'], where: { itemId: { in: rows.map((r) => r.id) } } })
       : [];
     return paginated(
-      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
+      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt) })),
       total,
       args,
     );
@@ -1504,7 +1504,7 @@ export class StockService {
     return d.toDecimalPlaces(2);
   }
 
-  /** The pipe fields of a create or change (item 128); left out, unchanged. */
+  /** The pipe fields of a create or change; left out, unchanged. */
   private pipeData(dto: { pipeDiameterMm?: number | null; pipeMaterial?: PipeMaterial | null; kgPerMetre?: string | null }): { pipeDiameterMm?: number | null; pipeMaterial?: PipeMaterial | null; kgPerMetre?: Decimal | null } {
     const kg = dto.kgPerMetre === undefined ? undefined : dto.kgPerMetre === null || dto.kgPerMetre === '' ? null : new Prisma.Decimal(dto.kgPerMetre).toDecimalPlaces(3);
     if (kg && kg.lte(0)) throw new BadRequestException('Enter a weight per metre above zero');
@@ -1525,7 +1525,7 @@ export class StockService {
     const r = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!r) throw new NotFoundException('Item not found');
     const used = await this.prisma.stockTxn.groupBy({ by: ['projectId'], where: { itemId: id } });
-    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.length, createdAt: iso(r.createdAt)! };
+    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), aliases: r.aliases, projectCount: used.length, createdAt: iso(r.createdAt) };
   }
 
   async createItem(user: RequestUser, dto: CreateItemDto): Promise<ItemDto> {
@@ -1584,7 +1584,7 @@ export class StockService {
   }
 
   /**
-   * Items that look like one item written more ways (finding 3 of the October review), for the store manager to merge
+   * Items that look like one item written more ways, for the store manager to merge
    * once: the same unit, and the same spelling or one name inside the other (`duplicateGroups`).
    */
   async itemDuplicates(user: RequestUser): Promise<ItemDuplicateGroupDto[]> {
@@ -1596,7 +1596,7 @@ export class StockService {
   }
 
   /**
-   * Merge items into one (finding 3): every record that points at them points at the item kept, request and order
+   * Merge items into one: every record that points at them points at the item kept, request and order
    * lines take its name, and their names become its old names so a line typed that way lands on it. A minimum level
    * or norm both items have keeps the kept item's. Items in different units do not merge.
    */

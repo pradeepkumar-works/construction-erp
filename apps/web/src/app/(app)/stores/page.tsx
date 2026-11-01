@@ -16,7 +16,7 @@ import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 
 /**
- * Central stores and yards (v6 item 106): each one is a project of type STORE, so it receives on GRNs and purchase
+ * Central stores and yards: each one is a project of type STORE, so it receives on GRNs and purchase
  * orders, sends to sites by transfer (in transit until the site receives it) and is counted like any site's store.
  */
 export default function StoresPage() {
@@ -82,8 +82,8 @@ function StoreCard({ store: s }: { store: StoreSummaryDto }) {
       </Row>
       <Flex gap={8} wrap style={{ marginTop: token.marginSM }}>
         {s.low ? <AppTag tone="danger">{`${s.low} item${s.low === 1 ? '' : 's'} below minimum`}</AppTag> : null}
-        {s.outInTransit ? <AppTag tone="info">{`${s.outInTransit} transfer${s.outInTransit === 1 ? '' : 's'} on the road to sites`}</AppTag> : null}
-        {s.inInTransit ? <AppTag tone="pending">{`${s.inInTransit} coming in to receive`}</AppTag> : null}
+        {s.outInTransit ? <AppTag tone="info">{`${s.outInTransit} transfer${s.outInTransit === 1 ? '' : 's'} to sites in transit`}</AppTag> : null}
+        {s.inInTransit ? <AppTag tone="pending">{`${s.inInTransit} in transit to receive`}</AppTag> : null}
       </Flex>
       <LinkButton href={`/stores/${s.id}`} style={{ marginTop: token.marginMD }} aria-label={`Open store: ${s.name}`}>
         Open store

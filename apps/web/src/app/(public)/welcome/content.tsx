@@ -205,7 +205,7 @@ export const MODULES: Module[] = [
     tab: 'Site',
     title: 'Everything a site sends to the office',
     lead: 'The site engineer enters the day on the phone. The project manager approves it, and only then does it count.',
-    shot: { src: 'web-approvals', alt: 'The approvals queue: progress entries, DPRs and material requests waiting, with the WMM entry open beside them' },
+    shot: { src: 'web-approvals', alt: 'The approvals queue: progress entries, daily reports and indents waiting, with the WMM entry open beside them' },
     features: [
       { title: 'DPR and progress', text: 'Quantities against BOQ activities, manpower from attendance, photos and the day’s hindrances.' },
       { title: 'Measurement book', text: 'Nos × L × B × D by BOQ item and location, started from the approved progress still to measure.' },
@@ -229,7 +229,7 @@ export const MODULES: Module[] = [
   {
     key: 'buy',
     tab: 'Buy and pay',
-    title: 'From material request to vendor payment',
+    title: 'From indent to vendor payment',
     lead: 'Quotes, purchase orders, receipts at site and the vendor’s bill are checked against each other before anyone pays.',
     shot: { src: 'web-po', alt: 'The purchase order register by stage, with what has been received at site' },
     features: [

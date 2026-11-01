@@ -13,7 +13,7 @@ export type PushStatus =
   | 'denied'
   /** Simulator, web, Expo Go on Android, or no EAS projectId: remote push is not possible here. */
   | 'unavailable'
-  /** Not asked yet, or "Not now" on the explanation shown before the phone's own prompt (UX item 88). */
+  /** Not asked yet, or "Not now" on the explanation shown before the phone's own prompt. */
   | 'off';
 
 export interface PushRegistration {
@@ -98,7 +98,7 @@ export async function getPushRegistration(): Promise<PushRegistration> {
 }
 
 /**
- * Opens a notification's screen without stacking a copy of the one already showing (UX item 88): the same screen is
+ * Opens a notification's screen without stacking a copy of the one already showing: the same screen is
  * left as it is (or replaced, when only its filters differ), anything else is pushed.
  */
 export function openNotificationRoute(router: { push: (href: never) => void; replace: (href: never) => void }, currentPath: string, route: string) {
@@ -128,7 +128,7 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
   if (data?.type === 'DPR_REMINDER' && projectId) return `/dpr/new?projectId=${projectId}`;
   if (entityType === 'RFI' && entityId) return `/rfi/${entityId}`;
   if (entityType === 'LETTER' && entityId) return `/letter/${entityId}`;
-  // Meetings (v6 item 112) and material approvals (113) have no phone screen yet; the notice itself says what is due.
+  // Meetings and material approvals (113) have no phone screen yet; the notice itself says what is due.
   if (entityType === 'MEETING' || entityType === 'MATERIAL_APPROVAL') return '/notifications';
   if (data?.type === 'DOCUMENT_ISSUED' && projectId) return `/documents?projectId=${projectId}`;
   if (data?.type === 'LEAVE' || data?.type === 'OVERTIME') return '/staff';

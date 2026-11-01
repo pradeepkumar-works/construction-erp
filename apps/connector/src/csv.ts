@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 
 /**
- * A batching plant controller's batch report (item 149): a text file of rows, its first row the column names, written
+ * A batching plant controller's batch report: a text file of rows, its first row the column names, written
  * with commas, semicolons or tabs. `readReport` reads it into rows of named columns, each with a key that stays the same
  * when the controller writes the same row again (a day's file grows through the day). Pure: tested in `csv-test.ts`.
  */

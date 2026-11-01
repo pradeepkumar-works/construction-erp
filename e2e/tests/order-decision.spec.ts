@@ -9,7 +9,7 @@ type Quote = { id: string; vendorName: string; total: string };
 type Po = { id: string; poNo: string };
 
 /**
- * What the approver sees on a purchase order (finding 15 of the October review): the card showed no quotes, no lowest
+ * What the approver sees on a purchase order: the card showed no quotes, no lowest
  * bidder and no budget, and Delete sat a tap from Approve. The order now carries the request's quotations and the
  * project's material budget, and Delete lives in the ⋯ menu.
  */

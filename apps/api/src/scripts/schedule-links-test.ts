@@ -1,5 +1,5 @@
 /**
- * Schedule links' tests (v6 item 114): loops refused, the critical path's forward and backward passes for each kind of
+ * Schedule links' tests: loops refused, the critical path's forward and backward passes for each kind of
  * link and lag, the moves the links make, readiness for the look-ahead, and MS Project XML and P6 XER both ways, with no
  * database. CI runs it after the build:
  *

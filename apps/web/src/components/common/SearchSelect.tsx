@@ -31,7 +31,7 @@ export type SearchSelectProps<T> = Omit<SelectProps<string>, 'options' | 'showSe
 };
 
 /**
- * A select over a master that searches as you type (item 83): it shows the first page when it opens, asks the list
+ * A select over a master that searches as you type: it shows the first page when it opens, asks the list
  * endpoint with `q` a moment after each pause in typing, and keeps showing the chosen value's name when that is not on
  * the page shown. It replaces dropdowns that loaded up to 500 rows up front.
  */
@@ -85,7 +85,7 @@ export function SearchSelect<T extends { id: string }>({ source, params, toOptio
         fetching ? (
           <Spin size="small" />
         ) : (
-          <Typography.Text type="secondary">{q ? `Nothing matches "${q}"` : 'Nothing to choose yet'}</Typography.Text>
+          <Typography.Text type="secondary">{q ? `Nothing matches “${q}”` : 'Nothing to choose yet'}</Typography.Text>
         )
       }
     />
@@ -97,7 +97,7 @@ type Picker<T> = Omit<SearchSelectProps<T>, 'source' | 'toOption'>;
 const userOption = (u: UserSummary): PickerOption => ({ value: u.id, label: `${u.fullName} (${u.roleName})` });
 const vendorOption = (v: VendorDto): PickerOption => ({ value: v.id, label: v.name });
 const clientOption = (c: ClientDto): PickerOption => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name });
-const equipmentOption = (e: EquipmentDto): PickerOption => ({ value: e.id, label: `${e.code} - ${e.name}` });
+const equipmentOption = (e: EquipmentDto): PickerOption => ({ value: e.id, label: `${e.code} · ${e.name}` });
 const itemOption = (i: ItemDto): PickerOption => ({ value: i.id, label: `${i.name} (${i.unit})` });
 
 /** A user of the organisation (active ones unless `params` says otherwise), optionally of some roles only. */
@@ -108,7 +108,7 @@ export function UserSelect({ roles, params, ...props }: Picker<UserSummary> & { 
 }
 
 /**
- * Several users at once (finding 6 of the October review: a team was added one person at a time), searching as you type
+ * Several users at once (a team was added one person at a time), searching as you type
  * like `UserSelect`; the chosen ones keep their names when the search that found them is gone.
  */
 export function UserMultiSelect({
@@ -152,7 +152,7 @@ export function UserMultiSelect({
         setOpen(o);
         if (!o) setSearch('');
       }}
-      notFoundContent={open && page.isFetching ? <Spin size="small" /> : <Typography.Text type="secondary">{q ? `Nothing matches "${q}"` : 'Nothing to choose yet'}</Typography.Text>}
+      notFoundContent={open && page.isFetching ? <Spin size="small" /> : <Typography.Text type="secondary">{q ? `Nothing matches “${q}”` : 'Nothing to choose yet'}</Typography.Text>}
     />
   );
 }
@@ -189,7 +189,7 @@ export function ItemSelect(props: Picker<ItemDto>) {
 
 const sorOption = (s: SorItemDto): PickerOption => ({ value: s.id, label: `${s.code} · ${s.description.length > 70 ? `${s.description.slice(0, 70)}…` : s.description} (${s.unit})` });
 
-/** An item of a schedule of rates (v6 item 110), searched by code or words of its description. */
+/** An item of a schedule of rates, searched by code or words of its description. */
 export function SorItemSelect({ bookId, ...props }: Picker<SorItemDto> & { bookId?: string | null }) {
   const query = useMemo(() => ({ bookId: bookId ?? undefined }), [bookId]);
   return <SearchSelect<SorItemDto> source="sorItems" params={query} toOption={sorOption} placeholder="Type a code or words of the item" {...props} />;

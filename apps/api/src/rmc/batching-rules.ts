@@ -1,5 +1,5 @@
 /**
- * Batching plant rules (item 149, ARCHITECTURE "Batching plant controller"): a batching plant connection's settings, its
+ * Batching plant rules (ARCHITECTURE "Batching plant controller"): a batching plant connection's settings, its
  * column map, and a row the Connector read from the controller's batch report. Pure: tested in
  * `src/scripts/batching-test.ts`. Reading a row through the map, the first map and the order a batch was for are in
  * `@erp/shared/batching.ts`.

@@ -61,7 +61,7 @@ ${PRINT_FONT_LINKS}
     <div><b>To</b>${esc(o.vendorName)}${o.vendorGstin ? `<br/><span class="muted">GSTIN ${esc(o.vendorGstin)}</span>` : ''}${o.vendorMsme ? `<br/><span class="muted">${esc(MSME_CATEGORY_LABELS[o.vendorMsme])}</span>` : ''}</div>
     <div><b>Deliver to</b>${esc(o.deliveryAddress ?? o.projectName)}</div>
     <div><b>Deliver by</b>${esc(o.deliveryBy ? formatDate(o.deliveryBy) : 'As agreed')}</div>
-    <div><b>Our reference</b>${esc(o.requestNo ? `Material request ${o.requestNo}` : '-')}</div>
+    <div><b>Our reference</b>${esc(o.requestNo ? `Indent ${o.requestNo}` : '-')}</div>
     <div><b>Payment</b>${esc(o.paymentTerms ?? (o.paymentDays !== null ? `${o.paymentDays} days from invoice` : 'As agreed'))}</div>
   </div>
   <h2>Items</h2>

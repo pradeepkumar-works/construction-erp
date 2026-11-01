@@ -5,7 +5,7 @@ const login = (email: string) =>
   fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) });
 
 /**
- * Platform admin (v3 item 35). In the e2e run admin@demo.com is staff (PLATFORM_ADMIN_EMAILS). A new company's admin
+ * Platform admin. In the e2e run admin@demo.com is staff (PLATFORM_ADMIN_EMAILS). A new company's admin
  * allows support; staff open it read-only from the console, cannot change anything, and the visit is in the company's
  * log. Then staff suspend the company and nobody in it can sign in until the suspension is lifted.
  */

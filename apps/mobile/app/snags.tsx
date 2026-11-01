@@ -15,7 +15,7 @@ import { useT } from '../src/i18n/LanguageContext';
 
 type Show = 'OPEN' | 'FIXED' | 'CLOSED';
 
-/** Snags before handover and defects in the defect liability period (v4 item 47): what is open, fixed or closed. */
+/** Snags before handover and defects in the defect liability period: what is open, fixed or closed. */
 export default function SnagsScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const router = useRouter();

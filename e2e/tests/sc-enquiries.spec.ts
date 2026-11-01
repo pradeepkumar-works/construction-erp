@@ -30,7 +30,7 @@ async function demo(token: string) {
 }
 
 /**
- * Subcontract enquiries (v6 item 111): management sends brickwork and an own item to two subcontractors from Purchases,
+ * Subcontract enquiries: management sends brickwork and an own item to two subcontractors from Purchases,
  * enters one quote on the page and the other comes in lower, then awards the higher one: a reason is asked for, and the
  * award opens the draft work order it made at that quote's rates.
  */
@@ -54,7 +54,7 @@ test('an enquiry is quoted, compared and the chosen quote becomes a work order',
   await form.getByLabel('Quantity of line 2').fill('1');
   await chooseOption(form.getByLabel('Subcontractors'), 'Kalinga Builders');
   await chooseOption(form.getByLabel('Subcontractors'), 'Utkal Shuttering');
-  await form.getByRole('button', { name: 'Create enquiry' }).click();
+  await form.getByRole('button', { name: 'Save enquiry' }).click();
   await expect(page.getByText(/Enquiry SCE-\d{4}-\d{4} created/)).toBeVisible();
   await expect(page).toHaveURL(/\/subcontract-enquiries\/[0-9a-f-]{36}$/);
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();

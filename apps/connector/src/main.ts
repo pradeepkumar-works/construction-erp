@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Nirmaan Connector (item 139, ARCHITECTURE "Integration layer"). Runs on a computer at a site or office, reads the
+ * Nirmaan Connector (ARCHITECTURE "Integration layer"). Runs on a computer at a site or office, reads the
  * devices on its network and sends their readings to Nirmaan. It only calls out (HTTPS to the API); nothing on the
  * site's router is opened, and it never listens on a port.
  *

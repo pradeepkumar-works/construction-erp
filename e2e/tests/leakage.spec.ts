@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
 
 /**
- * Leakage checks (AI item 121). The demo has material over its norms at the building site, the hired grader short of
+ * Leakage checks. The demo has material over its norms at the building site, the hired grader short of
  * the 200 hours a month it is paid for, and diesel put into the excavator on a day with no log. The page lists the
  * month's flags with their rupees and working; a purchase order above what another site paid says so on its record.
  */
@@ -27,7 +27,7 @@ test('the month’s leakage flags, with their rupees and the working behind each
     const first = data.flags[0];
     const card = page.locator(`[data-flag-key="${first.key}"]`);
     await expect(card.getByRole('heading', { name: first.title })).toBeVisible();
-    await card.getByRole('button', { name: 'Why: the working' }).click();
+    await card.getByRole('button', { name: 'Show how this was worked out' }).click();
     await expect(card.getByText(first.working[0], { exact: true })).toBeVisible();
   } else {
     await expect(page.getByText('Nothing found this month')).toBeVisible();

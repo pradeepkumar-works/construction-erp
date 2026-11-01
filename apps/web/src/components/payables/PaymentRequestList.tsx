@@ -13,7 +13,7 @@ import { useNewIntent } from '@/lib/new-intent';
 import { useProjectScope } from '@/lib/project-scope';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYMENT_REQUEST_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -43,8 +43,8 @@ const money = (v: string, strong?: boolean) =>
 const forLabel = (r: PaymentRequestDto) => (r.kind === 'FUND_REQUEST' && r.purpose ? FUND_PURPOSE_LABELS[r.purpose] : r.targetLabel);
 
 /**
- * Payment requests (v5 item 90) in the Payables page's tab: bills to pay and advances to release, waiting for approval
- * or for accounts to pay them. With `fund`, a site's fund requests (v6 item 107) on the Site imprest page: asked for by
+ * Payment requests in the Payables page's tab: bills to pay and advances to release, waiting for approval
+ * or for accounts to pay them. With `fund`, a site's fund requests on the Site imprest page: asked for by
  * the site, released into its imprest or paid to a party.
  */
 export function PaymentRequestList({ projectId: given, vendorId, fund }: { projectId?: string; vendorId?: string; fund?: boolean }) {
@@ -182,7 +182,7 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
       cardText: (r) => (r.neededBy ? `Needed by ${formatDate(r.neededBy)}` : ''),
       width: 120,
       ...sort('neededBy'),
-      render: (v: string | null) => (v ? formatDate(v) : '-'),
+      render: (v: string | null) => (v ? formatDate(v) : NO_VALUE),
     },
     {
       title: 'Status',

@@ -30,7 +30,7 @@ export default function ProjectScreen() {
   if (!data) return null;
   const { project, activities } = data;
   const delayed = activities.filter((a) => a.isDelayed).length;
-  // Where the project's type places work (item 134): none for a type that is not located by place.
+  // Where the project's type places work: none for a type that is not located by place.
   const sector = sectorStepOf(project);
 
   return (
@@ -108,7 +108,7 @@ export default function ProjectScreen() {
             <View style={styles.actBar}>
               <ProgressBar value={a.progressPct} color={a.isDelayed ? colors.danger : undefined} />
             </View>
-            {/* An activity made of parts takes its progress through them (item 125). */}
+            {/* An activity made of parts takes its progress through them. */}
             {!a.isSummary ? (
               <Button title={t('Add progress for this activity')} size="sm" variant="secondary" icon="add" onPress={() => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)} />
             ) : null}

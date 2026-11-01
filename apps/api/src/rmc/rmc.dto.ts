@@ -89,7 +89,7 @@ export class DispatchBatchDto {
   @ApiPropertyOptional({ example: 110 }) @IsOptional() @opt() @IsInt() @Min(0) @Max(300) slumpMm?: number | null;
   @ApiPropertyOptional({ type: [BatchLineInput], description: 'Weighed quantities where they differ from the design' }) @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({ each: true }) @Type(() => BatchLineInput) lines?: BatchLineInput[];
   @ApiPropertyOptional() @IsOptional() @trim() @opt() @IsString() @MaxLength(500) note?: string | null;
-  @ApiPropertyOptional({ description: 'The batch from the plant controller this challan is for (item 149): its weights are the lines' }) @IsOptional() @IsUUID() plantRowId?: string;
+  @ApiPropertyOptional({ description: 'The batch from the plant controller this challan is for: its weights are the lines' }) @IsOptional() @IsUUID() plantRowId?: string;
 }
 
 export class DeliverBatchDto {

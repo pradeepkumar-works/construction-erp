@@ -77,6 +77,7 @@ function RootNavigator() {
         <Stack.Screen name="work-order/[id]" options={{ title: t('Work Order') }} />
         <Stack.Screen name="subcontract-bill/[id]" options={{ title: t('Subcontractor Bill') }} />
         <Stack.Screen name="payment-request/[id]" options={{ title: t('Payment request') }} />
+        <Stack.Screen name="supplier-choice/[id]" options={{ title: t('Supplier choice') }} />
         <Stack.Screen name="inspection/new" options={{ title: t('Request Inspection') }} />
         <Stack.Screen name="inspection/[id]" options={{ title: t('Inspection') }} />
         <Stack.Screen name="risks" options={{ title: t('Delays & Risks') }} />

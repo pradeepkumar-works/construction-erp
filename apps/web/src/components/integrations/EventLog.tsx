@@ -7,7 +7,7 @@ import { AppTag, type TagTone } from '@/components/common/AppTag';
 import type { IntegrationEventDto, IntegrationEventStatus } from '@erp/shared';
 import { INTEGRATION_EVENT_STATUSES, INTEGRATION_EVENT_STATUS_LABELS } from '@erp/shared';
 import { useIntegrationConnections, useIntegrationEvents } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 
 const STATUS_TONE: Record<IntegrationEventStatus, TagTone> = { OK: 'success', FAILED: 'danger', IGNORED: 'neutral' };
@@ -22,7 +22,7 @@ export function EventLog() {
 
   const columns: TableProps<IntegrationEventDto>['columns'] = [
     { title: 'When', dataIndex: 'createdAt', width: 170, render: (v: string) => formatDateTime(v) },
-    { title: 'Connection', dataIndex: 'connectionName', width: 200, ellipsis: true, render: (v: string | null, e) => v ?? e.agentName ?? '-' },
+    { title: 'Connection', dataIndex: 'connectionName', width: 200, ellipsis: true, render: (v: string | null, e) => v ?? e.agentName ?? NO_VALUE },
     { title: 'Result', dataIndex: 'status', width: 120, render: (s: IntegrationEventStatus) => <AppTag tone={STATUS_TONE[s]}>{INTEGRATION_EVENT_STATUS_LABELS[s]}</AppTag> },
     { title: 'What came', dataIndex: 'summary' },
     {
@@ -53,7 +53,7 @@ export function EventLog() {
         <Select
           allowClear
           aria-label="Result"
-          placeholder="Any result"
+          placeholder="All results"
           style={{ minWidth: 160 }}
           value={status}
           onChange={setStatus}

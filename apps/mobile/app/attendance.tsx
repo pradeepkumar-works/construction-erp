@@ -183,7 +183,6 @@ export default function AttendanceScreen() {
     // screen is dropped, so an empty sheet never replaces it on the phone.
     if (draft.restoredAt && !sheet) draft.clear();
     else draft.settle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheet?.id, sheet?.updatedAt, projectId, date, day.loading]);
 
   const lines = useMemo(() => toLines(groups), [groups]);

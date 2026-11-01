@@ -939,6 +939,27 @@ what they show is in Nirmaan already. These four were missing or thin, built as 
      and flags a line past the BOQ or one the store already covers, for the approver (`GET /material-requests/:id/check`).
      ARCHITECTURE "Indent checks".
 
+## Tender alignment (items 171 to 173)
+
+Asked by Pradeep on 30 Oct 2026: are we aligned with real business, against a consultant's terms of reference, two
+contractors' water supply tenders, their BOQs and the sample reports. The gap analysis is the Claude Doc "Nirmaan against
+real tenders: gap analysis"; Pradeep chose items 1 to 3 of it, in order.
+
+171. ~~**Contract obligations and recoveries** (M).~~ Done: each obligation of the contract with its clause, who owes it,
+     its deadline from the agreement, start, completion or handover, and what missing it costs; RA bills deduct it as named
+     Contract recoveries and give a withholding back once met; reminders a week before and when it passes; the security
+     deposit held to a cap of the contract value. ARCHITECTURE "Contract obligations and recoveries".
+172. ~~**Consultant checks in the portal** (M).~~ Done: a check level for each of the client's side on the project's team;
+     check measurement in the portal at 100%, 25%, 10% and 3% by value, with the certificate held until the certifier has
+     checked their share and a short check told to the QS; hidden work signed off against its inspection before cover-up
+     and countersigned from above before its progress is approved; and a site order book with compliance replies, accepted
+     or sent back. ARCHITECTURE "Consultant checks".
+173. ~~**Programme submissions and extension of time applications** (M).~~ Done: programme revisions sent to the Engineer
+     with what each showed, approved or returned in the portal, the next update watched at the contract's interval and the
+     0.20% programme obligation met by the first revision kept; EOT applications for delays or a variation's added work
+     (time in proportion), forwarded with a recommendation, decided within 30 days, the days granted written to the delay
+     register's `eotGrantedDays`. ARCHITECTURE "Programme and EOT".
+
 ## Official progress reports (item 174)
 
 174. ~~**Daily, weekly and monthly progress reports for the client** (M).~~ Done: Reports › Progress reports makes the

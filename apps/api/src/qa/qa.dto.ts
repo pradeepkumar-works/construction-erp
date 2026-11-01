@@ -10,8 +10,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 const num = () => Transform(({ value }) => (value === '' ? null : typeof value === 'number' ? String(value) : value));
 const toNumber = () => Transform(({ value }) => (value === '' || value === null || value === undefined ? null : Number(value)));
 
-/* ---------- test types ---------- */
-
 export class TestReadingDefDto {
   @ApiProperty({ example: '28 days' }) @trim() @IsString() @IsNotEmpty() @MaxLength(60) label: string;
   @ApiProperty({ example: 28, description: 'Days after sampling it falls due' }) @IsInt() @Min(0) @Max(365) days: number;
@@ -29,8 +27,6 @@ export class SaveTestTypeDto {
   @ApiProperty({ example: 3, description: 'Specimens in one sample' }) @IsInt() @Min(1) @Max(12) specimens: number;
   @ApiPropertyOptional({ default: true }) @IsOptional() @IsBoolean() active?: boolean;
 }
-
-/* ---------- the quality plan ---------- */
 
 export class QaPlanQuery {
   @ApiProperty() @IsUUID() projectId: string;
@@ -57,8 +53,6 @@ export class CreatePlanLineDto {
 }
 
 export class UpdatePlanLineDto extends PartialType(OmitType(CreatePlanLineDto, ['projectId'] as const)) {}
-
-/* ---------- pours ---------- */
 
 export class ListPoursQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;

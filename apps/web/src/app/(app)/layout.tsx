@@ -30,7 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // While the sign-in is checked: the shell's outline and a page of placeholders, where the app will draw them.
   if (loading || !user || guestAway) return <ShellSkeleton />;
 
-  // A page of a module the company has turned off (v6 item 117) says so instead.
+  // A page of a module the company has turned off says so instead.
   const pageModule = moduleOfPath(pathname);
   const off = pageModule && user.modulesOff?.includes(pageModule) ? pageModule : null;
   return (

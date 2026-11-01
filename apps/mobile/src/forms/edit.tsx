@@ -14,7 +14,7 @@ export function attachmentsToPhotos(attachments: AttachmentDto[]): LocalPhoto[] 
 }
 
 /**
- * An outbox entry the server refused, opened in its form by "Fix and send" (`?outboxId=`, UX item 80). The form fills
+ * An outbox entry the server refused, opened in its form by "Fix and send" (`?outboxId=`). The form fills
  * itself from `payload`, sends with the entry's own id, and the outbox entry goes when it is sent (or is replaced when
  * it is queued again).
  */

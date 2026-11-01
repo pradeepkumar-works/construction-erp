@@ -63,11 +63,11 @@ export const DEFAULT_ACTIVITY_TEMPLATES: Record<ProjectType, ActivityTemplateIte
     { name: 'Road restoration', unit: 'Sqm', startDay: 120, durationDays: 300 },
     { name: 'Trial run and commissioning', unit: 'LS', startDay: 390, durationDays: 60 },
   ],
-  // Other works (item 134) start empty: the company's own type lists its activities.
+  // Other works start empty: the company's own type lists its activities.
   OTHER: [],
-  // An RMC plant runs, it is not built; its schedule is the day's orders (v6 item 104).
+  // An RMC plant runs, it is not built; its schedule is the day's orders.
   PLANT: [],
-  // A central store holds stock; it has no works to schedule (v6 item 106).
+  // A central store holds stock; it has no works to schedule.
   STORE: [],
 };
 
@@ -124,7 +124,7 @@ export interface PlanActivity {
 }
 
 /**
- * Dates for the activities that have none, once the project's own dates arrive (finding 11 of the October review):
+ * Dates for the activities that have none, once the project's own dates arrive:
  * an activity named after a template item takes that item's place in the schedule; the rest are spread in order over
  * the period, each taking an equal share. Activities that already have a date are left as they are.
  */

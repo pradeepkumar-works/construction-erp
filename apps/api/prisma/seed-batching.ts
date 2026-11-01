@@ -1,5 +1,5 @@
 /**
- * Demo batching plant controller (item 149): the Patia plant's controller writes a day's batch report to D:\Batch Reports
+ * Demo batching plant controller: the Patia plant's controller writes a day's batch report to D:\Batch Reports
  * on its control room computer, read by a Connector there, with its columns already matched. Today's two trucks already
  * sent came from its batches; two more batches wait for their challans (one made five hours ago, so it shows late), and a
  * trial batch was set aside. Runs once per company (when it has no batching plant connection), after the RMC demo.

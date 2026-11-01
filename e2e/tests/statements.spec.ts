@@ -8,7 +8,7 @@ type Pair = { amount: string; previous: string };
 type Bank = { booksBalance: string; notPresented: string; bankOnlyWithdrawals: string; statementBalance: string | null; difference: string | null; statement: { id: string; description: string; bookLineId: string | null }[] };
 
 /**
- * Financial statements (v6 item 103): the trial balance and balance sheet balance and profit and loss adds up; a bank
+ * Financial statements: the trial balance and balance sheet balance and profit and loss adds up; a bank
  * statement imported on the page matches what agrees, a bank charge becomes a voucher and is matched by hand, and the
  * reconciliation comes to nothing; a voucher in the locked period is refused.
  */
@@ -68,7 +68,7 @@ test('the statements balance, and a bank statement reconciles to nothing', async
   const form = formPanel(page, 'New voucher');
   await chooseOption(form.getByLabel('Account').nth(0), 'Bank Charges');
   await form.getByRole('button', { name: 'Submit for approval' }).click();
-  await expect(page.getByText(/^PV\/\d{4}-\d{2}\/\d{4} sent for approval$/)).toBeVisible();
+  await expect(page.getByText(/^PV\/\d{4}-\d{2}\/\d{4} submitted for approval$/)).toBeVisible();
   const made = (await api<Page<Voucher>>(accounts, `/books/vouchers?q=${encodeURIComponent(`SMS AND NEFT CHARGES ${stamp}`)}`)).items[0];
   await api(md, `/books/vouchers/${made.id}/approve`, { method: 'POST', body: {} });
   await page.reload();

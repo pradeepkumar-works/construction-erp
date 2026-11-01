@@ -97,13 +97,13 @@ export function PurchaseOrderFormModal({
   const poDateValue = Form.useWatch('poDate', form) as dayjs.Dayjs | undefined;
   const poDate = (poDateValue ?? dayjs()).format('YYYY-MM-DD');
   const others = useRateCheck((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', unit: l?.unit ?? '' })), projectId, poDate, open, order?.id);
-  // Lines whose material has approved makes on the project but name another make, or none (v6 item 113).
+  // Lines whose material has approved makes on the project but name another make, or none.
   const makeKey = useDebounced(JSON.stringify((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', make: l?.make ?? null }))), 400);
   const makeLines = useMemo(() => JSON.parse(makeKey) as { itemName: string; make: string | null }[], [makeKey]);
   const makeCheck = useMakeCheck(open ? projectId : undefined, makeLines);
   const makeWarnings = makeCheck.data ?? [];
   const vendor = useVendor(open ? vendorId : undefined);
-  // Where it is delivered when the order says nothing: the project's own address (finding 12 of the October review).
+  // Where it is delivered when the order says nothing: the project's own address.
   const siteAddress = siteDeliveryAddress(useProject(open ? projectId : undefined).data);
   const msme = vendor?.msmeCategory === 'MICRO' || vendor?.msmeCategory === 'SMALL';
   const fromRequest = order ? order.requestNo : start?.requestNo;
@@ -201,7 +201,7 @@ export function PurchaseOrderFormModal({
 
   const summary = (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
-      <span>Items</span>
+      <span>Total before GST</span>
       <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
       <span>GST</span>
       <span className="mono" translate="no">{formatINR(totals.gst, true)}</span>
@@ -219,7 +219,7 @@ export function PurchaseOrderFormModal({
       form={form}
       title={order ? `Edit ${order.poNo}` : fromRequest ? `Purchase order for ${fromRequest}` : 'New purchase order'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       // All values, not just the rendered fields: request lines carry their item without an input for it.
       allValues
       onSubmit={(v, draft) => save.mutateAsync({ v, submit: !draft })}
@@ -235,17 +235,17 @@ export function PurchaseOrderFormModal({
         <FormSection title="Order">
           <FormGrid cols={4}>
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+              <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
             </Form.Item>
             <Form.Item
               name="vendorId"
               label="Vendor"
-              rules={[{ required: true, message: 'Pick the vendor from the master' }]}
+              rules={[{ required: true, message: 'Choose the vendor from the master' }]}
               extra={vendor ? [vendor.gstin ? `GSTIN ${vendor.gstin}` : 'No GSTIN', vendor.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory] : null].filter(Boolean).join(' · ') : undefined}
             >
               <VendorSelect prefer={['SUPPLIER']} />
             </Form.Item>
-            <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Pick the PO date' }]}>
+            <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Choose the PO date' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="deliveryBy" label="Deliver by">
@@ -403,7 +403,7 @@ export function PurchaseOrderFormModal({
             footer={() => (
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={7} align="right">
-                  <Typography.Text type="secondary">Items before GST</Typography.Text>
+                  <Typography.Text type="secondary">Total before GST</Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
                   <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
@@ -424,7 +424,7 @@ export function PurchaseOrderFormModal({
                 <Form.Item
                   name="paymentDays"
                   label="Payment days"
-                  extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory?.toLowerCase()} enterprise: at most 45 days.` : 'From the invoice; 30 when left empty.'}
+                  extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory].toLowerCase() : ''} enterprise: at most 45 days.` : 'From the invoice; 30 when left empty.'}
                   rules={[{ type: 'number', max: msme ? 45 : 365, message: msme ? 'At most 45 days for a micro or small enterprise' : 'At most 365 days' }]}
                 >
                   <InputNumber min={0} precision={0} inputMode="numeric" style={{ width: '100%' }} />

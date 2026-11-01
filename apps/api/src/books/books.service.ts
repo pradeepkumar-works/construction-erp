@@ -88,7 +88,7 @@ const voucherInclude = {
 type VoucherRow = Prisma.BookVoucherGetPayload<{ include: typeof voucherInclude }>;
 
 /**
- * The books of account (v6 item 102). Vouchers come from the modules through the posting service (the same one the
+ * The books of account. Vouchers come from the modules through the posting service (the same one the
  * Tally export uses), brought up to date on read, or are made by accounts and approved by management. The day book,
  * cash and bank books and ledgers read approved vouchers only; projects are the cost centres.
  */
@@ -113,7 +113,7 @@ export class BooksService {
     if (booksFrom && date < booksFrom) throw new BadRequestException(`The books begin on ${formatDay(booksFrom)}; what came before is in the opening balances. Date the voucher on or after that day.`);
   }
 
-  // ----- Posting -----
+  // Posting
 
   /** Post every module record that changed since the last run, when that run is older than a minute. */
   async fresh(user: RequestUser) {
@@ -158,9 +158,9 @@ export class BooksService {
         const changed: string[] = [];
         for (const v of vouchers) {
           const key = `${v.kind}:${v.sourceId}`;
-          const day = dateOnly(v.date)!;
+          const day = dateOnly(v.date);
           const was = byKey.get(key);
-          const wasDay = was ? dateOnly(was.date)! : null;
+          const wasDay = was ? dateOnly(was.date) : null;
           if (!was && booksFrom && day < booksFrom) continue; // in the opening balances
           if (!was && locked(day)) {
             lockedOut(v.kind, v.sourceId, day, v.number, v.party, 'Recorded in the module');
@@ -168,7 +168,7 @@ export class BooksService {
           }
           seen.add(key);
           const hash = voucherHash({
-            date: dateOnly(v.date)!,
+            date: dateOnly(v.date),
             number: v.number,
             reference: v.reference,
             narration: v.narration,
@@ -221,7 +221,7 @@ export class BooksService {
         const gone: string[] = [];
         for (const e of existing) {
           if (seen.has(`${e.source}:${e.sourceId}`)) continue;
-          if (locked(dateOnly(e.date)!)) lockedOut(e.source, e.sourceId!, dateOnly(e.date)!, e.voucherNo, e.party, 'Taken out of the module');
+          if (locked(dateOnly(e.date))) lockedOut(e.source, e.sourceId!, dateOnly(e.date), e.voucherNo, e.party, 'Taken out of the module');
           else gone.push(e.id);
         }
         if (gone.length) await tx.bookVoucher.deleteMany({ where: { id: { in: gone } } });
@@ -266,7 +266,7 @@ export class BooksService {
     return { lastPostedAt: iso(st?.lastPostedAt), vouchers, held: (st?.held as unknown as BooksHeldDto[] | undefined) ?? [], toApprove };
   }
 
-  // ----- Chart of accounts -----
+  // Chart of accounts
 
   /** Every account with its debits, credits and balance in the approved vouchers (up to a day, for a project). */
   async accounts(user: RequestUser, q: AccountQuery = {}): Promise<LedgerAccountDto[]> {
@@ -298,9 +298,9 @@ export class BooksService {
         isActive: a.isActive,
         description: a.description,
         statementLine: a.statementLine,
-        debit: money(dr)!,
-        credit: money(cr)!,
-        balance: money(dr.sub(cr))!,
+        debit: money(dr),
+        credit: money(cr),
+        balance: money(dr.sub(cr)),
         entries: s?._count._all ?? 0,
       };
     });
@@ -361,7 +361,7 @@ export class BooksService {
     return { ok: true };
   }
 
-  // ----- Ledgers, cash and bank books -----
+  // Ledgers, cash and bank books
 
   /** One account's entries in a period with the opening balance, the running balance and the closing balance. */
   async ledger(user: RequestUser, q: LedgerQuery): Promise<LedgerDto> {
@@ -370,7 +370,7 @@ export class BooksService {
     const account = (await this.accounts(user)).find((a) => a.id === q.accountId);
     if (!account) throw new NotFoundException('Account not found');
     const org = user.organizationId;
-    const to = q.to ?? dateOnly(new Date())!;
+    const to = q.to ?? dateOnly(new Date());
     const project = q.projectId ? { projectId: q.projectId } : {};
     const [before, rows] = await Promise.all([
       q.from
@@ -394,17 +394,17 @@ export class BooksService {
       account,
       from: q.from ?? null,
       to,
-      opening: money(opening)!,
-      debit: money(dr)!,
-      credit: money(cr)!,
-      closing: money(opening.add(dr).sub(cr))!,
+      opening: money(opening),
+      debit: money(dr),
+      credit: money(cr),
+      closing: money(opening.add(dr).sub(cr)),
       entries: rows.slice(skip).map((r, i) => ({
         lineId: r.id,
         voucherId: r.voucher.id,
         voucherNo: r.voucher.voucherNo,
         type: r.voucher.type,
         source: r.voucher.source as BookSource,
-        date: dateOnly(r.voucher.date)!,
+        date: dateOnly(r.voucher.date),
         against: againstOf(
           r.voucher.lines.map((l) => ({ accountId: l.accountId, name: l.account.name, debit: l.debit })),
           r,
@@ -413,13 +413,13 @@ export class BooksService {
         projectCode: r.project?.code ?? null,
         debit: r.debit.gt(0) ? money(r.debit) : null,
         credit: r.credit.gt(0) ? money(r.credit) : null,
-        balance: money(balances[skip + i])!,
+        balance: money(balances[skip + i]),
       })),
       truncated: skip > 0,
     };
   }
 
-  // ----- Day book and vouchers -----
+  // Day book and vouchers
 
   private voucherDto(user: RequestUser, v: VoucherRow): BookVoucherDto {
     const manual = v.source === 'MANUAL';
@@ -430,7 +430,7 @@ export class BooksService {
       id: v.id,
       voucherNo: v.voucherNo,
       type: v.type,
-      date: dateOnly(v.date)!,
+      date: dateOnly(v.date),
       source: v.source as BookSource,
       sourceId: v.sourceId,
       reference: v.reference,
@@ -438,7 +438,7 @@ export class BooksService {
       narration: v.narration,
       projectId: v.projectId,
       projectName: v.project?.name ?? null,
-      amount: money(v.amount)!,
+      amount: money(v.amount),
       status: v.status,
       preparedByName: v.preparedBy?.fullName ?? null,
       approvedByName: v.approvedBy?.fullName ?? null,
@@ -481,7 +481,7 @@ export class BooksService {
       this.prisma.bookVoucher.count({ where }),
       this.prisma.bookVoucher.aggregate({ where, _sum: { amount: true } }),
     ]);
-    return { ...paginated(rows.map((v) => this.voucherDto(user, v)), total, args), debit: money(sum._sum.amount ?? 0)! };
+    return { ...paginated(rows.map((v) => this.voucherDto(user, v)), total, args), debit: money(sum._sum.amount ?? 0) };
   }
 
   /** Vouchers made by hand, newest first: drafts, those waiting for approval, approved, sent back, cancelled. */
@@ -598,7 +598,7 @@ export class BooksService {
     const lines = await this.linesOf(user, dto);
     await this.prisma.$transaction(async (tx) => {
       // A new financial year gives a new number.
-      const voucherNo = fyCode(dto.date) === fyCode(dateOnly(v.date)!) ? v.voucherNo : await this.nextNumber(tx, user.organizationId, dto.type, dto.date);
+      const voucherNo = fyCode(dto.date) === fyCode(dateOnly(v.date)) ? v.voucherNo : await this.nextNumber(tx, user.organizationId, dto.type, dto.date);
       await tx.bookLine.deleteMany({ where: { voucherId: id } });
       await tx.bookVoucher.update({
         where: { id },
@@ -630,7 +630,7 @@ export class BooksService {
     this.assertKeep(user);
     const v = await this.row(user, id);
     this.editable(user, v);
-    await this.assertOpen(user.organizationId, dateOnly(v.date)!);
+    await this.assertOpen(user.organizationId, dateOnly(v.date));
     await this.prisma.bookVoucher.update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewNote: null } });
     await this.audit.log(user, 'BOOK_VOUCHER', id, 'SUBMITTED', v.voucherNo);
     return this.voucher(user, id);
@@ -647,7 +647,7 @@ export class BooksService {
 
   async approve(user: RequestUser, id: string, note?: string): Promise<BookVoucherDto> {
     const v = await this.decidable(user, id);
-    await this.assertOpen(user.organizationId, dateOnly(v.date)!);
+    await this.assertOpen(user.organizationId, dateOnly(v.date));
     await this.prisma.bookVoucher.update({ where: { id }, data: { status: 'APPROVED', approvedById: user.id, approvedAt: new Date(), reviewNote: note || null } });
     await this.audit.log(user, 'BOOK_VOUCHER', id, 'APPROVED', note || v.voucherNo);
     return this.voucher(user, id);
@@ -666,7 +666,7 @@ export class BooksService {
     if (!canApproveVouchers(user.roleKey)) throw new ForbiddenException('Only management or an admin cancels an approved voucher');
     const v = await this.row(user, id);
     if (v.source !== 'MANUAL' || v.status !== 'APPROVED') throw new BadRequestException('Only an approved voucher made by hand can be cancelled');
-    await this.assertOpen(user.organizationId, dateOnly(v.date)!);
+    await this.assertOpen(user.organizationId, dateOnly(v.date));
     await this.prisma.$transaction([
       this.prisma.bankStatementLine.updateMany({ where: { organizationId: user.organizationId, bookLine: { voucherId: id } }, data: { bookLineId: null, matchedBy: null, matchedAt: null } }),
       this.prisma.bookVoucher.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date(), reviewNote: note } }),
@@ -675,13 +675,13 @@ export class BooksService {
     return this.voucher(user, id);
   }
 
-  // ----- For the Accounts module's home -----
+  // For the Accounts module's home
 
   /** Cash and bank in hand today, and what waits: vouchers to approve, records that could not be posted. */
   async figures(user: RequestUser) {
     if (!canKeepBooks(user.roleKey)) return null;
     const [accounts, status] = await Promise.all([this.accounts(user), this.status(user)]);
     const sum = (g: AccountGroup) => accounts.filter((a) => a.group === g).reduce((s, a) => s.add(a.balance), D(0));
-    return { cash: money(sum('CASH_IN_HAND'))!, bank: money(sum('BANK_ACCOUNTS'))!, toApprove: status.toApprove, held: status.held.length, moneyAccounts: accounts.filter((a) => isMoneyGroup(a.group)).length };
+    return { cash: money(sum('CASH_IN_HAND')), bank: money(sum('BANK_ACCOUNTS')), toApprove: status.toApprove, held: status.held.length, moneyAccounts: accounts.filter((a) => isMoneyGroup(a.group)).length };
   }
 }

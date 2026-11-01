@@ -1,6 +1,5 @@
 /**
- * Tests for reading invoices, challans and drawings (AI item 70), work orders and BOQs (finding 10 of the October
- * review) that need no model: turning the model's reply into
+ * Tests for reading invoices, challans and drawings, work orders and BOQs that need no model: turning the model's reply into
  * typed values, the checks that mark a value to check, and matching read lines to order lines.
  *
  *   node dist/scripts/doc-read-test.js

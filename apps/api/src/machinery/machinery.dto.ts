@@ -26,8 +26,6 @@ const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.t
 /** Accept numbers or numeric strings; keep them as strings for Decimal columns. */
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : value));
 
-/* ---------- equipment master ---------- */
-
 export class CreateEquipmentDto {
   @ApiProperty({ example: 'EXC-01' }) @trim() @IsString() @IsNotEmpty() @MaxLength(30) code: string;
   @ApiProperty({ example: 'Excavator (Tata Hitachi EX200)' }) @trim() @IsString() @IsNotEmpty() @MaxLength(120) name: string;
@@ -43,7 +41,7 @@ export class CreateEquipmentDto {
   @IsNumberString()
   rate?: string | null;
   @ApiPropertyOptional({ enum: EQUIPMENT_RATE_UNITS, default: 'HOUR' }) @IsOptional() @IsIn(EQUIPMENT_RATE_UNITS as unknown as string[]) rateUnit?: EquipmentRateUnit;
-  @ApiPropertyOptional({ example: '200', description: 'Hire terms (v5 item 91): hours paid for a month even if it worked less; null = none' })
+  @ApiPropertyOptional({ example: '200', description: 'Hire terms: hours paid for a month even if it worked less; null = none' })
   @IsOptional()
   @num()
   @ValidateIf((_, v) => v !== null)
@@ -76,7 +74,7 @@ export class CreateEquipmentDto {
   @IsDateString()
   lastServiceDate?: string | null;
   @ApiPropertyOptional({ example: '2150' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() lastServiceMeter?: string | null;
-  @ApiPropertyOptional({ example: '4.5', description: 'Fuel norm (v5 item 93) in `fuelNormUnit`; null = none' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() fuelNorm?: string | null;
+  @ApiPropertyOptional({ example: '4.5', description: 'Fuel norm in `fuelNormUnit`; null = none' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() fuelNorm?: string | null;
   @ApiPropertyOptional({ enum: FUEL_NORM_UNITS }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(FUEL_NORM_UNITS as unknown as string[]) fuelNormUnit?: FuelNormUnit | null;
   @ApiPropertyOptional({ example: '15', description: 'How far the average may stray from the norm, %; null = the default 15' })
   @IsOptional()
@@ -84,7 +82,7 @@ export class CreateEquipmentDto {
   @ValidateIf((_, v) => v !== null)
   @IsNumberString()
   fuelTolerancePct?: string | null;
-  @ApiPropertyOptional({ example: '300', description: "The fuel tank's size in litres (item 147); null = not known" })
+  @ApiPropertyOptional({ example: '300', description: "The fuel tank's size in litres; null = not known" })
   @IsOptional()
   @num()
   @ValidateIf((_, v) => v !== null)
@@ -103,8 +101,6 @@ export class ListEquipmentQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Include inactive machines (default: active only)' }) @IsOptional() @QueryBool() @IsBoolean() includeInactive?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.equipment, default: 'code' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.equipment as unknown as string[]) sortBy?: EquipmentSortField;
 }
-
-/* ---------- daily logs ---------- */
 
 export class CreateMachineryLogDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
@@ -140,8 +136,6 @@ export class ListMachineryLogsQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Only logs created by the current user' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.machinery, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.machinery as unknown as string[]) sortBy?: MachineryLogSortField;
 }
-
-/* ---------- fleet use (v5 item 93) ---------- */
 
 export class FleetPeriodQuery {
   @ApiPropertyOptional({ example: '2026-10-01', description: 'From the first log when left out' }) @IsOptional() @IsDateString() from?: string;

@@ -10,7 +10,7 @@ import { HindranceQuery, RecordHindranceDto } from './hindrance.dto';
 export class HindranceController {
   constructor(private hindrances: HindranceService) {}
 
-  @ApiOperation({ summary: 'DPR remarks read as hindrances, to record or dismiss (AI item 123)' })
+  @ApiOperation({ summary: 'DPR remarks read as hindrances, to record or dismiss' })
   @Get('suggestions')
   suggestions(@CurrentUser() user: RequestUser, @Query() q: HindranceQuery) {
     return this.hindrances.suggestions(user, q.projectId);

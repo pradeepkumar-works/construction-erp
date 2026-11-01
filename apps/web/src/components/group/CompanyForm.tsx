@@ -54,7 +54,7 @@ export function CompanyForm({ open, company, onClose }: { open: boolean; company
       layout="modal"
       width={560}
       title={company ? `Edit ${company.name}` : 'New company'}
-      okText={company ? 'Save' : 'Add company'}
+      okText="Save"
       draftKey={company ? undefined : 'group-company'}
       projectDefault={false}
       onSubmit={submit}

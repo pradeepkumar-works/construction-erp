@@ -8,7 +8,7 @@ import { useDebounced } from '@/lib/debounce';
 import { themeFontSize } from '@/lib/theme';
 
 /**
- * Vendor name with suggestions from the vendor master (vendors of `kind` first), searched as you type (item 83) rather
+ * Vendor name with suggestions from the vendor master (vendors of `kind` first), searched as you type rather
  * than loading the whole master. A name that is not in the master can still be typed; the server links a typed name that
  * matches a vendor. `onPick` gets the vendor chosen from the list.
  */
@@ -47,7 +47,7 @@ export function VendorPicker({
       value={value}
       onChange={onChange}
       options={options}
-      placeholder={placeholder ?? 'Pick from the vendor master or type a name'}
+      placeholder={placeholder ?? 'Choose from the vendor master or type a name'}
       // The master already matched the words typed.
       showSearch={{ filterOption: false }}
       onOpenChange={setOpen}

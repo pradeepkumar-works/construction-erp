@@ -1,5 +1,5 @@
 /**
- * Official progress reports (item 174, asked by Pradeep on 30 Oct 2026 with the client's own samples): the daily site
+ * Official progress reports (asked by Pradeep on 30 Oct 2026 with the client's own samples): the daily site
  * report, the weekly progress report and the monthly progress report (MPR) a contractor submits to the client or its
  * consultant, in Nirmaan's design. One document model (`OfficialReportDto`: a header, numbered chapters of blocks and the
  * signatures) is drawn on the screen and written to PDF, Word and Excel, so the four always say the same thing. The
@@ -17,8 +17,6 @@ export const OFFICIAL_REPORTS: Record<OfficialReportKind, { title: string; code:
   WEEKLY: { title: 'Weekly progress report', code: 'WPR', description: 'Overall physical and financial progress, every component against its scope with its status in words, the week’s work and observations, and photographs.' },
   MONTHLY: { title: 'Monthly progress report', code: 'MPR', description: 'The MPR: project details, summary, delays against the programme, physical and financial progress, bills, variations and extensions, drawings, meetings, letters, staff, machinery, quality, safety, risks and photographs.' },
 };
-
-/* ---------- the document ---------- */
 
 export interface OfficialFactDto {
   label: string;
@@ -87,8 +85,6 @@ export interface OfficialReportDto {
 export interface OfficialIssueListDto {
   issues: OfficialIssueDto[];
 }
-
-/* ---------- periods and numbers ---------- */
 
 const DAY = 86_400_000;
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -172,8 +168,6 @@ export function officialFileName(r: Pick<OfficialReportDto, 'kind' | 'project' |
   const rev = r.issue && r.issue.revision > 0 ? `-R${r.issue.revision}` : '';
   return `${r.project.code}-${OFFICIAL_REPORTS[r.kind].code}-${no}${rev}-${period}.${ext}`.replace(/[^\w.-]+/g, '-');
 }
-
-/* ---------- what the chapters say ---------- */
 
 export interface ComponentScheduleFacts {
   /** Last planned finish of its activities */

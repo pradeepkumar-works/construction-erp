@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, queueItem, signIn } from './helpers';
 
 /**
- * Bill checks before approval (AI item 69) on the demo company's seeded anomalies: a second copy of the road supplier's
+ * Bill checks before approval on the demo company's seeded anomalies: a second copy of the road supplier's
  * invoice, an expense paid in cash above ₹10,000, and a clean approved bill. CI runs the API with AI_PROVIDER=fake, whose
  * summary line is the rules' own draft.
  */

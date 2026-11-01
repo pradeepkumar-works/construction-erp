@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn, homeHeading } from './helpers';
 
-/** UX plan item 78: fixes found on the walk through the live site. */
+/** Fixes found on the walk through the live site. */
 
 test('the sign-in form starts empty, and a demo account fills it in', async ({ page }) => {
   await page.goto('/login');
@@ -21,7 +21,7 @@ test('a seeded DPR with no audit log still shows when it was submitted', async (
   test.skip(!dpr, 'no submitted DPR in the demo data');
   await signIn(page, 'pm@demo.com');
   await page.goto(`/dpr/${dpr!.id}`);
-  const activity = page.locator('.ant-card').filter({ hasText: 'Activity' }).last();
+  const activity = page.locator('.ant-card').filter({ hasText: 'History' }).last();
   await expect(activity).toContainText('Submitted by');
   await expect(activity).not.toContainText('No audit records');
 });
@@ -29,7 +29,7 @@ test('a seeded DPR with no audit log still shows when it was submitted', async (
 test('the approval limit names each type in a sentence, keeping abbreviations', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/approvals');
-  const limit = page.locator('.ant-alert').filter({ hasText: 'Your approval limit' });
+  const limit = page.locator('#main-content').getByText(/Your approval limit/);
   await expect(limit).toContainText('RA bill up to');
   await expect(limit).not.toContainText('ra bill');
 });

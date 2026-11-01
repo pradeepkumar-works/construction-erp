@@ -1,9 +1,9 @@
 import type { CompanyKind, RoleKey } from './enums';
-import { isGuest } from './permissions';
+import { canMakeGroup, isGuest } from './permissions';
 import type { SwitchableModule } from './module-switches';
 
 /**
- * Group companies (phase 1, ARCHITECTURE "Group companies"). A parent company's group holds companies that each stay a
+ * Group companies (ARCHITECTURE "Group companies"). A parent company's group holds companies that each stay a
  * full company (own data, roles, books and menu). A person signs in once and moves between the companies they have a
  * place in with the company switcher; the group's admins make companies and give people places in them.
  */
@@ -51,7 +51,7 @@ export interface AuthGroupDto {
 }
 
 /** Who may open Group companies: the group's admins, and a company's admin before it has a group (to make one). */
-export const canSeeGroupCompanies = (u: { roleKey: RoleKey; group?: AuthGroupDto }) => (u.group ? u.group.admin : u.roleKey === 'ADMIN');
+export const canSeeGroupCompanies = (u: { roleKey: RoleKey; group?: AuthGroupDto }) => (u.group ? u.group.admin : canMakeGroup(u.roleKey));
 
 /** Roles a person can be given in a sister company from Group companies: staff roles. Guests and suppliers are invited from the company's own pages. */
 export const isGroupPlaceRole = (role: RoleKey) => !isGuest(role);

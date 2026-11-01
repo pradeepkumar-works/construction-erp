@@ -22,7 +22,7 @@ export class ApprovalsController {
     return this.lifecycle.pending(user);
   }
 
-  @ApiOperation({ summary: 'My entries waiting for approval', description: 'v5 item 94, Waiting with others: each one\'s level, the roles whose queue it is in and since when, longest waiting first.' })
+  @ApiOperation({ summary: 'My entries waiting for approval', description: 'Waiting with others: each one\'s level, the roles whose queue it is in and since when, longest waiting first.' })
   @Get('waiting')
   waiting(@CurrentUser() user: RequestUser) {
     return this.lifecycle.waiting(user);
@@ -42,16 +42,16 @@ export class ApprovalsController {
     const t = type.toUpperCase() as SubmissionType;
     if (!SUBMISSION_TYPES.includes(t)) throw new BadRequestException('Unknown submission type');
     if (t === 'INSPECTION') throw new BadRequestException('Record the checklist with the inspection: POST /inspections/:id/inspect');
-    // Rejecting or sending back needs a reason of a few words, so the submitter knows what to fix (UX item 88).
+    // Rejecting or sending back needs a reason of a few words, so the submitter knows what to fix.
     const note = dto.note?.trim() || null;
     if (dto.decision !== 'APPROVE' && (note?.length ?? 0) < MIN_REASON_LENGTH) {
       throw new BadRequestException(dto.decision === 'REJECT' ? 'Say why you are rejecting it' : 'Say what needs changing');
     }
-    // The status it now has, and the level decided: below the last level it stays SUBMITTED for the next (v5 item 94).
+    // The status it now has, and the level decided: below the last level it stays SUBMITTED for the next.
     return { ok: true, ...(await this.lifecycle.review(user, t, id, dto.decision, note)) };
   }
 
-  @ApiOperation({ summary: "An entry's approval levels", description: 'v5 item 94: the level it waits at of the levels its amount needs, the steps so far, whose queue it is in, and whether the caller may decide it now (with the reason when not).' })
+  @ApiOperation({ summary: "An entry's approval levels", description: 'The level it waits at of the levels its amount needs, the steps so far, whose queue it is in, and whether the caller may decide it now (with the reason when not).' })
   @Get(':type/:id/stage')
   stage(@CurrentUser() user: RequestUser, @Param('type') type: string, @Param('id') id: string) {
     const t = type.toUpperCase() as SubmissionType;

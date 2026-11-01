@@ -46,8 +46,6 @@ export class EventQuery {
   @ApiPropertyOptional({ example: 200 }) @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(500) limit?: number;
 }
 
-/* ---------- the Connector ---------- */
-
 export class PairConnectorDto {
   @ApiProperty({ example: 'K7QM-3XPA' }) @IsString() @MaxLength(20) code: string;
   @ApiPropertyOptional({ example: 'SITE-PC-01' }) @IsOptional() @IsString() @MaxLength(120) hostname?: string;

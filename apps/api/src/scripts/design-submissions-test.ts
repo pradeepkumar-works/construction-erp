@@ -1,5 +1,5 @@
 /**
- * Design submissions (item 138 part 2): the codes and what they do to the submission, the register and the comments,
+ * Design submissions: the codes and what they do to the submission, the register and the comments,
  * when a package may go (again), when a code may be recorded, how late a review is, the covering letter and the summary,
  * with no database. CI runs it after the build:
  *

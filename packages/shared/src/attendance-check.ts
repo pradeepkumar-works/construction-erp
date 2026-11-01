@@ -2,7 +2,7 @@ import type { RoleKey, SubmissionStatus } from './enums';
 import { APPROVER_ROLES, STAFF_ADMIN_ROLES } from './permissions';
 
 /**
- * Attendance cross-check (AI item 124): what a labour contractor bills in man-days against what the site recorded (the
+ * Attendance cross-check: what a labour contractor bills in man-days against what the site recorded (the
  * head-count sheet, the named roll call and the biometric punches), and each day's records against each other and the
  * DPR's manpower. Rules only; a flag is a reason to check the muster, never a cut in anyone's wage. The rules are in
  * `apps/api/src/attendance-check/attendance-check-rules.ts`.

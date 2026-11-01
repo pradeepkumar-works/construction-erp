@@ -65,7 +65,7 @@ export function HindranceRow({ s, onRecorded, showProject = true, showDpr = true
 }
 
 /**
- * Hindrances read from the DPRs' remarks (AI item 123), for the project manager on the delay register: each recorded as
+ * Hindrances read from the DPRs' remarks, for the project manager on the delay register: each recorded as
  * a delay (which then runs its notice clock), added to the open delay it belongs to, or dismissed.
  */
 export function HindranceSuggestions({ projectId, onRecorded }: { projectId?: string; onRecorded: (r: RiskDto) => void }) {

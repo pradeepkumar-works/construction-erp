@@ -90,16 +90,16 @@ const addTotals = (a: Totals, b: Totals): Totals => ({
   gstTdsDeducted: a.gstTdsDeducted.add(b.gstTdsDeducted),
 });
 const totalsDto = (t: Totals): ReceivableTotalsDto => ({
-  billed: money(t.billed)!,
-  received: money(t.received)!,
-  deducted: money(t.deducted)!,
-  outstanding: money(t.outstanding)!,
-  ageing: { current: money(t.ageing[0])!, days31to60: money(t.ageing[1])!, days61to90: money(t.ageing[2])!, over90: money(t.ageing[3])! } satisfies AgeingDto,
-  notSent: money(t.notSent)!,
-  retentionHeld: money(t.retentionHeld)!,
-  depositHeld: money(t.depositHeld)!,
-  tdsDeducted: money(t.tdsDeducted)!,
-  gstTdsDeducted: money(t.gstTdsDeducted)!,
+  billed: money(t.billed),
+  received: money(t.received),
+  deducted: money(t.deducted),
+  outstanding: money(t.outstanding),
+  ageing: { current: money(t.ageing[0]), days31to60: money(t.ageing[1]), days61to90: money(t.ageing[2]), over90: money(t.ageing[3]) } satisfies AgeingDto,
+  notSent: money(t.notSent),
+  retentionHeld: money(t.retentionHeld),
+  depositHeld: money(t.depositHeld),
+  tdsDeducted: money(t.tdsDeducted),
+  gstTdsDeducted: money(t.gstTdsDeducted),
 });
 
 const addMonths = (date: string, months: number) => {
@@ -109,7 +109,7 @@ const addMonths = (date: string, months: number) => {
 };
 
 /**
- * Receivables (v3 item 19): money received from clients against RA bills, with the deductions the client actually made
+ * Receivables: money received from clients against RA bills, with the deductions the client actually made
  * (TDS, GST TDS, retention, security deposit, advance recovery, cess, other), and releases of the retention and deposit it
  * held. A bill is paid once its receipts settle work + GST. The summary ages what is outstanding from the day each bill
  * was sent, per project and per client, with retention held and when it falls due.
@@ -128,26 +128,26 @@ export class ReceivablesService {
       clientName: r.project.client?.name ?? r.project.clientName,
       billId: r.billId,
       billLabel: r.bill ? billLabel(r.bill.billNo, r.bill.isFinal, r.bill.omYear !== null) : null,
-      receiptDate: dateOnly(r.receiptDate)!,
-      amount: money(r.amount)!,
+      receiptDate: dateOnly(r.receiptDate),
+      amount: money(r.amount),
       currency: r.project.currency,
       contractRate: fxRate(r.project.exchangeRate),
       exchangeRate: fxRate(r.exchangeRate),
-      bankCredit: money(bankCredit(r.amount, r.project.exchangeRate, r.exchangeRate))!,
+      bankCredit: money(bankCredit(r.amount, r.project.exchangeRate, r.exchangeRate)),
       mode: r.mode,
       reference: r.reference,
-      tdsAmount: money(r.tdsAmount)!,
-      gstTdsAmount: money(r.gstTdsAmount)!,
-      retentionAmount: money(r.retentionAmount)!,
-      securityDepositAmount: money(r.securityDepositAmount)!,
-      advanceRecoveryAmount: money(r.advanceRecoveryAmount)!,
-      labourCessAmount: money(r.labourCessAmount)!,
-      otherDeduction: money(r.otherDeduction)!,
+      tdsAmount: money(r.tdsAmount),
+      gstTdsAmount: money(r.gstTdsAmount),
+      retentionAmount: money(r.retentionAmount),
+      securityDepositAmount: money(r.securityDepositAmount),
+      advanceRecoveryAmount: money(r.advanceRecoveryAmount),
+      labourCessAmount: money(r.labourCessAmount),
+      otherDeduction: money(r.otherDeduction),
       otherDeductionNote: r.otherDeductionNote,
-      deductedAmount: money(deductedOn(r))!,
+      deductedAmount: money(deductedOn(r)),
       remarks: r.remarks,
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
       exportedToTally: !!r.tallyExportId,
     };
   }
@@ -355,7 +355,7 @@ export class ReceivablesService {
   }
 
   /**
-   * The day's rate of a receipt on a project in another currency (item 130); none in rupees. Its amounts are kept at the
+   * The day's rate of a receipt on a project in another currency; none in rupees. Its amounts are kept at the
    * contract rate like the bills they settle, and what the bank credited is at the day's rate.
    */
   private async dayRate(tx: Prisma.TransactionClient, projectId: string, rate: string | null | undefined) {
@@ -441,12 +441,12 @@ export class ReceivablesService {
           projectName: p.name,
           clientName: p.client?.name ?? p.clientName,
           stage: b.stage,
-          billDate: dateOnly(b.billDate)!,
-          sentDate: dateOnly(b.sentDate)!,
+          billDate: dateOnly(b.billDate),
+          sentDate: dateOnly(b.sentDate),
           certifiedDate: dateOnly(b.certifiedDate),
-          invoiceAmount: money(invoice)!,
-          settledAmount: money(settled)!,
-          outstanding: money(outstanding)!,
+          invoiceAmount: money(invoice),
+          settledAmount: money(settled),
+          outstanding: money(outstanding),
           daysOutstanding: days,
         });
       }

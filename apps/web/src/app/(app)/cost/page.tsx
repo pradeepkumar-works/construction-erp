@@ -26,14 +26,14 @@ export default function Page() {
     );
   return (
     <div className="page-container">
-      <PageHeader title="Project cost" subtitle="Cost against the value of work executed, and the cash expected in and out over the coming months." />
+      <PageHeader title="Project cost" subtitle="Cost against the work done, and the money expected in and out over the coming months." />
       <Card size="small">
         <AppTabs
           variant="page"
           activeKey={tab}
           onChange={(k) => setTab(k as (typeof TABS)[number])}
           items={[
-            { key: 'cost', label: 'Cost', children: <CostOverview /> },
+            { key: 'cost', label: 'Project cost', children: <CostOverview /> },
             { key: 'cash-flow', label: 'Cash flow', children: <CashFlowPanel /> },
           ]}
         />

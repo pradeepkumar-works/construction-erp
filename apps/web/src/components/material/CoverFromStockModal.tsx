@@ -10,6 +10,7 @@ import { formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
+import { unitLabel } from '@erp/shared';
 
 interface FormValues {
   fromProjectId: string;
@@ -24,7 +25,7 @@ const heldAt = (l: RequestLineStockDto, projectId: string | undefined, own: stri
   !projectId ? 0 : projectId === own ? toNumber(l.here) : toNumber(l.others.find((o) => o.projectId === projectId)?.balance);
 
 /**
- * Stock first (v5 item 95): meet a request's lines from stock before buying. From the request's own site it is an issue
+ * Stock first: meet a request's lines from stock before buying. From the request's own site it is an issue
  * to whoever raised it; from another site, a transfer here (received at this site as usual). What is met no longer
  * needs ordering.
  */
@@ -76,7 +77,7 @@ export function CoverFromStockModal({ open, onClose, request, stock }: { open: b
           <Form.Item name="fromProjectId" label="From" rules={[{ required: true, message: 'Choose the site the material comes from' }]}>
             <Select options={sites} placeholder="Site with stock" />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
@@ -100,7 +101,7 @@ export function CoverFromStockModal({ open, onClose, request, stock }: { open: b
                   <Form.Item
                     name={['qty', l.materialRequestItemId]}
                     noStyle
-                    rules={[{ validator: (_r, v) => (!v || Number(v) <= max + 1e-9 ? Promise.resolve() : Promise.reject(new Error(`At most ${formatQty(max)} ${l.unit} of ${l.itemName}`))) }]}
+                    rules={[{ validator: (_r, v) => (!v || Number(v) <= max + 1e-9 ? Promise.resolve() : Promise.reject(new Error(`At most ${formatQty(max)} ${unitLabel(l.unit)} of ${l.itemName}`))) }]}
                   >
                     <QuantityInput unit={l.unit} min={0} disabled={max <= 0} aria-label={`Quantity of ${l.itemName}`} />
                   </Form.Item>

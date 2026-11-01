@@ -24,7 +24,7 @@ async function twoWorkingDays(token: string) {
 }
 
 /**
- * Staff and leave (v3 item 29): a site engineer checks in and applies for leave, cannot approve it herself, and her
+ * Staff and leave: a site engineer checks in and applies for leave, cannot approve it herself, and her
  * project manager approves it; the site in-charge marks the staff register; HR adds a staff member.
  */
 test.describe.serial('staff attendance and leave', () => {

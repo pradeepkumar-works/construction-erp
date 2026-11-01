@@ -1,5 +1,5 @@
 /**
- * The drawing schedule (item 138 part 1, ARCHITECTURE "Design and drawings"): the drawings a project needs, from whom and
+ * The drawing schedule (ARCHITECTURE "Design and drawings"): the drawings a project needs, from whom and
  * by when, each matched to the register when it arrives. A drawing still awaited past its day holds up work: it goes on
  * the watch list, a reminder letter chases it and it can be recorded as a delay, which starts the notice clock. Also the
  * company's drawing numbers and the as-built check at handover. Everything here is pure.
@@ -73,8 +73,6 @@ export function revisionDays(revisions: { issuedOn: string; status: RevisionStat
   return { receivedOn: sorted[0]?.issuedOn ?? null, gfcOn: sorted.find((r) => BUILDABLE_STATUSES.includes(r.status))?.issuedOn ?? null };
 }
 
-/* ---------- drawing numbers ---------- */
-
 /** A discipline's letters in a drawing number. */
 export const DISCIPLINE_CODES: Record<DocumentDiscipline, string> = {
   GENERAL: 'GEN',
@@ -103,8 +101,6 @@ export function nextDrawingNo(projectCode: string, discipline: DocumentDisciplin
   }
   return `${prefix}${String(max + 1).padStart(3, '0')}`;
 }
-
-/* ---------- chasing ---------- */
 
 /** What a schedule line needs before it is saved, in words for the form. */
 export function drawingNeedProblem(l: { title: string; neededBy: string; source: DrawingSource; fromParty?: string | null }): string | null {

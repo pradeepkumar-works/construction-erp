@@ -33,7 +33,7 @@ type Scope = { what: 'type'; type: ProjectTypeDef & { version: number } } | { wh
 const D0 = new Prisma.Decimal(0);
 
 /**
- * Update projects (item 134 part 3, ARCHITECTURE "Project types", Updating projects): what running projects of a type
+ * Update projects (ARCHITECTURE "Project types", Updating projects): what running projects of a type
  * would gain from it as it is now, or the components laid out from a kind from its steps now (`projectUpdatePlan`),
  * and adding it when the admin says so. It only adds; nothing a project has is changed.
  */
@@ -57,7 +57,7 @@ export class TypeUpdatesService {
     return { what, kind: { ...kind, version: kind.row?.version ?? 1 } };
   }
 
-  /** The projects a scope reaches: a type's (a standard type's include those made before item 134), or those with a component of the kind. */
+  /** The projects a scope reaches: a type's (a standard type's include those made before project types existed), or those with a component of the kind. */
   private projectWhere(organizationId: string, scope: Scope): Prisma.ProjectWhereInput {
     if (scope.what === 'kind') return { organizationId, workElements: { some: { kindCode: scope.kind.code } } };
     const bases = PROJECT_TYPES.filter((b) => STANDARD_TYPE_FOR[b] === scope.type.code);

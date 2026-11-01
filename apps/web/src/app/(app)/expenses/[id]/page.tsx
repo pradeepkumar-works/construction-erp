@@ -6,7 +6,7 @@ import type { ExpenseDto } from '@erp/shared';
 import { ExpenseRecord } from '@/components/expenses/ExpenseDrawer';
 import { ExpenseFormModal } from '@/components/expenses/ExpenseFormModal';
 
-/** One site expense, as its own page (UI roadmap item 61). */
+/** One site expense, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

@@ -9,7 +9,7 @@ import { themeFontSize } from '@/lib/theme';
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 /**
- * A quoting vendor's scorecard on the comparative statement (intelligence quick win Q5): deliveries on time and
+ * A quoting vendor's scorecard on the comparative statement: deliveries on time and
  * rejected at the gate over the last year, and its rates against the median here. A habit worth weighing before
  * finalising L1 shows in a tag; the figures stand under it.
  */

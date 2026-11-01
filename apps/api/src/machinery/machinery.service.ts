@@ -83,7 +83,7 @@ export class MachineryService {
     private telematics: TelematicsService,
   ) {}
 
-  /* ---------- equipment ---------- */
+  // Equipment
 
   toEquipmentDto(user: RequestUser, r: EquipmentRow): EquipmentDto {
     return {
@@ -112,9 +112,9 @@ export class MachineryService {
       fuelNormUnit: r.fuelNormUnit,
       fuelTolerancePct: dec(r.fuelTolerancePct),
       fuelTankLitres: dec(r.fuelTankLitres),
-      // Machine finance (v6 item 108): only those who keep the loans see that a machine is financed.
+      // Machine finance: only those who keep the loans see that a machine is financed.
       loan: canManageMachineLoans(user.roleKey) && r.loans[0] ? { id: r.loans[0].id, lenderName: r.loans[0].lenderName } : null,
-      createdAt: iso(r.createdAt)!,
+      createdAt: iso(r.createdAt),
     };
   }
 
@@ -243,9 +243,9 @@ export class MachineryService {
     return { ok: true };
   }
 
-  /* ---------- logs ---------- */
+  // Logs
 
-  /** Fuel issued from the store into each log's machine on its day (v5 item 93), by log id. */
+  /** Fuel issued from the store into each log's machine on its day, by log id. */
   private async fuelIssued(rows: LogRow[]): Promise<Map<string, string>> {
     if (!rows.length) return new Map();
     const entries = await this.prisma.stockEntry.findMany({
@@ -260,7 +260,7 @@ export class MachineryService {
     const out = new Map<string, string>();
     for (const r of rows) {
       const v = sum.get(`${r.equipmentId}|${r.date.getTime()}`);
-      if (v) out.set(r.id, dec(v)!);
+      if (v) out.set(r.id, dec(v));
     }
     return out;
   }
@@ -274,10 +274,10 @@ export class MachineryService {
       equipmentCode: r.equipment.code,
       equipmentName: r.equipment.name,
       ownership: r.equipment.ownership,
-      date: dateOnly(r.date)!,
-      hoursWorked: dec(r.hoursWorked)!,
-      idleHours: dec(r.idleHours)!,
-      breakdownHours: dec(r.breakdownHours)!,
+      date: dateOnly(r.date),
+      hoursWorked: dec(r.hoursWorked),
+      idleHours: dec(r.idleHours),
+      breakdownHours: dec(r.breakdownHours),
       dieselLitres: dec(r.dieselLitres),
       fuelIssuedLitres: fuelIssued?.get(r.id) ?? null,
       meterStart: dec(r.meterStart),
@@ -299,8 +299,8 @@ export class MachineryService {
       reviewedAt: iso(r.reviewedAt),
       reviewNote: r.reviewNote,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

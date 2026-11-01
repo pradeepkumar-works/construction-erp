@@ -1,5 +1,5 @@
 /**
- * Item master tests (finding 3 of the October review). One spelling per name, which master item a typed line is (by
+ * Item master tests. One spelling per name, which master item a typed line is (by
  * name or old name, the unit however it is spelt), the items a new name may mean, and the groups offered for merging.
  *
  *   node dist/scripts/items-test.js

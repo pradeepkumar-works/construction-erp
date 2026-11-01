@@ -37,7 +37,7 @@ const addDays = (d: string, n: number) => {
 };
 
 /**
- * Guarantees, insurance and licences register (v4 item 46). Accounts and admins keep it; project managers see the
+ * Guarantees, insurance and licences register. Accounts and admins keep it; project managers see the
  * entries of their projects. Expiring entries are alerted by NotificationJobsService.complianceDue.
  */
 @Injectable()
@@ -76,8 +76,8 @@ export class ComplianceService {
       daysLeft: e?.daysLeft ?? null,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       createdByName: r.createdBy.fullName,
-      createdAt: iso(r.createdAt)!,
-      updatedAt: iso(r.updatedAt)!,
+      createdAt: iso(r.createdAt),
+      updatedAt: iso(r.updatedAt),
     };
   }
 

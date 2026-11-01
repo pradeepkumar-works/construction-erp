@@ -1,7 +1,7 @@
 import type { RoleKey } from './enums';
 
 /**
- * Integration layer (item 139, ARCHITECTURE "Integration layer"). A connection is an outside system the company has
+ * Integration layer (ARCHITECTURE "Integration layer"). A connection is an outside system the company has
  * joined to Nirmaan: a vendor's cloud that posts to the connection's own web address, or a device on a site's
  * network that a paired Nirmaan Connector reads and sends on. Every message is kept in the log with what was made of
  * it. The API's `integration-rules.ts` holds the secrets, pairing codes and health; this holds the labels and shapes.
@@ -226,8 +226,6 @@ export interface IntegrationEventDto {
   detail: unknown;
   createdAt: string;
 }
-
-/* ---------- what the Connector and the hooks are sent ---------- */
 
 /** GET /connector/config: who the Connector is and what it reads. */
 export interface ConnectorConfigDto {

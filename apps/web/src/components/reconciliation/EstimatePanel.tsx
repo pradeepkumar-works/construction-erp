@@ -7,7 +7,7 @@ import { CalculatorOutlined, EditOutlined, FileExcelOutlined, UploadOutlined } f
 import type { EstimateItemDto, ProjectEstimateDto } from '@erp/shared';
 import { BOQ_RESOURCE_KIND_LABELS } from '@erp/shared';
 import { useProjectEstimate, useSetEstimateTerms } from '@/lib/queries';
-import { formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
@@ -19,7 +19,7 @@ import { RateAnalysisImportModal } from './RateAnalysisImportModal';
 const RED = themeColor('colorErrorText');
 const money = (v: string | null) =>
   v === null ? (
-    <span className="text-muted">-</span>
+    <span className="text-muted">{NO_VALUE}</span>
   ) : (
     <span className="mono" translate="no">
       {formatINR(v, true)}
@@ -29,7 +29,7 @@ const money = (v: string | null) =>
 type Show = 'analysed' | 'all';
 
 /**
- * The project's estimate from its rate analysis (v5 item 92): each BOQ item's built-up rate (materials with wastage,
+ * The project's estimate from its rate analysis: each BOQ item's built-up rate (materials with wastage,
  * labour and machines at today's rates, plus overheads and profit) against the BOQ rate. Without cost it is the list
  * of rate analyses, quantities only. An item opens its rate analysis.
  */

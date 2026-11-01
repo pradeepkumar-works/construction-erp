@@ -4,7 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { WeighbridgeService } from './weighbridge.service';
 import { CancelWeighTicketDto, CreateWeighTicketDto, UpdateWeighTicketDto, WeighbridgeQuery, WeightDto } from './weighbridge.dto';
 
-/** The site's weighbridge (item 148): the weights the Connector read, and the store's tickets for each truck. */
+/** The site's weighbridge: the weights the Connector read, and the store's tickets for each truck. */
 @ApiTags('weighbridge')
 @ApiBearerAuth()
 @Controller('weighbridge')

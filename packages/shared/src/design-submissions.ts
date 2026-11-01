@@ -1,5 +1,5 @@
 /**
- * Design submissions (item 138 part 2, ARCHITECTURE "Design and drawings"): a package of drawings or a design report
+ * Design submissions (ARCHITECTURE "Design and drawings"): a package of drawings or a design report
  * sent to the client's engineer or consultant for approval, or to an outside institution for vetting (proof checking),
  * each submission a revision that comes back with a code (A to D) and the reviewer's comments. Every comment gets our
  * reply before the package goes back, which is the comment resolution sheet. Everything here is pure.

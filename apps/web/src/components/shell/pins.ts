@@ -49,7 +49,7 @@ export function recordVisit(kind: NavVisitKind, target: string, label: string, h
 }
 
 /**
- * The shell's part of the launcher (phase 2): Pinned as a sidebar section, the header's Pin to Home for the page you are
+ * The shell's part of the launcher: Pinned as a sidebar section, the header's Pin to Home for the page you are
  * on, each place opened recorded for Recent, and Recent for Search (Ctrl K). Pins and Recent are kept on the server.
  */
 export function useShellPins(user: AuthUser) {

@@ -1,5 +1,5 @@
 /**
- * Site imprest (v4 item 45): a petty cash float held by one person at one project. Cash advanced to them is spent by
+ * Site imprest: a petty cash float held by one person at one project. Cash advanced to them is spent by
  * their cash site expenses; a top-up brings the cash in hand back to the float.
  */
 import type { ImprestEntryKind, ImprestEntryStatus, PaymentMode, SubmissionStatus } from './enums';
@@ -59,7 +59,7 @@ export interface ImprestEntryDto {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
-  /** The fund request (v6 item 107) this advance releases */
+  /** The fund request this advance releases */
   paymentRequestId: string | null;
   requestNo: string | null;
   createdAt: string;

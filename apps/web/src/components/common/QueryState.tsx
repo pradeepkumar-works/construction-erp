@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, Empty, Flex, Result, Skeleton, theme } from 'antd';
+import { Alert, Button, Flex, Result, Skeleton, theme } from 'antd';
 import { DisconnectOutlined, ReloadOutlined } from '@/components/common/icons';
 import { ResultMark } from '@/components/common/ResultMark';
 import { NoAccess } from '@/components/common/NoAccess';
@@ -26,7 +26,7 @@ function useOnline() {
 
 /**
  * A request that failed: no access (403), not found (404) and no connection each get their own state with a way on;
- * anything else is an error with Retry.
+ * anything else is an error with Try again.
  */
 export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const online = useOnline();
@@ -46,7 +46,7 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
       <Result
         icon={<ResultMark icon={<DisconnectOutlined />} />}
         title={online ? `Can't reach ${PRODUCT_NAME}` : "You're offline"}
-        subTitle={online ? 'The server did not answer. It may be restarting; try again in a moment.' : 'Check your connection. This page loads again when you are back online.'}
+        subTitle={online ? `${PRODUCT_NAME} did not answer. It may be restarting; try again in a moment.` : 'Check your connection. This page loads again when you are back online.'}
         extra={retry}
       />
     );
@@ -54,12 +54,12 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
     <Alert
       type="error"
       showIcon
-      title="Could not load data"
+      title="This page could not load"
       description={errorMessage(error)}
       action={
         onRetry ? (
           <Button size="small" onClick={onRetry}>
-            Retry
+            Try again
           </Button>
         ) : undefined
       }
@@ -109,12 +109,3 @@ export function PageSkeleton({ shape = 'list', header = true }: { shape?: 'list'
     </div>
   );
 }
-
-export function EmptyState({ description = 'Nothing here yet', children }: { description?: React.ReactNode; children?: React.ReactNode }) {
-  return (
-    <Empty description={description} style={{ padding: '32px 0' }}>
-      {children}
-    </Empty>
-  );
-}
-

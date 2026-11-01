@@ -107,7 +107,7 @@ export interface PortfolioProjectDto {
   code: string;
   name: string;
   type: string;
-  /** Its vertical (item 167), a code of the `vertical` master */
+  /** Its vertical, a code of the `vertical` master */
   verticalCode: string | null;
   status: string;
   clientName: string | null;
@@ -177,7 +177,7 @@ export interface AttentionItemDto {
   text: string;
 }
 
-/** The portfolio's money for one vertical (item 167), its projects added up. */
+/** The portfolio's money for one vertical, its projects added up. */
 export interface PortfolioVerticalDto {
   /** null for the projects with no vertical */
   code: string | null;
@@ -220,8 +220,6 @@ export interface PortfolioProjectDetailDto {
   risks: { id: string; riskNo: string; title: string; kind: string; score: number; daysLost: number | null; dueDate: string | null }[];
   orders: { kind: 'PO' | 'WO'; id: string; number: string; vendorName: string; date: string; value: string; billed: string; open: string }[];
 }
-
-/* ---------- reports ---------- */
 
 export const MANAGEMENT_REPORT_KEYS = ['mis', 'profit-loss', 'wip', 'receivables', 'payables', 'procurement', 'labour', 'stock', 'approvals'] as const;
 export type ManagementReportKey = (typeof MANAGEMENT_REPORT_KEYS)[number];
@@ -288,10 +286,10 @@ export interface ManagementReportDto {
   to: string;
   /** The project it is limited to, else null for every project the reader sees */
   projectName: string | null;
-  /** The vertical it is limited to (item 167), by name, else null */
+  /** The vertical it is limited to, by name, else null */
   verticalName: string | null;
   generatedAt: string;
-  /** The paragraph the report opens with, written from its own figures (the Monthly MIS, intelligence quick win Q9) */
+  /** The paragraph the report opens with, written from its own figures (the Monthly MIS) */
   commentary?: string | null;
   figures: ReportFigureDto[];
   sections: ReportSectionDto[];

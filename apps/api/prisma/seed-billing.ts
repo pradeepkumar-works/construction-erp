@@ -1,5 +1,5 @@
 /**
- * Stage billing on the town water supply scheme (item 129). Invented names and figures throughout.
+ * Stage billing on the town water supply scheme. Invented names and figures throughout.
  *
  * - Terms: 80.7% of the contract is a lump sum shared by the components; road restoration, house connections and the HT
  *   feeder are paid at their unit rates × the tender factor (1.0425). Security deposit 5%, TDS 2%, GST TDS 2%, labour
@@ -9,6 +9,9 @@
  *   the "Pipes supplied" stages move bill by bill.
  * - The standard break-up from the work breakdown, its design approvals dated, and a milestone grid from the schedule
  *   that the treatment plant has fallen behind.
+ * - The contract's obligations: the programme went in late, so bill 1 withholds 0.2% of the contract and bill 2
+ *   gives it back; the technical staff came three months late (₹20,000 a month, on bill 1); the field laboratory was on
+ *   time; the final account waits for the handover; the zone 1 as-built drawings are due in four days.
  * - RA bills 1 to 4, priced from the evidence at their dates as the bills screen would, certified (bill 3 with a stage
  *   cut by the client) and the first three paid. Bill 5 is the QS's to prepare.
  *
@@ -18,14 +21,10 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { createStandardBreakup, proposedGrid, stagePlan } from '../src/stage-billing/stage-plan';
 import { BILL_TERMS_SELECT, billTotals, measuredLines, writeBill } from '../src/ra-bills/ra-bill-pricing';
 import { syncBillStage } from '../src/receivables/bill-settlement';
+import { STANDARD_OBLIGATIONS } from '@erp/shared';
+import { day } from './seed-clock';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
 /** Unit-rate items replacing the price breakup's lines: [component, item no., description, unit, rate, quantity, measured [days ago, qty, where][]] */
@@ -147,6 +146,23 @@ export async function seedTownBilling(prisma: PrismaClient, organizationId: stri
     });
   }
 
+  // The contract's obligations, before the bills that deduct for them.
+  const standard = new Map(STANDARD_OBLIGATIONS.map((o) => [o.code, o]));
+  const obligation = (code: string, metAgo: number | null) => {
+    const o = standard.get(code)!;
+    return { ...o, penaltyValue: o.penaltyValue === null ? null : D(o.penaltyValue), metOn: metAgo === null ? null : day(-metAgo) };
+  };
+  await prisma.contractObligation.createMany({
+    data: [
+      obligation('PROGRAMME', 170),
+      obligation('FIELD_LAB', 220),
+      obligation('TECHNICAL_STAFF', 205),
+      obligation('FINAL_ACCOUNT', null),
+      obligation('FINAL_ACCOUNT_CERTIFIED', null),
+      { code: null, title: 'Submit the as-built drawings of zone 1', clause: 'GCC 41.2', party: 'CONTRACTOR' as const, anchor: 'DATE' as const, offsetDays: 0, offsetMonths: 0, dueOn: day(4), penalty: 'NONE' as const, penaltyValue: null, metOn: null },
+    ].map((o, i) => ({ ...o, organizationId, projectId, createdById: qs, sortOrder: i, note: o.code === 'TECHNICAL_STAFF' ? 'Planning engineer joined late; recovered on RA bill 1' : null })),
+  });
+
   // RA bills 1 to 4
   const terms = await prisma.project.findUniqueOrThrow({ where: { id: projectId }, select: BILL_TERMS_SELECT });
   for (const [n, [upTo, billAgo, sentAgo, certAgo, paidAgo, certificateNo]] of BILLS.entries()) {
@@ -195,7 +211,8 @@ export async function seedTownBilling(prisma: PrismaClient, organizationId: stri
       data: {
         organizationId, projectId, billId: bill.id, kind: 'BILL', receiptDate: day(-paidAgo), amount: bill.netPayable, mode: 'BANK', reference: `SUWM${String(880120 + billNo * 37)}`,
         tdsAmount: bill.tdsAmount, gstTdsAmount: bill.gstTdsAmount, retentionAmount: bill.retentionAmount, securityDepositAmount: bill.securityDepositAmount,
-        advanceRecoveryAmount: bill.advanceRecoveryAmount, labourCessAmount: bill.labourCessAmount, otherDeduction: bill.otherDeduction.add(Prisma.Decimal.max(bill.slippageWithheld, 0)), otherDeductionNote: bill.slippageWithheld.gt(0) ? 'Milestone slippage withheld' : null,
+        advanceRecoveryAmount: bill.advanceRecoveryAmount, labourCessAmount: bill.labourCessAmount, otherDeduction: bill.otherDeduction.add(Prisma.Decimal.max(bill.slippageWithheld, 0)).add(Prisma.Decimal.max(bill.obligationRecovery, 0)),
+        otherDeductionNote: [bill.slippageWithheld.gt(0) ? 'Milestone slippage withheld' : null, bill.obligationRecovery.gt(0) ? 'Contract recoveries' : null].filter(Boolean).join(', ') || null,
         remarks: 'RTGS from the State Urban Water Mission', createdById: accounts, createdAt: day(-paidAgo),
       },
     });

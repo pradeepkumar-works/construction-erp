@@ -11,11 +11,11 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { recordPage } from './queue';
 import { RecordLink } from '@/components/record/RecordLink';
 
-/** "Reviewed today": what this user approved, rejected or sent back since midnight, newest first. */
+/** "Reviewed today": what this user approved, rejected or asked to change since midnight, newest first. */
 export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => void }) {
   const { token } = theme.useToken();
   const { data, isLoading } = useReviewedToday();
-  const approved = (data ?? []).filter((r) => r.decision === 'APPROVED').length;
+  const reviewed = data?.length ?? 0;
 
   const content = (
     <div style={{ width: 380, maxWidth: '80vw', maxHeight: 420, overflowY: 'auto' }}>
@@ -45,7 +45,7 @@ export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => v
                 </Flex>
                 <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                   {r.projectName} · {formatDateTime(r.reviewedAt)}
-                  {r.note ? ` · "${r.note}"` : ''}
+                  {r.note ? ` · “${r.note}”` : ''}
                 </Typography.Text>
               </li>
             );
@@ -58,8 +58,8 @@ export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => v
   return (
     <Popover trigger="click" placement="bottomRight" title="Reviewed today" content={content}>
       <Button icon={<HistoryOutlined />}>
-        Approved today{' '}
-        <Badge count={approved} showZero color={approved ? token.colorSuccess : token.colorTextQuaternary} style={{ boxShadow: 'none' }} />
+        Reviewed today{' '}
+        <Badge count={reviewed} showZero color={reviewed ? token.colorSuccess : token.colorTextQuaternary} style={{ boxShadow: 'none' }} />
       </Button>
     </Popover>
   );

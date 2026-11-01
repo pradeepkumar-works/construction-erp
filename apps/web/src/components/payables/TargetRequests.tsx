@@ -16,7 +16,7 @@ import { PaymentRequestFormModal, type RequestFor } from './PaymentRequestFormMo
 const holding = (r: PaymentRequestDto) => (r.status === 'SUBMITTED' ? toNumber(r.amount) : r.status === 'APPROVED' ? toNumber(r.outstanding) : 0);
 
 /**
- * The payment requests on one approved bill or order (v5 item 90), with "Request payment" (a bill) or "Request
+ * The payment requests on one approved bill or order, with "Request payment" (a bill) or "Request
  * advance" (an order) for those who may ask, and Pay for accounts on an approved one. `base` is what is left before
  * any request: a bill's outstanding, or an order's value less advances already asked for (the API checks again).
  */

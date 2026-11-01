@@ -10,7 +10,7 @@ import { formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 
 /**
- * Links a project's activities to its BOQ items (finding 11 of the October review). The BOQ's sections are usually
+ * Links a project's activities to its BOQ items. The BOQ's sections are usually
  * named after the same work as the activities, so the links are offered; the planner unticks what is wrong and
  * confirms. An activity with no quantity of its own takes the item's unit and quantity.
  */

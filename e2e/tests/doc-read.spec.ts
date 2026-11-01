@@ -34,7 +34,7 @@ async function orderWithReceipt(): Promise<Po> {
 }
 
 /**
- * Reading invoices, challans and drawings (AI item 70): a photo fills the form, each value says where on the page it
+ * Reading invoices, challans and drawings: a photo fills the form, each value says where on the page it
  * came from, a value read with low confidence is marked to check, the bill's checks run on the draft, and nothing is
  * saved until Save. The model is the scripted stand-in, which reads binding wire from Sahoo Auto Parts off any page.
  */
@@ -60,7 +60,7 @@ test('an invoice photo fills the vendor bill, with checks on the draft, and noth
   // Pointing at where a value came from shows its box on the page.
   await modal.getByRole('button', { name: /From the invoice/ }).first().hover();
   await expect(modal.locator('[data-read-box]')).not.toHaveCount(0);
-  // Item 69's checks run on the draft: 40 of the 60 kg received, at the PO rate, adding up to the printed total.
+  // The bill checks run on the draft: 40 of the 60 kg received, at the PO rate, adding up to the printed total.
   const checks = modal.locator('.draft-bill-checks');
   await expect(checks.getByText(/All \d+ checks pass/)).toBeVisible();
   await expect(checks.getByRole('list', { name: 'Checks passed' })).toBeVisible();
@@ -72,7 +72,7 @@ test('an invoice photo fills the vendor bill, with checks on the draft, and noth
   await modal.getByLabel("Vendor's invoice no.").fill(invoiceNo);
   // The scan itself is attached to the bill.
   await expect(modal.locator('.ant-upload-list-item[title="sahoo-invoice.png"], .ant-upload-list-item:has([title="sahoo-invoice.png"])')).toHaveCount(1);
-  await modal.getByRole('button', { name: 'Save draft' }).click();
+  await modal.getByRole('button', { name: 'Save as draft' }).click();
   await expect(page.getByText(/VB-\d{4}-\d{4} saved as a draft/)).toBeVisible();
   const bill = (await api<Page<Bill>>(accounts, `/vendor-bills?q=${invoiceNo}`)).items[0];
   expect(bill.invoiceNo).toBe(invoiceNo);
@@ -95,9 +95,9 @@ test('a challan photo fills the GRN against the order', async ({ page }) => {
   await expect(modal.getByLabel('Challan / invoice no.')).toHaveValue('DC-7781');
   await expect(modal.getByLabel('Quantity received of Binding wire 18 SWG (e2e)')).toHaveValue('20');
   await expect(modal.getByText(/Check this/)).toBeVisible();
-  // The challan's own date is taken (finding 13 of the October review); a date still to come would be left in amber.
+  // The challan's own date is taken; a date still to come would be left in amber.
   await expect(modal.getByLabel('Received on')).toHaveValue('15 Oct 2026');
-  // The challan itself is kept on the GRN, so nobody uploads it twice (finding 13 of the October review).
+  // The challan itself is kept on the GRN, so nobody uploads it twice.
   await expect(modal.locator('.ant-upload-list-item[title="challan.png"], .ant-upload-list-item:has([title="challan.png"])')).toHaveCount(1);
   await modal.getByRole('button', { name: 'Save GRN' }).click();
   await expect(page.getByText(/GRN-\d{4}-\d{4} saved: 1 item received|saved: 1 item received/)).toBeVisible();
@@ -109,8 +109,8 @@ test('a challan photo fills the GRN against the order', async ({ page }) => {
 
 test("a drawing's title block fills the register entry", async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Documents', exact: true }).click();
-  await page.getByRole('button', { name: 'New document' }).click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Drawings and documents', exact: true }).click();
+  await page.getByRole('button', { name: 'New drawing or document' }).click();
   const modal = formPanel(page, 'New drawing or document');
   const chooser = page.waitForEvent('filechooser');
   await modal.getByRole('button', { name: 'Fill from title block' }).click();

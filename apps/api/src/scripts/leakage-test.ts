@@ -1,5 +1,5 @@
 /**
- * Leakage checks' tests (AI item 121). First the rules on their own: the company median and a site's material against
+ * Leakage checks' tests. First the rules on their own: the company median and a site's material against
  * its allowance and the other sites, a rate against what other sites paid, fuel issued on a day with no log, and a
  * hired machine paid for idle time. Then, when DATABASE_URL is set, a replay on the demo company: leaks of each kind are
  * put into a month four months back (cement over the norm, an order above another site's rate, diesel into a machine
@@ -19,7 +19,6 @@ const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
 const near = (a: number | null | undefined, b: number, eps = 0.01) => assert.ok(a !== null && a !== undefined && Math.abs(a - b) < eps, `${a} is not ${b}`);
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Material
 
 test('median: middle value, mean of the middle two, null for none', () => {
@@ -61,7 +60,6 @@ test('a site within its allowance but well above the other sites is a leak, meas
   assert.equal(materialLeak({ projectId: 'a', itemId: 'x', allowed: 0, consumed: 50 }, { median: 0.8, sites: 3 }), null);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Rates
 
 const quote = (over: Partial<RateQuote>): RateQuote => ({ purchaseOrderId: 'po', poNo: 'PO-1', poDate: '2026-10-10', projectId: 'other', projectName: 'Other site', vendorName: 'V', rate: 100, ...over });
@@ -81,7 +79,6 @@ test('own site, later orders, orders over 30 days old and small differences are 
   assert.ok(rateAboveOthers({ rate: 102.5, projectId: 'mine', poDate: '2026-10-20' }, [quote({})]));
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Fuel
 
 test('fuel issued on a day with no log is flagged from the minimum, a day summed over its slips', () => {
@@ -95,7 +92,6 @@ test('fuel issued on a day with no log is flagged from the minimum, a day summed
   assert.deepEqual(out.map((d) => [d.equipmentId, d.date, d.litres, d.entries.length]), [['m1', '2026-10-05', 25, 2]]);
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Idle hire
 
 const days = (from: number, to: number, worked: (d: number) => number) =>
@@ -130,7 +126,6 @@ test('a month runs to its last day, or to today while it runs', () => {
   assert.deepEqual(monthSpan('2026-10', '2026-10-23'), { from: '2026-10-01', to: '2026-10-23' });
 });
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Roles
 
 test('roles: each section goes to those who can act on it', () => {

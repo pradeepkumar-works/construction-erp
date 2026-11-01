@@ -32,7 +32,7 @@ export interface ItemPickerProps extends Omit<AutoCompleteProps, 'options' | 'sh
 }
 
 /**
- * The item of a request or order line (finding 3 of the October review): picks from the item master with its unit, so
+ * The item of a request or order line: picks from the item master with its unit, so
  * the same cement is not three items to stock, rates and leakage. A name that is not in the master is still taken (it
  * is added when first received), but first the field offers the items it may mean.
  */

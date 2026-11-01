@@ -1,5 +1,5 @@
 /**
- * Emails for the actions that wait on someone (finding 18 of the October review): the RA bill the client's engineer
+ * Emails for the actions that wait on someone: the RA bill the client's engineer
  * reads in their inbox, and the Monday summary of the money that came in. No database. CI runs it after the build:
  *
  *   node dist/scripts/action-email-test.js

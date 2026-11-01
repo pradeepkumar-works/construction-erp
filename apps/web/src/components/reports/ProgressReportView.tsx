@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { App, Button, Card, Empty, Segmented, Skeleton, Space, theme } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
-import { formatDayMonth, formatDate } from '@/lib/format';
+import { formatDayMonth, formatDate, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { PrinterOutlined } from '@/components/common/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { QueryError } from '@/components/common/QueryState';
@@ -51,12 +51,12 @@ export function ProgressReportView({ projectId, portal = false, picker, only }: 
             options={[
               { value: 'WEEKLY', label: 'Weekly' },
               { value: 'MONTHLY', label: 'Monthly' },
-              { value: 'CUSTOM', label: 'Custom' },
+              { value: 'CUSTOM', label: 'Custom dates' },
             ]}
           />
           )}
           {kind === 'WEEKLY' ? <DatePicker picker="week" aria-label="Week" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format={() => `${formatDayMonth(from)} to ${formatDate(to.format('YYYY-MM-DD'))}`} /> : null}
-          {kind === 'MONTHLY' ? <DatePicker picker="month" aria-label="Month" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format="MMMM YYYY" /> : null}
+          {kind === 'MONTHLY' ? <DatePicker picker="month" aria-label="Month" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format={MONTH_PICKER_FORMAT} /> : null}
           {kind === 'CUSTOM' ? (
             <DatePicker.RangePicker
               value={custom ?? [from, to]}

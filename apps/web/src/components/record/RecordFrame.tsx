@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Dropdown, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
+import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
-import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, MoreOutlined, PrinterOutlined } from '@/components/common/icons';
+import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@/components/common/icons';
 import { useComments, type ApprovalTypeParam } from '@/lib/queries';
 import type { CommentKind } from '@erp/shared';
 import { CommentsSection } from '@/components/comments/CommentsSection';
@@ -17,6 +17,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ApprovalLevels } from './ApprovalLevels';
 import { StageBar } from './StageBar';
+import { MoreActions } from './MoreActions';
 import type { Lifecycle } from './lifecycle';
 import type { SubmissionBase } from '@erp/shared';
 
@@ -34,7 +35,7 @@ export type RecordMode = 'drawer' | 'page' | 'pane';
 type ActionSize = 'small' | 'middle';
 
 /**
- * An action that lives in the record's ⋯ menu rather than beside Approve (finding 15 of the October review: Delete sat
+ * An action that lives in the record's ⋯ menu rather than beside Approve (Delete sat
  * next to Approve in the bar). Anything that destroys or cannot be taken back belongs here; the deciding buttons stay
  * in the bar. A `danger` item asks first, usually through `useConfirmDelete`.
  */
@@ -45,19 +46,6 @@ export interface RecordMenuAction {
   danger?: boolean;
   disabled?: boolean;
   onSelect: () => void;
-}
-
-/** The record's ⋯ menu, after its buttons. */
-function MoreMenu({ items, size }: { items: RecordMenuAction[]; size: ActionSize }) {
-  if (!items.length) return null;
-  return (
-    <Dropdown
-      trigger={['click']}
-      menu={{ items: items.map((i) => ({ key: i.key, label: i.label, icon: i.icon, danger: i.danger, disabled: i.disabled, onClick: i.onSelect })) }}
-    >
-      <Button size={size} icon={<MoreOutlined />} aria-label="More actions" />
-    </Dropdown>
-  );
 }
 
 export interface RecordFrameProps {
@@ -100,7 +88,7 @@ export interface RecordFrameProps {
 const sectionId = (key: string) => `record-${key}`;
 
 /**
- * The record's sections, and its comments after them (v6 item 116) when it is a submission: the activity's type is the
+ * The record's sections, and its comments after them when it is a submission: the activity's type is the
  * comment kind, and the count is its threads.
  */
 function useSections(record: RecordFrameProps['record']): RecordSection[] {
@@ -112,7 +100,7 @@ function useSections(record: RecordFrameProps['record']): RecordSection[] {
   return [...record.sections, { key: 'comments', title: 'Comments', count: comments.data ? comments.data.threads.length : undefined, children: <CommentsSection kind={kind} entityId={id} /> }];
 }
 
-/** The approval levels under the stage bar (v5 item 94), once the entry has been submitted. */
+/** The approval levels under the stage bar, once the entry has been submitted. */
 const levelsOf = (record: NonNullable<RecordFrameProps['record']>) =>
   record.activity && record.lifecycle && record.lifecycle.current >= 2 ? <ApprovalLevels type={record.activity.type} id={record.activity.id} /> : null;
 
@@ -138,12 +126,12 @@ function useHeight<E extends HTMLElement>(): [React.RefObject<E | null>, number]
   return [ref, height];
 }
 
-/** On a phone the actions sit in a bar fixed to the bottom of the screen, above the home indicator (UX item 84). */
+/** On a phone the actions sit in a bar fixed to the bottom of the screen, above the home indicator. */
 const safeBottom = (padding: number) => `calc(${padding}px + env(safe-area-inset-bottom))`;
 const sectionTitle = (s: RecordSection) => (s.count === undefined ? s.title : `${s.title} (${s.count})`);
 
 /**
- * A submission or document shown whole (UI roadmap item 57): in a drawer for a quick look from a list, or as its own
+ * A submission or document shown whole: in a drawer for a quick look from a list, or as its own
  * page with key facts, the stage bar, sections with an anchor bar, the activity beside them and the actions in a footer
  * that stays in view. Each record type fills the same props once and gets both.
  */
@@ -209,7 +197,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
           {record.activity && (
             <>
               <Divider titlePlacement="start" plain>
-                Activity
+                History
               </Divider>
               <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
             </>
@@ -255,7 +243,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
               <LinkButton href={record.href} size="small" icon={<ExpandOutlined />} aria-label="Open full page" />
             </Tooltip>
             {phone ? null : record.actions?.('small')}
-            {phone ? null : <MoreMenu items={more} size="small" />}
+            {phone ? null : <MoreActions items={more} size="small" />}
           </Space>
         ) : null
       }
@@ -263,7 +251,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
         hasContent(footerActions) || (phone && more.length) ? (
           <Flex wrap gap={token.marginXS} justify="flex-end" role="toolbar" aria-label="Record actions">
             {footerActions}
-            {phone ? <MoreMenu items={more} size="middle" /> : null}
+            {phone ? <MoreActions items={more} size="middle" /> : null}
           </Flex>
         ) : undefined
       }
@@ -293,7 +281,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
           {record.activity && (
             <>
               <Divider titlePlacement="start" plain>
-                Activity
+                History
               </Divider>
               <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
             </>
@@ -391,7 +379,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             {record.activity && (
               <Col xs={24} xl={7}>
                 <Card
-                  title="Activity"
+                  title="History"
                   size="small"
                   style={{ position: 'sticky', top: top + token.marginSM }}
                   styles={{ body: { maxHeight: `calc(100vh - ${top + 160}px)`, overflowY: 'auto' } }}
@@ -443,12 +431,12 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             {phone ? (
               <Flex wrap gap={token.marginXS} justify="flex-end" style={{ flex: 1 }}>
                 {record.actions?.('middle')}
-                <MoreMenu items={record.more ?? []} size="middle" />
+                <MoreActions items={record.more ?? []} size="middle" />
               </Flex>
             ) : (
               <Space wrap>
                 {record.actions?.('middle')}
-                <MoreMenu items={record.more ?? []} size="middle" />
+                <MoreActions items={record.more ?? []} size="middle" />
               </Space>
             )}
           </Flex>

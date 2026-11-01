@@ -1,5 +1,5 @@
 /**
- * A water supply scheme in operation and maintenance (item 131, ARCHITECTURE "Operation and maintenance"). Invented names
+ * A water supply scheme in operation and maintenance (ARCHITECTURE "Operation and maintenance"). Invented names
  * and figures throughout.
  *
  * - WS-2025-05, a 7.5 MLD treatment plant with its rising main, two reservoirs and the town's distribution network,
@@ -14,8 +14,8 @@
  * - Five quarterly O&M bills approved, certified and paid, and the sixth (year 2, quarter 2) a draft carrying its
  *   staff deduction and pressure penalty, all priced through the same functions as the app.
  *
- * Every date counts back from the first of this month, so the scheme is always in year 2, quarter 3. Skipped once the
- * project exists.
+ * Every date counts back from the first of the month 20 days ago ("this month" above; last month until the 21st), so
+ * the scheme is always in year 2, quarter 3 and that month's readings are already in. Skipped once the project exists.
  */
 import { Prisma, PrismaClient } from '@prisma/client';
 import { DEFAULT_OM_BENCHMARKS } from '@erp/shared';
@@ -23,6 +23,7 @@ import { BILL_TERMS_SELECT, billTotals, writeBill } from '../src/ra-bills/ra-bil
 import { omPercentages, omPricing } from '../src/om/om-bill';
 import { addMonths, monthsBetween, omPeriods } from '../src/om/om-rules';
 import { syncBillStage } from '../src/receivables/bill-settlement';
+import { seedToday } from './seed-clock';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
 const CODE = 'WS-2025-05';
@@ -62,9 +63,10 @@ export async function seedOm(prisma: PrismaClient, organizationId: string) {
   if (!pm || !engineer2 || !qs || !store || !qaqc) return;
 
   // O&M began on the first of the month 18 months ago; the works were completed a few days before.
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const thisMonth = `${today.slice(0, 7)}-01`;
+  const today = seedToday();
+  // The month the story counts back from: the one 20 days ago, so its low-pressure days (the 7th and 16th) are behind us
+  // even on the 1st, and today is still in year 2, quarter 3.
+  const thisMonth = `${addDays(today, -20).slice(0, 7)}-01`;
   const startOn = addMonths(thisMonth, -18);
   const completedOn = addDays(startOn, -4);
   const yesterday = addDays(today, -1);
@@ -149,7 +151,7 @@ export async function seedOm(prisma: PrismaClient, organizationId: string) {
   await prisma.omStaffMonth.createMany({ data: staffRows });
 
   // Chemicals: a receipt each quarter, issued weekly for the last four months at the norm, bleaching powder over it this month
-  const year = now.getUTCFullYear();
+  const year = Number(today.slice(0, 4));
   const counters: Record<string, number> = {};
   const nextNo = async (prefix: string) => {
     if (counters[prefix] === undefined) {

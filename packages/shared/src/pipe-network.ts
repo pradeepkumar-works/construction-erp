@@ -1,5 +1,5 @@
 /**
- * Pipe network (item 126): a pipe zone's or main's hydraulic model, junctions and the pipes between them, and how far
+ * Pipe network: a pipe zone's or main's hydraulic model, junctions and the pipes between them, and how far
  * each stage of work has got on each pipe. Reading a model file (EPANET .inp, or an Excel book of nodes and pipes),
  * the import's preview, the figures per segment and per diameter, and the working fronts are pure functions here; the
  * API and the screens share them. ARCHITECTURE "Pipe network".
@@ -50,7 +50,7 @@ export const comparePipeCodes = (a: string, b: string) => a.localeCompare(b, 'en
 /** How a segment is named on a line or a list: "P-27, J-12 to J-13". */
 export const segmentLabel = (s: { code: string; fromCode: string; toCode: string }) => `${s.code}, ${s.fromCode} to ${s.toCode}`;
 
-/* ---------- reading a model ---------- */
+// Reading a model
 
 export interface PipeNodeInput {
   code: string;
@@ -315,7 +315,7 @@ export function importPlan(
   return plan;
 }
 
-/* ---------- figures ---------- */
+// Figures
 
 /** Metres done per stage on one segment (approved work), and whether a passed hydraulic test covers it. */
 export interface SegmentWork {
@@ -473,7 +473,7 @@ export function pipelineSummary(lines: { pipeStage: PipeStage | null; segmentDia
   return [...rows.values()].sort((a, b) => a.zone.localeCompare(b.zone) || b.diameterMm - a.diameterMm);
 }
 
-/* ---------- API shapes ---------- */
+// API shapes
 
 export interface PipeNodeDto {
   id: string;

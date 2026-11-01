@@ -16,8 +16,6 @@ export class QualityController {
     return this.quality.summary(user, q.projectId);
   }
 
-  /* ---------- tests ---------- */
-
   @Get('tests')
   listTests(@CurrentUser() user: RequestUser, @Query() q: ListTestsQuery) {
     return this.quality.listTests(user, q);
@@ -55,8 +53,6 @@ export class QualityController {
   removeTest(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.quality.removeTest(user, id);
   }
-
-  /* ---------- NCRs ---------- */
 
   @Get('ncrs')
   listNcrs(@CurrentUser() user: RequestUser, @Query() q: ListNcrsQuery) {

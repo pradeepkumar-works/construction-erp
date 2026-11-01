@@ -42,7 +42,7 @@ const toLines = (v: LineValue[] | undefined) =>
 /**
  * Record a day's attendance (head count by contractor and trade), or open an existing sheet to correct it.
  * Read-only for roles that cannot record attendance and once payroll for the day's month is approved (attendance first:
- * an approved DPR no longer shuts it, finding 7 of the October review).
+ * an approved DPR no longer shuts it).
  */
 export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }: { open: boolean; onClose: () => void; projectId?: string; sheet?: AttendanceSheetDto | null }) {
   const [form] = Form.useForm<FormValues>();
@@ -149,12 +149,12 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
           }
         />
       ) : null}
-      {movedOnto ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`${formatDate(movedOnto.date)} already has its own sheet. Pick another date.`} /> : null}
+      {movedOnto ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`${formatDate(movedOnto.date)} already has its own sheet. Choose another date.`} /> : null}
 
       <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-        <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+        <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose a project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
       </Form.Item>
-      <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} style={{ maxWidth: 240 }}>
+      <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]} style={{ maxWidth: 240 }}>
         <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
       </Form.Item>
 
@@ -192,7 +192,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
                   add({ contractor: last?.contractor ?? DEPARTMENTAL_CONTRACTOR, count: null });
                 }}
               >
-                Add row
+                Add line
               </Button>
             </Space>
           )}
@@ -204,7 +204,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
         {byTrade.length ? (
           <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
             <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginRight: 4 }}>
-              Fills the DPR manpower:
+              Fills the DPR labour:
             </Typography.Text>
             {byTrade.map((m) => (
               <AppTag key={m.category} style={{ margin: 0 }}>

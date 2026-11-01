@@ -12,7 +12,7 @@ import { useFieldChain } from '../src/forms/keyboard';
 const rupees = (v: string | number) => formatMoney(v);
 
 /**
- * The site in-charge's imprests (v4 item 45): the float, the cash in hand after their cash expenses, and asking for
+ * The site in-charge's imprests: the float, the cash in hand after their cash expenses, and asking for
  * the top-up that brings it back. Needs a connection.
  */
 export default function ImprestScreen() {

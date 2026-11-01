@@ -21,7 +21,7 @@ export class ReceiptFieldsDto {
   @ApiPropertyOptional() @IsOptional() @num() @IsNumberString() otherDeduction?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(200) otherDeductionNote?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
-  @ApiPropertyOptional({ example: '83.9', description: 'A project in another currency (item 130): rupees to one unit on the day the bank credited it; the contract rate when empty' })
+  @ApiPropertyOptional({ example: '83.9', description: 'A project in another currency: rupees to one unit on the day the bank credited it; the contract rate when empty' })
   @IsOptional()
   @num()
   @ValidateIf((_, v) => v !== null && v !== '')

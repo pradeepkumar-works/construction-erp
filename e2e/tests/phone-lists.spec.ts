@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { newestFirst, pageOverflow, signIn } from './helpers';
 
-// UX item 84: lists on a phone are cards with their filters in a drawer, a record keeps its actions in reach, the header
+// Lists on a phone are cards with their filters in a drawer, a record keeps its actions in reach, the header
 // fits; on a laptop the DPR list fits without sideways scroll; the finance pages, tabs and the Approvals filters live in
 // the URL so a reload keeps them.
 
@@ -104,7 +104,7 @@ test('on a laptop the DPR list fits without sideways scroll', async ({ page }) =
   const { scroll, client } = await table.evaluate((e) => ({ scroll: e.scrollWidth, client: e.clientWidth }));
   expect(scroll).toBeLessThanOrEqual(client);
   // The columns that matter stay; the rest wait for a wider screen or the Columns menu.
-  for (const name of ['Date', 'Project', 'Work executed', 'Status']) await expect(page.getByRole('columnheader', { name, exact: true })).toBeVisible();
+  for (const name of ['Date', 'Project', 'Work done', 'Status']) await expect(page.getByRole('columnheader', { name, exact: true })).toBeVisible();
 });
 
 test('payables and receivables are lists with columns, and keep their search over a reload', async ({ page }) => {

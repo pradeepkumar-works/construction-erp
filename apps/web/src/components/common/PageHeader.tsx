@@ -13,7 +13,7 @@ export interface Crumb {
 
 /**
  * A page's heading: its one `<h1>` (the brand's display face at the top of the type scale, `.page-title` in globals.css),
- * the browser tab's title, the page's actions, and its breadcrumb where the header does not already show one (UX item 81).
+ * the browser tab's title, the page's actions, and its breadcrumb where the header does not already show one.
  */
 export function PageHeader({
   title,

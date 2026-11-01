@@ -1,5 +1,5 @@
 /**
- * Measuring on drawings (v6 item 118): lengths, areas and counts taken off a revision's sheet in the drawing viewer, and
+ * Measuring on drawings: lengths, areas and counts taken off a revision's sheet in the drawing viewer, and
  * the scale that turns the sheet's own coordinates into metres. Points are the markup's: x and y from 0 to 1 of the
  * page's width and height (y down). A page's `aspect` is its width over its height, so a point is (x × aspect, y) in
  * units of the page's height, and the scale is metres per page height.

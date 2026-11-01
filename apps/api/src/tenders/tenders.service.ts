@@ -89,7 +89,7 @@ interface Priced {
 }
 
 /**
- * Tender bidding (v6 item 110). The register keeps each tender's notice, dates, EMD (a guarantees entry of kind EMD) and
+ * Tender bidding. The register keeps each tender's notice, dates, EMD (a guarantees entry of kind EMD) and
  * result; the bid BOQ is priced from each item's rate analysis (materials, labour and machine hours a unit takes, at the
  * item master's, labour and machine rates unless given) with the tender's overheads and profit, and quoted either as one
  * percentage on the SOR or a rate per item. The bids read out at opening rank the quote; a won tender becomes a project
@@ -162,10 +162,10 @@ export class TendersService {
       status: t.status,
       bidType: t.bidType,
       estimatedValue: money(t.estimatedValue),
-      submitBy: dateOnly(t.submitBy)!,
+      submitBy: dateOnly(t.submitBy),
       submittedOn: dateOnly(t.submittedOn),
       openedOn: dateOnly(t.openedOn),
-      daysToSubmit: t.status === 'PREPARING' ? daysToSubmit(dateOnly(t.submitBy)!, today) : null,
+      daysToSubmit: t.status === 'PREPARING' ? daysToSubmit(dateOnly(t.submitBy), today) : null,
       quotedAmount: money(p.totals.quotedAmount),
       quotedPct: p.totals.quotedPct,
       rank: opened ? (p.ranked.find((b) => b.us)?.rank ?? null) : null,
@@ -214,7 +214,6 @@ export class TendersService {
     };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Register
 
   async list(user: RequestUser, q: TenderQuery): Promise<TenderListDto> {
@@ -240,16 +239,16 @@ export class TendersService {
     // Open tenders soonest due first; closed ones latest first.
     if (status === 'open') shown.sort((a, b) => a.dto.submitBy.localeCompare(b.dto.submitBy) || a.dto.tenderNo.localeCompare(b.dto.tenderNo));
     const since = fyStart(today);
-    const decided = (s: TenderStatus) => all.filter(({ t }) => t.status === s && dateOnly(t.resultOn ?? t.updatedAt)! >= since);
+    const decided = (s: TenderStatus) => all.filter(({ t }) => t.status === s && dateOnly(t.resultOn ?? t.updatedAt) >= since);
     const won = decided('WON');
     const summary: TenderSummaryDto = {
       preparing: all.filter(({ t }) => t.status === 'PREPARING').length,
       dueThisWeek: all.filter(({ dto }) => dto.daysToSubmit !== null && dto.daysToSubmit >= 0 && dto.daysToSubmit <= TENDER_DUE_DAYS).length,
       awaitingResult: all.filter(({ t }) => t.status === 'SUBMITTED').length,
       wonCount: won.length,
-      wonValue: money(won.reduce((s, { dto }) => s.plus(dto.quotedAmount ?? 0), ZERO))!,
+      wonValue: money(won.reduce((s, { dto }) => s.plus(dto.quotedAmount ?? 0), ZERO)),
       lostCount: decided('LOST').length,
-      emdOut: money(all.filter(({ t }) => t.status !== 'WON' && t.emdDoc?.status === 'ACTIVE').reduce((s, { t }) => s.plus(t.emdDoc?.amount ?? 0), ZERO))!,
+      emdOut: money(all.filter(({ t }) => t.status !== 'WON' && t.emdDoc?.status === 'ACTIVE').reduce((s, { t }) => s.plus(t.emdDoc?.amount ?? 0), ZERO)),
     };
     return { items: shown.map((s) => s.dto), summary };
   }
@@ -264,7 +263,7 @@ export class TendersService {
     const bids: TenderBidDto[] = p.ranked.map((b) => ({
       id: b.id,
       bidderName: b.name,
-      amount: money(b.amount)!,
+      amount: money(b.amount),
       pct: pctOver(b.amount, base),
       rank: b.rank,
       us: b.us,
@@ -290,10 +289,10 @@ export class TendersService {
         itemCount: p.totals.itemCount,
         analysedCount: p.totals.analysedCount,
         sorAmount: money(p.totals.sorAmount),
-        costAmount: money(p.totals.costAmount)!,
-        overheads: money(p.totals.overheads)!,
-        profit: money(p.totals.profit)!,
-        builtUpAmount: money(p.totals.builtUpAmount)!,
+        costAmount: money(p.totals.costAmount),
+        overheads: money(p.totals.overheads),
+        profit: money(p.totals.profit),
+        builtUpAmount: money(p.totals.builtUpAmount),
         quotedAmount: money(p.totals.quotedAmount),
         costPct: p.totals.costPct,
         builtUpPct: p.totals.builtUpPct,
@@ -304,15 +303,14 @@ export class TendersService {
       labourTrades: [...rates.labour.keys()].map((k) => rates.labourName.get(k)!).sort((a, b) => a.localeCompare(b)),
       equipmentCategories: rates.categories,
       createdByName: t.createdBy.fullName,
-      createdAt: iso(t.createdAt)!,
+      createdAt: iso(t.createdAt),
       canEdit: canManageTenders(user.roleKey),
       canMakeProject: canMakeProjectFromTender(user.roleKey) && t.status === 'WON' && !t.projectId,
     };
   }
 
-  /** The company's labour rates by trade and machine rates by category (the average hourly rate of its machines). */
   /**
-   * Bid intelligence (intelligence quick win Q4): the company's past openings of the same client and kind of work, each
+   * Bid intelligence: the company's past openings of the same client and kind of work, each
    * priced through `price` like the register, with where L1 landed against the SOR (or the estimate) and our place; the
    * choice and the level are pure in `@erp/shared/bid-history.ts`.
    */
@@ -425,7 +423,7 @@ export class TendersService {
     }
   }
 
-  /** A tender's vertical (item 167) is a code of the company's vertical master, switched on. */
+  /** A tender's vertical is a code of the company's vertical master, switched on. */
   private async assertVertical(user: RequestUser, code: string | null | undefined) {
     if (!code) return;
     const problem = verticalProblem(code, await this.masters.entriesFor(user.organizationId, 'vertical'));
@@ -526,7 +524,6 @@ export class TendersService {
     return { ok: true };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Bid BOQ
 
   private async sorItem(user: RequestUser, sorBookId: string | null, id: string) {
@@ -745,7 +742,6 @@ export class TendersService {
     return { filled, left: t.items.filter((i) => !i.lines.length).length - filled };
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Submission, opening and result
 
   async submit(user: RequestUser, id: string, dto: SubmitTenderDto): Promise<TenderDetailDto> {
@@ -837,7 +833,6 @@ export class TendersService {
     return this.get(user, id);
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
   // Won: the project
 
   /**
@@ -865,7 +860,7 @@ export class TendersService {
       description: `Won on tender ${t.tenderNo}${t.nitNo ? ` (${t.nitNo})` : ''}`,
       startDate: start,
       endDate: t.completionMonths ? addMonths(start, t.completionMonths) : undefined,
-      contractValue: money(p.totals.quotedAmount)!,
+      contractValue: money(p.totals.quotedAmount),
       projectManagerId: dto.projectManagerId ?? undefined,
       applyTemplate: dto.applyTemplate ?? false,
     });

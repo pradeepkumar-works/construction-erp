@@ -11,7 +11,7 @@ import { EQUIPMENT_LOAN_STATUS_LABELS, LOAN_DISBURSAL_LABELS, PAYMENT_MODE_LABEL
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useMachineLoan } from '@/lib/queries';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, formatINR, toNumber, formatQty } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -19,7 +19,7 @@ import { EmiStageTag } from '@/components/loans/EmiStageTag';
 import { LoanFormModal, PayEmiModal } from '@/components/loans/LoanForms';
 
 /**
- * One machine loan (v6 item 108): what it has repaid and still owes, the next EMI, the machine's cost of finance (the
+ * One machine loan: what it has repaid and still owes, the next EMI, the machine's cost of finance (the
  * interest over the hours it has worked), and the EMI schedule with each EMI paid or due. Accounts record EMIs paid in
  * order, close the loan early, or undo the last EMI recorded.
  */
@@ -178,7 +178,7 @@ export default function MachineLoanPage() {
                 { key: 'emi', label: 'EMI', children: <span translate="no">{formatINR(loan.emi, true)}</span> },
                 { key: 'sanction', label: 'Sanctioned on', children: formatDate(loan.sanctionDate) },
                 { key: 'first', label: 'First EMI', children: formatDate(loan.firstEmiDate) },
-                { key: 'disbursal', label: 'The lender', children: LOAN_DISBURSAL_LABELS[loan.disbursal] },
+                { key: 'disbursal', label: 'Paid out to', children: LOAN_DISBURSAL_LABELS[loan.disbursal] },
                 { key: 'by', label: 'Recorded by', children: loan.createdByName },
                 ...(loan.note ? [{ key: 'note', label: 'Note', span: 2, children: loan.note }] : []),
               ]}
@@ -192,7 +192,7 @@ export default function MachineLoanPage() {
               column={1}
               items={[
                 { key: 'paid', label: 'Interest paid', children: <span translate="no">{formatINR(loan.interestPaid, true)}</span> },
-                { key: 'hours', label: 'Hours worked since the loan', children: `${toNumber(loan.hoursWorked).toLocaleString('en-IN')} h` },
+                { key: 'hours', label: 'Hours worked since the loan', children: `${formatQty(loan.hoursWorked)} h` },
                 { key: 'perHour', label: 'Interest a working hour', children: loan.interestPerHour ? <span translate="no">{formatINR(loan.interestPerHour, true)}</span> : 'No hours logged yet' },
                 { key: 'toCome', label: 'Interest still to come', children: <span translate="no">{formatINR(loan.interestToCome, true)}</span> },
               ]}

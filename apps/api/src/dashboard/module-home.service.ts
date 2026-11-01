@@ -59,10 +59,10 @@ const ZERO = new Prisma.Decimal(0);
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const count = (key: string, label: string, n: number, href: string, extra: Partial<ModuleFigureDto> = {}): ModuleFigureDto => ({ key, label, value: String(n), format: 'count', href, ...extra });
-const rupees = (key: string, label: string, v: string | D, href: string, extra: Partial<ModuleFigureDto> = {}): ModuleFigureDto => ({ key, label, value: typeof v === 'string' ? v : money(v)!, format: 'money', href, ...extra });
+const rupees = (key: string, label: string, v: string | D, href: string, extra: Partial<ModuleFigureDto> = {}): ModuleFigureDto => ({ key, label, value: typeof v === 'string' ? v : money(v), format: 'money', href, ...extra });
 
 /**
- * Module home pages (v6 item 98): for one sidebar section, its figures, what waits for the caller in it, and the caller's
+ * Module home pages: for one sidebar section, its figures, what waits for the caller in it, and the caller's
  * own entries sent back or waiting with others. Each figure is behind the same permission helper as the list it counts,
  * and covers the projects the caller sees, or the one project asked for.
  */
@@ -113,7 +113,7 @@ export class ModuleHomeService {
     }
     const waitingRows: ModuleWaitingDto[] = [...byType.values()]
       .sort((a, b) => b.count - a.count || b.oldestDays - a.oldestDays)
-      .map((w) => ({ ...w, amount: w.amount === null ? null : money(w.amount)! }));
+      .map((w) => ({ ...w, amount: w.amount === null ? null : money(w.amount) }));
     const back = new Map<SubmissionType, number>();
     for (const s of inModule(sentBack)) back.set(s.type, (back.get(s.type) ?? 0) + 1);
 
@@ -174,7 +174,7 @@ export class ModuleHomeService {
           plannedPct: planned,
           financialPct: seesFinancial && contract?.gt(0) ? Math.round(billed.div(contract).mul(1000).toNumber()) / 10 : null,
           contractValue: seesFinancial ? p.revisedContractValue : null,
-          billed: seesFinancial ? money(billed)! : null,
+          billed: seesFinancial ? money(billed) : null,
           startDate: p.startDate,
           endDate: p.endDate,
           eotDays,
@@ -425,7 +425,7 @@ export class ModuleHomeService {
     return out;
   }
 
-  /** RMC (v6 item 104): the plants the caller sees (or the one asked for). */
+  /** RMC: the plants the caller sees (or the one asked for). */
   private async rmc(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
     const role = user.roleKey;
     if (!canViewRmc(role) || !moduleOn(user, 'rmc')) return [];
@@ -498,7 +498,7 @@ export class ModuleHomeService {
     ];
     if (summary.leaveToDecide !== undefined) out.push(count('leaveToDecide', 'Leave to decide', summary.leaveToDecide, '/staff?tab=leave', { tone: summary.leaveToDecide ? 'warning' : 'default', note: summary.leaveToDecide ? 'Waiting for your decision' : 'Nothing waiting' }));
     if (summary.overtimeToDecide !== undefined) out.push(count('overtimeToDecide', 'Overtime to decide', summary.overtimeToDecide, '/staff?tab=overtime', { tone: summary.overtimeToDecide ? 'warning' : 'default', note: summary.overtimeToDecide ? 'Waiting for your decision' : 'Nothing waiting' }));
-    // Salary runs (v6 item 100): drafts for HR, submitted ones for management, approved ones for accounts.
+    // Salary runs: drafts for HR, submitted ones for management, approved ones for accounts.
     if (canViewPayroll(role) && moduleOn(user, 'payroll') && !projectId) {
       const runs = await this.payrollRuns.waiting(user);
       const net = runs.reduce((t, r) => t + Number(r.net), 0);

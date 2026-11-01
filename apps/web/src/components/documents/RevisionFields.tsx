@@ -11,7 +11,7 @@ import { FormGrid } from '@/components/form/FormShell';
 
 /**
  * Revision, date, status, from whom and the files: in the new-document form (under `revision`) and the revision form.
- * `read` adds where a value was read from a drawing's title block (AI item 70).
+ * `read` adds where a value was read from a drawing's title block.
  */
 export function RevisionFields({ prefix = [], read }: { prefix?: string[]; read?: (key: 'revision' | 'date' | 'issuedBy') => Partial<FormItemProps> }) {
   const n = (k: string) => [...prefix, k];
@@ -28,7 +28,7 @@ export function RevisionFields({ prefix = [], read }: { prefix?: string[]; read?
           <Select options={REVISION_STATUSES.map((s) => ({ value: s, label: REVISION_STATUS_LABELS[s] }))} />
         </Form.Item>
       </FormGrid>
-      <Form.Item name={n('receivedFrom')} label="Issued by (architect, consultant, client)" {...read?.('issuedBy')}>
+      <Form.Item name={n('receivedFrom')} label="Issued by" extra="The architect, consultant or client" {...read?.('issuedBy')}>
         <Input maxLength={200} />
       </Form.Item>
       <Form.Item name={n('remarks')} label="What changed">

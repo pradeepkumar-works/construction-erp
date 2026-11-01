@@ -1,5 +1,5 @@
 /**
- * Operation and maintenance (item 131, ARCHITECTURE "Operation and maintenance"): the years of running a water scheme
+ * Operation and maintenance (ARCHITECTURE "Operation and maintenance"): the years of running a water scheme
  * after its handover. The contract pays each year as a % of the contract value in instalments (an O&M bill each), less
  * the pay of staff short of the minimum and the penalties for service levels missed beyond what a month allows. The
  * arithmetic is in `apps/api/src/om/om-rules.ts`.
@@ -119,7 +119,6 @@ export const omLimitText = (key: OmBenchmark, limit: string | number) => {
 /** "at least 135 lpcd", "at most 20%" */
 export const omRuleText = (key: OmBenchmark, limit: string | number) => `${OM_BENCHMARK_INFO[key].direction === 'MIN' ? 'at least' : 'at most'} ${omLimitText(key, limit)}`;
 
-// ---------------------------------------------------------------------------------------------------------------------
 // What the project's O&M tab reads
 
 export interface OmStaffNormDto {
@@ -219,6 +218,7 @@ export interface OmMonthDto {
 }
 
 export type OmPeriodStatus = 'FUTURE' | 'RUNNING' | 'DUE' | 'BILLED';
+export const OM_PERIOD_STATUS_LABELS: Record<OmPeriodStatus, string> = { FUTURE: 'Not started', RUNNING: 'Running', DUE: 'Due to bill', BILLED: 'Billed' };
 
 export interface OmPeriodDto {
   year: number;
@@ -256,8 +256,11 @@ export interface OmChemicalRowDto {
   consumedQty: string;
   /** Consumed against the norm, %, one decimal; null with no norm quantity */
   variancePct: number | null;
-  status: 'OVER' | 'UNDER' | 'WITHIN' | 'NO_WATER';
+  status: OmChemicalState;
 }
+
+export type OmChemicalState = 'OVER' | 'UNDER' | 'WITHIN' | 'NO_WATER';
+export const OM_CHEMICAL_STATE_LABELS: Record<OmChemicalState, string> = { OVER: 'Over the norm', UNDER: 'Under the norm', WITHIN: 'Within the norm', NO_WATER: 'No water logged' };
 
 export interface OmDto {
   projectId: string;

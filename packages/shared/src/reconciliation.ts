@@ -6,7 +6,7 @@
  * over the BOQ items that use the item. Consumed = issued to site − returned from site. Transfers to other projects,
  * returns to the supplier and stock adjustments are not consumption.
  *
- * Rate analysis (v5 item 92) adds the labour and machine hours one unit takes (`BoqResource`), so the estimate can build
+ * Rate analysis adds the labour and machine hours one unit takes (`BoqResource`), so the estimate can build
  * each BOQ item's rate from its resources at current rates. A starter library of common items is at the end.
  */
 import type { BoqResourceKind, EquipmentRateUnit, StockAdjustmentReason } from './enums';
@@ -55,7 +55,7 @@ export interface MaterialNormDto {
 /** One BOQ item's (or, for an activity's own norm, one activity's) share of an item's theoretical consumption. */
 export interface ReconciliationLineDto {
   normId: string;
-  /** null on an activity's own norm (item 128) */
+  /** null on an activity's own norm */
   boqItemId: string | null;
   activityId: string | null;
   /** The BOQ item number, or the activity's component code */
@@ -92,11 +92,11 @@ export interface ReconciliationItemDto {
   /** excessQty × rate; null without a rate or for viewers without cost */
   excessValue: string | null;
   lines: ReconciliationLineDto[];
-  /** The store's book for the period (item 128): before it, received in it (receipts and transfers in) and after it */
+  /** The store's book for the period: before it, received in it (receipts and transfers in) and after it */
   openingQty: string;
   receivedQty: string;
   closingQty: string;
-  /** What approved DPR lines in the period say they used (item 128) */
+  /** What approved DPR lines in the period say they used */
   usedQty: string;
   /** Approved DPR line quantities × the norms: what those lines should have used */
   neededQty: string;
@@ -121,7 +121,7 @@ export interface UnreconciledItemDto {
   itemName: string;
   unit: string;
   consumedQty: string;
-  /** Used per approved DPR lines in the period (item 128) */
+  /** Used per approved DPR lines in the period */
   usedQty: string;
   atFrontQty: string | null;
   front: FrontFlag | null;
@@ -137,7 +137,7 @@ export interface ProjectReconciliationDto {
   items: ReconciliationItemDto[];
   unreconciled: UnreconciledItemDto[];
   norms: MaterialNormDto[];
-  /** Norms set on activities (item 128), for work with no BOQ item of its own */
+  /** Norms set on activities, for work with no BOQ item of its own */
   activityNorms: ActivityNormDto[];
   /** BOQ items with approved progress in the period and no norm */
   boqItemsWithoutNorm: number;
@@ -367,7 +367,6 @@ export interface WastageReportDto {
   canSeeValues: boolean;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Starter library
 
 /** A material of a library entry: any word set in `match` found in a store item's name picks it, if its unit agrees. */
@@ -562,7 +561,7 @@ export function pickLibraryItem<T extends { name: string; unit: string }>(m: Rat
   return { item: fit[0] ?? null, wrongUnit: fit.length ? null : (named[0] ?? null) };
 }
 
-/* ---------- the standard norms library (finding 16 of the October review) ---------- */
+// The standard norms library
 
 /** One material the library would set on a BOQ item, and the master item it lands on. */
 export interface StandardNormMaterialDto {

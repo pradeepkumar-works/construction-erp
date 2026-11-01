@@ -1,5 +1,5 @@
 /**
- * The vendor scorecard at the L1 decision (intelligence quick win Q5): beside each quotation on the comparative
+ * The vendor scorecard at the L1 decision: beside each quotation on the comparative
  * statement, how the vendor has delivered over the last year (on time, rejected at the gate) and where its rates sit
  * against the median of the quotations on this statement. Pure; the API counts the deliveries
  * (`QuotationsService.comparative`), the screen and the tests read them through these helpers.

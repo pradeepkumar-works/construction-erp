@@ -1,5 +1,5 @@
 /**
- * Stock against the DPR (item 128): the reconciliation's views beside Materials. The DPR's work lines say what they used;
+ * Stock against the DPR: the reconciliation's views beside Materials. The DPR's work lines say what they used;
  * issued less returned less used is what should be lying at the work front; the work done × the norms is what the lines
  * should have used. Per structure (component × material), per pipe size (zone × diameter and material), per
  * house-connection kit, and a list of the day-to-day exceptions. Arithmetic in apps/api/src/reconciliation/reconciliation-rules.ts.
@@ -38,7 +38,6 @@ export interface ActivityNormDto {
   updatedAt: string;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Pipe sizes
 
 /** Words that make an item a fitting, not pipe, though its name carries a size. */
@@ -86,7 +85,6 @@ export function pipeMetres(qty: number, unit: string, kgPerMetre: number | null 
 /** Cut wastage allowed on pipe by material, % of the metres laid (pipe comes in lengths; cuts at bends and fittings are lost). */
 export const PIPE_CUT_WASTAGE_PCT: Record<PipeMaterial, number> = { HDPE: 1.5, MDPE: 2, DI: 1, CI: 1, MS: 1, PVC: 2, GRP: 1, OTHER: 2 };
 
-// ---------------------------------------------------------------------------------------------------------------------
 // Report shapes
 
 /** One material of one component or sub-component: what its work needs, what its DPR lines used and what was issued to it. */

@@ -1,6 +1,6 @@
 import { PRODUCT_NAME } from './brand';
 
-/** WhatsApp and SMS alerts (v3 item 31). WhatsApp goes first; SMS is the fallback when WhatsApp is off or fails. */
+/** WhatsApp and SMS alerts. WhatsApp goes first; SMS is the fallback when WhatsApp is off or fails. */
 export const MESSAGE_CHANNELS = ['WHATSAPP', 'SMS'] as const;
 export type MessageChannel = (typeof MESSAGE_CHANNELS)[number];
 export const MESSAGE_CHANNEL_LABELS: Record<MessageChannel, string> = { WHATSAPP: 'WhatsApp', SMS: 'SMS' };
@@ -129,7 +129,7 @@ export interface OutboundMessageDto {
 }
 
 /**
- * A wa.me link that opens WhatsApp with the message ready to send (finding 12 of the October review): to that number
+ * A wa.me link that opens WhatsApp with the message ready to send: to that number
  * when it is one we can dial, else to whoever the sender picks. It opens WhatsApp; it never sends anything itself.
  */
 export function whatsAppShareUrl(text: string, phone?: string | null): string {

@@ -1,5 +1,5 @@
 /**
- * Demo QA/QC plans (item 137): the building and road projects' quality plans from the standard ones, the demo tests
+ * Demo QA/QC plans: the building and road projects' quality plans from the standard ones, the demo tests
  * counted under them, and the building's pour register: three slab and column pours with passed cards and 28-day cubes
  * (with the ground floor slab's, four results for the IS 456 check), one poured yesterday without a passed card and short
  * of cubes, and one planned for tomorrow waiting for its card. Runs once per company (when it has no plan yet), after the
@@ -7,13 +7,8 @@
  */
 import { Prisma, PrismaClient } from '@prisma/client';
 import { POUR_CARD_CHECKLIST, STANDARD_QA_PLANS, planLineFor, type ProjectType } from '@erp/shared';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const D = (v: number | string) => new Prisma.Decimal(v);
 const KIND_TYPE: Record<string, string> = { CONCRETE_CUBE: 'CUBE', FIELD_DENSITY: 'FDD', BRICK: 'BRICK' };
 

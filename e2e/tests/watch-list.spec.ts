@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { api, apiToken, formPanel, signIn } from './helpers';
 
 /**
- * Early warnings (AI items 73 and 119). The demo seed's dates are relative to today, so its schedule and stock always
+ * Early warnings. The demo seed's dates are relative to today, so its schedule and stock always
  * give the MD some warnings. Each card leads with its action and keeps its working under Why; a dismissal says what
  * became of the warning (Known needs a note), holds for the company, counts in the track record, and Restore brings
  * the warning back.
@@ -26,16 +26,16 @@ test('the MD sees warnings with their action and working, dismisses one as Known
   const card = page.locator(`[data-warning-key="${first.key}"]`);
   await expect(card).toBeVisible();
   await expect(card.getByText(first.action)).toBeVisible();
-  await card.getByRole('button', { name: 'Why: the working' }).click();
+  await card.getByRole('button', { name: 'Show how this was worked out' }).click();
   await expect(card.getByText(first.working[0])).toBeVisible();
 
   await card.getByRole('button', { name: 'Dismiss' }).click();
   const modal = formPanel(page, 'Dismiss this warning');
   await modal.getByRole('button', { name: 'Dismiss' }).click();
-  await expect(modal.getByText('Choose what became of it')).toBeVisible();
+  await expect(modal.getByText('Choose what became of it', { exact: true })).toBeVisible();
   await modal.getByRole('radio', { name: /Known and accepted/ }).check();
   await modal.getByRole('button', { name: 'Dismiss' }).click();
-  await expect(modal.getByText('Say why it can be left as it is')).toBeVisible();
+  await expect(modal.getByText('Say why it can be left as it is', { exact: true })).toBeVisible();
   await modal.getByLabel('Why it can be left').fill('Second crew starts Monday');
   await modal.getByRole('button', { name: 'Dismiss' }).click();
   await expect(page.getByText('Dismissed for everyone in the company')).toBeVisible();

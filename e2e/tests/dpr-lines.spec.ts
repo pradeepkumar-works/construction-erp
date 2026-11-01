@@ -3,7 +3,7 @@ import type { DailyReportDto, DprWorkOptionsDto, ProgressEntryDto } from '../../
 import { API_URL, api, apiToken, formPanel, signIn } from './helpers';
 
 /**
- * The structured DPR (item 127): a day's report carries work lines against the work breakdown, each a progress entry
+ * The structured DPR: a day's report carries work lines against the work breakdown, each a progress entry
  * that moves with the report. Its figures cumulate over what was approved before, a line is never edited or reviewed on
  * its own, a decision on the report reaches every line, and the report's page shows the work grouped by component.
  * The report is rejected at the end, so the demo project's progress stays as it was.
@@ -19,7 +19,7 @@ test('a DPR with work lines: figures, one decision for all, and the Work done se
   const pm = await apiToken('pm@demo.com');
   const town = (await api<{ items: Project[] }>(engineer, '/projects?pageSize=100')).items.find((p) => p.code === 'WS-2026-04')!;
   const options = await api<DprWorkOptionsDto>(engineer, `/dpr/work-options?projectId=${town.id}`);
-  // Pipe work on a zone with its network loaded names a pipe (item 126, pipe-network.spec.ts); these lines are other work.
+  // Pipe work on a zone with its network loaded names a pipe (pipe-network.spec.ts); these lines are other work.
   const plain = options.activities.filter((a) => !a.pipeStage || !options.segments.some((s) => s.zoneId === a.zoneId));
   expect(plain.length).toBeGreaterThan(1);
   const [first, second] = plain;

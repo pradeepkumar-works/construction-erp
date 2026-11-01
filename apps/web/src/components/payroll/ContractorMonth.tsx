@@ -70,7 +70,7 @@ export function ContractorMonth({ month, projectId }: { month: string; projectId
         </Typography.Text>
         <div style={{ flex: 1 }} />
         <Button icon={<DownloadOutlined />} disabled={!rows.length} onClick={() => downloadXlsx(`labour-contractors-${month}`, `Contractors ${month}`, exportColumns, rows)}>
-          Export Excel
+          Export to Excel
         </Button>
       </div>
       <Table<ContractorMonthRowDto>

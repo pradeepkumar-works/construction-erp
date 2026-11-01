@@ -41,7 +41,7 @@ export interface BriefBatchResult {
 }
 
 /**
- * The morning brief and the weekly narrative (AI item 74), written in the overnight batch. The brief is for users who
+ * The morning brief and the weekly narrative, written in the overnight batch. The brief is for users who
  * asked for it, built from their own My work (so their role's limits apply); the narrative is for each active project
  * in a company with Ask Nirmaan on. The model rewrites the rules' draft from the facts alone; its text is kept only when
  * every figure in it is in the facts, and either way the cost counts in the company's monthly allowance.
@@ -204,5 +204,5 @@ export class BriefsService {
 }
 
 export function toBrief(row: { date: Date; lines: Prisma.JsonValue; createdAt: Date; byAssistant: boolean }): MorningBriefDto {
-  return { date: dateOnly(row.date)!, lines: row.lines as unknown as BriefLineDto[], writtenAt: row.createdAt.toISOString(), byAssistant: row.byAssistant };
+  return { date: dateOnly(row.date), lines: row.lines as unknown as BriefLineDto[], writtenAt: row.createdAt.toISOString(), byAssistant: row.byAssistant };
 }

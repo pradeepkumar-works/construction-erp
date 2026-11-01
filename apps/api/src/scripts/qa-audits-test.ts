@@ -1,5 +1,5 @@
 /**
- * QA/QC audits and the monthly report (item 137 part 3): where a finding stands and when it is late, what an audit needs
+ * QA/QC audits and the monthly report: where a finding stands and when it is late, what an audit needs
  * before it is saved, and the report's months, pass rate, NCR ages, counts and totals, with no database. CI runs it after
  * the build:
  *

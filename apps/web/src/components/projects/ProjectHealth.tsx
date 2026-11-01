@@ -25,7 +25,7 @@ const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' 
 export type ScheduleStatus = ScheduleReading;
 
 /**
- * Where the project stands against its schedule (UX item 85), the one reading behind the header's chip and the
+ * Where the project stands against its schedule, the one reading behind the header's chip and the
  * overview's lead line: `scheduleReading` in shared, which the phone's project screen reads too.
  */
 export function scheduleStatus(project: ProjectDetail, dash: ProjectDashboard, on = today()): ScheduleStatus {
@@ -47,7 +47,7 @@ export function scheduleChipText(s: ScheduleStatus): string {
 }
 
 /**
- * The project's health at a glance (UI roadmap item 56): schedule from activities running late and progress against
+ * The project's health at a glance: schedule from activities running late and progress against
  * time gone; for those who see cost, cost against the value of work done and how much of that work is billed.
  */
 export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
@@ -77,7 +77,7 @@ export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
       out.push({
         key: 'cost',
         level: pct <= 90 ? 'success' : pct <= 100 ? 'warning' : 'error',
-        text: `Cost: ${formatPct(pct)} of work value`,
+        text: `Cost: ${formatPct(pct)} of the value of work done`,
         detail: 'Cost booked so far against the value of approved work (progress × BOQ rate).',
       });
     }
@@ -86,7 +86,7 @@ export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
       out.push({
         key: 'billing',
         level: pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'error',
-        text: `Billed: ${formatPct(pct)} of work value`,
+        text: `Billed: ${formatPct(pct)} of the value of work done`,
         detail: 'Approved RA bills against the value of approved work. Work not yet billed is cash still to ask for.',
       });
     }

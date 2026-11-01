@@ -28,8 +28,8 @@ const moved = (days: number | null) =>
   days === null ? <span className="text-muted">-</span> : days === 0 ? <span className="text-muted">none</span> : <span className={days > 0 ? 'text-danger' : undefined}>{days > 0 ? `${days} days later` : `${-days} days earlier`}</span>;
 
 /**
- * Schedule tab of a project (v4 item 43): the Gantt of milestones and activities against the frozen baseline, the
- * milestone list, and freezing the baseline. Links between activities give the critical path and float (v6 item 114):
+ * Schedule tab of a project: the Gantt of milestones and activities against the frozen baseline, the
+ * milestone list, and freezing the baseline. Links between activities give the critical path and float:
  * an activity's row opens its links, activities planned before their links allow can be moved in one go, and the plan
  * goes out to and comes in from MS Project and Primavera.
  */
@@ -158,7 +158,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         action={
           freezer ? (
             <Button size="small" onClick={() => setFreezeOpen(true)}>
-              {data.baselineAt ? 'Re-baseline' : 'Freeze baseline'}
+              {data.baselineAt ? 'Replace baseline' : 'Freeze baseline'}
             </Button>
           ) : undefined
         }
@@ -184,7 +184,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
         <Space wrap>
-          <Segmented<GanttScale> value={scale} onChange={setScale} options={[{ value: 'week', label: 'Weeks' }, { value: 'month', label: 'Months' }]} />
+          <Segmented<GanttScale> aria-label="Gantt scale" value={scale} onChange={setScale} options={[{ value: 'week', label: 'Weeks' }, { value: 'month', label: 'Months' }]} />
           {data.baselineAt ? (
             <Checkbox checked={showBaseline} onChange={(e) => setShowBaseline(e.target.checked)}>
               Show baseline
@@ -234,7 +234,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         confirmLoading={schedule.isPending}
         destroyOnHidden
       >
-        <p>Each keeps its length and starts on the first day its links allow. Activities already started stay where they are. The audit log keeps the old dates.</p>
+        <p>Each keeps its length and starts on the first day its links allow. Activities already started stay where they are. The record's history keeps the old dates.</p>
         <Table<GanttActivityDto>
           size="small"
           rowKey="id"
@@ -260,7 +260,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
       >
         <p>
           Today&apos;s planned dates of every activity and the due date of every milestone become the baseline.
-          {data.baselineAt ? ` The baseline frozen ${formatDate(data.baselineAt)} is replaced; the audit log keeps who changed it and when.` : ''}
+          {data.baselineAt ? ` The baseline frozen ${formatDate(data.baselineAt)} is replaced; the history keeps who changed it and when.` : ''}
         </p>
         <Form layout="vertical">
           <Form.Item label="Note" style={{ marginBottom: 0 }}>

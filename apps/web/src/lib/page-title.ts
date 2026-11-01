@@ -7,7 +7,7 @@ import { PRODUCT_NAME } from '@erp/shared';
 let owner: symbol | null = null;
 
 /**
- * The browser tab's title for this page (UX item 81, WCAG 2.4.2): "Purchase orders · Nirmaan", or a record's own name
+ * The browser tab's title for this page (WCAG 2.4.2): "Purchase orders · Nirmaan", or a record's own name
  * ("PO-2026-0012 · Tata Steel · Nirmaan"), so tabs, history, bookmarks and the screen reader's page-change announcement
  * tell pages apart. `PageHeader` and record pages call it; a page without a `PageHeader` calls it itself.
  */

@@ -1,5 +1,6 @@
 'use client';
 
+import { DeleteInMenu } from '@/components/record/MoreActions';
 import React, { useState } from 'react';
 import { Alert, App, Button, Checkbox, Descriptions, Divider, Drawer, Form, Input, Modal, Skeleton, Space, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +15,6 @@ import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { PermitStatusTag, SafetyHistory, permitTypeLabel, permitWindow } from './safetyUi';
 import { joinPrecautions, splitPrecautions } from './PermitFormModal';
-import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type Action = 'issue' | 'reject' | 'close';
 
@@ -92,11 +92,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
               </Button>
             ) : null}
             {manager || (own && data.status === 'REQUESTED') ? (
-              <ConfirmDelete what={`permit ${data.permitNo}`} description="Only for one made by mistake." onConfirm={() => remove.mutateAsync()}>
-                <Button size="small" danger loading={remove.isPending}>
-                  Delete
-                </Button>
-              </ConfirmDelete>
+              <DeleteInMenu what={`permit ${data.permitNo}`} description="Only for one made by mistake." onConfirm={() => remove.mutateAsync()} />
             ) : null}
           </Space>
         ) : null
@@ -107,7 +103,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (
         <>
-          {data.expired ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="This permit has run out. Close it, or ask for a new one if the work goes on." /> : null}
+          {data.expired ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="This permit has expired. Close it, or request a new one if the work goes on." /> : null}
           <Descriptions
             size="small"
             column={2}
@@ -175,7 +171,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
           <Form.Item
             name="note"
             label={action === 'issue' ? 'Conditions' : action === 'reject' ? 'Why not' : 'Note'}
-            rules={action === 'reject' ? [{ required: true, whitespace: true, message: 'Say why' }] : []}
+            rules={action === 'reject' ? [{ required: true, whitespace: true, message: 'Enter why the permit is rejected' }] : []}
           >
             <Input.TextArea rows={2} maxLength={1000} placeholder={action === 'close' ? 'Work done, area made safe' : undefined} />
           </Form.Item>

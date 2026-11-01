@@ -6,7 +6,7 @@ type Plan = { matches: { itemNo: string; normKey: string; hasNorms: boolean }[];
 type Reconciliation = { norms: { boqItemNo: string; itemName: string; qtyPerUnit: string; wastagePct: string }[] };
 
 /**
- * The standard norms library (finding 16 of the October review): a new project's reconciliation was empty, because a
+ * The standard norms library: a new project's reconciliation was empty, because a
  * norm had to be typed for every BOQ item first. The library now reads the BOQ and offers the usual figures.
  */
 test('a new project adopts the standard norms and its reconciliation has something to check', async ({ page }) => {

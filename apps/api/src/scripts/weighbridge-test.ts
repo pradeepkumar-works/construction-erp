@@ -1,5 +1,5 @@
 /**
- * Weighbridge tests (item 148): a Connector's weighing, a weighbridge's settings, the ticket numbers, the net weight and
+ * Weighbridge tests: a Connector's weighing, a weighbridge's settings, the ticket numbers, the net weight and
  * its units, short supply against the challan, a GRN booked above the net weight, and the watch list's short loads. No
  * database. CI runs it after the build:
  *

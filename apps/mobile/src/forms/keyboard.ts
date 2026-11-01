@@ -9,7 +9,7 @@ export interface FieldProps {
 }
 
 /**
- * Next on the keyboard moves to the form's next field (UX item 88). Spread `field()` on each `Input`, in the order they
+ * Next on the keyboard moves to the form's next field. Spread `field()` on each `Input`, in the order they
  * show on screen; Next jumps to the next text field still there (pickers and chips in between are skipped, and a row
  * taken out drops out of the chain). The last one gets `field({ done: true })`: its key reads Done and closes the
  * keyboard, or with `done: submit` sends the form. A multiline field (`{ multiline: true }`) is a stop on the way but

@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from 'react';
 
-/** Ask Nirmaan from inside a page (AI item 68): whether it can answer now, and asking it a question in a new conversation. */
+/** Ask Nirmaan from inside a page: whether it can answer now, and asking it a question in a new conversation. */
 export interface AskContextValue {
   available: boolean;
   ask: (question: string) => void;

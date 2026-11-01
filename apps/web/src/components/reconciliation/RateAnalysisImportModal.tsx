@@ -42,7 +42,7 @@ export async function downloadRateAnalysisTemplate() {
 }
 
 /**
- * Rate analysis from Excel (v5 item 92): one row per line, for any BOQ items of the project. Rows are checked here
+ * Rate analysis from Excel: one row per line, for any BOQ items of the project. Rows are checked here
  * first; the server checks them again and refuses the whole sheet if any is wrong, so nothing is half imported.
  */
 export function RateAnalysisImportModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId: string }) {

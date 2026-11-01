@@ -33,7 +33,7 @@ import { OwnFieldInputs, ownPayload, ownProblems, ownValuesFrom, type OwnValues 
 import { useT } from '../i18n/LanguageContext';
 import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../theme';
 
-/** A DPR work line (item 127) as the phone's form holds it. */
+/** A DPR work line as the phone's form holds it. */
 export interface DprLineRow {
   key: string;
   /** The line's progress entry: kept on an edit, a new uuid for a new line */
@@ -44,12 +44,12 @@ export interface DprLineRow {
   subPick: string | null;
   quantity: string;
   location: string;
-  /** Where by the project's places (item 134): chainage as km+m text, floor, village */
+  /** Where by the project's places: chainage as km+m text, floor, village */
   chainageFrom: string;
   chainageTo: string;
   floor: string | null;
   village: string | null;
-  /** The pipe segment, or for a valve line the valve, the work was on (item 126) */
+  /** The pipe segment, or for a valve line the valve, the work was on */
   pipeSegmentId: string | null;
   pipeNodeId: string | null;
   crew: { key: string; category: string | null; count: string }[];
@@ -59,7 +59,7 @@ export interface DprLineRow {
   materialsEdited: boolean;
   workOrderId: string | null;
   remarks: string;
-  /** The line's fields of the company's own (item 134 part 2) */
+  /** The line's fields of the company's own */
   extra: OwnValues;
   /** The line's photos; they go to the outbox with the line's id */
   photos: LocalPhoto[];
@@ -190,7 +190,7 @@ export function linesProblem(rows: DprLineRow[], t: ReturnType<typeof useT>, opt
 }
 
 /**
- * The DPR's work done, line by line (item 127), as the project type's form asks (item 134 part 2): the activity (picked
+ * The DPR's work done, line by line, as the project type's form asks: the activity (picked
  * component by component, or from one list), where by the project's places, how much today, and what else the form
  * takes: crew, machines, material used (filled from the norms until changed), work order, remark, photo and the
  * company's own line fields. Activities planned this week come first in the picker.

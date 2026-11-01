@@ -4,7 +4,7 @@ import React from 'react';
 import { Statistic, Tooltip } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
-import { SAFETY_INCIDENT_TYPE_LABELS } from '@erp/shared';
+import { SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_STATUS_LABELS } from '@erp/shared';
 import { useSafetySummary } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { IncidentList } from './IncidentList';
@@ -20,7 +20,7 @@ export const SAFETY_TABS = ['incidents', 'talks', 'permits', 'ppe'] as const;
 export type SafetyTab = (typeof SAFETY_TABS)[number];
 const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
-/** Safety at a glance and its three registers; the Safety page and a project tab. The open register is `?sub=` in the URL (UX item 84). */
+/** Safety at a glance and its three registers; the Safety page and a project tab. The open register is `?sub=` in the URL. */
 export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: string; initialTab?: SafetyTab; initialId?: string }) {
   const { data: s } = useSafetySummary(projectId);
   const [tab, setTab] = useUrlTab<SafetyTab>(SAFETY_TABS, 'incidents', { initial: initialTab });
@@ -38,8 +38,8 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
           <Statistic title="Near misses this month" value={s.nearMissesThisMonth} styles={big} />
           <Statistic title="Open incidents" value={s.openIncidents} styles={big} />
           <Statistic title="Toolbox talks this month" value={s.toolboxTalksThisMonth} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>{s.attendeesThisMonth} attended</span>} styles={big} />
-          <Statistic title="Permits waiting / live" value={`${s.permitsRequested} / ${s.permitsActive}`} styles={big} />
-          {s.permitsExpired ? <Statistic title="Permits run out, not closed" value={s.permitsExpired} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: themeColor('colorWarningText') } }} /> : null}
+          <Statistic title={`Permits ${WORK_PERMIT_STATUS_LABELS.REQUESTED.toLowerCase()} and ${WORK_PERMIT_STATUS_LABELS.ISSUED.toLowerCase()}`} value={`${s.permitsRequested} / ${s.permitsActive}`} styles={big} />
+          {s.permitsExpired ? <Statistic title="Permits expired, not closed" value={s.permitsExpired} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: themeColor('colorWarningText') } }} /> : null}
           {s.byType.length ? (
             <div style={{ flexBasis: '100%', display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
               <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), marginRight: 4 }}>

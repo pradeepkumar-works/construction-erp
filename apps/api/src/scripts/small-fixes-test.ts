@@ -1,5 +1,5 @@
 /**
- * Tests for the two typing fixes of finding 17 of the October review: the PAN inside a GSTIN, and the next project
+ * Tests for two typing fixes: the PAN inside a GSTIN, and the next project
  * code in the company's series. Both are pure, so they need no database:
  *
  *   node dist/scripts/small-fixes-test.js

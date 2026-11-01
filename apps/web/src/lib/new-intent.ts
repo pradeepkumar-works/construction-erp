@@ -14,7 +14,7 @@ const PENDING_MS = 15_000;
 
 /**
  * Starts a new entry: the list already on screen opens its form, otherwise `navigate` goes to the list's page and the
- * list opens the form as it mounts. With `draft` (from Ask Nirmaan, AI item 71) the form opens filled in.
+ * list opens the form as it mounts. With `draft` (from Ask Nirmaan) the form opens filled in.
  */
 export function requestNew(kind: NewKind, navigate: () => void, draft?: AiDraftDto) {
   const open = [...(listeners.get(kind) ?? [])].pop();

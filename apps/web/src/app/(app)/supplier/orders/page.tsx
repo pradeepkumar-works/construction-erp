@@ -8,11 +8,12 @@ import { AppTabs } from '@/components/common/AppTabs';
 import type { SupplierDispatchDto, SupplierOrderDto } from '@erp/shared';
 import { useSupplierAction, useSupplierDispatches, useSupplierOrders } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDate, formatDateTime, formatQty } from '@/lib/format';
+import { formatDate, formatDateTime, formatQty, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AcceptForm, DispatchForm } from '@/components/supplier/SupplierForms';
 import { AcceptedTag, DispatchStatusTag, Money } from '@/components/supplier/supplierUi';
+import { unitLabel } from '@erp/shared';
 
 /** The supplier's orders (purchase and work orders) to accept and send against, and the dispatch notes sent. */
 export default function SupplierOrdersPage() {
@@ -71,7 +72,7 @@ export default function SupplierOrdersPage() {
                     { title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
                     { title: 'Due by', dataIndex: 'dueBy', width: 110, render: (v: string | null) => formatDate(v) },
                     { title: 'Value', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
-                    { title: 'State', key: 'state', width: 120, render: (_, o) => (o.closed ? <AppTag>Closed</AppTag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
+                    { title: 'Status', key: 'state', width: 120, render: (_, o) => (o.closed ? <AppTag>Closed</AppTag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
                     {
                       title: 'Action',
                       key: 'action',
@@ -124,13 +125,13 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
             <Descriptions.Item label="Site">
               <span translate="no">{o.projectName}</span>
             </Descriptions.Item>
-            <Descriptions.Item label={o.kind === 'PO' ? 'Deliver to' : 'Work'}>{o.kind === 'PO' ? (o.deliveryAddress ?? '-') : o.title}</Descriptions.Item>
+            <Descriptions.Item label={o.kind === 'PO' ? 'Deliver to' : 'Work'}>{o.kind === 'PO' ? (o.deliveryAddress ?? NO_VALUE) : o.title}</Descriptions.Item>
             <Descriptions.Item label="Dated">{formatDate(o.date)}</Descriptions.Item>
             <Descriptions.Item label={o.kind === 'PO' ? 'Deliver by' : 'Finish by'}>{formatDate(o.dueBy)}</Descriptions.Item>
             <Descriptions.Item label={o.kind === 'PO' ? 'Total with GST' : 'Value before GST'}>
               <Money value={o.amount} />
             </Descriptions.Item>
-            <Descriptions.Item label="Payment">{o.paymentTerms ?? (o.paymentDays != null ? `${o.paymentDays} days from invoice` : '-')}</Descriptions.Item>
+            <Descriptions.Item label="Payment">{o.paymentTerms ?? (o.paymentDays != null ? `${o.paymentDays} days from invoice` : NO_VALUE)}</Descriptions.Item>
             <Descriptions.Item label="Accepted" span={2}>
               {o.acceptedAt ? `${formatDateTime(o.acceptedAt)} by ${o.acceptedBy ?? 'you'}${o.supplierNote ? `: ${o.supplierNote}` : ''}` : o.closed ? 'Closed' : 'Not yet'}
             </Descriptions.Item>
@@ -143,12 +144,12 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
             scroll={{ x: 720 }}
             columns={[
               { title: 'Item', dataIndex: 'itemName', render: (v: string, l) => (l.specification ? `${v} (${l.specification})` : v) },
-              { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => <span translate="no">{`${formatQty(v)} ${l.unit}`}</span> },
+              { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => <span translate="no">{`${formatQty(v)} ${unitLabel(l.unit)}`}</span> },
               { title: 'Rate', dataIndex: 'rate', align: 'right', width: 120, render: (v: string) => <Money value={v} /> },
               ...(o.kind === 'PO'
                 ? [
                     { title: 'Received', dataIndex: 'received', align: 'right' as const, width: 100, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
-                    { title: 'On the way', dataIndex: 'onTheWay', align: 'right' as const, width: 100, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
+                    { title: 'In transit', dataIndex: 'onTheWay', align: 'right' as const, width: 100, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
                     { title: 'Left to send', dataIndex: 'toSend', align: 'right' as const, width: 110, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
                   ]
                 : [{ title: 'Amount', dataIndex: 'amount', align: 'right' as const, width: 140, render: (v: string) => <Money value={v} /> }]),
@@ -167,7 +168,7 @@ function Dispatches({ list }: { list: ReturnType<typeof useSupplierDispatches> }
     modal.confirm({
       title: `Cancel dispatch note ${d.dispatchNo}?`,
       content: 'Only when the truck did not go. The site stops expecting it.',
-      okText: 'Cancel the note',
+      okText: 'Cancel the dispatch note',
       cancelText: 'Keep it',
       onOk: async () => {
         try {
@@ -193,15 +194,15 @@ function Dispatches({ list }: { list: ReturnType<typeof useSupplierDispatches> }
           { title: 'Challan', dataIndex: 'dispatchNo', width: 140, render: (v: string) => <span translate="no">{v}</span> },
           { title: 'Order', dataIndex: 'poNo', width: 140, render: (v: string) => <span translate="no">{v}</span> },
           { title: 'Sent', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
-          { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
+          { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
           {
             title: 'What',
             key: 'lines',
             render: (_, d) => (
-              <Typography.Text translate="no">{d.lines.map((l) => `${l.itemName} ${formatQty(l.quantity)} ${l.unit}`).join(', ')}</Typography.Text>
+              <Typography.Text translate="no">{d.lines.map((l) => `${l.itemName} ${formatQty(l.quantity)} ${unitLabel(l.unit)}`).join(', ')}</Typography.Text>
             ),
           },
-          { title: 'State', dataIndex: 'status', width: 120, render: (s: SupplierDispatchDto['status'], d) => (d.grn ? <span><DispatchStatusTag status={s} /> <span translate="no">{d.grn.entryNo}</span></span> : <DispatchStatusTag status={s} />) },
+          { title: 'Status', dataIndex: 'status', width: 120, render: (s: SupplierDispatchDto['status'], d) => (d.grn ? <span><DispatchStatusTag status={s} /> <span translate="no">{d.grn.entryNo}</span></span> : <DispatchStatusTag status={s} />) },
           {
             title: 'Action',
             key: 'action',

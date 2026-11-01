@@ -1,7 +1,7 @@
 import type { AiCitationDto } from '@erp/shared';
 
 /**
- * Checks on an answer before it is shown (AI item 67): links may only point at records a tool returned, and every
+ * Checks on an answer before it is shown: links may only point at records a tool returned, and every
  * figure should match something in the tool results. Pure functions, so they can be tested without a model.
  */
 

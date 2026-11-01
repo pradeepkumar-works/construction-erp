@@ -26,7 +26,7 @@ import {
 } from './rmc.dto';
 import { ModuleSwitch } from '../common/decorators';
 
-/** Ready-mix concrete (v6 item 104): plants, mix designs, orders, batches and challans, the plant's day, bills and money received. */
+/** Ready-mix concrete: plants, mix designs, orders, batches and challans, the plant's day, bills and money received. */
 @ApiTags('rmc')
 @ApiBearerAuth()
 @ModuleSwitch('rmc')
@@ -37,7 +37,7 @@ export class RmcController {
     private plantBatches: PlantBatchesService,
   ) {}
 
-  @ApiOperation({ summary: "The batching plant controllers' batches waiting for a challan, and this week's (item 149)" })
+  @ApiOperation({ summary: "The batching plant controllers' batches waiting for a challan, and this week's" })
   @Get('batcher')
   batcher(@CurrentUser() user: RequestUser, @Query() q: PlantBatchQuery) {
     return this.plantBatches.board(user, q.plantId);

@@ -6,7 +6,7 @@ import type { ProgressEntryDto } from '@erp/shared';
 import { ProgressRecord } from '@/components/progress/ProgressDrawer';
 import { ProgressFormModal } from '@/components/progress/ProgressFormModal';
 
-/** One progress entry, as its own page (UI roadmap item 57). */
+/** One progress entry, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

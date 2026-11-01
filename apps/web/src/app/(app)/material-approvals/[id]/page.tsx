@@ -16,7 +16,7 @@ import { MaterialApprovalForm, MaterialApprovalStatusTag, OutcomeTag, ReviewDial
 import { CommentsCard } from '@/components/comments/CommentsSection';
 
 /**
- * One material approval request (v6 item 113): what is asked for, each revision sent to the reviewer with the outcome
+ * One material approval request: what is asked for, each revision sent to the reviewer with the outcome
  * and comments that came back, and the files. From here it is submitted, its outcome recorded, resubmitted or withdrawn.
  */
 export default function MaterialApprovalPage() {
@@ -118,7 +118,7 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
       <Alert
         type={a.status === 'REJECTED' ? 'error' : 'warning'}
         showIcon
-        title={a.status === 'REJECTED' ? 'Rejected. Resubmit with another make, or withdraw the request.' : 'Back with us to revise and resubmit.'}
+        title={a.status === 'REJECTED' ? 'Rejected. Resubmit with another make, or withdraw the request.' : 'Returned to us to revise and resubmit.'}
         description={current?.comments ?? undefined}
         style={{ marginBottom: token.marginMD }}
       />

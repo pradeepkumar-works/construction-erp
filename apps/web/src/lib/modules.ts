@@ -3,7 +3,7 @@
 import { pathIsOff, type SwitchableModule } from '@erp/shared';
 import { useAuth } from './auth';
 
-/** Whether the signed-in user's company uses the module (v6 item 117: an admin may turn it off). */
+/** Whether the signed-in user's company uses the module (an admin may turn it off). */
 export function useModuleOn(key: SwitchableModule): boolean {
   const { user } = useAuth();
   return !user?.modulesOff?.includes(key);

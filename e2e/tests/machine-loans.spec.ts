@@ -15,7 +15,7 @@ const post = (token: string, path: string, body: unknown = {}) =>
   fetch(`${API_URL}${path}`, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 /**
- * Machine finance (v6 item 108): accounts record a loan on an owned machine from Machine loans (the form works the EMI
+ * Machine finance: accounts record a loan on an owned machine from Machine loans (the form works the EMI
  * out), record the first EMI paid from the loan's page, and the payment reaches the Tally export as principal to the
  * loan and interest to finance costs.
  */
@@ -54,7 +54,7 @@ test('accounts record a machine loan, pay its first EMI, and it posts principal 
   const pay = page.locator('.ant-modal').filter({ hasText: `Pay EMI 1 · ${loanNo}` });
   await expect(pay.getByText(/principal ₹\s?79,582\.67, interest ₹\s?8,333\.33/)).toBeVisible();
   await pay.getByLabel('Reference').fill('E2E NACH');
-  await pay.getByRole('button', { name: 'Record paid' }).click();
+  await pay.getByRole('button', { name: 'Record payment' }).click();
   await expect(page.getByText(`EMI 1 of loan ${loanNo} recorded paid`)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pay EMI 2' })).toBeVisible();
 

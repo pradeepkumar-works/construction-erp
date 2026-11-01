@@ -1,5 +1,5 @@
 /**
- * Where a node of the navigation tree opens on the phone (launcher phase 4). Kept free of React Native so the web's
+ * Where a node of the navigation tree opens on the phone. Kept free of React Native so the web's
  * `scripts/nav-check.ts` can check every path against the phone's screens.
  */
 import { navDestination, navNode, navTarget, type NavNode, type NavVisitDto } from '@erp/shared';
@@ -9,6 +9,7 @@ export const PHONE_ROUTES: Record<string, string> = {
   'my-work': '/my-work',
   approvals: '/approvals',
   'projects.all': '/projects',
+  'projects.handover': '/snags',
   'site.dpr': '/submissions?type=DPR',
   'site.attendance': '/attendance',
   'site.progress': '/submissions?type=PROGRESS',
@@ -22,12 +23,19 @@ export const PHONE_ROUTES: Record<string, string> = {
   'quality.incidents': '/safety?show=incidents',
   'quality.permits': '/safety?show=permits',
   'quality.talks': '/safety?show=talks',
+  'quality.ppe': '/ppe/new',
   'documents.register': '/documents',
   'documents.rfis': '/rfis',
+  'documents.letters': '/letters',
   'materials.requests': '/submissions?type=MATERIAL_REQUEST',
   'materials.stock': '/stock',
+  'materials.register': '/stock',
   'plant.logs': '/submissions?type=MACHINERY',
+  'plant.fuel': '/stock/fuel',
+  'plant.maintenance': '/breakdown/new',
   'people.me': '/staff',
+  'people.leave': '/staff',
+  'people.overtime': '/staff',
   'people.payslips': '/payslips',
   'people.register': '/staff-register',
 };

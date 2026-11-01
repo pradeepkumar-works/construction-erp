@@ -6,7 +6,7 @@ import type { InspectionDto } from '@erp/shared';
 import { InspectionRecord } from '@/components/inspections/InspectionDrawer';
 import { InspectionFormModal } from '@/components/inspections/InspectionFormModal';
 
-/** One inspection request, as its own page (UI roadmap item 61). */
+/** One inspection request, as its own page. */
 export default function Page() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

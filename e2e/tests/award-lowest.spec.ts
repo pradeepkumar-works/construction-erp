@@ -8,7 +8,7 @@ type Mr = { id: string; requestNo: string; items: { id: string; itemName: string
 type Po = { id: string; poNo: string; status: string; vendorName: string; deliveryAddress: string | null; lines: { itemName: string; quantity: string; rate: string }[] };
 
 /**
- * Award the lowest rate per item (finding 12 of the October review): the comparative statement marks the cheapest rate
+ * Award the lowest rate per item: the comparative statement marks the cheapest rate
  * for each item, but an order goes to one vendor, so the buyer used to raise each one by hand. One button now splits
  * the request between the winners, and the orders take the project's own delivery address.
  */
@@ -52,16 +52,17 @@ test('the request splits between the vendors who quoted lowest, and the orders k
   await quote(auto.id, ['52', '980'], '500');
 
   await signIn(page, 'procurement@demo.com');
-  await page.goto(`/material-requests?id=${mr.id}`);
-  const drawer = page.locator('.ant-drawer').filter({ hasText: 'Quotations and purchase orders' });
-  await drawer.getByRole('button', { name: 'Award lowest per item' }).click();
-  const modal = page.getByRole('dialog', { name: `Award the lowest rate per item on ${mr.requestNo}` });
+  await page.goto(`/requests-to-order/${mr.id}`);
+  await page.getByRole('button', { name: 'Finalise L1 per item' }).click();
+  await expect(page.getByRole('tab', { name: /Purchase order/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'Make the draft orders' }).click();
+  const modal = page.getByRole('dialog', { name: `Finalise L1 per item on ${mr.requestNo}` });
   await expect(modal.getByRole('row', { name: /Hand gloves/ })).toContainText('Kalinga Safety Store');
   await expect(modal.getByRole('row', { name: /Safety boots/ })).toContainText('Sahoo Auto Parts');
   // 100 × 45 and 40 × 980 + 500 freight, against the whole lot from the cheapest single quotation.
   await expect(modal).toContainText('less than ordering it all from');
-  await modal.getByRole('button', { name: 'Raise 2 draft orders' }).click();
-  await expect(page.getByText(/2 draft orders raised: PO-\d{4}-\d{4}, PO-\d{4}-\d{4}/)).toBeVisible();
+  await modal.getByRole('button', { name: 'Make 2 draft orders' }).click();
+  await expect(page.getByText(/2 draft orders made: PO-\d{4}-\d{4}, PO-\d{4}-\d{4}/)).toBeVisible();
 
   const orders = (await api<Page<Po>>(procurement, `/purchase-orders?materialRequestId=${mr.id}&pageSize=10`)).items;
   expect(orders).toHaveLength(2);

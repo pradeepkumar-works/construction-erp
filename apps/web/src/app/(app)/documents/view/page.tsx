@@ -11,7 +11,7 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 
 /**
- * A filed PDF opened at one page (Ask the contract, AI item 75): where an answer's citation such as "RD-AGR-01, page 4"
+ * A filed PDF opened at one page (Ask the contract): where an answer's citation such as "RD-AGR-01, page 4"
  * leads. The browser's own PDF viewer shows the file at the page; the page's text is under it, for small screens and
  * for copying a clause.
  */
@@ -33,7 +33,7 @@ function DocumentPageView() {
       <PageHeader
         title={data.title}
         subtitle={data.pages ? `Page ${page} of ${data.pages}` : `Page ${page}`}
-        crumbs={[{ title: 'Documents', href: '/documents' }, { title: data.title, href: data.recordHref }, { title: `Page ${page}` }]}
+        crumbs={[{ title: 'Drawings and documents', href: '/documents' }, { title: data.title, href: data.recordHref }, { title: `Page ${page}` }]}
         extra={
           <Flex gap={token.marginXS} wrap>
             <LinkButton href={at(page - 1)} icon={<LeftOutlined />} disabled={page <= 1}>
