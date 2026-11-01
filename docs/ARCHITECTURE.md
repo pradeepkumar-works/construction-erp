@@ -278,6 +278,21 @@ the same `plannedProgress` (`src/common/progress.ts`) as the Projects screen. A 
 says how many wait for the reader in the header's project (the approvals queue). `src/scripts/list-columns-test.ts` (CI)
 holds the scale and the fit.
 
+### Overviews answer first
+
+A screen someone opens to see where things stand answers before it offers a menu. A module's screen
+(`components/modules/ModuleHome.tsx`) and a department's (`DepartmentHome.tsx`) run: the figures, what waits, progress or
+the pipelines, and last the area's pages as compact tiles (the sidebar lists them too). Progress by project is ordered worst
+first (`byProgressOrder` in `@erp/shared/project-progress.ts`: behind plan most first, then billing lag, then code).
+
+Everything that waits on someone has one order, `rankWaiting` (`@erp/shared/waiting-rank.ts`): the money band at stake
+(₹1 crore, ₹10 lakh, ₹1 lakh), then days past its own mark, then the role's usual order. My work's cards and Home's Waiting
+for you (`myWorkOrder`), the approvals inbox's groups (`groupQueue`) and the watch list (`WarningsService.list`) all use it,
+so a ₹14 crore bill never sits under a ₹2 lakh one because the small one is a day older. A card with money leads with the
+rupees and says its count in words ("3 bills"); one past its mark says Overdue. A company-wide role's layout has
+`figuresFirst` (`homeLayout`), so My work opens on the figures. A count that is information, not a decision (the watch
+list's), is plain text on a tile, never a red badge. `src/scripts/waiting-rank-test.ts` (CI) holds the order.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search

@@ -194,6 +194,9 @@ and the pre-delivery checklist.
   `LauncherBadgesDto.nodes` built from `HomeService.myWork`. A record page records its visit through `RecordFrame`.
   Discover (ARCHITECTURE "Discover and access requests") is `discoverFor` in `@erp/shared/launcher.ts` (keep
   `src/scripts/launcher-test.ts` passing); a node is New by default with `newUntil`, and admins override it in Admin › Discover and access requests.
+- Overviews (ARCHITECTURE "Overviews answer first"): a module or department screen runs figures, what waits, progress, then
+  its pages; anything that waits is ordered only by `rankWaiting` (`@erp/shared/waiting-rank.ts`: money band, days late,
+  role order), never a sort of a screen's own. Keep `src/scripts/waiting-rank-test.ts` passing.
 - My work (`app/(app)/my-work/page.tsx`): what each role leads with is `homeLayout(role)` in `components/home/layout.ts` (order only;
   the API's `GET /dashboard/my-work` and `/dashboard/trends` in `HomeService` leave out what a role may not see). A new My work
   card is a key on `MyWorkDto`, a block in `HomeService.myWork`, a line in `MyWorkPanel`'s `CARDS` and `CLEAR`, its place in

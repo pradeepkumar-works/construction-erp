@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-overviews',
+    date: '2026-11-01',
+    title: 'Overviews answer first',
+    points: [
+      'A module’s or department’s screen now opens on its figures and what waits for you, then progress, with the pages at the bottom.',
+      'My work, Home, the approvals inbox and the watch list put what waits in one order: the most money at stake first, then the longest overdue. A card with money leads with the rupees.',
+      'The watch list is a table, most at stake first, with one line saying how many are open and the rupees at risk. A row opens the full working.',
+      'Approval groups say how many, how much and how old, such as “7 · ₹14.20 L · oldest 3 days”. Projects are listed most behind plan first.',
+    ],
+  },
+  {
     id: '2026-11-tables',
     date: '2026-11-01',
     title: 'Lists that answer at a glance',
