@@ -2,7 +2,6 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { Prisma } from '@prisma/client';
 import {
   ROLE_LABELS,
-  subBillLabel,
   canApprove,
   canEditSubmission,
   canResubmit,

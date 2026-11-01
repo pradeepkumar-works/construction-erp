@@ -217,8 +217,8 @@ look and one rule for what stands out. Three parts, all in `@erp/shared` but the
   figure that most needs action, money first, then the larger amount; none on a calm day) and the grid spans at two,
   four and all columns so no row is ragged. It throws in development past `MAX_FIGURES` (6).
 
-On the web `<Figures label figures scope currency bare>` (`components/figures/`) draws the view on `tk` tokens: a `dl`, the
-lead first and two columns wide, danger for act, pending for watch, muted for quiet, never a success colour; the label
+On the web `<Figures label figures scope currency bare>` (`components/figures/`) draws the view on `tk` tokens: a `dl` whose
+columns follow the block's own width (a container query, so a block beside a side panel wraps), the lead first and two columns wide, danger for act, pending for watch, muted for quiet, never a success colour; the label
 links to the measure's list with the scope's filters and carries its definition as help; the value sits in
 `<data value>` with its spoken words in `.visually-hidden`. The management report's print and Excel read the same
 `presentFigures` view, so the page, the paper and the sheet say the same words. Every headline strip uses it: the

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
+import { todayIn } from '../notifications/time';
 
 export type StorageMode = 'blob' | 'db' | 'disk';
 
@@ -28,7 +29,7 @@ export class StorageService {
   }
 
   async save(file: Express.Multer.File, organizationId: string): Promise<SavedFile> {
-    const day = new Date().toISOString().slice(0, 10);
+    const day = todayIn();
     const ext = extname(file.originalname || '').toLowerCase() || '.jpg';
     const key = `${organizationId}/${day}/${randomUUID()}${ext}`;
 

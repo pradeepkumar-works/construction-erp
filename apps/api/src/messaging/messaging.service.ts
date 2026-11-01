@@ -7,6 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { iso } from '../common/serialize';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { ListMessagesQuery, UpdateMessagingPrefsDto } from './messaging.dto';
+import { todayIn } from '../notifications/time';
 
 export interface OutgoingMessage {
   template: MessageTemplate;
@@ -229,7 +230,7 @@ export class MessagingService {
     const name = `${this.waPrefix}${template.toLowerCase()}`;
     const body = {
       template_name: name,
-      broadcast_name: `${name}_${new Date().toISOString().slice(0, 10)}`,
+      broadcast_name: `${name}_${todayIn()}`,
       parameters: WATI_PARAM_NAMES[template].map((n, i) => ({ name: n, value: params[i] ?? '-' })),
       ...(this.watiChannel ? { channel_number: this.watiChannel } : {}),
     };

@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 import { PAYMENT_MODES, RMC_BATCH_STATUSES, RMC_GRADES, RMC_ORDER_STATUSES, type PaymentMode, type RmcBatchStatus, type RmcOrderStatus } from '@erp/shared';
-import { PageQuery } from '../common/paging';
+import { PageQuery, QueryBool } from '../common/paging';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
@@ -67,6 +67,7 @@ export class RmcOrderQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() plantId?: string;
   @ApiPropertyOptional({ enum: RMC_ORDER_STATUSES }) @IsOptional() @IsIn(RMC_ORDER_STATUSES as unknown as string[]) status?: RmcOrderStatus;
   @ApiPropertyOptional() @IsOptional() @IsUUID() clientId?: string;
+  @ApiPropertyOptional({ description: 'Only quotes and orders still running (not completed or cancelled)' }) @IsOptional() @QueryBool() @IsBoolean() open?: boolean;
 }
 
 export class NoteDto {

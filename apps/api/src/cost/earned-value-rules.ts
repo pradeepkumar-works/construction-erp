@@ -37,7 +37,10 @@ export function monthEnds(from: string, to: string, cap = 48): { month: string; 
     const month = `${y}-${String(m).padStart(2, '0')}`;
     if (month > last) break;
     out.push({ month, end: new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10) });
-    m === 12 ? ((y += 1), (m = 1)) : (m += 1);
+    if (m === 12) {
+      y += 1;
+      m = 1;
+    } else m += 1;
   }
   return out;
 }
