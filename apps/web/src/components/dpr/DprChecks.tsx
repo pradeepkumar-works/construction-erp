@@ -37,6 +37,13 @@ function DprChecks({ checks }: { checks: DprCheckDto[] }) {
   );
 }
 
-/** The Checks section for a DPR's sections list; none while there is nothing to say. */
+/**
+ * The Checks section for a DPR's sections list, first among them: what to look at twice, or the line that says the checks
+ * ran and found nothing, so "checked and clean" never reads as "not checked". None while the checks have not loaded.
+ */
 export const dprChecksSection = (checks: DprCheckDto[] | undefined): RecordSection[] =>
-  checks?.length ? [{ key: 'checks', title: 'Checks', count: checks.length, children: <DprChecks checks={checks} /> }] : [];
+  !checks
+    ? []
+    : checks.length
+      ? [{ key: 'checks', title: 'Checks', count: checks.length, children: <DprChecks checks={checks} /> }]
+      : [{ key: 'checks', title: 'Checks', count: 0, children: <p style={{ margin: 0 }}>Every check passes: each work line has a crew and its material issued, neither the figures nor the crew repeat the reports before, and no photo was used before.</p> }];

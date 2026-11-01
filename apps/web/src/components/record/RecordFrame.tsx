@@ -19,7 +19,8 @@ import { ApprovalLevels } from './ApprovalLevels';
 import { StageBar } from './StageBar';
 import { MoreActions } from './MoreActions';
 import type { Lifecycle } from './lifecycle';
-import type { SubmissionBase } from '@erp/shared';
+import type { FigureInput, SubmissionBase } from '@erp/shared';
+import { ContextLine, FoldedLine, RecordDetails, RecordHeadline, checksFirst, liftFacts, useFoldedSections, type RecordContext } from './RecordParts';
 
 /** One block of a record: a table of lines, the photos, the totals… In the drawer it sits under a divider, on the page in its own card. */
 export interface RecordSection {
@@ -27,6 +28,8 @@ export interface RecordSection {
   title: string;
   /** Shown after the title, e.g. the number of photos. */
   count?: number;
+  /** Nothing in it yet: it folds into the one "Nothing yet" line and leaves the anchor bar until opened. */
+  empty?: boolean;
   children: React.ReactNode;
 }
 
@@ -67,7 +70,13 @@ export interface RecordFrameProps {
     href: string;
     title: React.ReactNode;
     tags?: React.ReactNode;
+    /** What it belongs to, under the title: the project, linked. Else the `project` fact stands in for it. */
+    context?: RecordContext;
+    /** The one to three figures a decision rests on (`figure()` facts), above the facts. */
+    headline?: readonly FigureInput[];
     facts: NonNullable<DescriptionsProps['items']>;
+    /** Reference facts (agreement, work order, terms, address): folded under Details. */
+    details?: NonNullable<DescriptionsProps['items']>;
     lifecycle?: Lifecycle;
     /** Alerts above the sections (a draft, a closed order). */
     notices?: React.ReactNode;
@@ -96,8 +105,17 @@ function useSections(record: RecordFrameProps['record']): RecordSection[] {
   const id = record?.activity?.id;
   const comments = useComments(kind ?? 'DPR', kind ? id : undefined);
   if (!record) return [];
-  if (!kind || !id) return record.sections;
-  return [...record.sections, { key: 'comments', title: 'Comments', count: comments.data ? comments.data.threads.length : undefined, children: <CommentsSection kind={kind} entityId={id} /> }];
+  if (!kind || !id) return checksFirst(record.sections);
+  const threads = comments.data?.threads.length;
+  return checksFirst([...record.sections, { key: 'comments', title: 'Comments', count: threads, empty: threads === 0, children: <CommentsSection kind={kind} entityId={id} /> }]);
+}
+
+/** The record's facts with the frame's own lifted out, its sections split into shown and folded. */
+function useRecordParts(record: RecordFrameProps['record']) {
+  const sections = useSections(record);
+  const fold = useFoldedSections(sections);
+  const lifted = record ? liftFacts(record.facts, { context: record.context, history: !!record.activity }) : { facts: [], context: undefined };
+  return { ...fold, facts: lifted.facts, context: lifted.context };
 }
 
 /** The approval levels under the stage bar, once the entry has been submitted. */
@@ -152,7 +170,7 @@ export function RecordFrame(props: RecordFrameProps) {
 
 /** The record without a frame of its own and without its actions, which the host page supplies. */
 function RecordPane({ loading, error, onRetry, record, children }: RecordFrameProps) {
-  const sections = useSections(record);
+  const { shown, folded, open, facts, context } = useRecordParts(record);
   const { token } = theme.useToken();
   return (
     <div className="record-pane">
@@ -161,12 +179,17 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
       {record && (
         <>
           <Flex justify="space-between" align="flex-start" gap={token.marginSM} style={{ marginBottom: token.marginSM }}>
-            <Space wrap size={token.marginXS} align="center">
-              <span style={{ fontSize: token.fontSizeLG, fontWeight: token.fontWeightStrong }} role="heading" aria-level={2} translate="no">
-                {record.title}
-              </span>
-              {record.tags}
-            </Space>
+            <div>
+              <Space wrap size={token.marginXS} align="center">
+                <span style={{ fontSize: token.fontSizeLG, fontWeight: token.fontWeightStrong }} role="heading" aria-level={2} translate="no">
+                  {record.title}
+                </span>
+                {record.tags}
+              </Space>
+              <div>
+                <ContextLine context={context} />
+              </div>
+            </div>
             <Space size={token.marginXXS}>
               {record.print && (
                 <Tooltip title="Print">
@@ -179,14 +202,16 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
             </Space>
           </Flex>
           {record.notices}
-          <Descriptions size="small" column={{ xs: 1, sm: 2, xxl: 3 }} bordered items={record.facts} style={{ marginBottom: token.margin }} />
+          <RecordHeadline figures={record.headline} />
+          {facts.length ? <Descriptions size="small" column={{ xs: 1, sm: 2, xxl: 3 }} bordered items={facts} style={{ marginBottom: token.margin }} /> : null}
+          <RecordDetails items={record.details} column={{ xs: 1, sm: 2, xxl: 3 }} />
           {record.lifecycle && (
             <div role="group" aria-label="Stage">
               <StageBar {...record.lifecycle} label="Where it stands" style={{ marginBottom: token.marginSM }} />
               {levelsOf(record)}
             </div>
           )}
-          {sections.map((s) => (
+          {shown.map((s) => (
             <React.Fragment key={s.key}>
               <Divider titlePlacement="start" plain>
                 {sectionTitle(s)}
@@ -194,6 +219,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
               {s.children}
             </React.Fragment>
           ))}
+          <FoldedLine folded={folded} open={open} />
           {record.activity && (
             <>
               <Divider titlePlacement="start" plain>
@@ -209,8 +235,8 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
   );
 }
 
-function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, onRetry, record, children }: RecordFrameProps) {
-  const sections = useSections(record);
+function RecordDrawer({ open: isOpen, onClose, drawerSize = 820, kind, loading, error, onRetry, record, children }: RecordFrameProps) {
+  const { shown, folded, open, facts, context } = useRecordParts(record);
   const { token } = theme.useToken();
   // On a phone Approve, Submit and the rest are in the drawer's footer, always in reach of a thumb, not at its top.
   const phone = useIsPhone();
@@ -218,15 +244,22 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
   const footerActions = phone && record ? record.actions?.('middle') : null;
   return (
     <Drawer
-      open={open}
+      open={isOpen}
       onClose={onClose}
       size={drawerSize}
       title={
         record ? (
-          <Space wrap size={token.marginXS}>
-            <span translate="no">{record.title}</span>
-            {record.tags}
-          </Space>
+          <div>
+            <Space wrap size={token.marginXS}>
+              <span translate="no">{record.title}</span>
+              {record.tags}
+            </Space>
+            {context ? (
+              <div style={{ fontWeight: 'normal' }}>
+                <ContextLine context={context} />
+              </div>
+            ) : null}
+          </div>
         ) : (
           kind
         )
@@ -263,14 +296,16 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
       {record && (
         <>
           {record.notices}
-          <Descriptions size="small" column={drawerSize >= 960 ? { xs: 1, sm: 2, lg: 3 } : { xs: 1, sm: 2 }} bordered items={record.facts} style={{ marginBottom: token.margin }} />
+          <RecordHeadline figures={record.headline} />
+          {facts.length ? <Descriptions size="small" column={drawerSize >= 960 ? { xs: 1, sm: 2, lg: 3 } : { xs: 1, sm: 2 }} bordered items={facts} style={{ marginBottom: token.margin }} /> : null}
+          <RecordDetails items={record.details} column={drawerSize >= 960 ? { xs: 1, sm: 2, lg: 3 } : { xs: 1, sm: 2 }} />
           {record.lifecycle && (
             <div role="group" aria-label="Stage">
               <StageBar {...record.lifecycle} label="Where it stands" style={{ marginBottom: token.marginSM }} />
               {levelsOf(record)}
             </div>
           )}
-          {sections.map((s) => (
+          {shown.map((s) => (
             <React.Fragment key={s.key}>
               <Divider titlePlacement="start" plain>
                 {sectionTitle(s)}
@@ -278,6 +313,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
               {s.children}
             </React.Fragment>
           ))}
+          <FoldedLine folded={folded} open={open} />
           {record.activity && (
             <>
               <Divider titlePlacement="start" plain>
@@ -294,7 +330,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
 }
 
 function RecordPage({ kind, list, loading, error, onRetry, record, children }: RecordFrameProps) {
-  const sections = useSections(record);
+  const { shown: sections, folded, open, facts, context } = useRecordParts(record);
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const top = useStickyTop();
@@ -328,6 +364,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             kind
           )
         }
+        subtitle={context ? <ContextLine context={context} /> : undefined}
         extra={
           record ? (
             <span data-record-chrome>
@@ -347,10 +384,12 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
       {!!error && <QueryError error={error} onRetry={onRetry} />}
       {record && (
         <>
+          <RecordHeadline figures={record.headline} />
           <Card style={{ marginBottom: token.margin }}>
-            <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 3, xxl: 4 }} items={record.facts} />
+            {facts.length ? <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 3, xxl: 4 }} items={facts} /> : null}
+            <RecordDetails items={record.details} column={{ xs: 1, sm: 2, lg: 3, xxl: 4 }} />
             {record.lifecycle && (
-              <div role="group" aria-label="Stage" style={{ marginTop: token.margin, paddingTop: token.padding, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
+              <div role="group" aria-label="Stage" style={{ marginTop: facts.length || record.details?.length ? token.margin : 0, paddingTop: facts.length || record.details?.length ? token.padding : 0, borderTop: facts.length || record.details?.length ? `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` : undefined }}>
                 <StageBar {...record.lifecycle} label="Where it stands" />
                 {levelsOf(record)}
               </div>
@@ -375,6 +414,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
                   {s.children}
                 </Card>
               ))}
+              <FoldedLine folded={folded} open={open} />
             </Col>
             {record.activity && (
               <Col xs={24} xl={7}>

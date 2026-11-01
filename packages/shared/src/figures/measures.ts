@@ -169,6 +169,17 @@ export const MEASURES = {
   approvalsOld: { label: `Waiting over ${OLD} days`, asPart: `over ${OLD} days`, kind: 'count', better: 'down', flag: { level: 'watch', clear: `Nothing waiting over ${OLD} days` }, list: '/approvals', define: `Entries waiting for approval for more than ${OLD} days.` },
   approvalsOver15: { label: 'Waiting over 15 days', kind: 'count', better: 'down', flag: { level: 'act', clear: 'Nothing waiting over 15 days' }, list: '/approvals', define: 'Entries waiting for approval for more than 15 days.' },
   oldestWait: { label: 'Oldest wait', kind: 'days', better: 'down', list: '/approvals', define: 'Days since the oldest entry still waiting was sent for approval.' },
+  // One record (ARCHITECTURE "Records lead with the decision"): the figures a decision on a bill, order or report rests on
+  netPayable: { label: 'Net payable', kind: 'money', better: 'either', define: 'The bill’s amount after deductions and recoveries, with GST: what is paid or received on it.' },
+  stillToReceive: { label: 'Still to receive', kind: 'money', better: 'down', define: 'Of a client bill’s net payable, what the client has not yet paid.' },
+  stillToPay: { label: 'Still to pay', kind: 'money', better: 'down', define: 'Of a vendor or subcontractor bill’s net payable, what is not yet paid.' },
+  orderValue: { label: 'Order value', kind: 'money', better: 'either', define: 'The order’s total with GST and freight.' },
+  receivedShare: { label: 'Received', kind: 'pct', better: 'up', define: 'Of the order’s quantity, what has come in on goods received notes.' },
+  billedAboveReceived: { label: 'Billed above received', kind: 'count', better: 'down', flag: { level: 'act', clear: 'Billed within what was received' }, items: ['line', 'lines'], define: 'Order lines billed by the vendor for more than has been received.' },
+  checksRaised: { label: 'Checks to look at', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every check passes' }, items: ['check', 'checks'], define: 'What the record’s checks found worth a second look before deciding.' },
+  amountClaimed: { label: 'Amount claimed', kind: 'money', better: 'either', define: 'What the entry asks to be paid or booked.' },
+  measuredValue: { label: 'Measured value', kind: 'money', better: 'up', define: 'The sheet’s quantities at BOQ rates.' },
+  workLines: { label: 'Work lines', kind: 'count', better: 'either', items: ['work line', 'work lines'], define: 'Activities the report records progress on.' },
 } as const satisfies Record<string, MeasureDef>;
 
 /** A registered figure. A closed union: a figure no one registered does not compile. */
