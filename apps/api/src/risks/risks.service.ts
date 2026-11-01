@@ -4,7 +4,7 @@ import {
   HIGH_RISK_SCORE,
   RISK_CATEGORIES,
   RISK_KIND_LABELS,
-  canApprove,
+  canDeleteRisk,
   canEditRisk,
   delayDays,
   riskScore,
@@ -379,11 +379,10 @@ export class RisksService {
     return updated;
   }
 
-  /** Approvers only: for an entry raised by mistake. A resolved entry is closed, not deleted. */
   async remove(user: RequestUser, id: string) {
     const current = await this.prisma.risk.findFirst({ where: { id, ...this.access.submissionWhere(user) }, select: { id: true } });
     if (!current) throw new NotFoundException('Register entry not found');
-    if (!canApprove(user.roleKey)) throw new ForbiddenException('Only an approver can delete a register entry; close it instead');
+    if (!canDeleteRisk(user.roleKey)) throw new ForbiddenException('Only an approver can delete a register entry; close it instead');
     await this.prisma.risk.delete({ where: { id } });
     await this.audit.log(user, 'RISK', id, 'DELETED');
     return { ok: true };

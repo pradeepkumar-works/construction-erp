@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Skeleton, Space, Timeline, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RiskDto } from '@erp/shared';
-import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_RATING_LABELS, canApprove, canEditRisk, canViewLetters, LETTER_DIRECTION_LABELS } from '@erp/shared';
+import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_RATING_LABELS, canDeleteRisk, canEditRisk, canViewLetters, LETTER_DIRECTION_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -86,7 +86,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                 Close
               </Button>
             )}
-            {user && canApprove(user.roleKey) ? (
+            {user && canDeleteRisk(user.roleKey) ? (
               <DeleteInMenu what={data.riskNo} description="Only for an entry raised by mistake. A resolved one should be closed." onConfirm={() => remove.mutateAsync()} />
             ) : null}
           </Space>
