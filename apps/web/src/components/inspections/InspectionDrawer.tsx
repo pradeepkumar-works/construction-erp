@@ -23,12 +23,10 @@ import { NcrFormModal, type NcrPrefill } from '@/components/quality/NcrFormModal
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle, type Lifecycle } from '@/components/record/lifecycle';
 
-const RESULT_COLORS: Record<InspectionResult, string> = { PASS: 'green', FAIL: 'red', NA: 'default' };
-
 export function ResultTag({ result }: { result: InspectionResult | null }) {
   if (!result) return <span className="text-muted">-</span>;
   return (
-    <AppTag color={RESULT_COLORS[result]} style={{ margin: 0 }}>
+    <AppTag kind="inspectionResult" status={result} style={{ margin: 0 }}>
       {INSPECTION_RESULT_LABELS[result]}
     </AppTag>
   );
@@ -200,7 +198,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
           title: `Inspection · ${data.inspectionNo}`,
           tags: <StatusTag status={data.status} labels={INSPECTION_STATUS_LABELS} />,
           facts: [
-            { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <AppTag tone="pending" style={{ marginLeft: 8 }}>Hold point</AppTag>}</span> },
+            { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <AppTag meaning="waiting" style={{ marginLeft: 8 }}>Hold point</AppTag>}</span> },
             { key: 'loc', label: 'Location', children: data.location },
             { key: 'date', label: 'Ready on', children: formatDate(data.date) },
             { key: 'checklist', label: 'Checklist', children: data.checklistName ?? (data.checklist.length ? 'Own points' : 'None') },

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Card, Col, Descriptions, Form, Input, Radio, Row, Select, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { CreditCardOutlined, PrinterOutlined } from '@/components/common/icons';
-import type { BillingDetailsDto, BillingInvoiceDto, BillingStatus } from '@erp/shared';
+import type { BillingDetailsDto, BillingInvoiceDto } from '@erp/shared';
 import { BILLING_STATUS_LABELS, BILLING_UNIT_LABELS, BILLING_YEAR_CHARGED_MONTHS, GST_STATES, PRODUCT_NAME, canManageBilling } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
@@ -16,7 +16,6 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { NoAccess } from '@/components/common/NoAccess';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 
-const STATUS_COLORS: Record<BillingStatus, string> = { TRIAL: 'blue', ACTIVE: 'green', READ_ONLY: 'red', EXEMPT: 'default' };
 const STATE_OPTIONS = Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${name} (${code})` }));
 
 export default function BillingPage() {
@@ -78,7 +77,7 @@ export default function BillingPage() {
               size="small"
               column={{ xs: 1, sm: 2 }}
               items={[
-                { key: 'status', label: 'Status', children: <AppTag color={STATUS_COLORS[data.status]}>{BILLING_STATUS_LABELS[data.status]}</AppTag> },
+                { key: 'status', label: 'Status', children: <AppTag kind="billing" status={data.status}>{BILLING_STATUS_LABELS[data.status]}</AppTag> },
                 ...(data.paidUntil ? [{ key: 'paid', label: 'Paid until', children: formatDate(data.paidUntil) }] : []),
                 ...(data.trialEndsAt ? [{ key: 'trial', label: 'Free trial ends', children: formatDate(data.trialEndsAt) }] : []),
                 { key: 'price', label: 'Price', children: `${formatINR(data.unitPrice)} per ${unit.one} per month, plus GST` },

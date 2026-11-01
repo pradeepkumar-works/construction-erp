@@ -175,7 +175,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
               </>
             )}
             {chosenBill?.vendorMsme && (chosenBill.vendorMsme === 'MICRO' || chosenBill.vendorMsme === 'SMALL') ? (
-              <AppTag tone="pending" style={{ marginLeft: 8 }}>
+              <AppTag meaning="waiting" style={{ marginLeft: 8 }}>
                 {MSME_CATEGORY_LABELS[chosenBill.vendorMsme]}: 45 days at most
               </AppTag>
             ) : null}

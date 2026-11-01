@@ -144,7 +144,7 @@ export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?:
       {passed.length ? (
         <Flex gap={6} wrap style={{ marginTop: flags.length ? 10 : 0 }} role="list" aria-label="Checks passed">
           {passed.map((c) => (
-            <AppTag key={c.key} tone="success" icon={<CheckOutlined />} role="listitem" style={{ margin: 0 }}>
+            <AppTag key={c.key} meaning="done" icon={<CheckOutlined />} role="listitem" style={{ margin: 0 }}>
               {c.title}
             </AppTag>
           ))}

@@ -233,7 +233,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
           <Statistic title="Components" value={data.elements.filter((e) => e.level === 'COMPONENT').length} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           <div>
             <div className="text-muted">Contract</div>
-            <AppTag style={{ marginTop: 6 }}>{CONTRACT_MODEL_LABELS[data.contractModel]}</AppTag>
+            <AppTag variant="kind" style={{ marginTop: 6 }}>{CONTRACT_MODEL_LABELS[data.contractModel]}</AppTag>
           </div>
         </Space>
         <Space wrap>

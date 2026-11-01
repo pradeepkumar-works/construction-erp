@@ -48,11 +48,9 @@ const TABS = ['pours', 'cubes'] as const;
 type Tab = (typeof TABS)[number];
 const KEYS = ['status', 'flagged'] as const;
 
-const statusTone = (s: PourStatus) => (s === 'POURED' ? 'success' : s === 'CANCELLED' ? 'neutral' : 'info');
-
 export function PourStatusTag({ status }: { status: PourStatus }) {
   return (
-    <AppTag tone={statusTone(status)} dot>
+    <AppTag kind="pour" status={status}>
       {POUR_STATUS_LABELS[status]}
     </AppTag>
   );
@@ -62,7 +60,7 @@ function Flags({ pour }: { pour: PourDto }) {
   return (
     <>
       {pour.flags.map((f) => (
-        <AppTag key={f} tone="danger">
+        <AppTag key={f} meaning="failed">
           {POUR_FLAG_LABELS[f]}
         </AppTag>
       ))}
@@ -283,7 +281,7 @@ function PourList() {
         },
         { title: 'Grade', dataIndex: 'grade', width: 80, ...sort('grade'), render: (v: string) => <span translate="no">{v}</span> },
         { key: 'volume', title: 'm³', width: 90, align: 'right', render: (_, r) => <span translate="no">{Number(r.volume ?? r.plannedVolume)}</span> },
-        { title: 'Card', key: 'card', width: 110, render: (_, r) => (r.cardPassed ? <AppTag tone="success">Passed</AppTag> : r.card ? <AppTag tone="pending">Waiting</AppTag> : <Typography.Text type="secondary">-</Typography.Text>) },
+        { title: 'Card', key: 'card', width: 110, render: (_, r) => (r.cardPassed ? <AppTag meaning="done">Passed</AppTag> : r.card ? <AppTag meaning="waiting">Waiting</AppTag> : <Typography.Text type="secondary">-</Typography.Text>) },
         { title: 'Cube sets', key: 'cubes', width: 100, align: 'right', render: (_, r) => <span translate="no">{`${r.tests.length} of ${r.cubeSetsDue}`}</span> },
         { key: 'flags', title: 'Flags', width: 220, render: (_, r) => (r.flags.length ? <Flags pour={r} /> : <Typography.Text type="secondary">-</Typography.Text>) },
         { key: 'status', title: 'Status', dataIndex: 'status', fixed: 'right' as const, width: 110, render: (v: PourStatus) => <PourStatusTag status={v} /> },
@@ -346,7 +344,7 @@ function CubeAcceptancePanel() {
   const [projectId, setProjectId] = useProjectScope();
   const { data, isLoading, error, refetch } = useCubeAcceptance(projectId);
   const verdictTag = (g: CubeAcceptanceDto) =>
-    g.acceptance.verdict === 'PASS' ? <AppTag tone="success">Accepted</AppTag> : g.acceptance.verdict === 'FAIL' ? <AppTag tone="danger">Not accepted</AppTag> : <AppTag tone="pending">Waiting for four results</AppTag>;
+    g.acceptance.verdict === 'PASS' ? <AppTag meaning="done">Accepted</AppTag> : g.acceptance.verdict === 'FAIL' ? <AppTag meaning="failed">Not accepted</AppTag> : <AppTag meaning="waiting">Waiting for four results</AppTag>;
   return (
     <Flex vertical gap={token.margin}>
       <Flex gap={token.marginSM} wrap align="center">
@@ -385,7 +383,7 @@ function CubeAcceptancePanel() {
                 { title: 'Results', key: 'from', render: (_, x) => `${formatDate(x.from)} to ${formatDate(x.to)}` },
                 { title: 'Mean of four', dataIndex: 'mean', align: 'right', render: (v: number) => <span translate="no">{v}</span> },
                 { title: 'Needs', dataIndex: 'needed', align: 'right', render: (v: number) => <span translate="no">{v}</span> },
-                { title: 'Check', dataIndex: 'ok', render: (ok: boolean) => (ok ? <AppTag tone="success">Meets</AppTag> : <AppTag tone="danger">Short</AppTag>) },
+                { title: 'Check', dataIndex: 'ok', render: (ok: boolean) => (ok ? <AppTag meaning="done">Meets</AppTag> : <AppTag meaning="failed">Short</AppTag>) },
               ]}
             />
             {g.acceptance.lowIds.length ? (

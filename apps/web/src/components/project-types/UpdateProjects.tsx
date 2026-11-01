@@ -16,7 +16,7 @@ import {
 import { AppTag } from '@/components/common/AppTag';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
-import { PROJECT_STATUS_COLORS, plural } from '@/lib/format';
+import { plural } from '@/lib/format';
 import { useApplyTypeUpdates, useTypeUpdates } from '@/lib/queries';
 
 /** Per project: whether it is updated, and what of its plan is left out. */
@@ -99,8 +99,8 @@ function ProjectChoice({ row, value, onChange, defaultOn }: { row: ProjectUpdate
           <strong translate="no">{row.code}</strong> <span translate="no">{row.name}</span>
         </Checkbox>
         <Space size={token.marginXXS} wrap>
-          <AppTag color={PROJECT_STATUS_COLORS[row.status as ProjectStatus]}>{PROJECT_STATUS_LABELS[row.status as ProjectStatus] ?? row.status}</AppTag>
-          {row.typeVersion === null ? <AppTag tone="pending">Older than its type</AppTag> : <AppTag tone="neutral">Version {row.typeVersion}</AppTag>}
+          <AppTag kind="project" status={row.status as ProjectStatus}>{PROJECT_STATUS_LABELS[row.status as ProjectStatus] ?? row.status}</AppTag>
+          {row.typeVersion === null ? <AppTag meaning="waiting">Older than its type</AppTag> : <AppTag variant="kind">Version {row.typeVersion}</AppTag>}
         </Space>
       </Flex>
       <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXXS}px 0 0` }}>

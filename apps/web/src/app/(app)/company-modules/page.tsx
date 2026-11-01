@@ -24,7 +24,7 @@ function ModuleRow({ m, busy, onChange }: { m: ModuleSwitchDto; busy: boolean; o
           <label htmlFor={id} style={{ fontWeight: 600 }}>
             {m.label}
           </label>
-          {!m.inPlan && <AppTag>Not in your plan</AppTag>}
+          {!m.inPlan && <AppTag meaning="closed">Not in your plan</AppTag>}
         </Flex>
         <Typography.Paragraph id={`${id}-help`} type="secondary" style={{ margin: 0 }}>
           {m.description}

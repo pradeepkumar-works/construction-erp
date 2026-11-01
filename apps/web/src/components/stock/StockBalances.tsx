@@ -124,7 +124,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
           render: (v, r) => (
             <Space size={6} wrap>
               <RecordLink onOpen={() => setLedger(r)}>{v}</RecordLink>
-              {r.category ? <AppTag style={{ margin: 0 }}>{r.category}</AppTag> : null}
+              {r.category ? <AppTag variant="kind" style={{ margin: 0 }}>{r.category}</AppTag> : null}
             </Space>
           ),
         },

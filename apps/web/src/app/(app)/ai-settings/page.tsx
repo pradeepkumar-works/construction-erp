@@ -309,7 +309,7 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
               ),
             },
             { key: 'questions', title: 'Questions', dataIndex: 'questions', align: 'right' },
-            { key: 'notHelpful', title: 'Not helpful', dataIndex: 'notHelpful', align: 'right', render: (n: number) => (n ? <AppTag tone="pending">{n}</AppTag> : 0) },
+            { key: 'notHelpful', title: 'Not helpful', dataIndex: 'notHelpful', align: 'right', render: (n: number) => (n ? <AppTag meaning="waiting">{n}</AppTag> : 0) },
             { key: 'spent', title: 'Used', dataIndex: 'spentInr', align: 'right', render: (v: number) => formatINR(v) },
           ]}
         />
@@ -358,11 +358,11 @@ function ConversationDrawer({ id, onClose }: { id: string | null; onClose: () =>
               )}
               {m.role === 'assistant' && (m.tools.length || m.feedback || m.unverified.length) ? (
                 <Flex gap={token.marginXXS} wrap>
-                  {m.feedback === 1 && <AppTag tone="success">Helpful</AppTag>}
-                  {m.feedback === -1 && <AppTag tone="pending">Not helpful</AppTag>}
-                  {m.unverified.length ? <AppTag tone="pending">Figures not found in records: {m.unverified.join(', ')}</AppTag> : null}
+                  {m.feedback === 1 && <AppTag meaning="done">Helpful</AppTag>}
+                  {m.feedback === -1 && <AppTag meaning="waiting">Not helpful</AppTag>}
+                  {m.unverified.length ? <AppTag meaning="waiting">Figures not found in records: {m.unverified.join(', ')}</AppTag> : null}
                   {m.tools.map((t) => (
-                    <AppTag key={t}>{t}</AppTag>
+                    <AppTag variant="kind" key={t}>{t}</AppTag>
                   ))}
                 </Flex>
               ) : null}

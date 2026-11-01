@@ -7,20 +7,8 @@ import { BOOK_SOURCE_LABELS, BOOK_VOUCHER_STATUS_LABELS, BOOK_VOUCHER_TYPE_LABEL
 
 import { Money } from '@/components/common/Money';
 
-const STATUS_COLOR: Record<BookVoucherStatus, string> = { DRAFT: 'default', SUBMITTED: 'processing', APPROVED: 'success', REJECTED: 'warning', CANCELLED: 'default' };
-const TYPE_COLOR: Record<BookVoucherType, string> = {
-  JOURNAL: 'purple',
-  PAYMENT: 'volcano',
-  RECEIPT: 'green',
-  CONTRA: 'cyan',
-  SALES: 'blue',
-  PURCHASE: 'orange',
-  DEBIT_NOTE: 'magenta',
-  CREDIT_NOTE: 'geekblue',
-};
-
-export const VoucherStatusTag = ({ status }: { status: BookVoucherStatus }) => <AppTag color={STATUS_COLOR[status]}>{BOOK_VOUCHER_STATUS_LABELS[status]}</AppTag>;
-export const VoucherTypeTag = ({ type }: { type: BookVoucherType }) => <AppTag color={TYPE_COLOR[type]}>{BOOK_VOUCHER_TYPE_LABELS[type]}</AppTag>;
+export const VoucherStatusTag = ({ status }: { status: BookVoucherStatus }) => <AppTag kind="bookVoucher" status={status}>{BOOK_VOUCHER_STATUS_LABELS[status]}</AppTag>;
+export const VoucherTypeTag = ({ type }: { type: BookVoucherType }) => <AppTag variant="kind">{BOOK_VOUCHER_TYPE_LABELS[type]}</AppTag>;
 
 /** A balance as Tally shows it: the amount with Dr or Cr. */
 export function Balance({ value }: { value: string | number }) {

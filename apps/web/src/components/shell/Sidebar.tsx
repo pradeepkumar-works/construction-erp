@@ -139,7 +139,7 @@ function NavLink({ item, active, rail, count, onNavigate }: { item: NavItem; act
     >
       <Icon className={s.icon} aria-hidden />
       <span className={s.label}>{item.label}</span>
-      {count > 0 && <span className={s.count}>{count > 99 ? '99+' : count}</span>}
+      {count > 0 && <span className={s.count}>{count.toLocaleString('en-IN')}</span>}
     </Link>
   );
   return (

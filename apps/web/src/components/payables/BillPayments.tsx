@@ -19,9 +19,9 @@ import { Money } from '@/components/common/Money';
 /** Tag for how much of an approved bill is paid. */
 export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; outstanding: string; paidDate: string | null } }) {
   if (bill.status !== 'APPROVED') return null;
-  if (bill.paidDate) return <AppTag tone="success" style={{ margin: 0 }}>{PAID_STATE_LABELS.PAID}</AppTag>;
-  if (toNumber(bill.paidAmount) > 0) return <AppTag tone="pending" style={{ margin: 0 }}>{PAID_STATE_LABELS.PART}</AppTag>;
-  return <AppTag style={{ margin: 0 }}>{PAID_STATE_LABELS.UNPAID}</AppTag>;
+  if (bill.paidDate) return <AppTag meaning="done" style={{ margin: 0 }}>{PAID_STATE_LABELS.PAID}</AppTag>;
+  if (toNumber(bill.paidAmount) > 0) return <AppTag meaning="waiting" style={{ margin: 0 }}>{PAID_STATE_LABELS.PART}</AppTag>;
+  return <AppTag kind="paid" status="UNPAID" style={{ margin: 0 }}>{PAID_STATE_LABELS.UNPAID}</AppTag>;
 }
 
 /**

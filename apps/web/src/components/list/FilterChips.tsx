@@ -28,7 +28,7 @@ export function FilterChips({ filters, labels, onClear, onClearAll }: { filters:
   return (
     <>
       {chips.map((c) => (
-        <AppTag key={c.keys.join()} closable onClose={() => onClear(c.keys)} closeIcon={<CloseOutlined aria-label={`Remove ${c.text}`} />} style={{ margin: 0 }}>
+        <AppTag variant="kind" key={c.keys.join()} closable onClose={() => onClear(c.keys)} closeIcon={<CloseOutlined aria-label={`Remove ${c.text}`} />} style={{ margin: 0 }}>
           {c.text}
         </AppTag>
       ))}

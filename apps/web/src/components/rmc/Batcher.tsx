@@ -16,7 +16,6 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoreOutlined } from '@/components/common/icons';
-import { HEALTH_TONE } from '@/components/integrations/Connections';
 import { DispatchForm } from './BatchForms';
 import { PlantFilter, m3, usePlantScope } from './rmcUi';
 import { useRmcDrawers } from './Drawers';
@@ -81,7 +80,7 @@ export function Batcher() {
       render: (_, r) => (
         <div>
           {batchCell(r)}
-          {r.late ? <AppTag tone="pending">{`No challan after ${BATCH_NO_CHALLAN_HOURS} h`}</AppTag> : null}
+          {r.late ? <AppTag meaning="waiting">{`No challan after ${BATCH_NO_CHALLAN_HOURS} h`}</AppTag> : null}
         </div>
       ),
     },
@@ -170,7 +169,7 @@ export function Batcher() {
         </div>
       ),
     },
-    { title: 'Status', key: 'health', width: 170, render: (_, c) => <AppTag tone={HEALTH_TONE[c.health as ConnectionHealth]}>{CONNECTION_HEALTH_LABELS[c.health as ConnectionHealth]}</AppTag> },
+    { title: 'Status', key: 'health', width: 170, render: (_, c) => <AppTag kind="connectionHealth" status={c.health as ConnectionHealth}>{CONNECTION_HEALTH_LABELS[c.health as ConnectionHealth]}</AppTag> },
     { title: 'Last batch read', key: 'last', width: 170, render: (_, c) => (c.lastEventAt ? formatDateTime(c.lastEventAt) : <span className="text-muted">None yet</span>) },
     {
       title: 'Columns',
@@ -178,7 +177,7 @@ export function Batcher() {
       width: 230,
       render: (_, c) => (
         <Space size={4} wrap>
-          {c.columns ? <AppTag tone="success">Matched</AppTag> : <AppTag tone="pending">Not matched yet</AppTag>}
+          {c.columns ? <AppTag meaning="done">Matched</AppTag> : <AppTag meaning="waiting">Not matched yet</AppTag>}
           {data.canMatch && c.headers.length ? (
             <Button size="small" type={c.columns ? 'default' : 'primary'} onClick={() => setMatching(c)} aria-label={`Match the columns of ${c.name}`}>
               {c.columns ? 'Change' : 'Match the columns'}

@@ -64,18 +64,16 @@ const STATE_FILTERS: { value: StateFilter; label: string }[] = [
   { value: 'DROPPED', label: 'Not needed' },
 ];
 
-const STATE_TONE: Record<DrawingNeedState, 'pending' | 'info' | 'success' | 'neutral'> = { AWAITED: 'pending', RECEIVED: 'info', GFC: 'success', DROPPED: 'neutral' };
-
 /** How late it is, or that it is due within a week; nothing otherwise. */
 function LateTag({ n }: { n: DrawingNeedDto }) {
-  if (n.overdue && n.daysLate) return <AppTag tone="danger">{`${n.daysLate} day${n.daysLate === 1 ? '' : 's'} late`}</AppTag>;
-  return n.dueSoon ? <AppTag tone="pending">Due soon</AppTag> : null;
+  if (n.overdue && n.daysLate) return <AppTag meaning="failed">{`${n.daysLate} day${n.daysLate === 1 ? '' : 's'} late`}</AppTag>;
+  return n.dueSoon ? <AppTag meaning="waiting">Due soon</AppTag> : null;
 }
 
 function NeedStateTag({ n }: { n: DrawingNeedDto }) {
   return (
     <Flex gap={4} wrap>
-      <AppTag tone={n.overdue ? 'danger' : STATE_TONE[n.state]} dot>
+      <AppTag kind="drawingNeed" status={n.state}>
         {DRAWING_NEED_STATE_LABELS[n.state]}
       </AppTag>
       <LateTag n={n} />
@@ -484,11 +482,14 @@ function ScheduleList() {
         width: 220,
         card: 'meta',
         cardText: (r) => DRAWING_NEED_STATE_LABELS[r.state],
-        render: (_, r) => (
-          <AppTag tone={r.overdue ? 'danger' : STATE_TONE[r.state]} dot>
-            {DRAWING_NEED_STATE_LABELS[r.state]}
-          </AppTag>
-        ),
+        render: (_, r) =>
+          r.overdue ? (
+            <AppTag meaning="failed">{DRAWING_NEED_STATE_LABELS[r.state]}</AppTag>
+          ) : (
+            <AppTag kind="drawingNeed" status={r.state}>
+              {DRAWING_NEED_STATE_LABELS[r.state]}
+            </AppTag>
+          ),
       },
       {
         key: 'chased',
@@ -524,11 +525,9 @@ function ScheduleList() {
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {c ? (
-        <Flex gap={token.marginXS} wrap style={{ margin: `${token.marginSM}px 0` }}>
-          <AppTag tone={c.overdue ? 'danger' : 'neutral'}>{`${c.overdue} late`}</AppTag>
-          <AppTag tone={c.dueSoon ? 'pending' : 'neutral'}>{`${c.dueSoon} due within a week`}</AppTag>
-          <AppTag tone="success">{`${c.gfc} of ${c.total} good for construction`}</AppTag>
-        </Flex>
+        <p translate="no" style={{ margin: `${token.marginSM}px 0` }}>
+          {`${c.overdue} late · ${c.dueSoon} due within a week · ${c.gfc} of ${c.total} good for construction`}
+        </p>
       ) : null}
       <ListToolbar
         filters={frame.filterState}

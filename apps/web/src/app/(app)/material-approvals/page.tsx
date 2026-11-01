@@ -178,7 +178,7 @@ function MaterialApprovalsPage() {
       render: (_, m) =>
         m.approvalId ? (
           <div>
-            <AppTag tone="success">{APPROVED_MAKE_SOURCE_LABELS[m.source]}</AppTag>
+            <AppTag meaning="done">{APPROVED_MAKE_SOURCE_LABELS[m.source]}</AppTag>
             {sub(
               <RecordLink href={`/material-approvals/${m.approvalId}`} onOpen={() => open(m.approvalId!)}>
                 <span translate="no">{m.marNo}</span>
@@ -186,7 +186,7 @@ function MaterialApprovalsPage() {
             )}
           </div>
         ) : (
-          <AppTag>{APPROVED_MAKE_SOURCE_LABELS[m.source]}</AppTag>
+          <AppTag variant="kind">{APPROVED_MAKE_SOURCE_LABELS[m.source]}</AppTag>
         ),
     },
     { key: 'note', title: 'Note', width: 280, card: false, render: (_, m) => m.note ?? '' },

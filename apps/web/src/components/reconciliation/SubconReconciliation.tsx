@@ -6,7 +6,7 @@ import { App, Button, Empty, Form, Input, Skeleton, Table, Tooltip, Typography }
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { DeleteOutlined } from '@/components/common/icons';
-import type { ExcessRecoveryDto, ReconciliationStatus, SubconMaterialDto, SubconMaterialLineDto, SubconReconciliationDto } from '@erp/shared';
+import type { ExcessRecoveryDto, ReconciliationStatus, SubconMaterialDto, SubconMaterialLineDto, SubconReconciliationDto, SubmissionStatus } from '@erp/shared';
 import { SUBMISSION_STATUS_LABELS, unitLabel } from '@erp/shared';
 import { useCancelRecovery, useRecoverExcess, useSubconReconciliation } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
@@ -148,7 +148,7 @@ function WorkOrderBlock({
             <Link href={`/subcontract-bills/${r.billId}`} className="mono" translate="no">
               {r.billLabel}
             </Link>{' '}
-            {r.billStatus ? <AppTag style={{ marginLeft: 4 }}>{SUBMISSION_STATUS_LABELS[r.billStatus as keyof typeof SUBMISSION_STATUS_LABELS] ?? r.billStatus}</AppTag> : null}
+            {r.billStatus ? <AppTag kind="submission" status={r.billStatus as SubmissionStatus} style={{ marginLeft: 4 }}>{SUBMISSION_STATUS_LABELS[r.billStatus as SubmissionStatus] ?? r.billStatus}</AppTag> : null}
           </>
         ) : (
           <span className="text-muted">Their next bill</span>

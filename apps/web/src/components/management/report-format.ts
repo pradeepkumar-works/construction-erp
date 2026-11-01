@@ -1,5 +1,4 @@
-import type { HealthLevel, ReportCell, ReportColumnKind } from '@erp/shared';
-import type { TagTone } from '@/components/common/AppTag';
+import type { ReportCell, ReportColumnKind } from '@erp/shared';
 import { formatDate, formatINR, formatINRCompact, formatPct, formatQty, NO_VALUE, formatCount } from '@/lib/format';
 
 /**
@@ -44,9 +43,3 @@ export const isNumeric = (kind: ReportColumnKind) => kind !== 'text' && kind !==
 
 /** A figure below zero (a loss) reads in the danger colour. */
 export const isNegative = (kind: ReportColumnKind, v: ReportCell | undefined) => (kind === 'money' || kind === 'pct') && typeof v === 'number' && v < 0;
-
-export const HEALTH_TONES: Record<HealthLevel, TagTone> = {
-  good: 'success',
-  watch: 'pending',
-  act: 'danger',
-};

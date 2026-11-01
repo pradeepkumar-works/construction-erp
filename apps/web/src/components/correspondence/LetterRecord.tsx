@@ -76,7 +76,7 @@ function lifecycleOf(l: LetterDto): Lifecycle {
   const stage = l.status === 'DRAFT' ? 0 : waiting || (l.deliveredOn ? 4 + after : l.dispatchedOn ? 3 + after : 2 + after);
   return {
     current: stage,
-    status: l.status === 'DRAFT' && l.returnNote ? 'error' : stage === 4 + after ? 'finish' : 'process',
+    status: l.status === 'DRAFT' && l.returnNote ? 'error' : stage === 4 + after ? 'finish' : l.status === 'AWAITING_APPROVAL' ? 'wait' : 'process',
     items: [
       { title: l.returnNote && l.status === 'DRAFT' ? 'Returned' : 'Drafted', content: l.createdByName },
       { title: 'Signed', content: signed ? `${l.signedByName ?? l.signatoryName ?? ''}, ${formatDate(signed.slice(0, 10))}` : (l.signatoryName ?? undefined) },
@@ -342,10 +342,10 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
             <Flex gap={4} wrap>
               <DirectionTag direction={data.direction} />
               <LetterStatusTag status={data.status} />
-              {data.priority === 'URGENT' ? <AppTag tone="danger">{LETTER_PRIORITY_LABELS.URGENT}</AppTag> : null}
-              {data.confidential ? <AppTag tone="violet">Confidential</AppTag> : null}
-              {data.overdue ? <AppTag tone="danger">Reply overdue</AppTag> : null}
-              {data.actionOverdue ? <AppTag tone="danger">Action overdue</AppTag> : null}
+              {data.priority === 'URGENT' ? <AppTag meaning="failed">{LETTER_PRIORITY_LABELS.URGENT}</AppTag> : null}
+              {data.confidential ? <AppTag variant="kind">Confidential</AppTag> : null}
+              {data.overdue ? <AppTag meaning="failed">Reply overdue</AppTag> : null}
+              {data.actionOverdue ? <AppTag meaning="failed">Action overdue</AppTag> : null}
             </Flex>
           ),
           lifecycle: lifecycleOf(data),

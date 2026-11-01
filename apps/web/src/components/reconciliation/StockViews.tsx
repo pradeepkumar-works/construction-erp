@@ -113,7 +113,7 @@ export function StructureView({ projectId }: { projectId: string }) {
       width: 150,
       render: (s: ReconciliationStatus) =>
         s === 'NO_WORK' ? (
-          <AppTag style={{ margin: 0 }}>No DPR work</AppTag>
+          <AppTag meaning="closed" style={{ margin: 0 }}>No DPR work</AppTag>
         ) : (
           <StatusCell status={s} />
         ),
@@ -199,7 +199,7 @@ export function StructureView({ projectId }: { projectId: string }) {
                   {e.label}
                 </span>
               }
-              extra={e.overCount ? <AppTag tone="danger">{e.overCount} over</AppTag> : null}
+              extra={e.overCount ? <AppTag meaning="failed">{e.overCount} over</AppTag> : null}
             >
               <Table<StructureItemDto>
                 rowKey="itemId"
@@ -235,7 +235,7 @@ function PipeFlags({ flags }: { flags: PipeFlag[] }) {
     <Space size={4} wrap>
       {flags.map((f) => (
         <Tooltip key={f} title={PIPE_FLAG_HINTS[f]}>
-          <AppTag tone="danger" style={{ margin: 0 }}>
+          <AppTag meaning="failed" style={{ margin: 0 }}>
             {PIPE_FLAG_LABELS[f]}
           </AppTag>
         </Tooltip>
@@ -398,7 +398,6 @@ export function PipeView({ projectId }: { projectId: string }) {
 
 // R5: kits
 
-const KIT_COLOR: Record<KitStatus, string> = { SHORT: 'error', OVER: 'warning', OK: 'success' };
 
 /** House-connection kits: connections done × the kit (the activity's norms) against what was issued. */
 export function KitsView({ projectId }: { projectId: string }) {
@@ -452,7 +451,7 @@ export function KitsView({ projectId }: { projectId: string }) {
       dataIndex: 'status',
       width: 170,
       render: (s: KitStatus) => (
-        <AppTag color={KIT_COLOR[s]} style={{ margin: 0 }}>
+        <AppTag kind="kit" status={s} style={{ margin: 0 }}>
           {KIT_STATUS_LABELS[s]}
         </AppTag>
       ),
@@ -485,7 +484,7 @@ export function KitsView({ projectId }: { projectId: string }) {
                     </span>{' '}
                     {k.unit} done
                   </Typography.Text>
-                  {k.kitsShort ? <AppTag tone="danger">{`${k.kitsShort} kit${k.kitsShort === 1 ? '' : 's'} short`}</AppTag> : null}
+                  {k.kitsShort ? <AppTag meaning="failed">{`${k.kitsShort} kit${k.kitsShort === 1 ? '' : 's'} short`}</AppTag> : null}
                 </Space>
               }
             >
@@ -504,7 +503,6 @@ export function KitsView({ projectId }: { projectId: string }) {
 
 // R6: exceptions
 
-const EXCEPTION_COLOR: Record<ReconExceptionKind, string> = { USE_WITHOUT_ISSUE: 'error', ISSUE_WITHOUT_WORK: 'warning', LAID_ABOVE_ISSUED: 'error' };
 
 /** The day-to-day exceptions between stock and the DPR, newest first, each with the DPR or issue to open. */
 export function ExceptionsView({ projectId }: { projectId: string }) {
@@ -538,7 +536,7 @@ export function ExceptionsView({ projectId }: { projectId: string }) {
       dataIndex: 'kind',
       width: 190,
       render: (k: ReconExceptionKind) => (
-        <AppTag color={EXCEPTION_COLOR[k]} style={{ margin: 0 }}>
+        <AppTag kind="reconException" status={k} style={{ margin: 0 }}>
           {RECON_EXCEPTION_LABELS[k]}
         </AppTag>
       ),

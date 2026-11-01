@@ -46,7 +46,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
       ) : quotes.length === 0 && !buyer ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No quotations or purchase orders yet" />
       ) : null}
-      {!remaining && <AppTag tone="success" style={{ marginTop: 8 }}>Everything on this indent is ordered or received</AppTag>}
+      {!remaining && <AppTag meaning="done" style={{ marginTop: 8 }}>Everything on this indent is ordered or received</AppTag>}
       <PurchaseOrderDrawer id={openPo} open={!!openPo} onClose={() => setOpenPo(null)} />
     </>
   );

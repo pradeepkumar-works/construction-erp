@@ -235,7 +235,7 @@ export function DprLinesField({ options, headCount, def }: { options: DprWorkOpt
                     )}
                     <span translate="no">{`${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${unitLabel(a.unit)}`}</span> done
                     {a.holdPoint ? (
-                      <AppTag tone="pending" style={{ marginInlineStart: 6 }}>
+                      <AppTag meaning="waiting" style={{ marginInlineStart: 6 }}>
                         Hold point
                       </AppTag>
                     ) : null}

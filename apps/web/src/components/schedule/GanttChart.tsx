@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Tooltip, theme } from 'antd';
+import { Tooltip } from 'antd';
 import dayjs from 'dayjs';
-import type { GanttActivityDto, GanttDto, MilestoneDto, MilestoneState, ScheduleState } from '@erp/shared';
-import { ACTIVITY_LINK_TYPE_LABELS, MILESTONE_STATE_LABELS, SCHEDULE_STATE_LABELS, daysBetween, linkLabel } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
+import type { GanttActivityDto, GanttDto, MilestoneDto, StatusMeaning } from '@erp/shared';
+import { ACTIVITY_LINK_TYPE_LABELS, MILESTONE_STATE_LABELS, SCHEDULE_STATE_LABELS, daysBetween, linkLabel, statusTone } from '@erp/shared';
+import { tk } from '@/ds';
 import { formatDate, formatPct } from '@/lib/format';
 
 export type GanttScale = 'week' | 'month';
@@ -40,27 +40,27 @@ function chartRange(data: GanttDto, showBaseline: boolean): Range | null {
   return { start, days: daysBetween(start, end) + 1 };
 }
 
-function stateColor(state: ScheduleState, token: ReturnType<typeof theme.useToken>['token']) {
-  if (state === 'DONE') return token.colorSuccess;
-  if (state === 'BEHIND' || state === 'LATE') return token.colorError;
-  if (state === 'UNSCHEDULED') return token.colorTextQuaternary;
-  return BRAND.colors.primary;
-}
+/**
+ * A bar's or a milestone's colour, by what its state means (`statusTone`): the plan in the accent, behind plan or due soon in
+ * the waiting tone, done in quiet grey, and red only for what is late (past its planned finish, a missed milestone).
+ */
+const INK: Record<StatusMeaning, string> = {
+  inHand: tk.color.accent.solid,
+  waiting: tk.color.tone.pending.solid,
+  failed: tk.color.tone.danger.solid,
+  done: tk.color.tone.neutral.solid,
+  closed: tk.color.text.faint,
+};
 
-function milestoneColor(state: MilestoneState, token: ReturnType<typeof theme.useToken>['token']) {
-  if (state === 'ACHIEVED') return token.colorSuccess;
-  if (state === 'ACHIEVED_LATE') return token.colorWarning;
-  if (state === 'MISSED') return token.colorError;
-  if (state === 'DUE_SOON') return BRAND.colors.pending;
-  return BRAND.colors.primary;
-}
+/** The critical path and today are drawn in the one neutral ink, by weight and dash, never in a colour of their own. */
+const MARK = tk.color.text.strong;
 
 const slipText = (days: number | null) => (days === null ? null : days === 0 ? 'on the baseline' : days > 0 ? `${days} days later than the baseline` : `${-days} days earlier than the baseline`);
 
 /**
  * A plain Gantt: one row per milestone and activity on a day scale, the current plan as a bar filled to
- * its progress, the frozen baseline as a thin grey bar under it, and a line for today. Names stay put while the
- * timeline scrolls sideways. With links a critical activity's bar has a thick top edge, its float shows
+ * its progress, the frozen baseline as a thin grey bar under it, and a dashed line for today. Names stay put while the
+ * timeline scrolls sideways. With links a critical activity's bar has a heavy outline in ink, its float shows
  * as a dotted line after the bar, and the row opens the activity's links.
  */
 export function GanttChart({
@@ -76,7 +76,6 @@ export function GanttChart({
   onMilestone?: (m: MilestoneDto) => void;
   onActivity?: (a: GanttActivityDto) => void;
 }) {
-  const { token } = theme.useToken();
   const range = useMemo(() => chartRange(data, showBaseline), [data, showBaseline]);
   const scroller = useRef<HTMLDivElement>(null);
   // Open with today about a third of the way across the visible timeline.
@@ -86,7 +85,7 @@ export function GanttChart({
     const today = daysBetween(range.start, data.today) * PX_PER_DAY[scale];
     el.scrollLeft = Math.max(0, today - (el.clientWidth - LABEL_W) / 3);
   }, [range, scale, data.today]);
-  if (!range) return <div className="text-muted" style={{ padding: 24 }}>Give the activities planned dates, or add a milestone, to see the chart.</div>;
+  if (!range) return <div className="text-muted" style={{ padding: tk.space[6] }}>Give the activities planned dates, or add a milestone, to see the chart.</div>;
 
   const px = PX_PER_DAY[scale];
   const width = Math.ceil(range.days * px);
@@ -107,13 +106,13 @@ export function GanttChart({
   }
 
   const label = (children: React.ReactNode, sub?: React.ReactNode) => (
-    <div className="gantt-label" style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, padding: '0 12px', background: token.colorBgContainer, borderRight: `1px solid ${token.colorBorderSecondary}`, display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
+    <div className="gantt-label" style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, padding: `0 ${tk.space[3]}`, background: tk.color.surface.base, borderRight: tk.line('hairline'), display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
       <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{children}</div>
-      {sub ? <div className="text-muted" style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div> : null}
+      {sub ? <div className="text-muted" style={{ ...tk.type.caption, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div> : null}
     </div>
   );
   const row = (key: string, lbl: React.ReactNode, bars: React.ReactNode, className: string, onClick?: () => void, action?: string) => {
-    const style: React.CSSProperties = { display: 'flex', height: ROW_H, borderBottom: `1px solid ${token.colorBorderSecondary}`, cursor: onClick ? 'pointer' : undefined };
+    const style: React.CSSProperties = { display: 'flex', height: ROW_H, borderBottom: tk.line('hairline'), cursor: onClick ? 'pointer' : undefined };
     const cells = (
       <>
         {lbl}
@@ -147,18 +146,18 @@ export function GanttChart({
     );
   };
   const section = (title: string) => (
-    <div style={{ display: 'flex', height: 26, background: token.colorFillQuaternary, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
-      <div style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, padding: '0 12px', lineHeight: '26px', fontWeight: 600, fontSize: token.fontSizeSM, background: token.colorFillQuaternary }}>{title}</div>
+    <div style={{ display: 'flex', height: 26, background: tk.color.surface.sunken, borderBottom: tk.line('hairline') }}>
+      <div style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, padding: `0 ${tk.space[3]}`, display: 'flex', alignItems: 'center', ...tk.type.label, background: tk.color.surface.sunken }}>{title}</div>
       <div style={{ width, minWidth: width }} />
     </div>
   );
 
   const diamond = (left: number, color: string, hollow = false) => (
-    <div style={{ position: 'absolute', left: left + px / 2 - 7, top: ROW_H / 2 - 7, width: 14, height: 14, transform: 'rotate(45deg)', background: hollow ? token.colorBgContainer : color, border: `2px solid ${color}`, boxSizing: 'border-box', zIndex: hollow ? 1 : 2 }} />
+    <div style={{ position: 'absolute', left: left + px / 2 - 7, top: ROW_H / 2 - 7, width: 14, height: 14, transform: 'rotate(45deg)', background: hollow ? tk.color.surface.base : color, border: `2px solid ${color}`, boxSizing: 'border-box', zIndex: hollow ? 1 : 2 }} />
   );
 
   const milestoneRow = (m: MilestoneDto) => {
-    const color = milestoneColor(m.state, token);
+    const color = INK[statusTone('milestone', m.state)];
     const tip = (
       <div>
         <b>{m.name}</b>
@@ -173,7 +172,7 @@ export function GanttChart({
       label(<span>◆ {m.name}</span>, `${MILESTONE_STATE_LABELS[m.state]} · due ${formatDate(m.dueDate)}`),
       <Tooltip title={tip}>
         <div style={{ position: 'absolute', inset: 0 }}>
-          {showBaseline && m.baselineDate && m.baselineDate !== m.dueDate ? diamond(x(m.baselineDate), token.colorTextQuaternary, true) : null}
+          {showBaseline && m.baselineDate && m.baselineDate !== m.dueDate ? diamond(x(m.baselineDate), tk.color.text.faint, true) : null}
           {diamond(x(m.dueDate), color, !!m.achievedOn && m.achievedOn !== m.dueDate)}
           {m.achievedOn && m.achievedOn !== m.dueDate ? diamond(x(m.achievedOn), color) : null}
         </div>
@@ -186,7 +185,7 @@ export function GanttChart({
 
   const names = new Map(data.activities.map((x) => [x.id, x.name]));
   const activityRow = (a: GanttActivityDto) => {
-    const color = stateColor(a.state, token);
+    const color = INK[statusTone('schedule', a.state)];
     const floatEnd = a.totalFloat && a.totalFloat > 0 && a.plannedEnd && a.lateFinish && a.lateFinish > a.plannedEnd ? a.lateFinish : null;
     const tip = (
       <div>
@@ -211,21 +210,21 @@ export function GanttChart({
       <Tooltip title={tip}>
         <div style={{ position: 'absolute', inset: 0 }}>
           {showBaseline && a.baselineStart && a.baselineEnd ? (
-            <div className="gantt-baseline" style={{ position: 'absolute', ...span(a.baselineStart, a.baselineEnd), top: ROW_H / 2 + 7, height: 5, borderRadius: 2, background: token.colorTextQuaternary }} />
+            <div className="gantt-baseline" style={{ position: 'absolute', ...span(a.baselineStart, a.baselineEnd), top: ROW_H / 2 + 7, height: 5, borderRadius: tk.radius.xs, background: tk.color.text.faint }} />
           ) : null}
           {a.plannedStart && a.plannedEnd ? (
             <div
               className={a.critical ? 'gantt-bar gantt-critical' : 'gantt-bar'}
-              style={{ position: 'absolute', ...span(a.plannedStart, a.plannedEnd), top: ROW_H / 2 - 12, height: 15, borderRadius: 3, overflow: 'hidden', background: token.colorFillSecondary, border: `1px solid ${color}`, borderTop: a.critical ? `4px solid ${token.colorErrorText}` : undefined }}
+              style={{ position: 'absolute', ...span(a.plannedStart, a.plannedEnd), top: ROW_H / 2 - 12, height: 15, borderRadius: tk.radius.sm, overflow: 'hidden', boxSizing: 'border-box', background: tk.color.state.track, border: a.critical ? `2px solid ${MARK}` : `1px solid ${color}` }}
             >
               <div style={{ width: `${Math.min(a.progressPct, 100)}%`, height: '100%', background: color }} />
             </div>
           ) : null}
           {floatEnd && a.plannedEnd ? (
-            <div className="gantt-float" style={{ position: 'absolute', left: x(a.plannedEnd) + px, width: Math.max(daysBetween(a.plannedEnd, floatEnd) * px, 2), top: ROW_H / 2 - 5, borderTop: `2px dotted ${token.colorTextTertiary}` }} />
+            <div className="gantt-float" style={{ position: 'absolute', left: x(a.plannedEnd) + px, width: Math.max(daysBetween(a.plannedEnd, floatEnd) * px, 2), top: ROW_H / 2 - 5, borderTop: `2px dotted ${tk.color.text.faint}` }} />
           ) : null}
           {a.linkStartsOn ? (
-            <div className="gantt-link-start" style={{ position: 'absolute', left: x(a.linkStartsOn), top: ROW_H / 2 - 14, height: 20, borderLeft: `2px solid ${token.colorWarningText}` }} />
+            <div className="gantt-link-start" style={{ position: 'absolute', left: x(a.linkStartsOn), top: ROW_H / 2 - 14, height: 20, borderLeft: `2px solid ${tk.color.text.muted}` }} />
           ) : null}
         </div>
       </Tooltip>,
@@ -237,25 +236,25 @@ export function GanttChart({
 
   const today = x(data.today) + px / 2;
   return (
-    <div ref={scroller} className="gantt-chart" style={{ overflowX: 'auto', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: token.borderRadius }}>
+    <div ref={scroller} className="gantt-chart" style={{ overflowX: 'auto', border: tk.line('hairline'), borderRadius: tk.radius.md }}>
       <div style={{ position: 'relative', width: LABEL_W + width, minWidth: '100%' }}>
         {/* Month lines and today, under the rows' contents and the sticky names */}
         <div style={{ position: 'absolute', top: 0, bottom: 0, left: LABEL_W, width, pointerEvents: 'none' }}>
           {months.map((m) => (
-            <div key={m.left} style={{ position: 'absolute', top: 0, bottom: 0, left: m.left, borderLeft: `1px solid ${token.colorBorderSecondary}` }} />
+            <div key={m.left} style={{ position: 'absolute', top: 0, bottom: 0, left: m.left, borderLeft: tk.line('hairline') }} />
           ))}
-          <div className="gantt-today" style={{ position: 'absolute', top: 0, bottom: 0, left: today, borderLeft: `2px dashed ${token.colorError}`, zIndex: 2 }} title={`Today, ${formatDate(data.today)}`} />
+          <div className="gantt-today" style={{ position: 'absolute', top: 0, bottom: 0, left: today, borderLeft: `2px dashed ${MARK}`, zIndex: 2 }} title={`Today, ${formatDate(data.today)}`} />
         </div>
-        <div style={{ display: 'flex', height: scale === 'week' ? 44 : 28, borderBottom: `1px solid ${token.colorBorder}`, position: 'relative' }}>
-          <div style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, background: token.colorBgContainer, borderRight: `1px solid ${token.colorBorderSecondary}` }} />
-          <div style={{ position: 'relative', width, minWidth: width, fontSize: token.fontSizeSM }}>
+        <div style={{ display: 'flex', height: scale === 'week' ? 44 : 28, borderBottom: tk.line('base'), position: 'relative' }}>
+          <div style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, background: tk.color.surface.base, borderRight: tk.line('hairline') }} />
+          <div style={{ position: 'relative', width, minWidth: width, ...tk.type.caption }}>
             {months.map((m) => (
-              <div key={m.left} style={{ position: 'absolute', left: m.left, width: m.width, top: 0, height: 26, lineHeight: '26px', paddingLeft: 6, whiteSpace: 'nowrap', overflow: 'hidden', fontWeight: 600 }}>
+              <div key={m.left} style={{ position: 'absolute', left: m.left, width: m.width, top: 0, height: 26, display: 'flex', alignItems: 'center', ...tk.type.label, paddingLeft: tk.space[2], whiteSpace: 'nowrap', overflow: 'hidden' }}>
                 {m.label}
               </div>
             ))}
             {weeks.map((w) => (
-              <div key={w.left} className="text-muted" style={{ position: 'absolute', left: w.left, top: 26, height: 18, paddingLeft: 3, fontSize: token.fontSizeSM, borderLeft: `1px dotted ${token.colorBorder}` }}>
+              <div key={w.left} className="text-muted" style={{ position: 'absolute', left: w.left, top: 26, height: 18, paddingLeft: tk.space[1], ...tk.type.caption, borderLeft: `1px dotted ${tk.color.line.base}` }}>
                 {w.label}
               </div>
             ))}
@@ -270,44 +269,27 @@ export function GanttChart({
   );
 }
 
-/** What the colours and shapes mean. */
+/** What the colours and shapes mean: red is only for late, and the critical path and today are in ink. */
 export function GanttLegend({ showBaseline, linked }: { showBaseline: boolean; linked?: boolean }) {
-  const { token } = theme.useToken();
-  const swatch = (bg: string, label: string, border?: string) => (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ display: 'inline-block', width: 22, height: 10, borderRadius: 2, background: bg, border: border ? `1px solid ${border}` : undefined }} />
+  const item = (mark: React.CSSProperties, label: string) => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: tk.space[2] }}>
+      <span aria-hidden style={{ display: 'inline-block', boxSizing: 'border-box', ...mark }} />
       {label}
     </span>
   );
+  const bar = (background: string, border?: string): React.CSSProperties => ({ width: 22, height: 10, borderRadius: tk.radius.xs, background, border });
   return (
-    <div className="text-muted" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: token.fontSizeSM, marginTop: 8 }}>
-      {swatch(BRAND.colors.primary, 'Plan, filled to progress')}
-      {swatch(token.colorError, 'Behind plan or past its end')}
-      {swatch(token.colorSuccess, 'Done')}
-      {showBaseline ? swatch(token.colorTextQuaternary, 'Baseline') : null}
-      {linked ? (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ display: 'inline-block', width: 22, height: 10, borderRadius: 2, border: `1px solid ${BRAND.colors.primary}`, borderTop: `4px solid ${token.colorErrorText}` }} />
-          Critical path
-        </span>
-      ) : null}
-      {linked ? (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ display: 'inline-block', width: 22, borderTop: `2px dotted ${token.colorTextTertiary}` }} />
-          Float
-        </span>
-      ) : null}
-      {linked ? (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ display: 'inline-block', height: 12, borderLeft: `2px solid ${token.colorWarningText}` }} />
-          Earliest start its links allow
-        </span>
-      ) : null}
-      <span>◆ Milestone{showBaseline ? ' (hollow: baseline date)' : ''}</span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ display: 'inline-block', height: 12, borderLeft: `2px dashed ${token.colorError}` }} />
-        Today
-      </span>
+    <div className="text-muted" style={{ display: 'flex', gap: `${tk.space[2]} ${tk.space[4]}`, flexWrap: 'wrap', ...tk.type.caption, marginTop: tk.space[2] }}>
+      {item(bar(INK.inHand), 'Plan, filled to progress')}
+      {item(bar(INK.waiting), 'Behind plan')}
+      {item(bar(INK.failed), 'Late: past its planned finish')}
+      {item(bar(INK.done), 'Done')}
+      {showBaseline ? item(bar(tk.color.text.faint), 'Baseline') : null}
+      {linked ? item(bar(tk.color.state.track, `2px solid ${MARK}`), 'Critical path') : null}
+      {linked ? item({ width: 22, borderTop: `2px dotted ${tk.color.text.faint}` }, 'Float') : null}
+      {linked ? item({ height: 12, borderLeft: `2px solid ${tk.color.text.muted}` }, 'Earliest start its links allow') : null}
+      <span>◆ Milestone{showBaseline ? ' (hollow: baseline date)' : ''}, red when missed</span>
+      {item({ height: 12, borderLeft: `2px dashed ${MARK}` }, 'Today')}
     </div>
   );
 }

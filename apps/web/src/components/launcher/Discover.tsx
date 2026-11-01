@@ -10,7 +10,7 @@ import { useRequestAccess } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
 import { LinkButton } from '@/components/common/LinkButton';
 import { TreeIcon } from '@/components/shell/nav-icons';
-import { TileGrid, familyOf, type TileEntry } from './TileGrid';
+import { TileGrid, type TileEntry } from './TileGrid';
 import s from './HomeLauncher.module.css';
 
 const TAGS: Record<DiscoverEntry['reason'], TileEntry['tag']> = {
@@ -140,7 +140,6 @@ export function DiscoverSection({ user, launcher }: { user: AuthUser; launcher: 
   const tiles: TileEntry[] = entries.map((e) => ({
     key: e.node.id,
     node: e.node,
-    family: familyOf(e.node),
     tag: e.locked && e.request?.status === 'OPEN' ? { text: 'Requested' } : TAGS[e.reason],
     locked: e.locked,
     onOpen: () => setPicked(e),

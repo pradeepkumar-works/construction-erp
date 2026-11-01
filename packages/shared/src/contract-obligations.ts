@@ -53,17 +53,6 @@ export const OBLIGATION_STATE_LABELS: Record<ObligationState, string> = {
   OVERDUE: 'Overdue',
   NO_DATE: 'No date yet',
 };
-/** Tones for the state tags (antd colour names, read by `toneOf`). */
-export const OBLIGATION_STATE_COLORS: Record<ObligationState, string> = {
-  MET: 'green',
-  MET_LATE: 'gold',
-  WAIVED: 'default',
-  UPCOMING: 'blue',
-  DUE_SOON: 'gold',
-  OVERDUE: 'red',
-  NO_DATE: 'default',
-};
-
 /** Days before its deadline an obligation is due soon, and its reminder goes out. */
 export const OBLIGATION_SOON_DAYS = 7;
 

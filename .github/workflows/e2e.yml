@@ -150,6 +150,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/figures-test.js
+      - name: Every status has one meaning, and Open, Rejected or Overdue mean the same on every register
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/status-tone-test.js
       - name: Screens open on a month with figures in it, and history notes read rupees and days as people write them
         if: matrix.suite == 'flows'
         working-directory: apps/api

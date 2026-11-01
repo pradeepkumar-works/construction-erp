@@ -5,7 +5,7 @@ import { Badge, Flex, Listy, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { NotificationDto } from '@erp/shared';
 import { NOTIFICATION_TYPE_LABELS } from '@erp/shared';
-import { NOTIFICATION_COLORS, dayLabel, formatDateTime, timeAgo } from '@/lib/format';
+import { dayLabel, formatDateTime, timeAgo } from '@/lib/format';
 import { ListRowMeta } from '@/components/common/ListRowMeta';
 
 /** Notifications under day headings (Today, Yesterday, …), newest first; unread ones tinted and marked with a dot. */
@@ -53,7 +53,7 @@ export function NotificationFeed({ items, onOpen, compact }: { items: Notificati
                     <span style={{ display: 'flex', gap: token.marginXS, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: n.readAt ? 500 : 700 }}>{n.title}</span>
                       {compact ? null : (
-                        <AppTag color={NOTIFICATION_COLORS[n.type]} style={{ margin: 0 }}>
+                        <AppTag variant="kind" style={{ margin: 0 }}>
                           {NOTIFICATION_TYPE_LABELS[n.type]}
                         </AppTag>
                       )}

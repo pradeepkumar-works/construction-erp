@@ -8,7 +8,6 @@ import {
   CHECK_LEVELS,
   CHECK_LEVEL_LABELS,
   SITE_ORDER_DEFAULT_DAYS,
-  SITE_ORDER_STATE_COLORS,
   SITE_ORDER_STATE_LABELS,
   canApprove,
   canKeepSiteOrders,
@@ -21,7 +20,7 @@ import { useAuth } from '@/lib/auth';
 import { useDecideSiteOrder, useRecordSiteOrder, useSiteOrderAction, useWriteSiteOrder } from '@/lib/queries';
 import { formatDate, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
-import { AppTag, toneOf } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
 import { QueryError } from '@/components/common/QueryState';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -32,7 +31,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 const StateTag = ({ o }: { o: SiteOrderDto }) => (
-  <AppTag tone={toneOf(SITE_ORDER_STATE_COLORS[o.state])} dot>
+  <AppTag kind="siteOrder" status={o.state}>
     {SITE_ORDER_STATE_LABELS[o.state]}
   </AppTag>
 );

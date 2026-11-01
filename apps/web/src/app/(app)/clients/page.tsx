@@ -64,7 +64,7 @@ export default function ClientsPage() {
         sortOrder: sortOrderFor('name'),
         render: (_, c) => (
           <div>
-            <Typography.Text strong>{c.name}</Typography.Text> {!c.isActive && <AppTag>Inactive</AppTag>}
+            <Typography.Text strong>{c.name}</Typography.Text> {!c.isActive && <AppTag meaning="closed">Inactive</AppTag>}
             {c.department && <Sub>{c.department}</Sub>}
           </div>
         ),

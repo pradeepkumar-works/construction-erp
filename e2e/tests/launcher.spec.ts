@@ -19,14 +19,14 @@ async function clearPins(email: string) {
 const modules = (page: Page) => page.getByRole('group', { name: 'All modules' });
 const pinned = (page: Page) => page.getByRole('group', { name: 'Pinned' });
 
-test('Home shows every module the role can open, with what waits, and My work is one of them', async ({ page }) => {
+test('Home shows every module the role can open, with what waits in its own word, and My work is one of them', async ({ page }) => {
   const token = await apiToken('pm@demo.com');
   const pending = await api<unknown[]>(token, '/approvals/pending');
   await signIn(page, 'pm@demo.com');
   await expect(page).toHaveTitle('Home · Nirmaan');
   await expect(homeHeading(page)).toBeVisible();
   for (const name of ['My work', 'Projects', 'Site', 'Materials', 'Purchases']) await expect(modules(page).getByRole('link', { name: new RegExp(`^${name}`) })).toBeVisible();
-  if (pending.length) await expect(modules(page).getByRole('link', { name: `Approvals, ${pending.length} waiting` })).toBeVisible();
+  if (pending.length) await expect(modules(page).getByRole('link', { name: `Approvals, ${pending.length} to approve` })).toBeVisible();
 
   await modules(page).getByRole('link', { name: /^My work/ }).click();
   await expect(page).toHaveURL(/\/my-work$/);

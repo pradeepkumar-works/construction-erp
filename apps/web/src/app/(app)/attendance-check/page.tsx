@@ -25,7 +25,6 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { NoAccess } from '@/components/common/NoAccess';
 
-const KIND_COLOR: Record<AttendanceFlagKind, string> = { BILL_ABOVE: 'red', NO_PUNCH: 'volcano', HEADCOUNT_ABOVE: 'orange', DPR_GAP: 'blue' };
 type BillRow = AttendanceBillLineDto & { bill: AttendanceBillDto; first: boolean };
 
 /**
@@ -95,7 +94,7 @@ function AttendanceCheck() {
     return (
       <Card key={f.key} data-flag-key={f.key} size="small">
         <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXS }}>
-          <AppTag color={KIND_COLOR[f.kind]}>{ATTENDANCE_FLAG_LABELS[f.kind]}</AppTag>
+          <AppTag variant="kind">{ATTENDANCE_FLAG_LABELS[f.kind]}</AppTag>
           <Typography.Text type="secondary" translate="no">
             {f.projectName}
           </Typography.Text>
@@ -108,7 +107,7 @@ function AttendanceCheck() {
           <Typography.Text strong>To check:</Typography.Text>
           <Typography.Text translate="no">{f.quantity}</Typography.Text>
           {f.valueInr ? (
-            <AppTag tone="danger" translate="no">
+            <AppTag meaning="failed" translate="no">
               {formatINR(f.valueInr)}
             </AppTag>
           ) : null}

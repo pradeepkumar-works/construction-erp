@@ -55,7 +55,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
               </div>
             ) : (
               <span>
-                {c.clientName ?? NO_VALUE} {c.clientName && <AppTag>not in the client master</AppTag>}
+                {c.clientName ?? NO_VALUE} {c.clientName && <AppTag meaning="closed">not in the client master</AppTag>}
               </span>
             )}
           </Descriptions.Item>
@@ -85,7 +85,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Completion (agreement)">{formatDate(c.endDate)}</Descriptions.Item>
           <Descriptions.Item label="Completion (with extensions)">
             {formatDate(c.revisedEndDate)}
-            {c.extensionDays > 0 && <AppTag tone="info" style={{ marginLeft: 8 }}>+{c.extensionDays} days</AppTag>}
+            {c.extensionDays > 0 && <span className="text-muted" translate="no"> +{c.extensionDays} days</span>}
           </Descriptions.Item>
           <Descriptions.Item label="Defect liability">{c.defectLiabilityMonths !== null ? `${c.defectLiabilityMonths} months` : NO_VALUE}</Descriptions.Item>
           <Descriptions.Item label="Client pays within">{c.clientPaymentDays !== null ? `${c.clientPaymentDays} days` : 'Not set (30 days assumed)'}</Descriptions.Item>
@@ -120,7 +120,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
             { title: 'Held up', key: 'dates', render: (_, e) => `${formatDate(e.delayStart)} to ${e.delayEnd ? formatDate(e.delayEnd) : 'date'}` },
             { title: 'Days lost', dataIndex: 'daysLost', align: 'right', render: (v: number | null) => v ?? NO_VALUE },
             { title: 'Caused by', dataIndex: 'responsibleParty', render: (v: ContractExtensionDto['responsibleParty']) => (v ? DELAY_PARTY_LABELS[v] : NO_VALUE) },
-            { title: 'Granted (days)', dataIndex: 'eotGrantedDays', align: 'right', render: (v: number | null, e) => (v !== null ? v : e.eotClaimed ? <AppTag tone="pending">Claimed</AppTag> : NO_VALUE) },
+            { title: 'Granted (days)', dataIndex: 'eotGrantedDays', align: 'right', render: (v: number | null, e) => (v !== null ? v : e.eotClaimed ? <AppTag meaning="waiting">Claimed</AppTag> : NO_VALUE) },
           ]}
           summary={() =>
             c.extensions.length ? (

@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-status-colour',
+    date: '2026-11-01',
+    title: 'Colour only where something needs you',
+    points: [
+      'A status now has one colour wherever it shows. Amber waits on someone, blue is in hand, red was rejected, sent back or is overdue. Approved, paid and closed entries are plain text, so a long list of finished work is calm and what needs you stands out.',
+      'Types, trades and priorities are outlined labels with no colour, and scores and counts are plain numbers.',
+      'The stage bar on a record shows the current stage half drawn, amber while it waits on someone and red when it was sent back.',
+      'Home’s tiles show every icon in one colour and say what a count is, such as “53 to approve”, with the full number instead of 99+.',
+      'On the Gantt, red is only for late. Behind plan is amber, done is grey, and the critical path and the today line are dark.',
+    ],
+  },
+  {
     id: '2026-11-headline-figures',
     date: '2026-11-01',
     title: 'Headline figures say the same thing everywhere',

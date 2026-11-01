@@ -6,7 +6,7 @@ import { Card, Flex, Skeleton, Typography, theme } from 'antd';
 import { BID_HISTORY_DAYS, BID_MATCH_LABELS, WORK_KIND_LABELS, sorPctLabel, type BidLevelDto, type PastOpeningsDto, type TenderDetailDto } from '@erp/shared';
 import { usePastOpenings } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
-import { RankTag } from './tenderUi';
+import { RankText } from './tenderUi';
 
 const atSor = (pct: string | number) => `${sorPctLabel(pct)}${Math.abs(Number(pct)) < 0.005 ? '' : ' the SOR'}`;
 
@@ -87,7 +87,7 @@ export function PastOpenings({ tender }: { tender: TenderDetailDto }) {
                 <div translate="no">{o.l1Pct === null ? 'L1 -' : `L1 ${sorPctLabel(o.l1Pct)}`}</div>
                 {o.ourRank ? (
                   <Typography.Text type="secondary" style={small}>
-                    Us <RankTag rank={o.ourRank} />
+                    Us <RankText rank={o.ourRank} />
                     {o.ourPct !== null ? <span translate="no">{` ${sorPctLabel(o.ourPct)}`}</span> : null}
                   </Typography.Text>
                 ) : (

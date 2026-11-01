@@ -144,7 +144,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
                 }
                 title={
                   <span style={{ fontSize: themeFontSize('fontSize') }}>
-                    {m.fullName} {m.isPm && <AppTag tone="info" style={{ marginLeft: 4 }}>PM</AppTag>}
+                    {m.fullName} {m.isPm && <AppTag variant="kind" style={{ marginLeft: 4 }}>PM</AppTag>}
                   </span>
                 }
                 description={<Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.roleName}</Typography.Text>}

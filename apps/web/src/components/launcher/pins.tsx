@@ -8,15 +8,15 @@ import { LAUNCHER_PIN_MAX, byPosition, canSeeNav, navNode, positionBetween } fro
 import { useLauncher, useMovePin, usePin, useUnpin } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { TreeIcon } from '@/components/shell/nav-icons';
-import { familyOf, type TileEntry, type TileMenu } from './TileGrid';
+import type { TileEntry, TileMenu } from './TileGrid';
 
 /** A pin as a tile: a node of the tree, or a project. */
 export function pinEntry(pin: NavPinDto): TileEntry {
   if (pin.kind === 'NODE') {
     const node = navNode(pin.target)!;
-    return { key: pin.id, node, family: familyOf(node) };
+    return { key: pin.id, node };
   }
-  return { key: pin.id, label: pin.label, icon: 'folder-kanban', family: 'work', description: 'Project', href: `/projects/${pin.target}` };
+  return { key: pin.id, label: pin.label, icon: 'folder-kanban', description: 'Project', href: `/projects/${pin.target}` };
 }
 
 const icon = (name: string) => <TreeIcon name={name} />;

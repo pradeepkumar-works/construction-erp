@@ -21,7 +21,6 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
 const moneyOf = (c: ContractCurrency | undefined) => (v: string | null) => (v ? <span className="mono" translate="no">{formatMoney(v, c)}</span> : NO_VALUE);
-const TRIGGER_COLORS: Record<StageTrigger, string> = { EVENT: 'purple', PROGRESS: 'blue', SUPPLY: 'cyan', TEST: 'geekblue' };
 const VISUALLY_HIDDEN: React.CSSProperties = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
 const numOrNull = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
@@ -88,7 +87,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
       key: 'trigger',
       render: (t: StageTrigger) => (
         <Tooltip title={STAGE_TRIGGER_HINTS[t]}>
-          <AppTag color={TRIGGER_COLORS[t]}>{STAGE_TRIGGER_LABELS[t]}</AppTag>
+          <AppTag variant="kind">{STAGE_TRIGGER_LABELS[t]}</AppTag>
         </Tooltip>
       ),
     },
@@ -238,7 +237,7 @@ export function BillingBreakup({ projectId }: { projectId: string }) {
                   </div>
                 ),
               },
-              { title: 'Paid by', dataIndex: 'basis', key: 'basis', render: (b: BillingComponentDto['basis']) => <AppTag>{BILLING_BASIS_LABELS[b]}</AppTag> },
+              { title: 'Paid by', dataIndex: 'basis', key: 'basis', render: (b: BillingComponentDto['basis']) => <AppTag variant="kind">{BILLING_BASIS_LABELS[b]}</AppTag> },
               {
                 title: 'Share',
                 key: 'share',

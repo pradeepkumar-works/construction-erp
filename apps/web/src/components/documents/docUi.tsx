@@ -9,22 +9,11 @@ import type { AttachmentDto, RevisionStatus } from '@erp/shared';
 import { REVISION_STATUS_LABELS, canViewDrawingFile, drawingFileKind } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 
-const STATUS_TAG: Record<RevisionStatus, string> = {
-  FOR_CONSTRUCTION: 'green',
-  APPROVED: 'cyan',
-  APPROVED_WITH_COMMENTS: 'cyan',
-  FOR_APPROVAL: 'gold',
-  FOR_INFORMATION: 'default',
-  REJECTED: 'red',
-  AS_BUILT: 'blue',
-  WITHDRAWN: 'default',
-};
-
 /** "R2" as it is; a bare number reads "Rev 3". */
 export const revLabel = (revision: string) => (/^\d+$/.test(revision) ? `Rev ${revision}` : revision);
 
 export const RevisionStatusTag = ({ status }: { status: RevisionStatus }) => (
-  <AppTag color={STATUS_TAG[status]} style={{ margin: 0 }}>
+  <AppTag kind="revision" status={status} style={{ margin: 0 }}>
     {REVISION_STATUS_LABELS[status]}
   </AppTag>
 );

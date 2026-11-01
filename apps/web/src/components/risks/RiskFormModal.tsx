@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useProject, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
-import { LEVEL_TAG, RATING_OPTIONS } from './riskUi';
+import { RATING_OPTIONS } from './riskUi';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { todayDate } from '@/lib/format';
 
@@ -248,7 +248,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
           </Form.Item>
           <Form.Item label="Score">
             {score ? (
-              <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeLG'), lineHeight: '32px', color: LEVEL_TAG[riskLevel(score)] === 'red' ? themeColor('colorErrorText') : undefined }}>
+              <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeLG'), lineHeight: '32px', color: riskLevel(score) === 'HIGH' ? themeColor('colorErrorText') : undefined }}>
                 {score} · {RISK_LEVEL_LABELS[riskLevel(score)]}
               </Typography.Text>
             ) : (

@@ -48,7 +48,7 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
               <RecordLink onOpen={() => onOpen(r.id)} strong>
                 {r.fullName}
               </RecordLink>
-              {!r.isActive && <AppTag style={{ marginLeft: 6 }}>Left</AppTag>}
+              {!r.isActive && <AppTag meaning="closed" style={{ marginLeft: 6 }}>Left</AppTag>}
               <Sub>{r.designation}</Sub>
             </div>
           ),

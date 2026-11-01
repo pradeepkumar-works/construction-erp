@@ -17,7 +17,6 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { NoAccess } from '@/components/common/NoAccess';
 
-const SECTION_COLOR: Record<LeakageSection, string> = { material: 'magenta', rates: 'purple', fuel: 'volcano', idle: 'blue' };
 const SECTION_HELP: Record<LeakageSection, string> = {
   material: 'Used against what the approved work allows, and against the other sites',
   rates: 'Orders above what another site paid in the 30 days before',
@@ -89,7 +88,7 @@ function Leakage() {
     return (
       <Card key={f.key} data-flag-key={f.key} size="small">
         <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXS }}>
-          <AppTag color={SECTION_COLOR[f.section]}>{LEAKAGE_SECTION_LABELS[f.section]}</AppTag>
+          <AppTag variant="kind">{LEAKAGE_SECTION_LABELS[f.section]}</AppTag>
           {f.projectName ? (
             <Typography.Text type="secondary" translate="no">
               {f.projectName}
@@ -103,7 +102,7 @@ function Leakage() {
           <Typography.Text strong>At risk:</Typography.Text>
           <Typography.Text translate="no">{f.quantity}</Typography.Text>
           {f.valueInr !== null ? (
-            <AppTag tone="danger" translate="no">
+            <AppTag meaning="failed" translate="no">
               {formatINR(f.valueInr)}
             </AppTag>
           ) : null}

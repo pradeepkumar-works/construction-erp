@@ -188,7 +188,7 @@ export function LabsPage() {
                     <Typography.Text strong translate="no">
                       {l.name}
                     </Typography.Text>
-                    {!l.active ? <AppTag tone="neutral">Not in use</AppTag> : null}
+                    {!l.active ? <AppTag meaning="closed">Not in use</AppTag> : null}
                   </Flex>
                   <Typography.Text type="secondary">{l.kind === 'SITE' && l.projectName ? `Site lab, ${l.projectName}` : LAB_KIND_LABELS[l.kind]}</Typography.Text>
                 </Flex>

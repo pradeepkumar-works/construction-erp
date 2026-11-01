@@ -99,7 +99,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
         <div>
           <Space size={4} wrap>
             <span>{p.position ?? EQUIPMENT_PART_KIND_LABELS[p.kind]}</span>
-            {p.removedOn ? <AppTag style={{ margin: 0 }}>Came off</AppTag> : <AppTag tone="success" style={{ margin: 0 }}>On now</AppTag>}
+            {p.removedOn ? <AppTag meaning="closed" style={{ margin: 0 }}>Came off</AppTag> : <AppTag meaning="done" style={{ margin: 0 }}>On now</AppTag>}
           </Space>
           <div className="text-muted" style={small}>
             {[p.position ? EQUIPMENT_PART_KIND_LABELS[p.kind] : null, p.make, p.serialNo].filter(Boolean).join(' · ') || ' '}

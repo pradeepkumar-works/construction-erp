@@ -57,7 +57,6 @@ export const PROGRAMME_WATCH_LABELS: Record<ProgrammeWatchState, string> = {
   DUE_SOON: 'Due soon',
   OVERDUE: 'Overdue',
 };
-export const PROGRAMME_WATCH_COLORS: Record<ProgrammeWatchState, string> = { NO_DATE: 'default', UPCOMING: 'green', DUE_SOON: 'gold', OVERDUE: 'red' };
 
 export interface ProgrammeWatch {
   /** The first programme (none sent yet) or an update */
@@ -129,16 +128,6 @@ export const EOT_STATE_LABELS: Record<EotState, string> = {
   REFUSED: 'Refused',
   WITHDRAWN: 'Withdrawn',
 };
-export const EOT_STATE_COLORS: Record<EotState, string> = {
-  SENT: 'blue',
-  FORWARDED: 'blue',
-  OVERDUE: 'red',
-  GRANTED: 'green',
-  PART_GRANTED: 'gold',
-  REFUSED: 'red',
-  WITHDRAWN: 'default',
-};
-
 /** What the rules read of an application. */
 export interface EotRow {
   status: EotStatus;

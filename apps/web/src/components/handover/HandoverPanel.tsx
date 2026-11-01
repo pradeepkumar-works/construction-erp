@@ -7,7 +7,7 @@ import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { CloseoutCategory, CloseoutItemDto, DefectDto, DefectPhase, DefectPriority, DefectStatus, HandoverSummaryDto, ProjectMemberDto } from '@erp/shared';
+import type { CloseoutCategory, CloseoutItemDto, DefectDto, DefectPhase, DefectPriority, HandoverSummaryDto, ProjectMemberDto } from '@erp/shared';
 import {
   CLOSEOUT_CATEGORIES,
   CLOSEOUT_CATEGORY_LABELS,
@@ -32,18 +32,16 @@ import { DefectFormModal, HandoverFormModal, type DefectAction } from './Handove
 import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const STATUS_COLORS: Record<DefectStatus, string> = { OPEN: 'orange', FIXED: 'blue', CLOSED: 'green' };
-const PRIORITY_COLORS: Record<DefectPriority, string> = { LOW: 'default', MEDIUM: 'gold', HIGH: 'red' };
 type StatusFilter = 'PENDING' | 'OPEN' | 'FIXED' | 'CLOSED' | 'ALL';
 
 export function DefectStatusTag({ d }: { d: Pick<DefectDto, 'status' | 'overdue'> }) {
   return (
     <Space size={4}>
-      <AppTag color={STATUS_COLORS[d.status]} style={{ margin: 0 }}>
+      <AppTag kind="defect" status={d.status} style={{ margin: 0 }}>
         {DEFECT_STATUS_LABELS[d.status]}
       </AppTag>
       {d.overdue ? (
-        <AppTag tone="danger" style={{ margin: 0 }}>
+        <AppTag meaning="failed" style={{ margin: 0 }}>
           Overdue
         </AppTag>
       ) : null}
@@ -53,8 +51,8 @@ export function DefectStatusTag({ d }: { d: Pick<DefectDto, 'status' | 'overdue'
 
 /** Where the defect liability period stands. */
 function DlpTag({ daysLeft }: { daysLeft: number }) {
-  if (daysLeft <= 0) return <AppTag tone="success">DLP over</AppTag>;
-  return <AppTag color={daysLeft <= DLP_ALERT_DAYS ? 'gold' : 'blue'}>{plural(daysLeft, 'day')} of DLP left</AppTag>;
+  if (daysLeft <= 0) return <AppTag meaning="done">DLP over</AppTag>;
+  return <AppTag meaning={daysLeft <= DLP_ALERT_DAYS ? 'waiting' : 'inHand'}>{plural(daysLeft, 'day')} of DLP left</AppTag>;
 }
 
 /**
@@ -142,7 +140,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
       dataIndex: 'priority',
       width: 100,
       render: (p: DefectPriority) => (
-        <AppTag color={PRIORITY_COLORS[p]} style={{ margin: 0 }}>
+        <AppTag variant="kind" style={{ margin: 0 }}>
           {DEFECT_PRIORITY_LABELS[p]}
         </AppTag>
       ),
@@ -334,8 +332,8 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
         ) : d ? (
           <Flex vertical gap={16}>
             <Space wrap>
-              <AppTag style={{ margin: 0 }}>{DEFECT_PHASE_LABELS[d.phase]}</AppTag>
-              <AppTag color={PRIORITY_COLORS[d.priority]} style={{ margin: 0 }}>
+              <AppTag variant="kind" style={{ margin: 0 }}>{DEFECT_PHASE_LABELS[d.phase]}</AppTag>
+              <AppTag variant="kind" style={{ margin: 0 }}>
                 {DEFECT_PRIORITY_LABELS[d.priority]} priority
               </AppTag>
               <DefectStatusTag d={d} />

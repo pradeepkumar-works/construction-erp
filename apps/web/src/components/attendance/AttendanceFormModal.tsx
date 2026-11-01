@@ -207,7 +207,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
               Fills the DPR labour:
             </Typography.Text>
             {byTrade.map((m) => (
-              <AppTag key={m.category} style={{ margin: 0 }}>
+              <AppTag variant="kind" key={m.category} style={{ margin: 0 }}>
                 {m.category} {m.count}
               </AppTag>
             ))}

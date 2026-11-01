@@ -62,7 +62,7 @@ export function PortalDprs({ projectId }: { projectId: string }) {
               bordered
               style={{ marginBottom: 16 }}
               items={[
-                { key: 'w', label: 'Weather', children: open.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[open.weather]}</AppTag> : NO_VALUE },
+                { key: 'w', label: 'Weather', children: open.weather ? <AppTag variant="kind" style={{ margin: 0 }}>{WEATHER_LABELS[open.weather]}</AppTag> : NO_VALUE },
                 { key: 'c', label: 'Site condition', children: open.siteCondition ?? NO_VALUE },
                 { key: 'm', label: 'Total labour', children: open.totalManpower },
                 { key: 'by', label: 'Reported by', children: open.submittedByName },

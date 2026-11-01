@@ -30,7 +30,7 @@ export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
         <Descriptions.Item label="LD terms">{rateLine(ld)}</Descriptions.Item>
         <Descriptions.Item label="On contract value">{formatINR(ld.contractValue)}</Descriptions.Item>
         <Descriptions.Item label="Cap">
-          {formatINR(ld.ldCap)} {ld.capReached ? <AppTag tone="danger">Forecast reaches the cap</AppTag> : null}
+          {formatINR(ld.ldCap)} {ld.capReached ? <AppTag meaning="failed">Forecast reaches the cap</AppTag> : null}
         </Descriptions.Item>
         <Descriptions.Item label="Completion with extensions">{formatDate(ld.revisedEndDate)}</Descriptions.Item>
         <Descriptions.Item label={ld.completedOn ? 'Completed' : 'Forecast finish'}>
@@ -95,7 +95,7 @@ export function LdExposureTable() {
           { title: 'Days late', dataIndex: 'daysLate', width: 100, align: 'right', render: (v: number) => (v ? <Typography.Text type="danger">{v}</Typography.Text> : 0) },
           { title: 'Forecast late', dataIndex: 'forecastDaysLate', width: 110, align: 'right' },
           { title: 'LD to date', dataIndex: 'ldToDate', width: 140, align: 'right', render: (v: string) => formatINR(v) },
-          { title: 'Forecast LD', dataIndex: 'ldForecast', width: 150, align: 'right', render: (v: string, r) => <span>{formatINR(v)} {r.capReached ? <AppTag tone="danger">cap</AppTag> : null}</span> },
+          { title: 'Forecast LD', dataIndex: 'ldForecast', width: 150, align: 'right', render: (v: string, r) => <span>{formatINR(v)} {r.capReached ? <AppTag meaning="failed">cap</AppTag> : null}</span> },
           { title: 'Extension to claim', dataIndex: 'eotPendingDays', width: 140, align: 'right', render: (v: number) => (v ? <Typography.Text type="warning">{v} days</Typography.Text> : NO_VALUE) },
         ]}
       />

@@ -174,7 +174,7 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
                 <ol style={{ margin: 0, paddingLeft: 20 }}>
                   {m.points.map((p) => (
                     <li key={p.id} style={{ marginBottom: token.marginXS }}>
-                      {p.kind === 'DECISION' ? <AppTag tone="info">Decided</AppTag> : null}
+                      {p.kind === 'DECISION' ? <AppTag meaning="done">Decided</AppTag> : null}
                       <span style={{ whiteSpace: 'pre-wrap' }}>{p.text}</span>
                     </li>
                   ))}
@@ -203,7 +203,7 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
                           {[a.organisation ?? 'Our staff', a.phone].filter(Boolean).join(' · ')}
                         </Typography.Text>
                       </div>
-                      {a.present ? null : <AppTag>Absent</AppTag>}
+                      {a.present ? null : <AppTag meaning="closed">Absent</AppTag>}
                     </Flex>
                   ))}
                 </Flex>

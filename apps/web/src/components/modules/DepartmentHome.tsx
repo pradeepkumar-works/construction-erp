@@ -15,9 +15,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton } from '@/components/common/QueryState';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { useNavMenu } from '@/components/shell/menu';
-import { ProjectPick, familyOf } from '@/components/launcher/TileGrid';
-import { familyColors } from '@/lib/brand';
-import { useAppearance } from '@/lib/appearance';
+import { ProjectPick, tileBadge, type TileBadge } from '@/components/launcher/TileGrid';
 import { useProjectScope } from '@/lib/project-scope';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import { ProjectProgressPanel } from './ProjectProgress';
@@ -28,19 +26,18 @@ import s from './DepartmentHome.module.css';
 /** The department that holds the projects shows their progress above its pages. */
 const PROJECTS_DEPARTMENT = 'project-management';
 
-/** One page of a sub-module: its icon in its module's colours, its name, what waits there, and the line on what it is for.
+/** One page of a sub-module: its icon in ink, its name, what waits there (with its word, in full), and the line on what it is for.
  *  A project tab with no project chosen in the header asks for the project. */
-function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: number; projectId: string | undefined; onPick: (n: NavNode) => void }) {
-  const { dark } = useAppearance();
-  const { fg, bg } = familyColors(familyOf(node), dark);
+function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: TileBadge; projectId: string | undefined; onPick: (n: NavNode) => void }) {
   const to = navDestination(node);
   const href = !to ? null : to.kind === 'page' ? to.href : projectId ? projectTabHref(projectId, to.tab, to.query) : null;
   const descId = useId();
   // The name says what waits there; the line under it describes it, as a Home tile does.
-  const a11y = { 'aria-label': badge ? `${node.label}, ${badge} waiting` : undefined, 'aria-describedby': badge && node.description ? descId : undefined };
+  const waiting = badge ? `${badge.count.toLocaleString('en-IN')} ${badge.word}` : null;
+  const a11y = { 'aria-label': waiting ? `${node.label}, ${waiting}` : undefined, 'aria-describedby': waiting && node.description ? descId : undefined };
   const body = (
     <>
-      <span className={s.chip} style={{ color: fg, background: bg }} aria-hidden>
+      <span className={s.chip} aria-hidden>
         <TreeIcon name={node.icon} />
       </span>
       <span className={s.text}>
@@ -51,9 +48,9 @@ function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: nu
           </span>
         )}
       </span>
-      {!!badge && (
+      {waiting && (
         <span className={s.badge} translate="no" aria-hidden>
-          {badge > 99 ? '99+' : badge}
+          {waiting}
         </span>
       )}
     </>
@@ -155,7 +152,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
               <ul className={s.pages}>
                 {sub.nodes.map((n) => (
                   <li key={n.id}>
-                    <PageRow node={n} badge={badges?.nodes?.[n.id]} projectId={projectId} onPick={setPicking} />
+                    <PageRow node={n} badge={tileBadge(badges?.nodes?.[n.id], badges?.words?.[n.id])} projectId={projectId} onPick={setPicking} />
                   </li>
                 ))}
               </ul>

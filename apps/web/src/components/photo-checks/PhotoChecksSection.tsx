@@ -86,7 +86,7 @@ function PhotoChecks({ kind, id, photos }: { kind: PhotoCheckKind; id: string; p
                   <span>
                     <Typography.Text strong>{f.label}</Typography.Text>
                     {PHOTO_FLAG_INFO[f.key].safety ? (
-                      <AppTag tone="pending" style={{ marginInlineStart: 6 }}>
+                      <AppTag meaning="waiting" style={{ marginInlineStart: 6 }}>
                         Safety
                       </AppTag>
                     ) : null}

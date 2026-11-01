@@ -53,7 +53,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
         <div style={r.parentActivityId ? { paddingInlineStart: 20 } : undefined}>
           {r.parentActivityId ? <>{v}</> : <strong>{v}</strong>}{' '}
           {r.isDelayed && (
-            <AppTag tone="danger" icon={<WarningOutlined />} style={{ marginLeft: 4 }}>
+            <AppTag meaning="failed" icon={<WarningOutlined />} style={{ marginLeft: 4 }}>
               Delayed
             </AppTag>
           )}
@@ -67,12 +67,12 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
             />
           )}
           {r.holdPoint && (
-            <AppTag tone="pending" style={{ marginLeft: 4 }}>
+            <AppTag meaning="waiting" style={{ marginLeft: 4 }}>
               Hold point
             </AppTag>
           )}
           {r.hiddenWork && (
-            <AppTag tone="pending" style={{ marginLeft: 4 }}>
+            <AppTag meaning="waiting" style={{ marginLeft: 4 }}>
               Hidden work
             </AppTag>
           )}

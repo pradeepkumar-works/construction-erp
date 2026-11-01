@@ -74,7 +74,7 @@ export function LinksDrawer({ projectId, data, activity, editor, onClose }: { pr
               { key: 'plan', label: 'Planned', children: a.plannedStart ? <span translate="no">{`${formatDate(a.plannedStart)} to ${formatDate(a.plannedEnd)}`}</span> : 'No dates' },
               ...(a.earlyStart ? [{ key: 'early', label: 'Earliest', children: <span translate="no">{`${formatDate(a.earlyStart)} to ${formatDate(a.earlyFinish)}`}</span> }] : []),
               ...(a.lateStart ? [{ key: 'late', label: 'Latest', children: <span translate="no">{`${formatDate(a.lateStart)} to ${formatDate(a.lateFinish)}`}</span> }] : []),
-              { key: 'float', label: 'Float', children: <span>{floatText(a)}{a.critical ? <AppTag tone="danger" style={{ marginLeft: 8 }}>Critical</AppTag> : null}</span> },
+              { key: 'float', label: 'Float', children: <span>{floatText(a)}{a.critical ? <AppTag meaning="failed" style={{ marginLeft: 8 }}>Critical</AppTag> : null}</span> },
             ]}
           />
           <div>
@@ -253,7 +253,7 @@ export function ImportScheduleModal({ projectId, open, onClose }: { projectId: s
             columns={[
               { title: 'Activity', dataIndex: 'name', width: 220 },
               { title: 'Dates', key: 'dates', width: 210, render: (_, r) => <span translate="no">{`${formatDate(r.start)} to ${formatDate(r.end)}`}</span> },
-              { title: 'Change', dataIndex: 'action', width: 110, render: (v: keyof typeof ACTION_LABELS) => <AppTag color={v === 'CREATE' ? 'blue' : v === 'UPDATE' ? 'gold' : undefined}>{ACTION_LABELS[v]}</AppTag> },
+              { title: 'Change', dataIndex: 'action', width: 110, render: (v: keyof typeof ACTION_LABELS) => <AppTag variant="kind">{ACTION_LABELS[v]}</AppTag> },
             ]}
           />
         </Flex>

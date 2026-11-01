@@ -194,9 +194,9 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               ) : (
                 r.name
               )}{' '}
-              {r.isActive ? null : <AppTag style={{ marginLeft: 4 }}>Inactive</AppTag>}
+              {r.isActive ? null : <AppTag meaning="closed" style={{ marginLeft: 4 }}>Inactive</AppTag>}
               {r.loan ? (
-                <AppTag style={{ marginLeft: 4 }}>
+                <AppTag variant="kind" style={{ marginLeft: 4 }}>
                   <RecordLink href={`/machine-loans/${r.loan.id}`} onOpen={() => router.push(`/machine-loans/${r.loan!.id}`)}>
                     {`Loan · ${r.loan.lenderName}`}
                   </RecordLink>

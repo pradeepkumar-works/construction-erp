@@ -159,7 +159,7 @@ export function RateAnalysisDrawer({ projectId, boqItemId, open, onClose }: { pr
     ...(edit ? [{ title: '', key: 'actions', width: 84, render: (_: unknown, l: EstimateLineDto) => lineActions(l) }] : []),
   ];
   const otherColumns: TableProps<EstimateLineDto>['columns'] = [
-    { title: 'Kind', dataIndex: 'kind', width: 90, render: (k: 'LABOUR' | 'EQUIPMENT') => <AppTag style={{ margin: 0 }}>{BOQ_RESOURCE_KIND_LABELS[k]}</AppTag> },
+    { title: 'Kind', dataIndex: 'kind', width: 90, render: (k: 'LABOUR' | 'EQUIPMENT') => <AppTag variant="kind" style={{ margin: 0 }}>{BOQ_RESOURCE_KIND_LABELS[k]}</AppTag> },
     {
       title: 'Trade or machine',
       dataIndex: 'name',

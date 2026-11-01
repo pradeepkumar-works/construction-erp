@@ -194,7 +194,7 @@ export function HomeLauncher() {
             Pages matching “{query.trim()}”
           </h2>
           {found.length ? (
-            <TileGrid entries={tileEntries(found, badges?.nodes)} label={`Pages matching ${query.trim()}`} menu={tileMenu} />
+            <TileGrid entries={tileEntries(found, badges)} label={`Pages matching ${query.trim()}`} menu={tileMenu} />
           ) : (
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={<>No page is called “{query.trim()}”. It may be a record: a vendor, an item or a bill.</>}>
               <Button type="primary" onClick={() => requestSearch(query.trim())}>
@@ -282,7 +282,7 @@ export function HomeLauncher() {
                 All modules
               </h2>
               {treeTiles ? (
-                <TileGrid entries={tileEntries(modules, badges?.nodes).map((e) => ({ ...e, label: settings.names[e.key]?.trim() || undefined }))} label="All modules" menu={tileMenu} />
+                <TileGrid entries={tileEntries(modules, badges).map((e) => ({ ...e, label: settings.names[e.key]?.trim() || undefined }))} label="All modules" menu={tileMenu} />
               ) : (
                 <MenuModules menu={menu} look="SIDEBAR" waiting={waiting} label="All modules" menuFor={tileMenu} />
               )}

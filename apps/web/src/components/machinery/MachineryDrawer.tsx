@@ -28,8 +28,8 @@ function EngineFact({ log }: { log: MachineryLogDto }) {
       {`${h(e.engineHours)}${e.idleHours !== null ? `, ${h(e.idleHours)} idle` : ''}${e.meterStart !== null ? `, meter ${formatQty(e.meterStart)} → ${formatQty(e.meterEnd ?? e.meterStart)}` : ''}`}
       {above !== null || (e.outsideSite && e.farthestM !== null) ? (
         <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-          {above !== null ? <AppTag tone="danger">{`Log ${formatQty(above)} h above the engine`}</AppTag> : null}
-          {e.outsideSite && e.farthestM !== null ? <AppTag tone="pending">{`${distanceText(e.farthestM)} from the site`}</AppTag> : null}
+          {above !== null ? <AppTag meaning="failed">{`Log ${formatQty(above)} h above the engine`}</AppTag> : null}
+          {e.outsideSite && e.farthestM !== null ? <AppTag meaning="waiting">{`${distanceText(e.farthestM)} from the site`}</AppTag> : null}
         </span>
       ) : null}
     </span>

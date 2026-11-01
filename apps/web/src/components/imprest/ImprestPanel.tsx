@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useImprest, useImprests } from '@/lib/queries';
-import { STATUS_COLORS, formatDate, formatINR, NO_VALUE } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -22,7 +22,6 @@ import { ImprestActionModal, type ImprestAction } from './ImprestActions';
 import { themeFontSize } from '@/lib/theme';
 
 const rs = (v: string | number) => formatINR(v, true);
-const ENTRY_COLORS = { REQUESTED: 'orange', PAID: 'green', REJECTED: 'red' } as const;
 
 function CashBar({ i }: { i: ImprestDto }) {
   const pct = Number(i.floatAmount) > 0 ? Math.max(0, Math.min(100, (Number(i.cashInHand) / Number(i.floatAmount)) * 100)) : 0;
@@ -88,7 +87,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       render: (_, i) =>
         i.openRequest ? (
           <Space wrap size={4}>
-            <AppTag tone="pending">{rs(i.openRequest.amount)} asked {formatDate(i.openRequest.date)}</AppTag>
+            <AppTag meaning="waiting">{rs(i.openRequest.amount)} asked {formatDate(i.openRequest.date)}</AppTag>
             {admin ? (
               <>
                 <Button size="small" type="primary" onClick={(e) => (e.stopPropagation(), setAction({ kind: 'pay', imprest: i }))}>
@@ -113,7 +112,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectFilter} onChange={setProjectFilter} /> : null}
         <Segmented value={active ? 'open' : 'closed'} onChange={(v) => setActive(v === 'open')} options={[{ value: 'open', label: 'Open' }, { value: 'closed', label: 'Closed' }]} />
-        {waiting ? <AppTag tone="pending">{waiting} top-up{waiting === 1 ? '' : 's'} waiting</AppTag> : null}
+        {waiting ? <AppTag meaning="waiting">{waiting} top-up{waiting === 1 ? '' : 's'} waiting</AppTag> : null}
         <div style={{ flex: 1 }} />
         {admin ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAction({ kind: 'open', projectId })}>
@@ -167,7 +166,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {l.ref}
             {l.status ? (
-              <AppTag color={STATUS_COLORS[l.status]} style={{ marginLeft: 6 }}>
+              <AppTag kind="submission" status={l.status} style={{ marginLeft: 6 }}>
                 {SUBMISSION_STATUS_LABELS[l.status]}
               </AppTag>
             ) : null}
@@ -183,7 +182,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
     { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
     { title: 'Kind', dataIndex: 'kind', width: 130, render: (v: ImprestEntryDto['kind']) => IMPREST_ENTRY_KIND_LABELS[v] },
     { title: 'Amount', dataIndex: 'amount', width: 120, align: 'right', render: (v) => rs(v) },
-    { title: 'Status', dataIndex: 'status', width: 140, render: (v: ImprestEntryDto['status']) => <AppTag color={ENTRY_COLORS[v]}>{IMPREST_ENTRY_STATUS_LABELS[v]}</AppTag> },
+    { title: 'Status', dataIndex: 'status', width: 140, render: (v: ImprestEntryDto['status']) => <AppTag kind="imprestEntry" status={v}>{IMPREST_ENTRY_STATUS_LABELS[v]}</AppTag> },
     {
       title: 'Detail',
       key: 'd',

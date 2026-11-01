@@ -9,7 +9,7 @@ import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, canEditRisk } from '@erp/shar
 import { formatDate } from '@/lib/format';
 import type { ListColumn } from '@/components/list/DataTable';
 import { RecordLink } from '@/components/record/RecordLink';
-import { KindTag, RiskStatusTag, ScoreTag } from './riskUi';
+import { KindTag, RiskScore, RiskStatusTag } from './riskUi';
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
@@ -50,7 +50,7 @@ export function riskColumns({
         </div>
       ),
     },
-    { title: 'Score', dataIndex: 'score', width: 80, align: 'center', ...sort('score'), render: (_, r) => <ScoreTag r={r} /> },
+    { title: 'Score', dataIndex: 'score', width: 80, align: 'center', ...sort('score'), render: (_, r) => <RiskScore r={r} /> },
     {
       title: 'Days lost',
       key: 'days',
@@ -60,7 +60,7 @@ export function riskColumns({
           <div>
             <strong>{r.daysLost ?? 0}</strong>
             {!r.delayEnd && r.status !== 'CLOSED' ? (
-              <AppTag tone="danger" style={{ marginLeft: 6 }}>
+              <AppTag meaning="failed" style={{ marginLeft: 6 }}>
                 ongoing
               </AppTag>
             ) : null}

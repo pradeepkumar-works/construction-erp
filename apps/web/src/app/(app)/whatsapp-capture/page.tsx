@@ -34,7 +34,6 @@ import { LinkButton } from '@/components/common/LinkButton';
 import { DRAFT_PAGES } from '@/components/ai/drafts';
 import { NoAccess } from '@/components/common/NoAccess';
 
-const STATE_COLOR: Record<InboundState, string> = { RECEIVED: 'default', ANSWERED: 'blue', DRAFTED: 'gold', SAVED: 'green', DISCARDED: 'default', FAILED: 'red' };
 const PAGE_SIZE = 10;
 
 const AI_OFF: Record<NonNullable<AiStatusDto['reason']>, string> = {
@@ -253,8 +252,8 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
     <Card size="small" data-message-id={m.id} style={picked ? { borderColor: token.colorPrimary } : undefined}>
       <Flex vertical gap={token.marginXS}>
         <Flex wrap gap={token.marginXS} align="center">
-          <AppTag>{INBOUND_TYPE_LABELS[m.type]}</AppTag>
-          <AppTag color={STATE_COLOR[m.state]}>{m.outcome ? CAPTURE_OUTCOME_LABELS[m.outcome] : INBOUND_STATE_LABELS[m.state]}</AppTag>
+          <AppTag variant="kind">{INBOUND_TYPE_LABELS[m.type]}</AppTag>
+          <AppTag kind="inbound" status={m.state}>{m.outcome ? CAPTURE_OUTCOME_LABELS[m.outcome] : INBOUND_STATE_LABELS[m.state]}</AppTag>
           <Typography.Text type="secondary">
             {formatDateTime(m.createdAt)}
             {showSender && m.userName ? <span translate="no">{` · ${m.userName}`}</span> : null}
@@ -263,7 +262,7 @@ function MessageCard({ m, showSender, picked }: { m: InboundMessageDto; showSend
         {m.text && <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>{m.text}</Typography.Paragraph>}
         {m.transcript && (
           <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
-            <AppTag tone="pending">Check this</AppTag>
+            <AppTag meaning="waiting">Check this</AppTag>
             Heard: {m.transcript}
           </Typography.Paragraph>
         )}

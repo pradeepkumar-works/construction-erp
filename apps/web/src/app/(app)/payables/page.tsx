@@ -296,7 +296,7 @@ export default function PayablesPage() {
         <div>
           {r.vendorName}
           {isSmall(r.vendorMsme) && (
-            <AppTag color={r.msmeFlag ? 'red' : 'orange'} style={{ marginLeft: 6 }}>
+            <AppTag {...(r.msmeFlag ? { meaning: 'failed' as const } : { variant: 'kind' as const })} style={{ marginLeft: 6 }}>
               {MSME_CATEGORY_LABELS[r.vendorMsme!]}
             </AppTag>
           )}
@@ -395,7 +395,7 @@ export default function PayablesPage() {
         <span>
           {v}
           {isSmall(r.vendorMsme) && (
-            <AppTag tone="pending" style={{ marginLeft: 6 }}>
+            <AppTag meaning="waiting" style={{ marginLeft: 6 }}>
               {MSME_CATEGORY_LABELS[r.vendorMsme!]}
             </AppTag>
           )}

@@ -48,7 +48,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
           {periodLabel(p, granularity)}
           {i === 0 && overdue ? (
             <div>
-              <AppTag tone="pending" style={{ marginTop: 2 }}>
+              <AppTag meaning="waiting" style={{ marginTop: 2 }}>
                 includes overdue
               </AppTag>
             </div>

@@ -92,7 +92,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
           print,
           facts: [
             { key: 'date', label: 'Date', children: formatDate(data.date) },
-            { key: 'weather', label: 'Weather', children: data.weather ? <AppTag style={{ margin: 0 }}>{WEATHER_LABELS[data.weather]}</AppTag> : '-' },
+            { key: 'weather', label: 'Weather', children: data.weather ? <AppTag variant="kind" style={{ margin: 0 }}>{WEATHER_LABELS[data.weather]}</AppTag> : '-' },
             { key: 'cond', label: 'Site condition', children: data.siteCondition ?? '-' },
             { key: 'mp', label: 'Total labour', children: data.totalManpower },
             ...filledExtra(ownFieldsOf(def, 'DAY'), data.extra).map((x) => ({ key: `own-${x.field.key}`, label: x.field.label, children: <span translate="no">{x.text}</span> })),

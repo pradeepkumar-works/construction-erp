@@ -78,7 +78,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
       width: 80,
       align: 'center',
       fixed: 'right',
-      render: (v: number) => (v > 0 ? <Badge count={v} color={BRAND.colors.pending} /> : <Sub>0</Sub>),
+      render: (v: number) => (v > 0 ? <Badge count={v} overflowCount={Infinity} color={BRAND.colors.pending} /> : <Sub>0</Sub>),
     },
   ];
 }

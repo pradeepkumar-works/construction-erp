@@ -36,21 +36,19 @@ import { ComplianceFormModal, type ComplianceAction } from './ComplianceForms';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { openableRow } from '@/components/list/openableRow';
 
-const KIND_COLORS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'blue', EMD: 'cyan', INSURANCE: 'purple', LICENCE: 'geekblue' };
-const STATUS_COLORS: Record<ComplianceDocStatus, string> = { ACTIVE: 'green', RENEWED: 'default', RELEASED: 'default', INVOKED: 'red' };
 const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
 const KindTag = ({ kind }: { kind: ComplianceDocKind }) => (
-  <AppTag color={KIND_COLORS[kind]} style={{ margin: 0 }}>
+  <AppTag variant="kind" style={{ margin: 0 }}>
     {COMPLIANCE_DOC_KIND_LABELS[kind]}
   </AppTag>
 );
 
 /** Where an entry stands: its expiry while active, else how it ended. */
 function StandTag({ d }: { d: ComplianceDocDto }) {
-  if (d.status === 'ACTIVE') return d.expiresOn ? <ExpiryTag state={d.state} daysLeft={d.daysLeft} /> : <AppTag style={{ margin: 0 }}>No expiry</AppTag>;
+  if (d.status === 'ACTIVE') return d.expiresOn ? <ExpiryTag state={d.state} daysLeft={d.daysLeft} /> : <AppTag meaning="closed" style={{ margin: 0 }}>No expiry</AppTag>;
   return (
-    <AppTag color={STATUS_COLORS[d.status]} style={{ margin: 0 }}>
+    <AppTag kind="complianceDoc" status={d.status} style={{ margin: 0 }}>
       {COMPLIANCE_DOC_STATUS_LABELS[d.status]}
       {d.closedOn ? ` ${formatDate(d.closedOn)}` : ''}
     </AppTag>
@@ -196,7 +194,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           aria-label="Status"
         />
         {state ? (
-          <AppTag closable onClose={() => setState(undefined)} color={state === 'EXPIRED' ? 'red' : 'gold'}>
+          <AppTag closable onClose={() => setState(undefined)} kind="expiry" status={state}>
             {state === 'EXPIRED' ? 'Expired' : `Expiring in ${DOC_ALERT_DAYS} days`}
           </AppTag>
         ) : null}

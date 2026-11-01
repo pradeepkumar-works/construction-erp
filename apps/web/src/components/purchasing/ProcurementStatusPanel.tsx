@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { Dayjs } from 'dayjs';
-import type { DeliveryState, ProcurementStatusLineDto, ProcurementStatusRowDto } from '@erp/shared';
+import type { ProcurementStatusLineDto, ProcurementStatusRowDto } from '@erp/shared';
 import { DELIVERY_STATE_LABELS, unitLabel } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { useProcurementStatus } from '@/lib/queries';
@@ -18,7 +18,6 @@ import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ExportButton } from '@/components/common/ExportButton';
 import { VendorSelect } from '@/components/common/SearchSelect';
 
-const STATE_COLORS: Record<DeliveryState, string> = { NOT_STARTED: 'default', PARTLY_RECEIVED: 'blue', RECEIVED: 'green', CLOSED: 'purple' };
 type Show = 'PENDING' | 'LATE' | 'ALL';
 
 interface ExportRow {
@@ -116,7 +115,7 @@ export function ProcurementStatusPanel() {
       width: 170,
       render: (_, r) => (
         <Flex vertical gap={2} align="flex-start">
-          <AppTag color={STATE_COLORS[r.state]} style={{ margin: 0 }}>
+          <AppTag kind="delivery" status={r.state} style={{ margin: 0 }}>
             {DELIVERY_STATE_LABELS[r.state]}
           </AppTag>
           {r.awaitingQc ? (

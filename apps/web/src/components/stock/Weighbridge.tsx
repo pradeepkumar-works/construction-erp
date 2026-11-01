@@ -34,8 +34,8 @@ const kg = (v: string | number | null) =>
 export function shortTag(s: ShortCheck | null, unit: string | null): React.ReactNode {
   if (!s) return <span className="text-muted">No challan quantity</span>;
   const inUnit = (k: number) => `${formatQty(kgToUnit(Math.abs(k), unit) ?? k)} ${unit ?? 'kg'}`;
-  if (s.short) return <AppTag tone="danger">{`${inUnit(s.shortKg)} short (${s.shortPct}%)`}</AppTag>;
-  return <AppTag tone="success">{s.shortKg < 0 ? `${inUnit(s.shortKg)} over the challan` : 'Matches the challan'}</AppTag>;
+  if (s.short) return <AppTag meaning="failed">{`${inUnit(s.shortKg)} short (${s.shortPct}%)`}</AppTag>;
+  return <AppTag meaning="done">{s.shortKg < 0 ? `${inUnit(s.shortKg)} over the challan` : 'Matches the challan'}</AppTag>;
 }
 
 const truck = (t: WeighTicketDto) => (
@@ -294,7 +294,7 @@ export function Weighbridge({ projectId }: { projectId?: string }) {
             <Button size="small" type="link" style={{ paddingInline: 0 }} onClick={() => setGrn(t.stockEntryId)}>
               <span translate="no">{t.grnNo}</span>
             </Button>
-            {t.grnAboveNetKg !== null ? <AppTag tone="danger">{`GRN ${formatQty(t.grnQty)} ${unitLabel(t.unit)}, above the net weight`}</AppTag> : shortTag(t.short, t.unit)}
+            {t.grnAboveNetKg !== null ? <AppTag meaning="failed">{`GRN ${formatQty(t.grnQty)} ${unitLabel(t.unit)}, above the net weight`}</AppTag> : shortTag(t.short, t.unit)}
           </Space>
         ),
     },

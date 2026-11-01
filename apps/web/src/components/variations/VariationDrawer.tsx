@@ -24,10 +24,9 @@ import { VariationFormModal } from './VariationFormModal';
 import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
-const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
 
 export const VariationStatusTag = ({ status }: { status: VariationStatus }) => (
-  <AppTag color={STATUS_COLORS[status]} style={{ margin: 0 }}>
+  <AppTag kind="variation" status={status} style={{ margin: 0 }}>
     {VARIATION_STATUS_LABELS[status]}
   </AppTag>
 );
@@ -59,7 +58,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
         <div>
           <span className="mono" translate="no">{l.itemNo}</span> {l.description}
           {l.isNewItem ? (
-            <AppTag tone="pending" style={{ marginLeft: 6 }}>
+            <AppTag meaning="waiting" style={{ marginLeft: 6 }}>
               New item
             </AppTag>
           ) : null}

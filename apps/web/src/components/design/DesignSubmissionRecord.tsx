@@ -14,7 +14,6 @@ import {
   designRevisionLabel,
   isClientSide,
   type DesignCommentDto,
-  type DesignCommentState,
   type DesignSubmissionDetailDto,
 } from '@erp/shared';
 import { useDesignSubmission, useDesignSubmissionAction } from '@/lib/queries';
@@ -30,7 +29,6 @@ import { CheckCircleOutlined, DeleteOutlined, EditOutlined, MoreOutlined, Printe
 import { CodeTag, DesignStatusTag, DesignSubmissionForm, RecordCodeDialog, ReplyDialog, SubmitDesignDialog, WithdrawDesignDialog } from './DesignSubmissionForms';
 
 type Dialog = 'edit' | 'submit' | 'code' | 'withdraw' | null;
-const COMMENT_TONE: Record<DesignCommentState, 'pending' | 'info' | 'success'> = { OPEN: 'pending', ANSWERED: 'info', CLOSED: 'success' };
 
 /** One design submission: what it sends, each round and its code, and the comment resolution sheet. */
 export function DesignSubmissionRecord({ id }: { id: string }) {
@@ -186,7 +184,7 @@ function SubmissionView({ s }: { s: DesignSubmissionDetailDto }) {
       title: 'Status',
       key: 'state',
       width: 120,
-      render: (_: unknown, c: DesignCommentDto) => <AppTag tone={COMMENT_TONE[c.state]}>{DESIGN_COMMENT_STATE_LABELS[c.state]}</AppTag>,
+      render: (_: unknown, c: DesignCommentDto) => <AppTag kind="designComment" status={c.state}>{DESIGN_COMMENT_STATE_LABELS[c.state]}</AppTag>,
     },
     ...(s.canReply
       ? [

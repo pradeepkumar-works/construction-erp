@@ -8,7 +8,7 @@ import type { TableProps } from 'antd';
 import { PrinterOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import type { EmployeeEventDto, EmployeeEventType } from '@erp/shared';
-import { EMPLOYEE_EVENT_LABELS, EMPLOYEE_EVENT_LETTERS, EMPLOYEE_EVENT_TYPES, isExitEvent } from '@erp/shared';
+import { EMPLOYEE_EVENT_LABELS, EMPLOYEE_EVENT_LETTERS, EMPLOYEE_EVENT_TYPES } from '@erp/shared';
 import { useEmployeeEvents } from '@/lib/queries';
 import { formatDate, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -43,7 +43,7 @@ export function ServiceRecords({ onOpen }: { onOpen: (employeeId: string) => voi
         </span>
       ),
     },
-    { title: 'Event', dataIndex: 'type', width: 130, render: (v: EmployeeEventType) => <AppTag color={isExitEvent(v) ? 'default' : v === 'WARNING' ? 'warning' : 'processing'}>{EMPLOYEE_EVENT_LABELS[v]}</AppTag> },
+    { title: 'Event', dataIndex: 'type', width: 130, render: (v: EmployeeEventType) => <AppTag variant="kind">{EMPLOYEE_EVENT_LABELS[v]}</AppTag> },
     { title: 'Change', key: 'change', ellipsis: true, render: (_, r) => eventChange(r) || NO_VALUE },
     { title: 'Letter', dataIndex: 'letterNo', width: 130, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Recorded by', dataIndex: 'createdByName', width: 160, ellipsis: true },

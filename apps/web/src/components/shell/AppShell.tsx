@@ -421,7 +421,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                 <BrandMark size={28} />
                 {approver && pendingCount > 0 && (
                   <Link href="/approvals">
-                    <AppTag tone="pending" style={{ margin: 0 }}>
+                    <AppTag meaning="waiting" style={{ margin: 0 }}>
                       {pendingCount} waiting
                     </AppTag>
                   </Link>

@@ -14,11 +14,9 @@ import { useLetters, useRisk, useRiskHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
-import { KindTag, RiskStatusTag, ScoreTag } from './riskUi';
+import { KindTag, RiskScore, RiskStatusTag } from './riskUi';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { NoticeClock } from './NoticeClock';
-
-const HISTORY_COLORS: Record<string, string> = { CREATED: 'gray', UPDATED: 'blue', CLOSED: 'green', REOPENED: 'orange', DELETED: 'red' };
 
 export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit: (r: RiskDto) => void }) {
   const { user } = useAuth();
@@ -116,7 +114,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                 span: 2,
                 children: (
                   <Space>
-                    <ScoreTag r={data} />
+                    <RiskScore r={data} />
                     <span className="text-muted">
                       probability {data.probability} ({RISK_RATING_LABELS[data.probability]}) × impact {data.impact} ({RISK_RATING_LABELS[data.impact]})
                     </span>
@@ -178,7 +176,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
           <Timeline
             items={(history ?? []).map((h) => ({
               key: h.id,
-              color: HISTORY_COLORS[h.action] ?? 'blue',
+              color: 'gray',
               content: (
                 <div>
                   <Typography.Text strong>{h.action.charAt(0) + h.action.slice(1).toLowerCase()}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>

@@ -213,8 +213,8 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           ],
           lifecycle: submissionLifecycle(data, [
             { title: 'Sent', done: stageAt >= 1, content: data.sentDate ? formatDate(data.sentDate) : undefined },
-            { title: 'Certified', done: stageAt >= 2, content: data.certifiedDate ? `${formatDate(data.certifiedDate)}${data.certificateNo ? `, ${data.certificateNo}` : ''}` : undefined },
-            { title: 'Paid', done: stageAt >= 3, content: data.paidDate ? formatDate(data.paidDate) : approved && stageAt >= 1 ? `${formatMoney(data.outstanding, data, true)} outstanding` : undefined },
+            { title: 'Certified', done: stageAt >= 2, waits: true, content: data.certifiedDate ? `${formatDate(data.certifiedDate)}${data.certificateNo ? `, ${data.certificateNo}` : ''}` : undefined },
+            { title: 'Paid', done: stageAt >= 3, waits: true, content: data.paidDate ? formatDate(data.paidDate) : approved && stageAt >= 1 ? `${formatMoney(data.outstanding, data, true)} outstanding` : undefined },
           ]),
           sections: [
             checksSection('ra-bill', data.id, dataUpdatedAt),
@@ -246,7 +246,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         render: (_, i) => (
                           <div>
                             <span className="mono" translate="no">{i.itemNo}</span> {i.description}
-                            {i.extraItem ? <AppTag tone="pending" style={{ marginLeft: 6 }}>Extra item</AppTag> : toNumber(i.excessQty) > 0 ? <AppTag tone="danger" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</AppTag> : null}
+                            {i.extraItem ? <AppTag meaning="waiting" style={{ marginLeft: 6 }}>Extra item</AppTag> : toNumber(i.excessQty) > 0 ? <AppTag meaning="failed" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</AppTag> : null}
                           </div>
                         ),
                       },

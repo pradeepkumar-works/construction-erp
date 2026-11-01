@@ -11,31 +11,28 @@ import {
   isBuildable,
   type ControlledCopyDto,
   type CopyDisposal,
-  type CopyState,
 } from '@erp/shared';
 import { useNotify } from '@/lib/notify';
 import { useControlledCopies, useCopyAction, useDocuments } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { DatePicker } from '@/components/common/DatePicker';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const afterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
 
-const STATE_TONE: Record<CopyState, TagTone> = { IN_FORCE: 'success', TO_RECALL: 'pending', CLOSED: 'neutral' };
-
 /** Where a controlled copy stands; a superseded one out past the recall period says how long. */
 export function CopyStateTag({ copy }: { copy: Pick<ControlledCopyDto, 'state' | 'recallDays' | 'recallLate' | 'disposal'> }) {
-  if (copy.state === 'CLOSED') return <AppTag tone="neutral">{copy.disposal ? COPY_DISPOSAL_LABELS[copy.disposal] : COPY_STATE_LABELS.CLOSED}</AppTag>;
+  if (copy.state === 'CLOSED') return <AppTag meaning="closed">{copy.disposal ? COPY_DISPOSAL_LABELS[copy.disposal] : COPY_STATE_LABELS.CLOSED}</AppTag>;
   if (copy.recallLate)
     return (
-      <AppTag tone="danger">
+      <AppTag meaning="failed">
         {`To withdraw, ${copy.recallDays} days out`}
       </AppTag>
     );
   return (
-    <AppTag tone={STATE_TONE[copy.state]}>
+    <AppTag kind="controlledCopy" status={copy.state}>
       {copy.state === 'TO_RECALL' ? 'To withdraw' : COPY_STATE_LABELS[copy.state]}
     </AppTag>
   );

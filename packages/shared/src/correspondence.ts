@@ -18,14 +18,6 @@ export const LETTER_STATUS_LABELS: Record<LetterStatus, string> = {
   OPEN: 'Open',
   CLOSED: 'Closed',
 };
-export const LETTER_STATUS_COLORS: Record<LetterStatus, string> = {
-  DRAFT: 'default',
-  AWAITING_APPROVAL: 'gold',
-  ISSUED: 'green',
-  OPEN: 'blue',
-  CLOSED: 'default',
-};
-
 export const LETTER_MODES = ['HAND', 'POST', 'SPEED_POST', 'REGISTERED_POST', 'COURIER', 'EMAIL', 'PORTAL'] as const;
 export type LetterMode = (typeof LETTER_MODES)[number];
 export const LETTER_MODE_LABELS: Record<LetterMode, string> = {

@@ -23,34 +23,25 @@ export function lineFrequency(l: Pick<QaPlanLineDef, 'frequency' | 'per' | 'unit
 export function WitnessTag({ line }: { line: Pick<QaPlanLineDef, 'witness' | 'holdPoint'> }) {
   return (
     <>
-      <AppTag tone={line.witness === 'OWN' ? 'neutral' : 'info'}>{QA_WITNESS_LABELS[line.witness]}</AppTag>
-      {line.holdPoint ? <AppTag tone="pending">Hold point</AppTag> : null}
+      <AppTag variant="kind">{QA_WITNESS_LABELS[line.witness]}</AppTag>
+      {line.holdPoint ? <AppTag meaning="waiting">Hold point</AppTag> : null}
     </>
   );
 }
 
-const ACCREDITATION_TAG: Record<Exclude<AccreditationState, 'NONE'>, { tone: 'success' | 'pending' | 'danger'; text: string }> = {
-  VALID: { tone: 'success', text: 'Accredited' },
-  EXPIRING: { tone: 'pending', text: 'Expiring' },
-  EXPIRED: { tone: 'danger', text: 'Expired' },
-};
+const ACCREDITATION_WORDS: Record<Exclude<AccreditationState, 'NONE'>, string> = { VALID: 'Accredited', EXPIRING: 'Expiring', EXPIRED: 'Expired' };
 
 /** Where an NABL lab's accreditation stands. */
 export function AccreditationTag({ state }: { state: AccreditationState }) {
   if (state === 'NONE') return null;
-  const t = ACCREDITATION_TAG[state];
-  return <AppTag tone={t.tone}>{t.text}</AppTag>;
+  return (
+    <AppTag kind="accreditation" status={state}>
+      {ACCREDITATION_WORDS[state]}
+    </AppTag>
+  );
 }
-
-const CALIBRATION_TONE: Record<CalibrationState, 'success' | 'pending' | 'danger' | 'neutral'> = {
-  OK: 'success',
-  DUE_SOON: 'pending',
-  OVERDUE: 'danger',
-  NEVER: 'danger',
-  OUT_OF_USE: 'neutral',
-};
 
 /** Where an instrument stands in the calibration register. */
 export function CalibrationTag({ state }: { state: CalibrationState }) {
-  return <AppTag tone={CALIBRATION_TONE[state]}>{CALIBRATION_STATE_LABELS[state]}</AppTag>;
+  return <AppTag kind="calibration" status={state}>{CALIBRATION_STATE_LABELS[state]}</AppTag>;
 }
