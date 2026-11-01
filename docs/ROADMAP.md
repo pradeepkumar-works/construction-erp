@@ -954,9 +954,11 @@ real tenders: gap analysis"; Pradeep chose items 1 to 3 of it, in order.
      checked their share and a short check told to the QS; hidden work signed off against its inspection before cover-up
      and countersigned from above before its progress is approved; and a site order book with compliance replies, accepted
      or sent back. ARCHITECTURE "Consultant checks".
-173. **Programme submissions and extension of time applications** (M): the programme submitted and approved with its
-     update interval and the 0.20% watch, and EOT applications as records (sent, forwarded, decided within 30 days, EOT
-     for a variation) that write the delay register's `eotGrantedDays`.
+173. ~~**Programme submissions and extension of time applications** (M).~~ Done: programme revisions sent to the Engineer
+     with what each showed, approved or returned in the portal, the next update watched at the contract's interval and the
+     0.20% programme obligation met by the first revision kept; EOT applications for delays or a variation's added work
+     (time in proportion), forwarded with a recommendation, decided within 30 days, the days granted written to the delay
+     register's `eotGrantedDays`. ARCHITECTURE "Programme and EOT".
 
 ## Official progress reports (item 174)
 

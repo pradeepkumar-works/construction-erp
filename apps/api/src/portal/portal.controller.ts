@@ -12,6 +12,9 @@ import { PortalAnswerDto } from '../rfis/rfis.dto';
 import { ConsultantChecksService } from '../consultant-checks/consultant-checks.service';
 import { SiteOrdersService } from '../consultant-checks/site-orders.service';
 import { CheckMeasurementDto, CountersignDto, SignHiddenDto, SiteOrderCloseDto, SiteOrderInputDto, SiteOrderReopenDto } from '../consultant-checks/consultant-checks.dto';
+import { ProgrammeService } from '../programme/programme.service';
+import { EotService } from '../programme/eot.service';
+import { DecideProgrammeDto, ForwardEotDto } from '../programme/programme.dto';
 import { PortalDprQuery, PortalReportQuery, WitnessDto } from './portal.dto';
 
 /** The client portal: the only routes the client's engineer and consultant (guest roles) may call, besides their account. Staff use the full screens. */
@@ -21,7 +24,7 @@ import { PortalDprQuery, PortalReportQuery, WitnessDto } from './portal.dto';
 @GuestOnly()
 @Controller('portal')
 export class PortalController {
-  constructor(private portal: PortalService, private bills: RaBillsService, private inspections: InspectionsService, private reports: ReportsService, private rfis: RfisService, private checks: ConsultantChecksService, private orders: SiteOrdersService) {}
+  constructor(private portal: PortalService, private bills: RaBillsService, private inspections: InspectionsService, private reports: ReportsService, private rfis: RfisService, private checks: ConsultantChecksService, private orders: SiteOrdersService, private programme: ProgrammeService, private eot: EotService) {}
 
   @ApiOperation({ summary: 'Projects the caller is on, with approved progress, open bills and inspections' })
   @Get('projects')
@@ -141,5 +144,24 @@ export class PortalController {
   @Post('site-orders/:id/reopen')
   reopenSiteOrder(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SiteOrderReopenDto) {
     return this.orders.reopen(user, id, dto.note);
+  }
+
+  @ApiOperation({ summary: "The project's programme revisions and extension of time applications" })
+  @Get('projects/:id/programme')
+  async programmeAndEot(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    const [programme, eot] = await Promise.all([this.programme.register(user, id), this.eot.register(user, id)]);
+    return { programme, eot };
+  }
+
+  @ApiOperation({ summary: 'Approve a programme revision, or return it with comments' })
+  @Post('programme/:id/decide')
+  decideProgramme(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: DecideProgrammeDto) {
+    return this.programme.decide(user, id, { decision: dto.decision, decidedOn: dto.decidedOn, note: dto.note });
+  }
+
+  @ApiOperation({ summary: 'Forward an extension of time application to the competent authority with your recommendation' })
+  @Post('eot/:id/forward')
+  forwardEot(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ForwardEotDto) {
+    return this.eot.forward(user, id, { forwardedOn: dto.forwardedOn, recommendedDays: dto.recommendedDays, note: dto.note });
   }
 }
