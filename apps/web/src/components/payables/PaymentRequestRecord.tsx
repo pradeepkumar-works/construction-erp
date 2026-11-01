@@ -22,17 +22,8 @@ import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { PaymentFormModal, requestPayTarget } from './PaymentFormModal';
 import { ReleaseFundsModal } from './FundRequestFormModal';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string | number, strong?: boolean) =>
-  strong ? (
-    <strong className="mono" translate="no">
-      {formatINR(v, true)}
-    </strong>
-  ) : (
-    <span className="mono" translate="no">
-      {formatINR(v, true)}
-    </span>
-  );
 
 /** Where a request's bill or order lives; a fund request's imprest (none for one paid to a party on account). */
 export const requestTargetHref = (r: Pick<PaymentRequestDto, 'vendorBillId' | 'subcontractBillId' | 'purchaseOrderId' | 'workOrderId' | 'imprestId'>) =>
@@ -190,7 +181,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
               {
                 key: 'amount',
                 label: 'Amount',
-                children: money(data.amount, true),
+                children: <Money value={data.amount} paise strong />,
               },
               {
                 key: 'neededBy',
@@ -207,7 +198,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                     {
                       key: 'open',
                       label: 'Most it may ask',
-                      children: money(data.targetOpen),
+                      children: <Money value={data.targetOpen} paise />,
                     },
                   ]
                 : []),
@@ -218,7 +209,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                       label: releases ? 'Released' : 'Paid',
                       children: (
                         <span>
-                          {money(data.paidAmount)} {toNumber(data.outstanding) > 0 ? <span className="text-muted">· {formatINR(data.outstanding, true)} left</span> : null}
+                          <Money value={data.paidAmount} paise /> {toNumber(data.outstanding) > 0 ? <span className="text-muted">· {formatINR(data.outstanding, true)} left</span> : null}
                         </span>
                       ),
                     },
@@ -270,14 +261,14 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                               dataIndex: 'amount',
                               width: 130,
                               align: 'right',
-                              render: (v) => money(v, true),
+                              render: (v) => <Money value={v} paise strong />,
                             },
                             {
                               title: 'Deducted',
                               key: 'ded',
                               width: 120,
                               align: 'right',
-                              render: (_, p) => money(toNumber(p.tdsAmount) + toNumber(p.otherDeduction)),
+                              render: (_, p) => <Money value={toNumber(p.tdsAmount) + toNumber(p.otherDeduction)} paise />,
                             },
                             {
                               title: 'Mode / reference',

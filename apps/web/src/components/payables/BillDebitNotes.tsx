@@ -6,10 +6,11 @@ import type { DebitNoteDto } from '@erp/shared';
 import { DEBIT_NOTE_REASON_LABELS, canRaiseDebitNote, canViewDebitNotes } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useDebitNotes } from '@/lib/queries';
-import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { formatDate, toNumber } from '@/lib/format';
 import { RecordLink } from '@/components/record/RecordLink';
 import { DebitNoteDrawer, DebitNoteTag } from './DebitNoteRecord';
 import { DebitNoteFormModal, type DebitNoteBill } from './DebitNoteFormModal';
+import { Money } from '@/components/common/Money';
 
 /** Whether a bill's record shows its debit notes: approved, and the user may see them. */
 export const showsDebitNotes = (role: Parameters<typeof canViewDebitNotes>[0] | undefined, status: string) => !!role && status === 'APPROVED' && canViewDebitNotes(role);
@@ -60,9 +61,7 @@ export function BillDebitNotes({ bill }: { bill: DebitNoteBill }) {
             width: 130,
             align: 'right',
             render: (v) => (
-              <strong className="mono" translate="no">
-                {formatINR(v, true)}
-              </strong>
+              <Money value={v} paise strong />
             ),
           },
           { title: 'Status', key: 'state', width: 150, render: (_, r) => <DebitNoteTag note={r} /> },

@@ -18,8 +18,9 @@ import { downloadXlsx, exportFileName } from "@/lib/exportExcel";
 import { QueryError } from "@/components/common/QueryState";
 import { LinkButton } from "@/components/common/LinkButton";
 import { ProjectSelect } from "@/components/common/ProjectSelect";
-import { Amount, Balance } from "@/components/books/booksUi";
+import { Balance } from "@/components/books/booksUi";
 import { PeriodPicker, day, ledgerHref, thisYearSoFar } from "./statementsUi";
+import { Money } from '@/components/common/Money';
 
 interface Row {
   key: string;
@@ -265,14 +266,14 @@ function Grouped({
           dataIndex: "debit",
           align: "right",
           width: 160,
-          render: (x: number) => <Amount value={x} />,
+          render: (x: number) => <Money paise value={x} />,
         },
         {
           title: "Credits",
           dataIndex: "credit",
           align: "right",
           width: 160,
-          render: (x: number) => <Amount value={x} />,
+          render: (x: number) => <Money paise value={x} />,
         },
         {
           title: "Closing",
@@ -297,12 +298,12 @@ function Grouped({
               </Table.Summary.Cell>
               <Table.Summary.Cell index={2} align="right">
                 <Typography.Text strong>
-                  <Amount value={data.totals.debit} />
+                  <Money paise value={data.totals.debit} />
                 </Typography.Text>
               </Table.Summary.Cell>
               <Table.Summary.Cell index={3} align="right">
                 <Typography.Text strong>
-                  <Amount value={data.totals.credit} />
+                  <Money paise value={data.totals.credit} />
                 </Typography.Text>
               </Table.Summary.Cell>
               <Table.Summary.Cell index={4} align="right">

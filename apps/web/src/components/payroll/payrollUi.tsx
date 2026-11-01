@@ -4,15 +4,13 @@ import React from 'react';
 import { AppTag } from '@/components/common/AppTag';
 import type { PayrollRunStatus, SettlementStatus } from '@erp/shared';
 import { PAYROLL_RUN_STATUS_LABELS, SETTLEMENT_STATUS_LABELS } from '@erp/shared';
-import { formatINR, formatMonthLong } from '@/lib/format';
+import { formatMonthLong } from '@/lib/format';
 
 const COLOR: Record<PayrollRunStatus, string> = { DRAFT: 'default', SUBMITTED: 'processing', APPROVED: 'gold', PAID: 'success' };
 
 export const RunStatusTag = ({ status }: { status: PayrollRunStatus }) => <AppTag color={COLOR[status]}>{PAYROLL_RUN_STATUS_LABELS[status]}</AppTag>;
 export const SettlementStatusTag = ({ status }: { status: SettlementStatus }) => <AppTag color={COLOR[status]}>{SETTLEMENT_STATUS_LABELS[status]}</AppTag>;
 
-/** Rupees in a table cell, kept out of translation. */
-export const Rupees = ({ value }: { value: string | number | null | undefined }) => <span translate="no">{formatINR(value)}</span>;
 
 /** Save text the API made (bank file, ECR, ESI sheet) as a file. */
 export function saveText(fileName: string, mimeType: string, content: string) {

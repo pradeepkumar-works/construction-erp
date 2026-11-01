@@ -16,9 +16,10 @@ import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 import { PayslipModal } from './PayslipModal';
-import { RunStatusTag, Rupees, monthLabel, saveText } from './payrollUi';
+import { RunStatusTag, monthLabel, saveText } from './payrollUi';
 import { openPayslips } from './payslipPrint';
 import { openableRow } from '@/components/list/openableRow';
+import { Money } from '@/components/common/Money';
 
 const amount = (p: PayslipDto, code: string) => Number(p.lines.find((l) => l.code === code)?.amount ?? 0);
 
@@ -118,9 +119,9 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
     { title: 'Code', dataIndex: 'employeeCode', width: 96, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Name', dataIndex: 'employeeName', width: 180, ellipsis: true, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Days paid', dataIndex: 'paidDays', width: 90, align: 'right', render: (v: string, p) => `${v}${Number(p.lopDays) ? ` (−${p.lopDays})` : ''}` },
-    { title: 'Gross', dataIndex: 'gross', width: 120, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'Deductions', dataIndex: 'deductions', width: 120, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'Net pay', dataIndex: 'net', width: 120, align: 'right', render: (v: string) => <strong><Rupees value={v} /></strong> },
+    { title: 'Gross', dataIndex: 'gross', width: 120, align: 'right', render: (v: string) => <Money value={v} /> },
+    { title: 'Deductions', dataIndex: 'deductions', width: 120, align: 'right', render: (v: string) => <Money value={v} /> },
+    { title: 'Net pay', dataIndex: 'net', width: 120, align: 'right', render: (v: string) => <strong><Money value={v} /></strong> },
   ];
   const monthOpen = run ? dayjs(`${run.month}-01`).endOf('month').isAfter(dayjs(), 'day') : false;
 
@@ -146,17 +147,17 @@ export function RunDrawer({ id, onClose }: { id: string | null; onClose: () => v
             <Descriptions.Item label="Employees">{run.employees}</Descriptions.Item>
             <Descriptions.Item label="Net pay">
               <strong>
-                <Rupees value={run.net} />
+                <Money value={run.net} />
               </strong>
             </Descriptions.Item>
             <Descriptions.Item label="Gross">
-              <Rupees value={run.gross} />
+              <Money value={run.gross} />
             </Descriptions.Item>
             <Descriptions.Item label="Deductions">
-              <Rupees value={run.deductions} />
+              <Money value={run.deductions} />
             </Descriptions.Item>
             <Descriptions.Item label="Cost to company">
-              <Rupees value={run.employerCost} />
+              <Money value={run.employerCost} />
             </Descriptions.Item>
             <Descriptions.Item label="Prepared by">{run.preparedByName}</Descriptions.Item>
             <Descriptions.Item label="Approved by">{run.approvedByName ? `${run.approvedByName}, ${formatDateTime(run.approvedAt)}` : NO_VALUE}</Descriptions.Item>

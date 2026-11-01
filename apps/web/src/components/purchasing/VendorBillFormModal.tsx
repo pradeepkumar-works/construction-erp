@@ -19,6 +19,7 @@ import { DraftBillChecks } from './DraftBillChecks';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { OtherBillFormModal } from './OtherBillFormModal';
+import { Money } from '@/components/common/Money';
 
 interface FormValues {
   purchaseOrderId: string;
@@ -371,7 +372,7 @@ export function VendorBillFormModal({
                     />
                   ),
                 },
-                { title: 'Amount', key: 'amt', width: 120, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatINR(amountOf(lines[l.id]), true)}</span> },
+                { title: 'Amount', key: 'amt', width: 120, align: 'right', render: (_, l) => <Money value={amountOf(lines[l.id])} paise /> },
               ]}
             />
           ) : (
@@ -421,25 +422,25 @@ export function VendorBillFormModal({
               title={
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
                   <span>Items</span>
-                  <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
+                  <Money value={totals.subtotal} paise />
                   <span>GST</span>
-                  <span className="mono" translate="no">{formatINR(totals.gst, true)}</span>
+                  <Money value={totals.gst} paise />
                   <span>Freight</span>
-                  <span className="mono" translate="no">{formatINR(toNumber(freight), true)}</span>
+                  <Money value={toNumber(freight)} paise />
                   <strong>Invoice total</strong>
-                  <strong className="mono" translate="no">{formatINR(totals.total, true)}</strong>
+                  <Money value={totals.total} paise strong />
                   {toNumber(advance) > 0 ? (
                     <>
                       <span>Less advance adjusted</span>
-                      <span className="mono" translate="no">{formatINR(-toNumber(advance), true)}</span>
+                      <Money value={-toNumber(advance)} paise />
                       <strong>Payable</strong>
-                      <strong className="mono" translate="no">{formatINR(totals.total - toNumber(advance), true)}</strong>
+                      <Money value={totals.total - toNumber(advance)} paise strong />
                     </>
                   ) : null}
                   {printedTotal !== null ? (
                     <>
                       <span>Printed on the invoice</span>
-                      <span className="mono" translate="no">{formatINR(printedTotal, true)}</span>
+                      <Money value={printedTotal} paise />
                     </>
                   ) : null}
                 </div>

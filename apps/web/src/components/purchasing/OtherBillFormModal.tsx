@@ -19,6 +19,7 @@ import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
+import { Money } from '@/components/common/Money';
 
 export type OtherBillKind = Exclude<VendorBillKind, 'PO'>;
 
@@ -250,9 +251,7 @@ export function OtherBillFormModal({
 
   const hireBlocked = (!!given && !bill) || (kind === 'HIRE' && (!p || !!p.existingBill || !p.vendorId));
   const money = (v: number | string) => (
-    <span className="mono" translate="no">
-      {formatINR(v, true)}
-    </span>
+    <Money value={v} paise />
   );
 
   return (

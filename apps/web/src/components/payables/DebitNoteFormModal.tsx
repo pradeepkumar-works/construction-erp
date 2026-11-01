@@ -15,6 +15,7 @@ import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+import { Money } from '@/components/common/Money';
 
 /** The bill a debit note goes against, as the bill's record knows it. */
 export interface DebitNoteBill {
@@ -231,9 +232,7 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
               align: 'right',
               render: (f) =>
                 priced(lines?.[f.name]) ? (
-                  <span className="mono" translate="no">
-                    {formatINR(lineAmount(lines?.[f.name]), true)}
-                  </span>
+                  <Money value={lineAmount(lines?.[f.name])} paise />
                 ) : (
                   <Form.Item name={[f.name, 'amount']} noStyle rules={[{ required: true, message: 'Enter the amount, or the quantity and rate' }]}>
                     <MoneyInput aria-label={`Lump sum of line ${f.name + 1}`} placeholder="Lump sum" />
@@ -257,9 +256,7 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
                 <Typography.Text type="secondary">Before GST {formatINR(totals.subtotal, true)} · GST {formatINR(totals.gst, true)} · Total</Typography.Text>
               </Table.Summary.Cell>
               <Table.Summary.Cell index={1} align="right">
-                <strong className="mono" translate="no">
-                  {formatINR(totals.total, true)}
-                </strong>
+                <Money value={totals.total} paise strong />
               </Table.Summary.Cell>
               <Table.Summary.Cell index={2} colSpan={2} />
             </Table.Summary.Row>

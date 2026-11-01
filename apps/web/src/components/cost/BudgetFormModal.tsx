@@ -11,6 +11,7 @@ import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 interface FormValues {
   heads: Partial<Record<CostHead, number | null>>;
@@ -109,7 +110,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
               )}
             </Space>
             <Typography.Text strong>
-              Total <span className="mono" translate="no">{formatINR(headTotal)}</span>
+              Total <Money value={headTotal} />
             </Typography.Text>
           </div>
           <Form.Item name="notes" label="Notes">
@@ -141,7 +142,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
               { title: 'Item', dataIndex: 'itemNo', width: 70, className: 'mono' },
               { title: 'Description', dataIndex: 'description', ellipsis: true },
               { title: 'Qty', dataIndex: 'qty', width: 120, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${unitLabel(r.unit)}`}</span> },
-              { title: 'Rate', dataIndex: 'rate', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+              { title: 'Rate', dataIndex: 'rate', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
               {
                 title: 'Budget rate',
                 key: 'budgetRate',
@@ -157,7 +158,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
           />
           <div style={{ textAlign: 'right', marginTop: 8 }}>
             <Typography.Text strong>
-              BOQ budget <span className="mono" translate="no">{formatINR(boqTotal)}</span>
+              BOQ budget <Money value={boqTotal} />
             </Typography.Text>
           </div>
         </FormSection>

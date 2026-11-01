@@ -22,6 +22,7 @@ import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { LastRates, RateAbove } from './LastRates';
+import { Money } from '@/components/common/Money';
 
 export interface PoLineValue {
   materialRequestItemId?: string | null;
@@ -202,13 +203,13 @@ export function PurchaseOrderFormModal({
   const summary = (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
       <span>Total before GST</span>
-      <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
+      <Money value={totals.subtotal} paise />
       <span>GST</span>
-      <span className="mono" translate="no">{formatINR(totals.gst, true)}</span>
+      <Money value={totals.gst} paise />
       <span>Freight</span>
-      <span className="mono" translate="no">{formatINR(toNumber(freight), true)}</span>
+      <Money value={toNumber(freight)} paise />
       <strong>Order total</strong>
-      <strong className="mono" translate="no">{formatINR(totals.total, true)}</strong>
+      <Money value={totals.total} paise strong />
     </div>
   );
 
@@ -260,7 +261,7 @@ export function PurchaseOrderFormModal({
               name="selectionReason"
               label={
                 <span>
-                  <span translate="no">{lowest.vendorName}</span> quoted lowest (<span translate="no">{formatINR(lowest.total, true)}</span>). Why does this order go to another vendor?
+                  <span translate="no">{lowest.vendorName}</span> quoted lowest (<Money value={lowest.total} paise />). Why does this order go to another vendor?
                 </span>
               }
               extra="The approver sees this on the order."
@@ -398,7 +399,7 @@ export function PurchaseOrderFormModal({
                   </Form.Item>
                 ),
               },
-              { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (f) => <span className="mono" translate="no">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
+              { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (f) => <Money value={lineAmount(lines?.[f.name])} paise /> },
             ]}
             footer={() => (
               <Table.Summary.Row>
@@ -406,7 +407,7 @@ export function PurchaseOrderFormModal({
                   <Typography.Text type="secondary">Total before GST</Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
-                  <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
+                  <Money value={totals.subtotal} paise />
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={2} />
               </Table.Summary.Row>

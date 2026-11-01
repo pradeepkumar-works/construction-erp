@@ -41,6 +41,7 @@ import { recordPage } from '@/components/approvals/queue';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+import { Money } from '@/components/common/Money';
 
 const counted = (label: string, n: number) => (
   <>
@@ -216,7 +217,7 @@ function ServiceLevels({ data, benchmarks, missing, onEdit }: { data: OmDto; ben
                 </Flex>
               ),
             },
-            { key: 'p', title: 'Penalty', width: 130, align: 'right', render: (_, b) => (Number(b.penalty) ? <AppTag tone="danger">{formatINR(b.penalty)}</AppTag> : <span translate="no">{formatINR(0)}</span>) },
+            { key: 'p', title: 'Penalty', width: 130, align: 'right', render: (_, b) => (Number(b.penalty) ? <AppTag tone="danger">{formatINR(b.penalty)}</AppTag> : <Money value={0} />) },
           ]}
         />
       </Section>
@@ -464,7 +465,7 @@ function Periods({ project, data }: { project: ProjectDetail; data: OmDto }) {
               </>
             ),
           },
-          { key: 'a', title: 'Instalment', width: 130, align: 'right', render: (_, p) => <span translate="no">{formatINR(p.amount)}</span> },
+          { key: 'a', title: 'Instalment', width: 130, align: 'right', render: (_, p) => <Money value={p.amount} /> },
           { key: 's', title: 'Staff short', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.staffDeduction) ? `− ${formatINR(p.staffDeduction)}` : '-'}</span> },
           { key: 'pen', title: 'Penalties', width: 120, align: 'right', render: (_, p) => <span translate="no">{Number(p.penalty) ? `− ${formatINR(p.penalty)}` : '-'}</span> },
           { key: 'n', title: 'Net', width: 130, align: 'right', render: (_, p) => <Typography.Text strong translate="no">{formatINR(p.net)}</Typography.Text> },
@@ -530,7 +531,7 @@ function Staff({ data, onRecord }: { data: OmDto; onRecord: () => void }) {
           { key: 'q', title: 'Minimum', width: 100, align: 'right', render: (_, r) => <span translate="no">{r.required}</span> },
           { key: 'd', title: 'Deployed', width: 100, align: 'right', render: (_, r) => (r.deployed === null ? '-' : <span translate="no">{r.deployed}</span>) },
           { key: 's', title: 'Short', width: 90, align: 'right', render: (_, r) => (r.short ? <AppTag tone="danger">{r.short}</AppTag> : '0') },
-          { key: 'x', title: 'Deducted', width: 130, align: 'right', render: (_, r) => <span translate="no">{formatINR(r.deduction)}</span> },
+          { key: 'x', title: 'Deducted', width: 130, align: 'right', render: (_, r) => <Money value={r.deduction} /> },
         ]}
       />
     </Section>
@@ -672,7 +673,7 @@ function Terms({ data, onEdit }: { data: OmDto; onEdit: () => void }) {
             { key: 'b', title: 'Benchmark', render: (_, b) => OM_BENCHMARK_INFO[b.key as OmBenchmark].label },
             { key: 'l', title: 'Must be', width: 160, render: (_, b) => omRuleText(b.key, b.limit) },
             { key: 'a', title: 'Failures allowed a month', width: 190, align: 'right', render: (_, b) => (OM_BENCHMARK_INFO[b.key as OmBenchmark].basis === 'DAY' ? b.allowedPerMonth : 'Judged monthly') },
-            { key: 'p', title: 'Penalty each', width: 130, align: 'right', render: (_, b) => <span translate="no">{formatINR(b.penalty)}</span> },
+            { key: 'p', title: 'Penalty each', width: 130, align: 'right', render: (_, b) => <Money value={b.penalty} /> },
           ]}
         />
       </Section>

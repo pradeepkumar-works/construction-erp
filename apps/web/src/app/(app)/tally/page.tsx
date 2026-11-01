@@ -20,14 +20,14 @@ import { api, errorMessage } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useTallyExports, useTallyPreview, useTallySettings } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, MONTH_PICKER_FORMAT } from '@/lib/format';
+import { formatDate, formatDateTime, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { NoAccess } from '@/components/common/NoAccess';
 import { themeColor, themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string | null) => (v ? <span className="mono" translate="no">{formatINR(v, true)}</span> : null);
 const KIND_COLORS: Record<TallyVoucherKind, string> = { SALES: 'green', RECEIPT: 'cyan', PURCHASE: 'orange', SUBCONTRACT: 'volcano', PAYMENT: 'purple', EXPENSE: 'gold', DEBIT_NOTE: 'magenta', SALARY: 'blue', SALARY_PAYMENT: 'geekblue', STAFF_LOAN: 'lime', RMC_SALE: 'green', RMC_RECEIPT: 'cyan', MACHINE_LOAN: 'blue', LOAN_EMI: 'purple' };
 const LEDGER_KIND_LABELS: Record<TallyLedgerKind, string> = { FIXED: 'Accounts', EXPENSE: 'Expense categories', CLIENT: 'Clients', VENDOR: 'Vendors', LOAN: 'Machine loans' };
 
@@ -107,7 +107,7 @@ function ToExport() {
         </div>
       ),
     },
-    { key: 'amount', title: 'Amount', dataIndex: 'amount', width: 150, align: 'right', card: 'amount', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
+    { key: 'amount', title: 'Amount', dataIndex: 'amount', width: 150, align: 'right', card: 'amount', render: (v) => <Money value={v} paise strong /> },
   ];
 
   return (
@@ -183,8 +183,8 @@ function ToExport() {
                 dataSource={v.entries}
                 columns={[
                   { title: 'Ledger', dataIndex: 'ledger' },
-                  { title: 'Debit', dataIndex: 'debit', width: 150, align: 'right', render: money },
-                  { title: 'Credit', dataIndex: 'credit', width: 150, align: 'right', render: money },
+                  { title: 'Debit', dataIndex: 'debit', width: 150, align: 'right', render: (v) => <Money value={v} paise /> },
+                  { title: 'Credit', dataIndex: 'credit', width: 150, align: 'right', render: (v) => <Money value={v} paise /> },
                 ]}
               />
             </div>

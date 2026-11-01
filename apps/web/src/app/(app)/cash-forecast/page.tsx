@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ChartCard } from '@/components/home/ChartCard';
 import { NoAccess } from '@/components/common/NoAccess';
+import { Money } from '@/components/common/Money';
 
 const CashForecastChart = dynamic(() => import('@/components/home/charts').then((m) => m.CashForecastChart), {
   ssr: false,
@@ -72,7 +73,7 @@ function Forecast({ data }: { data: CashForecastDto }) {
             ) : (
               <span translate="no">{i.label}</span>
             )}
-            , <span translate="no">{formatINR(i.amount)}</span>
+            , <Money value={i.amount} />
             {i.msme ? ' (MSME)' : ''}: {i.why.charAt(0).toLowerCase() + i.why.slice(1)}
           </li>
         ))}

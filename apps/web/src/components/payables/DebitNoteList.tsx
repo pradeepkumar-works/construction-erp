@@ -19,6 +19,7 @@ import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/D
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { DebitNoteDrawer, DebitNoteTag, debitNoteBillHref } from './DebitNoteRecord';
+import { Money } from '@/components/common/Money';
 
 const NO_KEYS: string[] = [];
 
@@ -103,9 +104,7 @@ export function DebitNoteList({ projectId, vendorId }: { projectId?: string; ven
       align: 'right',
       ...sort('total'),
       render: (v) => (
-        <strong className="mono" translate="no">
-          {formatINR(v)}
-        </strong>
+        <Money value={v} strong />
       ),
       total: (all) => formatINR(all.filter((r) => !r.cancelledAt).reduce((n, r) => n + toNumber(r.total), 0)),
     },

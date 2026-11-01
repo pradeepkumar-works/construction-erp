@@ -5,8 +5,9 @@ import { Alert, Button, Table, Typography } from 'antd';
 import type { LedgerDto, LedgerEntryDto } from '@erp/shared';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { Amount, Balance, VoucherTypeTag } from './booksUi';
+import { Balance, VoucherTypeTag } from './booksUi';
 import { VoucherDrawer } from './VoucherDrawer';
+import { Money } from '@/components/common/Money';
 
 /** An account's entries with its opening, running and closing balance; a voucher opens on click. */
 export function LedgerView({ data, isLoading, error, refetch, emptyText }: { data: LedgerDto | undefined; isLoading: boolean; error: unknown; refetch: () => void; emptyText: string }) {
@@ -39,8 +40,8 @@ export function LedgerView({ data, isLoading, error, refetch, emptyText }: { dat
           { title: 'Type', dataIndex: 'type', width: 110, render: (t: LedgerEntryDto['type']) => <VoucherTypeTag type={t} /> },
           { title: 'Against', dataIndex: 'against', width: 200, ellipsis: true, render: (a: string) => <span translate="no">{a}</span> },
           { title: 'Narration', dataIndex: 'narration', ellipsis: true },
-          { title: 'Debit', dataIndex: 'debit', align: 'right', width: 140, render: (x: string | null) => <Amount value={x} /> },
-          { title: 'Credit', dataIndex: 'credit', align: 'right', width: 140, render: (x: string | null) => <Amount value={x} /> },
+          { title: 'Debit', dataIndex: 'debit', align: 'right', width: 140, render: (x: string | null) => <Money paise value={x} /> },
+          { title: 'Credit', dataIndex: 'credit', align: 'right', width: 140, render: (x: string | null) => <Money paise value={x} /> },
           { title: 'Balance', dataIndex: 'balance', align: 'right', width: 160, render: (x: string) => <Balance value={x} /> },
         ]}
         summary={() =>
@@ -60,12 +61,12 @@ export function LedgerView({ data, isLoading, error, refetch, emptyText }: { dat
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={5} align="right">
                   <Typography.Text strong>
-                    <Amount value={data.debit} />
+                    <Money paise value={data.debit} />
                   </Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={6} align="right">
                   <Typography.Text strong>
-                    <Amount value={data.credit} />
+                    <Money paise value={data.credit} />
                   </Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={7} align="right">

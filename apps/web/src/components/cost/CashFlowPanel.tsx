@@ -13,10 +13,10 @@ import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { formatINR, toNumber, formatMonth, formatDayMonth } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { themeColor, themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 const RED = themeColor('colorErrorText');
 const GREEN = themeColor('colorSuccessText');
-const money = (v: string) => <span className="mono" translate="no">{formatINR(v)}</span>;
 const signed = (v: string) => (
   <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : undefined }}>
     {formatINR(v)}
@@ -56,13 +56,13 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
         </div>
       ),
     },
-    { title: 'Client bills', dataIndex: 'clientBills', width: 130, align: 'right', render: money },
-    { title: 'Retention release', dataIndex: 'retentionRelease', width: 130, align: 'right', render: money },
-    { title: 'Work still to bill', dataIndex: 'futureBilling', width: 140, align: 'right', render: money },
-    { title: 'Money in', dataIndex: 'inTotal', width: 140, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong> },
-    { title: 'Vendor bills', dataIndex: 'vendorBills', width: 130, align: 'right', render: money },
-    { title: 'Cost still to spend', dataIndex: 'remainingBudget', width: 140, align: 'right', render: money },
-    { title: 'Money out', dataIndex: 'outTotal', width: 140, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong> },
+    { title: 'Client bills', dataIndex: 'clientBills', width: 130, align: 'right', render: (v) => <Money value={v} /> },
+    { title: 'Retention release', dataIndex: 'retentionRelease', width: 130, align: 'right', render: (v) => <Money value={v} /> },
+    { title: 'Work still to bill', dataIndex: 'futureBilling', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+    { title: 'Money in', dataIndex: 'inTotal', width: 140, align: 'right', render: (v) => <Money value={v} strong /> },
+    { title: 'Vendor bills', dataIndex: 'vendorBills', width: 130, align: 'right', render: (v) => <Money value={v} /> },
+    { title: 'Cost still to spend', dataIndex: 'remainingBudget', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+    { title: 'Money out', dataIndex: 'outTotal', width: 140, align: 'right', render: (v) => <Money value={v} strong /> },
     { title: 'Net', dataIndex: 'net', width: 130, align: 'right', render: signed },
     { title: 'Cumulative', dataIndex: 'cumulative', width: 140, align: 'right', render: signed },
     {

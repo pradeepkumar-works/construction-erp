@@ -14,6 +14,7 @@ import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { UnitInput } from '@/components/common/UnitInput';
+import { Money } from '@/components/common/Money';
 
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
@@ -390,13 +391,13 @@ export function QuoteDrawer({ enquiry, quote, onClose }: { enquiry: ScEnquiryDet
                   <strong>{priced === enquiry.items.length ? 'Total' : `Total of ${priced} of ${enquiry.items.length} items`}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={3} align="right">
-                  <strong className="mono" translate="no">{formatINR(total, true)}</strong>
+                  <Money value={total} paise strong />
                 </Table.Summary.Cell>
               </Table.Summary.Row>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={3} align="right">{`GST at ${toNumber(gstRate)}%`}</Table.Summary.Cell>
                 <Table.Summary.Cell index={3} align="right">
-                  <span className="mono" translate="no">{formatINR(Math.round(total * toNumber(gstRate)) / 100, true)}</span>
+                  <Money value={Math.round(total * toNumber(gstRate)) / 100} paise />
                 </Table.Summary.Cell>
               </Table.Summary.Row>
             </>

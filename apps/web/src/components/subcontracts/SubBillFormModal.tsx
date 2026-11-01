@@ -16,6 +16,7 @@ import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { unitLabel } from '@erp/shared';
+import { Money } from '@/components/common/Money';
 
 interface FormValues {
   workOrderId: string;
@@ -186,7 +187,7 @@ export function SubBillFormModal({
                     { title: 'Item', dataIndex: 'description' },
                     { title: 'Ordered', width: 120, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatQty(l.quantity)} {l.unit}</span> },
                     { title: 'Billed before', width: 110, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatQty(billedElsewhere(l))}</span> },
-                    { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+                    { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <Money value={v} paise /> },
                     {
                       title: 'This bill',
                       width: 130,

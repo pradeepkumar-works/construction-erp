@@ -15,6 +15,7 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 const dim = (v: string | null) => (v === null ? '' : formatQty(v));
 
@@ -51,7 +52,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
             { key: 'loc', label: 'Location', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
             ...(data.woNo ? [{ key: 'wo', label: 'Done by', children: `${data.contractorName ?? ''} (${data.woNo})` }] : []),
             { key: 'qty', label: 'Quantity', children: <strong className="mono" translate="no">{`${formatQty(data.totalQty)} ${unitLabel(data.unit)}`}</strong> },
-            { key: 'amount', label: `Value at ${formatINR(data.rate, true)} / ${data.unit}`, children: <strong className="mono" translate="no">{formatINR(data.amount, true)}</strong> },
+            { key: 'amount', label: `Value at ${formatINR(data.rate, true)} / ${data.unit}`, children: <Money value={data.amount} paise strong /> },
             ...(data.raBillNo !== null ? [{ key: 'bill', label: 'Billed in', children: `RA bill ${data.raBillNo}` }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],

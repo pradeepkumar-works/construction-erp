@@ -6,7 +6,8 @@ import type { PayslipDto } from '@erp/shared';
 import { useMyPayslips } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { PayslipModal } from './PayslipModal';
-import { Rupees, monthLabel } from './payrollUi';
+import { monthLabel } from './payrollUi';
+import { Money } from '@/components/common/Money';
 
 /** The signed-in person's own payslips, once each month's run is approved; a row opens it to read or print. */
 export function MyPayslips() {
@@ -31,9 +32,9 @@ export function MyPayslips() {
         columns={[
           { title: 'Month', dataIndex: 'month', width: 160, render: (v: string) => monthLabel(v) },
           { title: 'Days paid', key: 'd', width: 110, render: (_, p) => `${p.paidDays} of ${p.monthDays}` },
-          { title: 'Gross', dataIndex: 'gross', align: 'right', render: (v: string) => <Rupees value={v} /> },
-          { title: 'Deductions', dataIndex: 'deductions', align: 'right', render: (v: string) => <Rupees value={v} /> },
-          { title: 'Net pay', dataIndex: 'net', align: 'right', render: (v: string) => <strong><Rupees value={v} /></strong> },
+          { title: 'Gross', dataIndex: 'gross', align: 'right', render: (v: string) => <Money value={v} /> },
+          { title: 'Deductions', dataIndex: 'deductions', align: 'right', render: (v: string) => <Money value={v} /> },
+          { title: 'Net pay', dataIndex: 'net', align: 'right', render: (v: string) => <strong><Money value={v} /></strong> },
         ]}
       />
       <PayslipModal slip={shown} open={!!shown} onClose={() => setOpenId(null)} />

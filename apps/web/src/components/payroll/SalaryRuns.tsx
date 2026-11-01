@@ -15,7 +15,8 @@ import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormShell } from '@/components/form/FormShell';
 import { RunDrawer } from './RunDrawer';
-import { RunStatusTag, Rupees, monthLabel } from './payrollUi';
+import { RunStatusTag, monthLabel } from './payrollUi';
+import { Money } from '@/components/common/Money';
 
 /** Prepare a month's run: the company's, or one site's. */
 function NewRunModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (id: string) => void }) {
@@ -64,7 +65,7 @@ export function SalaryRuns() {
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Whole company' },
     { title: 'Status', dataIndex: 'status', width: 170, render: (v: PayrollRunDto['status']) => <RunStatusTag status={v} /> },
     { title: 'Employees', dataIndex: 'employees', width: 100, align: 'right' },
-    { title: 'Net pay', dataIndex: 'net', width: 140, align: 'right', render: (v: string) => <Rupees value={v} /> },
+    { title: 'Net pay', dataIndex: 'net', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
     { title: 'Paid on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : NO_VALUE) },
   ];
   const newButton = runs ? (

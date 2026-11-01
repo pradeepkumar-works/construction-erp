@@ -31,8 +31,8 @@ import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { OrderBudget, OrderQuotes } from './OrderDecision';
 import { TargetRequests } from '@/components/payables/TargetRequests';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string | number) => <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}</span>;
 
 /** Tag for where an approved order stands: open, fully received or closed short. */
 export function PoStateTag({ order }: { order: Pick<PurchaseOrderDto, 'status' | 'closedAt' | 'open'> }) {
@@ -145,7 +145,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               ),
             },
             { key: 'date', label: 'PO date', children: formatDate(data.poDate) },
-            { key: 'total', label: 'Order total', children: <strong>{money(data.total)}</strong> },
+            { key: 'total', label: 'Order total', children: <strong><Money value={data.total} paise /></strong> },
             ...(toNumber(data.advancePaid) > 0 || toNumber(data.advanceRequested) > 0
               ? [
                   {
@@ -153,7 +153,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                     label: 'Advance',
                     children: (
                       <span>
-                        {money(data.advancePaid)} paid
+                        <Money value={data.advancePaid} paise /> paid
                         <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                           {formatINR(data.advanceRequested, true)} asked for, {formatINR(data.advanceAdjusted, true)} adjusted on bills
                         </div>
@@ -231,7 +231,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                               <Link href={`/purchase-orders/${c.purchaseOrderId}`} className="text-link" translate="no">
                                 {c.poNo}
                               </Link>
-                              ), {formatPct(c.abovePct)} more: <span translate="no">{formatINR(c.extra)}</span> on this order
+                              ), {formatPct(c.abovePct)} more: <Money value={c.extra} /> on this order
                             </li>
                           ))}
                         </ul>
@@ -247,9 +247,9 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                     columns={[
                       { title: 'Item', render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
                       { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
-                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => money(v) },
+                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <Money value={v} paise /> },
                       { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => formatPct(v) },
-                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                       ...(approved
                         ? [
                             {
@@ -273,13 +273,13 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                       ].map(([k, v]) => (
                         <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                           <span>{k}</span>
-                          {money(v)}
+                          <Money value={v} paise />
                         </div>
                       ))}
                       <Divider style={{ margin: '6px 0' }} />
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                         <span>Order total</span>
-                        {money(data.total)}
+                        <Money value={data.total} paise />
                       </div>
                     </Section>
                   </div>
@@ -360,7 +360,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                         columns={[
                           { title: 'Bill', dataIndex: 'billNo', width: 140, render: (v, b) => <Link href={`/vendor-bills/${b.id}`} className="mono">{v}</Link> },
                           { title: 'Invoice', dataIndex: 'invoiceNo', render: (v, b) => `${v}, ${formatDate(b.invoiceDate)}` },
-                          { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => money(v) },
+                          { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
                           { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <AppTag tone="success">Matches</AppTag> : <AppTag tone="danger">Does not match</AppTag>) },
                           { title: 'Status', dataIndex: 'status', width: 130, render: (st) => <StatusTag status={st} /> },
                         ]}

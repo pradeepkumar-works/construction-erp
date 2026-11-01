@@ -27,6 +27,7 @@ import { PurchaseOrderFormModal, type PoStart } from './PurchaseOrderFormModal';
 import { PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { AwardLowestModal } from './AwardLowestModal';
 import { ComparativeTable, RequestOrders, poStartFrom, ranksFor, toOrderOfRequest } from './RequestBuying';
+import { Money } from '@/components/common/Money';
 
 const STEPS = ['enquiries', 'quotations', 'finalise', 'orders'] as const;
 type Step = (typeof STEPS)[number];
@@ -412,7 +413,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
               </div>
             ),
           },
-          { title: 'Total with GST and freight', key: 'total', width: 180, align: 'right', render: (_, x) => <strong className="mono" translate="no">{formatINR(x.total, true)}</strong> },
+          { title: 'Total with GST and freight', key: 'total', width: 180, align: 'right', render: (_, x) => <Money value={x.total} paise strong /> },
           {
             title: 'Above L1',
             key: 'gap',

@@ -10,10 +10,11 @@ import { useRmcAction, useRmcBatches, useRmcOrder } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { BatchStatusTag, M3, OrderStatusTag, Rupees } from './rmcUi';
+import { BatchStatusTag, M3, OrderStatusTag } from './rmcUi';
 import { OrderForm } from './OrderForm';
 import { DispatchForm } from './BatchForms';
 import { InvoiceForm } from './MoneyForms';
+import { Money } from '@/components/common/Money';
 
 /** An order with its trucks, and what the caller may do with it. */
 export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClose: () => void; onBatch?: (id: string) => void }) {
@@ -92,9 +93,9 @@ export function OrderDrawer({ id, onClose, onBatch }: { id: string | null; onClo
               { key: 'w', label: 'Pour at', children: o.site ?? NO_VALUE },
               { key: 'g', label: 'Grade', children: <span translate="no">{`${o.grade} (${o.mixDesignCode})`}</span> },
               { key: 'q', label: 'Quantity', children: <M3 value={o.quantity} /> },
-              { key: 'r', label: 'Rate per m³', children: <Rupees value={o.rate} /> },
-              { key: 'pr', label: 'Pumping a m³', children: o.pumpRate ? <Rupees value={o.pumpRate} /> : 'Not pumped' },
-              { key: 'v', label: 'Value before GST', children: <Rupees value={o.value} /> },
+              { key: 'r', label: 'Rate per m³', children: <Money paise value={o.rate} /> },
+              { key: 'pr', label: 'Pumping a m³', children: o.pumpRate ? <Money paise value={o.pumpRate} /> : 'Not pumped' },
+              { key: 'v', label: 'Value before GST', children: <Money paise value={o.value} /> },
               { key: 'd', label: 'Date', children: formatDate(o.date) },
               { key: 'pd', label: 'Pour on', children: formatDate(o.pourDate) },
               ...(o.status === 'QUOTED' ? [{ key: 'vu', label: 'Quote valid until', children: formatDate(o.validUntil) }] : []),

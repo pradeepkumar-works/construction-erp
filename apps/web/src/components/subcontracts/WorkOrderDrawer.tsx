@@ -27,8 +27,8 @@ import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { TargetRequests } from '@/components/payables/TargetRequests';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
 /** Tag for where an approved order stands: open for work and bills, or closed. */
 export function WoStateTag({ order }: { order: Pick<WorkOrderDto, 'status' | 'closedAt' | 'open'> }) {
@@ -153,7 +153,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
             },
             { key: 'date', label: 'WO date', children: formatDate(data.woDate) },
             { key: 'title', label: 'Work', span: 2, children: data.title },
-            { key: 'value', label: 'Value before GST', children: <strong>{money(data.value)}</strong> },
+            { key: 'value', label: 'Value before GST', children: <strong><Money value={data.value} paise /></strong> },
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             { key: 'period', label: 'Period', children: `${data.startDate ? formatDate(data.startDate) : NO_VALUE} to ${data.endDate ? formatDate(data.endDate) : NO_VALUE}` },
             { key: 'gst', label: 'GST on their bills', children: formatPct(data.gstRate) },
@@ -165,7 +165,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
               children:
                 toNumber(data.advanceAmount) > 0 || advancePaid > 0 ? (
                   <span>
-                    {money(data.advanceAmount)} at {formatPct(data.advanceRecoveryPct)} a bill
+                    <Money value={data.advanceAmount} paise /> at {formatPct(data.advanceRecoveryPct)} a bill
                     <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {advancePaid > 0 ? `${formatINR(advancePaid, true)} paid, ` : ''}
                       {formatINR(data.advanceRecovered, true)} recovered, {formatINR(Math.max(advanceLeft, 0), true)} to go
@@ -212,8 +212,8 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                         ),
                       },
                       { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
-                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => money(v) },
-                      { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong>{money(v)}</strong> },
+                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <Money value={v} paise /> },
+                      { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                       ...(approved
                         ? [
                             {
@@ -239,7 +239,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                     <Section style={{ width: 320 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                         <span>Order value before GST</span>
-                        {money(data.value)}
+                        <Money value={data.value} paise />
                       </div>
                     </Section>
                   </div>
@@ -263,8 +263,8 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                         columns={[
                           { title: 'Bill', dataIndex: 'label', render: (v, b) => (billingRole ? <Link href={`/subcontract-bills/${b.id}`}>{v}</Link> : v) },
                           { title: 'Date', dataIndex: 'billDate', width: 120, render: (v) => formatDate(v) },
-                          { title: 'Work done', dataIndex: 'grossAmount', width: 150, align: 'right', render: (v) => money(v) },
-                          { title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', render: (v) => money(v) },
+                          { title: 'Work done', dataIndex: 'grossAmount', width: 150, align: 'right', render: (v) => <Money value={v} paise /> },
+                          { title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', render: (v) => <Money value={v} paise /> },
                           { title: 'Status', dataIndex: 'status', width: 130, render: (s) => <StatusTag status={s} /> },
                         ]}
                       />

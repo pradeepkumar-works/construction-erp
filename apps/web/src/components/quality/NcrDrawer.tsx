@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useNcr, useNcrHistory } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR } from '@/lib/format';
+import { formatDate, formatDateTime } from '@/lib/format';
 import { AppTag } from '@/components/common/AppTag';
 import { FormGrid } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -22,6 +22,7 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { NcrStatusTag, SeverityTag } from './qualityUi';
 import { NcrFormModal, useMasterOptions } from './NcrFormModal';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'red', ACTION_TAKEN: 'blue', CLOSED: 'green', REOPENED: 'orange', UPDATED: 'gray' };
 
@@ -218,7 +219,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
                 { key: 'ca', label: 'Corrective action', children: data.correctiveAction },
                 { key: 'pa', label: 'Preventive action', children: data.preventiveAction ?? '-' },
                 ...(data.rootCause ? [{ key: 'root', label: 'Root cause', children: causes.nameOf(data.rootCause) }] : []),
-                ...(data.reworkCost ? [{ key: 'cost', label: 'Rework cost', children: <span translate="no">{formatINR(data.reworkCost)}</span> }] : []),
+                ...(data.reworkCost ? [{ key: 'cost', label: 'Rework cost', children: <Money value={data.reworkCost} /> }] : []),
                 { key: 'at', label: 'Recorded', children: formatDateTime(data.actionAt) },
                 ...(data.status === 'CLOSED' ? [{ key: 'closed', label: 'Closed', children: `${formatDateTime(data.closedAt)} by ${data.closedByName}${data.closureNote ? `: ${data.closureNote}` : ''}` }] : []),
               ]}

@@ -7,12 +7,13 @@ import { EditOutlined } from '@/components/common/icons';
 import { canEditProjects } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject, useStores } from '@/lib/queries';
-import { formatINR } from '@/lib/format';
+
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { StockPanel } from '@/components/stock/StockPanel';
+import { Money } from '@/components/common/Money';
 
 /** One central store: its stock, register, value and ageing, and the transfers coming in to receive. */
 export default function StorePage() {
@@ -65,7 +66,7 @@ export default function StorePage() {
       {summary ? (
         <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
           {stat('Items in stock', summary.items)}
-          {summary.value !== null ? stat('Stock value', <span translate="no">{formatINR(summary.value)}</span>) : null}
+          {summary.value !== null ? stat('Stock value', <Money value={summary.value} />) : null}
           {stat('On the road to sites', summary.outInTransit)}
           {stat('Coming in to receive', summary.inInTransit)}
         </Row>

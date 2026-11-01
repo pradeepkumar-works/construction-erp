@@ -14,6 +14,7 @@ import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/
 import { CODE_INPUT, MoneyInput } from '@/components/form/inputs';
 import { UserSelect } from '@/components/common/SearchSelect';
 import { ExcelImportModal, type ImportField } from '@/components/common/ExcelImportModal';
+import { Money } from '@/components/common/Money';
 
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
@@ -243,7 +244,7 @@ export function MakeProjectDialog({ tender, open, onClose }: { tender: TenderDet
       <Form form={form} layout="vertical">
         <Typography.Paragraph>
           <span>{`The project takes the ${tender.totals.itemCount} bid items at the quoted rates (contract value `}</span>
-          <span translate="no">{formatINR(tender.totals.quotedAmount, true)}</span>
+          <Money value={tender.totals.quotedAmount} paise />
           <span>), their rate analysis as material norms and resources, the cost budget from the analysis, and the EMD.</span>
         </Typography.Paragraph>
         <FormSection title="Project">

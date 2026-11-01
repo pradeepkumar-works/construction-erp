@@ -7,6 +7,7 @@ import { useComparative, useProjectBudget } from '@/lib/queries';
 import { AppTag } from '@/components/common/AppTag';
 import { formatINR, toNumber } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 /**
  * What an approver needs to decide a purchase order away from their desk (the
@@ -58,9 +59,7 @@ export function OrderQuotes({ order }: { order: PurchaseOrderDto }) {
             width: 160,
             align: 'right',
             render: (v) => (
-              <span className="mono" translate="no">
-                {formatINR(v, true)}
-              </span>
+              <Money value={v} paise />
             ),
           },
         ]}
@@ -93,10 +92,10 @@ export function OrderBudget({ order }: { order: PurchaseOrderDto }) {
   return (
     <>
       <Typography.Paragraph style={{ marginBottom: 8 }}>
-        Material budget <span className="mono" translate="no">{formatINR(budget)}</span>, of which{' '}
-        <span className="mono" translate="no">{formatINR(spent)}</span> has been spent. This order of{' '}
-        <span className="mono" translate="no">{formatINR(order.total, true)}</span> takes it to{' '}
-        <span className="mono" translate="no">{formatINR(after)}</span>, {pct}% of the budget.
+        Material budget <Money value={budget} />, of which{' '}
+        <Money value={spent} /> has been spent. This order of{' '}
+        <Money value={order.total} paise /> takes it to{' '}
+        <Money value={after} />, {pct}% of the budget.
       </Typography.Paragraph>
       <Progress
         percent={Math.min(pct, 100)}

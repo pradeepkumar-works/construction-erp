@@ -11,7 +11,8 @@ import { useSupplierStatement } from '@/lib/queries';
 import { formatDate, formatINR, STATUS_COLORS, toNumber, NO_VALUE, todayDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { Money } from '@/components/supplier/supplierUi';
+import { Money } from '@/components/common/Money';
+
 
 /** The supplier's account with the company: bills, payments and what is still owed, from a date they pick. */
 export default function SupplierStatementPage() {
@@ -85,9 +86,9 @@ function Rows({ rows }: { rows: SupplierStatementRowDto[] }) {
         { title: 'Type', dataIndex: 'kind', width: 110, render: (k: SupplierStatementRowDto['kind']) => SUPPLIER_STATEMENT_KIND_LABELS[k] },
         { title: 'Reference', dataIndex: 'ref', width: 170, render: (v: string) => <span translate="no">{v}</span> },
         { title: 'Details', dataIndex: 'description', width: 260 },
-        { title: 'Billed', dataIndex: 'credit', width: 130, align: 'right', render: (v: string) => (toNumber(v) ? <Money value={v} /> : null) },
-        { title: 'Paid or deducted', dataIndex: 'debit', width: 140, align: 'right', render: (v: string) => (toNumber(v) ? <Money value={v} /> : null) },
-        { title: 'Balance', dataIndex: 'balance', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
+        { title: 'Billed', dataIndex: 'credit', width: 130, align: 'right', render: (v: string) => (toNumber(v) ? <Money paise value={v} /> : null) },
+        { title: 'Paid or deducted', dataIndex: 'debit', width: 140, align: 'right', render: (v: string) => (toNumber(v) ? <Money paise value={v} /> : null) },
+        { title: 'Balance', dataIndex: 'balance', width: 140, align: 'right', render: (v: string) => <Money paise value={v} /> },
       ]}
     />
   );
@@ -113,9 +114,9 @@ function Bills({ bills }: { bills: SupplierBillDto[] }) {
           width: 130,
           render: (v: string, b) => (b.status === 'APPROVED' && toNumber(b.due) > 0 && v < today ? <AppTag tone="danger">{formatDate(v)}</AppTag> : formatDate(v)),
         },
-        { title: 'Value', dataIndex: 'payable', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
-        { title: 'Paid', dataIndex: 'paid', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
-        { title: 'Still due', dataIndex: 'due', width: 130, align: 'right', render: (v: string, b) => (b.status === 'APPROVED' ? <Money value={v} /> : <Typography.Text type="secondary">Once approved</Typography.Text>) },
+        { title: 'Value', dataIndex: 'payable', width: 130, align: 'right', render: (v: string) => <Money paise value={v} /> },
+        { title: 'Paid', dataIndex: 'paid', width: 130, align: 'right', render: (v: string) => <Money paise value={v} /> },
+        { title: 'Still due', dataIndex: 'due', width: 130, align: 'right', render: (v: string, b) => (b.status === 'APPROVED' ? <Money paise value={v} /> : <Typography.Text type="secondary">Once approved</Typography.Text>) },
         { title: 'Status', dataIndex: 'status', width: 110, render: (s: SupplierBillDto['status']) => <AppTag color={STATUS_COLORS[s]}>{SUBMISSION_STATUS_LABELS[s]}</AppTag> },
       ]}
     />
@@ -136,9 +137,9 @@ function Payments({ payments }: { payments: SupplierPaymentDto[] }) {
         { title: 'Against', dataIndex: 'against', render: (v: string) => <span translate="no">{v}</span> },
         { title: 'Mode', dataIndex: 'mode', width: 110, render: (m: string) => PAYMENT_MODE_LABELS[m as PaymentMode] ?? m },
         { title: 'Reference', dataIndex: 'reference', width: 160, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
-        { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
-        { title: 'TDS', dataIndex: 'tds', width: 110, align: 'right', render: (v: string) => <Money value={v} /> },
-        { title: 'Other deduction', dataIndex: 'otherDeduction', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
+        { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v: string) => <Money paise value={v} /> },
+        { title: 'TDS', dataIndex: 'tds', width: 110, align: 'right', render: (v: string) => <Money paise value={v} /> },
+        { title: 'Other deduction', dataIndex: 'otherDeduction', width: 140, align: 'right', render: (v: string) => <Money paise value={v} /> },
       ]}
     />
   );

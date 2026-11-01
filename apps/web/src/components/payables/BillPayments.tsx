@@ -14,6 +14,7 @@ import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from './PaymentFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { Money } from '@/components/common/Money';
 
 /** Tag for how much of an approved bill is paid. */
 export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; outstanding: string; paidDate: string | null } }) {
@@ -78,8 +79,8 @@ export function BillPayments({ target, approved, heading = true }: { target: Pay
         locale={{ emptyText: 'Nothing paid yet' }}
         columns={[
           { title: 'Date', dataIndex: 'paymentDate', width: 110, render: (v) => formatDate(v) },
-          { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
-          { title: 'Deducted', key: 'ded', width: 120, align: 'right', render: (_, p) => <span className="mono" translate="no">{formatINR(toNumber(p.tdsAmount) + toNumber(p.otherDeduction), true)}</span> },
+          { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <Money value={v} paise strong /> },
+          { title: 'Deducted', key: 'ded', width: 120, align: 'right', render: (_, p) => <Money value={toNumber(p.tdsAmount) + toNumber(p.otherDeduction)} paise /> },
           {
             title: 'Mode / reference',
             key: 'ref',

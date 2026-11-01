@@ -11,8 +11,9 @@ import { usePayrollAction } from '@/lib/queries';
 import { FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput } from '@/components/form/inputs';
-import { Rupees, monthLabel } from './payrollUi';
+import { monthLabel } from './payrollUi';
 import { openPayslips } from './payslipPrint';
+import { Money } from '@/components/common/Money';
 
 interface AdjustValues {
   lines: { code: ManualPayslipCode; label?: string; amount: number }[];
@@ -89,7 +90,7 @@ function AdjustModal({ open, onClose, slip }: { open: boolean; onClose: () => vo
 
 const lineCols = [
   { title: 'Line', dataIndex: 'label', render: (v: string, l: PayslipLineDto) => (l.manual ? `${v} (added)` : v) },
-  { title: 'Amount', dataIndex: 'amount', align: 'right' as const, width: 130, render: (v: string) => <Rupees value={v} /> },
+  { title: 'Amount', dataIndex: 'amount', align: 'right' as const, width: 130, render: (v: string) => <Money value={v} /> },
 ];
 
 /** One payslip: who, the days paid, earnings and deductions side by side, what the company pays besides, and Print. */
@@ -131,11 +132,11 @@ export function PayslipModal({ slip, open, onClose, editable }: { slip: PayslipD
         </Descriptions.Item>
         <Descriptions.Item label="Overtime">{Number(shown.overtimeHours) ? `${shown.overtimeHours} h` : NO_VALUE}</Descriptions.Item>
         <Descriptions.Item label="Gross">
-          <Rupees value={shown.gross} />
+          <Money value={shown.gross} />
         </Descriptions.Item>
         <Descriptions.Item label="Net pay">
           <strong>
-            <Rupees value={shown.net} />
+            <Money value={shown.net} />
           </strong>
         </Descriptions.Item>
       </Descriptions>

@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { formatINR, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 type Row = AwardLine & { vendorName: string; quotationId: string };
 
@@ -35,9 +36,7 @@ function itemCell(r: Row) {
 function rateCell(r: Row) {
   return (
     <span>
-      <span className="mono" translate="no">
-        {formatINR(r.rate, true)}
-      </span>{' '}
+      <Money value={r.rate} paise />{' '}
       <span className="text-muted">+{r.gstRate}%</span>
     </span>
   );
@@ -105,7 +104,7 @@ export function AwardLowestModal({
                     { title: 'Item', key: 'item', render: (_, r) => itemCell(r) },
                     { title: 'To', dataIndex: 'vendorName', width: '28%', render: (v) => <span translate="no">{v}</span> },
                     { title: 'Rate', key: 'rate', width: 150, align: 'right', render: (_, r) => rateCell(r) },
-                    { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', className: 'mono', render: (v) => <span translate="no">{formatINR(v, true)}</span> },
+                    { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', className: 'mono', render: (v) => <Money value={v} paise /> },
                   ]
                 : [
                     {
@@ -116,7 +115,7 @@ export function AwardLowestModal({
                           {itemCell(r)}
                           <div translate="no">{r.vendorName}</div>
                           <div>
-                            {rateCell(r)} · <span className="mono" translate="no">{formatINR(r.amount, true)}</span>
+                            {rateCell(r)} · <Money value={r.amount} paise />
                           </div>
                         </div>
                       ),
@@ -128,9 +127,7 @@ export function AwardLowestModal({
             {plan.orders.map((o) => (
               <div key={o.quotationId}>
                 <span translate="no">{o.vendorName}</span>:{' '}
-                <span className="mono" translate="no">
-                  {formatINR(o.total, true)}
-                </span>
+                <Money value={o.total} paise />
                 <span className="text-muted">
                   {' '}
                   ({o.lines.length} item{o.lines.length === 1 ? '' : 's'}
@@ -139,7 +136,7 @@ export function AwardLowestModal({
               </div>
             ))}
             <strong>
-              Together <span className="mono" translate="no">{formatINR(plan.total, true)}</span>
+              Together <Money value={plan.total} paise />
             </strong>
           </Typography.Paragraph>
           {plan.singleVendor && plan.saving != null ? (

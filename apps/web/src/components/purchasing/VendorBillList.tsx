@@ -27,6 +27,7 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { MatchTag, VendorBillDrawer, overdueDays } from './VendorBillDrawer';
 import { VendorBillForm } from './VendorBillFormModal';
 import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
+import { Money } from '@/components/common/Money';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'exceptions', 'kind'] as const;
 
@@ -94,7 +95,7 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
       width: 140,
       align: 'right',
       ...sort('total'),
-      render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>,
+      render: (v) => <Money value={v} strong />,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.total), 0)),
     },
     {

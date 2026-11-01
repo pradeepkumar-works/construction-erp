@@ -15,10 +15,10 @@ import { CashFlowPanel } from './CashFlowPanel';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { AskButton } from '@/components/ai/AskButton';
 import { Section, SectionStack } from '@/components/common/Section';
+import { Money } from '@/components/common/Money';
 
 const RED = themeColor('colorErrorText');
 const GREEN = themeColor('colorSuccessText');
-const money = (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatINR(v)}</span>);
 const variance = (v: string | null) =>
   v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : GREEN }}>{formatINR(v)}</span>;
 
@@ -130,8 +130,8 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                         {COST_HEAD_LABELS[h]}
                       </span>
                     ) },
-                  { title: 'Budget', dataIndex: 'budget', width: 140, align: 'right', render: money },
-                  { title: 'Actual', dataIndex: 'actual', width: 140, align: 'right', render: money },
+                  { title: 'Budget', dataIndex: 'budget', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+                  { title: 'Actual', dataIndex: 'actual', width: 140, align: 'right', render: (v) => <Money value={v} /> },
                   {
                     title: 'Used',
                     key: 'used',
@@ -141,7 +141,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                       return <Progress percent={Math.min(pct, 100)} format={() => `${pct}%`} size="small" status={pct > data.pctComplete + 10 ? 'exception' : 'normal'} aria-label={`${pct}% of budget used`} />;
                     },
                   },
-                  { title: 'Earned', dataIndex: 'earned', width: 140, align: 'right', render: money },
+                  { title: 'Earned', dataIndex: 'earned', width: 140, align: 'right', render: (v) => <Money value={v} /> },
                   {
                     title: 'Variance',
                     dataIndex: 'variance',
@@ -165,7 +165,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                       </>
                     ),
                   },
-                  { title: 'Forecast', dataIndex: 'forecast', width: 140, align: 'right', render: money },
+                  { title: 'Forecast', dataIndex: 'forecast', width: 140, align: 'right', render: (v) => <Money value={v} /> },
                 ]}
               />
             ) : (
@@ -198,8 +198,8 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                 { title: 'Item', dataIndex: 'itemNo', width: 70, className: 'mono' },
                 { title: 'Description', dataIndex: 'description', ellipsis: true },
                 { title: 'Qty', dataIndex: 'qty', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${unitLabel(r.unit)}`}</span> },
-                { title: 'Rate', dataIndex: 'rate', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
-                { title: 'Budget rate', dataIndex: 'budgetRate', width: 140, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatINR(v, true)}</span>) },
+                { title: 'Rate', dataIndex: 'rate', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
+                { title: 'Budget rate', dataIndex: 'budgetRate', width: 140, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <Money value={v} paise />) },
                 {
                   title: 'Planned margin',
                   dataIndex: 'plannedMarginPct',
@@ -207,9 +207,9 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                   align: 'right',
                   render: (v: number | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span style={{ color: v < 0 ? RED : undefined }}>{formatPct(v)}</span>),
                 },
-                { title: 'Budget', dataIndex: 'budgetAmount', width: 130, align: 'right', render: money },
+                { title: 'Budget', dataIndex: 'budgetAmount', width: 130, align: 'right', render: (v) => <Money value={v} /> },
                 { title: 'Done', dataIndex: 'executedQty', width: 120, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
-                { title: 'Earned', dataIndex: 'earnedBudget', width: 130, align: 'right', render: money },
+                { title: 'Earned', dataIndex: 'earnedBudget', width: 130, align: 'right', render: (v) => <Money value={v} /> },
               ]}
             />
           </Section>

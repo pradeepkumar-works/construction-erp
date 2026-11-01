@@ -23,12 +23,13 @@ import { formatDate, formatINR } from "@/lib/format";
 import { loadXlsx } from "@/lib/exportExcel";
 import { QueryError } from "@/components/common/QueryState";
 import { FormShell } from "@/components/form/FormShell";
-import { Amount, Balance } from "@/components/books/booksUi";
+import { Balance } from "@/components/books/booksUi";
 import {
   VoucherForm,
   type VoucherPrefill,
 } from "@/components/books/VoucherForm";
 import { day } from "./statementsUi";
+import { Money } from '@/components/common/Money';
 
 /** The statement file's cells, row by row: Excel dates as YYYY-MM-DD, CSV kept as the bank wrote it. */
 async function readCells(f: File): Promise<unknown[][]> {
@@ -245,7 +246,7 @@ function MatchPicker({
             key: "amount",
             align: "right",
             width: 140,
-            render: (_, b) => <Amount value={b.deposit ?? b.withdrawal} />,
+            render: (_, b) => <Money paise value={b.deposit ?? b.withdrawal} />,
           },
         ]}
       />
@@ -263,29 +264,29 @@ function Summary({ d }: { d: BankReconciliationDto }) {
     {
       key: "np",
       label: "Add: paid in the books, not yet through the bank",
-      children: <Amount value={d.notPresented} />,
+      children: <Money paise value={d.notPresented} />,
     },
     {
       key: "nc",
       label: "Less: received in the books, not yet credited by the bank",
-      children: <Amount value={d.notCleared} />,
+      children: <Money paise value={d.notCleared} />,
     },
     {
       key: "bi",
       label: "Add: credited by the bank, not in the books",
-      children: <Amount value={d.bankOnlyDeposits} />,
+      children: <Money paise value={d.bankOnlyDeposits} />,
     },
     {
       key: "bo",
       label: "Less: debited by the bank, not in the books",
-      children: <Amount value={d.bankOnlyWithdrawals} />,
+      children: <Money paise value={d.bankOnlyWithdrawals} />,
     },
     {
       key: "exp",
       label: "Balance the bank should show",
       children: (
         <Typography.Text strong>
-          <Amount value={d.expectedBankBalance} />
+          <Money paise value={d.expectedBankBalance} />
         </Typography.Text>
       ),
     },
@@ -294,7 +295,7 @@ function Summary({ d }: { d: BankReconciliationDto }) {
           {
             key: "st",
             label: "Balance on the statement",
-            children: <Amount value={d.statementBalance} />,
+            children: <Money paise value={d.statementBalance} />,
           },
         ]
       : []),
@@ -532,14 +533,14 @@ export function BankReconciliation() {
                   dataIndex: "withdrawal",
                   align: "right",
                   width: 140,
-                  render: (x: string | null) => <Amount value={x} />,
+                  render: (x: string | null) => <Money paise value={x} />,
                 },
                 {
                   title: "Deposit",
                   dataIndex: "deposit",
                   align: "right",
                   width: 140,
-                  render: (x: string | null) => <Amount value={x} />,
+                  render: (x: string | null) => <Money paise value={x} />,
                 },
                 {
                   title: "In the books",
@@ -646,14 +647,14 @@ export function BankReconciliation() {
                   dataIndex: "withdrawal",
                   align: "right",
                   width: 140,
-                  render: (x: string | null) => <Amount value={x} />,
+                  render: (x: string | null) => <Money paise value={x} />,
                 },
                 {
                   title: "Received",
                   dataIndex: "deposit",
                   align: "right",
                   width: 140,
-                  render: (x: string | null) => <Amount value={x} />,
+                  render: (x: string | null) => <Money paise value={x} />,
                 },
                 {
                   title: "Cleared",

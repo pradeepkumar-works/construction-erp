@@ -12,7 +12,8 @@ import { useBooksAction, useLedgerAccounts } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
-import { Amount, Balance } from './booksUi';
+import { Balance } from './booksUi';
+import { Money } from '@/components/common/Money';
 
 interface Values {
   name: string;
@@ -142,8 +143,8 @@ export function ChartOfAccounts() {
               ),
             },
             { title: 'Group', dataIndex: 'group', width: 200, render: (g: AccountGroup) => ACCOUNT_GROUP_LABELS[g] },
-            { title: 'Debits', dataIndex: 'debit', align: 'right', width: 150, render: (x: string) => <Amount value={x} /> },
-            { title: 'Credits', dataIndex: 'credit', align: 'right', width: 150, render: (x: string) => <Amount value={x} /> },
+            { title: 'Debits', dataIndex: 'debit', align: 'right', width: 150, render: (x: string) => <Money paise value={x} /> },
+            { title: 'Credits', dataIndex: 'credit', align: 'right', width: 150, render: (x: string) => <Money paise value={x} /> },
             { title: 'Balance', dataIndex: 'balance', align: 'right', width: 170, render: (x: string) => <Balance value={x} /> },
             {
               title: '',

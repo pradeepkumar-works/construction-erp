@@ -10,9 +10,10 @@ import { useBookVouchers } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { Amount, VoucherStatusTag, VoucherTypeTag } from './booksUi';
+import { VoucherStatusTag, VoucherTypeTag } from './booksUi';
 import { VoucherDrawer } from './VoucherDrawer';
 import { VoucherForm } from './VoucherForm';
+import { Money } from '@/components/common/Money';
 
 type View = 'decide' | 'open' | 'all';
 
@@ -93,7 +94,7 @@ export function Vouchers() {
             { title: 'Narration', dataIndex: 'narration', ellipsis: true },
             { title: 'Made by', dataIndex: 'preparedByName', width: 150, ellipsis: true },
             { title: 'Status', dataIndex: 'status', width: 170, render: (s: BookVoucherStatus) => <VoucherStatusTag status={s} /> },
-            { title: 'Amount', dataIndex: 'amount', align: 'right', width: 150, render: (a: string) => <Amount value={a} /> },
+            { title: 'Amount', dataIndex: 'amount', align: 'right', width: 150, render: (a: string) => <Money paise value={a} /> },
           ]}
         />
       )}
