@@ -263,7 +263,7 @@ function PourList() {
       const sort = (key: PourSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
       return [
         { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
-        { title: 'No.', dataIndex: 'pourNo', width: 140, className: 'mono', ...sort('pourNo') },
+        { title: 'No.', dataIndex: 'pourNo', width: 150, className: 'mono', ...sort('pourNo') },
         { key: 'project', title: 'Project', dataIndex: 'projectName', width: 180, ellipsis: true, render: (v: string, r: PourDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
         {
           key: 'pour',
@@ -280,7 +280,7 @@ function PourList() {
           ),
         },
         { title: 'Grade', dataIndex: 'grade', width: 80, ...sort('grade'), render: (v: string) => <span translate="no">{v}</span> },
-        { key: 'volume', title: 'm³', width: 90, align: 'right', render: (_, r) => <span translate="no">{Number(r.volume ?? r.plannedVolume)}</span> },
+        { key: 'volume', title: 'm³', width: 90, kind: 'qty', value: (r) => r.volume ?? r.plannedVolume },
         { title: 'Card', key: 'card', width: 110, render: (_, r) => (r.cardPassed ? <AppTag meaning="done">Passed</AppTag> : r.card ? <AppTag meaning="waiting">Waiting</AppTag> : <Typography.Text type="secondary">-</Typography.Text>) },
         { title: 'Cube sets', key: 'cubes', width: 100, align: 'right', render: (_, r) => <span translate="no">{`${r.tests.length} of ${r.cubeSetsDue}`}</span> },
         { key: 'flags', title: 'Flags', width: 220, render: (_, r) => (r.flags.length ? <Flags pour={r} /> : <Typography.Text type="secondary">-</Typography.Text>) },
@@ -328,7 +328,6 @@ function PourList() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1400}
         emptyText={<EmptyArt art="entries" title={status || flagged || page.params.q ? 'No pour matches these filters' : 'No pour planned yet'} />}
         emptyAction={newButton}
       />

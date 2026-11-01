@@ -3,13 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { theme } from 'antd';
-import type { MeasurementSheetDto, MeasurementSortField } from '@erp/shared';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { unitLabel, type MeasurementSheetDto, type MeasurementSortField } from '@erp/shared';
+import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import type { ListColumn } from '@/components/list/DataTable';
 import { RowActions } from '@/components/list/RowActions';
 import { RecordLink } from '@/components/record/RecordLink';
-import { Money } from '@/components/common/Money';
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
@@ -55,13 +54,9 @@ export function measurementColumns({
       title: 'Quantity',
       dataIndex: 'totalQty',
       width: 130,
-      align: 'right',
+      kind: 'qty',
+      unit: (r) => unitLabel(r.unit),
       ...sort('totalQty'),
-      render: (v, r) => (
-        <span className="mono" translate="no">
-          {formatQty(v)} {r.unit}
-        </span>
-      ),
     },
     {
       card: 'amount',
@@ -69,8 +64,7 @@ export function measurementColumns({
       title: 'Value',
       dataIndex: 'amount',
       width: 140,
-      align: 'right',
-      render: (v) => <Money value={v} />,
+      kind: 'money',
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.amount), 0)),
     },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, defaultFrom: 1400, ...sort('submittedBy') },

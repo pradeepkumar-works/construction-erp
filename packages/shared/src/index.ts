@@ -129,3 +129,4 @@ export * from './official-reports';
 export * from './consultant-checks';
 export * from './programme-eot';
 export * from './status-tone';
+export * from './list-columns';

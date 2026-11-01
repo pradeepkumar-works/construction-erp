@@ -26,7 +26,6 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { PurchaseOrderFormModal } from './PurchaseOrderFormModal';
 import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
-import { Money } from '@/components/common/Money';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'open'] as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + Number(v || 0), 0));
@@ -66,7 +65,7 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
     { card: 'meta', cardText: (r) => r.vendorName, title: 'Vendor', ...sort('vendor'), render: (_, r) => <TwoLine top={r.vendorName} sub={r.lines.map((l) => l.itemName).join(', ')} /> },
     ...(showProject ? [{ card: 'meta' as const, cardText: (r: PurchaseOrderDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: PurchaseOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     { defaultFrom: 1400, key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests/${r.materialRequestId}`} className="mono" translate="no">{v}</Link> : NO_VALUE) },
-    { card: 'amount', title: 'Total', dataIndex: 'total', width: 150, align: 'right', ...sort('total'), render: (v) => <Money value={v} strong />, total: (rows) => sumMoney(rows.map((r) => r.total)) },
+    { card: 'amount', title: 'Total', dataIndex: 'total', width: 150, kind: 'money', strong: true, ...sort('total'), total: (rows) => sumMoney(rows.map((r) => r.total)) },
     { card: 'date', cardText: (r) => formatDate(r.poDate), title: 'Raised on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     {
       card: 'status',
@@ -169,7 +168,6 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1050 : 1250}
         emptyText={<EmptyArt art="entries" title={buyer ? 'No purchase orders yet. Make one from an approved indent, or with New purchase order.' : 'No purchase orders yet'} />}
         emptyAction={newButton}
       />

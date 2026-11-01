@@ -207,7 +207,6 @@ export function DesignSubmissionsPage() {
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
-          scrollX={1260}
           emptyText={<EmptyArt art="entries" title={status || purpose || kind || toAnswer || page.params.q ? 'No submission matches these filters' : 'No design submission yet'} />}
           emptyAction={newButton}
         />

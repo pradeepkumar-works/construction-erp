@@ -124,9 +124,9 @@ export function Bills() {
       { key: 'invoiceNo', title: 'Bill', dataIndex: 'invoiceNo', width: 150, locked: true, render: (n: string) => <span translate="no">{n}</span> },
       { key: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (d: string) => formatDate(d) },
       { key: 'customer', title: 'Customer', dataIndex: 'customer', ellipsis: true, card: 'meta', render: (c: string) => <span translate="no">{c}</span> },
-      { key: 'quantity', title: 'Concrete', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-      { key: 'total', title: 'Total', dataIndex: 'total', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
-      { key: 'due', title: 'Due', dataIndex: 'due', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
+      { key: 'quantity', title: 'Concrete', dataIndex: 'quantity', kind: 'qty', unit: () => 'm³', width: 100 },
+      { key: 'total', title: 'Total', dataIndex: 'total', kind: 'money', width: 140 },
+      { key: 'due', title: 'Due', dataIndex: 'due', kind: 'money', width: 140 },
       { key: 'status', title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcInvoiceDto['status']) => <InvoiceStatusTag status={s} /> },
     ],
   });
@@ -182,7 +182,6 @@ export function Bills() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={960}
         emptyText={<EmptyArt art="entries" title={due ? 'Every bill is paid' : 'No bills yet'} />}
       />
       {bill && (

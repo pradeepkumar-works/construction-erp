@@ -38,6 +38,7 @@ export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { pr
         {
           title: 'No.',
           dataIndex: 'transmittalNo',
+          className: 'mono',
           locked: true,
           width: 150,
           ...sort('transmittalNo'),
@@ -110,7 +111,6 @@ export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { pr
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={unacknowledged || page.params.q ? 'No transmittal matches these filters' : 'No transmittals yet'} />}
         emptyAction={newButton}
       />

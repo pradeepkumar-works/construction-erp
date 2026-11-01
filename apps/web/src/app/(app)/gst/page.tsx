@@ -26,9 +26,9 @@ import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
 const taxColumns = <T extends { igst: string; cgst: string; sgst: string }>(): ListColumn<T>[] => [
-  { key: 'igst', title: 'IGST', dataIndex: 'igst', width: 120, align: 'right', render: (v) => <Money value={v} /> },
-  { key: 'cgst', title: 'CGST', dataIndex: 'cgst', width: 120, align: 'right', render: (v) => <Money value={v} /> },
-  { key: 'sgst', title: 'SGST', dataIndex: 'sgst', width: 120, align: 'right', render: (v) => <Money value={v} /> },
+  { key: 'igst', title: 'IGST', dataIndex: 'igst', width: 120, kind: 'money' },
+  { key: 'cgst', title: 'CGST', dataIndex: 'cgst', width: 120, kind: 'money' },
+  { key: 'sgst', title: 'SGST', dataIndex: 'sgst', width: 120, kind: 'money' },
 ];
 const TAB_KEYS = ['outward', 'inward', 'hsn'] as const;
 type GstTab = (typeof TAB_KEYS)[number];
@@ -96,10 +96,10 @@ function GstRegistersPage() {
       ),
     },
     { key: 'invoiceDate', title: 'Invoice date', dataIndex: 'invoiceDate', card: 'date', defaultHidden: true, width: 120, render: (v) => formatDate(v) },
-    { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
-    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+    { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, kind: 'pct' },
+    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, kind: 'money' },
     ...taxColumns<Keyed<GstOutwardRowDto>>(),
-    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: (v) => <Money value={v} strong /> },
+    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, kind: 'money', strong: true },
   ];
   const inwardColumns: ListColumn<Keyed<GstInwardRowDto>>[] = [
     {
@@ -138,10 +138,10 @@ function GstRegistersPage() {
       ),
     },
     { key: 'invoiceDate', title: 'Invoice date', dataIndex: 'invoiceDate', card: 'date', defaultHidden: true, width: 120, render: (v) => formatDate(v) },
-    { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
-    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+    { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, kind: 'pct' },
+    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, kind: 'money' },
     ...taxColumns<Keyed<GstInwardRowDto>>(),
-    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, kind: 'money' },
   ];
   const hsn = data ? hsnSummary(data.outward) : [];
   const net = data ? toNumber(data.outwardTotals.tax) - toNumber(data.inwardTotals.tax) : 0;
@@ -244,7 +244,6 @@ function GstRegistersPage() {
                   loading={isFetching}
                   failed={!!error}
                   onOpen={(id) => router.push(`/bills?id=${id}`)}
-                  scrollX={1150}
                   emptyText="No approved RA bill in this period"
                 />
               ),
@@ -261,7 +260,6 @@ function GstRegistersPage() {
                   rows={inward}
                   loading={isFetching}
                   failed={!!error}
-                  scrollX={1150}
                   emptyText="No purchase with GST in this period"
                 />
               ),

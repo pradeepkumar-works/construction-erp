@@ -122,7 +122,7 @@ export function ItemsTable() {
           label: 'Rate',
           dataIndex: 'rate',
           width: 130,
-          align: 'right',
+          kind: 'money',
           className: 'mono',
           render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">{NO_VALUE}</Typography.Text> : `${formatINR(v, true).replace(RUPEE, '')} / ${r.unit}`),
         },
@@ -193,7 +193,6 @@ export function ItemsTable() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={900}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No item matches this search' : 'No items yet. GRNs add them from the request lines.'} />}
         emptyAction={newButton}
       />

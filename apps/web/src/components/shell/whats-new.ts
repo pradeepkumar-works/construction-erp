@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-tables',
+    date: '2026-11-01',
+    title: 'Lists that answer at a glance',
+    points: [
+      'Money in a list reads in one unit down the column, such as ₹ 6.32 Cr above ₹ 0.63 Cr, so a large bill stands out from a small one. Point at a figure for the exact amount.',
+      'On a laptop a list leaves out its less used columns until the rest fit, so the figure you came for, such as a stock balance or who has an NCR’s action, is on screen without scrolling sideways. Columns still brings any of them back.',
+      'The total under a list shows when the whole list is on screen, and only for money. Due dates say how late or how soon, such as “3 days late”.',
+      'The projects list shows each project’s progress against what was planned by today, and Waiting for me says how many wait for you.',
+    ],
+  },
+  {
     id: '2026-11-status-colour',
     date: '2026-11-01',
     title: 'Colour only where something needs you',

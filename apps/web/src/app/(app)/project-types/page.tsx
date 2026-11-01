@@ -65,7 +65,6 @@ function TypesTab({ types }: { types: ProjectTypeDto[] }) {
       rows={rows}
       table={{ pagination: false }}
       onOpen={(code) => router.push(`/project-types/${code}`)}
-      scrollX={900}
       emptyText={<EmptyLine title="No project types yet" />}
     />
   );
@@ -115,7 +114,6 @@ function KindsTab({ kinds, onOpen }: { kinds: ComponentKindDto[]; onOpen: (k: Co
           const k = kinds.find((x) => x.code === code);
           if (k) onOpen(k);
         }}
-        scrollX={900}
         emptyText={<EmptyLine title="No component kinds yet" />}
       />
     </>

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button, Space, theme } from 'antd';
-import { AppTag } from '@/components/common/AppTag';
 import { PlusOutlined } from '@/components/common/icons';
 import type { SubcontractBillDto, SubcontractBillSortField, VendorKind } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPrepareSubcontractBill } from '@erp/shared';
@@ -24,11 +23,10 @@ import { RowActions } from '@/components/list/RowActions';
 import { RecordLink } from '@/components/record/RecordLink';
 import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
-import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
+import { DueCell } from '@/components/list/DueCell';
 import { SubBillDrawer } from './SubBillDrawer';
 import { SubBillFormModal } from './SubBillFormModal';
 import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
-import { Money } from '@/components/common/Money';
 
 const SUB_KINDS: VendorKind[] = ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'];
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId'] as const;
@@ -71,29 +69,15 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
       ),
     },
     ...(showProject ? [{ card: 'meta' as const, cardText: (r: SubcontractBillDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: SubcontractBillDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
-    { title: 'Work done', dataIndex: 'grossAmount', width: 140, align: 'right', ...sort('grossAmount'), render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
-    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 140, align: 'right', ...sort('netPayable'), render: (v) => <Money value={v} strong />, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
+    { title: 'Work done', dataIndex: 'grossAmount', width: 140, kind: 'money', ...sort('grossAmount'), total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
+    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 140, kind: 'money', strong: true, ...sort('netPayable'), total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
     {
       card: 'date',
       title: 'Due',
       dataIndex: 'dueDate',
       width: 130,
       ...sort('dueDate'),
-      render: (v, r) => {
-        const late = overdueDays(r);
-        return (
-          <div>
-            {formatDate(v)}
-            {late ? (
-              <div>
-                <AppTag meaning="failed" style={{ margin: 0 }}>
-                  {late} days late
-                </AppTag>
-              </div>
-            ) : null}
-          </div>
-        );
-      },
+      render: (v, r) => <DueCell date={v} done={r.status !== 'APPROVED' || !!r.paidDate} />,
     },
     { key: 'submittedByName', title: 'Prepared by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {
@@ -200,7 +184,6 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={preparer ? 'No subcontractor bills yet. Prepare one from an approved work order.' : 'No subcontractor bills yet'} />}
         emptyAction={newButton}
       />

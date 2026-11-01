@@ -143,7 +143,6 @@ export default function ClientsPage() {
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
-          scrollX={900}
           emptyText={<EmptyArt art="entries" title={page.params.q || includeInactive ? 'No client matches these filters' : editable ? 'No clients yet. Add the departments you build for with New client.' : 'No clients yet'} />}
           emptyAction={newButton}
         />

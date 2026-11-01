@@ -16,6 +16,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { AppTag } from '@/components/common/AppTag';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
+import { DueCell } from '@/components/list/DueCell';
 import { RecordLink } from '@/components/record/RecordLink';
 import { LetterDrawer } from './LetterRecord';
 import { LetterForm, HEAD_OFFICE } from './LetterForm';
@@ -165,14 +166,7 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
           width: 140,
           ...sort('replyBy'),
           render: (v: string | null, r) =>
-            v ? (
-              <Typography.Text type={r.overdue ? 'danger' : r.awaitingReply ? undefined : 'secondary'}>
-                {formatDate(v)}
-                {r.awaitingReply ? '' : ' (replied)'}
-              </Typography.Text>
-            ) : (
-              <Sub>-</Sub>
-            ),
+            v && !r.awaitingReply ? <Typography.Text type="secondary">{`${formatDate(v)} (replied)`}</Typography.Text> : v ? <DueCell date={v} /> : <Sub>-</Sub>,
         },
       ];
     },
@@ -262,7 +256,6 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1100 : 1300}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No letter matches these filters' : isIn ? 'No letters received yet' : 'No letters sent yet'} />}
         emptyAction={newButton}
       />

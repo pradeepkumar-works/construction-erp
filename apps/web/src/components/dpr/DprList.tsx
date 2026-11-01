@@ -103,7 +103,6 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1230 : 1450}
         emptyText={<EmptyArt art="entries" title="No daily reports here yet" />}
         emptyAction={newButton}
       />

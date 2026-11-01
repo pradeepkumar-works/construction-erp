@@ -226,7 +226,6 @@ export default function UsersPage() {
           chips={frame.chips}
           empty={frame.empty}
           failed={!!error}
-          scrollX={900}
           emptyText={<EmptyArt art="entries" title={roleKey || isActive !== undefined || page.params.q ? 'No user matches these filters' : 'No users yet'} />}
           emptyAction={newButton}
         />

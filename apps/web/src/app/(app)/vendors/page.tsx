@@ -219,7 +219,6 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1100}
         emptyText={<EmptyArt art="entries" title={kind || msme || page.params.q ? 'No vendor matches these filters' : 'No vendors yet'} />}
         emptyAction={emptyAction}
       />

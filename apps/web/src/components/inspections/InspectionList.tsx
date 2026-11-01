@@ -34,7 +34,7 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
   const sort = (key: InspectionSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
     { card: 'date', title: 'Ready on', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
-    { card: 'meta', title: 'No.', dataIndex: 'inspectionNo', width: 130, className: 'mono', ...sort('inspectionNo') },
+    { card: 'meta', title: 'No.', dataIndex: 'inspectionNo', width: 140, className: 'mono', ...sort('inspectionNo') },
     ...(showProject ? [{ card: 'meta' as const, cardText: (r: InspectionDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: InspectionDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     {
       card: 'title',
@@ -155,7 +155,6 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1250 : 1450}
         emptyText={<EmptyArt art="entries" title="No inspection requested yet" />}
         emptyAction={newButton}
       />

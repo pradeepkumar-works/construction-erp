@@ -116,7 +116,6 @@ export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: strin
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1200}
         emptyText={<EmptyArt art="entries" title={toDecide ? 'Nothing waiting on you' : status || type || page.params.q ? 'No leave matches these filters' : 'No leave'} />}
         emptyAction={newButton}
       />

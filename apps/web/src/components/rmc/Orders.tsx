@@ -13,10 +13,9 @@ import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
-import { Money } from '@/components/common/Money';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
-import { M3, OrderStatusTag, PlantFilter, usePlantScope } from './rmcUi';
+import { OrderStatusTag, PlantFilter, usePlantScope } from './rmcUi';
 import { OrderForm } from './OrderForm';
 import { useRmcDrawers } from './Drawers';
 
@@ -46,9 +45,9 @@ export function Orders() {
       { key: 'customer', title: 'Customer', dataIndex: 'customer', ellipsis: true, card: 'meta', render: (c: string) => <span translate="no">{c}</span> },
       { key: 'grade', title: 'Grade', dataIndex: 'grade', width: 80, render: (g: string) => <span translate="no">{g}</span> },
       { key: 'pourDate', title: 'Pour on', dataIndex: 'pourDate', width: 110, render: (d: string | null) => formatDate(d) },
-      { key: 'quantity', title: 'Ordered', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-      { key: 'delivered', title: 'Delivered', dataIndex: 'delivered', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-      { key: 'value', title: 'Value before GST', dataIndex: 'value', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
+      { key: 'quantity', title: 'Ordered', dataIndex: 'quantity', kind: 'qty', unit: () => 'm³', width: 100 },
+      { key: 'delivered', title: 'Delivered', dataIndex: 'delivered', kind: 'qty', unit: () => 'm³', width: 100 },
+      { key: 'value', title: 'Value before GST', dataIndex: 'value', kind: 'money', width: 140 },
       { key: 'status', title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcOrderStatus) => <OrderStatusTag status={s} /> },
     ],
   });
@@ -106,7 +105,6 @@ export function Orders() {
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={1000}
         emptyText={<EmptyArt art="entries" title={view === 'QUOTED' ? 'No quotes waiting for an answer' : 'No orders here'} />}
         emptyAction={newButton}
       />

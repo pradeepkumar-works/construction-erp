@@ -74,7 +74,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
     sortFields: ['date'],
     fixedProject,
     columns: (): ListColumn<ToolboxTalkDto>[] => [
-      { key: 'talkNo', title: 'No.', dataIndex: 'talkNo', width: 135, className: 'mono' },
+      { key: 'talkNo', title: 'No.', dataIndex: 'talkNo', width: 140, className: 'mono' },
       { key: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
       ...(fixedProject
         ? []
@@ -91,7 +91,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
           </div>
         ),
       },
-      { key: 'attendeeCount', title: 'Attended', dataIndex: 'attendeeCount', width: 90, align: 'right', total: (rows) => rows.reduce((n, r) => n + r.attendeeCount, 0) },
+      { key: 'attendeeCount', title: 'Attended', dataIndex: 'attendeeCount', width: 90, align: 'right' },
       { key: 'recordedByName', title: 'Recorded by', dataIndex: 'recordedByName', width: 150, defaultHidden: true },
       {
         title: '',
@@ -173,7 +173,6 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
             </Flex>
           ),
         }}
-        scrollX={fixedProject ? 800 : 1000}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No toolbox talk matches this search' : 'No toolbox talks recorded'} />}
         emptyAction={newButton}
       />

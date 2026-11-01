@@ -196,7 +196,6 @@ export function RfiList({ projectId: fixedProject, onOpen, onNew }: { projectId?
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 980 : 1180}
         emptyText={<EmptyArt art="entries" title={status || overdue || page.params.q ? 'No RFI matches these filters' : 'No RFIs raised'} />}
         emptyAction={newButton}
       />

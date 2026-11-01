@@ -87,7 +87,6 @@ function CompaniesTab({ group, onEdit }: { group: GroupDto; onEdit: (c: GroupCom
         const c = group.companies.find((x) => x.id === id);
         if (c) onEdit(c);
       }}
-      scrollX={900}
       emptyText={<EmptyLine title="No companies yet" />}
     />
   );
@@ -186,7 +185,6 @@ function PeopleTab({ group, myEmail, onGive }: { group: GroupDto; myEmail: strin
           if (p && p.places.filter((x) => x.isActive).length < group.companies.length) onGive(p);
         }}
         table={{ pagination: rows.length > 50 ? { pageSize: 50, showSizeChanger: false } : false }}
-        scrollX={900}
         emptyText={<EmptyLine title="No people yet" />}
       />
     </>

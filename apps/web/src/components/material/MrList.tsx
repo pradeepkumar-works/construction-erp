@@ -105,7 +105,6 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1180 : 1400}
         emptyText={<EmptyArt art="entries" title="No indents here yet" />}
         emptyAction={newButton}
       />

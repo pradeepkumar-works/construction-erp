@@ -34,7 +34,7 @@ export function cardFields<T>(columns: ListColumn<T>[]): CardFields<T> {
   const rest = usable.filter((c) => c !== title && !c.card);
   const guess = (role: CardRole, test: (c: ListColumn<T>) => boolean) => (declared(role).length ? declared(role)[0] : rest.find(test));
   const status = guess('status', (c) => /(^| )status\b/i.test(fieldName(c)));
-  const amount = guess('amount', (c) => c.align === 'right' && /amount|total|value|payable|outstanding/i.test(fieldName(c)));
+  const amount = guess('amount', (c) => (c.kind === 'money' || c.align === 'right') && /amount|total|value|payable|outstanding/i.test(fieldName(c)));
   const date = guess('date', (c) => /date/i.test(fieldName(c)));
   const meta = declared('meta').length ? declared('meta') : rest.filter((c) => /project/i.test(fieldName(c))).slice(0, 1);
   return { title, status: status === title ? undefined : status, amount, date: date === title ? undefined : date, meta };
@@ -117,7 +117,7 @@ export function ListCards<T extends { id: string }>({
   selectable: boolean;
   selectedKeys: React.Key[];
   onSelect: (keys: React.Key[]) => void;
-  /** Show the page's totals (the table shows them with more than one row). */
+  /** Show the totals: only when every row of the list is here (the table shows them with more than one row). */
   totals: boolean;
   labelOf: (c: ListColumn<T>) => string;
 }) {
@@ -147,7 +147,7 @@ export function ListCards<T extends { id: string }>({
     );
   if (!rows.length) return <div className="list-cards-empty">{emptyState}</div>;
 
-  const totalColumns = totals && pageRows.length > 1 ? columns.filter((c) => c.total) : [];
+  const totalColumns = totals && rows.length > 1 ? columns.filter((c) => c.total) : [];
 
   return (
     <Spin spinning={loading}>
@@ -217,12 +217,12 @@ export function ListCards<T extends { id: string }>({
         </ul>
         {totalColumns.length ? (
           <div className="list-card-totals">
-            <Typography.Text type="secondary">Page total</Typography.Text>
+            <Typography.Text type="secondary">Total</Typography.Text>
             <dl>
               {totalColumns.map((c) => (
                 <div key={c.key}>
                   <dt>{labelOf(c)}</dt>
-                  <dd className="mono" translate="no">{c.total!(pageRows)}</dd>
+                  <dd className="mono" translate="no">{c.total!(rows)}</dd>
                 </div>
               ))}
             </dl>

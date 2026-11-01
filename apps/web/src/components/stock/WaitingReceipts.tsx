@@ -169,7 +169,6 @@ export function WaitingReceipts({ waiting, projectId: fixedProject }: { waiting:
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="approved" title={words.empty} />}
       />
       <StockEntryDrawer id={opened} onClose={() => setOpened(null)} />

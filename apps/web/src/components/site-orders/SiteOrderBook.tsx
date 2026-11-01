@@ -93,7 +93,6 @@ export function SiteOrderBook({ projectId, orders, portal, openId, onOpen }: { p
         loading={isLoading}
         failed={!!error}
         onOpen={onOpen}
-        scrollX={900}
         emptyText={portal ? 'No orders in the book yet. Write one when the site needs an instruction.' : 'No site orders yet. Record one from the paper book, or the engineer writes one in their portal.'}
       />
       <SiteOrderDrawer data={open} portal={portal} onClose={() => onOpen(null)} />

@@ -63,7 +63,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
     // Waiting + live is the default, so only the other choices get a chip.
     chipLabels: { view: (v) => `Permits: ${VIEW_LABELS[v] ?? v}`, type: (v) => `Work: ${WORK_PERMIT_TYPE_LABELS[v as WorkPermitType] ?? v}` },
     columns: (): ListColumn<WorkPermitDto>[] => [
-      { key: 'permitNo', title: 'No.', dataIndex: 'permitNo', width: 135, className: 'mono' },
+      { key: 'permitNo', title: 'No.', dataIndex: 'permitNo', width: 140, className: 'mono' },
       ...(fixedProject
         ? []
         : [{ key: 'projectName', title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string, r: WorkPermitDto) => <Link href={`/projects/${r.projectId}?tab=safety`}>{v}</Link> } satisfies ListColumn<WorkPermitDto>]),
@@ -83,7 +83,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
       },
       { title: 'Valid', key: 'valid', width: 230, render: (_, r) => permitWindow(r) },
       { key: 'contractor', title: 'Contractor', dataIndex: 'contractor', width: 160, defaultHidden: true, render: (v: string | null) => v ?? <Sub>-</Sub> },
-      { key: 'workerCount', title: 'Workers', dataIndex: 'workerCount', width: 90, align: 'right', defaultHidden: true, render: (v: number | null) => v ?? <Sub>-</Sub>, total: (rows) => rows.reduce((n, r) => n + (r.workerCount ?? 0), 0) },
+      { key: 'workerCount', title: 'Workers', dataIndex: 'workerCount', width: 90, align: 'right', defaultHidden: true, render: (v: number | null) => v ?? <Sub>-</Sub> },
       { key: 'requestedByName', title: 'Asked by', dataIndex: 'requestedByName', width: 150 },
       { key: 'issuedByName', title: 'Issued by', dataIndex: 'issuedByName', width: 150, defaultHidden: true, render: (v: string | null) => v ?? <Sub>-</Sub> },
       { key: 'status', title: 'Status', dataIndex: 'status', width: 100, fixed: 'right' as const, render: (_, r) => <PermitStatusTag p={r} /> },
@@ -142,7 +142,6 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 900 : 1100}
         emptyText={<EmptyArt art="entries" title={view === 'ACTIVE' ? 'No permits waiting or live' : 'No permits'} />}
         emptyAction={newButton}
       />

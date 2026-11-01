@@ -36,28 +36,29 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreActions } from '@/components/record/MoreActions';
-import { Money } from '@/components/common/Money';
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
-const late = (v: string) => (toNumber(v) > 0 ? <Money value={v} tone="danger" /> : <span className="mono text-muted" translate="no">{NO_VALUE}</span>);
+/** An overdue amount: shown in red, and the dash where nothing is late. */
+const lateOnly = (v: string) => (toNumber(v) > 0 ? v : null);
+const danger = () => 'danger' as const;
 
 /** Ageing columns shared by the project and client tables (keys are stable: the column chooser keeps them). */
 function ageingColumns<T extends ProjectReceivableDto | ClientReceivableDto>(): ListColumn<T>[] {
   return [
-    { key: 'billed', title: 'Billed', dataIndex: 'billed', defaultHidden: true, width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'received', title: 'Received', dataIndex: 'received', defaultHidden: true, width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'deducted', title: 'Deducted', dataIndex: 'deducted', defaultHidden: true, width: 120, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => <Money value={v} strong /> },
-    { key: 'a0', title: '0-30 days', width: 110, align: 'right', render: (_, r) => <Money value={r.ageing.current} /> },
-    { key: 'a1', title: '31-60', label: '31-60 days', width: 110, align: 'right', render: (_, r) => <Money value={r.ageing.days31to60} /> },
-    { key: 'a2', title: '61-90', label: '61-90 days', width: 110, align: 'right', render: (_, r) => late(r.ageing.days61to90) },
-    { key: 'a3', title: 'Over 90', label: 'Over 90 days', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
-    { key: 'notSent', title: 'Not sent yet', dataIndex: 'notSent', defaultHidden: true, width: 120, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'depositHeld', title: 'Security deposit held', dataIndex: 'depositHeld', defaultHidden: true, width: 140, align: 'right', render: (v) => <Money value={v} /> },
+    { key: 'billed', title: 'Billed', dataIndex: 'billed', defaultHidden: true, width: 130, kind: 'money' },
+    { key: 'received', title: 'Received', dataIndex: 'received', defaultHidden: true, width: 130, kind: 'money' },
+    { key: 'deducted', title: 'Deducted', dataIndex: 'deducted', defaultHidden: true, width: 120, kind: 'money' },
+    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, kind: 'money', strong: true },
+    { key: 'a0', title: '0-30 days', width: 110, kind: 'money', value: (r) => r.ageing.current },
+    { key: 'a1', title: '31-60', label: '31-60 days', width: 110, kind: 'money', value: (r) => r.ageing.days31to60 },
+    { key: 'a2', title: '61-90', label: '61-90 days', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.days61to90), tone: danger },
+    { key: 'a3', title: 'Over 90', label: 'Over 90 days', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.over90), tone: danger },
+    { key: 'notSent', title: 'Not sent yet', dataIndex: 'notSent', defaultHidden: true, width: 120, kind: 'money' },
+    { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, kind: 'money' },
+    { key: 'depositHeld', title: 'Security deposit held', dataIndex: 'depositHeld', defaultHidden: true, width: 140, kind: 'money' },
   ];
 }
 
@@ -127,8 +128,8 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
         </div>
       ),
     },
-    { title: 'Received', dataIndex: 'amount', width: 140, align: 'right', ...sort('amount'), render: (v) => <Money value={v} strong />, total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)) },
-    { key: 'deductedAmount', title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <Money value={v} />, total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.deductedAmount), 0)) },
+    { title: 'Received', dataIndex: 'amount', width: 140, kind: 'money', strong: true, ...sort('amount'), total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)) },
+    { key: 'deductedAmount', title: 'Deducted', dataIndex: 'deductedAmount', width: 130, kind: 'money', total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.deductedAmount), 0)) },
     {
       title: 'Mode / reference',
       label: 'Mode and reference',
@@ -227,7 +228,6 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
           else if (r && accounts && !r.exportedToTally) setEditing(r);
         }}
         bulk={[exportSelected<ReceiptDto>('receipts', 'Receipts', RECEIPT_EXPORT)]}
-        scrollX={1100}
         emptyText={<EmptyArt art="entries" title={kind || page.params.q ? 'No receipt matches these filters' : 'No money received recorded yet'} />}
         emptyAction={newButton}
       />
@@ -307,11 +307,7 @@ export default function ReceivablesPage() {
         </div>
       ),
     },
-    { key: 'sentDate', title: 'Sent', dataIndex: 'sentDate', width: 110, card: 'date', render: (v) => formatDate(v) },
-    { key: 'stage', title: 'With client', dataIndex: 'stage', width: 120, card: 'status', render: (s) => <BillStageTag stage={s} /> },
-    { key: 'invoiceAmount', title: 'Bill amount with GST', dataIndex: 'invoiceAmount', width: 140, align: 'right', render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.invoiceAmount)) },
-    { key: 'settledAmount', title: 'Settled', dataIndex: 'settledAmount', width: 130, align: 'right', render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.settledAmount)) },
-    { key: 'outstanding', title: 'Outstanding', dataIndex: 'outstanding', width: 140, align: 'right', card: 'amount', render: (v) => <Money value={v} strong />, total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
+    { key: 'outstanding', title: 'Outstanding', dataIndex: 'outstanding', width: 140, kind: 'money', strong: true, card: 'amount', total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
     {
       key: 'daysOutstanding',
       title: 'Days',
@@ -324,6 +320,10 @@ export default function ReceivablesPage() {
       sortDirections: ['descend', 'ascend'],
       render: (v: number) => <span style={{ color: v > 90 ? themeColor('colorErrorText') : v > 60 ? themeColor('colorWarningText') : undefined }}>{v}</span>,
     },
+    { key: 'sentDate', title: 'Sent', dataIndex: 'sentDate', width: 110, card: 'date', render: (v) => formatDate(v) },
+    { key: 'stage', title: 'With client', dataIndex: 'stage', width: 120, card: 'status', render: (s) => <BillStageTag stage={s} /> },
+    { key: 'invoiceAmount', title: 'Bill amount with GST', dataIndex: 'invoiceAmount', width: 140, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.invoiceAmount)) },
+    { key: 'settledAmount', title: 'Settled', dataIndex: 'settledAmount', width: 130, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.settledAmount)) },
   ];
   const openChoice = useColumnChoice('receivables-open', openColumns);
 
@@ -445,7 +445,6 @@ export default function ReceivablesPage() {
                     table={page.tableProps<Keyed<OpenBillDto>>(openBills.length)}
                     onOpen={setBillId}
                     bulk={[exportSelected<Keyed<OpenBillDto>, OpenBillDto>('open-bills', 'Open bills', OPEN_BILL_EXPORT)]}
-                    scrollX={1000}
                     empty={{ filtered: !!page.params.q, clear: () => page.clear() }}
                     emptyText={<EmptyArt art="entries" title={page.params.q ? 'No open bill matches this search' : 'Every bill sent has been settled'} />}
                   />
@@ -467,7 +466,6 @@ export default function ReceivablesPage() {
                     loading={isLoading}
                     failed={failed}
                     bulk={[exportSelected<Keyed<ProjectReceivableDto>, ProjectReceivableDto>('receivables', 'Receivables', RECEIVABLE_EXPORT)]}
-                    scrollX={1700}
                     emptyText="No client owes anything on any project"
                   />
                 </>
@@ -476,7 +474,7 @@ export default function ReceivablesPage() {
             {
               key: 'clients',
               label: 'By client',
-              children: <LocalDataTable<Keyed<ClientReceivableDto>> list="receivables-clients" columns={clientColumns} rows={clients} loading={isLoading} failed={failed} scrollX={1650} emptyText="No client owes anything" />,
+              children: <LocalDataTable<Keyed<ClientReceivableDto>> list="receivables-clients" columns={clientColumns} rows={clients} loading={isLoading} failed={failed} emptyText="No client owes anything" />,
             },
             { key: 'receipts', label: 'Money received', children: <ReceiptsTab projectId={projectId} /> },
           ]}

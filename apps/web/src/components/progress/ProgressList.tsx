@@ -117,7 +117,6 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
         chips={frame.chips}
         empty={frame.empty}
         failed={!!error}
-        scrollX={fixedProject ? 1180 : 1400}
         emptyText={<EmptyArt art="entries" title="No progress entries here yet" />}
         emptyAction={newButton}
       />
