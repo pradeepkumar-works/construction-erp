@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Divider, Form, Input, Progress, Table, Typography } from 'antd';
+import { Alert, App, Button, Divider, Form, Input, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { ImportOutlined, MailOutlined } from '@/components/common/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, PO_RECEIPT_STATE_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewCost, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
+import type { BillCheckDto, PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, PO_RECEIPT_STATE_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewCost, canViewPaymentRequests, canViewVendorBills, figure } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -30,9 +30,17 @@ import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { OrderBudget, OrderQuotes } from './OrderDecision';
-import { TargetRequests } from '@/components/payables/TargetRequests';
+import { TargetRequests, useTargetRequests } from '@/components/payables/TargetRequests';
+import { CheckRows } from '@/components/checks/ChecksSection';
+import { projectContext } from '@/components/record/RecordParts';
 import { Money } from '@/components/common/Money';
 
+
+/** A line the vendor has billed more of than has come in on GRNs. */
+const billedAboveReceived = (l: PurchaseOrderLineDto) => toNumber(l.billedQty) > toNumber(l.receivedQty) + 1e-9;
+
+/** A check that passed or found something, in the shape the checks pattern draws. */
+const check = (key: string, ok: boolean, title: string, detail: string | null = null, links: BillCheckDto['links'] = []): BillCheckDto => ({ key, ok, title, detail, links, accepted: null });
 
 /** Tag for where an approved order stands: open, fully received or closed short. */
 export function PoStateTag({ order }: { order: Pick<PurchaseOrderDto, 'status' | 'closedAt' | 'open'> }) {
@@ -61,6 +69,24 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
   const makeWarnings = makeCheck.data ?? [];
   // Leakage checks: lines above what another site paid for the item in the 30 days before the order
   const rateChecks = (data?.lines ?? []).flatMap((line) => (line.rateCheck ? [{ line, check: line.rateCheck }] : []));
+  // The order's checks, in the one checks pattern: makes approved for the project, and rates against other sites.
+  const checks: BillCheckDto[] = data
+    ? [
+        ...(makeCheck.data ? (makeWarnings.length ? makeWarnings.map((w) => check(`make-${w.index}`, false, makeWarningText(w))) : [check('make', true, 'Makes approved for this project')]) : []),
+        ...(rateChecks.length
+          ? rateChecks.map(({ line: l, check: c }) =>
+              check(
+                `rate-${l.id}`,
+                false,
+                `${l.itemName}: ${formatPct(c.abovePct)} above what another site paid in the 30 days before`,
+                `${formatINR(l.rate, true)} against ${formatINR(c.bestRate, true)} paid by ${c.projectName} to ${c.vendorName} on ${formatDate(c.poDate)}, ${formatINR(c.extra)} more on this order`,
+                [{ label: c.poNo, href: `/purchase-orders/${c.purchaseOrderId}` }],
+              ),
+            )
+          : [check('rate', true, 'Rates within what other sites paid')]),
+      ]
+    : [];
+  const flags = checks.filter((c) => !c.ok).length;
   const [receiving, setReceiving] = useState(false);
   const [billing, setBilling] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -101,6 +127,9 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
 
   const editable = !!data && !!user && buyer && canEditSubmission(user, data) && data.status !== 'APPROVED';
   const approved = data?.status === 'APPROVED';
+  const aboveReceived = data?.lines.filter(billedAboveReceived).length ?? 0;
+  const advances = approved && !data?.closedAt && !!user && canViewPaymentRequests(user.roleKey);
+  const asked = useTargetRequests({ purchaseOrderId: data?.id }, advances);
 
   return (
     <RecordFrame
@@ -117,6 +146,8 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
         data && {
           href: `/purchase-orders/${data.id}`,
           title: `${data.poNo} · ${data.vendorName}`,
+          context: projectContext(data),
+          headline: [figure('orderValue', data.total), approved && figure('receivedShare', data.receivedPct), approved && figure('billedAboveReceived', aboveReceived)],
           tags: (
             <>
               <StatusTag status={data.status} /> <PoStateTag order={data} />
@@ -145,7 +176,6 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               ),
             },
             { key: 'date', label: 'PO date', children: formatDate(data.poDate) },
-            { key: 'total', label: 'Order total', children: <strong><Money value={data.total} paise /></strong> },
             ...(toNumber(data.advancePaid) > 0 || toNumber(data.advanceRequested) > 0
               ? [
                   {
@@ -162,12 +192,8 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                   },
                 ]
               : []),
-            { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             { key: 'mr', label: 'Indent', children: data.requestNo ? <Link href={`/material-requests/${data.materialRequestId}`}>{data.requestNo}</Link> : NO_VALUE },
             { key: 'deliver', label: 'Deliver by', children: data.deliveryBy ? formatDate(data.deliveryBy) : NO_VALUE },
-            { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? NO_VALUE },
-            { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : NO_VALUE) },
-            ...(approved ? [{ key: 'recv', label: 'Received', children: <Progress percent={data.receivedPct} size="small" style={{ maxWidth: 240, margin: 0 }} format={() => formatPct(data.receivedPct)} aria-label={`${formatPct(data.receivedPct)} received`} /> }] : []),
             ...(data.selectionReason ? [{ key: 'why', label: 'Why this vendor', span: 2, children: data.selectionReason }] : []),
             ...(approved && (data.supplierEmailedAt || data.supplierEmailError)
               ? [
@@ -187,196 +213,251 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
             ...(data.supplierAcceptedAt
               ? [{ key: 'accepted', label: 'Supplier accepted', children: `${formatDateTime(data.supplierAcceptedAt)}${data.supplierAcceptedBy ? ` by ${data.supplierAcceptedBy}` : ''}${data.supplierNote ? `: ${data.supplierNote}` : ''}` }]
               : []),
+            ...submissionMetaItems(data),
+          ],
+          details: [
+            { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? NO_VALUE },
+            { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : NO_VALUE) },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
             data.closedAt
               ? { title: 'Closed', done: true, content: `${formatPct(data.receivedPct)} received` }
               : { title: 'Received', done: !data.open, waits: true, content: approved ? `${formatPct(data.receivedPct)} received` : undefined },
           ]),
-          sections: [
-            {
-              key: 'items',
-              title: 'Items',
-              count: data.lines.length,
-              children: (
-                <>
-                  {makeWarnings.length ? (
-                    <Alert
-                      type="warning"
-                      showIcon
-                      style={{ marginBottom: 12 }}
-                      title={`${makeWarnings.length === 1 ? '1 line is' : `${makeWarnings.length} lines are`} not in a make approved for this project`}
-                      description={
-                        <ul style={{ margin: 0, paddingLeft: 18 }}>
-                          {makeWarnings.map((w) => (
-                            <li key={w.index}>{makeWarningText(w)}</li>
+          // Sections in the order the reader needs them: before approval what decides it (the items, who else quoted, the
+          // budget); once approved, what has come in and been billed against it.
+          sections: approved
+            ? [
+                { key: 'checks', title: 'Checks', count: flags, children: <CheckRows checks={checks} /> },
+                {
+                  key: 'items',
+                  title: 'Items',
+                  count: data.lines.length,
+                  children: (
+                    <>
+                      <Table<PurchaseOrderLineDto>
+                        rowKey="id"
+                        size="small"
+                        pagination={false}
+                        dataSource={data.lines}
+                        scroll={{ x: 760 }}
+                        columns={[
+                          { title: 'Item', render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
+                          { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
+                          ...(approved
+                            ? [
+                                { title: 'Received', dataIndex: 'receivedQty', width: 120, align: 'right' as const, render: (v: string, l: PurchaseOrderLineDto) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
+                                {
+                                  title: 'Billed',
+                                  dataIndex: 'billedQty',
+                                  width: 150,
+                                  align: 'right' as const,
+                                  render: (v: string, l: PurchaseOrderLineDto) => (
+                                    <span>
+                                      <span className="mono" translate="no">
+                                        {formatQty(v)} {l.unit}
+                                      </span>
+                                      {billedAboveReceived(l) ? (
+                                        <div>
+                                          <AppTag meaning="failed">Billed above received</AppTag>
+                                        </div>
+                                      ) : null}
+                                    </span>
+                                  ),
+                                },
+                              ]
+                            : []),
+                          { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <Money value={v} paise /> },
+                          { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => formatPct(v) },
+                          { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
+                        ]}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                        <Section style={{ width: 320 }}>
+                          {[
+                            ['Items', data.subtotal],
+                            ['GST', data.gstAmount],
+                            ...(toNumber(data.freight) > 0 ? [['Freight', data.freight]] : []),
+                          ].map(([k, v]) => (
+                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                              <span>{k}</span>
+                              <Money value={v} paise />
+                            </div>
                           ))}
-                        </ul>
-                      }
-                    />
-                  ) : null}
-                  {rateChecks.length ? (
-                    <Alert
-                      type="warning"
-                      showIcon
-                      style={{ marginBottom: 12 }}
-                      title={`${rateChecks.length === 1 ? '1 line is' : `${rateChecks.length} lines are`} above what another site paid in the 30 days before`}
-                      description={
-                        <ul style={{ margin: 0, paddingLeft: 18 }}>
-                          {rateChecks.map(({ line: l, check: c }) => (
-                            <li key={l.id}>
-                              <span translate="no">{l.itemName}</span>: {formatINR(l.rate, true)} against {formatINR(c.bestRate, true)} paid by <span translate="no">{c.projectName}</span> to <span translate="no">{c.vendorName}</span> on {formatDate(c.poDate)} (
-                              <Link href={`/purchase-orders/${c.purchaseOrderId}`} className="text-link" translate="no">
-                                {c.poNo}
-                              </Link>
-                              ), {formatPct(c.abovePct)} more: <Money value={c.extra} /> on this order
-                            </li>
-                          ))}
-                        </ul>
-                      }
-                    />
-                  ) : null}
-                  <Table<PurchaseOrderLineDto>
-                    rowKey="id"
-                    size="small"
-                    pagination={false}
-                    dataSource={data.lines}
-                    scroll={{ x: 760 }}
-                    columns={[
-                      { title: 'Item', render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
-                      { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
-                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <Money value={v} paise /> },
-                      { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => formatPct(v) },
-                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
-                      ...(approved
-                        ? [
-                            {
-                              title: 'Received',
-                              dataIndex: 'receivedQty',
-                              width: 100,
-                              align: 'right' as const,
-                              render: (v: string, l: PurchaseOrderLineDto) => <Typography.Text type={toNumber(v) >= toNumber(l.quantity) ? 'success' : toNumber(v) > 0 ? 'warning' : undefined} className="mono">{formatQty(v)}</Typography.Text>,
-                            },
-                            { title: 'Billed', dataIndex: 'billedQty', width: 90, align: 'right' as const, render: (v: string) => <span className="mono" translate="no">{formatQty(v)}</span> },
-                          ]
-                        : []),
-                    ]}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                    <Section style={{ width: 320 }}>
-                      {[
-                        ['Items', data.subtotal],
-                        ['GST', data.gstAmount],
-                        ...(toNumber(data.freight) > 0 ? [['Freight', data.freight]] : []),
-                      ].map(([k, v]) => (
-                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-                          <span>{k}</span>
-                          <Money value={v} paise />
-                        </div>
-                      ))}
-                      <Divider style={{ margin: '6px 0' }} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
-                        <span>Order total</span>
-                        <Money value={data.total} paise />
+                          <Divider style={{ margin: '6px 0' }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                            <span>Order total</span>
+                            <Money value={data.total} paise />
+                          </div>
+                        </Section>
                       </div>
-                    </Section>
-                  </div>
-                </>
-              ),
-            },
-            ...(data.dispatches?.length
-              ? [
-                  {
-                    key: 'dispatches',
-                    title: 'Dispatch notes from the vendor',
-                    count: data.dispatches.length,
-                    children: (
-                      <Table
+                    </>
+                  ),
+                },
+                ...(approved && user && canViewVendorBills(user.roleKey)
+                  ? [
+                      {
+                        key: 'bills',
+                        title: 'Vendor bills',
+                        count: data.bills?.length ?? 0,
+                        empty: !data.bills?.length,
+                        children: (
+                          <Table
+                            rowKey="id"
+                            size="small"
+                            pagination={false}
+                            dataSource={data.bills ?? []}
+                            locale={{ emptyText: 'No bill recorded yet' }}
+                            scroll={{ x: 640 }}
+                            columns={[
+                              { title: 'Bill', dataIndex: 'billNo', width: 140, render: (v, b) => <Link href={`/vendor-bills/${b.id}`} className="mono">{v}</Link> },
+                              { title: 'Invoice', dataIndex: 'invoiceNo', render: (v, b) => `${v}, ${formatDate(b.invoiceDate)}` },
+                              { title: 'Match', dataIndex: 'matched', width: 130, render: (v) => (v ? <AppTag meaning="done">Matches</AppTag> : <AppTag meaning="failed">Does not match</AppTag>) },
+                              { title: 'Status', dataIndex: 'status', width: 130, render: (st) => <StatusTag status={st} /> },
+                              { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
+                            ]}
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
+                ...(approved
+                  ? [
+                      {
+                        key: 'grns',
+                        title: 'GRNs',
+                        count: data.grns?.length ?? 0,
+                        empty: !data.grns?.length,
+                        children: (
+                          <Table
+                            rowKey="id"
+                            size="small"
+                            pagination={false}
+                            dataSource={data.grns ?? []}
+                            locale={{ emptyText: 'Nothing received yet' }}
+                            columns={[
+                              { title: 'GRN', dataIndex: 'entryNo', width: 160, className: 'mono' },
+                              { title: 'Date', dataIndex: 'date', width: 120, render: (v) => formatDate(v) },
+                              { title: 'Lines', dataIndex: 'lines' },
+                            ]}
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
+                ...(data.dispatches?.length
+                  ? [
+                      {
+                        key: 'dispatches',
+                        title: 'Dispatch notes from the vendor',
+                        count: data.dispatches.length,
+                        children: (
+                          <Table
+                            rowKey="id"
+                            size="small"
+                            pagination={false}
+                            dataSource={data.dispatches}
+                            scroll={{ x: 560 }}
+                            columns={[
+                              { title: 'Challan', dataIndex: 'dispatchNo', render: (v: string) => <span className="mono" translate="no">{v}</span> },
+                              { title: 'Sent', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
+                              { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
+                              {
+                                title: 'Status',
+                                dataIndex: 'status',
+                                width: 180,
+                                render: (st: SupplierDispatchStatus, d: { grnNo: string | null }) => (
+                                  <span>
+                                    <DispatchStatusTag status={st} />
+                                    {d.grnNo ? <span className="mono" translate="no">{d.grnNo}</span> : null}
+                                  </span>
+                                ),
+                              },
+                            ]}
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
+                ...(advances
+                  ? [{ key: 'advances', title: 'Advance requests', empty: asked.loaded && asked.rows.length === 0, children: <TargetRequests approved target={{ kind: 'PO_ADVANCE', purchaseOrderId: data.id, label: data.poNo, vendorName: data.vendorName }} base={String(toNumber(data.total) - toNumber(data.advanceRequested))} /> }]
+                  : []),
+                ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the indent', children: <OrderQuotes order={data} /> }] : []),
+                ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', title: 'Against the budget', children: <OrderBudget order={data} /> }] : []),
+                { key: 'documents', title: 'Documents', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} emptyText="No documents" /> },
+              ]
+            : [
+                { key: 'checks', title: 'Checks', count: flags, children: <CheckRows checks={checks} /> },
+                {
+                  key: 'items',
+                  title: 'Items',
+                  count: data.lines.length,
+                  children: (
+                    <>
+                      <Table<PurchaseOrderLineDto>
                         rowKey="id"
                         size="small"
                         pagination={false}
-                        dataSource={data.dispatches}
-                        scroll={{ x: 560 }}
+                        dataSource={data.lines}
+                        scroll={{ x: 760 }}
                         columns={[
-                          { title: 'Challan', dataIndex: 'dispatchNo', render: (v: string) => <span className="mono" translate="no">{v}</span> },
-                          { title: 'Sent', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
-                          { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
-                          {
-                            title: 'Status',
-                            dataIndex: 'status',
-                            width: 180,
-                            render: (st: SupplierDispatchStatus, d: { grnNo: string | null }) => (
-                              <span>
-                                <DispatchStatusTag status={st} />
-                                {d.grnNo ? <span className="mono" translate="no">{d.grnNo}</span> : null}
-                              </span>
-                            ),
-                          },
+                          { title: 'Item', render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
+                          { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
+                          ...(approved
+                            ? [
+                                { title: 'Received', dataIndex: 'receivedQty', width: 120, align: 'right' as const, render: (v: string, l: PurchaseOrderLineDto) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
+                                {
+                                  title: 'Billed',
+                                  dataIndex: 'billedQty',
+                                  width: 150,
+                                  align: 'right' as const,
+                                  render: (v: string, l: PurchaseOrderLineDto) => (
+                                    <span>
+                                      <span className="mono" translate="no">
+                                        {formatQty(v)} {l.unit}
+                                      </span>
+                                      {billedAboveReceived(l) ? (
+                                        <div>
+                                          <AppTag meaning="failed">Billed above received</AppTag>
+                                        </div>
+                                      ) : null}
+                                    </span>
+                                  ),
+                                },
+                              ]
+                            : []),
+                          { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <Money value={v} paise /> },
+                          { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => formatPct(v) },
+                          { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                         ]}
                       />
-                    ),
-                  },
-                ]
-              : []),
-            ...(approved
-              ? [
-                  {
-                    key: 'grns',
-                    title: 'GRNs',
-                    count: data.grns?.length ?? 0,
-                    children: (
-                      <Table
-                        rowKey="id"
-                        size="small"
-                        pagination={false}
-                        dataSource={data.grns ?? []}
-                        locale={{ emptyText: 'Nothing received yet' }}
-                        columns={[
-                          { title: 'GRN', dataIndex: 'entryNo', width: 160, className: 'mono' },
-                          { title: 'Date', dataIndex: 'date', width: 120, render: (v) => formatDate(v) },
-                          { title: 'Lines', dataIndex: 'lines' },
-                        ]}
-                      />
-                    ),
-                  },
-                ]
-              : []),
-            ...(approved && user && canViewVendorBills(user.roleKey)
-              ? [
-                  {
-                    key: 'bills',
-                    title: 'Vendor bills',
-                    count: data.bills?.length ?? 0,
-                    children: (
-                      <Table
-                        rowKey="id"
-                        size="small"
-                        pagination={false}
-                        dataSource={data.bills ?? []}
-                        locale={{ emptyText: 'No bill recorded yet' }}
-                        scroll={{ x: 640 }}
-                        columns={[
-                          { title: 'Bill', dataIndex: 'billNo', width: 140, render: (v, b) => <Link href={`/vendor-bills/${b.id}`} className="mono">{v}</Link> },
-                          { title: 'Invoice', dataIndex: 'invoiceNo', render: (v, b) => `${v}, ${formatDate(b.invoiceDate)}` },
-                          { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
-                          { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <AppTag meaning="done">Matches</AppTag> : <AppTag meaning="failed">Does not match</AppTag>) },
-                          { title: 'Status', dataIndex: 'status', width: 130, render: (st) => <StatusTag status={st} /> },
-                        ]}
-                      />
-                    ),
-                  },
-                ]
-              : []),
-            ...(approved && !data.closedAt && user && canViewPaymentRequests(user.roleKey)
-              ? [{ key: 'advances', title: 'Advance requests', children: <TargetRequests approved target={{ kind: 'PO_ADVANCE', purchaseOrderId: data.id, label: data.poNo, vendorName: data.vendorName }} base={String(toNumber(data.total) - toNumber(data.advanceRequested))} /> }]
-              : []),
-            // What the approver needs to decide it: who else quoted, and the budget.
-            ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the indent', children: <OrderQuotes order={data} /> }] : []),
-            ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', title: 'Against the budget', children: <OrderBudget order={data} /> }] : []),
-            { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
-          ],
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                        <Section style={{ width: 320 }}>
+                          {[
+                            ['Items', data.subtotal],
+                            ['GST', data.gstAmount],
+                            ...(toNumber(data.freight) > 0 ? [['Freight', data.freight]] : []),
+                          ].map(([k, v]) => (
+                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                              <span>{k}</span>
+                              <Money value={v} paise />
+                            </div>
+                          ))}
+                          <Divider style={{ margin: '6px 0' }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                            <span>Order total</span>
+                            <Money value={data.total} paise />
+                          </div>
+                        </Section>
+                      </div>
+                    </>
+                  ),
+                },
+                ...(data.materialRequestId ? [{ key: 'quotes', title: 'Quotations on the indent', children: <OrderQuotes order={data} /> }] : []),
+                ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', title: 'Against the budget', children: <OrderBudget order={data} /> }] : []),
+                { key: 'documents', title: 'Documents', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} emptyText="No documents" /> },
+              ],
           activity: { type: 'purchase_order', id: data.id, submission: data },
           actions: (size) => (
             <>

@@ -6,7 +6,7 @@ import { Alert, App, Button, Divider, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables, unitLabel } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, figure, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -22,7 +22,9 @@ import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
 import { TargetRequests } from '@/components/payables/TargetRequests';
 import { BillDebitNotes, showsDebitNotes } from '@/components/payables/BillDebitNotes';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
-import { checksSection } from '@/components/checks/ChecksSection';
+import { checksSection, useChecksFigure } from '@/components/checks/ChecksSection';
+import { projectContext } from '@/components/record/RecordParts';
+import { useTargetRequests } from '@/components/payables/TargetRequests';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { openSubBillPrint } from './subcontractPrint';
 import { Section } from '@/components/common/Section';
@@ -77,6 +79,8 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
 
   const payments = data?.status === 'APPROVED' && !!user && canViewPayables(user.roleKey);
   const requests = data?.status === 'APPROVED' && !!user && canViewPaymentRequests(user.roleKey);
+  const asked = useTargetRequests({ subcontractBillId: data?.id }, !!requests);
+  const checks = useChecksFigure('subcontract-bill', id ?? undefined, dataUpdatedAt);
 
   return (
     <RecordFrame
@@ -93,6 +97,8 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
         data && {
           href: `/subcontract-bills/${data.id}`,
           title: `${data.label} · ${data.vendorName}`,
+          context: projectContext(data),
+          headline: [figure('netPayable', payable), data.status === 'APPROVED' && figure('stillToPay', data.outstanding), checks],
           tags: (
             <>
               <StatusTag status={data.status} /> <PaidTag bill={data} />
@@ -134,12 +140,9 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                 </span>
               ),
             },
-            { key: 'wo', label: 'Work order', children: <Link href={`/work-orders/${data.workOrderId}`}>{data.woNo}</Link> },
             { key: 'work', label: 'Work', span: 2, children: data.woTitle },
-            { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             { key: 'date', label: 'Bill date', children: formatDate(data.billDate) },
             { key: 'upto', label: 'Measured up to', children: formatDate(data.measuredUpTo) },
-            { key: 'inv', label: 'Their invoice', children: data.invoiceNo ?? NO_VALUE },
             {
               key: 'due',
               label: 'Payment due',
@@ -154,9 +157,12 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                 </span>
               ),
             },
+            ...submissionMetaItems(data),
+          ],
+          details: [
+            { key: 'wo', label: 'Work order', children: <Link href={`/work-orders/${data.workOrderId}`}>{data.woNo}</Link> },
+            { key: 'inv', label: 'Their invoice', children: data.invoiceNo ?? NO_VALUE },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
-            { key: 'net', label: 'Bill net', children: <strong><Money value={data.netPayable} paise /></strong> },
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
             { title: 'Paid', done: !!data.paidDate, content: data.status !== 'APPROVED' ? undefined : data.paidDate ? formatDate(data.paidDate) : `${formatINR(data.outstanding, true)} to pay` },
@@ -174,7 +180,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                     size="small"
                     pagination={false}
                     dataSource={data.lines}
-                    scroll={{ x: 1000 }}
+                    scroll={{ x: 760 }}
                     columns={[
                       {
                         title: 'Item',
@@ -186,8 +192,8 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         ),
                       },
                       { title: 'Rate', dataIndex: 'rate', width: 150, align: 'right', render: (v, l) => <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}/{l.unit}</span> },
-                      { title: 'Previous', dataIndex: 'prevQty', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
-                      { title: 'This bill', dataIndex: 'thisQty', width: 100, align: 'right', render: (v) => <strong className="mono" translate="no">{formatQty(v)}</strong> },
+                      { title: 'Previous', dataIndex: 'prevQty', width: 100, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
+                      { title: 'This bill', dataIndex: 'thisQty', width: 100, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       {
                         title: 'Up to date',
                         dataIndex: 'uptoQty',
@@ -195,12 +201,13 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         align: 'right',
                         render: (v, l) => (
                           <Typography.Text type={toNumber(l.excessQty) > 0 ? 'danger' : undefined} className="mono">
-                            {formatQty(v)}
+                            {formatQty(v)} {l.unit}
+                            {toNumber(l.excessQty) > 0 ? <div><AppTag meaning="failed">Beyond the order</AppTag></div> : null}
                           </Typography.Text>
                         ),
                       },
-                      { title: 'This bill (₹)', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                       { title: 'Up to date (₹)', dataIndex: 'uptoAmount', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
+                      { title: 'This bill (₹)', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
@@ -295,12 +302,13 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   },
                 ]
               : []),
-            ...(requests ? [{ key: 'requests', title: 'Payment requests', children: <TargetRequests approved target={{ kind: 'BILL', subcontractBillId: data.id, label: data.label, vendorName: data.vendorName }} base={data.outstanding} /> }] : []),
+            ...(requests ? [{ key: 'requests', title: 'Payment requests', empty: asked.loaded && asked.rows.length === 0, children: <TargetRequests approved target={{ kind: 'BILL', subcontractBillId: data.id, label: data.label, vendorName: data.vendorName }} base={data.outstanding} /> }] : []),
             ...(showsDebitNotes(user?.roleKey, data.status)
               ? [
                   {
                     key: 'debit-notes',
                     title: 'Debit notes',
+                    empty: debited === 0,
                     children: <BillDebitNotes bill={{ billType: 'SUBCONTRACT_BILL', billId: data.id, label: data.label, vendorName: data.vendorName, billDate: data.billDate, outstanding: data.outstanding }} />,
                   },
                 ]
@@ -309,6 +317,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               key: 'measurements',
               title: 'Measurements',
               count: data.measurementCount,
+              empty: data.measurementCount === 0,
               children: (
                 <Table
                   rowKey="id"
@@ -347,7 +356,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   },
                 ]
               : []),
-            { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
+            { key: 'documents', title: 'Documents', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} emptyText="No documents" /> },
           ],
           activity: { type: 'subcontract_bill', id: data.id, submission: data },
           actions: (size) => (

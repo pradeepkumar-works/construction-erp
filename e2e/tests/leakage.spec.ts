@@ -58,7 +58,8 @@ test('a purchase order above what another site paid says so on its record', asyn
 
     await signIn(page, 'procurement@demo.com');
     await page.goto(`/purchase-orders/${po.id}`);
-    await expect(page.getByText('1 line is above what another site paid in the 30 days before')).toBeVisible();
+    // The order's Checks section names the line and what the other site paid.
+    await expect(page.locator('#record-checks').getByText(/^OPC 53 Grade Cement: .*% above what another site paid in the 30 days before$/)).toBeVisible();
   } finally {
     await api(procurement, `/purchase-orders/${po.id}`, { method: 'DELETE' });
   }

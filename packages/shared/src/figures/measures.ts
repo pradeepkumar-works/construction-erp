@@ -174,6 +174,8 @@ export const MEASURES = {
   stillToReceive: { label: 'Still to receive', kind: 'money', better: 'down', define: 'Of a client bill’s net payable, what the client has not yet paid.' },
   stillToPay: { label: 'Still to pay', kind: 'money', better: 'down', define: 'Of a vendor or subcontractor bill’s net payable, what is not yet paid.' },
   orderValue: { label: 'Order value', kind: 'money', better: 'either', define: 'The order’s total with GST and freight.' },
+  workOrderValue: { label: 'Order value before GST', kind: 'money', better: 'either', define: 'A work order’s scope at its agreed rates, before GST.' },
+  workOrderBilled: { label: 'Billed so far', kind: 'pct', better: 'either', define: 'Of a work order’s value, what the subcontractor’s bills not rejected have billed.' },
   receivedShare: { label: 'Received', kind: 'pct', better: 'up', define: 'Of the order’s quantity, what has come in on goods received notes.' },
   billedAboveReceived: { label: 'Billed above received', kind: 'count', better: 'down', flag: { level: 'act', clear: 'Billed within what was received' }, items: ['line', 'lines'], define: 'Order lines billed by the vendor for more than has been received.' },
   checksRaised: { label: 'Checks to look at', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every check passes' }, items: ['check', 'checks'], define: 'What the record’s checks found worth a second look before deciding.' },

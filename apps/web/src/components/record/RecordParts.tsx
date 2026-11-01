@@ -22,6 +22,9 @@ export interface RecordContext {
   href?: string;
 }
 
+/** A record's project as its context line: under the title, linked to the project. */
+export const projectContext = (r: { projectId: string; projectName: string }): RecordContext => ({ label: r.projectName, href: `/projects/${r.projectId}` });
+
 /** Who submitted and reviewed an entry and when: History says it, so the facts do not say it again. */
 const HISTORY_KEYS = new Set(['by', 'reviewed']);
 
