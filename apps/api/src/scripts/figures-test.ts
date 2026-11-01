@@ -203,6 +203,22 @@ test("a figure opens its list, with the strip's filters", () => {
   assert.equal(cells(present([figure('clientsOwe', 1)], { projectId: 'p1' }))[0].href, '/receivables?projectId=p1');
   assert.equal(only(figure('clientsOwe', 1)).href, '/receivables');
   assert.equal(only(figure('oldestWait', 3)).href, '/approvals');
+  assert.equal(cells(present([figure('drawingsLate', 2)], { projectId: 'p1' }))[0].href, '/drawing-schedule?state=LATE&projectId=p1');
+});
+
+test("a module screen's ratio is a count of its whole, and a counted part reads in its own words", () => {
+  const behind = only(figure('projectsBehindPlan', 3, { versus: { of: 12 } }));
+  assert.equal(behind.note?.text, 'of 12 projects');
+  assert.equal(behind.state, 'watch');
+  const letters = only(figure('lettersMarkedToYou', 3, { versus: { part: figure('lettersPastActionDate', 1) } }));
+  assert.equal(letters.note?.text, '1 past the action date');
+  assert.equal(letters.state, 'act');
+  assert.equal(only(figure('cubicMetresSent', '42.5', { when: 'today', count: 6, versus: { part: figure('trucksInTransit', 2) } })).note?.text, '6 trucks · 2 in transit');
+  assert.equal(only(figure('challansNotBilled', 3, { versus: { part: figure('cubicMetresNotBilled', '18.25') } })).note?.text, '18.25 m³ delivered');
+  const reports = only(figure('dailyReports', 9, { when: 'today', versus: { of: figure('activeProjects', 12) }, attention: 'watch' }));
+  assert.equal(`${reports.label.text}: ${reports.note?.text}`, 'Daily reports today: of 12 active projects');
+  assert.equal(reports.state, 'watch');
+  assert.deepEqual(present([figure('openNcrs', 0), figure('guaranteesExpiring', 0)]).clear?.text, 'No NCR open, nothing expiring in 30 days');
 });
 
 test('every row is full at every width, for one to six figures, with a lead or without', () => {

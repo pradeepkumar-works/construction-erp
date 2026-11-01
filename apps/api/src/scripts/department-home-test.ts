@@ -5,12 +5,12 @@
  *   node dist/scripts/department-home-test.js
  */
 import assert from 'node:assert/strict';
-import { DEPARTMENT_FIGURES, DEPARTMENT_FIGURE_MAX, DEPARTMENT_MODULES, DEPARTMENT_PIPELINES, MODULE_KEYS, daysPast, departmentFigures, pipelineOf, type ModuleFigureDto, type PipelineRowDto } from '@erp/shared';
+import { DEPARTMENT_FIGURES, DEPARTMENT_FIGURE_MAX, DEPARTMENT_MODULES, DEPARTMENT_PIPELINES, FIGURE_LABELS, MODULE_KEYS, daysPast, departmentFigures, pipelineOf, type Figure, type FigureId, type PipelineRowDto } from '@erp/shared';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
 
-const fig = (key: string): ModuleFigureDto => ({ key, label: key, value: '1', format: 'count', href: '/' });
+const fig = (id: FigureId) => ({ id, value: 1 }) as Figure;
 const row = (number: string, stage: string, extra: Partial<PipelineRowDto> = {}): PipelineRowDto => ({ id: number, number, href: '/', projectName: null, title: number, stage, dueOn: null, daysLate: 0, since: null, ...extra });
 
 test('every department has its figures and pipelines named, from area modules that exist', () => {
@@ -23,11 +23,11 @@ test('every department has its figures and pipelines named, from area modules th
 });
 
 test("a department picks the named figures in its own order, each once, and no more than the strip holds", () => {
-  const figures = departmentFigures('purchase-management', { materials: [fig('lowStock'), fig('openRequests')], purchases: [fig('ordersOpen'), fig('ordersLate')] });
-  assert.deepEqual(figures.map((f) => f.key), ['openRequests', 'ordersOpen', 'ordersLate']);
-  assert.deepEqual(departmentFigures('store-inventory', { materials: [fig('openRequests'), fig('lowStock')], purchases: [fig('ordersOpen'), fig('ordersLate')] }).map((f) => f.key), ['openRequests', 'lowStock', 'ordersLate']);
+  const figures = departmentFigures('purchase-management', { materials: [fig('itemsBelowMinimum'), fig('materialRequestsToApprove')], purchases: [fig('ordersToReceive'), fig('lateDeliveries')] });
+  assert.deepEqual(figures.map((f) => f.id), ['materialRequestsToApprove', 'ordersToReceive', 'lateDeliveries']);
+  assert.deepEqual(departmentFigures('store-inventory', { materials: [fig('materialRequestsToApprove'), fig('itemsBelowMinimum')], purchases: [fig('ordersToReceive'), fig('lateDeliveries')] }).map((f) => f.id), ['materialRequestsToApprove', 'itemsBelowMinimum', 'lateDeliveries']);
   assert.deepEqual(departmentFigures('reports-mis', {}), []);
-  const many = Array.from({ length: 9 }, (_, i) => fig(`f${i}`));
+  const many = (Object.keys(FIGURE_LABELS) as FigureId[]).slice(0, 9).map(fig);
   assert.equal(departmentFigures('quality-control', { quality: many }).length, DEPARTMENT_FIGURE_MAX);
 });
 

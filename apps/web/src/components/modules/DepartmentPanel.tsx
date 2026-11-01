@@ -9,8 +9,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { formatDate } from '@/lib/format';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
 import { QueryError } from '@/components/common/QueryState';
-import { FigureStrip } from '@/components/common/FigureStrip';
-import { moduleFigure } from './moduleFigure';
+import { Figures } from '@/components/figures';
 import s from './DepartmentHome.module.css';
 
 /** A stage's tone: what waits on a decision is pending, part received violet, the rest in hand. */
@@ -116,9 +115,7 @@ export function DepartmentPanel({ department }: { department: string }) {
   if (!data || (!data.figures.length && !data.pipelines.length)) return null;
   return (
     <Flex vertical gap={16}>
-      {data.figures.length > 0 && (
-        <FigureStrip label="Department figures" figures={data.figures.map(moduleFigure)} />
-      )}
+      {data.figures.length > 0 && <Figures label="Department figures" figures={data.figures} scope={{ projectId }} />}
       {data.pipelines.map((p) => (
         <Pipeline key={p.key} p={p} />
       ))}

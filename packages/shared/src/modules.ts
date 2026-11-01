@@ -1,4 +1,5 @@
 import type { SubmissionType } from './enums';
+import type { Figure } from './figures';
 import { NAV_TREE } from './navigation';
 import type { ModuleProgressDto } from './project-progress';
 
@@ -47,28 +48,6 @@ export const MODULE_SUBMISSION_TYPES: Record<ModuleKey, SubmissionType[]> = {
 
 export const isModuleKey = (k: string): k is ModuleKey => (MODULE_KEYS as readonly string[]).includes(k);
 
-/** How a figure is shown: a count, rupees, a count out of a total ("4 of 6"), or a percentage. */
-export type ModuleFigureFormat = 'count' | 'money' | 'ratio' | 'percent';
-/** `warning` and `danger` mark a figure that needs someone (always said in words too, in `note`). */
-export type ModuleFigureTone = 'default' | 'warning' | 'danger';
-
-export interface ModuleFigureDto {
-  key: string;
-  label: string;
-  /** A count or rupees as a string; for `ratio`, the part */
-  value: string;
-  /** For `ratio`: the whole */
-  of?: number | null;
-  format: ModuleFigureFormat;
-  /** What the figure stands against, or why it needs someone ("3 overdue", "2 sites not reported") */
-  note?: string | null;
-  /** Rupees the note's `{money}` stands for, formatted by the client */
-  noteMoney?: string | null;
-  tone?: ModuleFigureTone;
-  /** The list behind the figure */
-  href: string;
-}
-
 export interface ModuleWaitingDto {
   type: SubmissionType;
   count: number;
@@ -81,7 +60,8 @@ export interface ModuleWaitingDto {
 export interface ModuleHomeDto {
   module: ModuleKey;
   date: string;
-  figures: ModuleFigureDto[];
+  /** Headline figures (`figure()`), each behind the permission of the list it counts */
+  figures: Figure[];
   /** Entries in this module the caller can decide now, most first */
   waiting: ModuleWaitingDto[];
   /** The caller's own entries in this module that were sent back or turned down */

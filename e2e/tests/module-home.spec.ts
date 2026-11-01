@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
 
+/** A headline figure as the API states it (`figure()` in @erp/shared): the facts, named by its measure's id. */
+type Figure = { id: string; value: string | number | { none: string }; versus?: { of?: number | Figure; part?: Figure } };
 type ModuleHome = {
   module: string;
-  figures: { key: string; label: string; value: string; of?: number | null; href: string }[];
+  figures: Figure[];
   waiting: { type: string; count: number }[];
 };
 
@@ -16,19 +18,23 @@ type ModuleHome = {
 test('each module has a screen with its tiles, figures and what waits', async ({ page }) => {
   const pm = await apiToken('pm@demo.com');
   const site = await api<ModuleHome>(pm, '/dashboard/modules/site');
-  expect(site.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['dprToday', 'openRisks']));
-  const dpr = site.figures.find((f) => f.key === 'dprToday')!;
-  expect(Number(dpr.value)).toBeLessThanOrEqual(dpr.of ?? 0);
+  expect(site.figures.map((f) => f.id)).toEqual(expect.arrayContaining(['dailyReports', 'openRisks']));
+  // Daily reports today stand against the active projects: never more reported than there are sites.
+  const dpr = site.figures.find((f) => f.id === 'dailyReports')!;
+  const active = dpr.versus?.of;
+  expect(typeof active === 'object' && active.id).toBe('activeProjects');
+  expect(Number(dpr.value)).toBeLessThanOrEqual(typeof active === 'object' ? Number(active.value) : 0);
 
   const accounts = await apiToken('accounts@demo.com');
   const money = await api<ModuleHome>(accounts, '/dashboard/modules/accounts');
-  expect(money.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['payable', 'payableOverdue']));
+  const weOwe = money.figures.find((f) => f.id === 'weOwe');
+  expect(weOwe?.versus?.part?.id).toBe('weOweOverdue');
   const quality = await api<ModuleHome>(pm, '/dashboard/modules/quality');
-  expect(quality.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['openNcrs']));
+  expect(quality.figures.map((f) => f.id)).toEqual(expect.arrayContaining(['openNcrs']));
   const safety = await api<ModuleHome>(pm, '/dashboard/modules/safety');
-  expect(safety.figures.map((f) => f.key)).toEqual(expect.arrayContaining(['incidents']));
+  expect(safety.figures.map((f) => f.id)).toEqual(expect.arrayContaining(['safetyIncidents']));
   const accountsSite = await api<ModuleHome>(accounts, '/dashboard/modules/site');
-  expect(accountsSite.figures.map((f) => f.key)).not.toContain('dprToday');
+  expect(accountsSite.figures.map((f) => f.id)).not.toContain('dailyReports');
   await expect(api(pm, '/dashboard/modules/nowhere')).rejects.toThrow(/404/);
 
   await signIn(page, 'pm@demo.com');

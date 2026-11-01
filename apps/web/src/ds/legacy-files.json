@@ -106,7 +106,6 @@
  "src/components/common/ConfirmDelete.tsx",
  "src/components/common/EmptyArt.tsx",
  "src/components/common/ExcelImportModal.tsx",
- "src/components/common/FigureStrip.tsx",
  "src/components/common/ListRowMeta.tsx",
  "src/components/common/ListToolbar.tsx",
  "src/components/common/PageHeader.tsx",

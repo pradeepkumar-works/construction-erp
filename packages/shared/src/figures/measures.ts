@@ -1,4 +1,6 @@
 import { APPROVAL_OLD_DAYS } from '../management';
+import { BILLING_GAP_PCT } from '../project-progress';
+import { BEHIND_TOLERANCE_PCT } from '../schedule';
 
 /** What a figure counts in. It fixes the value's type, how it reads and how a change is said ("up ₹1.20 Cr", "4 points"). */
 export type FigureKind = 'money' | 'count' | 'pct' | 'qty' | 'days';
@@ -62,12 +64,16 @@ export const MEASURES = {
   moneyReceived: { label: 'Money received', kind: 'money', better: 'up', list: '/receivables', define: 'Received in the bank from clients.' },
   cost: { label: 'Cost', kind: 'money', better: 'down', list: '/cost', define: 'Site expenses, material issued, machinery, labour and subcontractor bills, approved.' },
   workNotBilled: { label: 'Work done, not billed', kind: 'money', better: 'down', list: '/bills', define: 'Work done at BOQ rates less what is billed, never below zero.' },
-  measuredNotBilled: { label: 'Measured, in no bill', kind: 'money', better: 'down', list: '/measurements', define: 'Approved measurement sheets not yet in an RA bill: the next bill’s ready money.' },
+  measuredNotBilled: { label: 'Measured, in no bill', kind: 'money', better: 'down', items: ['project', 'projects'], list: '/billing-readiness', define: 'Approved measurement sheets not yet in an RA bill: the next bill’s ready money.' },
   billsNotSent: { label: 'Approved bills not sent', kind: 'money', better: 'down', flag: { level: 'watch', clear: 'Every approved bill sent' }, list: '/bills', define: 'Approved RA bills not yet sent to the client.' },
   billsAwaitingCertificate: { label: 'Awaiting certificate', kind: 'money', better: 'down', list: '/bills', define: 'Bills sent to the client and not yet certified.' },
   certifiedNotPaid: { label: 'Certified, not paid', kind: 'money', better: 'down', list: '/receivables', define: 'Bills the client certified and has not yet settled.' },
   grossMargin: { label: 'Gross margin', negativeLabel: 'Gross loss', kind: 'money', better: 'up', limit: { below: 0, level: 'act' }, list: '/cost', define: 'Billed less cost, in the period.' },
   marginOnBilling: { label: 'Margin on billing', kind: 'pct', better: 'up', limit: { below: 0, level: 'act' }, define: 'Gross margin as a share of what is billed.' },
+  budget: { label: 'Budget', kind: 'money', better: 'either', list: '/cost', define: 'The cost budget at completion.' },
+  variationsWithClient: { label: 'Variations with the client', kind: 'count', better: 'down', items: ['variation', 'variations'], list: '/variations', define: 'Variations sent to the client, not yet decided.' },
+  guaranteesExpiring: { label: 'Guarantees and licences expiring', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Nothing expiring in 30 days' }, items: ['entry', 'entries'], list: '/compliance', define: 'Bank guarantees, insurance and licences that expire within the next 30 days.' },
+  guaranteesExpired: { label: 'Guarantees and licences expired', kind: 'count', better: 'down', flag: { level: 'act', clear: 'Nothing expired' }, items: ['entry', 'entries'], list: '/compliance', define: 'Bank guarantees, insurance and licences past their expiry date.' },
   // Receivables
   clientsOwe: { label: 'Clients owe', kind: 'money', better: 'down', items: ['open bill', 'open bills'], list: '/receivables', define: 'Bills sent to clients, with GST, less what they have settled.' },
   clientsOweOver90: { label: 'Clients owe over 90 days', asPart: 'over 90 days', kind: 'money', better: 'down', flag: { level: 'act', clear: 'Nothing over 90 days' }, list: '/receivables', define: 'Of what clients owe, bills sent more than 90 days ago.' },
@@ -76,28 +82,88 @@ export const MEASURES = {
   weOwe: { label: 'We owe', kind: 'money', better: 'down', items: ['open bill', 'open bills'], list: '/payables', define: 'Approved vendor and subcontractor bills, with GST, less what is paid and deducted.' },
   weOweOverdue: { label: 'Overdue to vendors', asPart: 'overdue', kind: 'money', better: 'down', flag: { level: 'act', clear: 'Nothing overdue' }, list: '/payables', define: 'Of what we owe, bills past their due date.' },
   weOweDueSoon: { label: 'Due to vendors in 7 days', asPart: 'due in 7 days', kind: 'money', better: 'down', list: '/payables', define: 'Of what we owe, bills that fall due in the next 7 days.' },
+  paymentRequestsToPay: { label: 'Payment requests to pay', kind: 'count', better: 'down', items: ['request', 'requests'], list: '/payables?tab=requests', define: 'Approved payment requests not yet paid in full.' },
   msmeAtRisk: { label: 'MSME bills at risk', kind: 'money', better: 'down', flag: { level: 'act', clear: 'No MSME bill at risk' }, list: '/payables', define: 'Owed to micro and small enterprises, due within 7 days or overdue (45 days at most by law).' },
   // Schedule and site
-  physicalProgress: { label: 'Physical progress', kind: 'pct', better: 'up', list: '/progress', define: 'Work done against the whole by value, in the latest month with approved work.' },
+  physicalProgress: { label: 'Physical progress', kind: 'pct', better: 'up', items: ['project', 'projects'], list: '/progress', define: 'Work done against the whole by value; across projects, weighted by contract value.' },
+  financialProgress: { label: 'Financial progress', kind: 'pct', better: 'up', list: '/bills', define: 'Approved RA bills against the revised contract value.' },
+  projectsBehindPlan: { label: 'Projects behind plan', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No project behind plan' }, items: ['project', 'projects'], list: '/projects', define: `Projects more than ${BEHIND_TOLERANCE_PCT} points behind the share planned by today.` },
+  projectsBillingBehind: { label: 'Projects with billing behind', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Billing keeps up on every project' }, items: ['project', 'projects'], list: '/bills', define: `Projects whose billing is ${BILLING_GAP_PCT} or more points behind the work done.` },
   delayedActivities: { label: 'Delayed activities', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No activity delayed' }, items: ['activity', 'activities'], define: 'Activities past their planned finish and not complete.' },
   activitiesDue: { label: 'Activities due by today', kind: 'count', better: 'either', items: ['activity due to finish by today', 'activities due to finish by today'], define: 'Activities planned to finish by today.' },
   dailyReports: { label: 'Daily reports', kind: 'count', better: 'up', items: ['daily report', 'daily reports'], list: '/dpr', define: 'Daily reports filed for the day.' },
+  labour: { label: 'Labour', kind: 'count', better: 'either', list: '/attendance', define: 'Workers on the day’s head counts, plus those present on the roll call.' },
+  openRisks: { label: 'Open delays and risks', kind: 'count', better: 'down', items: ['delay or risk', 'delays and risks'], list: '/risks', define: 'Delays and risks in the register, not closed.' },
+  openDelays: { label: 'Open delays', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No open delays' }, items: ['delay holding up work', 'delays holding up work'], list: '/risks', define: 'Delays in the register, not closed.' },
+  // Quality and safety
+  openNcrs: { label: 'Open NCRs', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No NCR open' }, items: ['NCR', 'NCRs'], list: '/inspections?tab=ncrs', define: 'Non-conformance reports waiting for action or closing.' },
+  safetyIncidents: { label: 'Safety incidents', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No safety incident this month' }, items: ['incident', 'incidents'], list: '/safety', define: 'Incidents reported in the month.' },
+  // Design and drawings
+  drawingsLate: { label: 'Drawings late', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No drawing late' }, items: ['drawing', 'drawings'], list: '/drawing-schedule?state=LATE', define: 'Drawings on the schedule past the date they are needed by.' },
+  drawingsAwaited: { label: 'Drawings awaited', kind: 'count', better: 'down', items: ['drawing awaited', 'drawings awaited'], list: '/drawing-schedule', define: 'Drawings on the schedule not yet received.' },
+  reviewsLate: { label: 'Approvals past the reply date', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No reviewer past the reply date' }, items: ['submission', 'submissions'], list: '/design-submissions?status=LATE', define: 'Design submissions with the reviewer past the date the reply was due.' },
+  underReview: { label: 'With the reviewer', kind: 'count', better: 'either', items: ['submission with the reviewer', 'submissions with the reviewer'], list: '/design-submissions', define: 'Design submissions waiting for the reviewer’s code.' },
+  commentsToAnswer: { label: 'Review comments to answer', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No review comment to answer' }, items: ['submission to revise', 'submissions to revise'], list: '/design-submissions?status=WITH_US', define: 'Reviewer comments not yet answered, before the next submission.' },
+  copiesToRecall: { label: 'Superseded copies to recall', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every copy on site is current' }, items: ['copy', 'copies'], list: '/controlled-copies?state=TO_RECALL', define: 'Controlled copies of a superseded revision still on site.' },
+  recallsLate: { label: 'Recalls over a week old', asPart: 'out longer than a week', kind: 'count', better: 'down', flag: { level: 'act', clear: 'None out longer than a week' }, list: '/controlled-copies?state=TO_RECALL', define: 'Superseded copies still on site a week after they were called back.' },
+  // Correspondence
+  lettersMarkedToYou: { label: 'Letters marked to you', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No letter marked to you' }, items: ['letter', 'letters'], list: '/correspondence?mine=1', define: 'Received letters marked to you with an action, not yet done.' },
+  lettersPastActionDate: { label: 'Your letters past the action date', asPart: 'past the action date', kind: 'count', better: 'down', flag: { level: 'act', clear: 'None past the action date' }, list: '/correspondence?mine=1', define: 'Letters marked to you whose action date has passed.' },
+  lettersToSign: { label: 'Letters to sign', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No letter to sign' }, items: ['letter', 'letters'], list: '/correspondence/outward?toSign=1', define: 'Outward letters waiting for your signature; each is numbered once you approve.' },
+  repliesDue: { label: 'Letters waiting for our reply', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No reply due' }, items: ['letter', 'letters'], list: '/correspondence?awaiting=1', define: 'Received letters that ask for our reply by a date.' },
+  repliesOverdue: { label: 'Replies past the date asked', asPart: 'past the date asked', kind: 'count', better: 'down', flag: { level: 'act', clear: 'None past the date asked' }, list: '/correspondence?awaiting=1', define: 'Letters waiting for our reply past the date they asked for it.' },
+  lettersNotMarked: { label: 'Received, not marked to anyone', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every letter received is marked' }, items: ['letter', 'letters'], list: '/correspondence?unmarked=1', define: 'Received letters not yet marked to someone with an action.' },
+  noticesWithoutProof: { label: 'Notices without proof of delivery', kind: 'count', better: 'down', flag: { level: 'act', clear: 'Every notice has its proof' }, items: ['notice', 'notices'], list: '/correspondence/outward?proof=1', define: 'Outward notices with no receipt or acknowledged copy kept.' },
   // Procurement
   ordered: { label: 'Ordered', kind: 'money', better: 'either', items: ['order', 'orders'], list: '/purchase-orders', define: 'Approved purchase orders dated in the period, before GST, freight included.' },
   vendorsOrderedFrom: { label: 'Vendors ordered from', kind: 'count', better: 'either', items: ['vendor', 'vendors'], list: '/vendors', define: 'Vendors with an approved order in the period.' },
   daysToOrder: { label: 'Days from indent to order', kind: 'days', better: 'down', define: 'Average, from the indent’s approval to its order.' },
   daysToReceive: { label: 'Days from order to receipt', kind: 'days', better: 'down', define: 'Average, from the order to its first goods received note.' },
+  ordersToReceive: { label: 'Orders to receive', kind: 'money', better: 'either', items: ['order', 'orders'], list: '/purchase-orders', define: 'Approved orders with material still to come, at their value.' },
+  lateDeliveries: { label: 'Late deliveries', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No delivery late' }, items: ['order', 'orders'], list: '/purchase-orders', define: 'Orders past their delivery date with material still to come.' },
+  materialRequestsToApprove: { label: 'Material requests to approve', kind: 'count', better: 'down', items: ['request', 'requests'], list: '/material-requests', define: 'Raised by the sites, not yet decided.' },
   deliveredOnTime: { label: 'Delivered on time', kind: 'pct', better: 'up', define: 'Orders whose first goods received note came by the delivery date.' },
   // Labour
   manDays: { label: 'Man-days', kind: 'count', better: 'either', list: '/attendance', define: 'The daily labour musters in the period.' },
   averageOnSite: { label: 'Average on site a day', kind: 'qty', better: 'either', define: 'Man-days over the days with a muster, all projects.' },
   labourCost: { label: 'Labour cost', kind: 'money', better: 'down', list: '/cost', define: 'Man-days at the trade’s daily rate, as Project cost counts it.' },
+  attendanceFlags: { label: 'Man-day bills above attendance', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No man-day bill above attendance' }, list: '/attendance-check', define: 'Subcontractor bill lines with more man-days than the head count, roll call and punches.' },
+  attendanceFlagValue: { label: 'Value above attendance', asPart: 'above the records', kind: 'money', better: 'down', list: '/attendance-check', define: 'The man-days above the records, at the bill’s rates.' },
   tradesWithoutRate: { label: 'Trades without a rate', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every trade has a daily rate' }, items: ['trade', 'trades'], list: '/cost', define: 'Trades on a muster with no daily rate; set them on Project cost.' },
   // Stock
   stockValue: { label: 'Stock value', kind: 'money', better: 'either', list: '/stock', define: 'Stock on hand at item master rates.' },
   stockOver90: { label: 'Stock over 90 days old', asPart: 'over 90 days old', kind: 'money', better: 'down', flag: { level: 'watch', clear: 'No stock over 90 days old' }, list: '/stock', define: 'Stock held over 90 days, the oldest taken as used first.' },
-  itemsBelowMinimum: { label: 'Items below minimum', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No item below its minimum' }, items: ['item', 'items'], list: '/stock', define: 'Items whose stock is under the minimum set for them.' },
+  itemsBelowMinimum: { label: 'Items below minimum', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No item below its minimum' }, items: ['item', 'items'], list: '/stock?low=1', define: 'Items whose stock is under the minimum set for them.' },
   itemsWithoutRate: { label: 'Items without a rate', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every item in stock has a rate' }, items: ['item', 'items'], list: '/stock', define: 'Items in stock with no rate in the item master, so not valued.' },
+  // Plant and machinery
+  openJobCards: { label: 'Open job cards', kind: 'count', better: 'down', items: ['job card', 'job cards'], list: '/machinery?tab=maintenance', define: 'Services and breakdowns not closed.' },
+  fuelIssues: { label: 'Fuel issues', kind: 'count', better: 'either', list: '/machinery?tab=fuel', define: 'Diesel issued to machines.' },
+  // RMC plant
+  cubicMetresSent: { label: 'Cubic metres sent', kind: 'qty', better: 'either', items: ['truck', 'trucks'], list: '/rmc?tab=day', define: 'Concrete sent from the plant, not rejected.' },
+  trucksInTransit: { label: 'Trucks in transit', asPart: 'in transit', kind: 'count', better: 'either', list: '/rmc?tab=day', define: 'Trucks sent and not yet delivered.' },
+  concreteOrdersOpen: { label: 'Open concrete orders', kind: 'count', better: 'either', items: ['order', 'orders'], list: '/rmc?tab=orders', define: 'Confirmed orders not yet poured in full.' },
+  poursToday: { label: 'Pours due today', asPart: 'to pour today', kind: 'count', better: 'either', list: '/rmc?tab=orders', define: 'Confirmed orders whose pour date is today.' },
+  mixDesignsToApprove: { label: 'Mix designs to approve', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No mix design waiting' }, items: ['mix design', 'mix designs'], list: '/rmc?tab=designs', define: 'Mix designs in draft, waiting for quality to approve.' },
+  challansNotBilled: { label: 'Challans not billed', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every delivery is billed' }, items: ['challan', 'challans'], list: '/rmc?tab=bills', define: 'Delivered loads for a customer not yet on a bill.' },
+  cubicMetresNotBilled: { label: 'Cubic metres not billed', asPart: 'm³ delivered', kind: 'qty', better: 'down', list: '/rmc?tab=bills', define: 'Concrete delivered to customers and not yet on a bill.' },
+  rmcCustomersOwe: { label: 'RMC customers owe', kind: 'money', better: 'down', list: '/rmc?tab=bills', define: 'On bills issued, less money received.' },
+  // Books
+  profitThisYear: { label: 'Profit this year', negativeLabel: 'Loss this year', kind: 'money', better: 'up', limit: { below: 0, level: 'act' }, list: '/statements?tab=pl', define: 'From 1 April, before tax.' },
+  vouchersToApprove: { label: 'Vouchers to approve', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No voucher to approve' }, items: ['voucher', 'vouchers'], list: '/books?tab=vouchers', define: 'Vouchers made by accounts, waiting for someone else to approve.' },
+  recordsNotPosted: { label: 'Records not posted', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every record is in the books' }, items: ['record', 'records'], list: '/books?tab=day', define: 'Records that do not balance, so are held out of the books; the day book says why.' },
+  bankLinesToMatch: { label: 'Bank lines to match', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'Every imported bank line is matched' }, items: ['bank line to match', 'bank lines to match'], list: '/statements?tab=bank', define: 'Lines of an imported bank statement not yet matched in the books.' },
+  // Leakage checks
+  leakageAtRisk: { label: 'Leakage at risk', kind: 'money', better: 'down', flag: { level: 'act', clear: 'No leakage flagged' }, items: ['flag', 'flags'], list: '/leakage', define: 'Rupees at risk on what the leakage checks flagged in the month.' },
+  leakageFlags: { label: 'Leakage flags', kind: 'count', better: 'down', flag: { level: 'act', clear: 'No leakage flagged' }, list: '/leakage', define: 'What the leakage checks flagged in the month.' },
+  // Staff
+  staffPresent: { label: 'Staff present', kind: 'count', better: 'either', list: '/staff?tab=register', define: 'Staff marked present or on half day.' },
+  staffOnRoll: { label: 'Staff on the roll', kind: 'count', better: 'either', items: ['person on the roll', 'people on the roll'], list: '/staff?tab=staff', define: 'Staff in employment on the day.' },
+  staffOnLeave: { label: 'Staff on leave', kind: 'count', better: 'either', list: '/staff?tab=leave', define: 'Staff on approved leave.' },
+  staffAbsent: { label: 'Staff absent', asPart: 'absent besides', kind: 'count', better: 'down', list: '/staff?tab=register', define: 'Staff marked absent.' },
+  staffJoined: { label: 'Staff joined', kind: 'count', better: 'either', list: '/staff?tab=staff', define: 'Staff who joined in the month.' },
+  leaveToDecide: { label: 'Leave to decide', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No leave to decide' }, items: ['request', 'requests'], list: '/staff?tab=leave', define: 'Leave requests waiting for your decision.' },
+  overtimeToDecide: { label: 'Overtime to decide', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No overtime to decide' }, items: ['claim', 'claims'], list: '/staff?tab=overtime', define: 'Overtime claims waiting for your decision.' },
+  salaryRunsWaiting: { label: 'Salary runs waiting', kind: 'count', better: 'down', flag: { level: 'watch', clear: 'No salary run waiting on you' }, items: ['run', 'runs'], list: '/payroll?tab=runs', define: 'Salary runs at your step: in draft for HR, sent for approval for management, approved and not paid for accounts.' },
   // Approvals
   approvalsWaiting: { label: 'Waiting for approval', kind: 'count', better: 'down', items: ['entry', 'entries'], list: '/approvals', define: 'Entries sent for approval and not yet decided, whoever decides them.' },
   approvalsOld: { label: `Waiting over ${OLD} days`, asPart: `over ${OLD} days`, kind: 'count', better: 'down', flag: { level: 'watch', clear: `Nothing waiting over ${OLD} days` }, list: '/approvals', define: `Entries waiting for approval for more than ${OLD} days.` },
