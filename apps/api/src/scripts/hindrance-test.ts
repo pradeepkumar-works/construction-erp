@@ -252,7 +252,7 @@ async function demo(): Promise<number> {
         const unsure = (await hindrances.forReport(pm, dpr.id))!;
         check('unsure remark: suggested from its DPR’s own page', !!unsure && unsure.dprId === dpr.id);
         check(aiOn ? 'unsure remark: read by the model' : 'unsure remark: kept by the rules with no cause', unsure?.source === (aiOn ? 'MODEL' : 'RULES') && unsure.category === 'OTHER', JSON.stringify(unsure));
-        check('unsure remark: begun the day before its report', unsure?.delayStart === addDays(dateOnly(dpr.date)!, -1));
+        check('unsure remark: begun the day before its report', unsure?.delayStart === addDays(dateOnly(dpr.date), -1));
 
         // 4. The notice period from each contract, with its clause and page.
         const roadNotice = await hindrances.noticePeriod(pm, road.id);

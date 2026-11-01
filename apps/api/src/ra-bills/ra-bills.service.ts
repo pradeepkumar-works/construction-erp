@@ -127,7 +127,7 @@ export class RaBillsService {
     }
     if (!r.obligationRecovery.isZero()) {
       const key: BillDeductionKey = 'obligations';
-      deductions.push({ key, label: r.obligationRecovery.gt(0) ? BILL_DEDUCTION_LABELS.obligations : 'Contract recoveries given back', pct: null, amount: money(r.obligationRecovery)! });
+      deductions.push({ key, label: r.obligationRecovery.gt(0) ? BILL_DEDUCTION_LABELS.obligations : 'Contract recoveries given back', pct: null, amount: money(r.obligationRecovery) });
     }
     if (!r.otherDeduction.isZero()) {
       const key: BillDeductionKey = 'other';
@@ -183,7 +183,7 @@ export class RaBillsService {
       }),
       slippageWithheld: money(r.slippageWithheld),
       slippageLines: (r.slippageLines as SlippageLineDto[] | null) ?? [],
-      obligationRecovery: money(r.obligationRecovery)!,
+      obligationRecovery: money(r.obligationRecovery),
       obligationLines: storedLines(r.obligationLines),
       om: omBillDto(r),
       tenderFactor: r.stageLines.length && r.project.tenderFactor ? r.project.tenderFactor.toFixed(6).replace(/\.?0+$/, '') : null,
