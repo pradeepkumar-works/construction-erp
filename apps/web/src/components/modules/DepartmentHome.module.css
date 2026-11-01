@@ -97,6 +97,14 @@
   white-space: nowrap;
 }
 
+/* A count to read, not a decision (the watch list's warnings): plain text beside the name. */
+.count {
+  flex: none;
+  color: var(--ant-color-text-secondary);
+  font-size: var(--ant-font-size-sm);
+  white-space: nowrap;
+}
+
 /* A pipeline's stages: each stage's count in the display face, in the order the work moves. */
 .stages {
   display: grid;

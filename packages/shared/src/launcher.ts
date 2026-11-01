@@ -92,6 +92,9 @@ export interface LauncherBadgesDto {
   nodes: Record<string, number>;
   /** What each count in `nodes` is, said after it on a tile: "53 to approve", "4 to order". Same keys as `nodes`. */
   words: Record<string, string>;
+  /** Nodes in `nodes` whose count is there to read, not a decision waiting on the user (the watch list's warnings): a tile
+   *  says it as plain text, never as a badge. */
+  info?: string[];
   /** The approvals waiting on the user by type, so a module of the company's menu counts its own (`menuWaiting`) */
   approvals?: { type: SubmissionType; count: number }[];
 }

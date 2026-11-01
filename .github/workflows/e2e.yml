@@ -158,6 +158,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/list-columns-test.js
+      - name: What waits is ranked by money at stake, then how late, then the role's order
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/waiting-rank-test.js
       - name: Screens open on a month with figures in it, and history notes read rupees and days as people write them
         if: matrix.suite == 'flows'
         working-directory: apps/api

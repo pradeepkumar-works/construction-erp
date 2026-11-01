@@ -7,7 +7,9 @@ import type { AuthUser, MyWorkCard, MyWorkDto } from '@erp/shared';
 import { useMyWork } from '@/lib/queries';
 import { formatINRCompact } from '@/lib/format';
 import { CheckSquareOutlined } from '@/components/common/icons';
-import { APPROVALS_TITLE, CARDS, myWorkOrder, urgencyOf } from '@/components/home/MyWorkPanel';
+import { APPROVALS_TITLE, CARDS, amountOf, countWords, myWorkOrder, unitOf, urgencyOf } from '@/components/home/MyWorkPanel';
+import { AppTag } from '@/components/common/AppTag';
+import { tk } from '@/ds';
 import { homeLayout, type MyWorkKey } from '@/components/home/layout';
 import s from './HomeLauncher.module.css';
 
@@ -16,11 +18,13 @@ const SHOWN = 3;
 
 const countOf = (data: MyWorkDto, k: MyWorkKey) => (k === 'approvals' ? (data.approvals ?? []).reduce((n, a) => n + a.count, 0) : (data[k] as MyWorkCard).count);
 
-/** One card as a line: its title, the most pressing entry, the count. */
+/** One card as a line: its title, the most pressing entry, its rupees or its count, and whether it is past its mark. */
 function entryOf(data: MyWorkDto, k: MyWorkKey) {
+  const amount = amountOf(data, k);
+  const late = urgencyOf(data, k) > 0;
   if (k === 'approvals') {
     const d = data.approvalsWaitingDays;
-    return { title: APPROVALS_TITLE, icon: <CheckSquareOutlined />, href: '/approvals', note: d ? `Oldest waiting ${d} day${d === 1 ? '' : 's'}` : 'All sent today', amount: null, late: false };
+    return { title: APPROVALS_TITLE, icon: <CheckSquareOutlined />, href: '/approvals', note: d ? `Oldest waiting ${d} day${d === 1 ? '' : 's'}` : 'All sent today', amount, late };
   }
   const card = data[k] as MyWorkCard;
   const meta = CARDS[k];
@@ -30,14 +34,14 @@ function entryOf(data: MyWorkDto, k: MyWorkKey) {
     icon: meta.icon,
     href: card.href ?? meta.href ?? first?.href ?? '/my-work',
     note: first ? [first.label, first.note].filter(Boolean).join(' · ') : '',
-    amount: card.amount,
-    late: meta.tone === 'error' && urgencyOf(data, k) > 0,
+    amount,
+    late,
   };
 }
 
 /**
- * Home's first section: the three most pressing of My work's cards for the caller's
- * role (approvals, money due, the watch list, a desk's own queue), each opening its list, and a link to the rest.
+ * Home's first section: the first three of My work's cards for the caller's role in My work's own order (`myWorkOrder`:
+ * the bigger money, then the later, then the role's layout), each opening its list, and a link to the rest.
  */
 export function WaitingForYou({ user }: { user: AuthUser }) {
   const { data, isPending, isError } = useMyWork();
@@ -75,10 +79,14 @@ export function WaitingForYou({ user }: { user: AuthUser }) {
                   </span>
                   <span className={s.recentText}>
                     <span className={s.recentLabel}>{e.title}</span>
-                    <span className={s.recentKind}>{[e.amount ? formatINRCompact(e.amount) : null, e.note].filter(Boolean).join(' · ')}</span>
+                    <span className={s.recentKind}>
+                      {e.late && <AppTag meaning="failed">Overdue</AppTag>}
+                      {[e.amount ? countWords(n, unitOf(k)) : null, e.note].filter(Boolean).join(' · ')}
+                    </span>
                   </span>
-                  <span className={e.late ? `${s.waitCount} ${s.waitLate}` : s.waitCount} translate="no">
-                    {n}
+                  {/* Rupees lead where there are rupees; the count where there are none. */}
+                  <span className={s.waitCount} translate="no" style={tk.type.figure}>
+                    {e.amount ? formatINRCompact(e.amount) : n}
                   </span>
                 </Link>
               </li>

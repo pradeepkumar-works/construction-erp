@@ -193,6 +193,8 @@ export class LauncherService {
     add('quality.audits', work.findingsToClose?.count, 'to close');
     add('purchases.toBill', work.toMatch?.count, 'to match');
     add('accounts.debitNotes', work.toDebit?.count, 'to debit');
-    return { nodes, words, approvals: approvals.filter((a) => a.count > 0) };
+    // Warnings are there to read; everything else counted here waits on the user's own move.
+    const info = ['watch'].filter((id) => nodes[id]);
+    return { nodes, words, info, approvals: approvals.filter((a) => a.count > 0) };
   }
 }

@@ -29,6 +29,20 @@ export function rupees(amount: string | number): string {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** The longest line the brief carries, the rules' own as well as the model's. */
+const MAX_LINE = 140;
+
+/**
+ * The watch list's line: its first warning and how many more. A long warning keeps the count short ("and 295 more"),
+ * and one too long even then is cut with "…", so the rules' own line always fits the brief.
+ */
+function watchLine(title: string, more: number): string {
+  const tails = more > 0 ? [`, and ${more} more on the watch list`, `, and ${more} more`] : [''];
+  for (const tail of tails) if (title.length + tail.length <= MAX_LINE) return `${title}${tail}`;
+  const tail = tails[tails.length - 1];
+  return `${title.slice(0, MAX_LINE - tail.length - 1).trimEnd()}…${tail}`;
+}
+
 /** Every line the brief could carry, most pressing first. */
 export function morningCandidates(f: MorningFacts): BriefLineDto[] {
   const out: BriefLineDto[] = [];
@@ -38,10 +52,7 @@ export function morningCandidates(f: MorningFacts): BriefLineDto[] {
     out.push({ text: `${plural(a.overTwoDays, 'approval')} over two days old, the oldest ${plural(a.oldestDays, 'day')}${oldest}`, href: '/approvals' });
   } else if (a && a.count > 0) out.push({ text: `${plural(a.count, 'approval')} waiting for you`, href: '/approvals' });
   if (f.sentBack && f.sentBack.count > 0) out.push({ text: `${plural(f.sentBack.count, 'entry', 'entries')} of yours sent back for changes`, href: f.sentBack.href });
-  if (f.warnings && f.warnings.top.length) {
-    const more = f.warnings.count - 1;
-    out.push({ text: `${f.warnings.top[0].title}${more > 0 ? `, and ${more} more on the watch list` : ''}`, href: '/watch-list' });
-  }
+  if (f.warnings && f.warnings.top.length) out.push({ text: watchLine(f.warnings.top[0].title, f.warnings.count - 1), href: '/watch-list' });
   if (f.payablesDue && f.payablesDue.count > 0) out.push({ text: `${rupees(f.payablesDue.amount)} due to vendors this week or overdue, ${plural(f.payablesDue.count, 'bill')}`, href: '/payables' });
   if (f.lateDeliveries && f.lateDeliveries.count > 0) out.push({ text: `${plural(f.lateDeliveries.count, 'order')} past the delivery date, ${rupees(f.lateDeliveries.amount)} still to come`, href: '/purchase-orders' });
   if (f.receivables && f.receivables.count > 0) out.push({ text: `${rupees(f.receivables.amount)} outstanding from clients, the oldest bill ${plural(f.receivables.oldestDays, 'day')}`, href: '/receivables' });
@@ -60,7 +71,6 @@ export function morningDraft(candidates: BriefLineDto[]): BriefLineDto[] {
 /** What the model is asked to return, and what the rules' draft looks like in that form. */
 export const asPicks = (candidates: BriefLineDto[], lines: BriefLineDto[]) => JSON.stringify(lines.map((l) => ({ line: l.text, from: candidates.indexOf(l) })));
 
-const MAX_LINE = 140;
 
 /**
  * The model's brief as lines, or null when it is not fit to show: not a JSON list of one to three lines, a line too

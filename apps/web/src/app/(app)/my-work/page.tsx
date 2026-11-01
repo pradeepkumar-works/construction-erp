@@ -11,6 +11,7 @@ import { formatINRCompact, formatPct, toNumber, todayDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Figures } from '@/components/figures';
+import { tk } from '@/ds';
 import { useAuth } from '@/lib/auth';
 import { GettingStartedCard, useGettingStarted } from '@/components/dashboard/GettingStartedCard';
 import { themeFontSize } from '@/lib/theme';
@@ -40,6 +41,7 @@ export default function MyWorkPage() {
   // The four requests go out together, so this waits for the slowest, not their sum; a failed one does not hold it up.
   const ready = !isPending && !myWork.isPending && !trends.isPending && gettingStarted.settled;
   const figures = data ? layout.kpis.map((k) => kpiFigure(k, data, t)) : [];
+  const keyFigures = ready && data ? <Figures label="Key figures" figures={figures} /> : null;
 
   return (
     <div className="page-container">
@@ -55,19 +57,16 @@ export default function MyWorkPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {ready && <GettingStartedCard state={gettingStarted} />}
       {ready && <MorningBriefCard />}
+      {/* Company-wide readers get the state of the company first, then what waits on them. */}
+      {layout.figuresFirst && keyFigures && <div style={{ marginBottom: tk.space[4] }}>{keyFigures}</div>}
       {ready && <MyWorkPanel data={myWork.data} loading={false} order={layout.myWork} />}
-      {ready && data && (
-        <>
-          <Figures label="Key figures" figures={figures} />
-
-          {t && (
-            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-              {layout.charts.map((c) => (
-                <HomeChart key={c} c={c} trends={t} />
-              ))}
-            </Row>
-          )}
-        </>
+      {!layout.figuresFirst && keyFigures}
+      {ready && data && t && (
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          {layout.charts.map((c) => (
+            <HomeChart key={c} c={c} trends={t} />
+          ))}
+        </Row>
       )}
     </div>
   );

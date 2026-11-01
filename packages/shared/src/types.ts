@@ -517,7 +517,8 @@ export interface MyWorkCard {
  * the role has no business with it, and present with count 0 when there is simply nothing to do.
  */
 export interface MyWorkDto {
-  approvals?: { type: SubmissionType; count: number }[];
+  /** What waits for the caller's approval, by type: how many, and the rupees on them (null for a type without amounts) */
+  approvals?: { type: SubmissionType; count: number; amount?: string | null }[];
   /** Days the oldest entry waiting for the caller's approval has waited; null when none waits */
   approvalsWaitingDays?: number | null;
   /** Active projects with no daily report for today */

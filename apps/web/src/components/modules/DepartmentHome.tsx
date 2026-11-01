@@ -15,15 +15,15 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton } from '@/components/common/QueryState';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { useNavMenu } from '@/components/shell/menu';
-import { ProjectPick, tileBadge, type TileBadge } from '@/components/launcher/TileGrid';
+import { ProjectPick, nodeBadge, type TileBadge } from '@/components/launcher/TileGrid';
 import { useProjectScope } from '@/lib/project-scope';
 import { TreeIcon } from '@/components/shell/nav-icons';
-import { ProjectProgressPanel } from './ProjectProgress';
-import { DepartmentPanel } from './DepartmentPanel';
+import { ProjectFiguresPanel, ProjectProgressPanel } from './ProjectProgress';
+import { DepartmentFigures, DepartmentPipelines } from './DepartmentPanel';
 import { NotInYourMenu } from './ModuleHome';
 import s from './DepartmentHome.module.css';
 
-/** The department that holds the projects shows their progress above its pages. */
+/** The department that holds the projects shows their figures and progress above its pages. */
 const PROJECTS_DEPARTMENT = 'project-management';
 
 /** One page of a sub-module: its icon in ink, its name, what waits there (with its word, in full), and the line on what it is for.
@@ -49,7 +49,7 @@ function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: Ti
         )}
       </span>
       {waiting && (
-        <span className={s.badge} translate="no" aria-hidden>
+        <span className={badge?.info ? s.count : s.badge} translate="no" aria-hidden>
           {waiting}
         </span>
       )}
@@ -67,8 +67,9 @@ function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: Ti
 }
 
 /**
- * A department module's screen (Menu and names): the module the company named, what waits for the user in it, what
- * they can start there, and its pages under each sub-module. The sub-modules are also the bar under the top bar.
+ * A department module's screen (Menu and names), answer first: the module the company named, its figures, what waits for
+ * the user in it, progress and its pipelines, what they can start there, and last its pages under each sub-module. The
+ * sub-modules are also the bar under the top bar.
  */
 export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
   const { user } = useAuth();
@@ -119,6 +120,8 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
     <div className="page-container">
       <PageHeader title={`${mod.label} overview`} subtitle={mod.description} extra={actions} />
       <Flex vertical gap={24}>
+        {moduleKey === PROJECTS_DEPARTMENT && <ProjectFiguresPanel />}
+        <DepartmentFigures department={moduleKey} />
         {waiting.length > 0 && (
           <Card size="small" title="Waiting for you">
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -142,7 +145,8 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
           </Card>
         )}
         {moduleKey === PROJECTS_DEPARTMENT && <ProjectProgressPanel />}
-        <DepartmentPanel department={moduleKey} />
+        <DepartmentPipelines department={moduleKey} />
+        {/* The pages last: the sidebar and the bar under the top bar list them too, so the screen leads with the answer. */}
         <div className={s.subs}>
           {mod.subs.map((sub) => (
             <section key={sub.key} aria-labelledby={`sub-${sub.key}`} className={s.sub}>
@@ -152,7 +156,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
               <ul className={s.pages}>
                 {sub.nodes.map((n) => (
                   <li key={n.id}>
-                    <PageRow node={n} badge={tileBadge(badges?.nodes?.[n.id], badges?.words?.[n.id])} projectId={projectId} onPick={setPicking} />
+                    <PageRow node={n} badge={nodeBadge(badges, n.id)} projectId={projectId} onPick={setPicking} />
                   </li>
                 ))}
               </ul>

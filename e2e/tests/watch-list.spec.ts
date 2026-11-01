@@ -3,9 +3,9 @@ import { api, apiToken, formPanel, signIn } from './helpers';
 
 /**
  * Early warnings. The demo seed's dates are relative to today, so its schedule and stock always
- * give the MD some warnings. Each card leads with its action and keeps its working under Why; a dismissal says what
- * became of the warning (Known needs a note), holds for the company, counts in the track record, and Restore brings
- * the warning back.
+ * give the MD some warnings. They are a table, most at stake first; a row's card (in a drawer) leads with its action and
+ * keeps its working under Why; a dismissal says what became of the warning (Known needs a note), holds for the company,
+ * counts in the track record, and Restore brings the warning back.
  */
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
@@ -21,12 +21,15 @@ test('the MD sees warnings with their action and working, dismisses one as Known
   await expect(page.getByText('Watch list', { exact: true }).first()).toBeVisible();
   await page.goto('/watch-list');
   await expect(page.getByRole('heading', { name: 'Watch list' })).toBeVisible();
+  // The API's first warning is the table's first row. Two warnings can share a title (the same activity name on two
+  // projects), so the row and the card are found by the warning's key.
   const first = before.open[0];
-  // Two warnings can share a title (the same activity name on two projects), so the card is found by its key.
+  const row = page.locator(`tr:has([data-warning-row="${first.key}"])`);
+  await expect(row).toBeVisible();
+  await row.getByRole('button', { name: /^Actions for / }).click();
+  await page.getByRole('menuitem', { name: 'Show how this was worked out' }).click();
   const card = page.locator(`[data-warning-key="${first.key}"]`);
-  await expect(card).toBeVisible();
   await expect(card.getByText(first.action)).toBeVisible();
-  await card.getByRole('button', { name: 'Show how this was worked out' }).click();
   await expect(card.getByText(first.working[0])).toBeVisible();
 
   await card.getByRole('button', { name: 'Dismiss' }).click();
@@ -44,6 +47,7 @@ test('the MD sees warnings with their action and working, dismisses one as Known
   expect((await api<WatchList>(admin, '/warnings')).dismissed.some((w) => w.key === first.key)).toBe(true);
 
   await page.getByRole('tab', { name: /Dismissed/ }).click();
+  await page.locator(`tr:has([data-warning-row="${first.key}"])`).click();
   const gone = page.locator(`[data-warning-key="${first.key}"]`);
   await expect(gone.getByText('Second crew starts Monday')).toBeVisible();
   await expect(gone.getByText(/^Known and accepted: dismissed by/)).toBeVisible();

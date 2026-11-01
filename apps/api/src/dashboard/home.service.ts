@@ -166,9 +166,15 @@ export class HomeService {
 
     const out: MyWorkDto = {};
     if (pending) {
-      const counts = new Map<SubmissionType, number>();
-      for (const p of pending) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
-      out.approvals = [...counts.entries()].map(([type, count]) => ({ type, count }));
+      // Each type's count and the rupees on it (the amounts its approval limit is checked against), as the inbox shows them.
+      const byType = new Map<SubmissionType, { count: number; amount: D | null }>();
+      for (const p of pending) {
+        const t = byType.get(p.type) ?? { count: 0, amount: null };
+        t.count += 1;
+        if (p.amount !== null) t.amount = (t.amount ?? ZERO).add(p.amount);
+        byType.set(p.type, t);
+      }
+      out.approvals = [...byType.entries()].map(([type, t]) => ({ type, count: t.count, amount: t.amount === null ? null : money(t.amount) }));
       // `pending` is oldest first: how long the first has waited is how pressing the approvals are.
       out.approvalsWaitingDays = pending.length ? Math.max(0, daysBetween(todayIn(undefined, new Date(pending[0].submittedAt)), today)) : null;
     }

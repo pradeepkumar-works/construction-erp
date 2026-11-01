@@ -10,8 +10,8 @@ type ModuleHome = {
 };
 
 /**
- * Module screens: each sidebar section leads with its overview, a tile for each of the
- * module's pages above its figures. The project manager's Site screen shows the site figures and what waits for them
+ * Module screens: each sidebar section leads with its overview, its figures and what waits first, then a compact tile
+ * for each of the module's pages. The project manager's Site screen shows the site figures and what waits for them
  * there; accounts get the money figures of Accounts and none of the site ones; a module a role does not use is not found,
  * and a module with one page for the role opens that page.
  */

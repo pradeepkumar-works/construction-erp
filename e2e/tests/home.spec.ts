@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
 import { api, apiToken, signIn } from './helpers';
+import { compareWaiting } from '../../packages/shared/src/waiting-rank';
 
 type Card = { count: number; amount: string | null; items: { label: string; href: string }[]; urgencyDays?: number | null };
-type MyWork = { approvals?: { type: string; count: number }[]; approvalsWaitingDays?: number | null } & Partial<Record<CardKey, Card>>;
+type MyWork = { approvals?: { type: string; count: number; amount?: string | null }[]; approvalsWaitingDays?: number | null } & Partial<Record<CardKey, Card>>;
 type CardKey = 'watchList' | 'dprsMissing' | 'sentBack' | 'waitingWithOthers' | 'receivables' | 'payablesDue' | 'expiring' | 'lateDeliveries' | 'lowStock' | 'meetingActions' | 'toOrder' | 'dueThisWeek' | 'staffToDecide' | 'certifiedToReceive' | 'toMatch' | 'grnsToCheck' | 'toDebit' | 'transfersToReceive' | 'letters' | 'findingsToClose';
 type Trends = { months: string[]; workDone: string[]; cashIn?: string[]; cashOut?: string[]; cost?: string[]; sCurve: unknown[] };
 
 const section = (page: import('@playwright/test').Page, name: string) => page.getByRole('region', { name, exact: true });
 
-/** My work's card titles, and the project manager's layout order (`homeLayout`), which breaks ties in urgency. */
+/** My work's card titles, and the project manager's and accounts' layout orders (`homeLayout`), the last tie-break. */
 const TITLES: Record<CardKey | 'approvals', string> = {
   approvals: 'Waiting for your approval',
   watchList: 'Watch list',
@@ -33,6 +34,21 @@ const TITLES: Record<CardKey | 'approvals', string> = {
   letters: 'Letters for you',
 };
 const MANAGER_ORDER: (CardKey | 'approvals')[] = ['approvals', 'watchList', 'meetingActions', 'letters', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'findingsToClose', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'];
+const ACCOUNTS_ORDER: (CardKey | 'approvals')[] = ['payablesDue', 'certifiedToReceive', 'toMatch', 'toDebit', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'];
+
+/**
+ * The cards My work shows, in its order (`rankWaiting` over `myWorkOrder`'s weights): the bigger money band first, then
+ * the more days past the card's mark (an approval's mark is two days), then the role's layout.
+ */
+function rankedCards(work: MyWork, order: (CardKey | 'approvals')[]) {
+  const count = (k: CardKey | 'approvals') => (k === 'approvals' ? (work.approvals ?? []).reduce((n, a) => n + a.count, 0) : (work[k]?.count ?? 0));
+  const priced = (work.approvals ?? []).filter((a) => a.amount != null);
+  const amount = (k: CardKey | 'approvals') => (k === 'approvals' ? (priced.length ? priced.reduce((t, a) => t + Number(a.amount), 0) : null) : (work[k]?.amount ?? null));
+  const daysLate = (k: CardKey | 'approvals') => (k === 'approvals' ? (work.approvalsWaitingDays == null ? 0 : work.approvalsWaitingDays - 2) : (work[k]?.urgencyDays ?? 0));
+  const weight = (k: CardKey | 'approvals') => ({ amount: amount(k), daysLate: daysLate(k), place: order.indexOf(k) });
+  const busy = order.filter((k) => (k === 'approvals' ? work.approvals : work[k]) !== undefined && count(k) > 0);
+  return { busy, ranked: [...busy].sort((a, b) => compareWaiting(weight(a), weight(b))), count };
+}
 
 /** "Oct" for the API's YYYY-MM, as the tiles write it. */
 const monthName = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
@@ -54,8 +70,10 @@ test('accounts lead with money due and see cash flow', async ({ page }) => {
   await signIn(page, 'accounts@demo.com');
   await page.goto('/my-work');
   const mine = page.locator('.ant-card').filter({ has: page.getByText('My work', { exact: true }) });
-  await expect(mine.getByRole('region').first()).toHaveAccessibleName('Payments due this week');
-  await expect(section(page, 'Bills waiting for payment')).toContainText(String(work.receivables!.count));
+  // The biggest money leads, not the layout's first card: crores of client bills before a week's lakhs of payments.
+  await expect(mine.getByRole('region').first()).toHaveAccessibleName(TITLES[rankedCards(work, ACCOUNTS_ORDER).ranked[0]]);
+  // A card with rupees leads with them, and says its count in words.
+  await expect(section(page, 'Bills waiting for payment')).toContainText(`${work.receivables!.count} bill`);
   await expect(page.getByText('We owe', { exact: true })).toBeVisible();
   await expect(page.getByText(/^Money received in [A-Z][a-z]{2,3}$/)).toBeVisible();
   await expect(page.getByText(/^Cost in [A-Z][a-z]{2,3}$/)).toBeVisible();
@@ -100,16 +118,13 @@ test('the approvals count shows once on home outside the sidebar', async ({ page
   await expect(main.getByRole('columnheader', { name: 'Pending' })).toHaveCount(0);
 });
 
-test("my work leads with what waits longest for the project manager", async ({ page }) => {
+test('my work leads with the most money, then the latest, for the project manager', async ({ page }) => {
   const token = await apiToken('pm@demo.com');
   const work = await api<MyWork>(token, '/dashboard/my-work');
-  const count = (k: CardKey | 'approvals') => (k === 'approvals' ? (work.approvals ?? []).reduce((n, a) => n + a.count, 0) : (work[k]?.count ?? 0));
-  const urgency = (k: CardKey | 'approvals') => (k === 'approvals' ? work.approvalsWaitingDays : work[k]?.urgencyDays) ?? 0;
-  const busy = MANAGER_ORDER.filter((k) => (k === 'approvals' ? work.approvals : work[k]) !== undefined && count(k) > 0);
+  const { busy, ranked: expected, count } = rankedCards(work, MANAGER_ORDER);
   expect(busy.length).toBeGreaterThan(1);
-  const expected = [...busy].sort((a, b) => urgency(b) - urgency(a) || MANAGER_ORDER.indexOf(a) - MANAGER_ORDER.indexOf(b));
-  // The seed has a vendor bill overdue by days, more than any approval has waited: urgency, not the layout, leads.
-  expect(urgency(expected[0])).toBeGreaterThan(urgency('approvals'));
+  // The seed has vendor bills due, worth lakhs, far down the manager's layout: money, not the layout, moves them up.
+  expect(expected).not.toEqual(busy);
 
   await signIn(page, 'pm@demo.com');
   await page.goto('/my-work');

@@ -54,7 +54,6 @@
  "src/app/(app)/tenders/page.tsx",
  "src/app/(app)/users/page.tsx",
  "src/app/(app)/vendors/page.tsx",
- "src/app/(app)/watch-list/page.tsx",
  "src/app/(app)/whatsapp-capture/page.tsx",
  "src/app/(public)/forgot-password/page.tsx",
  "src/app/(public)/quote/[token]/page.tsx",

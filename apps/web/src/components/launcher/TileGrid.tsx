@@ -33,14 +33,20 @@ export interface TileEntry {
   group?: string | null;
 }
 
-/** A count on a tile and what it counts, said after it: `{ count: 53, word: 'to approve' }` reads "53 to approve". */
+/** A count on a tile and what it counts, said after it: `{ count: 53, word: 'to approve' }` reads "53 to approve". A count
+ *  to read rather than act on (`info`, the watch list's warnings) is plain text; only a decision waiting is a badge. */
 export interface TileBadge {
   count: number;
   word: string;
+  info?: boolean;
 }
 
 /** A badge from a count, or none for nothing waiting. */
-export const tileBadge = (count: number | undefined, word = 'waiting'): TileBadge | undefined => (count ? { count, word } : undefined);
+export const tileBadge = (count: number | undefined, word = 'waiting', info = false): TileBadge | undefined => (count ? { count, word, info } : undefined);
+
+/** A node's count from the launcher badges, in their words, plain where it is only there to read. */
+export const nodeBadge = (badges: LauncherBadgesDto | undefined, id: string): TileBadge | undefined =>
+  tileBadge(badges?.nodes?.[id], badges?.words?.[id], badges?.info?.includes(id));
 
 /** A tile's menu (Pin to Home, Unpin, Move left…): drawn as ⋮ on the tile, and opened by right-click, a long press or Shift F10. */
 export type TileMenu = (entry: TileEntry, index: number) => MenuProps['items'];
@@ -72,7 +78,7 @@ function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: T
       </span>
       <span className={s.label}>{label}</span>
       {waiting && (
-        <span className={s.badge} aria-hidden translate="no">
+        <span className={entry.badge?.info ? s.count : s.badge} aria-hidden translate="no">
           {waiting}
         </span>
       )}
@@ -257,4 +263,4 @@ export function TileGrid({ entries, label, menu, compact, headingLevel = 2 }: { 
 
 /** Tiles for nodes of the tree, each with what waits there in the launcher badges' own words ("53 to approve"). */
 export const tileEntries = (nodes: NavNode[], badges?: LauncherBadgesDto): TileEntry[] =>
-  nodes.map((node) => ({ key: node.id, node, badge: tileBadge(badges?.nodes[node.id], badges?.words?.[node.id]) }));
+  nodes.map((node) => ({ key: node.id, node, badge: nodeBadge(badges, node.id) }));
