@@ -8,6 +8,8 @@ export interface HomeLayout {
   myWork: MyWorkKey[];
   kpis: KpiKey[];
   charts: ChartKey[];
+  /** The company's figures above the cards: for those who read the whole company first (the directors, accounts). */
+  figuresFirst?: boolean;
 }
 
 /**
@@ -21,6 +23,7 @@ const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores
     myWork: ['approvals', 'watchList', 'receivables', 'payablesDue', 'certifiedToReceive', 'expiring', 'lateDeliveries', 'toOrder', 'staffToDecide', 'dprsMissing', 'lowStock', 'toMatch', 'toDebit', 'grnsToCheck', 'findingsToClose', 'dueThisWeek', 'transfersToReceive', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
     kpis: ['contract', 'workDone', 'billed', 'cashIn', 'receivables', 'payables'],
     charts: ['sCurve', 'cashFlow', 'billingVsContract', 'costByHead'],
+    figuresFirst: true,
   },
   manager: {
     myWork: ['approvals', 'watchList', 'meetingActions', 'letters', 'dprsMissing', 'staffToDecide', 'lateDeliveries', 'toOrder', 'grnsToCheck', 'findingsToClose', 'dueThisWeek', 'transfersToReceive', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
@@ -32,6 +35,7 @@ const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores
     myWork: ['payablesDue', 'certifiedToReceive', 'toMatch', 'toDebit', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
     kpis: ['cashIn', 'receivables', 'payables', 'billed', 'cost'],
     charts: ['cashFlow', 'billingVsContract', 'costByHead'],
+    figuresFirst: true,
   },
   purchase: {
     myWork: ['toOrder', 'lateDeliveries', 'dueThisWeek', 'toMatch', 'toDebit', 'approvals', 'watchList', 'lowStock', 'meetingActions', 'letters', 'sentBack', 'waitingWithOthers'],
