@@ -280,7 +280,7 @@ function PourList() {
           ),
         },
         { title: 'Grade', dataIndex: 'grade', width: 80, ...sort('grade'), render: (v: string) => <span translate="no">{v}</span> },
-        { key: 'volume', title: 'm³', width: 90, align: 'right', render: (_, r) => <span translate="no">{Number(r.volume ?? r.plannedVolume)}</span> },
+        { key: 'volume', title: 'm³', width: 90, kind: 'qty', value: (r) => r.volume ?? r.plannedVolume },
         { title: 'Card', key: 'card', width: 110, render: (_, r) => (r.cardPassed ? <AppTag meaning="done">Passed</AppTag> : r.card ? <AppTag meaning="waiting">Waiting</AppTag> : <Typography.Text type="secondary">-</Typography.Text>) },
         { title: 'Cube sets', key: 'cubes', width: 100, align: 'right', render: (_, r) => <span translate="no">{`${r.tests.length} of ${r.cubeSetsDue}`}</span> },
         { key: 'flags', title: 'Flags', width: 220, render: (_, r) => (r.flags.length ? <Flags pour={r} /> : <Typography.Text type="secondary">-</Typography.Text>) },

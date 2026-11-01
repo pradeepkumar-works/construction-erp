@@ -14,7 +14,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { DateRangeFilter } from '@/components/list/DateRangeFilter';
 import { useListFrame } from '@/components/list/useListFrame';
-import { BatchStatusTag, M3, PlantFilter, usePlantScope } from './rmcUi';
+import { BatchStatusTag, PlantFilter, usePlantScope } from './rmcUi';
 import { useRmcDrawers } from './Drawers';
 
 const KEYS = ['status', 'from', 'to'] as const;
@@ -38,7 +38,7 @@ export function Batches() {
       { key: 'customer', title: 'Customer', dataIndex: 'customer', ellipsis: true, card: 'meta', render: (c: string) => <span translate="no">{c}</span> },
       { key: 'orderNo', title: 'Order', dataIndex: 'orderNo', width: 140, render: (n: string) => <span translate="no">{n}</span> },
       { key: 'grade', title: 'Grade', dataIndex: 'grade', width: 80, render: (g: string) => <span translate="no">{g}</span> },
-      { key: 'quantity', title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
+      { key: 'quantity', title: 'Quantity', dataIndex: 'quantity', kind: 'qty', unit: () => 'm³', width: 100 },
       { key: 'truck', title: 'Truck', dataIndex: 'truck', width: 140, render: (t: string | null) => <span translate="no">{t ?? NO_VALUE}</span> },
       { key: 'status', title: 'Status', dataIndex: 'status', width: 120, render: (s: RmcBatchStatus) => <BatchStatusTag status={s} /> },
       { key: 'invoiceNo', title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? NO_VALUE}</span> },

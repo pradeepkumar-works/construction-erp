@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { theme } from 'antd';
-import type { MeasurementSheetDto, MeasurementSortField } from '@erp/shared';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { unitLabel, type MeasurementSheetDto, type MeasurementSortField } from '@erp/shared';
+import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import type { ListColumn } from '@/components/list/DataTable';
 import { RowActions } from '@/components/list/RowActions';
@@ -54,13 +54,9 @@ export function measurementColumns({
       title: 'Quantity',
       dataIndex: 'totalQty',
       width: 130,
-      align: 'right',
+      kind: 'qty',
+      unit: (r) => unitLabel(r.unit),
       ...sort('totalQty'),
-      render: (v, r) => (
-        <span className="mono" translate="no">
-          {formatQty(v)} {r.unit}
-        </span>
-      ),
     },
     {
       card: 'amount',
