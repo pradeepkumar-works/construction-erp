@@ -47,6 +47,7 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
           card: 'title',
           title: 'Entry no.',
           dataIndex: 'entryNo',
+          className: 'mono',
           locked: true,
           width: 140,
           ...sort('entryNo'),

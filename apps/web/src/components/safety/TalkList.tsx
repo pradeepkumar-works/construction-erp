@@ -74,7 +74,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
     sortFields: ['date'],
     fixedProject,
     columns: (): ListColumn<ToolboxTalkDto>[] => [
-      { key: 'talkNo', title: 'No.', dataIndex: 'talkNo', width: 135, className: 'mono' },
+      { key: 'talkNo', title: 'No.', dataIndex: 'talkNo', width: 140, className: 'mono' },
       { key: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
       ...(fixedProject
         ? []

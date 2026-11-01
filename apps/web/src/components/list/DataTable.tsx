@@ -90,9 +90,19 @@ export function figureOf<T>(c: ListColumn<T>, row: T): string | number | null | 
 }
 const blank = (v: unknown) => v === null || v === undefined || v === "";
 
-/** A column's cells from its kind: alignment, one line, the figures face, and the formatter where it has no render. */
+/** A column's cells on one line, whatever its width. */
+const oneLine = <T,>(c: ListColumn<T>): ListColumn<T> => ({
+  ...c,
+  onCell: (row, i) => ({ ...c.onCell?.(row, i), style: { whiteSpace: "nowrap", ...c.onCell?.(row, i)?.style } }),
+});
+const isMono = <T,>(c: ListColumn<T>) => typeof c.className === "string" && c.className.split(" ").includes("mono");
+
+/**
+ * A column's cells from its kind: alignment, one line, the figures face, and the formatter where it has no render. A
+ * record's number (a `mono` column) stays on one line too, so its width must hold it.
+ */
 function withKind<T>(c: ListColumn<T>, scale: MoneyScale): ListColumn<T> {
-  if (!c.kind) return c;
+  if (!c.kind) return isMono(c) ? oneLine(c) : c;
   const Tag = c.strong ? "strong" : "span";
   const cell = (row: T): React.ReactNode => {
     const v = figureOf(c, row);
@@ -119,13 +129,12 @@ function withKind<T>(c: ListColumn<T>, scale: MoneyScale): ListColumn<T> {
       </Tag>
     );
   };
-  return {
+  return oneLine({
     ...c,
     align: c.align ?? "right",
     ellipsis: false,
-    onCell: (row, i) => ({ ...c.onCell?.(row, i), style: { whiteSpace: "nowrap", ...c.onCell?.(row, i)?.style } }),
     render: c.render ?? ((_: unknown, row: T) => cell(row)),
-  };
+  });
 }
 
 const labelOf = <T,>(c: ListColumn<T>) =>

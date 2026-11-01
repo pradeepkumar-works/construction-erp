@@ -45,7 +45,7 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
     columns: (sortOrderFor): ListColumn<DocumentDto>[] => {
       const sort = (key: DocumentSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['ascend', 'descend'] as ('descend' | 'ascend')[] });
       return [
-        { title: 'Number', dataIndex: 'docNo', width: 150, className: 'mono', ...sort('docNo') },
+        { title: 'Number', dataIndex: 'docNo', width: 150, className: 'mono', ellipsis: true, ...sort('docNo') },
         {
           title: 'Title',
           dataIndex: 'title',

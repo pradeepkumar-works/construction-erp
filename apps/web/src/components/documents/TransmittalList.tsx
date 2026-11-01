@@ -38,6 +38,7 @@ export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { pr
         {
           title: 'No.',
           dataIndex: 'transmittalNo',
+          className: 'mono',
           locked: true,
           width: 150,
           ...sort('transmittalNo'),

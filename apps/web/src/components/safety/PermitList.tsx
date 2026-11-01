@@ -63,7 +63,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
     // Waiting + live is the default, so only the other choices get a chip.
     chipLabels: { view: (v) => `Permits: ${VIEW_LABELS[v] ?? v}`, type: (v) => `Work: ${WORK_PERMIT_TYPE_LABELS[v as WorkPermitType] ?? v}` },
     columns: (): ListColumn<WorkPermitDto>[] => [
-      { key: 'permitNo', title: 'No.', dataIndex: 'permitNo', width: 135, className: 'mono' },
+      { key: 'permitNo', title: 'No.', dataIndex: 'permitNo', width: 140, className: 'mono' },
       ...(fixedProject
         ? []
         : [{ key: 'projectName', title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string, r: WorkPermitDto) => <Link href={`/projects/${r.projectId}?tab=safety`}>{v}</Link> } satisfies ListColumn<WorkPermitDto>]),

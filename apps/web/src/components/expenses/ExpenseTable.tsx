@@ -36,7 +36,7 @@ export function expenseColumns({
   const sort = (key: ExpenseSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
     { card: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
-    { title: 'No.', dataIndex: 'expenseNo', width: 130, className: 'mono', ...sort('expenseNo') },
+    { title: 'No.', dataIndex: 'expenseNo', width: 140, className: 'mono', ...sort('expenseNo') },
     ...(showProject
       ? [{ card: 'meta' as const, cardText: (r: ExpenseDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 180, ellipsis: true, render: (v: string, r: ExpenseDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),

@@ -65,7 +65,7 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
     statusLabels: SAFETY_INCIDENT_STATUS_LABELS,
     chipLabels: { type: (v) => (v === 'INCIDENTS' ? 'All but near misses' : `Type: ${SAFETY_INCIDENT_TYPE_LABELS[v as SafetyIncidentType] ?? v}`) },
     columns: (): ListColumn<SafetyIncidentDto>[] => [
-      { key: 'incidentNo', title: 'No.', dataIndex: 'incidentNo', width: 135, className: 'mono' },
+      { key: 'incidentNo', title: 'No.', dataIndex: 'incidentNo', width: 140, className: 'mono' },
       { key: 'date', title: 'Date', dataIndex: 'date', width: 120, render: (v, r) => `${formatDate(v)}${r.time ? ` ${r.time}` : ''}` },
       ...(fixedProject
         ? []

@@ -263,7 +263,7 @@ function PourList() {
       const sort = (key: PourSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
       return [
         { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
-        { title: 'No.', dataIndex: 'pourNo', width: 140, className: 'mono', ...sort('pourNo') },
+        { title: 'No.', dataIndex: 'pourNo', width: 150, className: 'mono', ...sort('pourNo') },
         { key: 'project', title: 'Project', dataIndex: 'projectName', width: 180, ellipsis: true, render: (v: string, r: PourDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
         {
           key: 'pour',

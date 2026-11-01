@@ -32,7 +32,7 @@ export function riskColumns({
 }): ListColumn<RiskDto>[] {
   const sort = (key: RiskSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
-    { title: 'No.', dataIndex: 'riskNo', width: 135, className: 'mono', ...sort('riskNo') },
+    { title: 'No.', dataIndex: 'riskNo', width: 150, className: 'mono', ...sort('riskNo') },
     ...(showProject
       ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: RiskDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> } satisfies ListColumn<RiskDto>]
       : []),
