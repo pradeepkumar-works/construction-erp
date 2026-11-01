@@ -279,10 +279,14 @@ and the pre-delivery checklist.
   a page's Card (in line with its padding, sticky under the header on a wider screen), the default `section` anywhere else;
   a count is the item's `count` + `countLabel` (said after the count by a screen reader; `attention` for what waits on
   someone), never "Label (3)" or a `Badge` in the label.
-- Tags and stages: a tag is `AppTag` (`components/common/AppTag.tsx`) with a `tone` (`neutral`, `info`, `pending`, `success`,
-  `danger`, `violet`; a status gets a dot), never antd `Tag`; the colour maps in `format.ts` still pass antd colour names,
-  which `toneOf` reads. Where an entry or a wizard stands is `StageBar` (`components/record/StageBar.tsx`), never antd
-  `Steps`. ESLint refuses both imports. A form drawer's title carries its module as an `.eyebrow` (FormShell, from the page).
+- Tags and stages (ARCHITECTURE "Status colour"): a status's colour is only its meaning, `statusTone(kind, status)`
+  (`@erp/shared/status-tone.ts`: waiting, in hand, done, failed, closed), never a colour map of a screen's own; a new status
+  is a line there (keep `src/scripts/status-tone-test.ts` passing). A tag is `AppTag` (`components/common/AppTag.tsx`),
+  never antd `Tag`: `kind="…" status={…}` for a state (done and closed are quiet text), `meaning` for a flag that is no
+  enum, `variant="kind"` for a category (outlined, no dot); a score or a count is text, never a tag. Where an entry or a
+  wizard stands is `StageBar` (`components/record/StageBar.tsx`: done solid, the current stage half drawn, amber when it
+  waits, red when sent back), never antd `Steps`. ESLint refuses both imports. Tiles draw icons in one ink and a count
+  with its word ("53 to approve", `LauncherBadgesDto.words`), never 99+; the Gantt is red only for late. A form drawer's title carries its module as an `.eyebrow` (FormShell, from the page).
 - Icons: Lucide from `components/common/icons.tsx` under the antd names (`PlusOutlined`…), never `@ant-design/icons` (ESLint
   refuses it); a missing one is a line there, an icon of our own drawing goes through `ownIcon`. A full-page 403/404/500 is
   `Result` with `icon={<ResultMark kind=… />}` (no `status`, which draws antd's pictures); an empty list or picker the page gave
