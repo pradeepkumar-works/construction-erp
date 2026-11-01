@@ -88,6 +88,9 @@ test('Recent shows the pages opened last, and the search box finds pages by thei
 
 test('Home draws its modules within a second', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
+  // Time a return to Home, not the runner's first fetch of its code: the visit after signing in loads every part of the
+  // page once, so the timed load below measures Home itself. The budget stays one second.
+  await expect(modules(page).getByRole('link').first()).toBeVisible();
   await page.addInitScript(() => {
     const w = window as unknown as { __tiles?: number };
     new MutationObserver((_m, obs) => {
