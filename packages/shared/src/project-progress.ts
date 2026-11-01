@@ -137,6 +137,25 @@ export function progressNotes(p: { physicalPct: number; plannedPct: number | nul
 
 const STATUS_ORDER: Record<ProjectStatus, number> = { ACTIVE: 0, ON_HOLD: 1, PLANNED: 2, COMPLETED: 3, CLOSED: 4 };
 
-/** Running projects first, then on hold, planned and complete; by code within each. */
-export const byProgressOrder = (a: Pick<ProjectProgressDto, 'status' | 'code'>, b: Pick<ProjectProgressDto, 'status' | 'code'>) =>
-  STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.code.localeCompare(b.code);
+type ProgressOrderRow = Pick<ProjectProgressDto, 'status' | 'code' | 'physicalPct' | 'plannedPct' | 'financialPct'>;
+
+/** Points the work stands behind the share planned by today (negative while ahead); null without a plan to stand against. */
+export const behindPlan = (p: Pick<ProjectProgressDto, 'physicalPct' | 'plannedPct'>): number | null => (p.plannedPct === null ? null : p.plannedPct - p.physicalPct);
+
+/** Points the billing stands behind the work done (negative while billed ahead); 0 without financial progress. */
+const billingLag = (p: Pick<ProjectProgressDto, 'physicalPct' | 'financialPct'>) => (p.financialPct === null ? 0 : p.physicalPct - p.financialPct);
+
+/**
+ * Running projects first, then on hold, planned and complete. Within each, the project most behind plan first (one with no
+ * plan after those with one), then the one whose billing lags its work most, then by code: the late project leads.
+ */
+export const byProgressOrder = (a: ProgressOrderRow, b: ProgressOrderRow) => {
+  const ga = behindPlan(a);
+  const gb = behindPlan(b);
+  return (
+    STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
+    (ga === null ? (gb === null ? 0 : 1) : gb === null ? -1 : gb - ga) ||
+    billingLag(b) - billingLag(a) ||
+    a.code.localeCompare(b.code)
+  );
+};

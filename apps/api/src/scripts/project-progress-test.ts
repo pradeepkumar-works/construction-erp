@@ -1,12 +1,12 @@
 /**
  * Progress by project's tests (ARCHITECTURE "Progress by project"): the projects' physical progress together weighs by
  * contract value only when every project has one, financial progress compares bills with the contract values that exist,
- * the notes beside a project, the order the projects come in, and the contract time with its extensions.
+ * the notes beside a project, the order the projects come in (most behind plan first), and the contract time with its extensions.
  *
  *   node dist/scripts/project-progress-test.js
  */
 import assert from 'node:assert/strict';
-import { BEHIND_TOLERANCE_PCT, BILLING_GAP_PCT, byProgressOrder, contractTime, portfolioProgress, progressNotes } from '@erp/shared';
+import { BEHIND_TOLERANCE_PCT, BILLING_GAP_PCT, behindPlan, byProgressOrder, contractTime, portfolioProgress, progressNotes } from '@erp/shared';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -76,15 +76,29 @@ test('both notes can stand together, the schedule first', () => {
   assert.deepEqual(keys, ['behind', 'billingBehind']);
 });
 
-test('running projects come first, then on hold, planned and complete, by code within each', () => {
+test('running projects come first, then on hold, planned and complete, by code within each when they stand alike', () => {
+  const alike = { physicalPct: 40, plannedPct: 40, financialPct: 40 };
   const rows = [
-    { status: 'COMPLETED' as const, code: 'A-01' },
-    { status: 'PLANNED' as const, code: 'B-02' },
-    { status: 'ACTIVE' as const, code: 'C-03' },
-    { status: 'ON_HOLD' as const, code: 'D-04' },
-    { status: 'ACTIVE' as const, code: 'B-01' },
+    { status: 'COMPLETED' as const, code: 'A-01', ...alike },
+    { status: 'PLANNED' as const, code: 'B-02', ...alike },
+    { status: 'ACTIVE' as const, code: 'C-03', ...alike },
+    { status: 'ON_HOLD' as const, code: 'D-04', ...alike },
+    { status: 'ACTIVE' as const, code: 'B-01', ...alike },
   ];
   assert.deepEqual([...rows].sort(byProgressOrder).map((r) => r.code), ['B-01', 'C-03', 'D-04', 'B-02', 'A-01']);
+});
+
+test('the project most behind plan leads, ahead of plan comes last of those with a plan, and no plan after them', () => {
+  const row = (code: string, physicalPct: number, plannedPct: number | null, financialPct: number | null = null) => ({ status: 'ACTIVE' as const, code, physicalPct, plannedPct, financialPct });
+  const rows = [row('A-01', 50, 52), row('B-02', 30, 72), row('C-03', 60, 40), row('D-04', 20, null), row('E-05', 45, 60)];
+  assert.deepEqual([...rows].sort(byProgressOrder).map((r) => r.code), ['B-02', 'E-05', 'A-01', 'C-03', 'D-04']);
+  assert.equal(behindPlan(rows[1]), 42);
+  assert.equal(behindPlan(rows[3]), null);
+  // Equally behind (or with no plan): the one whose billing lags its work most comes first.
+  const tied = [row('A-01', 50, null, 45), row('B-02', 50, null, 8), row('C-03', 50, null, null)];
+  assert.deepEqual([...tied].sort(byProgressOrder).map((r) => r.code), ['B-02', 'A-01', 'C-03']);
+  // Status still comes first: a running project ahead of plan before one on hold far behind it.
+  assert.deepEqual([{ ...row('A-01', 10, 90), status: 'ON_HOLD' as const }, row('B-02', 60, 50)].sort(byProgressOrder).map((r) => r.code), ['B-02', 'A-01']);
 });
 
 test('the extensions of time granted move the completion date, and the time used and left run to it', () => {
