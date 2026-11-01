@@ -47,8 +47,9 @@ test('a closed section stays closed after a reload, and opens itself on one of i
 });
 
 test('Search with nothing typed shows a record opened lately', async ({ page }) => {
-  const md = await apiToken('md@demo.com');
-  const bill = (await api<{ items: { id: string }[] }>(md, '/ra-bills?pageSize=1')).items[0];
+  // A bill the person signing in can open (the newest company-wide may be on a project they are not on).
+  const pm = await apiToken('pm@demo.com');
+  const bill = (await api<{ items: { id: string }[] }>(pm, '/ra-bills?pageSize=1')).items[0];
   await signIn(page, 'pm@demo.com');
   await page.goto(`/bills/${bill.id}`);
   await expect(page.getByRole('group', { name: 'Stage' })).toBeVisible();

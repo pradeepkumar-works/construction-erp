@@ -35,15 +35,10 @@ import { seedGroupModules } from './seed-group-modules';
 import { seedProjectTypes } from './seed-project-types';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { COMPANY_KIND_INFO, DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, VERTICAL_OF_TYPE, type MarkupPoint, type ProjectType, type PpeKind, type TakeoffKind } from '@erp/shared';
+import { day } from './seed-clock';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 
 const ROLES: [string, string][] = [
   ['ADMIN', 'Admin'],
@@ -3460,9 +3455,12 @@ async function seedPayroll(organizationId: string) {
     structures.set(e.id, { id: row.id, rules });
     await prisma.employee.update({ where: { id: e.id }, data: { ctcAnnual: structureCost(rules, st).ctcAnnual } });
   }
-  const now = new Date();
+  // Salaries go out on the 7th of the next month, so before the 7th the last month paid is the one before last.
+  const paidBy = day(-6);
   const ym = (d: Date) => d.toISOString().slice(0, 7);
-  const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const last = new Date(Date.UTC(paidBy.getUTCFullYear(), paidBy.getUTCMonth() - 1, 1));
+  const paidOn = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth() + 1, 7));
+  const decided = new Date(paidOn.getTime() - 2 * 86_400_000);
   const month = ym(last);
   const byCode = new Map(staff.map((e) => [e.employeeCode, e]));
   const loans = [
@@ -3476,10 +3474,10 @@ async function seedPayroll(organizationId: string) {
     const row = await prisma.staffLoan.create({ data: { organizationId, employeeId: e.id, kind: l.kind, issuedOn: new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), 3)), amount: l.amount, emi: l.emi, startMonth: month, note: l.note, createdById: hr.id } });
     loanIds.set(e.id, { id: row.id, kind: l.kind, emi: l.emi, balance: l.amount });
   }
-  // Last month's run, approved by the MD and paid by accounts on the 1st.
+  // The last month paid: approved by the MD and paid by accounts on the 7th.
   const calendarDays = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth() + 1, 0)).getUTCDate();
   const run = await prisma.payrollRun.create({
-    data: { organizationId, runNo: `SAL-${month}`, month, status: 'PAID', preparedById: hr.id, submittedAt: now, approvedById: md.id, approvedAt: now, paidById: accounts.id, paidOn: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), paymentRef: 'NEFT batch 1' },
+    data: { organizationId, runNo: `SAL-${month}`, month, status: 'PAID', preparedById: hr.id, submittedAt: decided, approvedById: md.id, approvedAt: decided, paidById: accounts.id, paidOn, paymentRef: 'NEFT batch 1' },
   });
   const ORDER = Object.keys(PAYSLIP_CODES);
   const totals = { gross: 0, deductions: 0, net: 0, cost: 0 };

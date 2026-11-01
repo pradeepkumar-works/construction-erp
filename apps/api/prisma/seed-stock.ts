@@ -15,14 +15,9 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { activityPipeStage } from '@erp/shared';
 import { addTownDpr, type DprSeed } from './seed-structure';
+import { day } from './seed-clock';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const r1 = (n: number) => Math.round(n * 10) / 10;
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 

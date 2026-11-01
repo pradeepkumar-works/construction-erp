@@ -22,14 +22,9 @@ import { createStandardBreakup, proposedGrid, stagePlan } from '../src/stage-bil
 import { BILL_TERMS_SELECT, billTotals, measuredLines, writeBill } from '../src/ra-bills/ra-bill-pricing';
 import { syncBillStage } from '../src/receivables/bill-settlement';
 import { STANDARD_OBLIGATIONS } from '@erp/shared';
+import { day } from './seed-clock';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
 /** Unit-rate items replacing the price breakup's lines: [component, item no., description, unit, rate, quantity, measured [days ago, qty, where][]] */

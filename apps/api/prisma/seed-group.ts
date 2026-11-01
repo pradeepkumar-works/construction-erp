@@ -19,15 +19,10 @@
  */
 import { Prisma, PrismaClient, type CompanyKind, type ProjectType, type TestKind, type VendorKind } from '@prisma/client';
 import { COMPANY_KIND_INFO, ROLE_KEYS, ROLE_LABELS, gstinCheckChar, isWeeklyOff, workSummary } from '@erp/shared';
+import { day } from './seed-clock';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
 const r2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const iso = (offset: number) => day(offset).toISOString().slice(0, 10);
 const year = new Date().getUTCFullYear();
 const gstin = (pan: string) => `21${pan}1Z${gstinCheckChar(`21${pan}1Z`)}`;

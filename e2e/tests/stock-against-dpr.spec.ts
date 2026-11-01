@@ -63,6 +63,8 @@ test('the reports find the planted cases, and a norm can sit on an activity', as
   await page.goto(`/projects/${town.id}?tab=reconciliation&sub=kits`);
   await expect(page.getByText('4 kits short').first()).toBeVisible();
   await page.goto(`/projects/${town.id}?tab=reconciliation&sub=exceptions`);
+  // The planted DPRs are days old, so early in a month they sit before "This month".
+  await page.getByText('Last 3 months', { exact: true }).click();
   await expect(page.getByText('Issued with no work').first()).toBeVisible();
   await page.getByRole('link', { name: 'Open the DPR' }).first().click();
   await expect(page).toHaveURL(/\/dpr\//);
