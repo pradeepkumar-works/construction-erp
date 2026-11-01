@@ -295,7 +295,7 @@ export class RmcService {
     const where: Prisma.RmcOrderWhereInput = {
       ...this.orderWhere(user),
       ...(q.plantId ? { plantId: q.plantId } : {}),
-      ...(q.status ? { status: q.status } : {}),
+      ...(q.status ? { status: q.status } : q.open ? { status: { in: ['QUOTED', 'CONFIRMED'] } } : {}),
       ...(q.clientId ? { clientId: q.clientId } : {}),
       AND: searchWords(q.q).map((w) => ({ OR: [{ orderNo: ilike(w) }, { site: ilike(w) }, { client: { name: ilike(w) } }, { project: { name: ilike(w) } }, { mixDesign: { grade: ilike(w) } }] })),
     };

@@ -4421,7 +4421,7 @@ export const useRmcDay = (filters: { date?: string; plantId?: string }) =>
 export const useMixDesigns = (filters: { plantId?: string }, enabled = true) =>
   useQuery({ queryKey: ['rmc', 'designs', clean(filters)], queryFn: async () => (await api.get<MixDesignDto[]>('/rmc/mix-designs', { params: clean(filters) })).data, enabled });
 
-export const useRmcOrders = (filters: PageParams & { plantId?: string; status?: RmcOrderStatus; clientId?: string }, enabled = true) =>
+export const useRmcOrders = (filters: PageParams & { plantId?: string; status?: RmcOrderStatus; open?: boolean; clientId?: string }, enabled = true) =>
   useQuery({
     queryKey: ['rmc', 'orders', clean(filters)],
     queryFn: async () => (await api.get<Paginated<RmcOrderDto>>('/rmc/orders', { params: clean(filters) })).data,
