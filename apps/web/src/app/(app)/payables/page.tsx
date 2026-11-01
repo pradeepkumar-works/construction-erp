@@ -18,7 +18,7 @@ import { useListPage } from '@/lib/listPage';
 import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYABLE_BILL_EXPORT, PAYABLE_VENDOR_EXPORT, VENDOR_PAYMENT_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
+import { formatDate, formatDue, formatINR, formatINRCompact, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -50,9 +50,9 @@ const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
 
 /** When a bill falls due, in words: "in 5 days", "today", "12 days late". */
 function DueText({ days }: { days: number }) {
-  if (days < 0) return <Typography.Text type="danger">{-days} days late</Typography.Text>;
-  if (days === 0) return <Typography.Text type="warning">today</Typography.Text>;
-  return <Typography.Text type={days <= 7 ? 'warning' : undefined}>in {days} days</Typography.Text>;
+  if (days < 0) return <Typography.Text type="danger">{formatDue(days)}</Typography.Text>;
+  if (days === 0) return <Typography.Text type="warning">{formatDue(days)}</Typography.Text>;
+  return <Typography.Text type={days <= 7 ? 'warning' : undefined}>{formatDue(days)}</Typography.Text>;
 }
 
 /** The ageing columns of the by-vendor and by-project tables (keys are stable: the column chooser keeps them). */

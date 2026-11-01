@@ -23,7 +23,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useDefect, useDefects, useHandover } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, plural } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -54,7 +54,7 @@ export function DefectStatusTag({ d }: { d: Pick<DefectDto, 'status' | 'overdue'
 /** Where the defect liability period stands. */
 function DlpTag({ daysLeft }: { daysLeft: number }) {
   if (daysLeft <= 0) return <AppTag tone="success">DLP over</AppTag>;
-  return <AppTag color={daysLeft <= DLP_ALERT_DAYS ? 'gold' : 'blue'}>{daysLeft} days of DLP left</AppTag>;
+  return <AppTag color={daysLeft <= DLP_ALERT_DAYS ? 'gold' : 'blue'}>{plural(daysLeft, 'day')} of DLP left</AppTag>;
 }
 
 /**

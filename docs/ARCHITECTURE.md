@@ -187,6 +187,15 @@ left; `contractTime` in the same file works them out. There is no EOT field on t
 record of extensions. `ModuleHomeService.progress` builds the rows; keep `src/scripts/project-progress-test.ts` passing. Bars rather than a pie
 per figure: two percentages per project compare across projects on a shared scale, which separate circles do not.
 
+### Reporting period
+
+A screen that reads one month or a period opens on a month with figures in it. Until the 7th (`MONTH_SETTLES_ON`) that is
+the last full month, and from then on the month so far: `reportingMonth(today)` in `@erp/shared/reporting-period.ts`. The
+web's period pickers start from `defaultPeriod()` (`components/cost/PeriodPicker.tsx`, which offers Last month beside
+This month), and the API's month defaults (MIS, quality report, leakage) call the same function, so a page and its export
+agree. A history note writes money with `inr` and days with `formatDay`, never a raw number or an ISO date.
+`src/scripts/reporting-period-test.ts` (CI) holds both.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search

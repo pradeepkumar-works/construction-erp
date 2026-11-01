@@ -104,8 +104,8 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
   if (!visible || !isModuleKey(moduleKey))
     return (
       <div className="page-container">
-        <PageHeader title="Module" docTitle="Module not found" />
-        <Result icon={<ResultMark kind="not-found" />} title="This module is not in your menu" subTitle="Your role does not use it. Choose a module from Home." />
+        <PageHeader title="Not in your menu" />
+        <Result icon={<ResultMark kind="not-found" />} title="Your role does not use this module" subTitle="Choose a module from Home." />
       </div>
     );
   const key: ModuleKey = moduleKey;

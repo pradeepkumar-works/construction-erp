@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { inr } from '../common/submission-titles';
 import { DEFAULT_SETTINGS, monthlyTds, structureCost, type RulesSettings, type RulesStructure } from './payroll-rules';
 import type { CreateSalaryStructureDto, CreateStaffLoanDto, LoanQuery, PayrollSettingsDto as SettingsBody, StructureQuery } from './payroll.dto';
 
@@ -263,7 +264,7 @@ export class SalaryService {
       data: { organizationId: user.organizationId, employeeId: e.id, kind: dto.kind, issuedOn: parseDate(dto.issuedOn), amount: dto.amount, emi: dto.emi, startMonth: dto.startMonth, note: dto.note ?? null, createdById: user.id },
       include: loanInclude,
     });
-    await this.audit.log(user, 'EMPLOYEE', e.id, 'UPDATED', `${dto.kind === 'LOAN' ? 'Loan' : 'Advance'} of ₹${dto.amount} from ${dto.startMonth}`);
+    await this.audit.log(user, 'EMPLOYEE', e.id, 'UPDATED', `${dto.kind === 'LOAN' ? 'Loan' : 'Advance'} of ${inr(dto.amount)} from ${dto.startMonth}`);
     return this.toLoanDto(row);
   }
 
@@ -273,7 +274,7 @@ export class SalaryService {
     if (!l) throw new NotFoundException('Loan not found');
     if (l.lines.length) throw new BadRequestException('Some of it has been recovered in a salary run, so it stays on record');
     await this.prisma.staffLoan.delete({ where: { id } });
-    await this.audit.log(user, 'EMPLOYEE', l.employeeId, 'UPDATED', `${l.kind === 'LOAN' ? 'Loan' : 'Advance'} of ₹${n(l.amount)} removed`);
+    await this.audit.log(user, 'EMPLOYEE', l.employeeId, 'UPDATED', `${l.kind === 'LOAN' ? 'Loan' : 'Advance'} of ${inr(n(l.amount))} removed`);
     return { ok: true };
   }
 }

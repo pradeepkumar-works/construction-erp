@@ -17,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { dec, iso, money, dateOnly, parseDate } from '../common/serialize';
+import { inr } from '../common/submission-titles';
 import { PayrollService } from '../staff/payroll.service';
 import { computePayslip } from './payroll-rules';
 import { SalaryService, monthEnd, toRulesStructure } from './salary.service';
@@ -246,7 +247,7 @@ export class PayrollRunService {
       data: dto.lines.map((l) => ({ organizationId: user.organizationId, payslipId, kind: PAYSLIP_CODES[l.code].kind, code: l.code, label: l.label?.trim() || PAYSLIP_CODES[l.code].label, amount: l.amount, manual: true })),
     });
     await this.compute(user, s.runId, s.employeeId);
-    await this.audit.log(user, 'PAYROLL_RUN', s.runId, 'UPDATED', `${s.employeeName}: ${dto.lines.map((l) => `${l.label || PAYSLIP_CODES[l.code].label} ₹${l.amount}`).join(', ') || 'manual lines removed'}`);
+    await this.audit.log(user, 'PAYROLL_RUN', s.runId, 'UPDATED', `${s.employeeName}: ${dto.lines.map((l) => `${l.label || PAYSLIP_CODES[l.code].label} ${inr(l.amount)}`).join(', ') || 'manual lines removed'}`);
     return this.payslip(user, (await this.prisma.payslip.findFirstOrThrow({ where: { runId: s.runId, employeeId: s.employeeId }, select: { id: true } })).id);
   }
 

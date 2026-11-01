@@ -13,7 +13,7 @@ import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExc
 import { QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
 import { CostBar, CostLegend } from './CostBar';
-import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
+import { defaultPeriod, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
 import { LabourRatesModal } from './LabourRatesModal';
 import { UnpricedNote, unpricedText } from './UnpricedNote';
 import { CardToolbar } from '@/components/common/CardToolbar';
@@ -44,7 +44,7 @@ const EXPORT: ExportColumn<ProjectCostSummaryDto>[] = [
 
 /** Every visible project's cost against executed value for a period. */
 export function CostOverview() {
-  const [period, setPeriod] = useState<PeriodState>(DEFAULT_PERIOD);
+  const [period, setPeriod] = useState<PeriodState>(defaultPeriod);
   const [ratesOpen, setRatesOpen] = useState(false);
   const params = periodParams(period);
   const { data, isLoading, isFetching, error, refetch } = useCostSummary(params);

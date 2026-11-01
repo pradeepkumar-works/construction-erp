@@ -93,6 +93,9 @@ export const todayDate = (): string => new Intl.DateTimeFormat('en-CA', { timeZo
 /** "1 bill", "3 bills"; `many` for a plural that is not `one` + s ("activity", "activities"). */
 export const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
 
+/** When something falls due, from the days left (negative when past): "in 1 day", "today", "3 days late". */
+export const formatDue = (days: number): string => (days < 0 ? `${plural(-days, 'day')} late` : days === 0 ? 'today' : `in ${plural(days, 'day')}`);
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return NO_VALUE;
   const d = dayjs(value);

@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, formatDay, iso, money, parseDate } from '../common/serialize';
+import { inr } from '../common/submission-titles';
 import { searchWords, ilike } from '../common/paging';
 import { todayIn } from '../notifications/time';
 import { CreateEquipmentLoanDto, EquipmentLoanQuery, ForecloseDto, LoanPreviewQuery, PayEmiDto, UpdateEquipmentLoanDto } from './machine-loans.dto';
@@ -247,7 +248,7 @@ export class MachineLoansService {
         return loan.id;
       })
       .catch((e) => this.unique(e, dto.loanNo));
-    await this.audit.log(user, 'EQUIPMENT_LOAN', id, 'CREATED', `${dto.lenderName} ${dto.loanNo}: ₹${D(dto.amount).toFixed(2)} at ${dto.ratePct}% for ${dto.tenureMonths} months, EMI ₹${emi.toFixed(2)}`);
+    await this.audit.log(user, 'EQUIPMENT_LOAN', id, 'CREATED', `${dto.lenderName} ${dto.loanNo}: ${inr(D(dto.amount))} at ${dto.ratePct}% for ${dto.tenureMonths} months, EMI ${inr(emi)}`);
     return this.get(user, id);
   }
 
@@ -305,7 +306,7 @@ export class MachineLoansService {
         }
       })
       .catch((e) => this.unique(e, dto.loanNo ?? r.loanNo));
-    await this.audit.log(user, 'EQUIPMENT_LOAN', r.id, 'UPDATED', termsChange ? `Terms: ₹${D(terms.amount).toFixed(2)} at ${D(terms.ratePct).toFixed(2)}% for ${terms.tenureMonths} months, EMI ₹${emi.toFixed(2)}` : null);
+    await this.audit.log(user, 'EQUIPMENT_LOAN', r.id, 'UPDATED', termsChange ? `Terms: ${inr(D(terms.amount))} at ${D(terms.ratePct).toFixed(2)}% for ${terms.tenureMonths} months, EMI ${inr(emi)}` : null);
     return this.get(user, r.id);
   }
 
@@ -362,7 +363,7 @@ export class MachineLoansService {
       await tx.equipmentLoan.update({ where: { id: r.id }, data: { status: 'CLOSED', closedOn: parseDate(dto.paidOn) } });
       return { id: r.id, f, no: next.no };
     });
-    await this.audit.log(user, 'EQUIPMENT_LOAN', loanId.id, 'FORECLOSED', `Closed with EMI ${loanId.no}: ₹${loanId.f.principal.toFixed(2)} principal + ₹${loanId.f.interest.toFixed(2)} interest on ${dto.paidOn}`);
+    await this.audit.log(user, 'EQUIPMENT_LOAN', loanId.id, 'FORECLOSED', `Closed with EMI ${loanId.no}: ${inr(loanId.f.principal)} principal + ${inr(loanId.f.interest)} interest on ${dto.paidOn}`);
     return this.get(user, loanId.id);
   }
 

@@ -36,7 +36,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useEpc, usePurchaseOrders, useStructure, WATCH_LIST_KEY } from '@/lib/queries';
 import { useUrlTab } from '@/lib/url-state';
-import { formatDate, formatMoney, formatPct, inContract, moneyPrefix, outOfContract, toNumber } from '@/lib/format';
+import { formatDate, formatMoney, formatPct, inContract, moneyPrefix, outOfContract, plural, toNumber } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Section } from '@/components/common/Section';
@@ -221,7 +221,7 @@ function Engineering({ data, onEdit }: { data: EpcDto; onEdit: (d: DeliverableDt
                 <Flex vertical gap={2} align="start">
                   <AppTag color={STATUS_COLORS[d.status]}>{d.approvalCode ? `${DELIVERABLE_STATUS_LABELS[d.status]}, code ${d.approvalCode}` : DELIVERABLE_STATUS_LABELS[d.status]}</AppTag>
                   {d.approvedOn ? <span translate="no">{formatDate(d.approvedOn)}</span> : null}
-                  {d.lateDays !== null ? <AppTag tone="danger">{`${d.lateDays} days late for ${d.lateFor === 'SUBMISSION' ? 'submission' : 'approval'}`}</AppTag> : null}
+                  {d.lateDays !== null ? <AppTag tone="danger">{`${plural(d.lateDays, 'day')} late for ${d.lateFor === 'SUBMISSION' ? 'submission' : 'approval'}`}</AppTag> : null}
                 </Flex>
               ),
             },
@@ -398,7 +398,7 @@ function StageTimeline({ p }: { p: PackageDto }) {
             title: 'Slip',
             align: 'right',
             render: (_, r) =>
-              r.slipDays === null ? (r.stage === p.nextStage && p.nextOverdueDays ? <AppTag tone="pending">{`${p.nextOverdueDays} days overdue`}</AppTag> : '-') : r.slipDays > 0 ? <AppTag tone="pending">{`${r.slipDays} days late`}</AppTag> : r.slipDays < 0 ? `${-r.slipDays} days early` : 'On the day',
+              r.slipDays === null ? (r.stage === p.nextStage && p.nextOverdueDays ? <AppTag tone="pending">{`${plural(p.nextOverdueDays, 'day')} overdue`}</AppTag> : '-') : r.slipDays > 0 ? <AppTag tone="pending">{`${plural(r.slipDays, 'day')} late`}</AppTag> : r.slipDays < 0 ? `${plural(-r.slipDays, 'day')} early` : 'On the day',
           },
         ]}
       />
@@ -497,7 +497,7 @@ function Packages({ data, onEdit }: { data: EpcDto; onEdit: (p: PackageDto | 'ne
                       {p.nextPlannedOn ? <span translate="no">{`, ${formatDate(p.nextPlannedOn)}`}</span> : null}
                     </Typography.Text>
                   ) : null}
-                  {p.nextOverdueDays ? <AppTag tone="pending">{`${p.nextOverdueDays} days overdue`}</AppTag> : null}
+                  {p.nextOverdueDays ? <AppTag tone="pending">{`${plural(p.nextOverdueDays, 'day')} overdue`}</AppTag> : null}
                 </Flex>
               ),
             },

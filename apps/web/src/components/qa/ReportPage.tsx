@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import { Button, Card, Col, Flex, Row, Statistic, Table, Typography, theme } from 'antd';
-import { CALIBRATION_SOON_DAYS, NCR_AGE_BAND_LABELS, type QaReportDto, type QaReportRowDto } from '@erp/shared';
+import { CALIBRATION_SOON_DAYS, NCR_AGE_BAND_LABELS, reportingMonth, type QaReportDto, type QaReportRowDto } from '@erp/shared';
 import { useQaReport } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
-import { formatINR } from '@/lib/format';
+import { formatINR, todayDate } from '@/lib/format';
 import { DISPLAY_FONT } from '@/lib/theme';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -171,7 +171,7 @@ function ReportBody({ data }: { data: QaReportDto }) {
 /** The month's quality report: tests and pass rate, NCRs by age, category and root cause, rework, audits and the registers, by project. */
 export function ReportPage() {
   const { token } = theme.useToken();
-  const [month, setMonth] = useState(() => dayjs().format('YYYY-MM'));
+  const [month, setMonth] = useState(() => reportingMonth(todayDate()));
   const [projectId, setProjectId] = useProjectScope();
   const { data, isLoading, error, refetch } = useQaReport(month, projectId);
   return (

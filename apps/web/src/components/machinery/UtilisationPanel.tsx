@@ -13,7 +13,7 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { Section, SectionStack } from '@/components/common/Section';
-import { PeriodPicker, periodLabel, periodParams, type PeriodState } from '@/components/cost/PeriodPicker';
+import { defaultPeriod, PeriodPicker, periodLabel, periodParams, type PeriodState } from '@/components/cost/PeriodPicker';
 import { OwnershipTag } from './hours';
 
 const hours = (v: string) => (
@@ -43,7 +43,7 @@ function Share({ pct, label }: { pct: number | null; label: string }) {
 export function UtilisationPanel({ projectId: fixedProject }: { projectId?: string }) {
   const [scope, setScope] = useProjectScope();
   const projectId = fixedProject ?? scope;
-  const [period, setPeriod] = useState<PeriodState>({ preset: 'month', range: null });
+  const [period, setPeriod] = useState<PeriodState>(defaultPeriod);
   const { data, isLoading, error, refetch } = useFleetUtilisation({ ...periodParams(period), projectId });
 
   const exportExcel = () => {

@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { inr } from '../common/submission-titles';
 import { StaffService } from '../staff/staff.service';
 import { computeSettlement, structureGross } from './payroll-rules';
 import { SalaryService, toRulesStructure } from './salary.service';
@@ -118,7 +119,7 @@ export class SettlementService {
     const row = e.settlement
       ? await this.prisma.finalSettlement.update({ where: { id: e.settlement.id }, data, include })
       : await this.prisma.finalSettlement.create({ data: { organizationId: user.organizationId, employeeId: e.id, settlementNo: `FNF-${e.employeeCode}`, ...data }, include });
-    await this.audit.log(user, 'EMPLOYEE', e.id, 'UPDATED', `Full and final settlement worked out: net ₹${r.net}`);
+    await this.audit.log(user, 'EMPLOYEE', e.id, 'UPDATED', `Full and final settlement worked out: net ${inr(r.net)}`);
     return this.toDto(row, user);
   }
 

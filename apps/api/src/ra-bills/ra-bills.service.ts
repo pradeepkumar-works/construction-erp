@@ -9,7 +9,7 @@ import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { UNAPPROVED_EXTRA_ITEM } from '../variations/variations.service';
-import { dateOnly, dec, fxRate, iso, money, parseDate } from '../common/serialize';
+import { dateOnly, formatDay, dec, fxRate, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
@@ -560,7 +560,7 @@ export class RaBillsService {
     checkNotFuture(dto.date, 'date sent');
     if (dto.date < dateOnly(bill.billDate)) throw new BadRequestException('A bill cannot be sent before its bill date');
     await this.prisma.raBill.update({ where: { id }, data: { stage: 'SENT', sentDate: parseDate(dto.date) } });
-    await this.audit.log(user, 'BILL', id, 'SENT', `Sent to the client on ${dto.date}`);
+    await this.audit.log(user, 'BILL', id, 'SENT', `Sent to the client on ${formatDay(dto.date)}`);
     const out = await this.get(user, id);
     // The client's engineer and consultant on the project get it in their portal, and the bill itself by email.
     if (bill.stage === 'NOT_SENT') {

@@ -28,7 +28,8 @@ export const measurementTitle = (mbNo: string, itemNo: string, qty: string, unit
 export const billTitle = (billNo: number, isFinal: boolean, gross: string, om = false) =>
   `${om ? 'O&M' : 'RA'} bill ${billNo}${isFinal ? ' (final)' : ''}: ₹${Number(gross).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} of ${om ? 'O&M' : 'work'}`;
 
-export const inr = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Rupees as people read them in a note or a title: ₹24,98,617.80. */
+export const inr = (v: string | number | { toString(): string }) => `₹${Number(v.toString()).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** "PO-2026-0004: ₹2,45,000.00 to Utkal Cement Traders". */
 export const poTitle = (poNo: string, total: string, vendor: string) => `${poNo}: ${inr(total)} to ${vendor}`;

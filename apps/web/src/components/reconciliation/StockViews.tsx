@@ -24,7 +24,7 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
 import { Section, SectionStack } from '@/components/common/Section';
-import { PeriodPicker, periodLabel, periodParams, type PeriodState } from '@/components/cost/PeriodPicker';
+import { defaultPeriod, PeriodPicker, periodLabel, periodParams, type PeriodState } from '@/components/cost/PeriodPicker';
 import { StockEntryDrawer } from '@/components/stock/StockEntryDrawer';
 import { StatusCell, qty } from './ReconciliationPanel';
 
@@ -508,7 +508,7 @@ const EXCEPTION_COLOR: Record<ReconExceptionKind, string> = { USE_WITHOUT_ISSUE:
 
 /** The day-to-day exceptions between stock and the DPR, newest first, each with the DPR or issue to open. */
 export function ExceptionsView({ projectId }: { projectId: string }) {
-  const [period, setPeriod] = useState<PeriodState>({ preset: 'month', range: null });
+  const [period, setPeriod] = useState<PeriodState>(defaultPeriod);
   const [entryId, setEntryId] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = useReconExceptions(projectId, periodParams(period));
 

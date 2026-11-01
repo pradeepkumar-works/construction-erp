@@ -11,7 +11,7 @@ import { useProjectCost } from '@/lib/queries';
 import { formatINR, formatPct, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CostBar, CostHeadTitle, CostLegend } from './CostBar';
-import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
+import { defaultPeriod, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
 import { LabourRatesModal } from './LabourRatesModal';
 import { unpricedText } from './UnpricedNote';
 import { themeColor, themeFontSize } from '@/lib/theme';
@@ -22,7 +22,7 @@ const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span sty
 
 /** One project's cost heads, month by month, and what makes them up. */
 export function ProjectCostPanel({ projectId }: { projectId: string }) {
-  const [period, setPeriod] = useState<PeriodState>(DEFAULT_PERIOD);
+  const [period, setPeriod] = useState<PeriodState>(defaultPeriod);
   const [ratesOpen, setRatesOpen] = useState(false);
   const { data, isLoading, error, refetch } = useProjectCost(projectId, periodParams(period));
   const missing = data ? unpricedText(data.unpriced) : [];

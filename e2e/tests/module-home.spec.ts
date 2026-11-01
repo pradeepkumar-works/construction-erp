@@ -64,7 +64,7 @@ test('each module has a screen with its tiles, figures and what waits', async ({
   await expect(page).toHaveURL(/\/projects\/[\w-]+\?tab=boq$/);
 
   await page.goto('/modules/nowhere');
-  await expect(page.getByText('This module is not in your menu')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Not in your menu' })).toBeVisible();
 
   // Payroll has one page for the project manager (labour contractors' man-days): its screen opens that page.
   await page.goto('/modules/payroll');

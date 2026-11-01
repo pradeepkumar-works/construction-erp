@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-reporting-month',
+    date: '2026-11-01',
+    title: 'Month figures open on a month with work in it',
+    points: [
+      'In the first six days of a month, Cost, the project’s Cost tab, machine use, material reconciliation, Leakage checks, the Quality report and the monthly MIS open on last month instead of a month that has barely started. From the 7th they open on the month so far. Last month is also a choice beside This month.',
+      'The BOQ’s total now sits under Amount, payables say “in 1 day” rather than “in 1 days”, and a bill’s history reads “₹24,98,617.80 received on 20 Oct 2026”.',
+      'Charts lower on a page draw a moment after it opens, so a page printed without scrolling has them too.',
+    ],
+  },
+  {
     id: '2026-11-programme-eot',
     date: '2026-11-01',
     title: 'Programme revisions and extensions of time',
