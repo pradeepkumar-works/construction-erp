@@ -108,7 +108,7 @@ export function FoldedLine({ folded, open }: { folded: readonly { key: string; t
       {folded.map((s, i) => (
         <React.Fragment key={s.key}>
           {i ? ', ' : ''}
-          <Button type="link" size="small" onClick={() => open(s.key)} style={{ paddingInline: tk.space[1] }} aria-label={`Open ${s.title}`}>
+          <Button type="link" size="small" onClick={() => open(s.key)} style={{ paddingInline: 0 }} aria-label={`Open ${s.title}`}>
             {s.title}
           </Button>
         </React.Fragment>
