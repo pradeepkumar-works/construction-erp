@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-headline-figures',
+    date: '2026-11-01',
+    title: 'Headline figures say the same thing everywhere',
+    points: [
+      'The figures at the top of the management dashboard, the reports, My work, each module and department screen, a project’s management page and the watch list now share one look and one name each. “Clients owe” is “Clients owe” wherever it shows, and each figure opens its list.',
+      'The figure that needs action comes first and larger, in red or amber with the reason under it. On a day when nothing needs action, no figure is singled out.',
+      'Each figure says what it stands against: last month, the plan, the whole it is part of, or the part that matters, such as “₹12.80 L overdue”. Flags at zero fold into one quiet line, such as “Nothing over 90 days”.',
+    ],
+  },
+  {
     id: '2026-11-reporting-month',
     date: '2026-11-01',
     title: 'Month figures open on a month with work in it',

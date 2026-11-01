@@ -5,18 +5,17 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Card, Col, Empty, Flex, Grid, Progress, Row, Skeleton, Typography } from 'antd';
 import type { CompanyDashboard, HomeTrendsDto } from '@erp/shared';
-import { isCompanyWide } from '@erp/shared';
+import { figure, isCompanyWide, type FigureInput } from '@erp/shared';
 import { useCompanyDashboard, useHomeTrends, useMyWork } from '@/lib/queries';
-import { formatINR, formatINRCompact, formatMonthName, formatPct, toNumber, plural } from '@/lib/format';
+import { formatINRCompact, formatPct, toNumber, todayDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
-import { FigureStrip, type StripFigure } from '@/components/common/FigureStrip';
+import { Figures } from '@/components/figures';
 import { useAuth } from '@/lib/auth';
 import { GettingStartedCard, useGettingStarted } from '@/components/dashboard/GettingStartedCard';
 import { themeFontSize } from '@/lib/theme';
 import { MyWorkPanel } from '@/components/home/MyWorkPanel';
 import { MorningBriefCard } from '@/components/home/MorningBriefCard';
-import { isBadTrend, trendNote, trendOf } from '@/components/home/trend';
 import { homeLayout, type ChartKey, type KpiKey } from '@/components/home/layout';
 import { CashFlowTable, ChartCard, CostByHeadTable, SCurveTable } from '@/components/home/ChartCard';
 import { allZero, cashFlowSummary, costByHeadSummary, sCurveSummary } from '@/components/home/chartData';
@@ -40,7 +39,7 @@ export default function MyWorkPage() {
   // need the trends) and the chart row. Drawing each as it arrived pushed what was already on screen down (CLS 0.22).
   // The four requests go out together, so this waits for the slowest, not their sum; a failed one does not hold it up.
   const ready = !isPending && !myWork.isPending && !trends.isPending && gettingStarted.settled;
-  const figures = data ? layout.kpis.map((k) => kpiFigure(k, data, t)).filter((f): f is StripFigure => !!f) : [];
+  const figures = data ? layout.kpis.map((k) => kpiFigure(k, data, t)) : [];
 
   return (
     <div className="page-container">
@@ -59,7 +58,7 @@ export default function MyWorkPage() {
       {ready && <MyWorkPanel data={myWork.data} loading={false} order={layout.myWork} />}
       {ready && data && (
         <>
-          <FigureStrip label="Key figures" figures={figures} />
+          <Figures label="Key figures" figures={figures} />
 
           {t && (
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
@@ -76,84 +75,46 @@ export default function MyWorkPage() {
 
 const small = { fontSize: themeFontSize('fontSizeSM') } as const;
 
-function monthFigure(key: KpiKey, href: string, label: string, series: string[], months: string[], upIsGood = true, extra?: string): StripFigure {
-  const now = toNumber(series[series.length - 1]);
-  const before = toNumber(series[series.length - 2]);
-  if (now === 0) return { key, href, label, value: 'None yet', note: before > 0 ? `${formatINRCompact(before)} in ${formatMonthName(months[months.length - 2])}` : undefined };
-  const trend = trendOf(series, months, upIsGood);
-  const note = [trendNote(trend), extra].filter(Boolean).join('; ');
-  return { key, href, label, value: formatINRCompact(now), note: note || undefined, noteTone: isBadTrend(trend) ? 'danger' : undefined };
-}
-
-function kpiFigure(k: KpiKey, data: CompanyDashboard, trends: HomeTrendsDto | undefined): StripFigure | null {
+/** A role's figure for one of its layout's keys; nothing when the role cannot see it or it has no data yet. */
+function kpiFigure(k: KpiKey, data: CompanyDashboard, trends: HomeTrendsDto | undefined): FigureInput {
   const months = trends?.months ?? [];
-  const thisMonth = formatMonthName(months[months.length - 1] ?? dayjsMonth());
-  const last = (xs?: string[]) => toNumber(xs?.[xs.length - 1]);
+  const when = { month: months[months.length - 1] ?? thisMonth() };
+  const flow = (series: string[]) => ({ when, versus: { trend: series, months } });
+  const last = (series: string[]) => series[series.length - 1] ?? 0;
   switch (k) {
     case 'contract': {
-      // Billed against the contract: the figure against its plan, not the contract value alone.
+      // Billed against the contract: the figure against its whole, not the contract value alone.
       const fp = data.financialProgress;
-      return fp && toNumber(fp.contractValue) > 0
-        ? { key: k, href: '/bills', label: 'Billed to date', value: formatINRCompact(fp.billed), note: `of ${formatINRCompact(fp.contractValue)} contract${fp.pct != null ? `, ${formatPct(fp.pct)}` : ''}` }
-        : { key: k, label: 'Total contract value', value: formatINRCompact(data.totalContractValue), note: formatINR(data.totalContractValue) };
+      return fp && toNumber(fp.contractValue) > 0 ? figure('billed', fp.billed, { when: 'toDate', versus: { of: figure('contractValue', fp.contractValue) } }) : figure('contractValue', data.totalContractValue);
     }
     case 'projects':
-      return { key: k, href: '/projects', label: 'Active projects', value: data.activeProjects, note: `of ${plural(data.totalProjects, 'project')}` };
+      return figure('activeProjects', data.activeProjects, { versus: { of: figure('projects', data.totalProjects) } });
     case 'progress': {
       // Progress against plan from the S-curve: the latest month with approved work, done against planned by then.
       const now = trends ? [...trends.sCurve].reverse().find((p) => p.actual !== null) : undefined;
-      if (!now || now.actual === null) return null;
-      // Ten points or more behind is the exception worth colour; less is "on track" within the plan's own accuracy.
-      const behind = now.planned - now.actual >= 10;
-      return { key: k, href: '/progress', label: 'Progress against plan', value: `${formatPct(now.actual)} done`, note: `${formatPct(now.planned)} planned by now${behind ? ', behind plan' : ''}`, noteTone: behind ? 'danger' : undefined };
+      return now && now.actual !== null && figure('physicalProgress', now.actual, { versus: { plan: now.planned } });
     }
     case 'workDone':
-      return trends ? monthFigure(k, '/progress', `Work done in ${thisMonth}`, trends.workDone, months) : null;
+      return trends && figure('workDone', last(trends.workDone), flow(trends.workDone));
     case 'billed':
-      return trends?.billed ? monthFigure(k, '/bills', `Billed in ${thisMonth}`, trends.billed, months) : null;
+      return trends?.billed && figure('billed', last(trends.billed), flow(trends.billed));
     case 'cost':
-      return trends?.cost
-        ? monthFigure(k, '/cost', `Cost in ${thisMonth}`, trends.cost, months, false, last(trends.workDone) > 0 ? `${formatPct((last(trends.cost) / last(trends.workDone)) * 100)} of the work done` : undefined)
-        : null;
+      return trends?.cost && figure('cost', last(trends.cost), flow(trends.cost));
     case 'cashIn':
-      return trends?.cashIn ? monthFigure(k, '/receivables', `Received in ${thisMonth}`, trends.cashIn, months) : null;
+      return trends?.cashIn && figure('moneyReceived', last(trends.cashIn), flow(trends.cashIn));
     case 'receivables':
-      return data.receivables
-        ? {
-            key: k,
-            href: '/receivables',
-            label: 'Receivables',
-            value: formatINRCompact(data.receivables.outstanding),
-            tone: toNumber(data.receivables.over90) > 0 ? 'danger' : undefined,
-            note: `${plural(data.receivables.openBills, 'open bill')}${toNumber(data.receivables.over90) > 0 ? ` · ${formatINRCompact(data.receivables.over90)} over 90 days` : ''}`,
-          }
-        : null;
+      return data.receivables && figure('clientsOwe', data.receivables.outstanding, { count: data.receivables.openBills, versus: { part: figure('clientsOweOver90', data.receivables.over90) } });
     case 'payables':
-      return data.payables
-        ? {
-            key: k,
-            href: '/payables',
-            label: 'Vendor payable',
-            value: formatINRCompact(data.payables.outstanding),
-            tone: toNumber(data.payables.overdue) > 0 ? 'danger' : undefined,
-            note: `${plural(data.payables.openBills, 'open bill')}${toNumber(data.payables.overdue) > 0 ? ` · ${formatINRCompact(data.payables.overdue)} overdue` : ''}`,
-          }
-        : null;
+      return data.payables && figure('weOwe', data.payables.outstanding, { count: data.payables.openBills, versus: { part: figure('weOweOverdue', data.payables.overdue) } });
     case 'delayed':
-      return {
-        key: k,
-        label: 'Delayed activities',
-        value: data.delayedActivities,
-        tone: data.delayedActivities > 0 ? 'danger' : undefined,
-        note: data.dueActivities == null ? undefined : data.dueActivities ? `of ${plural(data.dueActivities, 'activity', 'activities')} due to finish by today` : 'None was due to finish yet',
-      };
+      return figure('delayedActivities', data.delayedActivities, data.dueActivities == null ? undefined : { versus: { of: figure('activitiesDue', data.dueActivities) } });
     case 'dprsToday':
-      return { key: k, href: '/dpr', label: 'DPRs today', value: data.dprsToday, note: `of ${plural(data.activeProjects, 'active project')}${trends ? `; ${trends.dprs[trends.dprs.length - 1]} approved in ${thisMonth}` : ''}` };
+      return figure('dailyReports', data.dprsToday, { when: 'today', versus: { of: figure('activeProjects', data.activeProjects) } });
   }
 }
 
 /** This month as YYYY-MM, for a figure drawn before the trends arrive. */
-const dayjsMonth = () => new Date().toISOString().slice(0, 7);
+const thisMonth = () => todayDate().slice(0, 7);
 
 /** One chart card of the role's layout; nothing when the role cannot see its data or there is none. */
 function HomeChart({ c, trends }: { c: ChartKey; trends: HomeTrendsDto }) {

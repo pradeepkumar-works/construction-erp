@@ -5,7 +5,7 @@
  * signatures) is drawn on the screen and written to PDF, Word and Excel, so the four always say the same thing. The
  * periods, numbers, delays and wording below are pure and tested in `apps/api/src/scripts/official-reports-test.ts`.
  */
-import type { ReportColumnDto, ReportColumnKind, ReportFigureDto, ReportRowDto } from './management';
+import type { ReportCell, ReportColumnDto, ReportColumnKind, ReportRowDto } from './management';
 
 export const OFFICIAL_REPORT_KINDS = ['DAILY', 'WEEKLY', 'MONTHLY'] as const;
 export type OfficialReportKind = (typeof OFFICIAL_REPORT_KINDS)[number];
@@ -25,10 +25,18 @@ export interface OfficialFactDto {
   kind?: ReportColumnKind;
 }
 
+/** A figure in an official report's summary, the client's own words. It moves to `Figure` with the module screens. */
+export interface OfficialFigureDto {
+  label: string;
+  value: ReportCell;
+  kind: ReportColumnKind;
+  note?: string;
+}
+
 export type OfficialBlockDto =
   | { type: 'facts'; facts: OfficialFactDto[] }
   | { type: 'text'; title?: string; paragraphs: string[] }
-  | { type: 'figures'; figures: ReportFigureDto[] }
+  | { type: 'figures'; figures: OfficialFigureDto[] }
   | { type: 'table'; title?: string; note?: string; columns: ReportColumnDto[]; rows: ReportRowDto[]; total?: ReportRowDto; empty: string }
   | { type: 'photos'; photos: { url: string; caption: string }[]; empty?: string };
 

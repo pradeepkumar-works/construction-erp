@@ -11,8 +11,11 @@ import {
   PORTFOLIO_SCHEDULE_LABELS,
   SUBMISSION_TYPE_LABELS,
   canSeeManagement,
+  figure,
   submissionHref,
+  unbilledAttention,
   type BillStage,
+  type FigureInput,
   type PortfolioProjectDetailDto,
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -24,7 +27,7 @@ import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ChartCard } from '@/components/home/ChartCard';
-import { FigureStrip, type StripFigure } from '@/components/common/FigureStrip';
+import { Figures } from '@/components/figures';
 import { BudgetTrack, MoneyPipeline, ScheduleBullet } from '@/components/management/MoneyPipeline';
 import { AttentionList } from '@/components/management/AttentionList';
 import { HEALTH_TONES } from '@/components/management/report-format';
@@ -66,49 +69,15 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
   const p = data.project;
   const m = p.money;
   const s = p.schedule;
-  const figures: StripFigure[] = [
-    {
-      key: 'contract',
-      label: 'Contract value',
-      value: m.contractValue === null ? NO_VALUE : formatINRCompact(m.contractValue),
-      note: p.clientName ?? undefined,
-    },
-    {
-      key: 'done',
-      label: 'Done',
-      value: formatPct(s.done),
-      note: s.planned !== null ? `${formatPct(s.planned)} planned by today` : PORTFOLIO_SCHEDULE_LABELS[s.state],
-    },
-    {
-      key: 'unbilled',
-      label: 'Work done, not billed',
-      value: formatINRCompact(m.unbilled),
-      note:
-        m.unbilledDays !== null
-          ? `${days(m.unbilledDays)} since ${m.billedUpTo ? `the bill up to ${formatDate(m.billedUpTo)}` : 'the start'}`
-          : 'Everything done is billed',
-      tone: p.reasons.some((r) => r.key === 'billing' && r.level === 'act') ? 'danger' : undefined,
-    },
-    {
-      key: 'owe',
-      label: 'Client owes',
-      value: formatINRCompact(m.outstanding),
-      note: toNumber(m.over90) > 0 ? `${formatINRCompact(m.over90)} over 90 days` : `Retention ${formatINRCompact(m.retentionHeld)}`,
-      tone: toNumber(m.over90) > 0 ? 'danger' : undefined,
-    },
-    {
-      key: 'cost',
-      label: 'Cost to date',
-      value: formatINRCompact(m.cost),
-      note: m.budget !== null ? `Budget ${formatINRCompact(m.budget)}` : 'No budget set',
-    },
-    {
-      key: 'margin',
-      label: 'Margin to date',
-      value: formatPct(m.marginPct),
-      note: m.forecastMargin !== null ? `${formatINRCompact(m.forecastMargin)} forecast at completion` : `${formatINRCompact(m.margin)} on work done`,
-      tone: m.marginPct !== null && m.marginPct < 0 ? 'danger' : undefined,
-    },
+  const billing = unbilledAttention(p.reasons);
+  const unbilled = billing && m.unbilledDays !== null ? { level: billing.level, because: `${days(m.unbilledDays)} since ${m.billedUpTo ? `the bill up to ${formatDate(m.billedUpTo)}` : 'the start'}` } : billing;
+  const figures: FigureInput[] = [
+    figure('contractValue', m.contractValue ?? { none: 'No contract value yet' }),
+    s.planned !== null ? figure('physicalProgress', s.done, { versus: { plan: s.planned } }) : figure('physicalProgress', s.done),
+    figure('workNotBilled', m.unbilled, unbilled && { attention: unbilled }),
+    figure('clientsOwe', m.outstanding, { versus: { part: figure('clientsOweOver90', m.over90) } }),
+    m.budget !== null ? figure('cost', m.cost, { when: 'toDate', versus: { of: figure('budget', m.budget) } }) : figure('cost', m.cost, { when: 'toDate' }),
+    figure('marginToDate', m.margin, { versus: { of: figure('workDone', m.workDone) } }),
   ];
   const facts: [string, React.ReactNode][] = [
     ['Schedule', PORTFOLIO_SCHEDULE_LABELS[s.state]],
@@ -131,6 +100,11 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
               {HEALTH_LABELS[p.health]}
             </AppTag>
             <span translate="no">{p.code}</span>
+            {p.clientName ? (
+              <>
+                , for <span translate="no">{p.clientName}</span>
+              </>
+            ) : null}
             {p.projectManagerName ? (
               <>
                 , project manager <span translate="no">{p.projectManagerName}</span>
@@ -150,7 +124,7 @@ function Detail({ data }: { data: PortfolioProjectDetailDto }) {
       />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: token.margin }}>
-        <FigureStrip label={`${p.code} figures`} figures={figures} />
+        <Figures label={`${p.code} figures`} figures={figures} scope={{ projectId: p.projectId }} />
 
         <Row gutter={[16, 16]}>
           <Col xs={24} xl={14}>

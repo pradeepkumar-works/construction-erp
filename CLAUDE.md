@@ -196,6 +196,10 @@ and the pre-delivery checklist.
   `homeLayout` and in the phone's `ORDERS`/`CARDS` (`apps/mobile/src/components/MyWork.tsx`, title in Hindi). Home's Waiting
   for you shows the top three of the same cards (`WaitingForYou`). Charts use
   `@ant-design/plots` from `components/home/charts.tsx`, loaded with `dynamic(..., { ssr: false })`.
+- Headline figures (ARCHITECTURE "Headline figures"): one figure has one name, its line in `MEASURES`
+  (`@erp/shared/figures/measures.ts`); screens and the API state facts through `figure(id, value, opts)`, never a label,
+  format, tone or place of their own, and `<Figures>` (`components/figures/`) is the only headline block, drawn from the
+  pure `presentFigures` (print and Excel read it too). A new figure is a registry line. Keep `src/scripts/figures-test.ts` passing.
 - Progress by project (ARCHITECTURE "Progress by project"): the Projects screen's and the Project management department's
   bars are `ModuleHomeDto.progress` from `ModuleHomeService.progress` (physical against planned by today; financial is
   approved RA bills against the revised contract value, for `canViewContract`); the totals and notes are pure in
