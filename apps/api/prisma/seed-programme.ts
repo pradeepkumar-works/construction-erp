@@ -7,14 +7,9 @@
  * company (when it has no programme revision yet), after the risks, the contracts and the guests.
  */
 import { PrismaClient } from '@prisma/client';
+import { day } from './seed-clock';
 
 const DAY = 86_400_000;
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 
 export async function seedProgramme(prisma: PrismaClient, organizationId: string) {
   if (await prisma.programmeSubmission.count({ where: { organizationId } })) return;
