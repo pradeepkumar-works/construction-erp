@@ -6,13 +6,8 @@
  */
 import { PrismaClient } from '@prisma/client';
 import { HEAD_OFFICE_PREFIX, LETTER_NUMBER_PATTERN, formatLetterNo, letterFy, letterPrefixOf, type LetterDirection } from '@erp/shared';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
 export async function seedCorrespondence(prisma: PrismaClient, organizationId: string) {

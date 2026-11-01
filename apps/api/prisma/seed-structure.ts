@@ -13,14 +13,9 @@
  */
 import { Prisma, PrismaClient, type WorkElementType } from '@prisma/client';
 import { elementPlan, workSummary, type ElementActivityLine } from '@erp/shared';
+import { day } from './seed-clock';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 
 export interface ElementSeed {
   code: string;

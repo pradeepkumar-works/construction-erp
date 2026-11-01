@@ -5,13 +5,8 @@
  * after the demo NCRs.
  */
 import { PrismaClient } from '@prisma/client';
+import { day } from './seed-clock';
 
-const day = (offset: number) => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-};
 
 type Finding = { text: string; severity?: 'MINOR' | 'MAJOR' | 'CRITICAL'; dueIn?: number; closedAfter?: number; note?: string; ncrId?: string | null };
 
