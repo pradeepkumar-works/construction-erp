@@ -102,17 +102,24 @@ function Pipeline({ p }: { p: DepartmentPipelineDto }) {
 }
 
 /**
- * A department's figures strip and its pipelines (`@erp/shared/department-home.ts`), for the header's project
- * or every project the user sees. Nothing shows for a department with neither.
+ * A department's figures strip (`@erp/shared/department-home.ts`), for the header's project or every project the user
+ * sees: the screen's answer, so it comes first. Nothing shows for a department without figures.
  */
-export function DepartmentPanel({ department }: { department: string }) {
+export function DepartmentFigures({ department }: { department: string }) {
   const [projectId] = useProjectScope();
   const { data, error, refetch } = useDepartmentHome(department, projectId);
   if (error) return <QueryError error={error} onRetry={() => refetch()} />;
-  if (!data || (!data.figures.length && !data.pipelines.length)) return null;
+  if (!data?.figures.length) return null;
+  return <Figures label="Department figures" figures={data.figures} scope={{ projectId }} />;
+}
+
+/** A department's pipelines, from the same answer as its figures (a failure shows once, with the figures). */
+export function DepartmentPipelines({ department }: { department: string }) {
+  const [projectId] = useProjectScope();
+  const { data } = useDepartmentHome(department, projectId);
+  if (!data?.pipelines.length) return null;
   return (
     <Flex vertical gap={16}>
-      {data.figures.length > 0 && <Figures label="Department figures" figures={data.figures} scope={{ projectId }} />}
       {data.pipelines.map((p) => (
         <Pipeline key={p.key} p={p} />
       ))}

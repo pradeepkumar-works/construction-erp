@@ -339,22 +339,29 @@ export function ProjectProgress({ data }: { data: ModuleProgressDto }) {
   );
 }
 
-/**
- * The same figures and progress on a department's screen (Menu and names) that holds the projects, such as Project
- * management: read from the Projects module's figures, for the header's project or every project the caller sees.
- */
-export function ProjectProgressPanel() {
+/** The Projects module's answer, for a department's screen that holds the projects, such as Project management. */
+function useProjectsHome() {
   const { user } = useAuth();
   const [projectId] = useProjectScope();
   const projects = navNode('projects');
   const allowed = !!user && !!projects && canSeeNav(user, projects);
-  const { data, error, refetch } = useModuleHome('projects', projectId, allowed);
+  return { projectId, ...useModuleHome('projects', projectId, allowed) };
+}
+
+/**
+ * The Projects module's figures on a department's screen (Menu and names) that holds the projects, for the header's
+ * project or every project the caller sees: at the top, with the department's own figures.
+ */
+export function ProjectFiguresPanel() {
+  const { data, error, refetch, projectId } = useProjectsHome();
   if (error) return <QueryError error={error} onRetry={() => refetch()} />;
   if (!data?.progress?.projects.length) return null;
-  return (
-    <Flex vertical gap={16}>
-      <Figures label="Project figures" figures={data.figures} scope={{ projectId }} />
-      <ProjectProgress data={data.progress} />
-    </Flex>
-  );
+  return <Figures label="Project figures" figures={data.figures} scope={{ projectId }} />;
+}
+
+/** Progress by project on that screen, below what waits (a failure shows once, with the figures). */
+export function ProjectProgressPanel() {
+  const { data } = useProjectsHome();
+  if (!data?.progress?.projects.length) return null;
+  return <ProjectProgress data={data.progress} />;
 }

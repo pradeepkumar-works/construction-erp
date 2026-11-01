@@ -22,6 +22,7 @@ import { TileGrid, tileEntries } from '@/components/launcher/TileGrid';
 import { usePins } from '@/components/launcher/pins';
 import { useNavMenu } from '@/components/shell/menu';
 import { ResultMark } from '@/components/common/ResultMark';
+import { tk } from '@/ds';
 
 const oldest = (n: number) => (n === 0 ? 'all from today' : `oldest ${n} day${n === 1 ? '' : 's'}`);
 
@@ -77,9 +78,9 @@ function Waiting({ data, label }: { data: ModuleHomeDto; label: string }) {
 }
 
 /**
- * A module's screen: a tile for each of the module's pages this person may open, then its
- * figures for the header's project (or every project they see), what waits for them in it, and what they can start there.
- * A module where they see one page only opens that page.
+ * A module's screen, answer first: its figures for the header's project (or every project they see), what waits for them
+ * in it, progress by project, then a compact tile for each of the module's pages they may open, and what they can start
+ * there. A module where they see one page only opens that page.
  */
 export function ModuleHome({ moduleKey }: { moduleKey: string }) {
   const { user } = useAuth();
@@ -124,7 +125,6 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
     <div className="page-container">
       <PageHeader title={`${label} overview`} subtitle={MODULE_INTROS[key]} extra={actions} />
       <Flex vertical gap={24}>
-        <TileGrid entries={tileEntries(tiles)} label={`Pages in ${inSentence(label)}`} menu={tileMenu} />
         {isLoading && <PageSkeleton shape="home" header={false} />}
         {error && <QueryError error={error} onRetry={() => refetch()} />}
         {data && (data.figures.length > 0 || waits) && (
@@ -143,6 +143,13 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
         )}
         {data?.progress && <ProjectProgress data={data.progress} />}
         {key === 'people' && (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) && <HrDashboard />}
+        {/* The pages last and small: the sidebar lists them too, so the screen leads with how the area is doing. */}
+        <section aria-labelledby="module-pages">
+          <h2 id="module-pages" style={{ ...tk.type.title, margin: `0 0 ${tk.space[3]}` }}>
+            Pages
+          </h2>
+          <TileGrid entries={tileEntries(tiles)} label={`Pages in ${inSentence(label)}`} menu={tileMenu} compact headingLevel={3} />
+        </section>
       </Flex>
     </div>
   );
