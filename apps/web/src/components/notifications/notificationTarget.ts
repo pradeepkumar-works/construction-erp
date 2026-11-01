@@ -21,6 +21,9 @@ export function notificationHref(n: NotificationDto): string {
   if (n.entityType === 'RFI' && n.entityId) return n.type === 'PORTAL' && n.projectId ? `/portal/${n.projectId}?tab=rfis&open=${n.entityId}` : `/documents?tab=rfis&rfi=${n.entityId}`;
   // A site order: the engineer accepts it in the portal; staff reply on the project's Site orders tab.
   if (n.entityType === 'SITE_ORDER' && n.entityId && n.projectId) return n.type === 'PORTAL' ? `/portal/${n.projectId}?tab=site-orders&open=${n.entityId}` : `/projects/${n.projectId}?tab=site-orders&order=${n.entityId}`;
+  // A programme revision or an EOT application: the engineer answers in the portal; staff open the project's tab.
+  if ((n.entityType === 'PROGRAMME' || n.entityType === 'EOT') && n.entityId && n.projectId)
+    return n.type === 'PORTAL' ? `/portal/${n.projectId}?tab=programme&open=${n.entityId}` : `/projects/${n.projectId}?tab=programme&${n.entityType === 'EOT' ? 'eot' : 'revision'}=${n.entityId}`;
   if (n.type === 'MORNING_BRIEF') return '/';
   // The supplier portal: the supplier's own notices open their pages; the company's open the inbox or the vendor.
   if (n.entityType === 'PORTAL_PO' || n.entityType === 'PORTAL_WO') return `/supplier/orders?open=${n.entityType === 'PORTAL_PO' ? 'po' : 'wo'}:${n.entityId}`;

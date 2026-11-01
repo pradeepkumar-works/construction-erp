@@ -228,6 +228,16 @@ export type CheckLevel = (typeof CHECK_LEVELS)[number];
 export const SITE_ORDER_STATUSES = ['OPEN', 'REPLIED', 'CLOSED'] as const;
 export type SiteOrderStatus = (typeof SITE_ORDER_STATUSES)[number];
 
+/** A programme revision with the Engineer: waiting, approved, or returned with comments for a new revision. */
+export const PROGRAMME_STATUSES = ['SUBMITTED', 'APPROVED', 'RETURNED'] as const;
+export type ProgrammeStatus = (typeof PROGRAMME_STATUSES)[number];
+/** What an extension of time is claimed for: delays in the register, or added work under a variation. */
+export const EOT_BASES = ['DELAY', 'VARIATION'] as const;
+export type EotBasis = (typeof EOT_BASES)[number];
+/** An EOT application's step: sent to the Engineer, forwarded to the competent authority, decided, or withdrawn. */
+export const EOT_STATUSES = ['SENT', 'FORWARDED', 'DECIDED', 'WITHDRAWN'] as const;
+export type EotStatus = (typeof EOT_STATUSES)[number];
+
 /** A scheduled service when it falls due, or a breakdown repair. */
 export const MAINTENANCE_KINDS = ['SERVICE', 'BREAKDOWN'] as const;
 export type MaintenanceKind = (typeof MAINTENANCE_KINDS)[number];

@@ -1,11 +1,11 @@
 import type { RoleKey } from './enums';
-import { canApprove, canEditProjects, canManageDocuments, canManageMachineLoans, canManagePackages, canManageQaPlan, canManageMaintenance, canManageOm, canManageStore, canPurchase, canRaiseRisk, canSetMaterialNorms, canViewCost } from './permissions';
+import { canApplyEot, canKeepProgramme, canApprove, canEditProjects, canManageDocuments, canManageMachineLoans, canManagePackages, canManageQaPlan, canManageMaintenance, canManageOm, canManageStore, canPurchase, canRaiseRisk, canSetMaterialNorms, canViewCost } from './permissions';
 
 /**
  * Early warnings: plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
-export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW', 'PURCHASE_CONTROL', 'FUEL_TANK', 'WEIGH_SHORT'] as const;
+export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE', 'NOTICE_DUE', 'MANDAYS_ABOVE', 'PACKAGE_LATE', 'OM_SERVICE', 'BOQ_OFF_CONTRACT', 'TESTS_SHORT', 'CALIBRATION_DUE', 'LAB_REPORT_LATE', 'DRAWING_LATE', 'DESIGN_REVIEW_LATE', 'COPY_RECALL_LATE', 'MARGIN_FADE', 'CUBE_7DAY_LOW', 'PURCHASE_CONTROL', 'FUEL_TANK', 'WEIGH_SHORT', 'PROGRAMME_DUE', 'EOT_OVERDUE'] as const;
 export type WarningKind = (typeof WARNING_KINDS)[number];
 
 export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
@@ -37,6 +37,8 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
   PURCHASE_CONTROL: 'Purchase control',
   FUEL_TANK: "Fuel tank and slips don't match",
   WEIGH_SHORT: 'Short deliveries at the weighbridge',
+  PROGRAMME_DUE: 'Programme update due',
+  EOT_OVERDUE: 'Extension of time undecided',
 };
 
 /**
@@ -86,6 +88,9 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   if (canManageQaPlan(role)) out.push('CUBE_7DAY_LOW');
   // Purchase controls (Q6): the owners of the money only, never the buyers or approvers whose work they look at.
   if (canSeePurchaseControls(role)) out.push('PURCHASE_CONTROL');
+  // Programme and EOT: the planners keep the programme up to date; the contract's people chase the decision.
+  if (canKeepProgramme(role)) out.push('PROGRAMME_DUE');
+  if (canApplyEot(role)) out.push('EOT_OVERDUE');
   return out;
 }
 
@@ -138,6 +143,8 @@ export const WARNING_CONFIDENCE_OF: Record<WarningKind, WarningConfidence> = {
   PURCHASE_CONTROL: 'CHECKED',
   FUEL_TANK: 'CHECKED',
   WEIGH_SHORT: 'CHECKED',
+  PROGRAMME_DUE: 'CHECKED',
+  EOT_OVERDUE: 'CHECKED',
 };
 
 /**
