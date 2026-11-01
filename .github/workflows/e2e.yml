@@ -87,6 +87,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/web
         run: npx tsx --tsconfig tsconfig.json scripts/copy-check.ts
+      - name: Design tokens keep AA contrast and the list of screens not yet on them only shrinks (docs/design/REDESIGN.md)
+        if: matrix.suite == 'flows'
+        working-directory: apps/web
+        run: npx tsx --tsconfig tsconfig.json scripts/tokens-check.ts
       - name: Start the API as erp_runtime
         working-directory: apps/api
         run: |

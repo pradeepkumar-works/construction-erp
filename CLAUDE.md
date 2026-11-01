@@ -23,6 +23,7 @@ pnpm typecheck                        # all packages, must pass before committin
 cd apps/web && npx next build         # web must build clean
 cd apps/web && npx tsx --tsconfig tsconfig.json scripts/nav-check.ts   # navigation tree: routes, icons, access, Concord
 cd apps/web && npx tsx --tsconfig tsconfig.json scripts/copy-check.ts  # shared labels and menu names against docs/WRITING.md
+cd apps/web && npx tsx --tsconfig tsconfig.json scripts/tokens-check.ts # design tokens: contrast, and the not-yet-moved list only shrinks
 pnpm --filter @erp/web lint           # ESLint (typescript-eslint, hooks, Next, jsx-a11y) on the web; 0 errors, CI runs it
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
 cd e2e && npx playwright test         # browser tests; needs API + web running (docs/TESTING.md), CI runs them on PRs
@@ -56,7 +57,8 @@ and the pre-delivery checklist.
   `apps/web/scripts/nav-check.ts` (CI) checks routes, icons, access keys and the Concord items. The product name (Nirmaan) is `PRODUCT_NAME` in
   `packages/shared/src/brand.ts`; web colours and sizes live only in `src/ds/source/` (the design tokens, read through
   `tk` from `@/ds`; `docs/design/REDESIGN.md`), plus `BrandMark` and `app/icon.svg`, mobile ones in `src/theme.ts`. New code
-  uses `tk` instead of hex or px literals; `BRAND.colors` is the old name for the same values while screens move over. A component's look is its
+  uses `tk` instead of hex or px literals (ESLint's `ds/no-raw-style` refuses them, `theme.useToken()`, `themeColor` and
+  `BRAND.colors` outside the files in `src/ds/legacy-files.json`; a file you move onto `tk` leaves that list). A component's look is its
   tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own: titles and big
   figures are the display face (`DISPLAY_FONT`), fields have the blue ring, tables the canvas header.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
