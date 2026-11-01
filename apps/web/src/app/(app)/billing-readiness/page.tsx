@@ -17,6 +17,7 @@ import { DRAFT_PAGES } from '@/components/ai/drafts';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { NoAccess } from '@/components/common/NoAccess';
+import { Money } from '@/components/common/Money';
 
 /**
  * The next bill: what the project could bill today (measured, approved and not measured, stages
@@ -31,11 +32,11 @@ function NextBill({ next, projectId }: { next: NextBillDto; projectId: string })
   return (
     <p style={{ margin: 0 }}>
       <Typography.Text strong>Next bill: </Typography.Text>
-      <span translate="no">{formatINR(next.atBillBy)}</span> by {formatDate(next.billBy)}
+      <Money value={next.atBillBy} /> by {formatDate(next.billBy)}
       {next.pacePerDay ? (
         <>
           {' '}
-          at <span translate="no">{formatINR(next.pacePerDay)}</span> of work a day, the pace of the last {PACE_DAYS} days
+          at <Money value={next.pacePerDay} /> of work a day, the pace of the last {PACE_DAYS} days
         </>
       ) : (
         `, with no approved work in the last ${PACE_DAYS} days`
@@ -108,7 +109,7 @@ export default function Page() {
         {r.unbilledSheets ? (
           <p style={{ margin: 0 }}>
             <Typography.Text strong>Measured, not billed: </Typography.Text>
-            <span translate="no">{formatINR(r.unbilledValue)}</span> at BOQ rates in {r.unbilledSheets === 1 ? '1 approved measurement' : `${r.unbilledSheets} approved measurements`}
+            <Money value={r.unbilledValue} /> at BOQ rates in {r.unbilledSheets === 1 ? '1 approved measurement' : `${r.unbilledSheets} approved measurements`}
             {r.oldestUnbilled ? `, the oldest of ${formatDate(r.oldestUnbilled)}` : ''}.{' '}
             <Link href={`/measurements?projectId=${r.projectId}&status=APPROVED`} className="text-link">
               Measurements
@@ -124,7 +125,7 @@ export default function Page() {
                   <Link href={`/bills/${b.billId}`} className="text-link">
                     {b.label}
                   </Link>{' '}
-                  of {formatDate(b.billDate)}, <span translate="no">{formatINR(b.amount)}</span> net
+                  of {formatDate(b.billDate)}, <Money value={b.amount} /> net
                 </li>
               ))}
             </ul>
@@ -139,7 +140,7 @@ export default function Page() {
                   <p style={{ margin: 0 }}>
                     <Link href={`/bills/${b.billId}`} className="text-link">
                       {b.label}
-                    </Link>, <span translate="no">{formatINR(b.outstanding)}</span> unpaid, sent {formatDate(b.sentDate)}: {b.daysOutstanding} of the {b.expectedDays} days the client takes{' '}
+                    </Link>, <Money value={b.outstanding} /> unpaid, sent {formatDate(b.sentDate)}: {b.daysOutstanding} of the {b.expectedDays} days the client takes{' '}
                     {b.late ? <AppTag tone="danger">Late</AppTag> : null}
                   </p>
                   {letters ? (

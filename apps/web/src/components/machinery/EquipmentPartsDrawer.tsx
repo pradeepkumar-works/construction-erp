@@ -10,12 +10,13 @@ import dayjs from 'dayjs';
 import type { EquipmentDto, EquipmentPartDto, EquipmentPartKind } from '@erp/shared';
 import { EQUIPMENT_PART_KINDS, EQUIPMENT_PART_KIND_LABELS, unitLabel } from '@erp/shared';
 import { useEquipmentParts, useSaveEquipmentPart } from '@/lib/queries';
-import { formatDate, formatINR, formatQty, NO_VALUE } from '@/lib/format';
+import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+import { Money } from '@/components/common/Money';
 
 interface PartForm {
   kind: EquipmentPartKind;
@@ -159,7 +160,7 @@ export function EquipmentPartsDrawer({ machine, onClose }: { machine: EquipmentD
       ),
     },
     ...(data?.canSeeCost
-      ? [{ title: 'Cost', dataIndex: 'cost', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatINR(v)}</span>) }]
+      ? [{ title: 'Cost', dataIndex: 'cost', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <Money value={v} />) }]
       : []),
     ...(data?.canEdit
       ? [

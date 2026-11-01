@@ -16,6 +16,7 @@ import { LastRates } from './LastRates';
 import { VendorScorecard } from './VendorScorecard';
 import { PoStateTag } from './PurchaseOrderDrawer';
 import type { PoStart } from './PurchaseOrderFormModal';
+import { Money } from '@/components/common/Money';
 
 type Line = ComparativeStatementDto['lines'][number];
 
@@ -122,7 +123,7 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
             if (!r) return <span className="text-muted">Not quoted</span>;
             return (
               <div style={best(l, q) ? { background: themeColor('colorSuccessBg'), borderRadius: 4, padding: '0 4px' } : undefined}>
-                <span className="mono" translate="no">{formatINR(r.rate, true)}</span> <span className="text-muted">+{r.gstRate}%</span>
+                <Money value={r.rate} paise /> <span className="text-muted">+{r.gstRate}%</span>
                 <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {formatINR(r.amount, true)}
                 </div>
@@ -154,7 +155,7 @@ export function ComparativeTable({ request, data, loading, actions }: { request:
             </Table.Summary.Cell>
             {quotes.map((q, i) => (
               <Table.Summary.Cell key={q.id} index={i + 1} align="right">
-                <strong className="mono" translate="no">{formatINR(q.total, true)}</strong>
+                <Money value={q.total} paise strong />
                 {q.missingLines > 0 && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{q.missingLines} item{q.missingLines === 1 ? '' : 's'} not quoted</div>}
                 {toNumber(q.freight) > 0 && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>freight {formatINR(q.freight)}</div>}
                 {actions ? <div style={{ marginTop: 4 }}>{actions(q)}</div> : null}
@@ -183,7 +184,7 @@ export function RequestOrders({ requestId, onOpen, style }: { requestId: string;
       columns={[
         { title: 'Purchase order', dataIndex: 'poNo', width: 150, render: (v, o) => <RecordLink href={`/purchase-orders/${o.id}`} onOpen={() => onOpen(o.id)} className="mono">{v}</RecordLink> },
         { title: 'Vendor', dataIndex: 'vendorName' },
-        { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+        { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
         { title: 'Status', key: 'status', width: 190, render: (_, o) => <Space size={4}><StatusTag status={o.status} /><PoStateTag order={o} /></Space> },
       ]}
     />

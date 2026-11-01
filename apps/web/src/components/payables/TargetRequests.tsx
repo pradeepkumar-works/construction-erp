@@ -11,6 +11,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { RecordLink } from '@/components/record/RecordLink';
 import { PaymentRequestDrawer, PayRequestModal, RequestPaidTag } from './PaymentRequestRecord';
 import { PaymentRequestFormModal, type RequestFor } from './PaymentRequestFormModal';
+import { Money } from '@/components/common/Money';
 
 /** Requests still holding part of the bill or order: waiting for approval, or approved and not yet paid. */
 const holding = (r: PaymentRequestDto) => (r.status === 'SUBMITTED' ? toNumber(r.amount) : r.status === 'APPROVED' ? toNumber(r.outstanding) : 0);
@@ -103,9 +104,7 @@ export function TargetRequests({ target, base, approved }: { target: Omit<Reques
             width: 130,
             align: 'right',
             render: (v) => (
-              <strong className="mono" translate="no">
-                {formatINR(v, true)}
-              </strong>
+              <Money value={v} paise strong />
             ),
           },
           {

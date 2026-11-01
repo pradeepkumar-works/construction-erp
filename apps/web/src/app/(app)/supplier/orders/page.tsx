@@ -12,8 +12,9 @@ import { formatDate, formatDateTime, formatQty, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { AcceptForm, DispatchForm } from '@/components/supplier/SupplierForms';
-import { AcceptedTag, DispatchStatusTag, Money } from '@/components/supplier/supplierUi';
+import { AcceptedTag, DispatchStatusTag } from '@/components/supplier/supplierUi';
 import { unitLabel } from '@erp/shared';
+import { Money } from '@/components/common/Money';
 
 /** The supplier's orders (purchase and work orders) to accept and send against, and the dispatch notes sent. */
 export default function SupplierOrdersPage() {
@@ -71,7 +72,7 @@ export default function SupplierOrdersPage() {
                     { title: 'Site', dataIndex: 'projectName', render: (v: string, o) => <span translate="no">{o.kind === 'WO' ? `${v}: ${o.title}` : v}</span> },
                     { title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
                     { title: 'Due by', dataIndex: 'dueBy', width: 110, render: (v: string | null) => formatDate(v) },
-                    { title: 'Value', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
+                    { title: 'Value', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money paise value={v} /> },
                     { title: 'Status', key: 'state', width: 120, render: (_, o) => (o.closed ? <AppTag>Closed</AppTag> : <AcceptedTag acceptedAt={o.acceptedAt} />) },
                     {
                       title: 'Action',
@@ -129,7 +130,7 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
             <Descriptions.Item label="Dated">{formatDate(o.date)}</Descriptions.Item>
             <Descriptions.Item label={o.kind === 'PO' ? 'Deliver by' : 'Finish by'}>{formatDate(o.dueBy)}</Descriptions.Item>
             <Descriptions.Item label={o.kind === 'PO' ? 'Total with GST' : 'Value before GST'}>
-              <Money value={o.amount} />
+              <Money paise value={o.amount} />
             </Descriptions.Item>
             <Descriptions.Item label="Payment">{o.paymentTerms ?? (o.paymentDays != null ? `${o.paymentDays} days from invoice` : NO_VALUE)}</Descriptions.Item>
             <Descriptions.Item label="Accepted" span={2}>
@@ -145,14 +146,14 @@ function OrderDrawer({ order, onClose, onAccept, onDispatch, canSend }: { order:
             columns={[
               { title: 'Item', dataIndex: 'itemName', render: (v: string, l) => (l.specification ? `${v} (${l.specification})` : v) },
               { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 120, render: (v: string, l) => <span translate="no">{`${formatQty(v)} ${unitLabel(l.unit)}`}</span> },
-              { title: 'Rate', dataIndex: 'rate', align: 'right', width: 120, render: (v: string) => <Money value={v} /> },
+              { title: 'Rate', dataIndex: 'rate', align: 'right', width: 120, render: (v: string) => <Money paise value={v} /> },
               ...(o.kind === 'PO'
                 ? [
                     { title: 'Received', dataIndex: 'received', align: 'right' as const, width: 100, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
                     { title: 'In transit', dataIndex: 'onTheWay', align: 'right' as const, width: 100, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
                     { title: 'Left to send', dataIndex: 'toSend', align: 'right' as const, width: 110, render: (v: string) => <span translate="no">{formatQty(v)}</span> },
                   ]
-                : [{ title: 'Amount', dataIndex: 'amount', align: 'right' as const, width: 140, render: (v: string) => <Money value={v} /> }]),
+                : [{ title: 'Amount', dataIndex: 'amount', align: 'right' as const, width: 140, render: (v: string) => <Money paise value={v} /> }]),
             ]}
           />
         </>

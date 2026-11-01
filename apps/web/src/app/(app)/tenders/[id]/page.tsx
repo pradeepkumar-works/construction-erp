@@ -53,13 +53,9 @@ import {
   SubmitDialog,
 } from "@/components/tenders/TenderDialogs";
 import { todayDate } from '@/lib/format';
+import { Money } from '@/components/common/Money';
 
 type Tab = "boq" | "bids" | "details";
-const money = (v: string | null | undefined) => (
-  <span translate="no">
-    {v === null || v === undefined ? NO_VALUE : formatINR(v, true)}
-  </span>
-);
 const pctNote = (pct: string | null | undefined) =>
   pct === null || pct === undefined
     ? null
@@ -328,7 +324,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
       <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
         {stat(
           "At SOR rates",
-          money(tot.sorAmount),
+          <Money value={tot.sorAmount} paise />,
           tot.sorAmount
             ? `${tot.itemCount} item${tot.itemCount === 1 ? "" : "s"}${t.sorBookName ? `, ${t.sorBookName}` : ""}`
             : t.estimatedValue
@@ -337,7 +333,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
         )}
         {stat(
           "Our quote",
-          money(tot.quotedAmount),
+          <Money value={tot.quotedAmount} paise />,
           pctNote(tot.quotedPct) ??
             (t.bidType === "PERCENTAGE"
               ? "Enter the percentage on the SOR"
@@ -345,7 +341,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
         )}
         {stat(
           "Cost from the analysis",
-          money(tot.costAmount),
+          <Money value={tot.costAmount} paise />,
           `${tot.analysedCount} of ${tot.itemCount} items analysed${tot.costPct ? `, ${pctNote(tot.costPct)}` : ""}`,
         )}
         {us && t.bids.length > 1
@@ -368,7 +364,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
                 <Typography.Text
                   type={toNumber(tot.margin) < 0 ? "danger" : undefined}
                 >
-                  {money(tot.margin)}
+                  <Money value={tot.margin} paise />
                 </Typography.Text>
               ),
               "Quote less cost and overheads",
@@ -514,16 +510,16 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
           alignItems: "start",
         }}
       >
-        {row("At SOR rates", money(tot.sorAmount), tender.sorBookName)}
-        {row("Direct cost", money(tot.costAmount), pctNote(tot.costPct))}
+        {row("At SOR rates", <Money value={tot.sorAmount} paise />, tender.sorBookName)}
+        {row("Direct cost", <Money value={tot.costAmount} paise />, pctNote(tot.costPct))}
         {row(
           `Overheads ${toNumber(tender.overheadPct)}%`,
-          money(tot.overheads),
+          <Money value={tot.overheads} paise />,
         )}
-        {row(`Profit ${toNumber(tender.profitPct)}%`, money(tot.profit))}
+        {row(`Profit ${toNumber(tender.profitPct)}%`, <Money value={tot.profit} paise />)}
         {row(
           "Built-up value",
-          money(tot.builtUpAmount),
+          <Money value={tot.builtUpAmount} paise />,
           pctNote(tot.builtUpPct),
           true,
         )}
@@ -583,7 +579,7 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
         ) : null}
         {row(
           "Our quote",
-          money(tot.quotedAmount),
+          <Money value={tot.quotedAmount} paise />,
           pctNote(tot.quotedPct) ?? TENDER_BID_TYPE_LABELS[tender.bidType],
           true,
         )}
@@ -595,7 +591,7 @@ function PricingCard({ tender }: { tender: TenderDetailDto }) {
             <Typography.Text
               type={toNumber(tot.margin) < 0 ? "danger" : undefined}
             >
-              {money(tot.margin)}
+              <Money value={tot.margin} paise />
             </Typography.Text>
           ),
           "Quote less cost and overheads",
@@ -742,35 +738,35 @@ function BoqTab({
                 title: "SOR rate",
                 align: "right",
                 width: 110,
-                render: (_, i) => money(i.sorRate),
+                render: (_, i) => <Money value={i.sorRate} paise />,
               },
               {
                 key: "cost",
                 title: "Cost per unit",
                 align: "right",
                 width: 110,
-                render: (_, i) => money(i.cost),
+                render: (_, i) => <Money value={i.cost} paise />,
               },
               {
                 key: "built",
                 title: "Built-up rate",
                 align: "right",
                 width: 120,
-                render: (_, i) => money(i.builtUpRate),
+                render: (_, i) => <Money value={i.builtUpRate} paise />,
               },
               {
                 key: "quoted",
                 title: "Quoted rate",
                 align: "right",
                 width: 120,
-                render: (_, i) => money(i.quotedRate),
+                render: (_, i) => <Money value={i.quotedRate} paise />,
               },
               {
                 key: "amount",
                 title: "Amount",
                 align: "right",
                 width: 140,
-                render: (_, i) => money(i.quotedAmount),
+                render: (_, i) => <Money value={i.quotedAmount} paise />,
               },
               ...(edit
                 ? [
@@ -880,7 +876,7 @@ function BidsTab({
             title: "Amount",
             align: "right",
             width: 160,
-            render: (_, b) => money(b.amount),
+            render: (_, b) => <Money value={b.amount} paise />,
           },
           {
             key: "pct",
@@ -1009,9 +1005,9 @@ function DetailsTab({ tender: t }: { tender: TenderDetailDto }) {
               {
                 key: "estimate",
                 label: "Estimate",
-                children: money(t.estimatedValue),
+                children: <Money value={t.estimatedValue} paise />,
               },
-              { key: "fee", label: "Tender fee", children: money(t.tenderFee) },
+              { key: "fee", label: "Tender fee", children: <Money value={t.tenderFee} paise /> },
               {
                 key: "type",
                 label: "Quoted as",
@@ -1093,7 +1089,7 @@ function DetailsTab({ tender: t }: { tender: TenderDetailDto }) {
                   {
                     key: "amount",
                     label: "Amount",
-                    children: money(t.emd.amount),
+                    children: <Money value={t.emd.amount} paise />,
                   },
                   { key: "bank", label: "Bank", children: t.emd.issuer ?? NO_VALUE },
                   {

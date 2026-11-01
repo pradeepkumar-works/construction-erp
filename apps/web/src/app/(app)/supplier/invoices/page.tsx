@@ -10,7 +10,8 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PhotoThumbs } from '@/components/common/AttachmentGallery';
 import { InvoiceForm } from '@/components/supplier/SupplierForms';
-import { InvoiceStageTag, Money } from '@/components/supplier/supplierUi';
+import { InvoiceStageTag } from '@/components/supplier/supplierUi';
+import { Money } from '@/components/common/Money';
 
 /** The supplier's invoices: send one with its file, follow it to a bill and payment, fix and resend a returned one. */
 export default function SupplierInvoicesPage() {
@@ -56,7 +57,7 @@ export default function SupplierInvoicesPage() {
             { title: 'Invoice', dataIndex: 'invoiceNo', width: 150, render: (v: string) => <span translate="no">{v}</span> },
             { title: 'Date', dataIndex: 'invoiceDate', width: 110, render: (v: string) => formatDate(v) },
             { title: 'Against', key: 'against', width: 140, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? NO_VALUE}</span> },
-            { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
+            { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money paise value={v} /> },
             {
               title: 'Status',
               key: 'stage',
@@ -69,7 +70,7 @@ export default function SupplierInvoicesPage() {
                   {i.stage === 'RETURNED' && i.returnNote ? <Typography.Text type="secondary">{i.returnNote}</Typography.Text> : null}
                   {i.bill && i.stage !== 'PAID' && Number(i.bill.paid) > 0 ? (
                     <Typography.Text type="secondary">
-                      Paid <Money value={i.bill.paid} /> of <Money value={i.bill.payable} />
+                      Paid <Money paise value={i.bill.paid} /> of <Money paise value={i.bill.payable} />
                     </Typography.Text>
                   ) : null}
                 </Flex>

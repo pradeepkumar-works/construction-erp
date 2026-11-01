@@ -3,15 +3,16 @@
 import React from 'react';
 import { Table } from 'antd';
 import type { PortfolioMonthDto } from '@erp/shared';
-import { formatINR, formatINRCompact, toNumber } from '@/lib/format';
+import { formatINRCompact, toNumber } from '@/lib/format';
 import { monthLabel } from '@/components/home/chartData';
+import { Money } from '@/components/common/Money';
 
 /** The trend's figures as a table, month by month. */
 export function TrendTable({ months, workDone }: { months: (PortfolioMonthDto & { workDone?: string })[]; workDone?: boolean }) {
   const money = {
     align: 'right' as const,
     className: 'mono',
-    render: (v: string) => <span translate="no">{formatINR(v)}</span>,
+    render: (v: string) => <Money value={v} />,
   };
   return (
     <Table

@@ -20,8 +20,9 @@ import { PageSkeleton, QueryError } from "@/components/common/QueryState";
 import { FormShell } from "@/components/form/FormShell";
 import { LineTable } from "@/components/form/LineTable";
 import { MoneyInput } from "@/components/form/inputs";
-import { Amount } from "@/components/books/booksUi";
+
 import { Signed } from "./statementsUi";
+import { Money } from '@/components/common/Money';
 
 interface OpeningValues {
   booksFrom: dayjs.Dayjs;
@@ -334,14 +335,14 @@ export function YearClose() {
                 dataIndex: "debit",
                 align: "right",
                 width: 160,
-                render: (x: string | null) => <Amount value={x} />,
+                render: (x: string | null) => <Money paise value={x} />,
               },
               {
                 title: "Credit",
                 dataIndex: "credit",
                 align: "right",
                 width: 160,
-                render: (x: string | null) => <Amount value={x} />,
+                render: (x: string | null) => <Money paise value={x} />,
               },
             ]}
             summary={() => (
@@ -355,12 +356,12 @@ export function YearClose() {
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={2} align="right">
                   <Typography.Text strong>
-                    <Amount value={data.openingDebit} />
+                    <Money paise value={data.openingDebit} />
                   </Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={3} align="right">
                   <Typography.Text strong>
-                    <Amount value={data.openingCredit} />
+                    <Money paise value={data.openingCredit} />
                   </Typography.Text>
                 </Table.Summary.Cell>
               </Table.Summary.Row>

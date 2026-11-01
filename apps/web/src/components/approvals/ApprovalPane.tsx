@@ -7,7 +7,7 @@ import { CheckOutlined, CloseOutlined, EditOutlined, FileSearchOutlined } from '
 import { SUBMISSION_TYPE_LABELS, type PendingApprovalDto, type ReviewDecision } from '@erp/shared';
 import { approvalTypeParam } from '@/lib/queries';
 import { approveTheme, themeFontSize } from '@/lib/theme';
-import { formatDateTime, formatINR } from '@/lib/format';
+import { formatDateTime } from '@/lib/format';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ProgressRecord } from '@/components/progress/ProgressDrawer';
 import { DprRecord } from '@/components/dpr/DprDrawer';
@@ -25,6 +25,7 @@ import { PaymentRequestRecord } from '@/components/payables/PaymentRequestRecord
 import { SupplierChoiceRecord } from '@/components/purchasing/SupplierChoiceRecord';
 import { decidedInPlace } from './queue';
 import { TypeTag } from './ApprovalQueue';
+import { Money } from '@/components/common/Money';
 
 /** The record of the entry picked in the queue, then the decision bar. */
 export function ApprovalPane({ item, onDecide, onOpenDetails }: { item: PendingApprovalDto; onDecide: (d: ReviewDecision) => void; onOpenDetails: () => void }) {
@@ -135,7 +136,7 @@ function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onO
         column={{ xs: 1, sm: 2 }}
         items={[
           { key: 'project', label: 'Project', children: <Link href={`/projects/${item.projectId}`}>{item.projectName}</Link> },
-          { key: 'amount', label: 'Amount', children: item.amount === null ? '-' : <span className="mono" translate="no">{formatINR(item.amount)}</span> },
+          { key: 'amount', label: 'Amount', children: item.amount === null ? '-' : <Money value={item.amount} /> },
           { key: 'by', label: 'Submitted by', children: item.submittedByName },
           { key: 'at', label: 'Submitted', children: formatDateTime(item.submittedAt) },
         ]}

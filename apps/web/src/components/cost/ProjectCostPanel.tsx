@@ -16,8 +16,8 @@ import { LabourRatesModal } from './LabourRatesModal';
 import { unpricedText } from './UnpricedNote';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { Section, SectionStack } from '@/components/common/Section';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string) => <span className="mono" translate="no">{formatINR(v)}</span>;
 const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: themeColor('colorWarningText') }}>No rate</span> : <span className="mono" translate="no">{`${formatINR(v, true)} ${suffix}`}</span>);
 
 /** One project's cost heads, month by month, and what makes them up. */
@@ -91,8 +91,8 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                 scroll={{ x: 760 }}
                 columns={[
                   { title: 'Month', dataIndex: 'month', width: 100, render: (v) => formatMonth(v) },
-                  { title: 'Work done', dataIndex: 'executedValue', width: 140, align: 'right', render: money },
-                  { title: 'Cost', dataIndex: 'total', width: 130, align: 'right', render: money },
+                  { title: 'Work done', dataIndex: 'executedValue', width: 140, align: 'right', render: (v) => <Money value={v} /> },
+                  { title: 'Cost', dataIndex: 'total', width: 130, align: 'right', render: (v) => <Money value={v} /> },
                   {
                     title: '',
                     key: 'bars',
@@ -126,7 +126,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                       columns={[
                         { title: 'Category', dataIndex: 'category', render: (c: keyof typeof EXPENSE_CATEGORY_LABELS) => EXPENSE_CATEGORY_LABELS[c] },
                         { title: 'Bills', dataIndex: 'count', width: 80, align: 'right' },
-                        { title: 'Amount (incl. GST)', dataIndex: 'amount', width: 160, align: 'right', render: money },
+                        { title: 'Amount (incl. GST)', dataIndex: 'amount', width: 160, align: 'right', render: (v) => <Money value={v} /> },
                       ]}
                     />
                   ),
@@ -147,7 +147,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                         { title: 'Item', dataIndex: 'name' },
                         { title: 'Issued', dataIndex: 'quantity', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${unitLabel(r.unit)}`}</span> },
                         { title: 'Rate', dataIndex: 'rate', width: 170, align: 'right', render: (v, r) => rateOrDash(v, `/ ${r.unit}`) },
-                        { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: money },
+                        { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <Money value={v} /> },
                       ]}
                     />
                   ),
@@ -169,7 +169,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                         { title: 'Days', dataIndex: 'days', width: 70, align: 'right' },
                         { title: 'Hours', dataIndex: 'hours', width: 80, align: 'right', render: (v) => formatQty(v) },
                         { title: 'Rate', dataIndex: 'rate', width: 180, align: 'right', render: (v, r) => rateOrDash(v, inSentence(EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit])) },
-                        { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: money },
+                        { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <Money value={v} /> },
                       ]}
                     />
                   ),
@@ -189,7 +189,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                         { title: 'Trade', dataIndex: 'category' },
                         { title: 'Man-days', dataIndex: 'manDays', width: 100, align: 'right' },
                         { title: 'Daily rate', dataIndex: 'dailyRate', width: 150, align: 'right', render: (v) => rateOrDash(v, '/ day') },
-                        { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: money },
+                        { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <Money value={v} /> },
                       ]}
                     />
                   ),
@@ -210,7 +210,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                         { title: 'Work order', dataIndex: 'woNo', width: 150, render: (v, r) => <Link href={`/work-orders/${r.workOrderId}`} className="mono">{v}</Link> },
                         { title: 'Subcontractor', dataIndex: 'vendorName' },
                         { title: 'Bills', dataIndex: 'bills', width: 80, align: 'right' },
-                        { title: 'Work done', dataIndex: 'amount', width: 140, align: 'right', render: money },
+                        { title: 'Work done', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <Money value={v} /> },
                       ]}
                     />
                   ),

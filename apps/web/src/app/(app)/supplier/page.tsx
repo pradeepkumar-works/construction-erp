@@ -7,6 +7,7 @@ import { formatDate, formatINR } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
+import { Money } from '@/components/common/Money';
 
 /** The supplier portal's home: what waits on the supplier, and what is due to them. */
 export default function SupplierHomePage() {
@@ -48,14 +49,14 @@ export default function SupplierHomePage() {
             {tile('Invoices with accounts', data.invoicesWithAccounts, '/supplier/invoices', 'Send an invoice')}
             {tile(
               'Due to you',
-              <span translate="no">{formatINR(data.due)}</span>,
+              <Money value={data.due} />,
               '/supplier/statement',
               'Open payments',
               Number(data.overdue) > 0 ? <span translate="no">{`${formatINR(data.overdue)} past its due date`}</span> : 'Nothing past its due date',
             )}
             {tile(
               'Last payment',
-              data.lastPayment ? <span translate="no">{formatINR(data.lastPayment.amount)}</span> : 'None yet',
+              data.lastPayment ? <Money value={data.lastPayment.amount} /> : 'None yet',
               '/supplier/statement',
               'Open your statement',
               data.lastPayment ? `On ${formatDate(data.lastPayment.date)}` : null,

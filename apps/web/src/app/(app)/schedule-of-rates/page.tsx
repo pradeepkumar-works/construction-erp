@@ -24,7 +24,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { useNotify } from "@/lib/notify";
 import { useSorBooks, useSorItems, useTenderAction } from "@/lib/queries";
-import { formatDate, formatINR, toNumber } from "@/lib/format";
+import { formatDate, toNumber } from "@/lib/format";
 import { PageHeader } from "@/components/common/PageHeader";
 import { PageSkeleton, QueryError } from "@/components/common/QueryState";
 import { useConfirmDelete } from "@/components/common/ConfirmDelete";
@@ -35,6 +35,7 @@ import {
 } from "@/components/form/FormShell";
 import { MoneyInput } from "@/components/form/inputs";
 import { SorImport } from "@/components/tenders/TenderDialogs";
+import { Money } from '@/components/common/Money';
 
 const PAGE_SIZE = 50;
 
@@ -308,7 +309,7 @@ function ScheduleOfRatesPage() {
                       align: "right",
                       width: 130,
                       render: (_, i) => (
-                        <span translate="no">{formatINR(i.rate, true)}</span>
+                        <Money value={i.rate} paise />
                       ),
                     },
                     ...(canManage

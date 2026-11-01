@@ -7,7 +7,7 @@ import { CalculatorOutlined, EditOutlined, FileExcelOutlined, UploadOutlined } f
 import type { EstimateItemDto, ProjectEstimateDto } from '@erp/shared';
 import { BOQ_RESOURCE_KIND_LABELS } from '@erp/shared';
 import { useProjectEstimate, useSetEstimateTerms } from '@/lib/queries';
-import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
+import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
@@ -15,16 +15,9 @@ import { Section, SectionStack } from '@/components/common/Section';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MarginText, RateAnalysisDrawer } from './RateAnalysisDrawer';
 import { RateAnalysisImportModal } from './RateAnalysisImportModal';
+import { Money } from '@/components/common/Money';
 
 const RED = themeColor('colorErrorText');
-const money = (v: string | null) =>
-  v === null ? (
-    <span className="text-muted">{NO_VALUE}</span>
-  ) : (
-    <span className="mono" translate="no">
-      {formatINR(v, true)}
-    </span>
-  );
 
 type Show = 'analysed' | 'all';
 
@@ -114,10 +107,10 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
     },
     ...(values
       ? [
-          { title: 'BOQ rate', dataIndex: 'boqRate', width: 100, align: 'right' as const, render: money },
-          { title: 'Materials', dataIndex: 'material', width: 100, align: 'right' as const, render: money },
-          { title: 'Labour', dataIndex: 'labour', width: 108, align: 'right' as const, render: money },
-          { title: 'Machines', dataIndex: 'equipment', width: 108, align: 'right' as const, render: money },
+          { title: 'BOQ rate', dataIndex: 'boqRate', width: 100, align: 'right' as const, render: (v: string | null) => <Money value={v} paise /> },
+          { title: 'Materials', dataIndex: 'material', width: 100, align: 'right' as const, render: (v: string | null) => <Money value={v} paise /> },
+          { title: 'Labour', dataIndex: 'labour', width: 108, align: 'right' as const, render: (v: string | null) => <Money value={v} paise /> },
+          { title: 'Machines', dataIndex: 'equipment', width: 108, align: 'right' as const, render: (v: string | null) => <Money value={v} paise /> },
           {
             title: 'Built-up rate',
             dataIndex: 'builtUpRate',
@@ -128,7 +121,7 @@ export function EstimatePanel({ projectId }: { projectId: string }) {
                 <span className="text-muted">No analysis</span>
               ) : (
                 <>
-                  {money(v)}
+                  <Money value={v} paise />
                   {r.unpriced ? (
                     <div style={{ fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorWarningText') }}>
                       {r.unpriced} without a rate

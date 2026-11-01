@@ -19,6 +19,7 @@ import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/D
 import { RecordLink } from '@/components/record/RecordLink';
 import { EmiStageTag } from '@/components/loans/EmiStageTag';
 import { LoanFormModal } from '@/components/loans/LoanForms';
+import { Money } from '@/components/common/Money';
 
 const KEYS = ['status'] as const;
 const STATUS_OPTIONS: { value: EquipmentLoanStatus | 'ALL'; label: string }[] = [
@@ -73,10 +74,10 @@ function MachineLoansPage() {
         </div>
       ),
     },
-    { key: 'amount', title: 'Amount', align: 'right', width: 130, render: (_, r) => <span translate="no">{formatINR(r.amount)}</span> },
+    { key: 'amount', title: 'Amount', align: 'right', width: 130, render: (_, r) => <Money value={r.amount} /> },
     { key: 'emi', title: 'EMI', align: 'right', width: 150, render: (_, r) => <span translate="no">{`${formatINR(r.emi)} at ${toNumber(r.ratePct)}%`}</span>, defaultFrom: 1280 },
     { key: 'paid', title: 'EMIs paid', align: 'right', width: 110, render: (_, r) => `${r.emisPaid} of ${r.emiCount}` },
-    { key: 'outstanding', title: 'Owed', align: 'right', width: 130, render: (_, r) => <span translate="no">{formatINR(r.outstanding)}</span> },
+    { key: 'outstanding', title: 'Owed', align: 'right', width: 130, render: (_, r) => <Money value={r.outstanding} /> },
     {
       key: 'next',
       title: 'Next EMI',
@@ -124,7 +125,7 @@ function MachineLoansPage() {
       {s ? (
         <>
           <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
-            {stat('Owed on running loans', <span translate="no">{formatINR(s.outstanding)}</span>, `${s.loans} loan${s.loans === 1 ? '' : 's'}`)}
+            {stat('Owed on running loans', <Money value={s.outstanding} />, `${s.loans} loan${s.loans === 1 ? '' : 's'}`)}
             {stat(
               'Overdue',
               s.overdueCount ? (
@@ -136,8 +137,8 @@ function MachineLoansPage() {
               ),
               s.overdueCount ? `${s.overdueCount} EMI${s.overdueCount === 1 ? '' : 's'} past their date` : 'Every EMI paid on time',
             )}
-            {stat('Due in the next 30 days', <span translate="no">{formatINR(s.dueIn30)}</span>)}
-            {stat('Interest this year', <span translate="no">{formatINR(s.interestThisYear)}</span>, 'Paid since 1 April, a finance cost')}
+            {stat('Due in the next 30 days', <Money value={s.dueIn30} />)}
+            {stat('Interest this year', <Money value={s.interestThisYear} />, 'Paid since 1 April, a finance cost')}
           </Row>
           {s.lenders.length ? (
             <Card size="small" title={<Typography.Title level={2} style={{ fontSize: token.fontSize, margin: 0 }}>Owed by lender</Typography.Title>} style={{ marginBottom: token.marginMD }}>
@@ -150,9 +151,9 @@ function MachineLoansPage() {
                 columns={[
                   { key: 'lender', title: 'Lender', render: (_, l) => <span translate="no">{l.lenderName}</span> },
                   { key: 'loans', title: 'Loans', dataIndex: 'loans', align: 'right', width: 80 },
-                  { key: 'owed', title: 'Owed', align: 'right', render: (_, l) => <span translate="no">{formatINR(l.outstanding)}</span> },
+                  { key: 'owed', title: 'Owed', align: 'right', render: (_, l) => <Money value={l.outstanding} /> },
                   { key: 'overdue', title: 'Overdue', align: 'right', render: (_, l) => (toNumber(l.overdueAmount) ? <Typography.Text type="danger">{formatINR(l.overdueAmount)}</Typography.Text> : NO_VALUE) },
-                  { key: 'due', title: 'Due in 30 days', align: 'right', render: (_, l) => <span translate="no">{formatINR(l.dueIn30)}</span> },
+                  { key: 'due', title: 'Due in 30 days', align: 'right', render: (_, l) => <Money value={l.dueIn30} /> },
                 ]}
               />
             </Card>

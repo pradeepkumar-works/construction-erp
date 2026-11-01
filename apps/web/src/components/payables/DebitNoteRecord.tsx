@@ -14,17 +14,8 @@ import { useDebitNote } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatPct, formatQty, NO_VALUE } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string | number, strong?: boolean) =>
-  strong ? (
-    <strong className="mono" translate="no">
-      {formatINR(v, true)}
-    </strong>
-  ) : (
-    <span className="mono" translate="no">
-      {formatINR(v, true)}
-    </span>
-  );
 
 /** Where a debit note's bill lives. */
 export const debitNoteBillHref = (n: Pick<DebitNoteDto, 'vendorBillId' | 'subcontractBillId'>) => (n.vendorBillId ? `/vendor-bills/${n.vendorBillId}` : `/subcontract-bills/${n.subcontractBillId}`);
@@ -109,7 +100,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                   </Link>
                 ),
               },
-              { key: 'total', label: 'Total', children: money(data.total, true) },
+              { key: 'total', label: 'Total', children: <Money value={data.total} paise strong /> },
               {
                 key: 'vendor',
                 label: 'Vendor',
@@ -146,9 +137,9 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                     columns={[
                       { title: 'What for', dataIndex: 'description' },
                       { title: 'Quantity', key: 'qty', width: 120, align: 'right', render: (_, l) => (l.quantity ? `${formatQty(l.quantity)} ${unitLabel(l.unit ?? '')}` : NO_VALUE) },
-                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v: string | null) => (v ? money(v) : NO_VALUE) },
+                      { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v: string | null) => (v ? <Money value={v} paise /> : NO_VALUE) },
                       { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => formatPct(v) },
-                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => money(v, true) },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <Money value={v} paise strong /> },
                     ]}
                     summary={() => (
                       <Table.Summary.Row>
@@ -158,7 +149,7 @@ export function DebitNoteRecord({ id, mode, open, onClose }: RecordProps & { mod
                           </Typography.Text>
                         </Table.Summary.Cell>
                         <Table.Summary.Cell index={1} align="right">
-                          {money(data.total, true)}
+                          <Money value={data.total} paise strong />
                         </Table.Summary.Cell>
                       </Table.Summary.Row>
                     )}

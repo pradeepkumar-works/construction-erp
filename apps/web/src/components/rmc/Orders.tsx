@@ -10,9 +10,10 @@ import { useRmcOrders } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { M3, OrderStatusTag, PlantFilter, Rupees, usePlantScope } from './rmcUi';
+import { M3, OrderStatusTag, PlantFilter, usePlantScope } from './rmcUi';
 import { OrderForm } from './OrderForm';
 import { useRmcDrawers } from './Drawers';
+import { Money } from '@/components/common/Money';
 
 type View = 'open' | 'QUOTED' | 'CONFIRMED' | 'all';
 
@@ -83,7 +84,7 @@ export function Orders() {
             { title: 'Pour on', dataIndex: 'pourDate', width: 110, render: (d: string | null) => formatDate(d) },
             { title: 'Ordered', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
             { title: 'Delivered', dataIndex: 'delivered', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-            { title: 'Value before GST', dataIndex: 'value', align: 'right', width: 140, render: (v: string) => <Rupees value={v} /> },
+            { title: 'Value before GST', dataIndex: 'value', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
             { title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcOrderStatus) => <OrderStatusTag status={s} /> },
           ]}
         />

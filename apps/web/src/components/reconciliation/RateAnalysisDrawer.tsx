@@ -16,6 +16,7 @@ import { Section, SectionStack } from '@/components/common/Section';
 import { FormShell } from '@/components/form/FormShell';
 import { NormFormModal } from './NormFormModal';
 import { ResourceFormModal } from './ResourceFormModal';
+import { Money } from '@/components/common/Money';
 
 const RED = themeColor('colorErrorText');
 
@@ -32,9 +33,7 @@ const money = (v: string | null) =>
       <span className="text-muted">No rate</span>
     </Tooltip>
   ) : (
-    <span className="mono" translate="no">
-      {formatINR(v, true)}
-    </span>
+    <Money value={v} paise />
   );
 
 /** A material line as the norm form takes it. */

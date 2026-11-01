@@ -17,6 +17,7 @@ import { Section, SectionStack } from '@/components/common/Section';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { StatusCell, qty } from './ReconciliationPanel';
+import { Money } from '@/components/common/Money';
 
 const RED = themeColor('colorErrorText');
 
@@ -253,9 +254,7 @@ function RecoverModal({ projectId, target, onClose }: { projectId: string; targe
       okText="Save recovery"
       footerExtra={
         q && r ? (
-          <span className="mono" translate="no">
-            {formatINR(q * r)}
-          </span>
+          <Money value={q * r} />
         ) : null
       }
       onSubmit={async (v) => {

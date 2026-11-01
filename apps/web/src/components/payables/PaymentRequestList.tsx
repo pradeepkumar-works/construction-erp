@@ -26,18 +26,9 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { PaymentRequestDrawer, PayRequestModal, RequestPaidTag, requestPayee, requestReleases, requestTargetHref } from './PaymentRequestRecord';
 import { PaymentRequestFormModal } from './PaymentRequestFormModal';
 import { FundRequestFormModal } from './FundRequestFormModal';
+import { Money } from '@/components/common/Money';
 
 const NO_KEYS: string[] = [];
-const money = (v: string, strong?: boolean) =>
-  strong ? (
-    <strong className="mono" translate="no">
-      {formatINR(v)}
-    </strong>
-  ) : (
-    <span className="mono" translate="no">
-      {formatINR(v)}
-    </span>
-  );
 
 /** What a request is for, in the list: the bill or order, or a fund request's purpose. */
 const forLabel = (r: PaymentRequestDto) => (r.kind === 'FUND_REQUEST' && r.purpose ? FUND_PURPOSE_LABELS[r.purpose] : r.targetLabel);
@@ -163,7 +154,7 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
       width: 140,
       align: 'right',
       ...sort('amount'),
-      render: (v) => money(v, true),
+      render: (v) => <Money value={v} strong />,
       total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)),
     },
     {
@@ -172,7 +163,7 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
       dataIndex: 'paidAmount',
       width: 130,
       align: 'right',
-      render: (v) => money(v),
+      render: (v) => <Money value={v} />,
       total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.paidAmount), 0)),
     },
     {

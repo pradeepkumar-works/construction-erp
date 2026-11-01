@@ -10,6 +10,7 @@ import { formatINR, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { WorkOrderList } from './WorkOrderList';
 import { SubBillList } from './SubBillList';
+import { Money } from '@/components/common/Money';
 
 /** Client rate against what the subcontractors are paid, per BOQ item given out on approved work orders. */
 export function SubcontractMargin({ projectId }: { projectId: string }) {
@@ -34,7 +35,7 @@ export function SubcontractMargin({ projectId }: { projectId: string }) {
           ),
         },
         { title: 'BOQ qty', dataIndex: 'boqQty', width: 120, align: 'right', render: (v, r) => <span className="mono" translate="no">{formatQty(v)} {r.unit}</span> },
-        { title: 'Client rate', dataIndex: 'clientRate', width: 120, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+        { title: 'Client rate', dataIndex: 'clientRate', width: 120, align: 'right', render: (v) => <Money value={v} paise /> },
         {
           title: 'Subcontract rate',
           dataIndex: 'subRate',
@@ -42,11 +43,11 @@ export function SubcontractMargin({ projectId }: { projectId: string }) {
           align: 'right',
           render: (v, r) => (
             <Tooltip title={r.workOrders.map((w) => `${w.woNo} ${w.vendorName}: ${formatQty(w.quantity)} at ${formatINR(w.rate, true)}`).join('; ')}>
-              <span className="mono" translate="no">{formatINR(v, true)}</span>
+              <Money value={v} paise />
             </Tooltip>
           ),
         },
-        { title: 'Margin', dataIndex: 'margin', width: 120, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+        { title: 'Margin', dataIndex: 'margin', width: 120, align: 'right', render: (v) => <Money value={v} paise /> },
         {
           title: 'Margin %',
           dataIndex: 'marginPct',

@@ -10,8 +10,9 @@ import { useRmcAction, useRmcInvoices, useRmcReceipts } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { formatDate, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { InvoiceStatusTag, M3, PlantFilter, Rupees, usePlantScope } from './rmcUi';
+import { InvoiceStatusTag, M3, PlantFilter, usePlantScope } from './rmcUi';
 import { InvoiceForm, ReceiptForm } from './MoneyForms';
+import { Money } from '@/components/common/Money';
 
 /** A bill with its challans, GST and what has been received against it. */
 function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto | null; onClose: () => void; onReceive: (i: RmcInvoiceDto) => void }) {
@@ -67,13 +68,13 @@ function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto
               { key: 'c', label: 'Customer', children: <span translate="no">{`${i.customer}${i.gstin ? `, GSTIN ${i.gstin}` : ''}`}</span> },
               { key: 'o', label: 'Order', children: <span translate="no">{i.orderNo ?? NO_VALUE}</span> },
               { key: 'd', label: 'Date', children: formatDate(i.date) },
-              { key: 'q', label: 'Concrete', children: <span translate="no"><M3 value={i.quantity} />{', '}<Rupees value={i.concrete} /></span> },
-              ...(Number(i.pumping) ? [{ key: 'p', label: 'Pumping', children: <Rupees value={i.pumping} /> }] : []),
-              { key: 't', label: 'Taxable', children: <Rupees value={i.taxable} /> },
-              ...(Number(i.igst) ? [{ key: 'ig', label: 'IGST 18%', children: <Rupees value={i.igst} /> }] : [{ key: 'cg', label: 'CGST 9%', children: <Rupees value={i.cgst} /> }, { key: 'sg', label: 'SGST 9%', children: <Rupees value={i.sgst} /> }]),
-              { key: 'tot', label: 'Total', children: <Typography.Text strong><Rupees value={i.total} /></Typography.Text> },
-              { key: 'r', label: 'Received', children: <Rupees value={i.received} /> },
-              { key: 'due', label: 'Due', children: <Rupees value={i.due} /> },
+              { key: 'q', label: 'Concrete', children: <span translate="no"><M3 value={i.quantity} />{', '}<Money paise value={i.concrete} /></span> },
+              ...(Number(i.pumping) ? [{ key: 'p', label: 'Pumping', children: <Money paise value={i.pumping} /> }] : []),
+              { key: 't', label: 'Taxable', children: <Money paise value={i.taxable} /> },
+              ...(Number(i.igst) ? [{ key: 'ig', label: 'IGST 18%', children: <Money paise value={i.igst} /> }] : [{ key: 'cg', label: 'CGST 9%', children: <Money paise value={i.cgst} /> }, { key: 'sg', label: 'SGST 9%', children: <Money paise value={i.sgst} /> }]),
+              { key: 'tot', label: 'Total', children: <Typography.Text strong><Money paise value={i.total} /></Typography.Text> },
+              { key: 'r', label: 'Received', children: <Money paise value={i.received} /> },
+              { key: 'due', label: 'Due', children: <Money paise value={i.due} /> },
             ]}
           />
           <Typography.Title level={2} style={{ fontSize: 16, marginTop: 16 }}>
@@ -155,8 +156,8 @@ export function Bills() {
             { title: 'Date', dataIndex: 'date', width: 110, render: (d: string) => formatDate(d) },
             { title: 'Customer', dataIndex: 'customer', ellipsis: true, render: (c: string) => <span translate="no">{c}</span> },
             { title: 'Concrete', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-            { title: 'Total', dataIndex: 'total', align: 'right', width: 140, render: (v: string) => <Rupees value={v} /> },
-            { title: 'Due', dataIndex: 'due', align: 'right', width: 140, render: (v: string) => <Rupees value={v} /> },
+            { title: 'Total', dataIndex: 'total', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
+            { title: 'Due', dataIndex: 'due', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
             { title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcInvoiceDto['status']) => <InvoiceStatusTag status={s} /> },
           ]}
         />
@@ -179,7 +180,7 @@ export function Bills() {
               { title: 'Against', dataIndex: 'invoiceNo', width: 150, render: (n: string | null) => <span translate="no">{n ?? 'On account'}</span> },
               { title: 'Payment mode', dataIndex: 'mode', width: 110, render: (m: string) => PAYMENT_MODE_LABELS[m as PaymentMode] ?? m },
               { title: 'Reference', dataIndex: 'reference', width: 200, ellipsis: true, render: (r: string | null) => <span translate="no">{r ?? NO_VALUE}</span> },
-              { title: 'Amount', dataIndex: 'amount', align: 'right', width: 140, render: (v: string) => <Rupees value={v} /> },
+              { title: 'Amount', dataIndex: 'amount', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
             ]}
           />
         </>

@@ -29,7 +29,8 @@ import { OtherBillFormModal } from '@/components/purchasing/OtherBillFormModal';
 import { SubBillFormModal } from '@/components/subcontracts/SubBillFormModal';
 import { ChangeList } from '@/components/supplier/ChangeList';
 import { DecideChangeForm, ReturnInvoiceForm } from '@/components/supplier/StaffForms';
-import { InvoiceStageTag, Money } from '@/components/supplier/supplierUi';
+import { InvoiceStageTag } from '@/components/supplier/supplierUi';
+import { Money } from '@/components/common/Money';
 
 type StageFilter = SupplierInvoiceStage | 'ALL';
 const STAGE_FILTERS: StageFilter[] = ['SUBMITTED', 'BILLED', 'PAID', 'RETURNED', 'WITHDRAWN', 'ALL'];
@@ -111,7 +112,7 @@ function Invoices({ openId, setOpen }: { openId: string | null; setOpen: (id: st
           { title: 'Supplier', dataIndex: 'vendorName', render: (v: string) => <span translate="no">{v}</span> },
           { title: 'Date', dataIndex: 'invoiceDate', width: 110, render: (v: string) => formatDate(v) },
           { title: 'Against', key: 'against', width: 150, render: (_, i) => <span translate="no">{i.poNo ?? i.woNo ?? i.projectName ?? NO_VALUE}</span> },
-          { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
+          { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v: string) => <Money paise value={v} /> },
           { title: 'File', key: 'file', width: 100, render: (_, i) => <PhotoThumbs attachments={i.attachments} /> },
           { title: 'Sent', dataIndex: 'createdAt', width: 150, render: (v: string, i) => <span>{formatDateTime(v)}<br /><Typography.Text type="secondary">{i.sentBy}</Typography.Text></span> },
           {
@@ -193,9 +194,9 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
             </Descriptions.Item>
             <Descriptions.Item label="Invoice date">{formatDate(i.invoiceDate)}</Descriptions.Item>
             <Descriptions.Item label="Amount with GST">
-              <Money value={i.amount} />
+              <Money paise value={i.amount} />
             </Descriptions.Item>
-            <Descriptions.Item label="Of which GST">{i.gstAmount ? <Money value={i.gstAmount} /> : NO_VALUE}</Descriptions.Item>
+            <Descriptions.Item label="Of which GST">{i.gstAmount ? <Money paise value={i.gstAmount} /> : NO_VALUE}</Descriptions.Item>
             <Descriptions.Item label="Against">
               {i.purchaseOrderId ? (
                 <Link href={`/purchase-orders/${i.purchaseOrderId}`} translate="no">
@@ -220,7 +221,7 @@ function InvoiceDrawer({ id, onClose }: { id: string | null; onClose: () => void
             ) : null}
             {i.bill ? (
               <Descriptions.Item label="Paid" span={2}>
-                <Money value={i.bill.paid} /> of <Money value={i.bill.payable} />
+                <Money paise value={i.bill.paid} /> of <Money paise value={i.bill.payable} />
               </Descriptions.Item>
             ) : null}
           </Descriptions>

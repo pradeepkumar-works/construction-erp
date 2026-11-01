@@ -5,6 +5,7 @@ import { Descriptions, Table, Typography } from 'antd';
 import { OM_BENCHMARK_INFO, type OmBillDto } from '@erp/shared';
 import { formatDate, formatINR, formatMonth, formatPct } from '@/lib/format';
 import { Section } from '@/components/common/Section';
+import { Money } from '@/components/common/Money';
 
 type StaffLine = OmBillDto['staff'][number];
 type PenaltyLine = OmBillDto['penalties'][number];
@@ -22,7 +23,7 @@ export function OmBillSection({ om }: { om: OmBillDto }) {
         items={[
           { key: 'p', label: 'Period', children: <span translate="no">{`${om.label}: ${formatDate(om.from)} to ${formatDate(om.to)}`}</span>, span: 2 },
           { key: 'y', label: 'Year’s share', children: <span translate="no">{`${formatPct(om.yearPct, { digits: 2 })} of the contract`}</span> },
-          { key: 'i', label: 'Instalment', children: <span translate="no">{formatINR(om.instalmentAmount, true)}</span> },
+          { key: 'i', label: 'Instalment', children: <Money value={om.instalmentAmount} paise /> },
           { key: 's', label: 'Staff short', children: <span translate="no">{`− ${formatINR(om.staffDeduction, true)}`}</span> },
           { key: 'n', label: 'Service level penalties', children: <span translate="no">{`− ${formatINR(om.penalty, true)} (in deductions)`}</span> },
         ]}
@@ -51,7 +52,7 @@ export function OmBillSection({ om }: { om: OmBillDto }) {
               { key: 'm', title: 'Month', width: 100, render: (_, l) => <span translate="no">{formatMonth(l.month)}</span> },
               { key: 'r', title: 'Role', render: (_, l) => l.role },
               { key: 'd', title: 'Deployed of minimum', width: 160, align: 'right', render: (_, l) => <span translate="no">{`${l.deployed} of ${l.required}`}</span> },
-              { key: 'x', title: 'Deducted', width: 130, align: 'right', render: (_, l) => <span translate="no">{formatINR(l.deduction, true)}</span> },
+              { key: 'x', title: 'Deducted', width: 130, align: 'right', render: (_, l) => <Money value={l.deduction} paise /> },
             ]}
           />
         </Section>
@@ -68,7 +69,7 @@ export function OmBillSection({ om }: { om: OmBillDto }) {
               { key: 'm', title: 'Month', width: 100, render: (_, p) => <span translate="no">{formatMonth(p.month)}</span> },
               { key: 'b', title: 'Benchmark', render: (_, p) => OM_BENCHMARK_INFO[p.key].label },
               { key: 'f', title: 'Failures (allowed)', width: 150, align: 'right', render: (_, p) => <span translate="no">{`${p.failures} (${p.allowed})`}</span> },
-              { key: 'a', title: 'Penalty', width: 130, align: 'right', render: (_, p) => <span translate="no">{formatINR(p.amount, true)}</span> },
+              { key: 'a', title: 'Penalty', width: 130, align: 'right', render: (_, p) => <Money value={p.amount} paise /> },
             ]}
           />
         </Section>

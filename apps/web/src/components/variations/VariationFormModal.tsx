@@ -16,6 +16,7 @@ import { UnitInput } from '@/components/common/UnitInput';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+import { Money } from '@/components/common/Money';
 
 /** Picker value for a line that adds an item not yet in the BOQ. */
 const NEW_ITEM = '__new__';
@@ -202,7 +203,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
                           </Form.Item>
                         )}
                         <Form.Item label="Amount">
-                          <span className="mono" translate="no">{formatINR(amount)}</span>
+                          <Money value={amount} />
                         </Form.Item>
                       </FormGrid>
                     </div>
@@ -214,7 +215,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, prefil
                     Add item
                   </Button>
                   <Typography.Text strong>
-                    Claimed <span className="mono" translate="no">{formatINR(total)}</span>
+                    Claimed <Money value={total} />
                   </Typography.Text>
                 </div>
               </>

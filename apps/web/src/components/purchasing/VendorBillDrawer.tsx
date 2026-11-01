@@ -27,8 +27,8 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
 /** Whether a bill matches its PO and GRNs, or (a bill without a PO) passed its own checks. */
 export const MatchTag = ({ matched, po = true }: { matched: boolean; po?: boolean }) =>
@@ -140,7 +140,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                   ...(data.expenseCategory ? [{ key: 'head', label: 'Cost head', children: EXPENSE_CATEGORY_LABELS[data.expenseCategory] }] : []),
                 ]),
             { key: 'invoice', label: 'Invoice', children: `${data.invoiceNo}, ${formatDate(data.invoiceDate)}` },
-            { key: 'total', label: 'Invoice total', children: <strong>{money(data.total)}</strong> },
+            { key: 'total', label: 'Invoice total', children: <strong><Money value={data.total} paise /></strong> },
             ...(withPo && (adjusted > 0 || toNumber(data.poAdvancePaid) > 0)
               ? [
                   {
@@ -148,7 +148,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                     label: 'Advance adjusted',
                     children: (
                       <span>
-                        {money(data.advanceAdjusted)} <span className="text-muted">of {formatINR(data.poAdvancePaid, true)} paid on the PO</span>
+                        <Money value={data.advanceAdjusted} paise /> <span className="text-muted">of {formatINR(data.poAdvancePaid, true)} paid on the PO</span>
                       </span>
                     ),
                   },
@@ -163,8 +163,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 </span>
               ),
             },
-            ...(fuel > 0 ? [{ key: 'fuel', label: 'Fuel recovered', children: <span>{money(data.fuelRecovery)} <span className="text-muted">for {formatQty(data.fuelLitres)} L at {formatINR(data.fuelRate, true)}</span></span> }] : []),
-            ...(debited > 0 ? [{ key: 'debit', label: 'Debit notes', children: money(data.debitNoteAmount) }] : []),
+            ...(fuel > 0 ? [{ key: 'fuel', label: 'Fuel recovered', children: <span><Money value={data.fuelRecovery} paise /> <span className="text-muted">for {formatQty(data.fuelLitres)} L at {formatINR(data.fuelRate, true)}</span></span> }] : []),
+            ...(debited > 0 ? [{ key: 'debit', label: 'Debit notes', children: <Money value={data.debitNoteAmount} paise /> }] : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
@@ -221,15 +221,15 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         align: 'right',
                         render: (v, l) => <Typography.Text type={toNumber(v) !== toNumber(l.poGstRate) ? 'danger' : undefined}>{formatPct(v)}</Typography.Text>,
                       },
-                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
-                      { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => money(v) },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
+                      { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => <Money value={v} paise /> },
                     ] : [
                       { title: 'Line', dataIndex: 'itemName' },
                       { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
-                      { title: 'Rate', dataIndex: 'rate', width: 130, align: 'right', render: (v) => money(v) },
+                      { title: 'Rate', dataIndex: 'rate', width: 130, align: 'right', render: (v) => <Money value={v} paise /> },
                       { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => formatPct(v) },
-                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
-                      { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => money(v) },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
+                      { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => <Money value={v} paise /> },
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
@@ -241,13 +241,13 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                       ].map(([k, v]) => (
                         <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                           <span>{k}</span>
-                          {money(v)}
+                          <Money value={v} paise />
                         </div>
                       ))}
                       <Divider style={{ margin: '6px 0' }} />
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                         <span>Invoice total</span>
-                        {money(data.total)}
+                        <Money value={data.total} paise />
                       </div>
                       {adjusted + fuel + debited > 0 && (
                         <>
@@ -262,12 +262,12 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                             .map(([k, v]) => (
                               <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                                 <span>{k}</span>
-                                {money(-v)}
+                                <Money value={-v} paise />
                               </div>
                             ))}
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                             <span>Payable</span>
-                            {money(data.payable)}
+                            <Money value={data.payable} paise />
                           </div>
                         </>
                       )}
@@ -379,7 +379,7 @@ function BillSources({ kind, rows }: { kind: VendorBillDto['kind']; rows: Vendor
         },
         ...(hire ? [] : [{ title: 'Closed', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) }]),
         { title: hire ? 'Hours' : 'Work', dataIndex: 'detail' },
-        ...(hire ? [] : [{ title: 'Labour and parts', dataIndex: 'amount', width: 150, align: 'right' as const, render: (v: string | null) => (v ? money(v) : NO_VALUE) }]),
+        ...(hire ? [] : [{ title: 'Labour and parts', dataIndex: 'amount', width: 150, align: 'right' as const, render: (v: string | null) => (v ? <Money value={v} paise /> : NO_VALUE) }]),
       ]}
     />
   );

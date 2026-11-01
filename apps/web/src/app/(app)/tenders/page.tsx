@@ -42,6 +42,7 @@ import {
   TenderStatusTag,
 } from "@/components/tenders/tenderUi";
 import { TenderForm } from "@/components/tenders/TenderForm";
+import { Money } from '@/components/common/Money';
 
 const KEYS = ["status"] as const;
 const STATUS_OPTIONS = [
@@ -288,7 +289,7 @@ function TendersPage() {
           )}
           {stat(
             "EMD with clients",
-            <span translate="no">{formatINR(s.emdOut)}</span>,
+            <Money value={s.emdOut} />,
             "On tenders not won, to come back",
           )}
         </Row>

@@ -7,6 +7,7 @@ import { HistoryOutlined, WarningOutlined } from '@/components/common/icons';
 import { LAST_RATES_COUNT, rateAboveOthers, type LastRateDto, type RateQuote } from '@erp/shared';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 /**
  * An item's last approved orders under a rate: the latest rate and vendor at a glance, the last five in a
@@ -62,7 +63,7 @@ export function RateAbove({ rate, quantity, projectId, poDate, quotes }: { rate:
   const q = Number(quantity);
   return (
     <div style={{ color: token.colorWarningText, fontSize: themeFontSize('fontSizeSM') }} role="note">
-      <WarningOutlined aria-hidden /> {Math.round(hit.abovePct)}% above the <span translate="no">{formatINR(hit.best.rate, true)}</span>{' '}
+      <WarningOutlined aria-hidden /> {Math.round(hit.abovePct)}% above the <Money value={hit.best.rate} paise />{' '}
       <Link href={`/purchase-orders/${hit.best.purchaseOrderId}`} className="text-link" translate="no">
         {hit.best.projectName}
       </Link>{' '}

@@ -18,8 +18,8 @@ import { LabourRatesModal } from './LabourRatesModal';
 import { UnpricedNote, unpricedText } from './UnpricedNote';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string) => <span className="mono" translate="no">{formatINR(v)}</span>;
 
 const EXPORT: ExportColumn<ProjectCostSummaryDto>[] = [
   { header: 'Project code', value: (r) => r.projectCode, width: 14 },
@@ -68,8 +68,8 @@ export function CostOverview() {
         </div>
       ),
     },
-    { title: 'Work done', dataIndex: 'executedValue', width: 140, align: 'right', render: money, sorter: (a, b) => toNumber(a.executedValue) - toNumber(b.executedValue) },
-    { title: 'Measured (MB)', dataIndex: 'measuredValue', width: 130, align: 'right', render: money },
+    { title: 'Work done', dataIndex: 'executedValue', width: 140, align: 'right', render: (v) => <Money value={v} />, sorter: (a, b) => toNumber(a.executedValue) - toNumber(b.executedValue) },
+    { title: 'Measured (MB)', dataIndex: 'measuredValue', width: 130, align: 'right', render: (v) => <Money value={v} /> },
     {
       title: 'Cost',
       key: 'cost',
@@ -78,7 +78,7 @@ export function CostOverview() {
       render: (_, r) => (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <span className="mono" translate="no">{formatINR(r.cost.total)}</span>
+            <Money value={r.cost.total} />
             <UnpricedNote unpriced={r.unpriced} />
           </div>
           <CostBar cost={r.cost} scale={scale} height={8} />
@@ -91,11 +91,11 @@ export function CostOverview() {
       width: 140,
       align: 'right',
       sorter: (a, b) => toNumber(a.margin) - toNumber(b.margin),
-      render: (v) => <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') }}>{formatINR(v)}</span>,
+      render: (v) => <Money value={v} tone={toNumber(v) < 0 ? 'danger' : 'success'} />,
     },
-    { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
-    { title: 'Money in', dataIndex: 'cashIn', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
-    { title: 'Money out', dataIndex: 'cashOut', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashOut) - toNumber(b.cashOut) },
+    { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: (v) => <Money value={v} />, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
+    { title: 'Money in', dataIndex: 'cashIn', width: 130, align: 'right', render: (v) => <Money value={v} />, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
+    { title: 'Money out', dataIndex: 'cashOut', width: 130, align: 'right', render: (v) => <Money value={v} />, sorter: (a, b) => toNumber(a.cashOut) - toNumber(b.cashOut) },
     { title: 'Cost %', dataIndex: 'costPct', width: 90, align: 'right', render: (v: number | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : formatPct(v)), sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },
   ];
 
