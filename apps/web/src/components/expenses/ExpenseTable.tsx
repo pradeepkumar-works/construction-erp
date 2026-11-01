@@ -69,7 +69,7 @@ export function expenseColumns({
       ),
       total: (rows) => sumMoney(rows.map((r) => r.totalAmount)),
     },
-    { defaultFrom: 1600, key: 'paymentMode', title: 'Paid by', dataIndex: 'paymentMode', width: 110, render: (m) => PAYMENT_MODE_LABELS[m as ExpenseDto['paymentMode']].replace(/ \(.*\)$/, '') },
+    { defaultFrom: 1600, key: 'paymentMode', title: 'Paid by', dataIndex: 'paymentMode', width: 110, render: (m) => PAYMENT_MODE_LABELS[m as ExpenseDto['paymentMode']] },
     {
       defaultFrom: 1600,
       key: 'attachments',

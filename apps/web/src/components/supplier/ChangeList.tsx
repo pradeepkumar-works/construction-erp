@@ -3,7 +3,7 @@
 import React from 'react';
 import { Table, Typography } from 'antd';
 import type { SupplierChangeDto } from '@erp/shared';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { ChangeStatusTag } from './supplierUi';
 
 /** Changes a supplier asked for to their details: their own profile, the vendor's portal drawer and the supplier inbox. */
@@ -18,7 +18,7 @@ export function ChangeList({ changes, extra, vendorColumn }: { changes: Supplier
       scroll={{ x: 760 }}
       columns={[
         ...(vendorColumn ? [{ title: 'Supplier', dataIndex: 'vendorName', width: 180, render: (v: string) => <span translate="no">{v}</span> }] : []),
-        { title: 'Asked', dataIndex: 'createdAt', width: 150, render: (v: string, c) => <span>{formatDateTime(v)}<br /><Typography.Text type="secondary">{c.requestedBy}</Typography.Text></span> },
+        { title: 'Requested', dataIndex: 'createdAt', width: 150, render: (v: string, c) => <span>{formatDateTime(v)}<br /><Typography.Text type="secondary">{c.requestedBy}</Typography.Text></span> },
         {
           title: 'Change',
           key: 'changes',
@@ -26,7 +26,7 @@ export function ChangeList({ changes, extra, vendorColumn }: { changes: Supplier
             <div>
               {c.changes.map((x) => (
                 <div key={x.field}>
-                  {x.label}: <span translate="no">{x.from ?? '-'}</span> to <span translate="no">{x.to ?? '-'}</span>
+                  {x.label}: <span translate="no">{x.from ?? NO_VALUE}</span> to <span translate="no">{x.to ?? NO_VALUE}</span>
                 </div>
               ))}
               {c.note ? <Typography.Text type="secondary">{c.note}</Typography.Text> : null}
@@ -34,7 +34,7 @@ export function ChangeList({ changes, extra, vendorColumn }: { changes: Supplier
           ),
         },
         {
-          title: 'State',
+          title: 'Status',
           key: 'status',
           width: 200,
           render: (_, c) => (

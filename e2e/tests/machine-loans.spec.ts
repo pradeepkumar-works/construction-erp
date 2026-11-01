@@ -54,7 +54,7 @@ test('accounts record a machine loan, pay its first EMI, and it posts principal 
   const pay = page.locator('.ant-modal').filter({ hasText: `Pay EMI 1 · ${loanNo}` });
   await expect(pay.getByText(/principal ₹\s?79,582\.67, interest ₹\s?8,333\.33/)).toBeVisible();
   await pay.getByLabel('Reference').fill('E2E NACH');
-  await pay.getByRole('button', { name: 'Record paid' }).click();
+  await pay.getByRole('button', { name: 'Record payment' }).click();
   await expect(page.getByText(`EMI 1 of loan ${loanNo} recorded paid`)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pay EMI 2' })).toBeVisible();
 

@@ -19,7 +19,7 @@ import {
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useAttendanceCheck } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, formatQty, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -123,7 +123,7 @@ function AttendanceCheck() {
           </Typography.Paragraph>
         ) : null}
         <Button type="link" size="small" icon={open ? <UpOutlined /> : <DownOutlined />} aria-expanded={open} aria-controls={id} onClick={() => toggleWhy(f.key)} style={{ paddingInline: 0 }}>
-          Why: the working
+          Show how this was worked out
         </Button>
         {open ? (
           <ol id={id} style={{ margin: `${token.marginXS}px 0 0`, paddingInlineStart: token.paddingLG }} translate="no">
@@ -168,7 +168,7 @@ function AttendanceCheck() {
       <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.margin }}>
         <DatePicker
           picker="month"
-          format="MMM YYYY"
+          format={MONTH_PICKER_FORMAT}
           allowClear={false}
           aria-label="Month"
           value={dayjs(`${month}-01`)}
@@ -181,7 +181,7 @@ function AttendanceCheck() {
             style={{ maxWidth: '100%', overflowX: 'auto' }}
             value={kind}
             onChange={(v) => setKind(v as AttendanceFlagKind | 'ALL')}
-            options={[{ value: 'ALL', label: `All (${data.flags.length})` }, ...kinds.map((k) => ({ value: k, label: `${ATTENDANCE_FLAG_LABELS[k]} (${data.flags.filter((f) => f.kind === k).length})` }))]}
+            options={[{ value: 'ALL', label: <span>All <span className="text-muted" translate="no">{data.flags.length}</span></span> }, ...kinds.map((k) => ({ value: k, label: <span>{ATTENDANCE_FLAG_LABELS[k]} <span className="text-muted" translate="no">{data.flags.filter((f) => f.kind === k).length}</span></span> }))]}
           />
         ) : null}
       </Flex>
@@ -259,7 +259,7 @@ function AttendanceCheck() {
                       {formatQty(r.excess)} · {formatINR(r.excessInr)}
                     </Typography.Text>
                   ) : (
-                    <Typography.Text type="secondary">Within</Typography.Text>
+                    <Typography.Text type="secondary">Within the records</Typography.Text>
                   ),
               },
             ]}
@@ -282,7 +282,7 @@ function AttendanceCheck() {
             scroll={{ x: 640, y: 420 }}
             columns={[
               { title: 'Day', dataIndex: 'date', key: 'date', width: 110, render: (v: string) => formatDate(v) },
-              { title: 'DPR manpower', key: 'dpr', align: 'right', render: (_, d) => figure(d.dpr, 'No DPR') },
+              { title: 'DPR labour', key: 'dpr', align: 'right', render: (_, d) => figure(d.dpr, 'No DPR') },
               { title: 'Head count', key: 'head', align: 'right', render: (_, d) => figure(d.headCount, 'No sheet') },
               { title: 'Roll call', key: 'roll', align: 'right', render: (_, d) => figure(d.rollCall, 'Not kept') },
               {

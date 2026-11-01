@@ -1,8 +1,7 @@
 import type { FinalSettlementDto, PayslipDto } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
-import { formatINR } from '@/lib/format';
-import dayjs from 'dayjs';
+import { formatINR, formatMonthLong, formatDate } from '@/lib/format';
 
 const esc = (v: unknown) =>
   String(v ?? '')
@@ -41,7 +40,7 @@ function slipHtml(p: PayslipDto, company: string): string {
     return `<tr><td>${e ? esc(e.label) : ''}</td><td class="r">${e ? formatINR(e.amount) : ''}</td><td>${d ? esc(d.label) : ''}</td><td class="r">${d ? formatINR(d.amount) : ''}</td></tr>`;
   }).join('');
   return `<section class="slip">
-  <div class="head"><div class="brand">${esc(company)}</div><div><b>Payslip for ${esc(dayjs(`${p.month}-01`).format('MMMM YYYY'))}</b></div></div>
+  <div class="head"><div class="brand">${esc(company)}</div><div><b>Payslip for ${esc(formatMonthLong(p.month))}</b></div></div>
   <table class="facts">
     <tr><th>Employee</th><td>${esc(p.employeeName)} (${esc(p.employeeCode)})</td><th>Designation</th><td>${esc(p.designation)}</td></tr>
     <tr><th>Posted at</th><td>${esc(p.projectName ?? 'Head office')}</td><th>PAN</th><td>${esc(p.pan ?? '-')}</td></tr>
@@ -99,7 +98,7 @@ export function buildPayslipsHtml(slips: PayslipDto[], company: string): string 
 
 /** The full and final settlement statement: what is owed each way and the net, with lines to sign. */
 export function buildSettlementHtml(s: FinalSettlementDto, company: string): string {
-  const d = (v: string | null) => (v ? dayjs(v).format('DD MMM YYYY') : '-');
+  const d = (v: string | null) => formatDate(v);
   const earn: [string, string][] = [
     [`Salary for ${s.salaryDays} days of the last month`, s.salary],
     [`Leave encashment, ${s.leaveDays} days`, s.leaveEncashment],

@@ -3,10 +3,9 @@
 import React from 'react';
 import { Image, Space } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
-import dayjs from 'dayjs';
 import type { LeaveRequestDto, LeaveStatus, OvertimeStatus, StaffAttendanceDto, StaffAttendanceStatus } from '@erp/shared';
 import { LEAVE_STATUS_LABELS, OVERTIME_STATUS_LABELS, STAFF_ATTENDANCE_LABELS } from '@erp/shared';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatDayMonth, formatTime } from '@/lib/format';
 import { fileUrl } from '@/lib/api';
 import { themeColor } from '@/lib/theme';
 
@@ -20,13 +19,13 @@ export const AttendanceTag = ({ status }: { status: StaffAttendanceStatus }) => 
 export function leaveSpan(l: Pick<LeaveRequestDto, 'fromDate' | 'toDate' | 'halfDay'>) {
   if (l.fromDate === l.toDate) return `${formatDate(l.fromDate)}${l.halfDay ? ' (half day)' : ''}`;
   const sameYear = l.fromDate.slice(0, 4) === l.toDate.slice(0, 4);
-  return `${dayjs(l.fromDate).format(sameYear ? 'DD MMM' : 'DD MMM YYYY')} to ${formatDate(l.toDate)}`;
+  return `${sameYear ? formatDayMonth(l.fromDate) : formatDate(l.fromDate)} to ${formatDate(l.toDate)}`;
 }
 
 export const days = (n: string | number) => `${n} day${Number(n) === 1 ? '' : 's'}`;
 
 /** Clock time of an ISO timestamp, in the browser's zone. */
-export const clock = (iso: string | null) => (iso ? dayjs(iso).format('HH:mm') : '-');
+export const clock = (iso: string | null) => formatTime(iso);
 
 /** Metres as "120 m" or "1.4 km". */
 export const metres = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`);

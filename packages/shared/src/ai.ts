@@ -48,7 +48,7 @@ export const AI_DRAFT_KINDS = ['material-request', 'expense', 'progress', 'dpr',
 export type AiDraftKind = (typeof AI_DRAFT_KINDS)[number];
 
 export const AI_DRAFT_LABELS: Record<AiDraftKind, string> = {
-  'material-request': 'Material request',
+  'material-request': 'Indent',
   expense: 'Site expense',
   progress: 'Progress entry',
   dpr: 'Daily report',

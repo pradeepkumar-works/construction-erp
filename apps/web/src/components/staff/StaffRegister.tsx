@@ -118,7 +118,7 @@ export function StaffRegister() {
       ),
     },
     {
-      title: 'In / out',
+      title: 'In and out',
       key: 'io',
       width: 180,
       render: (_, r) =>
@@ -133,7 +133,7 @@ export function StaffRegister() {
         ),
     },
     {
-      title: 'OT h',
+      title: 'Overtime (h)',
       key: 'ot',
       width: 110,
       render: (_, r) => (
@@ -164,8 +164,8 @@ export function StaffRegister() {
   return (
     <>
       <CardToolbar wrap gap={8} align="center">
-        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} allowClear={false} placeholder="Select project" />
-        <DatePicker value={date} allowClear={false} format="ddd DD MMM YYYY" aria-label="Date" onChange={(d) => d && setDate(d)} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+        <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} allowClear={false} placeholder="Choose a project" />
+        <DatePicker value={date} allowClear={false} aria-label="Date" onChange={(d) => d && setDate(d)} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         <div style={{ flex: 1 }} />
         <Space>
           <Button onClick={markAllPresent} disabled={!data?.rows.length}>

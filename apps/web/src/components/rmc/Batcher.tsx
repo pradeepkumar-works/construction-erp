@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { App, Button, Dropdown, Empty, Flex, Form, Input, InputNumber, Select, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import type { BatchColumnMap, BatchField, BatchMaterialColumn, ConnectionHealth, GuessItem, PlantBatchRowDto, PlantControllerDto, RmcOrderDto } from '@erp/shared';
-import { BATCH_FIELD_LABELS, BATCH_FIELDS, BATCH_NO_CHALLAN_HOURS, BATCH_REQUIRED, CONNECTION_HEALTH_LABELS, canManageIntegrations, columnMapProblem, defaultPerUnit, guessColumns, readBatchRow } from '@erp/shared';
+import { BATCH_FIELD_LABELS, BATCH_FIELDS, BATCH_NO_CHALLAN_HOURS, BATCH_REQUIRED, CONNECTION_HEALTH_LABELS, canManageIntegrations, columnMapProblem, defaultPerUnit, guessColumns, readBatchRow, unitLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useMixDesigns, usePlantBatches, useRmcAction, useRmcOrders } from '@/lib/queries';
 import { formatDateTime, formatQty } from '@/lib/format';
@@ -23,7 +23,7 @@ import { useRmcDrawers } from './Drawers';
 
 const small = { fontSize: themeFontSize('fontSizeSM') };
 const left = (o: RmcOrderDto) => Math.max(0, Number(o.quantity) - Number(o.delivered) - Number(o.onTheWay));
-const materialsText = (r: PlantBatchRowDto) => r.materials.map((m) => `${formatQty(m.actualQty)} ${m.unit} ${m.itemName}`).join(', ');
+const materialsText = (r: PlantBatchRowDto) => r.materials.map((m) => `${formatQty(m.actualQty)} ${unitLabel(m.unit)} ${m.itemName}`).join(', ');
 
 /**
  * The batching plant controller's batches: each batch the controller wrote to its report, read by the
@@ -170,7 +170,7 @@ export function Batcher() {
         </div>
       ),
     },
-    { title: 'State', key: 'health', width: 170, render: (_, c) => <AppTag tone={HEALTH_TONE[c.health as ConnectionHealth]}>{CONNECTION_HEALTH_LABELS[c.health as ConnectionHealth]}</AppTag> },
+    { title: 'Status', key: 'health', width: 170, render: (_, c) => <AppTag tone={HEALTH_TONE[c.health as ConnectionHealth]}>{CONNECTION_HEALTH_LABELS[c.health as ConnectionHealth]}</AppTag> },
     { title: 'Last batch read', key: 'last', width: 170, render: (_, c) => (c.lastEventAt ? formatDateTime(c.lastEventAt) : <span className="text-muted">None yet</span>) },
     {
       title: 'Columns',
@@ -195,7 +195,7 @@ export function Batcher() {
         <Typography.Text type="secondary" style={small}>
           {data.controllers.length
             ? 'Each batch the controller writes to its report comes in within a minute or two, with the materials it weighed.'
-            : 'No batching plant controller is connected: make each challan in Trucks and challans, typing the printout’s weights.'}{' '}
+            : 'No batching plant controller is connected: make each challan in Challans, typing the printout’s weights.'}{' '}
           {!data.controllers.length && admin ? (
             <LinkButton size="small" type="link" href="/connections" style={{ paddingInline: 0 }}>
               Connect the controller

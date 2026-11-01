@@ -58,7 +58,7 @@ test('the client certifies a bill and attends an inspection in the portal', asyn
   await modal.getByLabel('Certificate no.').fill('EE/RD/PORTAL');
   await modal.getByLabel('Certified 3.02').fill('150');
   await modal.getByRole('button', { name: 'Certify' }).click();
-  await expect(page.getByText(new RegExp(`${bill.billLabel} certified: work value`))).toBeVisible();
+  await expect(page.getByText(new RegExp(`${bill.billLabel} certified: work done`))).toBeVisible();
 
   const qsNotes = await api<{ items: Note[] }>(qs, '/notifications?limit=20');
   expect(qsNotes.items.some((n) => n.type === 'PORTAL' && n.title === `${bill.billLabel} certified by the client` && n.entityId === bill.id)).toBe(true);

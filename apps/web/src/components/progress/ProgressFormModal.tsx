@@ -1,5 +1,6 @@
 'use client';
 
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import React, { useEffect } from 'react';
 import { Alert, Form, Input, InputNumber, Select } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -10,7 +11,7 @@ import { QuantityInput } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivities, useDprWorkOptions, useProjects } from '@/lib/queries';
+import { useActivities, useDprWorkOptions } from '@/lib/queries';
 import { LinkButton } from '@/components/common/LinkButton';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -38,7 +39,6 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
-  const { data: projects } = useProjects();
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
@@ -106,7 +106,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
       onClose={onClose}
       form={form}
       title={entry ? `${editActionLabel(entry.status)} · ${entry.activityName}` : 'New progress entry'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       layout="modal"
       width={640}
@@ -133,7 +133,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+          <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity' }]} {...aiFlagItem(draft, 'activityId', selectedActivity)}>
@@ -141,7 +141,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
               showSearch={{ optionFilterProp: 'label' }}
               loading={actLoading}
               disabled={!selectedProject}
-              placeholder={selectedProject ? 'Select activity' : 'Select a project first'}
+              placeholder={selectedProject ? 'Choose the activity' : 'Choose the project first'}
               options={(activities ?? []).filter((a) => !a.isSummary).map((a) => ({ value: a.id, label: `${a.name} (${a.unit})` }))}
             />
           </Form.Item>
@@ -150,10 +150,10 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>
-          <Form.Item name="quantity" label="Quantity executed" rules={[{ required: true, message: 'Enter the quantity done' }]} {...aiFlagItem(draft, 'quantity', quantity)}>
+          <Form.Item name="quantity" label="Quantity done" rules={[{ required: true, message: 'Enter the quantity done' }]} {...aiFlagItem(draft, 'quantity', quantity)}>
             <QuantityInput unit={activity?.unit} />
           </Form.Item>
-          <Form.Item name="manpowerCount" label="Manpower">
+          <Form.Item name="manpowerCount" label="Labour">
             <InputNumber style={{ width: '100%' }} min={0} precision={0} inputMode="numeric" />
           </Form.Item>
           <Form.Item name="location" label="Location">
@@ -161,7 +161,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           </Form.Item>
         </FormGrid>
         <SectorInputs projectId={selectedProject} />
-        <Form.Item name="machineryUsed" label="Machinery used">
+        <Form.Item name="machineryUsed" label="Machines used">
           <Input placeholder="Excavator x1, Tipper x4" />
         </Form.Item>
         <Form.Item name="remarks" label="Remarks">

@@ -48,7 +48,7 @@ export function InvoiceForm({ open, orderId, onClose }: { open: boolean; orderId
           <Form.Item name="orderId" label="Order" rules={[{ required: true, message: 'Choose the order to bill' }]} extra={billable.length ? null : 'No order has delivered challans waiting for a bill'}>
             <Select showSearch={{ optionFilterProp: 'label' }} options={billable.map((o) => ({ value: o.id, label: `${o.orderNo} · ${o.customer} · ${m3(o.unbilled)} to bill` }))} />
           </Form.Item>
-          <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
+          <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Choose the bill date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
@@ -97,13 +97,13 @@ export function ReceiptForm({ open, invoice, onClose }: { open: boolean; invoice
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Enter the amount received' }]}>
             <MoneyInput />
           </Form.Item>
-          <Form.Item name="mode" label="How" rules={[{ required: true, message: 'Choose how it was paid' }]}>
+          <Form.Item name="mode" label="Payment mode" rules={[{ required: true, message: 'Choose the payment mode' }]}>
             <Select options={PAYMENT_MODES.filter((m) => m !== 'CREDIT').map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
         </FormGrid>

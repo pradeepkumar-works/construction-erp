@@ -42,7 +42,7 @@ test('a field of the company’s own on the road’s DPR form, and a report keep
   const form = formPanel(page, 'New daily report');
   await chooseOption(form.getByLabel('Project', { exact: true }), 'E2E diaphragm wall road');
   await expect(form.getByLabel('Slurry level')).toBeVisible();
-  await form.getByLabel('Work executed').fill('Guide walls cast for panels 4 to 6');
+  await form.getByLabel('Work done today').fill('Guide walls cast for panels 4 to 6');
   await form.getByRole('button', { name: 'Submit DPR' }).click();
   await expect(form.getByText('Fill in Slurry level', { exact: true })).toBeVisible();
   const refused = await fetch(`${API_URL}/dpr`, {

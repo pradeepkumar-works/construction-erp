@@ -68,7 +68,7 @@ test('the statements balance, and a bank statement reconciles to nothing', async
   const form = formPanel(page, 'New voucher');
   await chooseOption(form.getByLabel('Account').nth(0), 'Bank Charges');
   await form.getByRole('button', { name: 'Submit for approval' }).click();
-  await expect(page.getByText(/^PV\/\d{4}-\d{2}\/\d{4} sent for approval$/)).toBeVisible();
+  await expect(page.getByText(/^PV\/\d{4}-\d{2}\/\d{4} submitted for approval$/)).toBeVisible();
   const made = (await api<Page<Voucher>>(accounts, `/books/vouchers?q=${encodeURIComponent(`SMS AND NEFT CHARGES ${stamp}`)}`)).items[0];
   await api(md, `/books/vouchers/${made.id}/approve`, { method: 'POST', body: {} });
   await page.reload();

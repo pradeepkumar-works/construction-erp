@@ -101,7 +101,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
       ).data;
     },
     onSuccess: (r) => {
-      notify.saved(`${r.requestNo} ${editing ? 'resubmitted' : 'sent'} for approval`, recordPage('PAYMENT_REQUEST', r.id));
+      notify.saved(`${r.requestNo} ${editing ? 'resubmitted' : 'submitted'} for approval`, recordPage('PAYMENT_REQUEST', r.id));
       for (const k of PAYMENT_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
       qc.invalidateQueries({ queryKey: ['approvals'] });
     },
@@ -116,7 +116,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
       layout="modal"
       width={640}
       title={request ? `${editActionLabel(request.status)} · ${request.requestNo}` : 'Request funds'}
-      okText={editing ? 'Resubmit for approval' : 'Send for approval'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing ? undefined : 'fund-request'}
     >
@@ -133,7 +133,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
                 <ProjectSelect aria-label="For the site" placeholder="Choose the site" allowClear={false} onChange={() => form.setFieldsValue({ imprestId: undefined })} />
               </Form.Item>
               <Form.Item name="purpose" label="For" rules={[{ required: true, message: 'Choose what the money is for' }]}>
-                <Select options={FUND_PURPOSES.map((p) => ({ value: p, label: FUND_PURPOSE_LABELS[p] }))} placeholder="Wages, local purchase…" />
+                <Select options={FUND_PURPOSES.map((p) => ({ value: p, label: FUND_PURPOSE_LABELS[p] }))} placeholder="e.g. Wages, local purchase…" />
               </Form.Item>
             </FormGrid>
             <Form.Item name="goesTo" label="Goes to">
@@ -177,7 +177,7 @@ export function FundRequestFormModal({ open, onClose, request, projectId: fixedP
           </Form.Item>
         </FormGrid>
         <Form.Item name="reason" label="What it is for" rules={[{ required: true, whitespace: true, message: 'Say what the money is for, e.g. the week’s wages of the helpers' }]}>
-          <Input.TextArea rows={2} maxLength={1000} placeholder="Weekly wages of the local helpers on the WMM stretch" />
+          <Input.TextArea rows={2} maxLength={1000} placeholder="e.g. Weekly wages of the local helpers on the WMM stretch" />
         </Form.Item>
         {!editing && (
           <Form.Item name="raisedAtProjectId" label="Asking from another site" extra="When you ask on behalf of the site above from a site of your own.">

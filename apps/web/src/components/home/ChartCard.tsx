@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, Flex, Segmented, Table, Typography, theme } from 'antd';
 import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
-import { formatINR, formatPct, toNumber } from '@/lib/format';
+import { formatINR, formatPct, toNumber, inSentence } from '@/lib/format';
 import { WhenInView } from './WhenInView';
 import { costHeadRows, monthLabel } from './chartData';
 
@@ -31,7 +31,7 @@ export function ChartCard({ title, note, summary, chart, table }: { title: strin
               { value: 'chart', label: 'Chart' },
               { value: 'table', label: 'Table' },
             ]}
-            aria-label={`Show ${title.toLowerCase()} as`}
+            aria-label={`Show ${inSentence(title)} as`}
           />
         </Flex>
       }

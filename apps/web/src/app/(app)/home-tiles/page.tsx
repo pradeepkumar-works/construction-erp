@@ -43,7 +43,7 @@ function DecideDialog({ decision, onClose }: { decision: Decision | null; onClos
       form={form}
       layout="modal"
       projectDefault={false}
-      title={r ? `${granting ? 'Grant' : 'Decline'} ${r.nodeLabel} for ${r.userName}` : ''}
+      title={r ? (granting ? `Mark ${r.nodeLabel} granted for ${r.userName}` : `Decline ${r.nodeLabel} for ${r.userName}`) : ''}
       okText={granting ? 'Mark granted' : 'Decline'}
       onSubmit={async (v) => {
         if (!decision) return;
@@ -112,7 +112,7 @@ function RequestRow({ r, highlighted, onDecide }: { r: AccessRequestDto; highlig
             </Button>
           </Flex>
         ) : (
-          <AppTag color={r.status === 'GRANTED' ? 'green' : undefined}>{ACCESS_REQUEST_STATUS_LABELS[r.status]}</AppTag>
+          <AppTag tone={r.status === 'GRANTED' ? 'success' : 'neutral'}>{ACCESS_REQUEST_STATUS_LABELS[r.status]}</AppTag>
         )}
       </Flex>
     </li>
@@ -129,7 +129,7 @@ function Requests({ requests }: { requests: AccessRequestDto[] }) {
   }, [highlight]);
   const waiting = requests.filter((r) => r.status === 'OPEN').length;
   return (
-    <Card title={waiting ? `Requests for access (${waiting} waiting)` : 'Requests for access'} size="small">
+    <Card title="Access requests" extra={waiting ? `${waiting} waiting` : undefined} size="small">
       {requests.length ? (
         <ul style={{ margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: token.marginSM }}>
           {requests.map((r) => (
@@ -247,7 +247,7 @@ export default function HomeTilesPage() {
   if (!user) return null;
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title="Home tiles" subtitle="Answer requests for access, and choose what Discover on everyone’s Home leads with." />
+      <PageHeader title="Discover and access requests" subtitle="Answer requests for access, and choose what Discover on everyone’s Home leads with." />
       {!allowed ? (
         <Alert type="info" title="Only an admin can manage Home tiles." />
       ) : isLoading ? (

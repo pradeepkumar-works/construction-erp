@@ -32,7 +32,7 @@ export function useOpenNode(webUrl: string | null) {
         show(t('This page opens on the web. Ask your admin for the web address'), { tone: 'error' });
         return;
       }
-      void WebBrowser.openBrowserAsync(`${webUrl}${href}`);
+      WebBrowser.openBrowserAsync(`${webUrl}${href}`).catch(() => show(t('This page is on the web only. Open {webUrl} on a computer.', { webUrl }), { tone: 'error' }));
     },
     [webUrl, show, t],
   );

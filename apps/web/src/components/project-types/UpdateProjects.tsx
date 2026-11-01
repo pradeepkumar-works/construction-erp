@@ -101,7 +101,7 @@ function ProjectChoice({ row, value, onChange, defaultOn }: { row: ProjectUpdate
         </Checkbox>
         <Space size={token.marginXXS} wrap>
           <AppTag color={PROJECT_STATUS_COLORS[row.status as ProjectStatus]}>{PROJECT_STATUS_LABELS[row.status as ProjectStatus] ?? row.status}</AppTag>
-          {row.typeVersion === null ? <AppTag tone="pending">Made before project types</AppTag> : <AppTag tone="neutral">Version {row.typeVersion}</AppTag>}
+          {row.typeVersion === null ? <AppTag tone="pending">Older than its type</AppTag> : <AppTag tone="neutral">Version {row.typeVersion}</AppTag>}
         </Space>
       </Flex>
       <Typography.Paragraph type="secondary" style={{ margin: `${token.marginXXS}px 0 0` }}>
@@ -206,7 +206,7 @@ export function UpdateProjects({ what, code, name, open, onClose }: { what: 'typ
       form={form}
       layout="drawer"
       width={760}
-      title={what === 'type' ? `Update projects of ${name}` : `Update components laid out from ${name}`}
+      title={what === 'type' ? `Update projects of ${name}` : `Update components made from ${name}`}
       okText={picked.length ? `Update ${plural(picked.length, 'project')}` : 'Update projects'}
       okDisabled={!picked.length || !adds}
       projectDefault={false}
@@ -229,7 +229,7 @@ export function UpdateProjects({ what, code, name, open, onClose }: { what: 'typ
           title="Only adds what a project lacks"
           description={
             what === 'type'
-              ? `Each project gets the components of ${name}'s breakdown it has no copy of, the steps its components' kinds have gained, and the type's activities it has no activity of that name for. Nothing it has is changed or removed. New work comes in with no weight, so progress does not move until the planner weighs it.`
+              ? `Each project gets the starting components of ${name} it has no copy of, the steps its components' types have gained, and the type's activities it has no activity of that name for. Nothing it has is changed or removed. New work comes in with no weight, so progress does not move until the planner weighs it.`
               : `Each component laid out from ${name} gets the steps it has no activity of that name for. Nothing it has is changed or removed, and a step kept as one line is not split. New activities come in with no weight, so progress does not move until the planner weighs them.`
           }
         />
@@ -240,10 +240,10 @@ export function UpdateProjects({ what, code, name, open, onClose }: { what: 'typ
         ) : !rows.length ? (
           <Typography.Paragraph>
             {updates.data.upToDate
-              ? `${what === 'type' ? 'Every project of this type' : 'Every component of this kind'} already has everything ${name} has now.`
+              ? `${what === 'type' ? 'Every project of this type' : 'Every component of this type'} already has everything ${name} has now.`
               : what === 'type'
                 ? 'No projects are of this type yet.'
-                : 'No components were laid out from this kind yet.'}
+                : 'No components were made from this type yet.'}
           </Typography.Paragraph>
         ) : (
           <>

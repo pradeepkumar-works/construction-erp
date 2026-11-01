@@ -236,6 +236,7 @@ export const QUALITY: Record<string, string> = {
   Attended: 'हाज़िर लोग',
   'Permits waiting / live': 'परमिट बाकी / चालू',
   Incidents: 'घटनाएँ',
+  'Incidents and near misses': 'घटनाएँ और नियर मिस',
   Permits: 'परमिट',
   'Toolbox talks': 'टूलबॉक्स टॉक',
   'No incidents': 'कोई घटना नहीं',

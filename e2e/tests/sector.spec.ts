@@ -51,7 +51,7 @@ test('a building entry tagged with a floor fills the floor matrix', async ({ pag
   await page.getByRole('button', { name: 'New progress entry' }).click();
   const modal = page.locator('.ant-modal').filter({ hasText: 'New progress entry' });
   await chooseOption(modal.getByLabel('Activity'), 'Brick masonry');
-  await modal.getByLabel(/Quantity executed/).fill(qty);
+  await modal.getByLabel(/Quantity done/).fill(qty);
   await chooseOption(modal.getByLabel('Floor'), 'First floor');
   await modal.getByRole('button', { name: 'Submit' }).click();
   await expect(page.getByText('Progress entry submitted for approval')).toBeVisible();
@@ -89,12 +89,12 @@ test('water supply shows pipe laid and tested by village, and sector settings sa
   await page.locator('.sector-panel').screenshot({ path: 'test-results/sector-water.png' });
 
   const village = `E2E Pada ${Date.now() % 10000}`;
-  await page.getByRole('button', { name: 'Sector settings' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Sector settings' });
+  await page.getByRole('button', { name: 'Set villages' }).click();
+  const modal = page.locator('.ant-modal').filter({ hasText: 'Set villages' });
   await modal.getByLabel('Villages').fill(village);
   await modal.getByLabel('Villages').press('Enter');
   await modal.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('Sector settings saved')).toBeVisible();
+  await expect(page.getByText('Villages saved')).toBeVisible();
   await expect(page.locator('.village-pipeline').getByRole('row', { name: new RegExp(village) })).toBeVisible();
 
   const after = await api<{ villages: string[] }>(pm, `/projects/${scheme.id}`);

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { API_URL, api, apiToken, PASSWORD, signIn } from './helpers';
 
-type Contract = { retentionPct: string; tdsPct: string; gstTdsPct: string; labourCessPct: string; defectLiabilityMonths: number | null };
+type Contract = { retentionPct: string; securityDepositPct: string; tdsPct: string; gstTdsPct: string; labourCessPct: string; defectLiabilityMonths: number | null };
 type Setup = { show: boolean; done: number; total: number; steps: { key: string; done: boolean; count: number | null }[]; boqGap: { gapPct: number } | null };
 type Project = { id: string; members: { userId: string }[] };
 
@@ -29,7 +29,7 @@ test('a new project starts with terms, copies a team, and its checklist ticks it
   // No client: the standard deductions, not zeros.
   const first = await api<Project>(owner, '/projects', { method: 'POST', body: { code: 'SET-01', name: 'E2E first scheme', type: 'WATER_SUPPLY' } });
   const std = await api<Contract>(owner, `/projects/${first.id}/contract`);
-  expect([std.retentionPct, std.tdsPct, std.gstTdsPct, std.labourCessPct].map(Number)).toEqual([5, 2, 2, 1]);
+  expect([std.securityDepositPct, std.retentionPct, std.tdsPct, std.gstTdsPct, std.labourCessPct].map(Number)).toEqual([5, 0, 2, 2, 1]);
 
   // Several people at once; then a client with terms of its own.
   await api(owner, `/projects/${first.id}/members`, { method: 'POST', body: { userIds: people.map((p) => p.id) } });

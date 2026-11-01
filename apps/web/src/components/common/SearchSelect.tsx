@@ -85,7 +85,7 @@ export function SearchSelect<T extends { id: string }>({ source, params, toOptio
         fetching ? (
           <Spin size="small" />
         ) : (
-          <Typography.Text type="secondary">{q ? `Nothing matches "${q}"` : 'Nothing to choose yet'}</Typography.Text>
+          <Typography.Text type="secondary">{q ? `Nothing matches “${q}”` : 'Nothing to choose yet'}</Typography.Text>
         )
       }
     />
@@ -97,7 +97,7 @@ type Picker<T> = Omit<SearchSelectProps<T>, 'source' | 'toOption'>;
 const userOption = (u: UserSummary): PickerOption => ({ value: u.id, label: `${u.fullName} (${u.roleName})` });
 const vendorOption = (v: VendorDto): PickerOption => ({ value: v.id, label: v.name });
 const clientOption = (c: ClientDto): PickerOption => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name });
-const equipmentOption = (e: EquipmentDto): PickerOption => ({ value: e.id, label: `${e.code} - ${e.name}` });
+const equipmentOption = (e: EquipmentDto): PickerOption => ({ value: e.id, label: `${e.code} · ${e.name}` });
 const itemOption = (i: ItemDto): PickerOption => ({ value: i.id, label: `${i.name} (${i.unit})` });
 
 /** A user of the organisation (active ones unless `params` says otherwise), optionally of some roles only. */
@@ -152,7 +152,7 @@ export function UserMultiSelect({
         setOpen(o);
         if (!o) setSearch('');
       }}
-      notFoundContent={open && page.isFetching ? <Spin size="small" /> : <Typography.Text type="secondary">{q ? `Nothing matches "${q}"` : 'Nothing to choose yet'}</Typography.Text>}
+      notFoundContent={open && page.isFetching ? <Spin size="small" /> : <Typography.Text type="secondary">{q ? `Nothing matches “${q}”` : 'Nothing to choose yet'}</Typography.Text>}
     />
   );
 }

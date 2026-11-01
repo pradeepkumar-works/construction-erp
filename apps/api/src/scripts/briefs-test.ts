@@ -36,7 +36,7 @@ test('the brief leads with old approvals, then the watch list, then money due, t
   const c = morningCandidates(facts());
   const draft = morningDraft(c);
   assert.equal(draft.length, 3);
-  assert.equal(draft[0].text, '3 approvals over two days old, the oldest 5 days (Daily Progress Report, Jajpur)');
+  assert.equal(draft[0].text, '3 approvals over two days old, the oldest 5 days (Daily report, Jajpur)');
   assert.equal(draft[0].href, '/approvals');
   assert.equal(draft[1].text, 'Jajpur cement runs out by 23 Oct, and 3 more on the watch list');
   assert.equal(draft[2].text, '₹18.4 L due to vendors this week or overdue, 2 bills');

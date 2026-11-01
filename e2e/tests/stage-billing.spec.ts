@@ -61,8 +61,8 @@ test('a lump-sum bill takes its stages from the evidence and withholds for slipp
     // On screen: the break-up on the Contract tab, and the bill's stages and slippage.
     await signIn(page, 'qs@demo.com');
     await page.goto(`/projects/${town.id}?tab=contract`);
-    await expect(page.getByRole('heading', { name: 'Billing break-up' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Milestone grid' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Payment schedule' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Milestone targets' })).toBeVisible();
     await page.goto(`/bills/${fifth.id}`);
     await expect(page.getByText('Payment stages (').first()).toBeVisible();
     await expect(page.getByText(/This bill withholds|releases/).first()).toBeVisible();

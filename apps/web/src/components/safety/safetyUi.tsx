@@ -4,7 +4,7 @@ import React from 'react';
 import { Timeline, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { AuditLogDto, SafetyIncidentStatus, SafetyIncidentType, WorkPermitDto } from '@erp/shared';
-import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_STATUS_LABELS, WORK_PERMIT_TYPE_LABELS } from '@erp/shared';
+import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_EXPIRED_LABEL, WORK_PERMIT_STATUS_LABELS, WORK_PERMIT_TYPE_LABELS } from '@erp/shared';
 import { formatDateTime, formatDayMonth } from '@/lib/format';
 import dayjs from 'dayjs';
 import { themeFontSize } from '@/lib/theme';
@@ -36,11 +36,11 @@ const PERMIT_COLORS = { REQUESTED: 'gold', ISSUED: 'green', REJECTED: 'red', CLO
 export const PermitStatusTag = ({ p }: { p: Pick<WorkPermitDto, 'status' | 'expired'> }) =>
   p.expired ? (
     <AppTag tone="pending" style={{ margin: 0 }}>
-      Expired
+      {WORK_PERMIT_EXPIRED_LABEL}
     </AppTag>
   ) : (
     <AppTag color={PERMIT_COLORS[p.status]} style={{ margin: 0 }}>
-      {p.status === 'ISSUED' ? 'Live' : WORK_PERMIT_STATUS_LABELS[p.status]}
+      {WORK_PERMIT_STATUS_LABELS[p.status]}
     </AppTag>
   );
 

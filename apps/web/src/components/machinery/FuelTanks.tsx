@@ -8,7 +8,7 @@ import { canManageIntegrations } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useMachineDays, useRetryDispense } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
-import { formatDateTime, formatQty, formatTime } from '@/lib/format';
+import { formatDateTime, formatQty, formatTime, NO_VALUE } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -18,7 +18,7 @@ type TankRow = MachineDayDto & { fuel: MachineFuelDto };
 
 const L = (v: string | null, muted = true) =>
   v === null || (muted && Number(v) === 0) ? (
-    <span className="text-muted">-</span>
+    <span className="text-muted">{NO_VALUE}</span>
   ) : (
     <span className="mono" translate="no">
       {formatQty(v)} L
@@ -112,7 +112,7 @@ export function FuelTanks({ date, projectId, canIssue }: { date: string; project
         </div>
       ),
     },
-    { title: 'On slips', key: 'slips', width: 100, align: 'right', render: (_, d) => L(d.fuel.slipLitres) },
+    { title: 'On fuel issues', key: 'slips', width: 100, align: 'right', render: (_, d) => L(d.fuel.slipLitres) },
     {
       title: 'Drained',
       key: 'drained',
@@ -126,7 +126,7 @@ export function FuelTanks({ date, projectId, canIssue }: { date: string; project
       ),
     },
     {
-      title: 'Burnt',
+      title: 'Fuel used',
       key: 'burnt',
       width: 130,
       align: 'right',

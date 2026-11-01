@@ -18,7 +18,7 @@ test('an engineer turns on WhatsApp alerts and a send-back reaches the message l
     await api(se, '/messaging/me', { method: 'PUT', body: { whatsapp: false, sms: false } });
     await signIn(page, 'engineer@demo.com');
     await page.goto('/notifications');
-    await page.getByRole('button', { name: 'Alerts' }).click();
+    await page.getByRole('button', { name: 'Email, WhatsApp and SMS alerts' }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: 'WhatsApp and SMS alerts' });
     await expect(modal.getByLabel('Mobile number')).toHaveValue(before.phone ?? '');
     await modal.getByLabel('Mobile number').fill('98000 00006');

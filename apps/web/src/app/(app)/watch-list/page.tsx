@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Result, Segmented, Tooltip, Typography, theme } from 'antd';
+import { Alert, App, Badge, Button, Card, Descriptions, Empty, Flex, Form, Input, Radio, Result, Segmented, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { DownOutlined, EyeInvisibleOutlined, PlayCircleOutlined, UndoOutlined, UpOutlined } from '@/components/common/icons';
@@ -45,6 +45,16 @@ type DismissForm = { outcome: WarningOutcome; reason?: string };
  * of the warning (Fixed, Known and accepted, Wrong); that is each kind's track record, and a kind marked Wrong too often
  * pauses until management resumes it. The header's project narrows the list to that project and the company-wide ones.
  */
+/** A kind of warning with how many are open (said as "3 open"), or that its check is paused. */
+function KindOption({ label, count, paused }: { label: string; count: number; paused?: boolean }) {
+  return (
+    <Flex align="center" gap={6}>
+      {label}
+      {paused ? <Typography.Text type="secondary">paused</Typography.Text> : count > 0 && <Badge count={count} size="small" aria-label={`${count} open`} />}
+    </Flex>
+  );
+}
+
 export default function Page() {
   const { user } = useAuth();
   const allowed = !!user && canSeeWatchList(user.roleKey);
@@ -160,7 +170,7 @@ export default function Page() {
           onClick={() => toggleWhy(w.key)}
           style={{ paddingInline: 0 }}
         >
-          Why: the working
+          Show how this was worked out
         </Button>
         {why.has(w.key) ? (
           <div id={`why-${w.key}`} style={{ marginTop: token.marginXS }}>
@@ -209,7 +219,7 @@ export default function Page() {
           </Flex>
           <Typography.Text type="secondary">
             {r.paused
-              ? `Marked Wrong ${r.paused.wrong} of ${r.paused.of} times in the last 30 days, so it stopped on ${formatDate(r.paused.since)}.${data.canResume ? ' Resume it once the rule or the records are put right.' : ' An admin or management can resume it.'}`
+              ? `Marked wrong ${r.paused.wrong} of ${r.paused.of} times in the last 30 days, so this check stopped on ${formatDate(r.paused.since)}.${data.canResume ? ' Resume it once the check or the records are put right.' : ' An admin or management can resume it.'}`
               : (trackRecordText(r) ?? 'Not marked yet: dismiss a warning as Fixed, Known or Wrong and it counts here.')}
           </Typography.Text>
         </div>
@@ -240,8 +250,8 @@ export default function Page() {
           value={kind}
           onChange={(v) => setKind(v as WarningKind | 'ALL')}
           options={[
-            { value: 'ALL', label: `All (${data.open.filter(inScope).length})` },
-            ...kinds.map((k) => ({ value: k, label: `${WARNING_KIND_LABELS[k]} (${recordOf.get(k)?.paused ? 'paused' : data.open.filter((w) => w.kind === k && inScope(w)).length})` })),
+            { value: 'ALL', label: <KindOption label="All" count={data.open.filter(inScope).length} /> },
+            ...kinds.map((k) => ({ value: k, label: <KindOption label={WARNING_KIND_LABELS[k]} count={data.open.filter((w) => w.kind === k && inScope(w)).length} paused={!!recordOf.get(k)?.paused} /> })),
           ]}
         />
       ) : null}

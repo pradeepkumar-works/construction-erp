@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Checkbox } from 'antd';
+import { Button } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import type { MachineryLogDto } from '@erp/shared';
 import { LIST_SORT_FIELDS, canLogMachinery } from '@erp/shared';
@@ -97,9 +97,6 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
           onChange={(v) => page.setFilter('equipmentId', v)}
         />
         <DateRangeFilter {...frame.dateRange} />
-        <Checkbox checked={!!filters.breakdownOnly} onChange={(e) => page.setFilter('breakdownOnly', e.target.checked ? '1' : undefined)}>
-          Breakdowns only
-        </Checkbox>
       </ListToolbar>
       <DataTable<MachineryLogDto>
         columns={frame.columns}

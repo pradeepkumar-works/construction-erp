@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@/components/common/icons';
 import { AppTag, type TagTone } from '@/components/common/AppTag';
@@ -9,11 +9,13 @@ import type { AgentState, ConnectorAgentDto, ConnectorPairCodeDto } from '@erp/s
 import { AGENT_STATE_LABELS } from '@erp/shared';
 import { API_URL, errorMessage } from '@/lib/api';
 import { useConnectorAgents, useIntegrationAction } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { DISPLAY_FONT } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { MoreActions } from '@/components/record/MoreActions';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const STATE_TONE: Record<AgentState, TagTone> = { ONLINE: 'success', OFFLINE: 'pending', WAITING_TO_PAIR: 'info', CODE_EXPIRED: 'pending', REVOKED: 'neutral' };
 
@@ -28,7 +30,7 @@ function AgentForm({ open, onClose, onCreated }: { open: boolean; onClose: () =>
       layout="modal"
       width={560}
       projectDefault={false}
-      title="Add a Connector"
+      title="New Connector"
       okText="Add and get a code"
       onSubmit={async (v) => onCreated(await act.mutateAsync({ path: '/integrations/agents', body: { name: v.name, projectId: v.projectId ?? null } }))}
     >
@@ -37,8 +39,8 @@ function AgentForm({ open, onClose, onCreated }: { open: boolean; onClose: () =>
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Name the Connector, for example Site office PC' }]}>
             <Input maxLength={80} placeholder="Site office PC" />
           </Form.Item>
-          <Form.Item name="projectId" label="Site (optional)">
-            <ProjectSelect allowClear placeholder="Head office" style={{ width: '100%' }} aria-label="Site" />
+          <Form.Item name="projectId" label="Project">
+            <ProjectSelect allowClear placeholder="Head office" style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
       </Form>
@@ -80,7 +82,8 @@ function PairCode({ shown, onClose }: { shown: ConnectorPairCodeDto | null; onCl
 
 /** Connectors: the computers on site that read local devices, and whether each is calling in. */
 export function Connectors() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
+  const [confirmDelete, deleteDialog] = useConfirmDelete();
   const { data, isLoading, error, refetch } = useConnectorAgents();
   const act = useIntegrationAction<ConnectorPairCodeDto>();
   const [adding, setAdding] = useState(false);
@@ -89,46 +92,48 @@ export function Connectors() {
 
   const columns: TableProps<ConnectorAgentDto>['columns'] = [
     { title: 'Connector', dataIndex: 'name', width: 200 },
-    { title: 'State', dataIndex: 'state', width: 150, render: (s: AgentState) => <AppTag tone={STATE_TONE[s]}>{AGENT_STATE_LABELS[s]}</AppTag> },
+    { title: 'Status', dataIndex: 'state', width: 150, render: (s: AgentState) => <AppTag tone={STATE_TONE[s]}>{AGENT_STATE_LABELS[s]}</AppTag> },
     { title: 'Site', dataIndex: 'projectName', ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
-    { title: 'Computer', dataIndex: 'hostname', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : '-') },
-    { title: 'Version', dataIndex: 'version', width: 90, render: (v: string | null) => (v ? <span translate="no">{v}</span> : '-') },
+    { title: 'Computer', dataIndex: 'hostname', width: 160, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },
+    { title: 'Version', dataIndex: 'version', width: 90, render: (v: string | null) => (v ? <span translate="no">{v}</span> : NO_VALUE) },
     { title: 'Last called in', dataIndex: 'lastSeenAt', width: 170, render: (v: string | null) => (v ? formatDateTime(v) : 'Never') },
     { title: 'Reads', dataIndex: 'connections', width: 80, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
     {
       title: '',
       key: 'x',
-      width: 220,
+      width: 64,
       render: (_, a) =>
         a.state === 'REVOKED' ? null : (
-          <Space size={4} wrap>
-            <Popconfirm
-              title="Make a new pairing code?"
-              description={a.pairedAt ? 'The computer stops sending until it is paired again with the new code.' : undefined}
-              okText="New code"
-              onConfirm={() => act.mutateAsync({ path: `/integrations/agents/${a.id}/pair-code` }).then(setCode).catch(fail)}
-            >
-              <Button size="small" aria-label={`New pairing code for ${a.name}`}>
-                New code
-              </Button>
-            </Popconfirm>
-            <Popconfirm
-              title={`Remove ${a.name}?`}
-              description="It stops sending for good, and what it read waits for another Connector."
-              okText="Remove"
-              okButtonProps={{ danger: true }}
-              onConfirm={() =>
-                act
-                  .mutateAsync({ method: 'delete', path: `/integrations/agents/${a.id}` })
-                  .then(() => message.success(`${a.name} removed`))
-                  .catch(fail)
-              }
-            >
-              <Button size="small" danger aria-label={`Remove ${a.name}`}>
-                Remove
-              </Button>
-            </Popconfirm>
-          </Space>
+          <MoreActions inRow
+            label={`More for ${a.name}`}
+            items={[
+              {
+                key: 'code',
+                label: 'New pairing code',
+                onSelect: () =>
+                  a.pairedAt
+                    ? modal.confirm({
+                        title: 'Make a new pairing code?',
+                        content: 'The computer stops sending until it is paired again with the new code.',
+                        okText: 'New code',
+                        onOk: () => act.mutateAsync({ path: `/integrations/agents/${a.id}/pair-code` }).then(setCode).catch(fail),
+                      })
+                    : act.mutateAsync({ path: `/integrations/agents/${a.id}/pair-code` }).then(setCode).catch(fail),
+              },
+              {
+                key: 'remove',
+                label: 'Remove',
+                danger: true,
+                onSelect: () =>
+                  confirmDelete({
+                    what: a.name,
+                    verb: 'Remove',
+                    description: 'It stops sending for good, and what it read waits for another Connector.',
+                    onConfirm: () => act.mutateAsync({ method: 'delete', path: `/integrations/agents/${a.id}` }),
+                  }),
+              },
+            ]}
+          />
         ),
     },
   ];
@@ -140,7 +145,7 @@ export function Connectors() {
           The Nirmaan Connector runs on a computer at a site or office and reads devices on its network (weighbridges, batching plants, meters). It keeps readings while the internet is down and sends them when it is back. Nothing needs to be opened on the site’s router.
         </Typography.Paragraph>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-          Add a Connector
+          New Connector
         </Button>
       </div>
       {error ? (
@@ -150,6 +155,7 @@ export function Connectors() {
       )}
       <AgentForm open={adding} onClose={() => setAdding(false)} onCreated={setCode} />
       <PairCode shown={code} onClose={() => setCode(null)} />
+      {deleteDialog}
     </div>
   );
 }

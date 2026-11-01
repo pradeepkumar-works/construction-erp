@@ -92,15 +92,15 @@ function LabDialog({ editing, onClose }: { editing: QaLabDto | 'new' | null; onC
     <FormShell open={!!editing} onClose={onClose} form={form} layout="modal" width={640} projectDefault={false} title={lab ? `Edit ${lab.name}` : 'New lab'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Name the lab' }]}>
-          <Input maxLength={120} placeholder="Kalinga Testing Labs, Bhubaneswar" />
+          <Input maxLength={120} placeholder="Name on the lab's reports" />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="kind" label="Kind" rules={[{ required: true, message: 'Choose the kind of lab' }]}>
+          <Form.Item name="kind" label="Type of lab" rules={[{ required: true, message: 'Choose the type of lab' }]}>
             <Select options={LAB_KINDS.map((k) => ({ value: k, label: LAB_KIND_LABELS[k] }))} />
           </Form.Item>
           {kind === 'SITE' ? (
             <Form.Item name="projectId" label="At the project" rules={[{ required: true, message: 'Choose the project the lab is at' }]}>
-              <ProjectSelect allowClear={false} placeholder="Choose the project" style={{ width: '100%' }} />
+              <ProjectSelect allowClear={false} placeholder="Choose a project" style={{ width: '100%' }} />
             </Form.Item>
           ) : null}
         </FormGrid>
@@ -188,7 +188,7 @@ export function LabsPage() {
                     <Typography.Text strong translate="no">
                       {l.name}
                     </Typography.Text>
-                    {!l.active ? <AppTag tone="neutral">Off</AppTag> : null}
+                    {!l.active ? <AppTag tone="neutral">Not in use</AppTag> : null}
                   </Flex>
                   <Typography.Text type="secondary">{l.kind === 'SITE' && l.projectName ? `Site lab, ${l.projectName}` : LAB_KIND_LABELS[l.kind]}</Typography.Text>
                 </Flex>
@@ -230,12 +230,12 @@ export function LabsPage() {
                         <Button type="text" icon={<EditOutlined />} aria-label={`Edit ${l.name}`} onClick={() => setEditing(l)} />
                         <ConfirmDelete
                           what={l.name}
-                          description={l.atLab + l.reported ? 'Samples went to it, so it is switched off and kept on them.' : undefined}
+                          description={l.atLab + l.reported ? 'Samples went to it, so it is marked not in use and kept on them.' : undefined}
                           verb={l.atLab + l.reported ? 'Remove' : 'Delete'}
-                          notice={l.atLab + l.reported ? `${l.name} switched off` : undefined}
+                          notice={l.atLab + l.reported ? `${l.name} is no longer in use` : undefined}
                           onConfirm={() => remove.mutateAsync(l.id)}
                         >
-                          <Button type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${l.name}`} />
+                          <Button type="text" danger icon={<DeleteOutlined />} aria-label={`${l.atLab + l.reported ? 'Remove' : 'Delete'} ${l.name}`} />
                         </ConfirmDelete>
                       </Flex>
                     ),

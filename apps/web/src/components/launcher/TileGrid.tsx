@@ -118,7 +118,7 @@ export function ProjectPick({ node, onClose }: { node: NavNode | null; onClose: 
   return (
     <Modal
       open={!!node}
-      title={node ? `Open ${node.label.toLowerCase()} for a project` : undefined}
+      title={node ? `Choose the project for ${node.label}` : undefined}
       okText="Open"
       onCancel={onClose}
       onOk={() => form.submit()}

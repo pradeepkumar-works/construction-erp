@@ -26,7 +26,7 @@ test('HR exports the payroll inputs and sees the labour contractors month', asyn
   await expect(row.getByRole('cell', { name: String(priya.paidDays), exact: true }).first()).toBeVisible();
 
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export Excel' }).click();
+  await page.getByRole('button', { name: 'Export to Excel' }).click();
   expect((await download).suggestedFilename()).toBe(`payroll-inputs-${month}.xlsx`);
 
   await page.getByRole('tab', { name: 'Labour contractors' }).click();
@@ -123,8 +123,8 @@ test('HR works out a full and final settlement for someone who resigned', async 
   await signIn(page, 'hr@demo.com');
   await page.goto('/payroll?tab=settlements');
   await expect(page.getByRole('tab', { name: 'Full and final', selected: true })).toBeVisible();
-  await page.getByRole('button', { name: `Work out ${ramesh.fullName}'s settlement` }).click();
-  await page.getByRole('dialog', { name: `Full and final settlement for ${ramesh.fullName}` }).getByRole('button', { name: 'Work it out' }).click();
+  await page.getByRole('button', { name: `Prepare settlement for ${ramesh.fullName}` }).click();
+  await page.getByRole('dialog', { name: `Full and final settlement for ${ramesh.fullName}` }).getByRole('button', { name: 'Prepare settlement' }).click();
   await expect(page.getByText(/FNF-EMP-008 worked out/)).toBeVisible();
 
   const s = (await api<Settlement[]>(hr, '/payroll/settlements')).find((x) => x.employeeCode === 'EMP-008')!;

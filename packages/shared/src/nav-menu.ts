@@ -4,6 +4,7 @@ import type { NavFamily, NavNode, NavUser } from './navigation';
 import { NAV_TREE, canSeeNav, navNode, navNodeAt } from './navigation';
 import type { SubmissionType } from './enums';
 import { submissionListHref } from './links';
+import { PRODUCT_NAME } from './brand';
 
 /**
  * Menu and names (ARCHITECTURE "Menu and names"): each company chooses where its menu sits (a sidebar, or a top bar with
@@ -69,27 +70,27 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     description: 'Projects, schedule, site work, safety and client billing.',
     subs: [
       sub('projects', 'Projects', 'projects.all', 'projects.handover', 'projects.templates'),
-      sub('schedule', 'Schedule', 'projects.schedule', 'projects.lookahead', 'projects.earned'),
+      sub('schedule', 'Schedule', 'projects.activities', 'projects.schedule', 'projects.lookahead', 'projects.earned'),
       sub('site', 'Site execution', 'site.dpr', 'site.progress', 'site.mb', 'site.risks', 'site.meetings', 'site.whatsapp'),
       sub('safety', 'Safety', 'quality.incidents', 'quality.permits', 'quality.talks', 'quality.ppe'),
       sub('billing', 'Client billing', 'billing.bills', 'billing.variations', 'billing.readiness', 'billing.clients'),
       sub('reports', 'Reports', 'reports.progress', 'reports.cashflow'),
-      sub('masters', 'Masters', 'billing.clients', 'projects.templates', 'projects.verticals'),
+      sub('masters', 'Masters', 'billing.clients', 'projects.templates', 'projects.verticals', 'projects.workTrades'),
     ],
   },
   {
     key: 'quality-control',
-    label: 'Quality (QA/QC)',
+    label: 'Quality',
     icon: 'shield-check',
     family: 'work',
     description: 'Inspections and hold points, the quality plan and tests due, material tests, pours and samples at the labs, calibration, NCRs, audits and visits, the monthly report and material checked on arrival.',
     subs: [
       sub('inspections', 'Inspections', 'quality.inspections'),
       sub('plan', 'Plan', 'quality.plan', 'quality.due'),
-      sub('tests', 'Tests', 'quality.tests', 'quality.pours', 'quality.samples', 'quality.calibration'),
+      sub('tests', 'Tests', 'quality.tests', 'quality.pours', 'quality.samples', 'quality.certificates', 'quality.calibration'),
       sub('material', 'Material', 'quality.grns', 'materials.approvals'),
       sub('ncrs', 'NCRs and audits', 'quality.ncrs', 'quality.audits', 'quality.report'),
-      sub('masters', 'Masters', 'quality.checklists', 'quality.testTypes', 'quality.labs', 'quality.certificates', 'quality.ncrCategories', 'quality.rootCauses', 'quality.instrumentKinds'),
+      sub('masters', 'Masters', 'quality.checklists', 'quality.testTypes', 'quality.labs', 'quality.ncrCategories', 'quality.rootCauses', 'quality.instrumentKinds'),
     ],
   },
   {
@@ -129,7 +130,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     subs: [
       sub('tenders', 'Tenders', 'tenders.register', 'tenders.sor'),
       sub('estimates', 'Estimates', 'projects.boq', 'reports.estimate'),
-      sub('budgets', 'Budgets', 'projects.budget'),
+      sub('budgets', 'Budget and cash flow', 'projects.budget'),
       sub('analysis', 'Analysis', 'reports.cost', 'reports.profitLoss'),
       sub('masters', 'Masters', 'tenders.sor', 'projects.templates', 'projects.verticals'),
     ],
@@ -139,15 +140,15 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     label: 'Purchase management',
     icon: 'shopping-cart',
     family: 'buying',
-    description: 'Indents, quotes, orders, goods receipt and vendor bills.',
+    description: 'Indents, quotations, orders, GRNs and vendor bills.',
     subs: [
       sub('indents', 'Indents', 'materials.requests', 'materials.approvals'),
-      sub('quotes', 'RFQ and quotes', 'purchases.toOrder'),
+      sub('quotes', 'Requests to order', 'purchases.toOrder'),
       sub('orders', 'Orders', 'purchases.orders', 'purchases.delivery'),
-      sub('receipt', 'Goods receipt', 'materials.register', 'quality.grns'),
+      sub('receipt', 'Receipt and checking', 'materials.register', 'quality.grns'),
       sub('bills', 'Vendor bills', 'purchases.bills', 'purchases.toBill', 'accounts.debitNotes'),
       sub('vendors', 'Vendors', 'purchases.suppliers', 'purchases.portal'),
-      sub('reports', 'Reports', 'reports.procurementSpend'),
+      sub('reports', 'Procurement spend', 'reports.procurementSpend'),
       sub('masters', 'Masters', 'purchases.suppliers', 'materials.items', 'materials.units'),
     ],
   },
@@ -156,13 +157,13 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     label: 'Store and inventory',
     icon: 'warehouse',
     family: 'materials',
-    description: 'Stock at each site and store, movements, and material control.',
+    description: 'Stock at each site and store, receipts and issues, and material control.',
     subs: [
-      sub('stock', 'Stock', 'materials.stock', 'materials.items'),
-      sub('movements', 'Movements', 'materials.register'),
+      sub('stock', 'Stock', 'materials.stock'),
+      sub('movements', 'Stock register', 'materials.register'),
       sub('stores', 'Central stores', 'materials.store'),
-      sub('control', 'Control', 'materials.reconciliation', 'materials.value', 'materials.leakage'),
-      sub('reports', 'Reports', 'reports.stockPosition'),
+      sub('control', 'Material control', 'materials.reconciliation', 'materials.value', 'materials.leakage'),
+      sub('reports', 'Stock position', 'reports.stockPosition'),
       sub('masters', 'Masters', 'materials.items', 'materials.units', 'materials.itemCategories'),
     ],
   },
@@ -173,10 +174,10 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     family: 'buying',
     description: 'Subcontractors, their enquiries, work orders and bills, and labour contractors.',
     subs: [
-      sub('contractors', 'Contractors', 'subcontracts.vendors'),
-      sub('enquiries', 'Enquiries', 'subcontracts.enquiries'),
+      sub('contractors', 'Subcontractors', 'subcontracts.vendors'),
+      sub('enquiries', 'Subcontract enquiries', 'subcontracts.enquiries'),
       sub('orders', 'Work orders', 'subcontracts.orders'),
-      sub('bills', 'Contractor bills', 'subcontracts.bills'),
+      sub('bills', 'Subcontractor bills', 'subcontracts.bills'),
       sub('labour', 'Labour contractors', 'payroll.contractors'),
       sub('masters', 'Masters', 'subcontracts.vendors', 'site.trades'),
     ],
@@ -186,28 +187,28 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     label: 'Machinery and vehicles',
     icon: 'tractor',
     family: 'materials',
-    description: 'Own and hired machines, daily logs, fuel, maintenance and papers.',
+    description: 'Own and hired machines, machinery logs, fuel, maintenance and papers.',
     subs: [
       sub('equipment', 'Equipment', 'plant.equipment', 'accounts.machineLoans'),
-      sub('logs', 'Daily logs', 'plant.logs'),
+      sub('logs', 'Machinery logs', 'plant.logs', 'plant.engine'),
       sub('fuel', 'Fuel', 'plant.fuel'),
       sub('maintenance', 'Maintenance', 'plant.maintenance'),
       sub('papers', 'Papers and drivers', 'plant.papers'),
-      sub('reports', 'Reports', 'plant.utilisation'),
-      sub('masters', 'Masters', 'plant.equipment', 'plant.equipmentCategories'),
+      sub('reports', 'Utilisation', 'plant.utilisation'),
+      sub('masters', 'Masters', 'plant.equipmentCategories'),
     ],
   },
   {
     key: 'plant-production',
-    label: 'Plant and production',
+    label: 'RMC plant',
     icon: 'factory',
     family: 'business',
     description: 'Ready-mix concrete: orders, the plant’s day, mix designs and sales.',
     subs: [
-      sub('orders', 'Orders', 'rmc.orders'),
-      sub('production', 'Production', 'rmc.schedule', 'rmc.batches'),
+      sub('orders', 'Quotes and orders', 'rmc.orders'),
+      sub('production', 'Production', 'rmc.schedule', 'rmc.batcher', 'rmc.batches'),
       sub('mixes', 'Mix designs', 'rmc.mixes'),
-      sub('sales', 'Sales', 'rmc.sales'),
+      sub('sales', 'Bills and money received', 'rmc.sales'),
       sub('masters', 'Masters', 'rmc.mixes'),
     ],
   },
@@ -221,7 +222,7 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('payables', 'Payables', 'accounts.payables', 'accounts.requests', 'accounts.payments', 'accounts.debitNotes'),
       sub('receivables', 'Receivables', 'billing.receivables', 'billing.receipts'),
       sub('cash', 'Cash', 'accounts.cashForecast', 'site.imprest', 'site.funds', 'site.expenses'),
-      sub('books', 'Books', 'accounts.vouchers', 'accounts.daybooks', 'accounts.cashbooks', 'accounts.ledgers', 'accounts.chart'),
+      sub('books', 'Books', 'accounts.vouchers', 'accounts.daybooks', 'accounts.cashbooks', 'accounts.ledgers'),
       sub('statements', 'Statements', 'accounts.trialBalance', 'accounts.pl', 'accounts.balanceSheet', 'accounts.bankReco', 'accounts.yearClose'),
       sub('tax', 'Tax and compliance', 'accounts.gst', 'accounts.tally', 'billing.guarantees'),
       sub('reports', 'Reports', 'reports.receivablesAgeing', 'reports.payablesAgeing', 'reports.wip'),
@@ -235,10 +236,10 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     family: 'people',
     description: 'Attendance at the sites, the man-days cross-check and biometric devices.',
     subs: [
-      sub('attendance', 'Attendance', 'site.attendance'),
-      sub('check', 'Cross-check', 'site.attendanceCheck'),
-      sub('biometric', 'Biometric', 'people.biometric'),
-      sub('reports', 'Reports', 'reports.labour'),
+      sub('attendance', 'Labour attendance', 'site.attendance'),
+      sub('check', 'Attendance cross-check', 'site.attendanceCheck'),
+      sub('biometric', 'Biometric devices', 'people.biometric'),
+      sub('reports', 'Labour and attendance', 'reports.labour'),
       sub('masters', 'Masters', 'site.trades'),
     ],
   },
@@ -247,14 +248,14 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
     label: 'HR and payroll',
     icon: 'id-card',
     family: 'people',
-    description: 'Your own attendance and payslips, leave, employees and salary runs.',
+    description: 'Your own attendance and payslips, leave, staff and salary runs.',
     subs: [
-      sub('self', 'Self-service', 'people.me', 'people.payslips'),
+      sub('self', 'Mine', 'people.me', 'people.payslips'),
       sub('leave', 'Leave and overtime', 'people.leave', 'people.overtime'),
-      sub('employees', 'Employees', 'people.employees', 'people.register', 'people.letters', 'people.holidays'),
+      sub('employees', 'Staff', 'people.employees', 'people.register', 'people.letters', 'people.holidays'),
       sub('payroll', 'Payroll', 'payroll.runs', 'payroll.structures', 'payroll.inputs', 'payroll.settings'),
       sub('loans', 'Loans and exits', 'payroll.loans', 'payroll.settlement'),
-      sub('masters', 'Masters', 'people.departments', 'people.designations', 'people.holidays', 'payroll.structures'),
+      sub('masters', 'Masters', 'people.departments', 'people.designations'),
     ],
   },
   {
@@ -285,9 +286,9 @@ export const DEPARTMENT_MODULES: NavModuleDef[] = [
       sub('masters', 'Masters', 'admin.masters'),
       sub('connections', 'Connections', 'admin.connections'),
       sub('data', 'Data and privacy', 'admin.data'),
-      sub('ai', 'Ask', 'admin.ai'),
+      sub('ai', `Ask ${PRODUCT_NAME} settings`, 'admin.ai'),
       sub('billing', 'Subscription', 'admin.billing'),
-      sub('console', 'Console', 'admin.platform'),
+      sub('console', `${PRODUCT_NAME} console`, 'admin.platform'),
     ],
   },
 ];
@@ -353,29 +354,6 @@ export function navMenuFor(user: NavUser, settings: Pick<NavSettingsDto, 'module
   return out;
 }
 
-/** The one-bar look's Home puts the modules in three groups: sites, materials and machines, then money, people and control. */
-export const NAV_MENU_GROUPS = ['Sites and projects', 'Materials and machines', 'Money, people and control'] as const;
-export type NavMenuGroup = (typeof NAV_MENU_GROUPS)[number];
-const GROUP_OF_FAMILY: Record<NavFamily, NavMenuGroup> = {
-  work: 'Sites and projects',
-  business: 'Sites and projects',
-  buying: 'Materials and machines',
-  materials: 'Materials and machines',
-  money: 'Money, people and control',
-  people: 'Money, people and control',
-  insight: 'Money, people and control',
-  admin: 'Money, people and control',
-};
-const GROUP_OF_MODULE: Record<string, NavMenuGroup> = {
-  'contractor-management': 'Sites and projects',
-  'labour-management': 'Sites and projects',
-  'plant-production': 'Materials and machines',
-  subcontracts: 'Sites and projects',
-  rmc: 'Materials and machines',
-};
-
-export const navMenuGroup = (m: Pick<NavMenuModule, 'key' | 'family'>): NavMenuGroup => GROUP_OF_MODULE[m.key] ?? GROUP_OF_FAMILY[m.family];
-
 /** The phone's Home tabs: Overview (the menu as it is), then the company's modules' pages by the work they are for. */
 export const HOME_TABS = [
   { key: 'overview', label: 'Overview' },
@@ -436,6 +414,10 @@ const TAB_OF_SUB: Record<string, HomeCategory> = {
 
 export const homeTabOf = (m: Pick<NavMenuModule, 'key' | 'family'>, subKey?: string): HomeCategory =>
   (subKey ? TAB_OF_SUB[`${m.key}.${subKey}`] : undefined) ?? TAB_OF_MODULE[m.key] ?? TAB_OF_FAMILY[m.family];
+
+/** The one-bar look's Home groups the modules under the phone's Home tabs, so a module is under one heading on both. */
+export const NAV_MENU_GROUPS = HOME_TABS.filter((t) => t.key !== 'overview').map((t) => t.label);
+export const navMenuGroup = (m: Pick<NavMenuModule, 'key' | 'family'>): string => HOME_TABS.find((t) => t.key === homeTabOf(m))!.label;
 
 /** A heading of a Home tab: a module of the menu (or the part of it that belongs here) and its pages. */
 export interface HomeTabSection {

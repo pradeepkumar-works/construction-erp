@@ -9,7 +9,7 @@ import type { ContractExtensionDto } from '@erp/shared';
 import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract, isForeign, MEASURE_TOLERANCE_PCT } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useContract } from '@/lib/queries';
-import { formatDate, formatINR, formatMoney, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatMoney, toNumber, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ContractFormModal } from './ContractFormModal';
 import { LdExposureCard } from './LdExposure';
@@ -55,18 +55,18 @@ export function ContractPanel({ projectId }: { projectId: string }) {
               </div>
             ) : (
               <span>
-                {c.clientName ?? '-'} {c.clientName && <AppTag>not in the client master</AppTag>}
+                {c.clientName ?? NO_VALUE} {c.clientName && <AppTag>not in the client master</AppTag>}
               </span>
             )}
           </Descriptions.Item>
           <Descriptions.Item label="Client GSTIN">
-            {c.client?.gstin ? <span translate="no">{c.client.gstin}</span> : '-'}
+            {c.client?.gstin ? <span translate="no">{c.client.gstin}</span> : NO_VALUE}
             {c.client?.stateCode && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{GST_STATES[c.client.stateCode] ?? c.client.stateCode}</div>}
           </Descriptions.Item>
-          <Descriptions.Item label="Work order">{c.workOrderNo ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="Agreement">{c.agreementNo ? `${c.agreementNo}${c.agreementDate ? `, ${formatDate(c.agreementDate)}` : ''}` : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Work order">{c.workOrderNo ?? NO_VALUE}</Descriptions.Item>
+          <Descriptions.Item label="Agreement">{c.agreementNo ? `${c.agreementNo}${c.agreementDate ? `, ${formatDate(c.agreementDate)}` : ''}` : NO_VALUE}</Descriptions.Item>
           <Descriptions.Item label="Contract value">
-            {c.contractValue ? <span translate="no">{formatMoney(c.contractValue, c)}</span> : '-'}
+            {c.contractValue ? <span translate="no">{formatMoney(c.contractValue, c)}</span> : NO_VALUE}
             {isForeign(c) && (
               <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }} translate="no">
                 {formatINR(c.contractValue)} at ₹&nbsp;{c.exchangeRate} to 1 {c.currency}
@@ -74,7 +74,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
             )}
           </Descriptions.Item>
           <Descriptions.Item label="Revised contract value">
-            {c.revisedContractValue ? <span translate="no">{formatMoney(c.revisedContractValue, c)}</span> : '-'}
+            {c.revisedContractValue ? <span translate="no">{formatMoney(c.revisedContractValue, c)}</span> : NO_VALUE}
             {toNumber(c.approvedVariations) !== 0 && (
               <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 <Link href={`/projects/${c.projectId}?tab=variations`}>{formatMoney(c.approvedVariations, c)} in approved variations</Link>
@@ -87,7 +87,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
             {formatDate(c.revisedEndDate)}
             {c.extensionDays > 0 && <AppTag tone="info" style={{ marginLeft: 8 }}>+{c.extensionDays} days</AppTag>}
           </Descriptions.Item>
-          <Descriptions.Item label="Defect liability">{c.defectLiabilityMonths !== null ? `${c.defectLiabilityMonths} months` : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Defect liability">{c.defectLiabilityMonths !== null ? `${c.defectLiabilityMonths} months` : NO_VALUE}</Descriptions.Item>
           <Descriptions.Item label="Client pays within">{c.clientPaymentDays !== null ? `${c.clientPaymentDays} days` : 'Not set (30 days assumed)'}</Descriptions.Item>
           <Descriptions.Item label="Hindrance notice within">{c.noticeDays !== null ? `${c.noticeDays} days` : 'Not set (14 days assumed)'}</Descriptions.Item>
           <Descriptions.Item label="Measure past the BOQ by up to">{c.measureTolerancePct !== null ? `${c.measureTolerancePct}%` : `Not set (${MEASURE_TOLERANCE_PCT}% assumed)`}</Descriptions.Item>
@@ -95,7 +95,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Mobilisation advance">{Number(c.mobilisationAdvance) > 0 ? <span translate="no">{formatMoney(c.mobilisationAdvance, c)}</span> : 'None'}</Descriptions.Item>
         </Descriptions>
       </Section>
-      <Section title="On each bill (% of the work value)">
+      <Section title="On each bill (% of the work done this bill)">
         <Descriptions size="small" column={{ xs: 2, sm: 4, lg: 7 }} layout="vertical" bordered>
           {CONTRACT_PERCENT_FIELDS.map((k) => (
             <Descriptions.Item key={k} label={CONTRACT_PERCENT_LABELS[k]}>
@@ -118,9 +118,9 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           columns={[
             { title: 'Delay', key: 'title', render: (_, e) => <span><Typography.Text type="secondary">{e.riskNo}</Typography.Text> {e.title}</span> },
             { title: 'Held up', key: 'dates', render: (_, e) => `${formatDate(e.delayStart)} to ${e.delayEnd ? formatDate(e.delayEnd) : 'date'}` },
-            { title: 'Days lost', dataIndex: 'daysLost', align: 'right', render: (v: number | null) => v ?? '-' },
-            { title: 'Caused by', dataIndex: 'responsibleParty', render: (v: ContractExtensionDto['responsibleParty']) => (v ? DELAY_PARTY_LABELS[v] : '-') },
-            { title: 'Granted (days)', dataIndex: 'eotGrantedDays', align: 'right', render: (v: number | null, e) => (v !== null ? v : e.eotClaimed ? <AppTag tone="pending">Claimed</AppTag> : '-') },
+            { title: 'Days lost', dataIndex: 'daysLost', align: 'right', render: (v: number | null) => v ?? NO_VALUE },
+            { title: 'Caused by', dataIndex: 'responsibleParty', render: (v: ContractExtensionDto['responsibleParty']) => (v ? DELAY_PARTY_LABELS[v] : NO_VALUE) },
+            { title: 'Granted (days)', dataIndex: 'eotGrantedDays', align: 'right', render: (v: number | null, e) => (v !== null ? v : e.eotClaimed ? <AppTag tone="pending">Claimed</AppTag> : NO_VALUE) },
           ]}
           summary={() =>
             c.extensions.length ? (

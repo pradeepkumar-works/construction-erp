@@ -80,7 +80,7 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
         return item(
           key,
           <Flex gap={token.marginXS}>
-            <Select aria-label="Manpower category" placeholder="Category" options={crew} style={{ flex: 1 }} />
+            <Select aria-label="Trade" placeholder="Trade" options={crew} style={{ flex: 1 }} />
             <InputNumber aria-label="Number" placeholder="Nos" style={{ width: 90 }} />
           </Flex>,
           phone ? undefined : `Categories: ${def.lines.crewCategories.join(', ')}`,
@@ -89,7 +89,7 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
         return item(
           key,
           <Flex gap={token.marginXS}>
-            <Select aria-label="Equipment" placeholder={def.lines.machineNames[0] ?? 'Equipment'} options={def.lines.machineNames.map((m) => ({ value: m, label: m }))} style={{ flex: 1 }} />
+            <Select aria-label="Machine" placeholder={def.lines.machineNames[0] ?? 'Machine'} options={def.lines.machineNames.map((m) => ({ value: m, label: m }))} style={{ flex: 1 }} />
             <InputNumber aria-label="Hours" placeholder="Hrs" style={{ width: 90 }} />
           </Flex>,
         );
@@ -143,8 +143,8 @@ export function DprFormPreview({ def, mode, locations, progressFromDpr }: { def:
           <>
             {wide.filter((k) => k === 'lines').map(builtIn)}
             {s === 'WORK' ? (
-              <Form.Item label={keys.includes('lines') ? 'Other work and notes' : 'Work executed'}>
-                <Input.TextArea aria-label="Work executed" rows={2} />
+              <Form.Item label={keys.includes('lines') ? 'Other work and notes' : 'Work done'}>
+                <Input.TextArea aria-label="Work done" rows={2} />
               </Form.Item>
             ) : null}
             <Grid cols={2}>{inline.map(builtIn)}</Grid>

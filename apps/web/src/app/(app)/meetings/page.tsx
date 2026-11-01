@@ -28,7 +28,7 @@ const MEETING_STATUS = [
 ];
 const ACTION_STATUS = [
   { value: 'open', label: 'Open actions' },
-  { value: 'overdue', label: 'Late' },
+  { value: 'overdue', label: 'Overdue' },
   { value: 'done', label: 'Done or dropped' },
   { value: 'all', label: 'All actions' },
 ];
@@ -192,13 +192,13 @@ function MeetingsPage() {
           {stat('This month', ms.thisMonth, 'Meetings held since the 1st')}
           {stat('Drafts', ms.drafts, 'Minutes not issued yet')}
           {stat('Open actions', ms.openActions, 'From every meeting')}
-          {stat('Late actions', ms.overdueActions, ms.overdueActions ? 'Past their date, still open' : 'None past its date', ms.overdueActions ? 'danger' : undefined)}
+          {stat('Overdue actions', ms.overdueActions, ms.overdueActions ? 'Past their due date, still open' : 'None past its due date', ms.overdueActions ? 'danger' : undefined)}
         </Row>
       ) : null}
       {view === 'actions' && as ? (
         <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
           {stat('Open', as.open, mine ? 'Yours, from every meeting' : 'From every meeting')}
-          {stat('Late', as.overdue, as.overdue ? 'Past their date' : 'None past its date', as.overdue ? 'danger' : undefined)}
+          {stat('Overdue', as.overdue, as.overdue ? 'Past their due date' : 'None past its due date', as.overdue ? 'danger' : undefined)}
           {stat('Due this week', as.dueThisWeek, 'Today and the next 7 days')}
           {stat('Done this month', as.doneThisMonth, 'Since the 1st')}
         </Row>

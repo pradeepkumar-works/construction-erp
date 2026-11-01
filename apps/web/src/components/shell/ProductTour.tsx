@@ -36,7 +36,7 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
       description: 'A quick look around the screen. Leave it any time; Help (?) at the top right has it again.',
     },
     mobile
-      ? { target: 'menu', title: 'Your pages', description: 'The menu opens every page your role uses, grouped by Site, Billing, Reports and more.', placement: 'bottom' }
+      ? { target: 'menu', title: 'Your pages', description: 'The menu opens every page your role uses, grouped by module: Site, Materials, Client billing, Reports and more.', placement: 'bottom' }
       : {
           target: 'sidebar',
           title: 'Your pages',
@@ -44,13 +44,19 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
             ? 'Your enquiries, orders, invoices and payments with this company.'
             : guest
             ? 'The projects you follow and what the contractor shares with you.'
-            : 'Every page your role uses, grouped by Site, Materials and plant, Billing, Reports and more. Press [ to fold it to icons and back.',
+            : 'Every page your role uses, grouped by module: Site, Materials, Client billing, Reports and more. Press [ to fold it to icons and back.',
           placement: 'right',
         },
+    !mobile && {
+      target: 'modules',
+      title: 'Your pages',
+      description: 'Home holds every module your role uses. In a module, its pages run along the bar at the top.',
+      placement: 'bottom',
+    },
     mayApprove(user) && {
       target: 'approvals',
       title: 'Waiting for you',
-      description: 'Entries that need your approval. Approve, reject or send them back with a note; the person who filed them is told.',
+      description: 'Entries that need your approval. Approve, reject or request changes with a note; the person who filed them is told.',
       placement: mobile ? 'bottom' : 'right',
     },
     {
@@ -62,7 +68,7 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
     {
       target: 'search',
       title: 'Jump anywhere',
-      description: `Find a page or a project by its name or code. ${searchShortcut()} opens it from any page.`,
+      description: `Find a page, a project or a record by its name or number. ${searchShortcut()} opens it from any page.`,
       placement: 'bottom',
     },
     {
@@ -74,13 +80,13 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
     {
       target: 'new',
       title: 'Start something new',
-      description: 'A daily report, progress entry, material request and whatever else your role files, from any page.',
+      description: 'A daily report, progress entry, indent and whatever else your role files, from any page.',
       placement: 'bottomRight',
     },
     {
       target: 'notifications',
       title: 'Notifications',
-      description: 'Approvals, reminders and alerts arrive here, and on your phone too when you use the site app.',
+      description: `Approvals, reminders and alerts arrive here, and on your phone too when you use the ${PRODUCT_NAME} app.`,
       placement: 'bottomRight',
     },
     {

@@ -26,7 +26,7 @@ export function ProjectSwitcher({ width }: { width: number }) {
 
   const options = useMemo(() => {
     const projects = data ?? [];
-    const item = (p: (typeof projects)[number]) => ({ value: p.id, label: `${p.code} - ${p.name}` });
+    const item = (p: (typeof projects)[number]) => ({ value: p.id, label: `${p.code} · ${p.name}` });
     if (!usesVerticals) return [{ value: ALL, label: 'All projects' }, ...projects.map(item)];
     const groups = byVertical(projects, (p) => p.verticalCode, master?.entries ?? []);
     return [

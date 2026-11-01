@@ -109,7 +109,7 @@ export function DebitNoteList({ projectId, vendorId }: { projectId?: string; ven
       ),
       total: (all) => formatINR(all.filter((r) => !r.cancelledAt).reduce((n, r) => n + toNumber(r.total), 0)),
     },
-    { key: 'state', title: 'State', width: 160, render: (_, r) => <DebitNoteTag note={r} /> },
+    { key: 'state', title: 'Status', width: 160, render: (_, r) => <DebitNoteTag note={r} /> },
     { key: 'createdByName', title: 'Raised by', dataIndex: 'createdByName', width: 150, defaultHidden: true },
   ];
   const choice = useColumnChoice('payables-debit-notes', columns);

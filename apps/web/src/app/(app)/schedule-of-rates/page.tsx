@@ -78,7 +78,7 @@ function ScheduleOfRatesPage() {
       icon={<PlusOutlined />}
       onClick={() => setBookForm({ book: null })}
     >
-      New schedule
+      New schedule of rates
     </Button>
   ) : null;
   const more: MenuProps["items"] =
@@ -147,7 +147,8 @@ function ScheduleOfRatesPage() {
                 {books.map((b) => (
                   <div role="listitem" key={b.id}>
                     <Button
-                      type="text"
+                      color={b.id === book?.id ? "primary" : "default"}
+                      variant={b.id === book?.id ? "filled" : "text"}
                       block
                       aria-current={b.id === book?.id ? "true" : undefined}
                       onClick={() => pick(b.id)}
@@ -158,18 +159,12 @@ function ScheduleOfRatesPage() {
                         justifyContent: "flex-start",
                         whiteSpace: "normal",
                         paddingBlock: 6,
-                        ...(b.id === book?.id
-                          ? {
-                              background: token.colorPrimaryBg,
-                              boxShadow: `inset 3px 0 0 ${token.colorPrimary}`,
-                            }
-                          : {}),
                       }}
                     >
                       <span>
                         <span
                           translate="no"
-                          style={{ display: "block", fontWeight: 500 }}
+                          style={{ display: "block", fontWeight: 500, color: token.colorText }}
                         >
                           {b.name}
                         </span>
@@ -445,7 +440,7 @@ function BookForm({
       layout="modal"
       projectDefault={false}
       title={book ? `Edit · ${book.name}` : "New schedule of rates"}
-      okText={book ? "Save" : "Add schedule"}
+      okText="Save"
       onSubmit={async (v) => {
         const body = {
           name: v.name.trim(),
@@ -587,7 +582,7 @@ function SorItemForm({
               {
                 required: true,
                 whitespace: true,
-                message: "Enter the unit, e.g. cum",
+                message: "Enter the unit, e.g. Cum",
               },
             ]}
           >

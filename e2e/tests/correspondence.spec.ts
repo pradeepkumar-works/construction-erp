@@ -24,8 +24,8 @@ test('a letter received is numbered, answered with a notice the project manager 
   await signIn(page, 'docs@demo.com');
   await page.goto('/correspondence');
   await expect(page.getByRole('heading', { name: 'Inward register', level: 1 })).toBeVisible();
-  await page.getByRole('button', { name: 'Record letter' }).first().click();
-  const modal = formPanel(page, 'Record letter received');
+  await page.getByRole('button', { name: 'Record inward letter' }).first().click();
+  const modal = formPanel(page, 'Record inward letter');
   await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
   await modal.getByLabel('From').fill('The Executive Engineer, R&B Division, Khordha');
   await modal.getByLabel('Subject').fill(subject);
@@ -63,7 +63,7 @@ test('a letter received is numbered, answered with a notice the project manager 
   const pm = await browser.newPage();
   await signIn(pm, 'pm@demo.com');
   await pm.goto(`/correspondence/${draft.id}`);
-  await pm.getByRole('button', { name: 'Approve and number' }).click();
+  await pm.getByRole('button', { name: 'Sign and number' }).click();
   await expect(pm.getByText(/Signed: RD01\/OUT\/\d\d-\d\d\/\d{3}/)).toBeVisible();
 
   const answered = await api<Letter>(docs, `/letters/${received.id}`);

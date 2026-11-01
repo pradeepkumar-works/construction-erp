@@ -7,7 +7,7 @@ import { Select, Typography, theme } from 'antd';
 import type { OrderStage, RequestToOrderDto } from '@erp/shared';
 import { ORDER_STAGES, ORDER_STAGE_LABELS, rankLabel } from '@erp/shared';
 import { useRequestsToOrder } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import dayjs from 'dayjs';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -47,9 +47,9 @@ const lateBy = (requiredDate: string) => dayjs().startOf('day').diff(dayjs(requi
 /** What the stage waits on, in a line: who answered the enquiry, what is not quoted, who was finalised. */
 export function stageNote(r: RequestToOrderDto): string | null {
   if (r.stage === 'AWAITING_QUOTES' && r.enquiry) return `${r.enquiry.replied} of ${r.enquiry.invited} replied, closes ${formatDate(r.enquiry.closesOn)}`;
-  if (r.stage === 'AWAITING_APPROVAL' && r.final) return `${r.final.split ? 'Split per item' : (r.final.vendorName ?? 'Quotation')}, waiting for approval`;
+  if (r.stage === 'AWAITING_APPROVAL' && r.final) return `${r.final.split ? 'L1 per item' : (r.final.vendorName ?? 'Quotation')}, waiting for approval`;
   if (r.stage === 'TO_FINALISE' && r.final?.approval) return `${r.final.approval.status === 'REJECTED' ? 'Rejected' : 'Sent back'}${r.final.approval.reviewedByName ? ` by ${r.final.approval.reviewedByName}` : ''}: finalise again`;
-  if (r.stage === 'READY' && r.final) return r.final.split ? 'Lowest per item, split between vendors' : `${r.final.vendorName ?? 'Quotation'}${r.final.rank ? ` (${rankLabel(r.final.rank)})` : ''}`;
+  if (r.stage === 'READY' && r.final) return r.final.split ? 'L1 per item, over more than one vendor' : `${r.final.vendorName ?? 'Quotation'}${r.final.rank ? ` (${rankLabel(r.final.rank)})` : ''}`;
   if (r.itemsUnquoted > 0 && r.quotations > 0) return `${r.itemsUnquoted} item${r.itemsUnquoted === 1 ? '' : 's'} nobody quoted`;
   if (r.stage === 'TO_ENQUIRE') return 'Send an enquiry or record a quotation';
   return null;
@@ -81,7 +81,7 @@ function columns(showProject: boolean): ListColumn<RequestToOrderDto>[] {
         <div>
           {r.itemNames.join(', ')}
           {r.itemsLeft > r.itemNames.length ? ` and ${r.itemsLeft - r.itemNames.length} more` : ''}
-          {r.orders > 0 ? <Sub>{r.orders} order{r.orders === 1 ? '' : 's'} raised already</Sub> : null}
+          {r.orders > 0 ? <Sub>{r.orders} order{r.orders === 1 ? '' : 's'} made already</Sub> : null}
         </div>
       ),
     },
@@ -129,7 +129,7 @@ function columns(showProject: boolean): ListColumn<RequestToOrderDto>[] {
             <Sub><span translate="no">{r.l1.vendorName}</span></Sub>
           </div>
         ) : (
-          <span className="text-muted">{r.quotations ? 'No complete quote' : 'No quotes'}</span>
+          <span className="text-muted">{r.quotations ? 'No complete quotation' : 'No quotations'}</span>
         ),
     },
     {
@@ -145,10 +145,10 @@ function columns(showProject: boolean): ListColumn<RequestToOrderDto>[] {
             <Sub><span translate="no">{r.l2.vendorName}</span></Sub>
           </div>
         ) : (
-          <span className="text-muted">-</span>
+          <span className="text-muted">{NO_VALUE}</span>
         ),
     },
-    { key: 'quotes', defaultFrom: 1800, title: 'Quotes', dataIndex: 'quotations', width: 90, align: 'right' },
+    { key: 'quotes', defaultFrom: 1800, title: 'Quotations', dataIndex: 'quotations', width: 90, align: 'right' },
   ];
 }
 
@@ -184,7 +184,7 @@ export function RequestsToOrderList() {
         onProject={frame.setProjectFilter}
         search={page.search}
         onSearch={page.setSearch}
-        searchPlaceholder="Search request no., item, project, supplier"
+        searchPlaceholder="Search indent no., item, project, vendor"
         searchLabel="Search requests to order"
       >
         <Select
@@ -210,7 +210,7 @@ export function RequestsToOrderList() {
         empty={frame.empty}
         failed={!!error}
         scrollX={1100}
-        emptyText={<EmptyArt art="approved" title={stage ? `Nothing at ${ORDER_STAGE_LABELS[stage].toLowerCase()}` : 'Nothing to order. Approved material requests show here until everything on them is ordered.'} />}
+        emptyText={<EmptyArt art="approved" title={stage ? `Nothing at ${ORDER_STAGE_LABELS[stage].toLowerCase()}` : 'Nothing to order. Approved indents show here until everything on them is ordered.'} />}
       />
     </>
   );

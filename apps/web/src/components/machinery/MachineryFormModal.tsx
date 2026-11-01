@@ -161,14 +161,14 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
       form={form}
       layout="drawer"
       title={log ? `${editActionLabel(log.status)} · ${log.equipmentCode}` : 'New machinery log'}
-      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      okText={editing ? 'Resubmit for approval' : 'Submit for approval'}
       onSubmit={submit}
     >
       <Form form={form} layout="vertical">
         {log?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${log.reviewedByName ?? 'approver'}`} description={log.reviewNote} />}
         <FormSection title="Machine and hours">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Choose a project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="equipmentId" label="Equipment" rules={[{ required: true, message: 'Choose the machine' }]}>
@@ -177,7 +177,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
                 selected={log ? { value: log.equipmentId, label: `${log.equipmentCode} - ${log.equipmentName}` } : prefill ? { value: prefill.equipmentId, label: prefill.equipmentLabel } : null}
               />
             </Form.Item>
-            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
           </FormGrid>
@@ -216,7 +216,7 @@ export function MachineryFormModal({ open, onClose, projectId, log, prefill }: {
             <Form.Item name="meterEnd" label="Hour meter end">
               <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
-            <Form.Item name="dieselLitres" label="Diesel filled">
+            <Form.Item name="dieselLitres" label="Fuel filled">
               <QuantityInput unit="L" />
             </Form.Item>
           </FormGrid>

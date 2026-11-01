@@ -1,7 +1,23 @@
 /** Data export and company deletion. */
+import { PRODUCT_NAME } from './brand';
 
 /** Days between an admin asking for the company to be deleted and the data being erased; the request can be cancelled until then. */
 export const DELETION_GRACE_DAYS = 30;
+
+/** The company log's actions (Admin › Company data); one not listed reads "Other". */
+export const COMPANY_LOG_LABELS: Record<string, string> = {
+  EXPORTED: 'Data exported',
+  DELETION_REQUESTED: 'Deletion requested',
+  DELETION_CANCELLED: 'Deletion cancelled',
+  SUPPORT_ACCESS_GRANTED: 'Support allowed',
+  SUPPORT_ACCESS_REVOKED: 'Support withdrawn',
+  SUPPORT_VIEW: 'Support visit',
+  SUSPENDED: 'Suspended',
+  UNSUSPENDED: 'Suspension lifted',
+  SUBSCRIPTION_PAID: 'Subscription paid',
+  TRIAL_CHANGED: 'Trial changed',
+  AI_SETTINGS: `Ask ${PRODUCT_NAME} settings`,
+};
 
 /** One table of the company's data and how many rows it has. */
 export interface CompanyExportTableDto {

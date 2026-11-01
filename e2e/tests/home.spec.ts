@@ -12,12 +12,12 @@ const section = (page: import('@playwright/test').Page, name: string) => page.ge
 const TITLES: Record<CardKey | 'approvals', string> = {
   approvals: 'Waiting for your approval',
   watchList: 'Watch list',
-  dprsMissing: 'DPRs not filed today',
+  dprsMissing: 'Daily reports not filed today',
   sentBack: 'Sent back to you',
   waitingWithOthers: 'Waiting with others',
-  receivables: 'Bills awaiting payment',
+  receivables: 'Bills waiting for payment',
   payablesDue: 'Payments due this week',
-  expiring: 'Guarantees and policies expiring',
+  expiring: 'Guarantees and licences expiring',
   lateDeliveries: 'Late deliveries',
   lowStock: 'Below minimum stock',
   meetingActions: 'Your actions from meetings',
@@ -25,7 +25,7 @@ const TITLES: Record<CardKey | 'approvals', string> = {
   dueThisWeek: 'Deliveries due this week',
   staffToDecide: 'Leave and overtime to decide',
   certifiedToReceive: 'Certified, payment to come',
-  toMatch: 'Goods received, no bill yet',
+  toMatch: 'Received, not billed',
   grnsToCheck: 'Material to check',
   findingsToClose: 'Audit findings to close',
   toDebit: 'Debit notes to raise',
@@ -55,7 +55,7 @@ test('accounts lead with money due and see cash flow', async ({ page }) => {
   await page.goto('/my-work');
   const mine = page.locator('.ant-card').filter({ has: page.getByText('My work', { exact: true }) });
   await expect(mine.getByRole('region').first()).toHaveAccessibleName('Payments due this week');
-  await expect(section(page, 'Bills awaiting payment')).toContainText(String(work.receivables!.count));
+  await expect(section(page, 'Bills waiting for payment')).toContainText(String(work.receivables!.count));
   await expect(page.getByText('Vendor payable', { exact: true })).toBeVisible();
   await expect(page.getByText(/^Received in [A-Z][a-z]{2,3}$/)).toBeVisible();
   await expect(page.getByText(/^Cost in [A-Z][a-z]{2,3}$/)).toBeVisible();
@@ -75,7 +75,7 @@ test('a project manager sees approvals, missing DPRs and the progress curve', as
   await expect(approvals).toBeVisible();
   await expect(approvals.getByRole('link', { name: 'Waiting for your approval' })).toHaveAttribute('href', '/approvals');
   // Missing DPRs are a card while any is missing; once every site has filed, they are named in the "Nothing else waiting" line.
-  if (work.dprsMissing!.count > 0) await expect(section(page, 'DPRs not filed today')).toBeVisible();
+  if (work.dprsMissing!.count > 0) await expect(section(page, 'Daily reports not filed today')).toBeVisible();
   else await expect(page.getByText(/^Nothing else waiting: .*\bDPRs\b/)).toBeVisible();
   await expect(page.getByText(/^Work done in [A-Z][a-z]{2,3}$/)).toBeVisible();
   // The approvals tile gave way to progress against plan: done against planned, not a lone number.
@@ -166,6 +166,6 @@ test('a site engineer sees no money', async ({ page }) => {
   await expect(page.getByText('Delayed activities', { exact: true })).toBeVisible();
   await expect(page.locator('.kpi-card').filter({ hasText: 'Delayed activities' })).toContainText(/due to finish by today|None was due/);
   await expect(page.getByText('Vendor payable')).toHaveCount(0);
-  await expect(page.getByText('Bills awaiting payment')).toHaveCount(0);
+  await expect(page.getByText('Bills waiting for payment')).toHaveCount(0);
   await expect(page.getByRole('img', { name: /^Cash in and out\. / })).toHaveCount(0);
 });

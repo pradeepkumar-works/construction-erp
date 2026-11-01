@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Input, Modal, Space, Table, Typography } from 'antd';
+import { App, Button, Form, Input, Modal, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import type { StaffAttendanceDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useOvertimeToDecide } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { CheckInPlaceTag, clock } from './staffUi';
 
@@ -50,7 +50,7 @@ export function OvertimeList() {
         </span>
       ),
     },
-    { title: 'Site', dataIndex: 'projectName', width: 220, ellipsis: true, render: (v: string | null) => v ?? '-' },
+    { title: 'Site', dataIndex: 'projectName', width: 220, ellipsis: true, render: (v: string | null) => v ?? NO_VALUE },
     {
       title: 'In and out',
       key: 'times',
@@ -58,7 +58,7 @@ export function OvertimeList() {
       render: (_, r) => (r.checkIn ? <span translate="no">{`${clock(r.checkIn)} to ${clock(r.checkOut)}`}</span> : <Typography.Text type="secondary">In the register</Typography.Text>),
     },
     { title: 'Overtime', dataIndex: 'overtimeHours', width: 100, align: 'right', render: (v: string) => <span translate="no">{v} h</span> },
-    { title: 'Marked in', key: 'place', width: 200, render: (_, r) => (r.checkInPlace ? <CheckInPlaceTag place={r.checkInPlace} /> : '-') },
+    { title: 'Mark-in place', key: 'place', width: 200, render: (_, r) => (r.checkInPlace ? <CheckInPlaceTag place={r.checkInPlace} /> : NO_VALUE) },
     {
       title: '',
       key: 'actions',
@@ -70,7 +70,7 @@ export function OvertimeList() {
             <Button size="small" danger onClick={() => setRejecting(r)} aria-label={`Reject ${r.employeeName}'s overtime on ${formatDate(r.date)}`}>
               Reject
             </Button>
-            <Button size="small" type="primary" loading={act.isPending && act.variables?.row.id === r.id} onClick={() => act.mutate({ row: r, decision: 'approve' })} aria-label={`Approve ${r.employeeName}'s overtime on ${formatDate(r.date)}`}>
+            <Button size="small" loading={act.isPending && act.variables?.row.id === r.id} onClick={() => act.mutate({ row: r, decision: 'approve' })} aria-label={`Approve ${r.employeeName}'s overtime on ${formatDate(r.date)}`}>
               Approve
             </Button>
           </Space>
@@ -80,7 +80,7 @@ export function OvertimeList() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Typography.Paragraph type="secondary">Overtime from check-outs, and from the register when someone else marked it, at your sites. Payroll pays approved overtime only.</Typography.Paragraph>
+      <Typography.Paragraph type="secondary">Overtime from marking out, and from the register when someone else marked it, at your sites. Payroll pays approved overtime only.</Typography.Paragraph>
       <Table<StaffAttendanceDto> rowKey="id" size="small" columns={columns} dataSource={data} pagination={false} scroll={{ x: 1210 }} locale={{ emptyText: 'No overtime waiting on you' }} />
       <Modal
         open={!!rejecting}
@@ -92,7 +92,11 @@ export function OvertimeList() {
         onCancel={() => setRejecting(null)}
         destroyOnHidden
       >
-        <Input.TextArea rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why, so they know what counts" aria-label="Reason for rejecting" />
+        <Form layout="vertical" component={false}>
+          <Form.Item label="Reason for rejecting" htmlFor="overtime-reject-reason" style={{ marginBottom: 0 }}>
+            <Input.TextArea id="overtime-reject-reason" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why, so they know what counts" />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

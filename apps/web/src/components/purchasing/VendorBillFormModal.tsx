@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto, VendorBillKind } from '@erp/shared';
-import { GST_RATES, readNumber, readText } from '@erp/shared';
+import { GST_RATES, readNumber, readText, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { usePurchaseOrder, usePurchaseOrders } from '@/lib/queries';
@@ -134,7 +134,7 @@ export function VendorBillFormModal({
       const v = lines[l.id];
       if (!v || !toNumber(v.quantity)) continue;
       const open = toNumber(l.receivedQty) - billedElsewhere(l);
-      if (toNumber(v.quantity) > open + 1e-9) out.push(`${l.itemName}: ${formatQty(v.quantity)} ${l.unit} billed, ${formatQty(Math.max(0, open))} received and not yet billed`);
+      if (toNumber(v.quantity) > open + 1e-9) out.push(`${l.itemName}: ${formatQty(v.quantity)} ${unitLabel(l.unit)} billed, ${formatQty(Math.max(0, open))} received and not yet billed`);
       if (toNumber(v.rate) > toNumber(l.rate)) out.push(`${l.itemName}: rate above the PO's ${formatINR(l.rate, true)}`);
       if (toNumber(v.gstRate) !== toNumber(l.gstRate)) out.push(`${l.itemName}: GST ${v.gstRate}% where the PO has ${l.gstRate}%`);
     }
@@ -235,7 +235,7 @@ export function VendorBillFormModal({
       allValues
       title={bill ? `Edit ${bill.billNo}` : 'Record vendor bill'}
       okText="Save and submit"
-      secondaryText="Save draft"
+      secondaryText="Save as draft"
       okDisabled={!po}
       onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
     >
@@ -266,7 +266,7 @@ export function VendorBillFormModal({
         ) : null}
         <FormSection title="Invoice">
           <FormGrid cols={4}>
-            <Form.Item name="purchaseOrderId" label="Purchase order" rules={[{ required: true, message: 'Pick the PO this invoice is for' }]}>
+            <Form.Item name="purchaseOrderId" label="Purchase order" rules={[{ required: true, message: 'Choose the PO this invoice is for' }]}>
               {bill || purchaseOrderId ? (
                 <Select disabled options={po ? [{ value: po.id, label: `${po.poNo} · ${po.vendorName}` }] : []} />
               ) : (
@@ -282,7 +282,7 @@ export function VendorBillFormModal({
             <Form.Item name="invoiceNo" label="Vendor's invoice no." rules={[{ required: true, whitespace: true, message: 'Enter the invoice number' }]} {...readFieldProps(readState, 'invoiceNo', setActiveRead)}>
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead, dateProblem)}>
+            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Choose the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead, dateProblem)}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             <Form.Item name="freight" label="Freight" extra={po && toNumber(po.freight) > 0 ? `PO freight ${formatINR(po.freight, true)}` : undefined} {...readFieldProps(readState, 'freight', setActiveRead)}>
@@ -327,7 +327,7 @@ export function VendorBillFormModal({
                     );
                   },
                 },
-                { title: 'Ordered', dataIndex: 'quantity', width: 100, align: 'right', render: (v, l) => `${formatQty(v)} ${l.unit}` },
+                { title: 'Ordered', dataIndex: 'quantity', width: 100, align: 'right', render: (v, l) => `${formatQty(v)} ${unitLabel(l.unit)}` },
                 { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => formatQty(v) },
                 { title: 'Billed before', key: 'billed', width: 100, align: 'right', render: (_, l) => formatQty(billedElsewhere(l)) },
                 {
@@ -375,7 +375,7 @@ export function VendorBillFormModal({
               ]}
             />
           ) : (
-            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Pick the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
+            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Choose the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
           )}
         </FormSection>
         {po && (

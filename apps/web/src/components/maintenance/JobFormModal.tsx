@@ -91,14 +91,14 @@ export function JobFormModal({
       onClose={onClose}
       form={form}
       layout="modal"
-      title={editing ? `Change ${job?.jobNo}` : breakdown ? 'Report breakdown' : 'New service job card'}
+      title={editing ? `Edit ${job?.jobNo}` : breakdown ? 'Report breakdown' : 'New service job card'}
       okText={editing ? 'Save' : breakdown ? 'Report' : 'Save job card'}
       onSubmit={(v) => save.mutateAsync(v)}
       draftKey={editing ? undefined : `maintenance-job:${kind ?? 'BREAKDOWN'}:${equipmentId ?? projectId ?? 'any'}`}
     >
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
-          <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Pick the machine' }]}>
+          <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Choose the machine' }]}>
             <EquipmentSelect disabled={editing} placeholder="Machine or vehicle" params={projectId ? { projectId } : undefined} />
           </Form.Item>
           {manager ? (
@@ -112,7 +112,7 @@ export function JobFormModal({
           )}
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="date" label={breakdown ? 'Stopped on' : 'Date'} rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label={breakdown ? 'Stopped on' : 'Date'} rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           <Form.Item name="meterReading" label="Hour meter / km">

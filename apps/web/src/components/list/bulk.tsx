@@ -73,7 +73,7 @@ export function useBulkApprove<T extends { id: string; status: SubmissionStatus 
 export function exportSelected<T extends { id: string }, R = T>(base: string, sheet: string, columns: ExportColumn<R>[], toRows?: (rows: T[]) => R[]): BulkAction<T> {
   return {
     key: 'export',
-    label: 'Export',
+    label: 'Export to Excel',
     icon: <DownloadOutlined />,
     run: (rows) => downloadXlsx(exportFileName(base), sheet, columns, toRows ? toRows(rows) : (rows as unknown as R[])),
   };

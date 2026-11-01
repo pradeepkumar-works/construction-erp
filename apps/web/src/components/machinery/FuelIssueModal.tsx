@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Alert, App, Form, Input, Select } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
-import { MAX_PAGE_SIZE, fuelNormText, meterUnit } from '@erp/shared';
+import { MAX_PAGE_SIZE, fuelNormText, meterUnit, unitLabel } from '@erp/shared';
 import { useEquipment, useFuelIssue, useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -68,35 +68,35 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
 
   const unit = meterUnit(machine?.fuelNormUnit);
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={640} title="Fuel issue" okText="Save fuel issue" onSubmit={submit}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={640} title="Record fuel issue" okText="Save fuel issue" onSubmit={submit}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Select project"
+            placeholder="Choose a project"
             onChange={() => form.setFieldsValue({ equipmentId: undefined, itemId: undefined })}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />
         </Form.Item>
         <FormGrid cols={2}>
           <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Choose the machine the fuel went into' }]} extra={machine?.fuelNorm && machine.fuelNormUnit ? `Norm ${fuelNormText(machine.fuelNorm, machine.fuelNormUnit)}` : undefined}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder={scope ? 'Machine on this site' : 'Pick the project first'}
+              placeholder={scope ? 'Machine on this site' : 'Choose the project first'}
               disabled={!scope}
               loading={machines.isLoading}
-              options={(machines.data?.items ?? []).map((m) => ({ value: m.id, label: `${m.code} - ${m.name}` }))}
+              options={(machines.data?.items ?? []).map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))}
             />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="itemId" label="Fuel" rules={[{ required: true, message: 'Choose the fuel' }]}>
             <Select
-              placeholder={scope ? 'Fuel in the store' : 'Pick the project first'}
+              placeholder={scope ? 'Fuel in the store' : 'Choose the project first'}
               disabled={!scope}
               loading={fuel.isLoading}
-              options={fuels.map((f) => ({ value: f.itemId, label: `${f.itemName} (${formatQty(f.balance)} ${f.unit} in stock)` }))}
+              options={fuels.map((f) => ({ value: f.itemId, label: `${f.itemName} (${formatQty(f.balance)} ${unitLabel(f.unit)} in stock)` }))}
             />
           </Form.Item>
           <Form.Item
@@ -105,7 +105,7 @@ export function FuelIssueModal({ open, onClose, projectId, equipmentId }: { open
             rules={[
               { required: true, message: 'Enter how much went in' },
               { validator: (_, v) => (!v || Number(v) > 0 ? Promise.resolve() : Promise.reject(new Error('Enter more than zero'))) },
-              { validator: (_, v) => (!v || !stock || Number(v) <= Number(stock.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(stock.balance)} ${stock.unit} in stock`))) },
+              { validator: (_, v) => (!v || !stock || Number(v) <= Number(stock.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(stock.balance)} ${unitLabel(stock.unit)} in stock`))) },
             ]}
           >
             <QuantityInput unit={stock?.unit ?? 'Ltr'} />

@@ -109,10 +109,10 @@ export function ClientFormModal({ open, client, initialName, onClose, onSaved }:
       <Form form={form} name="client" layout="vertical">
         <FormSection title="Client">
           <Form.Item name="name" label="Client name" rules={[{ required: true, whitespace: true, message: 'Enter the client name' }]}>
-            <Input placeholder="Odisha Works Department" />
+            <Input placeholder="e.g. Public Works Department" />
           </Form.Item>
           <Form.Item name="department" label="Department / division" extra="The office that issues the work orders and certifies bills.">
-            <Input placeholder="Roads Division, Khordha" />
+            <Input placeholder="e.g. Roads Division" />
           </Form.Item>
           <Form.Item name="billingAddress" label="Billing address">
             <Input.TextArea rows={2} />
@@ -121,17 +121,17 @@ export function ClientFormModal({ open, client, initialName, onClose, onSaved }:
         <FormSection title="Tax">
           <FormGrid cols={3}>
             <Form.Item name="gstin" label="GSTIN" normalize={upper} rules={[{ pattern: GSTIN_PATTERN, transform: (v?: string) => v?.trim().toUpperCase(), message: '15 characters, like 21AAAGO1234F1Z5' }]}>
-              <Input {...CODE_INPUT} placeholder="21AAAGO1234F1Z5" />
+              <Input {...CODE_INPUT} placeholder="e.g. 21AAAGO1234F1Z5" />
             </Form.Item>
             <Form.Item name="pan" label="PAN" normalize={upper} extra={gstin ? 'Taken from the GSTIN if left empty' : undefined} rules={[{ pattern: PAN_PATTERN, transform: (v?: string) => v?.trim().toUpperCase(), message: '10 characters, like AAAGO1234F' }]}>
-              <Input {...CODE_INPUT} placeholder="AAAGO1234F" />
+              <Input {...CODE_INPUT} placeholder="e.g. AAAGO1234F" />
             </Form.Item>
             <Form.Item name="stateCode" label="State (GST)">
               <Select
                 allowClear
                 showSearch={{ optionFilterProp: 'label' }}
                 disabled={!!fromGstin}
-                placeholder="Select"
+                placeholder="Choose the state"
                 options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))}
               />
             </Form.Item>

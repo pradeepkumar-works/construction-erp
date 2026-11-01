@@ -126,10 +126,10 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
       <Form form={form} layout="vertical" requiredMark="optional">
         {kind === 'open' ? (
           <>
-            <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Pick the project' }]}>
-              <ProjectSelect placeholder="Pick the project" allowClear={false} />
+            <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
+              <ProjectSelect placeholder="Choose a project" allowClear={false} />
             </Form.Item>
-            <Form.Item name="holderId" label="Held by" rules={[{ required: true, message: 'Pick who holds the cash' }]} extra="The site in-charge whose cash expenses spend it">
+            <Form.Item name="holderId" label="Held by" rules={[{ required: true, message: 'Choose who holds the cash' }]} extra="The site in-charge whose cash expenses spend it">
               <UserSelect roles={HOLDER_ROLES} />
             </Form.Item>
           </>

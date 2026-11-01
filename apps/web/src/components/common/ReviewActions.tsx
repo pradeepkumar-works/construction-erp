@@ -170,7 +170,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
       <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
         <Form.Item
           name="note"
-          label={decision === 'APPROVE' ? 'Note (optional)' : 'Reason'}
+          label={decision === 'APPROVE' ? 'Note' : 'Reason'}
           rules={
             decision && decision !== 'APPROVE'
               ? [

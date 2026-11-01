@@ -26,6 +26,6 @@ test('a site engineer has no Contract tab', async ({ page }) => {
   await openProjectTab(page, 'Plan');
   await expect(projectTabs(page, 'Plan').getByText('BOQ', { exact: true })).toBeVisible();
   await openProjectTab(page, 'Money');
-  await expect(projectTabs(page, 'Money').getByText('Expenses', { exact: true })).toBeVisible();
+  await expect(projectTabs(page, 'Money').getByText('Site expenses', { exact: true })).toBeVisible();
   await expect(projectTabs(page, 'Money').getByText('Contract', { exact: true })).toHaveCount(0);
 });

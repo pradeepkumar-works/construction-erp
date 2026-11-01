@@ -231,8 +231,8 @@ export function DprFormEditor({
             <Checkbox.Group options={DPR_LINE_PARTS.map((p) => ({ value: p, label: DPR_LINE_PART_LABELS[p] }))} />
           </Form.Item>
           <FormGrid cols={2}>
-            <Form.Item name="crewCategories" label="Crew categories" extra="Offered for manpower and a line's crew. Type to add one.">
-              <Select mode="tags" aria-label="Crew categories" tokenSeparators={[',']} placeholder="Mason, Helper…" />
+            <Form.Item name="crewCategories" label="Trades offered" extra="Offered for the day's labour and each line's. Type to add one.">
+              <Select mode="tags" aria-label="Trades offered" tokenSeparators={[',']} placeholder="Mason, Helper…" />
             </Form.Item>
             <Form.Item name="machineNames" label="Machines offered" extra="Offered by name; anything else can still be typed.">
               <Select mode="tags" aria-label="Machines offered" tokenSeparators={[',']} placeholder="JCB 3DX, Tipper…" />
@@ -266,7 +266,7 @@ export function DprFormEditor({
                 width: 170,
                 render: (f) => (
                   <Form.Item name={[f.name, 'labelHi']} noStyle>
-                    <Input aria-label={`Hindi name of field ${f.name + 1}`} maxLength={60} lang="hi" placeholder="Optional" />
+                    <Input aria-label={`Hindi name of field ${f.name + 1}`} maxLength={60} lang="hi" />
                   </Form.Item>
                 ),
               },

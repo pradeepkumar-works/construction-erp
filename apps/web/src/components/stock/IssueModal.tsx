@@ -7,7 +7,7 @@ import { DeleteOutlined, PlusOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
-import { MAX_PAGE_SIZE, canViewWorkOrders } from '@erp/shared';
+import { MAX_PAGE_SIZE, canViewWorkOrders, unitLabel } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useStructure, useWorkOrders } from '@/lib/queries';
@@ -83,13 +83,13 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Select project"
+            placeholder="Choose a project"
             onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined, workElementId: undefined, workOrderId: undefined })}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
           />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {(wos.data?.items.length ?? 0) > 0 && (
@@ -105,7 +105,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
               />
             </Form.Item>
           )}
-          <Form.Item name="issuedTo" label="Issued to" rules={[{ required: !workOrderId, whitespace: true, message: 'Who took the material?' }]}>
+          <Form.Item name="issuedTo" label="Issued to" rules={[{ required: !workOrderId, whitespace: true, message: 'Enter who took the material' }]}>
             <AutoComplete
               placeholder="Contractor, gang or person"
               options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))}
@@ -152,15 +152,15 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                   const row = items.find((i) => i.itemId === itemId);
                   return (
                     <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
+                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Choose an item' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
-                          placeholder={scope ? 'Item' : 'Pick the project first'}
+                          placeholder={scope ? 'Item' : 'Choose the project first'}
                           disabled={!scope}
                           loading={stock.isLoading}
                           options={items.map((i) => ({
                             value: i.itemId,
-                            label: `${i.itemName} (${formatQty(i.balance)} ${i.unit} in stock)`,
+                            label: `${i.itemName} (${formatQty(i.balance)} ${unitLabel(i.unit)} in stock)`,
                             disabled: chosen.has(i.itemId) && i.itemId !== itemId,
                           }))}
                         />
@@ -172,7 +172,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                           { required: true, message: 'Enter the quantity' },
                           {
                             validator: (_, v) =>
-                              !v || !row || Number(v) <= Number(row.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(row.balance)} ${row.unit} in stock`)),
+                              !v || !row || Number(v) <= Number(row.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(row.balance)} ${unitLabel(row.unit)} in stock`)),
                           },
                         ]}
                       >

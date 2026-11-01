@@ -54,17 +54,17 @@ test('prepare, approve, send and certify an RA bill', async ({ page }) => {
 
   await page.goto(`/bills?id=${bill.id}`);
   const approved = page.locator('.ant-drawer').filter({ hasText: 'Abstract of cost' });
-  await approved.getByRole('button', { name: 'Mark sent' }).click();
-  await page.locator('.ant-modal').filter({ hasText: 'Record as sent to the client' }).getByRole('button', { name: 'Save' }).click();
+  await approved.getByRole('button', { name: 'Record sent to client' }).click();
+  await page.locator('.ant-modal').filter({ hasText: 'Record sent to client' }).getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText(`${label} recorded as sent`)).toBeVisible();
 
   await approved.getByRole('button', { name: 'Record certificate' }).click();
-  const cert = page.locator('.ant-modal').filter({ hasText: 'Record the client’s certificate' });
-  await cert.getByLabel('Certificate / MB check reference').fill('EE/RD/E2E');
+  const cert = page.locator('.ant-modal').filter({ hasText: 'Record certificate' });
+  await cert.getByLabel('Certificate no.').fill('EE/RD/E2E');
   await cert.getByLabel('Certified quantity of 3.02').fill('150');
   await cert.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText(new RegExp(`${label} certified for`))).toBeVisible();
-  await expect(approved.getByText(/The client passed/)).toBeVisible();
+  await expect(approved.getByText(/The client certified/)).toBeVisible();
   await expect(approved.getByText('EE/RD/E2E', { exact: false })).toBeVisible();
 });
 
@@ -73,6 +73,6 @@ test('a site engineer has no RA bills', async ({ page }) => {
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
   await openProjectTab(page, 'Money');
-  await expect(projectTabs(page, 'Money').getByText('Expenses', { exact: true })).toBeVisible();
+  await expect(projectTabs(page, 'Money').getByText('Site expenses', { exact: true })).toBeVisible();
   await expect(projectTabs(page, 'Money').getByText('RA bills', { exact: true })).toHaveCount(0);
 });

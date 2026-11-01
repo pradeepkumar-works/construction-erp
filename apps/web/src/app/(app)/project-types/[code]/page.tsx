@@ -45,7 +45,7 @@ function Breakdown({ type, kinds }: { type: ProjectTypeDto; kinds: ComponentKind
   if (!rows.length)
     return (
       <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
-        No starting components. A new project of this type starts with its activities only; components are added on its Structure tab.
+        No starting components. A new project of this type starts with its activities only; components are added on its Components tab.
       </Typography.Paragraph>
     );
   return (
@@ -60,7 +60,7 @@ function Breakdown({ type, kinds }: { type: ProjectTypeDto; kinds: ComponentKind
       columns={[
         { key: 'key', title: 'No.', dataIndex: 'key', width: 70, render: (v: string) => <span translate="no">{v}</span> },
         { key: 'name', title: 'Component', dataIndex: 'name' },
-        { key: 'kind', title: 'Kind', width: 220, render: (_, b) => kindOf(b.kind)?.name ?? <span className="text-muted">{b.kind} (not in the library)</span> },
+        { key: 'kind', title: 'Component type', width: 220, render: (_, b) => kindOf(b.kind)?.name ?? <span className="text-muted">A type that was removed</span> },
         { key: 'count', title: 'Copies', dataIndex: 'count', width: 90, align: 'right', render: (v: number, b) => (b.parentKey ? <span className="text-muted">Each</span> : <span translate="no">{v}</span>) },
         { key: 'weight', title: 'Weight', dataIndex: 'weightPct', width: 100, align: 'right', render: (v: number | null | undefined) => (v === null || v === undefined ? <span className="text-muted">By BOQ</span> : <span translate="no">{v}%</span>) },
         { key: 'acts', title: 'Activities', width: 100, align: 'right', render: (_, b) => <span translate="no">{kindOf(b.kind) ? kindPlan(kindOf(b.kind)!, b.specs ?? null).length : 0}</span> },
@@ -178,7 +178,7 @@ export default function Page() {
           items={[
             {
               key: 'breakdown',
-              label: 'Setup and breakdown',
+              label: 'Setup and components',
               children: (
                 <>
                   <Descriptions
@@ -186,13 +186,13 @@ export default function Page() {
                     column={{ xs: 1, sm: 2, lg: 3 }}
                     style={{ margin: '12px 0 16px' }}
                     items={[
-                      { key: 'base', label: 'Built on', children: PROJECT_TYPE_LABELS[type.baseType] },
+                      { key: 'base', label: 'Based on', children: PROJECT_TYPE_LABELS[type.baseType] },
                       { key: 'code', label: 'Code', children: <span translate="no">{type.code}</span> },
                       { key: 'contract', label: 'Usual contract', children: CONTRACT_MODEL_LABELS[type.contractModel] },
                       { key: 'locations', label: 'Work is located by', children: type.locations.length ? type.locations.map((l) => WORK_LOCATION_LABELS[l]).join(', ') : 'Not by place' },
                       { key: 'pipes', label: 'Pipe network', children: type.pipeNetwork ? 'Yes' : 'No' },
                       { key: 'projects', label: 'Projects', children: <span translate="no">{type.projects}</span> },
-                      { key: 'kinds', label: 'Kinds offered first', span: 'filled', children: offered.length ? offered.join(', ') : 'Every kind in the library' },
+                      { key: 'kinds', label: 'Component types offered first', span: 'filled', children: offered.length ? offered.join(', ') : 'Every component type' },
                       ...(type.updatedAt ? [{ key: 'updated', label: 'Last changed', children: `${formatDateTime(type.updatedAt)}${type.updatedByName ? ` by ${type.updatedByName}` : ''}` }] : []),
                     ]}
                   />

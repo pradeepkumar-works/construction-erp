@@ -111,6 +111,9 @@ export class MastersService {
         [...projects, ...tenders].forEach((r) => add(names.get(r.verticalCode!) ?? null, r._count._all));
         break;
       }
+      case 'workTrade':
+        (await this.prisma.defect.groupBy({ by: ['trade'], where: { organizationId: org, trade: { not: null } }, _count: { _all: true } })).forEach((r) => add(r.trade, r._count._all));
+        break;
     }
     return out;
   }

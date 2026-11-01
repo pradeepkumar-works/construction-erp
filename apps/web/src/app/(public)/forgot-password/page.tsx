@@ -6,6 +6,8 @@ import { Alert, Button, Form, Input, Result } from 'antd';
 import { api, errorMessage } from '@/lib/api';
 import { useAuthOptions } from '@/lib/queries';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { ResultMark } from '@/components/common/ResultMark';
+import { MailOutlined } from '@/components/common/icons';
 
 export default function ForgotPasswordPage() {
   const { data: options } = useAuthOptions();
@@ -30,7 +32,7 @@ export default function ForgotPasswordPage() {
     <AuthCard title="Reset your password" subtitle="Enter the email you sign in with and we will send you a link to choose a new password.">
       {sentTo ? (
         <Result
-          status="success"
+          icon={<ResultMark icon={<MailOutlined />} />}
           title="Check your email"
           subTitle={`If ${sentTo} has an account, a link to choose a new password is on its way. It works once and expires in 2 hours.`}
           extra={<Link href="/login" className="text-link">Back to sign in</Link>}
@@ -42,7 +44,7 @@ export default function ForgotPasswordPage() {
               type="warning"
               showIcon
               style={{ marginBottom: 16 }}
-              title="Password emails are not set up on this server."
+              title="Password emails are not set up yet."
               description="Ask your admin: they can send you a new password link from the Users page."
             />
           ) : null}

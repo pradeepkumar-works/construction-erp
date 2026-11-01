@@ -32,7 +32,7 @@ async function progressRow(page: Page, remarks: string) {
 async function approveFromRow(page: Page, row: ReturnType<Page['locator']>) {
   await row.getByRole('button', { name: 'Actions' }).click();
   await page.getByRole('menuitem', { name: 'Approve' }).click();
-  await page.locator('.ant-modal').filter({ hasText: 'Note (optional)' }).getByRole('button', { name: 'Approve' }).click();
+  await page.getByRole('dialog', { name: 'Approve' }).getByRole('button', { name: 'Approve' }).click();
 }
 
 test('a delete asks with its name, says it is gone, and Undo brings it back', async ({ page }) => {
@@ -99,7 +99,7 @@ test('a new entry says what was made, and View opens it', async ({ page }) => {
   const modal = page.locator('.ant-modal').filter({ hasText: 'New progress entry' });
   await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
   await chooseOption(modal.getByLabel('Activity'));
-  await modal.getByLabel(/Quantity executed/).fill(uniqueQty());
+  await modal.getByLabel(/Quantity done/).fill(uniqueQty());
   await modal.getByLabel('Remarks').fill(remarks);
   await modal.getByRole('button', { name: 'Submit' }).click();
 
@@ -114,7 +114,7 @@ test('approving shows the new status at once, before the server answers', async 
   const entry = await submitProgress();
   await signIn(page, 'pm@demo.com');
   const row = await progressRow(page, entry.remarks);
-  await expect(row).toContainText('Pending Approval');
+  await expect(row).toContainText('Waiting for approval');
 
   let release: () => void = () => undefined;
   const held = new Promise<void>((r) => (release = r));
@@ -141,12 +141,12 @@ test('an approval that cannot reach the server goes back, says so in plain words
   await approveFromRow(page, row);
   const failed = notice(page, 'Could not reach Nirmaan. Your changes are kept; check your connection and try again.');
   await expect(failed).toBeVisible();
-  await expect(row).toContainText('Pending Approval');
+  await expect(row).toContainText('Waiting for approval');
   const pm = await apiToken('pm@demo.com');
   expect((await api<{ status: string }>(pm, `/progress/${entry.id}`)).status).toBe('SUBMITTED');
 
   await page.unroute('**/api/approvals/progress/*/review');
-  await failed.getByRole('button', { name: 'Retry' }).click();
+  await failed.getByRole('button', { name: 'Try again' }).click();
   await expect(row).toContainText('Approved');
   await expect(notice(page, /^Approved$/)).toBeVisible();
   expect((await api<{ status: string }>(pm, `/progress/${entry.id}`)).status).toBe('APPROVED');

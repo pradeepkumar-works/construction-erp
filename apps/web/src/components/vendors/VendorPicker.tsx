@@ -47,7 +47,7 @@ export function VendorPicker({
       value={value}
       onChange={onChange}
       options={options}
-      placeholder={placeholder ?? 'Pick from the vendor master or type a name'}
+      placeholder={placeholder ?? 'Choose from the vendor master or type a name'}
       // The master already matched the words typed.
       showSearch={{ filterOption: false }}
       onOpenChange={setOpen}

@@ -46,7 +46,7 @@ function TypesTab({ types }: { types: ProjectTypeDto[] }) {
         ),
       },
       { key: 'state', title: 'State', width: 120, card: 'status', render: (_, t) => <TypeStateTag standard={t.standard} edited={t.edited} active={t.active} /> },
-      { key: 'base', title: 'Built on', width: 140, card: 'meta', cardText: (t) => PROJECT_TYPE_LABELS[t.baseType], render: (_, t) => PROJECT_TYPE_LABELS[t.baseType] },
+      { key: 'base', title: 'Based on', width: 140, card: 'meta', cardText: (t) => PROJECT_TYPE_LABELS[t.baseType], render: (_, t) => PROJECT_TYPE_LABELS[t.baseType] },
       { key: 'components', title: 'Components', width: 120, align: 'right', render: (_, t) => count(t.breakdown.reduce((n, b) => n + (b.parentKey ? 0 : b.count), 0)) },
       { key: 'activities', title: 'Activities', width: 110, align: 'right', render: (_, t) => count(t.activities.length) },
       { key: 'projects', title: 'Projects', width: 100, align: 'right', render: (_, t) => count(t.projects) },
@@ -76,7 +76,7 @@ function KindsTab({ kinds, onOpen }: { kinds: ComponentKindDto[]; onOpen: (k: Co
     () => [
       {
         key: 'name',
-        title: 'Component kind',
+        title: 'Component type',
         locked: true,
         card: 'title',
         cardText: (k) => k.name,
@@ -90,10 +90,10 @@ function KindsTab({ kinds, onOpen }: { kinds: ComponentKindDto[]; onOpen: (k: Co
         ),
       },
       { key: 'state', title: 'State', width: 120, card: 'status', render: (_, k) => <TypeStateTag standard={k.standard} edited={k.edited} active={k.active} /> },
-      { key: 'base', title: 'Built on', width: 170, card: 'meta', cardText: (k) => WORK_ELEMENT_TYPE_LABELS[k.elementType], render: (_, k) => WORK_ELEMENT_TYPE_LABELS[k.elementType] },
+      { key: 'base', title: 'Based on', width: 170, card: 'meta', cardText: (k) => WORK_ELEMENT_TYPE_LABELS[k.elementType], render: (_, k) => WORK_ELEMENT_TYPE_LABELS[k.elementType] },
       { key: 'specs', title: 'Specs', width: 90, align: 'right', render: (_, k) => count(k.specFields.length) },
       { key: 'steps', title: 'Steps', width: 90, align: 'right', render: (_, k) => count(k.steps.length) },
-      { key: 'components', title: 'Laid out', width: 110, align: 'right', render: (_, k) => count(k.components) },
+      { key: 'components', title: 'Components made', width: 140, align: 'right', render: (_, k) => count(k.components) },
     ],
     [],
   );
@@ -146,7 +146,7 @@ function ProjectTypes() {
           icon={<DownloadOutlined />}
           loading={exporting}
           disabled={!edited}
-          title={edited ? 'The kinds your company made or changed' : 'Every kind is the built-in one'}
+          title={edited ? 'The component types your company made or changed' : 'Every component type is the standard one'}
           onClick={async () => {
             setExporting(true);
             try {
@@ -158,14 +158,14 @@ function ProjectTypes() {
             }
           }}
         >
-          Export kinds
+          Export component types
         </Button>
       ) : null}
       <Button icon={<ImportOutlined />} onClick={() => setImporting(true)}>
         Import
       </Button>
       <Button type="primary" icon={<PlusOutlined />} onClick={() => setMaking(tab === 'kinds' ? 'kind' : 'type')}>
-        {tab === 'kinds' ? 'New component kind' : 'New project type'}
+        {tab === 'kinds' ? 'New component type' : 'New project type'}
       </Button>
     </>
   ) : null;
@@ -190,7 +190,7 @@ function ProjectTypes() {
             onChange={setTab}
             items={[
               { key: 'types', label: 'Types', count: types.data.length, countLabel: 'types', children: <TypesTab types={types.data} /> },
-              { key: 'kinds', label: 'Component kinds', count: kinds.data.length, countLabel: 'kinds', children: <KindsTab kinds={kinds.data} onOpen={(k) => setOpenKind(k.code)} /> },
+              { key: 'kinds', label: 'Component types', count: kinds.data.length, countLabel: 'component types', children: <KindsTab kinds={kinds.data} onOpen={(k) => setOpenKind(k.code)} /> },
             ]}
           />
         </Card>

@@ -4,7 +4,7 @@ import React from 'react';
 import { AppTag } from '@/components/common/AppTag';
 import type { PayrollRunStatus, SettlementStatus } from '@erp/shared';
 import { PAYROLL_RUN_STATUS_LABELS, SETTLEMENT_STATUS_LABELS } from '@erp/shared';
-import { formatINR } from '@/lib/format';
+import { formatINR, formatMonthLong } from '@/lib/format';
 
 const COLOR: Record<PayrollRunStatus, string> = { DRAFT: 'default', SUBMITTED: 'processing', APPROVED: 'gold', PAID: 'success' };
 
@@ -27,7 +27,4 @@ export function saveText(fileName: string, mimeType: string, content: string) {
 }
 
 /** "October 2026" from "2026-10". */
-export const monthLabel = (m: string) => {
-  const [y, mm] = m.split('-').map(Number);
-  return new Date(Date.UTC(y, mm - 1, 1)).toLocaleString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-};
+export const monthLabel = (m: string) => formatMonthLong(m);

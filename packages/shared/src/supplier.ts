@@ -115,7 +115,7 @@ export interface SupplierOrderDto {
 }
 
 export type SupplierDispatchStatus = 'ON_THE_WAY' | 'RECEIVED' | 'CANCELLED';
-export const SUPPLIER_DISPATCH_STATUS_LABELS: Record<SupplierDispatchStatus, string> = { ON_THE_WAY: 'On the way', RECEIVED: 'Received', CANCELLED: 'Cancelled' };
+export const SUPPLIER_DISPATCH_STATUS_LABELS: Record<SupplierDispatchStatus, string> = { ON_THE_WAY: 'In transit', RECEIVED: 'Received', CANCELLED: 'Cancelled' };
 
 /** A dispatch note: what the supplier sent against a PO. The store's GRN is filled from it. */
 export interface SupplierDispatchDto {

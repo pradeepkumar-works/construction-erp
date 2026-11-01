@@ -8,11 +8,11 @@ import type { ContractCurrency, RaBillDto, RaBillStageLineDto, SlippageLineDto }
 import { STAGE_TRIGGER_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { formatDate, formatMoney, formatPct, toNumber } from '@/lib/format';
+import { formatDate, formatMoney, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 
-const pct = (v: string | number | null) => (v === null ? '-' : <span className="mono" translate="no">{formatPct(v, { digits: toNumber(v) % 1 ? 2 : 0 })}</span>);
+const pct = (v: string | number | null) => (v === null ? NO_VALUE : <span className="mono" translate="no">{formatPct(v, { digits: toNumber(v) % 1 ? 2 : 0 })}</span>);
 const money = (v: string, c: ContractCurrency) => <span className="mono" translate="no">{formatMoney(v, c, true)}</span>;
 
 /**
@@ -72,7 +72,7 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
                   <div>
                     <Tooltip title={l.note ?? undefined}>
                       <AppTag tone="pending" style={{ marginInlineEnd: 0 }}>
-                        Claimed by hand
+                        Claimed over the evidence
                       </AppTag>
                     </Tooltip>
                     <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
@@ -150,7 +150,7 @@ function ClaimModal({ bill, line, onClose }: { bill: RaBillDto; line: RaBillStag
       footerExtra={
         line?.claimedByHand ? (
           <Button loading={claim.isPending} onClick={() => claim.mutateAsync({ pct: null, note: null }).then(onClose)}>
-            Back to the evidence
+            Use the evidence's %
           </Button>
         ) : null
       }
@@ -184,7 +184,7 @@ export function SlippageNotes({ lines, withheld, c }: { lines: SlippageLineDto[]
     <>
       <Typography.Paragraph type="secondary">
         {lines.length
-          ? `Behind the milestone grid at the measurements date. This bill ${net < 0 ? `releases ${formatMoney(-net, c, true)}` : `withholds ${formatMoney(net, c, true)}`}: the total below less what earlier bills withheld.`
+          ? `Behind the milestone targets at the measurements date. This bill ${net < 0 ? `releases ${formatMoney(-net, c, true)}` : `withholds ${formatMoney(net, c, true)}`}: the total below less what earlier bills withheld.`
           : net < 0
             ? `Every component is on its target, so this bill releases the ${formatMoney(-net, c, true)} earlier bills withheld.`
             : 'Every component is on its target.'}
@@ -201,7 +201,7 @@ export function SlippageNotes({ lines, withheld, c }: { lines: SlippageLineDto[]
             { title: 'Target', dataIndex: 'targetPct', align: 'right', render: (v: number) => pct(v) },
             { title: 'Billed', dataIndex: 'actualPct', align: 'right', render: (v: number) => pct(v) },
             { title: 'Behind by', dataIndex: 'behindPct', align: 'right', render: (v: number) => `${formatPct(v)} of the target` },
-            { title: 'Tier', dataIndex: 'tierPct', align: 'right', render: (v: number) => pct(v) },
+            { title: 'Slab', dataIndex: 'tierPct', align: 'right', render: (v: number) => pct(v) },
             { title: 'Withheld to date', dataIndex: 'withheld', align: 'right', render: (v: string) => <strong>{money(v, c)}</strong> },
           ]}
         />

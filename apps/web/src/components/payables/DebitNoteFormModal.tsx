@@ -142,8 +142,8 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
       layout="modal"
       width={920}
       allValues
-      title={target ? `Raise debit note · ${target.label}` : grn ? `Raise debit note · ${grn.entryNo}` : 'Raise debit note'}
-      okText="Raise debit note"
+      title={target ? `New debit note · ${target.label}` : grn ? `New debit note · ${grn.entryNo}` : 'New debit note'}
+      okText="Save debit note"
       okDisabled={!target || over > 1}
       onSubmit={(v) => save.mutateAsync(v)}
       footerExtra={
@@ -175,7 +175,7 @@ export function DebitNoteFormModal({ open, bill, grn, onClose, onSaved }: { open
           <Form.Item name="reason" label="Reason" rules={[{ required: true, message: 'Choose the reason' }]}>
             <Select showSearch={{ optionFilterProp: 'label' }} options={DEBIT_NOTE_REASONS.map((r) => ({ value: r, label: DEBIT_NOTE_REASON_LABELS[r] }))} />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the note' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date of the note' }]}>
             <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!target && d.isBefore(dayjs(target.billDate), 'day'))} />
           </Form.Item>
         </FormGrid>

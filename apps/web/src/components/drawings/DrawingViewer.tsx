@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, App, Button, Checkbox, Flex, Popover, Result, Segmented, Select, Space, Spin, Switch, Tooltip, Typography, theme } from 'antd';
+import { ResultMark } from '@/components/common/ResultMark';
 import {
   ArrowRightOutlined,
   BorderOuterOutlined,
@@ -44,6 +45,7 @@ import {
   takeoffLine,
   takeoffProblem,
   takeoffValue,
+  unitLabel,
 } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { BRAND } from '@/lib/brand';
@@ -68,7 +70,7 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { RfiFormModal } from '@/components/documents/RfiFormModal';
-import { RevisionStatusTag } from '@/components/documents/docUi';
+import { RevisionStatusTag, revLabel } from '@/components/documents/docUi';
 import { MeasurementFormModal, type MeasurementPrefill } from '@/components/measurements/MeasurementFormModal';
 import { MarkShape, MARKUP_INK, VB_W, type ShownMark } from './MarkupLayer';
 import { MarkupList, MarkupNoteForm, ResolveMarkupForm, type ListScope } from './MarkupList';
@@ -503,7 +505,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
       ids: ts.map((t) => t.id),
       prefill: {
         lines: lines.map((l) => ({ description: l.description.slice(0, 200), nos: l.nos, length: l.length, breadth: l.breadth })),
-        remarks: `Taken off ${doc.docNo} Rev ${revs.join(', ')}: ${ts.map((t) => `T${t.takeoffNo}`).join(', ')}`,
+        remarks: `Taken off ${doc.docNo} ${revs.map(revLabel).join(', ')}: ${ts.map((t) => `T${t.takeoffNo}`).join(', ')}`,
       },
     });
   };
@@ -761,7 +763,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
           aria-label="Compare with another revision"
           value={compareRev?.id}
           onChange={(v) => setCompareId(v ?? null)}
-          options={revisions.filter((r) => r.id !== revision?.id && r.attachments.some(canViewDrawingFile)).map((r) => ({ value: r.id, label: `Compare with Rev ${r.revision}` }))}
+          options={revisions.filter((r) => r.id !== revision?.id && r.attachments.some(canViewDrawingFile)).map((r) => ({ value: r.id, label: `Compare with ${revLabel(r.revision)}` }))}
           disabled={!sheet?.readable}
         />
       ) : null}
@@ -779,14 +781,14 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         subtitle={
           revision ? (
             <Space size={6} wrap>
-              <span translate="no">Rev {revision.revision}</span>
+              <span translate="no">{revLabel(revision.revision)}</span>
               <RevisionStatusTag status={revision.status} />
               {!revision.current ? <Typography.Text type="warning">Superseded</Typography.Text> : null}
               <span>{doc.projectName}</span>
             </Space>
           ) : null
         }
-        crumbs={[{ title: 'Documents', href: '/documents' }, { title: doc.docNo, href: `/documents?id=${doc.id}` }, { title: 'Drawing' }]}
+        crumbs={[{ title: 'Drawings and documents', href: '/documents' }, { title: doc.docNo, href: `/documents?id=${doc.id}` }, { title: 'Drawing' }]}
         extra={
           <Flex gap={token.marginXS} wrap>
             {revisions.length > 1 ? (
@@ -798,7 +800,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                   setCompareId(null);
                   go({ rev: v, file: null, page: 1, mark: null });
                 }}
-                options={revisions.map((r) => ({ value: r.id, label: `Rev ${r.revision} · ${r.current ? REVISION_STATUS_LABELS[r.status] : 'Superseded'}` }))}
+                options={revisions.map((r) => ({ value: r.id, label: `${revLabel(r.revision)} · ${r.current ? REVISION_STATUS_LABELS[r.status] : 'Superseded'}` }))}
               />
             ) : null}
             {viewable.length > 1 ? (
@@ -855,11 +857,11 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               <Flex gap={token.marginSM} wrap align="center" style={{ fontSize: token.fontSizeSM }}>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareOld, verticalAlign: 'middle', marginRight: 4 }} />
-                  Only on Rev {compareIsOlder ? compareRev.revision : revision.revision} (older)
+                  Only on {revLabel(compareIsOlder ? compareRev.revision : revision.revision)} (older)
                 </span>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareNew, verticalAlign: 'middle', marginRight: 4 }} />
-                  Only on Rev {compareIsOlder ? revision.revision : compareRev.revision} (newer)
+                  Only on {revLabel(compareIsOlder ? revision.revision : compareRev.revision)} (newer)
                 </span>
                 <span>
                   <span aria-hidden style={{ display: 'inline-block', width: 12, height: 3, background: BRAND.colors.compareBoth, verticalAlign: 'middle', marginRight: 4 }} />
@@ -871,7 +873,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
             <div
               ref={attachViewport}
               role="application"
-              aria-label={`Drawing ${doc.docNo} Rev ${revision.revision}${pages > 1 ? `, page ${page} of ${pages}` : ''}. Arrow keys move it, plus and minus zoom, 0 fits the sheet.${isMeasure(tool) ? ' Enter finishes a measure, Backspace removes its last point, Escape drops it.' : ''}`}
+              aria-label={`Drawing ${doc.docNo} ${revLabel(revision.revision)}${pages > 1 ? `, page ${page} of ${pages}` : ''}. Arrow keys move it, plus and minus zoom, 0 fits the sheet.${isMeasure(tool) ? ' Enter finishes a measure, Backspace removes its last point, Escape drops it.' : ''}`}
               aria-roledescription="drawing viewer"
               // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keys move and zoom the drawing, so it takes focus
               tabIndex={0}
@@ -890,7 +892,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               }}
             >
               {sheetError ? (
-                <Result status="warning" title="This file cannot be shown" subTitle={sheetError} />
+                <Result icon={<ResultMark kind="error" />} title="This file cannot be shown" subTitle={sheetError} />
               ) : !sheet || !aspect || !baseW ? (
                 <Flex align="center" justify="center" style={{ height: '100%' }}>
                   <Spin description="Opening the drawing…" />
@@ -1085,7 +1087,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
         onClose={() => setToBoqOf(null)}
         onSubmit={async (v) => {
           await toBoq.mutateAsync({ ids: (toBoqOf ?? []).map((t) => t.id), boqItemId: v.boqItemId, field: v.field, factor: v.factor });
-          message.success(`${v.item.itemNo}'s ${v.field === 'ORIGINAL' ? 'original' : 'revised'} quantity is now ${formatQty(v.qty)} ${v.item.unit}`);
+          message.success(`${v.item.itemNo}'s ${v.field === 'ORIGINAL' ? 'original' : 'revised'} quantity is now ${formatQty(v.qty)} ${unitLabel(v.item.unit)}`);
           setChosen(new Set());
         }}
       />
@@ -1099,7 +1101,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
           rfiFrom
             ? {
                 subject: `${doc.docNo} M${rfiFrom.markupNo}: ${(rfiFrom.note ?? MARKUP_KIND_LABELS[rfiFrom.kind]).slice(0, 150)}`,
-                question: `${rfiFrom.note ? `${rfiFrom.note}\n\n` : ''}See mark M${rfiFrom.markupNo} on ${doc.docNo} Rev ${rfiFrom.revision}${rfiFrom.page > 1 ? `, page ${rfiFrom.page}` : ''}.`,
+                question: `${rfiFrom.note ? `${rfiFrom.note}\n\n` : ''}See mark M${rfiFrom.markupNo} on ${doc.docNo} ${revLabel(rfiFrom.revision)}${rfiFrom.page > 1 ? `, page ${rfiFrom.page}` : ''}.`,
               }
             : undefined
         }

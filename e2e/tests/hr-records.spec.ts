@@ -57,7 +57,7 @@ test('HR keeps the full staff record, its service events and letters', async ({ 
   await form.getByLabel('What the warning is about').fill('Late to site three days running');
   await form.getByRole('button', { name: 'Record' }).click();
   await expect(page.getByText(/Warning recorded: warning letter HR-\d{4}-\d{4}/)).toBeVisible();
-  await drawer.getByRole('button', { name: 'Take back' }).click();
-  await page.getByRole('button', { name: 'Take back' }).last().click();
-  await expect(page.getByText('Warning taken back')).toBeVisible();
+  await drawer.getByRole('row').filter({ hasText: 'Warning' }).getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel it' }).click();
+  await expect(page.getByText('Warning letter cancelled')).toBeVisible();
 });

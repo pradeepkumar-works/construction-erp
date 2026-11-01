@@ -27,7 +27,7 @@ test('the month’s leakage flags, with their rupees and the working behind each
     const first = data.flags[0];
     const card = page.locator(`[data-flag-key="${first.key}"]`);
     await expect(card.getByRole('heading', { name: first.title })).toBeVisible();
-    await card.getByRole('button', { name: 'Why: the working' }).click();
+    await card.getByRole('button', { name: 'Show how this was worked out' }).click();
     await expect(card.getByText(first.working[0], { exact: true })).toBeVisible();
   } else {
     await expect(page.getByText('Nothing found this month')).toBeVisible();

@@ -6,7 +6,8 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { StageBar } from '@/components/record/StageBar';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleFilled, CheckOutlined, CloseCircleFilled, EditOutlined, PlusOutlined } from '@/components/common/icons';
-import { SUBMISSION_STATUSES } from '@erp/shared';
+import { PRODUCT_NAME, SUBMISSION_STATUSES } from '@erp/shared';
+import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusTag } from '@/components/common/StatusTag';
 import { BRAND } from '@/lib/brand';
@@ -104,9 +105,22 @@ const rows = [
 
 /**
  * The design reference: every colour token, the type scale and the main components in the current appearance.
- * Not in the sidebar; open /design to check a theme change in light, dark and compact before it ships.
+ * Not in the sidebar; staff open /design to check a theme change in light, dark and compact before it ships.
  */
 export default function DesignPage() {
+  const { user } = useAuth();
+  if (!user) return null;
+  if (!user.platformAdmin || user.support)
+    return (
+      <div className="page-container">
+        <PageHeader title="Design reference" />
+        <Alert type="info" title={`This page is for ${PRODUCT_NAME} staff.`} />
+      </div>
+    );
+  return <DesignReference />;
+}
+
+function DesignReference() {
   const { token } = theme.useToken();
   const { prefs, setPrefs, dark } = useAppearance();
 

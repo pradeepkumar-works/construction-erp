@@ -37,7 +37,7 @@ function BooksPage() {
             destroyOnHidden
             items={[
               { key: 'day', label: 'Day book', children: <DayBook /> },
-              { key: 'cash', label: 'Cash and bank', children: <Ledgers money /> },
+              { key: 'cash', label: 'Cash and bank books', children: <Ledgers money /> },
               { key: 'ledgers', label: 'Ledgers', children: <Ledgers /> },
               { key: 'vouchers', label: 'Vouchers', children: <Vouchers /> },
               { key: 'accounts', label: 'Chart of accounts', children: <ChartOfAccounts /> },

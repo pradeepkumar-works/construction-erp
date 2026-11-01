@@ -15,7 +15,13 @@ interface FormValues {
   villages?: string[];
 }
 
-const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Like 12+000'))) };
+const chainageRule = { validator: (_: unknown, v?: string) => (!v || parseChainage(v) !== null ? Promise.resolve() : Promise.reject(new Error('Give the chainage like 12+000'))) };
+
+/** What the settings set, in the words of the tab they sit on. */
+export const sectorSetWhat = (project: Pick<ProjectDetail, 'type' | 'locations'>) => {
+  const k = sectorKinds(project);
+  return k.village ? 'villages' : k.floor ? 'floors' : 'chainage';
+};
 
 /** The project's length (road, pipeline), floors (building) or villages (water supply) that site entries are tagged with. */
 export function SectorSettingsModal({ open, onClose, project }: { open: boolean; onClose: () => void; project: ProjectDetail }) {
@@ -46,7 +52,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
       return (await api.patch<ProjectDetail>(`/projects/${project.id}`, body)).data;
     },
     onSuccess: () => {
-      message.success('Sector settings saved');
+      message.success(`${sectorSetWhat(project).replace(/^./, (c) => c.toUpperCase())} saved`);
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['sector', project.id] });
     },
@@ -54,7 +60,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Sector settings" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Set ${sectorSetWhat(project)}`} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         {k.chainage ? (
           <>
@@ -73,7 +79,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
                     validator: (_, v?: string) => {
                       const a = parseChainage(getFieldValue('chainageStart'));
                       const b = parseChainage(v);
-                      return a === null || b === null || b > a ? Promise.resolve() : Promise.reject(new Error('Must be after the start'));
+                      return a === null || b === null || b > a ? Promise.resolve() : Promise.reject(new Error('Chainage to must be after chainage from'));
                     },
                   }),
                 ]}

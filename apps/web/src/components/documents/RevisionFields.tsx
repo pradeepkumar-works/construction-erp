@@ -28,7 +28,7 @@ export function RevisionFields({ prefix = [], read }: { prefix?: string[]; read?
           <Select options={REVISION_STATUSES.map((s) => ({ value: s, label: REVISION_STATUS_LABELS[s] }))} />
         </Form.Item>
       </FormGrid>
-      <Form.Item name={n('receivedFrom')} label="Issued by (architect, consultant, client)" {...read?.('issuedBy')}>
+      <Form.Item name={n('receivedFrom')} label="Issued by" extra="The architect, consultant or client" {...read?.('issuedBy')}>
         <Input maxLength={200} />
       </Form.Item>
       <Form.Item name={n('remarks')} label="What changed">

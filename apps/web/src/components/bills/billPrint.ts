@@ -1,9 +1,8 @@
-import dayjs from 'dayjs';
 import type { RaBillDto } from '@erp/shared';
-import { BILL_STAGE_LABELS, CURRENCIES, OM_BENCHMARK_INFO, GST_STATES, currencySymbol, fromRupees, isForeign, type ContractCurrency } from '@erp/shared';
+import { BILL_STAGE_LABELS, CURRENCIES, SUBMISSION_STATUS_LABELS, OM_BENCHMARK_INFO, GST_STATES, currencySymbol, fromRupees, isForeign, type ContractCurrency } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
-import { formatDate, formatDateTime, formatMoney, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatMoney, formatMonth, formatQty, toNumber } from '@/lib/format';
 
 const esc = (v: unknown) =>
   String(v ?? '')
@@ -118,7 +117,7 @@ export function buildBillPrintHtml(b: RaBillDto, orgName: string): string {
     <thead><tr><th>Month</th><th>Particulars</th><th class="num">Amount (${sym})</th></tr></thead>
     <tbody>
       <tr><td></td><td>Instalment: ${esc(om.yearPct)}% of the contract for year ${esc(om.year)}, in its instalments</td><td class="num">${inr(om.instalmentAmount)}</td></tr>
-      ${om.staff.map((l) => `<tr><td>${esc(dayjs(`${l.month}-01`).format('MMM YYYY'))}</td><td>Less ${esc(l.role)}: ${esc(l.deployed)} deployed of ${esc(l.required)}</td><td class="num">-${inr(l.deduction)}</td></tr>`).join('')}
+      ${om.staff.map((l) => `<tr><td>${esc(formatMonth(l.month))}</td><td>Less ${esc(l.role)}: ${esc(l.deployed)} deployed of ${esc(l.required)}</td><td class="num">-${inr(l.deduction)}</td></tr>`).join('')}
       <tr class="total"><td colspan="2">Value of this bill</td><td class="num">${inr(b.grossAmount)}</td></tr>
     </tbody>
   </table>
@@ -126,13 +125,13 @@ export function buildBillPrintHtml(b: RaBillDto, orgName: string): string {
   <table>
     <thead><tr><th>Month</th><th>Benchmark</th><th class="num">Failures</th><th class="num">Allowed</th><th class="num">Penalty (${sym})</th></tr></thead>
     <tbody>
-      ${om.penalties.map((p) => `<tr><td>${esc(dayjs(`${p.month}-01`).format('MMM YYYY'))}</td><td>${esc(OM_BENCHMARK_INFO[p.key].label)}</td><td class="num">${esc(p.failures)}</td><td class="num">${esc(p.allowed)}</td><td class="num">${inr(p.amount)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">None</td></tr>'}
+      ${om.penalties.map((p) => `<tr><td>${esc(formatMonth(p.month))}</td><td>${esc(OM_BENCHMARK_INFO[p.key].label)}</td><td class="num">${esc(p.failures)}</td><td class="num">${esc(p.allowed)}</td><td class="num">${inr(p.amount)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">None</td></tr>'}
       <tr class="total"><td colspan="4">Deducted below</td><td class="num">${inr(om.penalty)}</td></tr>
     </tbody>
   </table>`
     : '';
   const client = b.client;
-  const status = b.status === 'APPROVED' ? BILL_STAGE_LABELS[b.stage] : b.status.replace(/_/g, ' ');
+  const status = b.status === 'APPROVED' ? BILL_STAGE_LABELS[b.stage] : SUBMISSION_STATUS_LABELS[b.status];
   const cols = certified ? 13 : 12;
 
   return `<!doctype html>
@@ -173,7 +172,7 @@ ${PRINT_FONT_LINKS}
 <body>
   <div class="head">
     <div><div class="brand">${esc(orgName)}</div><div class="org">${esc(b.projectName)} (${esc(b.projectCode)})</div></div>
-    <div style="text-align:right"><h1>${om ? 'O&amp;M Bill' : 'Running Account Bill'} No. ${esc(b.billNo)}${b.isFinal ? ' (Final)' : ''}</h1><div>${esc(formatDate(b.billDate))}</div><div style="margin-top:4px" class="status">${esc(status)}</div></div>
+    <div style="text-align:right"><h1>${om ? 'O&amp;M Bill' : b.isFinal ? 'Final Bill' : 'Running Account Bill'} No. ${esc(b.billNo)}</h1><div>${esc(formatDate(b.billDate))}</div><div style="margin-top:4px" class="status">${esc(status)}</div></div>
   </div>
   <div class="meta">
     <div><b>To</b>${esc(client?.name ?? b.clientName ?? '-')}${client?.department ? `<br/>${esc(client.department)}` : ''}${client?.billingAddress ? `<br/><span class="muted">${esc(client.billingAddress)}</span>` : ''}</div>
@@ -240,14 +239,14 @@ ${
     <div>
       <h2>Bill amount</h2>
       <table>
-        <tr><td>Value of work in this bill</td><td class="num">${inr(b.grossAmount)}</td></tr>
-        ${b.pvLines.length ? `<tr><td>Price variation${b.pvIndexMonth ? ` (indices for ${esc(dayjs(b.pvIndexMonth).format('MMM YYYY'))})` : ''}</td><td class="num">${inr(b.pvAmount)}</td></tr>` : ''}
+        <tr><td>Value of work done this bill</td><td class="num">${inr(b.grossAmount)}</td></tr>
+        ${b.pvLines.length ? `<tr><td>Price variation${b.pvIndexMonth ? ` (indices for ${esc(formatMonth(b.pvIndexMonth))})` : ''}</td><td class="num">${inr(b.pvAmount)}</td></tr>` : ''}
         <tr><td>GST @ ${esc(b.gstRate)}%</td><td class="num">${inr(b.gstAmount)}</td></tr>
-        <tr class="total"><td>Gross bill amount</td><td class="num">${inr(b.invoiceAmount)}</td></tr>
+        <tr class="total"><td>Bill amount with GST</td><td class="num">${inr(b.invoiceAmount)}</td></tr>
         <tr><td>Less deductions</td><td class="num">${inr(b.totalDeductions)}</td></tr>
         <tr class="total"><td>Net payable</td><td class="num">${inr(b.netPayable)}</td></tr>
       </table>
-      <div class="words">${esc(isForeign(b) ? amountInWords(fromRupees(b.netPayable, b.exchangeRate), b.currency) : rupeesInWords(b.netPayable))}${isForeign(b) ? `<div class="muted">At the contract rate of ₹ ${esc(b.exchangeRate)} to 1 ${esc(b.currency)}</div>` : ''}</div>
+      <div class="words">${esc(isForeign(b) ? amountInWords(fromRupees(b.netPayable, b.exchangeRate), b.currency) : rupeesInWords(b.netPayable))}${isForeign(b) ? `<div class="muted">At the contract rate of ${esc(formatINR(b.exchangeRate, true))} to 1 ${esc(b.currency)}</div>` : ''}</div>
       ${b.claimedNet !== null ? `<div class="muted" style="margin-top:4px">As claimed: work ${sym} ${inr(b.claimedGross)}, net ${sym} ${inr(b.claimedNet)}</div>` : ''}
     </div>
     <div>
@@ -260,7 +259,7 @@ ${
   <div class="sign"><div>Prepared by<br/>${esc(b.submittedByName)}</div><div>Checked and approved by<br/>${esc(b.reviewedByName ?? '')}</div><div>Measured and checked by (client)</div><div>Passed for payment (client)</div></div>
 
   ${annex ? `<div class="annex"><h2>Measurement annex</h2>${annex}</div>` : ''}
-  ${brandFooter(`Generated from ${esc(BRAND.name)} on ${esc(formatDateTime(new Date().toISOString()))} · Bill ID ${esc(b.id)}`)}
+  ${brandFooter(`Generated from ${esc(BRAND.name)} on ${esc(formatDateTime(new Date().toISOString()))} · ${esc(b.billLabel)}`)}
   ${AUTO_PRINT_SCRIPT}
 </body></html>`;
 }

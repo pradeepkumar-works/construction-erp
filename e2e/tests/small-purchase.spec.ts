@@ -91,14 +91,14 @@ test('a supplier quotes through the enquiry link and it lands on the comparative
   await api(pm, `/approvals/material_request/${mr.id}/review`, { method: 'POST', body: { decision: 'APPROVE' } });
 
   await signIn(page, 'procurement@demo.com');
-  await page.goto(`/material-requests/${mr.id}`);
+  await page.goto(`/requests-to-order/${mr.id}`);
   await page.getByRole('button', { name: 'Send enquiry' }).click();
   const modal = formPanel(page, `Send enquiry for ${mr.requestNo}`);
-  await chooseOption(modal.getByLabel('Suppliers', { exact: true }), 'Sahoo');
+  await chooseOption(modal.getByLabel('Vendors', { exact: true }), 'Sahoo');
   await page.keyboard.press('Escape');
   await modal.getByRole('button', { name: 'Send enquiry' }).click();
   const sent = page.locator('.ant-modal').filter({ hasText: 'Enquiry sent' });
-  const linkBox = sent.getByLabel(/Quote link for /);
+  const linkBox = sent.getByLabel(/Quotation link for /);
   await expect(linkBox).toBeVisible();
   const link = await linkBox.inputValue();
   expect(link).toMatch(/\/quote\/[A-Za-z0-9_-]{40,}$/);
@@ -125,7 +125,7 @@ test('a supplier quotes through the enquiry link and it lands on the comparative
   expect(enquiries[0].vendors[0].state).toBe('QUOTED');
   const comparative = await api<{ quotations: { vendorName: string; fromSupplier: boolean; deliveryDays: number; lines: { rate: string }[] }[] }>(procurement, `/material-requests/${mr.id}/comparative`);
   expect(comparative.quotations).toEqual([expect.objectContaining({ fromSupplier: true, deliveryDays: 4, lines: [expect.objectContaining({ rate: '142.50' })] })]);
-  await page.reload();
-  await expect(page.getByText('From supplier').first()).toBeVisible();
+  await page.goto(`/material-requests/${mr.id}`);
+  await expect(page.getByText('From vendor').first()).toBeVisible();
   await expect(page.getByRole('button', { name: /Last order ₹/ }).first()).toBeVisible();
 });

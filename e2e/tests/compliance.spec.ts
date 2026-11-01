@@ -50,7 +50,7 @@ test('accounts add a bank guarantee, see it expiring and renew it', async ({ pag
   await drawer.getByRole('button', { name: 'Renew' }).click();
   const renew = page.locator('.ant-modal').filter({ hasText: 'Renew' });
   await renew.getByLabel('New number').fill('BG/E2E/2');
-  await renew.getByRole('button', { name: 'Renew', exact: true }).click();
+  await renew.getByRole('button', { name: 'Renew guarantee', exact: true }).click();
   await expect(page.locator('.ant-message').getByText(/^Renewed to /)).toBeVisible();
   await expect(drawer.locator('.compliance-history')).toContainText('BG/E2E/1');
 

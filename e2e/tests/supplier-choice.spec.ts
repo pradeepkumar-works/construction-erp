@@ -42,7 +42,7 @@ test('a finalised supplier waits for approval before the order', async ({ browse
     // Purchase finalises L1 on the screen; it goes for approval and the screen says so.
     await signIn(page, 'procurement@demo.com');
     await page.goto(`/requests-to-order/${mr.id}`);
-    await expect(page.getByRole('tab', { name: /3\. Finalise and approve/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab', { name: /Finalise and approve/ })).toHaveAttribute('aria-selected', 'true');
     await page.getByRole('button', { name: 'Finalise L1' }).first().click();
     await expect(page.getByText('Waiting for approval:')).toBeVisible();
     const waiting = await row();

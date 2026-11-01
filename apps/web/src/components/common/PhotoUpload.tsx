@@ -46,7 +46,7 @@ export function PhotoUpload({
       const att = await uploadFile(drawings ? file : await shrinkPhoto(file));
       options.onSuccess?.(att);
     } catch (err) {
-      message.error(errorMessage(err, 'Upload failed'));
+      message.error(errorMessage(err, 'The photo did not upload. Check the connection and try again.'));
       options.onError?.(err as Error);
     }
   };

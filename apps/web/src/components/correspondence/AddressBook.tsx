@@ -99,7 +99,7 @@ export function AddressBook() {
     mutationFn: async (c: LetterContactDto) => (await api.patch<LetterContactDto>(`/letter-contacts/${c.id}`, { isActive: !c.isActive })).data,
     onSuccess: (c) => {
       qc.invalidateQueries({ queryKey: ['letter-contacts'] });
-      notify.success(`${c.name} ${c.isActive ? 'switched on' : 'switched off'}`);
+      notify.success(`${c.name} ${c.isActive ? 'is in use' : 'is no longer in use'}`);
     },
     meta: FAIL_NOTICE,
   });
@@ -129,8 +129,8 @@ export function AddressBook() {
         <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
           <Input.Search allowClear placeholder="Find an office or person" aria-label="Find an office or person" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
           <Flex gap={token.marginXS} align="center">
-            <Switch size="small" checked={all} onChange={setAll} aria-label="Show switched off" />
-            <Typography.Text>Show switched off</Typography.Text>
+            <Switch size="small" checked={all} onChange={setAll} aria-label="Show those not in use" />
+            <Typography.Text>Show those not in use</Typography.Text>
           </Flex>
         </Flex>
         {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
@@ -157,10 +157,10 @@ export function AddressBook() {
             { title: 'Client', dataIndex: 'clientName', width: 160, render: (v: string | null) => v ?? <Typography.Text type="secondary">-</Typography.Text> },
             { title: 'Letters', dataIndex: 'letters', width: 90, align: 'right', render: (v: number) => <span translate="no">{v || '-'}</span> },
             {
-              title: 'Switched on',
+              title: 'In use',
               key: 'active',
               width: 110,
-              render: (_, c) => <Switch size="small" checked={c.isActive} disabled={!keeper} loading={toggle.isPending && toggle.variables?.id === c.id} onChange={() => toggle.mutate(c)} aria-label={`${c.name} switched on`} />,
+              render: (_, c) => <Switch size="small" checked={c.isActive} disabled={!keeper} loading={toggle.isPending && toggle.variables?.id === c.id} onChange={() => toggle.mutate(c)} aria-label={`${c.name} in use`} />,
             },
             ...(keeper
               ? [

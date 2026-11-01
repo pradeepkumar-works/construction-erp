@@ -27,7 +27,7 @@ function MasterRow({ node, count }: { node: NavNode; count?: { active: number; t
       </Flex>
       {count && (
         <Typography.Text type="secondary" translate="no" style={{ whiteSpace: 'nowrap' }}>
-          {count.active} of {count.total} on
+          {count.active} of {count.total} in use
         </Typography.Text>
       )}
     </Link>

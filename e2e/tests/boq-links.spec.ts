@@ -44,7 +44,7 @@ test('dates arriving spread the activities, and the BOQ sections offer their lin
 
   await signIn(page, email);
   await page.goto(`/projects/${project.id}?tab=activities`);
-  await page.getByRole('button', { name: /Link to BOQ \(\d+\)/ }).click();
+  await page.getByRole('button', { name: /^Link \d+ activit(y|ies) to the BOQ$/ }).click();
   const dialog = page.getByRole('dialog', { name: 'Link the activities to BOQ items' });
   // The largest item of a section stands for it, under the section's own name.
   await expect(dialog.getByRole('row', { name: /Earthwork embankment/ })).toContainText('1.01 Earthwork in embankment with borrowed earth');

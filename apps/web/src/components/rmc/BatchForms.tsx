@@ -9,6 +9,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, QuantityInput } from '@/components/form/inputs';
 import { themeColor } from '@/lib/theme';
 import { m3 } from './rmcUi';
+import { unitLabel } from '@erp/shared';
 
 interface DispatchValues {
   quantity: number;
@@ -52,8 +53,8 @@ export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | nul
       layout="modal"
       width={640}
       projectDefault={false}
-      title={order ? (row?.batchNo ? `Send batch ${row.batchNo} on ${order.orderNo}` : `Send a truck on ${order.orderNo}`) : 'Send a truck'}
-      okText="Dispatch"
+      title={order ? (row?.batchNo ? `New challan for batch ${row.batchNo} · ${order.orderNo}` : `New challan · ${order.orderNo}`) : 'New challan'}
+      okText="Save challan"
       onSubmit={async (v) => {
         const lines = Object.entries(v.weighed ?? {})
           .filter(([, q]) => q !== null && q !== undefined)
@@ -109,7 +110,7 @@ export function DispatchForm({ order, row, onClose }: { order: RmcOrderDto | nul
               dataSource={design.lines}
               columns={[
                 { title: 'Material', dataIndex: 'itemName' },
-                { title: 'At the design', key: 'design', align: 'right', width: 150, render: (_, l) => <span translate="no">{`${formatQty(Number(l.quantity) * qty)} ${l.unit}`}</span> },
+                { title: 'At the design', key: 'design', align: 'right', width: 150, render: (_, l) => <span translate="no">{`${formatQty(Number(l.quantity) * qty)} ${unitLabel(l.unit)}`}</span> },
                 {
                   title: 'Weighed',
                   key: 'weighed',

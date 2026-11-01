@@ -20,6 +20,9 @@ const STATUS_TAG: Record<RevisionStatus, string> = {
   WITHDRAWN: 'default',
 };
 
+/** "R2" as it is; a bare number reads "Rev 3". */
+export const revLabel = (revision: string) => (/^\d+$/.test(revision) ? `Rev ${revision}` : revision);
+
 export const RevisionStatusTag = ({ status }: { status: RevisionStatus }) => (
   <AppTag color={STATUS_TAG[status]} style={{ margin: 0 }}>
     {REVISION_STATUS_LABELS[status]}
@@ -32,7 +35,7 @@ export function FileLinks({ files, compact }: { files: AttachmentDto[]; compact?
   return (
     <Space size={compact ? 4 : 8} wrap>
       {files.map((a) => (
-        <a key={a.id} href={fileUrl(a.url)} target="_blank" rel="noreferrer" title={a.fileName} style={{ whiteSpace: 'nowrap' }}>
+        <a key={a.id} href={fileUrl(a.url)} target="_blank" rel="noreferrer" title={a.fileName} aria-label={`Open ${a.fileName}`} style={{ whiteSpace: 'nowrap' }}>
           {drawingFileKind(a) === 'pdf' ? <FilePdfOutlined /> : drawingFileKind(a) === 'image' ? <FileImageOutlined /> : <FileOutlined />} {compact ? (files.length > 1 ? a.fileName : 'Open') : a.fileName}
         </a>
       ))}

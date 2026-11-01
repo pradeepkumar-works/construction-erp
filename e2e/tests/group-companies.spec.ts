@@ -34,10 +34,10 @@ test('an admin makes a group with a lab, and a colleague moves between the two o
   await expect(page.getByRole('heading', { level: 1, name: 'Group companies' })).toBeVisible();
   // One company, no group yet: the header has no company switcher.
   await expect(switcher(page)).toHaveCount(0);
-  await page.getByRole('button', { name: 'Make a group' }).click();
-  const make = page.getByRole('dialog', { name: 'Make a group' });
+  await page.getByRole('button', { name: 'New group' }).click();
+  const make = page.getByRole('dialog', { name: 'New group' });
   await make.getByLabel('Group name').fill(`E2E Group ${stamp}`);
-  await make.getByRole('button', { name: 'Make group' }).click();
+  await make.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('tab', { name: /Companies/ })).toBeVisible();
 
   await page.getByRole('button', { name: 'New company' }).click();
@@ -45,17 +45,17 @@ test('an admin makes a group with a lab, and a colleague moves between the two o
   await form.getByLabel('Name', { exact: true }).fill(lab);
   await chooseOption(form.getByLabel('Kind'), 'Quality lab');
   await form.getByLabel('PAN').fill('aabcq5678f');
-  await form.getByRole('button', { name: 'Add company' }).click();
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText(`${lab} added.`)).toBeVisible();
   await expect(page.getByRole('cell', { name: lab, exact: true })).toBeVisible();
   await expect(page.getByText('AABCQ5678F')).toBeVisible();
 
   // Sunil gets a place in the lab, on the sign-in he already has.
   await page.getByRole('tab', { name: /People/ }).click();
-  await page.getByRole('button', { name: 'Give Sunil Site a place' }).click();
-  const give = page.getByRole('dialog', { name: 'Give Sunil Site a place' });
-  await chooseOption(give.getByLabel('Role there'), 'Site Engineer');
-  await give.getByRole('button', { name: 'Give place' }).click();
+  await page.getByRole('button', { name: 'Add Sunil Site to a company' }).click();
+  const give = page.getByRole('dialog', { name: 'Add Sunil Site to a company' });
+  await chooseOption(give.getByLabel('Role there'), 'Site engineer');
+  await give.getByRole('button', { name: 'Add to company' }).click();
   await expect(page.getByText(`Sunil Site can now work in ${lab}`)).toBeVisible();
 
   await page.context().clearCookies();

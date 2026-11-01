@@ -72,10 +72,10 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
       layout="drawer"
       width={760}
       projectDefault={false}
-      title={editing ? `Change ${order.orderNo}` : 'New quote'}
+      title={editing ? `Edit ${order.orderNo}` : 'New RMC quote'}
       okText={editing ? 'Save' : 'Save quote'}
       draftKey={editing ? undefined : 'rmc-order'}
-      footerExtra={value ? <Typography.Text type="secondary" translate="no">{`Worth ${formatINR(value, true)} before GST`}</Typography.Text> : null}
+      footerExtra={value ? <Typography.Text type="secondary" translate="no">{`Value before GST ${formatINR(value, true)}`}</Typography.Text> : null}
       onSubmit={async (v) => {
         const body = {
           ...(editing ? {} : { plantId: v.plantId, clientId: v.for === 'client' ? v.clientId : null, projectId: v.for === 'site' ? v.projectId : null }),
@@ -97,9 +97,9 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
       <Form form={form} layout="vertical" initialValues={{ date: dayjs(), for: 'client' }}>
         <FormGrid cols={2}>
           <Form.Item name="plantId" label="Plant" rules={[{ required: true, message: 'Choose the plant' }]}>
-            <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ mixDesignId: undefined })} />
+            <Select disabled={editing} options={plants.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} onChange={() => form.setFieldsValue({ mixDesignId: undefined })} />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </FormGrid>
@@ -140,7 +140,7 @@ export function OrderForm({ open, onClose, order, onSaved }: { open: boolean; on
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="rate" label="Rate a cubic metre" rules={[{ required: true, message: 'Enter the rate a cubic metre' }]} extra="Before GST at 18%">
+          <Form.Item name="rate" label="Rate per m³" rules={[{ required: true, message: 'Enter the rate per m³' }]} extra="Before GST at 18%">
             <MoneyInput />
           </Form.Item>
           <Form.Item name="pumpRate" label="Pumping a cubic metre" extra="Leave empty when the customer pours by themselves">

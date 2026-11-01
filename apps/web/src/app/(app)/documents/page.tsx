@@ -24,7 +24,7 @@ function DocumentsPage() {
   const rfi = search.get('rfi') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Documents" subtitle="Drawings and documents with their current revision, transmittals sent with what was signed for, and RFIs waiting for an answer." />
+      <PageHeader title="Drawings and documents" subtitle="Drawings and documents with their current revision, transmittals sent with what was signed for, and RFIs waiting for an answer." />
       <Card size="small">
         <DocumentTabs key={`${id ?? ''}:${rfi ?? ''}`} tab={tab} onTab={(t) => router.replace(`${pathname}?tab=${t}`, { scroll: false })} openId={id} openRfiId={rfi} />
       </Card>

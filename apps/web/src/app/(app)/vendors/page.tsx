@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
+import { useSearchParams } from 'next/navigation';
+import { Button, Card, Flex, Select, Space, Table, Tooltip, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@/components/common/icons';
@@ -24,7 +25,7 @@ import { VendorPortalDrawer } from '@/components/supplier/VendorPortalDrawer';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
-import { formatDate } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const usedOn = (r: { expenseCount: number; equipmentCount: number; grnCount: number }) =>
@@ -64,13 +65,13 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
     sortFields: LIST_SORT_FIELDS.vendors,
     projectScoped: false,
     moreViews: [
-      { key: 'suppliers', label: 'Suppliers', filters: { kind: 'SUPPLIER' } },
+      { key: 'suppliers', label: 'Material suppliers', filters: { kind: 'SUPPLIER' } },
       { key: 'subcontractors', label: 'Subcontractors', filters: { kind: 'SUBCONTRACTOR' } },
       { key: 'hire', label: 'Hire agencies', filters: { kind: 'HIRE_AGENCY' } },
       { key: 'inactive', label: 'Including inactive', filters: { inactive: '1' } },
     ],
     chipLabels: {
-      kind: (v) => `Supplies: ${VENDOR_KIND_LABELS[v as VendorKind] ?? v}`,
+      kind: (v) => `Vendor kind: ${VENDOR_KIND_LABELS[v as VendorKind] ?? v}`,
       msme: (v) => `MSME: ${MSME_CATEGORY_LABELS[v as MsmeCategory] ?? v}`,
       inactive: () => 'Including inactive',
     },
@@ -102,7 +103,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         width: 190,
         render: (_, v) => (
           <div>
-            <div className="mono" translate="no">{v.gstin ?? '-'}</div>
+            <div className="mono" translate="no">{v.gstin ?? NO_VALUE}</div>
             <Sub>{[v.pan, v.stateCode ? GST_STATES[v.stateCode] : null].filter(Boolean).join(' · ')}</Sub>
           </div>
         ),
@@ -118,7 +119,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
               {MSME_CATEGORY_LABELS[v.msmeCategory]}
             </AppTag>
           ) : (
-            <Sub>-</Sub>
+            <Sub>{NO_VALUE}</Sub>
           ),
       },
       {
@@ -129,7 +130,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
         render: (_, v) => (
           <div>
             {v.contactPerson && <div>{v.contactPerson}</div>}
-            <Sub>{[v.phone, v.email].filter(Boolean).join(' · ') || (v.contactPerson ? '' : '-')}</Sub>
+            <Sub>{[v.phone, v.email].filter(Boolean).join(' · ') || (v.contactPerson ? '' : NO_VALUE)}</Sub>
           </div>
         ),
       },
@@ -146,7 +147,7 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
                     <Sub>{[v.bankIfsc, v.bankName].filter(Boolean).join(' · ')}</Sub>
                   </div>
                 ) : (
-                  <Sub>-</Sub>
+                  <Sub>{NO_VALUE}</Sub>
                 ),
             } satisfies ListColumn<VendorDto>,
           ]
@@ -202,11 +203,8 @@ function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boo
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar filters={frame.filterState} projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" searchLabel="Search vendors" extra={<ExportButton onExport={exportRows} />}>
-        <Select<VendorKind> allowClear placeholder="Supplies anything" aria-label="Supplies" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
-        <Select<MsmeCategory> allowClear placeholder="MSME or not" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
-        <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>
-          Show inactive
-        </Checkbox>
+        <Select<VendorKind> allowClear placeholder="All vendor kinds" aria-label="Vendor kind" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
+        <Select<MsmeCategory> allowClear placeholder="All MSME statuses" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
       </ListToolbar>
       <DataTable<VendorDto>
         columns={frame.columns}
@@ -246,7 +244,7 @@ function UnlistedTab({ editable, onAdd }: { editable: boolean; onAdd: (u: Unlist
         locale={{ emptyText: 'Every vendor name in use is in the master' }}
         columns={[
           { title: 'Name as typed', dataIndex: 'name', render: (v: string) => <Typography.Text strong>{v}</Typography.Text> },
-          { title: 'GSTIN typed with it', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
+          { title: 'GSTIN typed with it', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : NO_VALUE) },
           { title: 'Used on', key: 'used', width: 220, render: (_, u) => usedOn(u) },
           ...(editable
             ? [
@@ -270,6 +268,7 @@ function UnlistedTab({ editable, onAdd }: { editable: boolean; onAdd: (u: Unlist
 
 export default function VendorsPage() {
   const { user } = useAuth();
+  const subcontractors = useSearchParams().get('kind') === 'SUBCONTRACTOR';
   const editable = !!user && canEditVendors(user.roleKey);
   const [editing, setEditing] = useState<VendorDto | null>(null);
   const [adding, setAdding] = useState<Partial<{ name: string; gstin: string; kinds: VendorKind[] }> | null>(null);
@@ -286,7 +285,7 @@ export default function VendorsPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Vendors"
+        title={subcontractors ? 'Subcontractors' : 'Vendors'}
         subtitle="Suppliers, hire agencies, subcontractors and service providers, with GSTIN, MSME registration and bank details. Expenses, machines and GRNs pick from this list."
         extra={newButton}
       />

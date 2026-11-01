@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { ROLE_KEYS, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, defaultApprovalRights, hasAmount, isGuest, type ApprovalEscalationDto, type ApprovalMatrixDto, type ApprovalRuleDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { ROLE_KEYS, ROLE_LABELS, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, defaultApprovalRights, hasAmount, isGuest, type ApprovalEscalationDto, type ApprovalMatrixDto, type ApprovalRuleDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { money } from '../common/serialize';
@@ -33,7 +33,7 @@ export class ApprovalRulesService {
       : ROLE_KEYS.filter((k) => k !== 'ADMIN' && !isGuest(k)).flatMap((roleKey) => defaultApprovalRights(roleKey).map((r) => ({ roleKey, type: r.type, maxAmount: null, level: 1, minAmount: null })));
     return {
       custom,
-      roles: known.map((r) => ({ roleKey: r.key as RoleKey, roleName: r.name, users: r._count.users })),
+      roles: known.map((r) => ({ roleKey: r.key as RoleKey, roleName: ROLE_LABELS[r.key as RoleKey], users: r._count.users })),
       rules: list.sort((a, b) => order(a) - order(b)),
       paymentsNeedRequest: org.paymentsNeedRequest,
       progressFromDpr: org.progressFromDpr,

@@ -41,7 +41,7 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
     chipLabels: {
       severity: (v) => `Severity: ${NCR_SEVERITY_LABELS[v as NcrSeverity] ?? v}`,
       active: () => 'Not closed',
-      mine: () => 'Assigned to me',
+      mine: () => 'Action by me',
     },
     columns: (sortOrderFor): ListColumn<NcrDto>[] => {
       const sort = (key: NcrSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
@@ -65,13 +65,13 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
         },
         { title: 'Severity', dataIndex: 'severity', width: 100, ...sort('severity'), render: (v: NcrSeverity) => <SeverityTag severity={v} /> },
         {
-          title: 'Rectify by',
+          title: 'Due',
           dataIndex: 'dueDate',
           width: 120,
           ...sort('dueDate'),
           render: (v: string | null, r) => (v ? <Typography.Text type={r.overdue ? 'danger' : undefined}>{formatDate(v)}</Typography.Text> : <Sub>-</Sub>),
         },
-        { key: 'actionByName', title: 'Assigned to', dataIndex: 'actionByName', width: 150, render: (v: string | null) => v ?? <Sub>-</Sub> },
+        { key: 'actionByName', title: 'Action by', dataIndex: 'actionByName', width: 150, render: (v: string | null) => v ?? <Sub>-</Sub> },
         { title: 'Status', dataIndex: 'status', fixed: 'right' as const, width: 120, ...sort('status'), render: (v: NcrStatus) => <NcrStatusTag status={v} /> },
       ];
     },
@@ -120,7 +120,7 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
           Not closed
         </Checkbox>
         <Checkbox checked={mine} onChange={(e) => page.setFilter('mine', e.target.checked ? '1' : undefined)}>
-          Assigned to me
+          Action by me
         </Checkbox>
       </ListToolbar>
       <DataTable<NcrDto>

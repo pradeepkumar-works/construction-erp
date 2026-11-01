@@ -23,7 +23,7 @@ test('an admin moves the menu to the top bar, and a module opens with its sub-mo
   await page.getByRole('button', { name: 'Save menu' }).click();
   await expect(page.getByText('Menu saved')).toBeVisible();
 
-  await page.getByRole('link', { name: 'Home, all modules' }).click();
+  await page.getByRole('link', { name: 'Home', exact: true }).first().click();
   await expect(homeHeading(page)).toBeVisible();
   const modules = page.getByRole('group', { name: 'Modules' });
   await expect(modules.getByRole('link', { name: /^Stores/ })).toBeVisible();

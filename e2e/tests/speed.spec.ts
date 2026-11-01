@@ -45,9 +45,9 @@ test('a picker searches as you type and never loads the whole master', async ({ 
   const manager = form.getByLabel('Project manager');
   await manager.click();
   await manager.fill('kavi');
-  await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').getByText('Kavita Rao (Project Manager)')).toBeVisible();
+  await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').getByText('Kavita Rao (Project manager)')).toBeVisible();
   await manager.press('Enter');
-  await expect(form.locator('.ant-form-item').filter({ hasText: 'Project manager' })).toContainText('Kavita Rao (Project Manager)');
+  await expect(form.locator('.ant-form-item').filter({ hasText: 'Project manager' })).toContainText('Kavita Rao (Project manager)');
 
   // The search went to the server, and no picker asked for a whole master (the header's project list is the one large page).
   expect(asked.some((u) => /\/api\/users\?.*q=kavi/.test(u))).toBe(true);

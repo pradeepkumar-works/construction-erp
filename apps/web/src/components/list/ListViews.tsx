@@ -64,7 +64,7 @@ export function ListViews({
     try {
       if (editing === 'new') {
         await save.mutateAsync({ list, name: values.name, shared: values.shared, state: { filters: without(filters, ['q']), columns } });
-        message.success(`Saved "${values.name}"`);
+        message.success(`Saved “${values.name}”`);
       } else if (editing) {
         await save.mutateAsync({ id: editing.id, list, name: values.name, shared: values.shared });
         message.success('View updated');
@@ -155,7 +155,7 @@ export function ListViews({
           <Select
             aria-label="View"
             value={active}
-            placeholder="Own filters"
+            placeholder="Custom filters"
             onChange={pick}
             style={{ flex: 1, minWidth: 0, margin: `${token.marginXS}px 0` }}
             options={[...builtIns.map((v) => ({ value: v.key, label: v.label })), ...(saved ?? []).map((v) => ({ value: v.id, label: v.shared ? `${v.name} (shared)` : v.name }))]}
@@ -183,7 +183,7 @@ export function ListViews({
       </Flex>
       <Modal open={!!editing} title={editing === 'new' ? 'Save this view' : 'Rename or share'} okText="Save" onOk={submit} okButtonProps={{ loading: save.isPending }} onCancel={() => setEditing(null)} destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: token.marginSM }} onFinish={submit}>
-          <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Give the view a name' }, { max: 60 }]}>
+          <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Give the view a name' }, { max: 60, message: 'Keep the name under 60 characters' }]}>
             <Input
               placeholder="Submitted this month"
               maxLength={60}

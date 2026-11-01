@@ -136,7 +136,7 @@ export function StructureImportModal({ open, onClose, projectId }: { open: boole
             <InboxOutlined />
           </p>
           <p className="ant-upload-text">Choose or drop the Excel file</p>
-          <p className="ant-upload-hint">Columns: Number, Name, Kind and Weight %. A number like 2.1 puts the row inside component 2. Numbers already in the breakdown are skipped.</p>
+          <p className="ant-upload-hint">Columns: Number, Name, Kind and Weight %. A number like 2.1 puts the row inside component 2. Numbers already in the components are skipped.</p>
         </Upload.Dragger>
       ) : (
         <>
@@ -149,7 +149,7 @@ export function StructureImportModal({ open, onClose, projectId }: { open: boole
             columns={[
               { title: 'Number', dataIndex: 'code', width: 80 },
               { title: 'Name', dataIndex: 'name' },
-              { title: 'Kind', dataIndex: 'elementType', width: 180, render: (v?: WorkElementType) => (v ? WORK_ELEMENT_TYPE_LABELS[v] : 'Other') },
+              { title: 'Component type', dataIndex: 'elementType', width: 180, render: (v?: WorkElementType) => (v ? WORK_ELEMENT_TYPE_LABELS[v] : 'Other') },
               { title: 'Weight', dataIndex: 'weightPct', width: 80, align: 'right', render: (v?: string) => (v ? `${v}%` : 'Auto') },
               { title: 'Check', dataIndex: 'error', width: 200, render: (e?: string) => (e ? <Typography.Text type="danger">{e}</Typography.Text> : 'OK') },
             ]}

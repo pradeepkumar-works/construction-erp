@@ -8,7 +8,7 @@ import { CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, PlusOutlined 
 import type { EstimateItemDto, EstimateLineDto, MaterialNormDto } from '@erp/shared';
 import { BOQ_RESOURCE_KIND_LABELS, RATE_LIBRARY, suggestRateLibrary } from '@erp/shared';
 import { useCopyRateAnalysis, useProjectEstimate, useProjects, useRemoveBoqResource, useRemoveMaterialNorm } from '@/lib/queries';
-import { formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatINR, formatQty, toNumber, NO_VALUE } from '@/lib/format';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { QueryError } from '@/components/common/QueryState';
@@ -29,7 +29,7 @@ const per = (l: EstimateLineDto, boqUnit: string) => (
 const money = (v: string | null) =>
   v === null ? (
     <Tooltip title="No rate is set for it">
-      <span className="text-muted">no rate</span>
+      <span className="text-muted">No rate</span>
     </Tooltip>
   ) : (
     <span className="mono" translate="no">
@@ -56,7 +56,7 @@ const asNorm = (item: EstimateItemDto, l: EstimateLineDto): MaterialNormDto => (
 
 /** "Margin" with its sign and %, red when the BOQ rate does not cover the built-up rate. */
 export function MarginText({ item }: { item: EstimateItemDto }) {
-  if (item.margin === null) return <span className="text-muted">-</span>;
+  if (item.margin === null) return <span className="text-muted">{NO_VALUE}</span>;
   const m = toNumber(item.margin);
   return (
     <span className="mono" translate="no" style={{ color: m < 0 ? RED : undefined }}>
@@ -154,7 +154,7 @@ export function RateAnalysisDrawer({ projectId, boqItemId, open, onClose }: { pr
     ...(values
       ? [
           { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right' as const, render: (v: string | null) => money(v) },
-          { title: `Per ${unit}`, dataIndex: 'amount', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : money(v)) },
+          { title: `Per ${unit}`, dataIndex: 'amount', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : money(v)) },
         ]
       : []),
     ...(edit ? [{ title: '', key: 'actions', width: 84, render: (_: unknown, l: EstimateLineDto) => lineActions(l) }] : []),
@@ -179,7 +179,7 @@ export function RateAnalysisDrawer({ projectId, boqItemId, open, onClose }: { pr
     ...(values
       ? [
           { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right' as const, render: (v: string | null) => money(v) },
-          { title: `Per ${unit}`, dataIndex: 'amount', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : money(v)) },
+          { title: `Per ${unit}`, dataIndex: 'amount', width: 110, align: 'right' as const, render: (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : money(v)) },
         ]
       : []),
     ...(edit ? [{ title: '', key: 'actions', width: 84, render: (_: unknown, l: EstimateLineDto) => lineActions(l) }] : []),
@@ -378,7 +378,7 @@ function CopyModal({
         <Form.Item name="sourceProjectId" label="From project">
           <Select
             showSearch={{ optionFilterProp: 'label' }}
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             onChange={() => form.setFieldValue('fromBoqItemId', undefined)}
           />
         </Form.Item>

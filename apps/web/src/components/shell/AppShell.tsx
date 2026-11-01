@@ -275,7 +275,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
       {openSearch &&
         (isMobile || !toolsRoomy ? (
           <Tooltip title={isMobile ? undefined : `Search  ${searchShortcut()}`}>
-            <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages and projects" data-tour="search" />
+            <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages, projects and records" data-tour="search" />
           </Tooltip>
         ) : (
           <Button
@@ -422,7 +422,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                 {approver && pendingCount > 0 && (
                   <Link href="/approvals">
                     <AppTag tone="pending" style={{ margin: 0 }}>
-                      {pendingCount} pending
+                      {pendingCount} waiting
                     </AppTag>
                   </Link>
                 )}

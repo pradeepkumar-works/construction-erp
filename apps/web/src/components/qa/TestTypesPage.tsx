@@ -77,14 +77,14 @@ function TypeDialog({ editing, onClose, codes }: { editing: TestTypeDto | 'new' 
                   ? []
                   : [
                       { required: true, message: 'Give the code, such as FLOW' },
-                      { pattern: TEST_TYPE_CODE, message: 'Capitals, digits and _, such as FLOW_TABLE' },
+                      { pattern: TEST_TYPE_CODE, message: 'Use capitals, digits and underscores, for example FLOW_TABLE' },
                       { validator: (_, v: string) => (v && codes.includes(v.trim().toUpperCase()) ? Promise.reject(new Error('That code is taken; give another')) : Promise.resolve()) },
                     ]
               }
             >
               <Input {...CODE_INPUT} maxLength={30} placeholder="FLOW" />
             </Form.Item>
-            <Form.Item name="kind" label="Recorded as" tooltip="The register groups tests and reminds readings by this" rules={[{ required: true, message: 'Choose what it is recorded as' }]}>
+            <Form.Item name="kind" label="Recorded as" tooltip="The register groups tests and asks for readings by this" rules={[{ required: true, message: 'Choose what it is recorded as' }]}>
               <Select options={TEST_KINDS.map((k) => ({ value: k, label: TEST_KIND_LABELS[k] }))} />
             </Form.Item>
           </FormGrid>
@@ -146,7 +146,7 @@ function TypeDialog({ editing, onClose, codes }: { editing: TestTypeDto | 'new' 
             <Form.Item name="specimens" label="Specimens in a sample" tooltip="IS 456 makes one cube result the mean of three" rules={[{ required: true, message: 'Give the specimens, 1 to 12' }]}>
               <InputNumber min={1} max={12} precision={0} style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="active" label="Switched on" valuePropName="checked">
+            <Form.Item name="active" label="In use" valuePropName="checked">
               <Switch />
             </Form.Item>
           </FormGrid>
@@ -195,7 +195,7 @@ export function TestTypesPage() {
         <Flex gap={token.marginSM} wrap align="center" style={{ marginBottom: token.margin }}>
           <Input.Search allowClear placeholder="Find a test" aria-label="Find a test" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 320 }} />
           <Typography.Text type="secondary">
-            {data.filter((t) => t.active).length} of {data.length} switched on.
+            {data.filter((t) => t.active).length} of {data.length} in use.
           </Typography.Text>
         </Flex>
         <Table<TestTypeDto>
@@ -212,8 +212,8 @@ export function TestTypesPage() {
                 <Flex vertical gap={2}>
                   <Flex gap={token.marginXS} align="center" wrap>
                     <Typography.Text strong>{t.name}</Typography.Text>
-                    {!t.standard ? <AppTag tone="info">Own</AppTag> : t.changed ? <AppTag tone="violet">Changed</AppTag> : null}
-                    {!t.active ? <AppTag tone="neutral">Off</AppTag> : null}
+                    {!t.standard ? <AppTag tone="info">Company's own</AppTag> : t.changed ? <AppTag tone="violet">Changed from standard</AppTag> : null}
+                    {!t.active ? <AppTag tone="neutral">Not in use</AppTag> : null}
                   </Flex>
                   <Typography.Text type="secondary" translate="no">
                     {t.code}
@@ -230,7 +230,7 @@ export function TestTypesPage() {
             },
             { title: 'Readings', key: 'readings', render: (_, t) => t.readings.map((r) => r.label).join(', ') },
             { title: 'Specimens', dataIndex: 'specimens', width: 100, align: 'right', render: (v: number) => <span translate="no">{v}</span> },
-            { title: 'Tests', dataIndex: 'inUse', width: 80, align: 'right', render: (v: number) => <span translate="no">{v || '-'}</span> },
+            { title: 'In use by', dataIndex: 'inUse', width: 100, align: 'right', render: (v: number) => <span translate="no">{v || '-'}</span> },
             ...(manage
               ? [
                   {

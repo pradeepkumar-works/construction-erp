@@ -63,7 +63,7 @@ test('the hospital’s earned value hangs together and shows on its own tab', as
   await page.goto(`/projects/${hospital.id}`);
   await openProjectTab(page, 'Money', 'Earned value');
   await expect(page).toHaveURL(/tab=earned-value/);
-  await expect(page.getByText('Schedule (SPI)')).toBeVisible();
+  await expect(page.getByText('Schedule index (SPI)')).toBeVisible();
   await expect(page.getByText(ev.spi!.toFixed(2), { exact: true }).first()).toBeVisible();
   await expect(page.getByText(`${ev.daysLate} days after the planned`)).toBeVisible();
   await expect(page.locator('.ev-activities').getByRole('row').nth(1)).toContainText(ev.activities[0].name);

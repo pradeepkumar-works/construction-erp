@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, Segmented, Select, Statistic, Table, Typography } from 'antd';
+import { Alert, Segmented, Statistic, Table, Typography } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
 import type { TableProps } from 'antd';
 import type { CashFlowGranularity, CashFlowPeriodDto } from '@erp/shared';
 import { DEFAULT_CLIENT_PAYMENT_DAYS } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { useCashFlow, useProjects } from '@/lib/queries';
+import { useCashFlow } from '@/lib/queries';
+import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { formatINR, toNumber, formatMonth, formatDayMonth } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { themeColor, themeFontSize } from '@/lib/theme';
@@ -30,7 +31,6 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
   const [granularity, setGranularity] = useState<CashFlowGranularity>('MONTH');
   const [projectFilter, setProjectFilter] = useProjectScope();
   const projectId = fixedProject ?? projectFilter;
-  const { data: projects } = useProjects();
   const { data, isLoading, isFetching, error, refetch } = useCashFlow({ projectId, granularity });
   const periods = data?.periods ?? [];
   const scale = Math.max(1, ...periods.map((p) => Math.max(toNumber(p.inTotal), toNumber(p.outTotal))));
@@ -90,16 +90,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
           ]}
         />
         {!fixedProject && (
-          <Select
-            allowClear
-            showSearch={{ optionFilterProp: 'label' }}
-            placeholder="All projects"
-            value={projectFilter}
-            onChange={setProjectFilter}
-            style={{ width: 260 }}
-            aria-label="Project"
-            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
-          />
+          <ProjectSelect value={projectFilter} onChange={setProjectFilter} style={{ width: 260 }} />
         )}
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}

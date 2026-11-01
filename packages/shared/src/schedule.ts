@@ -11,7 +11,7 @@ export const SCHEDULE_STATE_LABELS: Record<ScheduleState, string> = {
   NOT_STARTED: 'Not started',
   ON_TRACK: 'On track',
   BEHIND: 'Behind plan',
-  LATE: 'Past end date',
+  LATE: 'Past planned finish',
   DONE: 'Done',
 };
 

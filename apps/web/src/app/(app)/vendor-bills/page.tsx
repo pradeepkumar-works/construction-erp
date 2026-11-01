@@ -29,7 +29,7 @@ function VendorBillsPage() {
           variant="page"
           destroyOnHidden
           items={[
-            { key: 'bills', label: 'Bills', children: <VendorBillList openId={search.get('id')} /> },
+            { key: 'bills', label: 'Vendor bills', children: <VendorBillList openId={search.get('id')} /> },
             ...(recorder ? [{ key: 'to-bill', label: 'Received, not billed', count: unbilled?.total, countLabel: 'waiting for a bill', attention: true, children: <WaitingReceipts waiting="BILL" /> }] : []),
           ]}
         />

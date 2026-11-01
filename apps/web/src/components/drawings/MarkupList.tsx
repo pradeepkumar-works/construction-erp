@@ -1,5 +1,6 @@
 'use client';
 
+import { revLabel } from '@/components/documents/docUi';
 import React, { useEffect } from 'react';
 import { App, Button, Empty, Flex, Form, Input, Segmented, Space, Typography, theme } from 'antd';
 import { AppTag } from '@/components/common/AppTag';
@@ -100,7 +101,7 @@ export function MarkupList({
                     {m.status === 'RESOLVED' ? <AppTag tone="success">Resolved</AppTag> : null}
                     {carriedIds.has(m.id) || scope === 'all' ? (
                       <AppTag translate="no" style={{ margin: 0 }}>
-                        Rev {m.revision}
+                        {revLabel(m.revision)}
                         {m.page > 1 ? `, p ${m.page}` : ''}
                       </AppTag>
                     ) : null}

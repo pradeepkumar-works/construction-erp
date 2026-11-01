@@ -5,8 +5,9 @@ import { Input, Segmented, Space, Table } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import dayjs from 'dayjs';
 import type { RmcBatchDto, RmcBatchStatus } from '@erp/shared';
+import { RMC_BATCH_STATUSES, RMC_BATCH_STATUS_LABELS } from '@erp/shared';
 import { useRmcBatches } from '@/lib/queries';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BatchStatusTag, M3, PlantFilter, usePlantScope } from './rmcUi';
 import { useRmcDrawers } from './Drawers';
@@ -36,12 +37,7 @@ export function Batches() {
           aria-label="Which trucks"
           value={status}
           onChange={(v) => (setStatus(v as RmcBatchStatus | 'all'), setPage(1))}
-          options={[
-            { value: 'all', label: 'All' },
-            { value: 'DISPATCHED', label: 'On the way' },
-            { value: 'DELIVERED', label: 'Delivered' },
-            { value: 'REJECTED', label: 'Turned back' },
-          ]}
+          options={[{ value: 'all', label: 'All' }, ...RMC_BATCH_STATUSES.map((s) => ({ value: s, label: RMC_BATCH_STATUS_LABELS[s] }))]}
         />
         <PlantFilter />
         <Input.Search allowClear placeholder="Challan, truck, customer" aria-label="Search challans" onSearch={(v) => (setQ(v.trim()), setPage(1))} style={{ width: 230 }} />
@@ -65,9 +61,9 @@ export function Batches() {
             { title: 'Order', dataIndex: 'orderNo', width: 140, render: (n: string) => <span translate="no">{n}</span> },
             { title: 'Grade', dataIndex: 'grade', width: 80, render: (g: string) => <span translate="no">{g}</span> },
             { title: 'Quantity', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-            { title: 'Truck', dataIndex: 'truck', width: 140, render: (t: string | null) => <span translate="no">{t ?? '-'}</span> },
+            { title: 'Truck', dataIndex: 'truck', width: 140, render: (t: string | null) => <span translate="no">{t ?? NO_VALUE}</span> },
             { title: 'Status', dataIndex: 'status', width: 120, render: (s: RmcBatchStatus) => <BatchStatusTag status={s} /> },
-            { title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? '-'}</span> },
+            { title: 'Bill', dataIndex: 'invoiceNo', width: 140, render: (n: string | null) => <span translate="no">{n ?? NO_VALUE}</span> },
           ]}
         />
       )}

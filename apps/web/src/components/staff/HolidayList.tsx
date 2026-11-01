@@ -75,7 +75,7 @@ export function HolidayList() {
         columns={[
           { title: 'Date', dataIndex: 'date', width: 180, render: (v: string) => dayjs(v).format('ddd DD MMM YYYY') },
           { title: 'Holiday', dataIndex: 'name' },
-          { title: 'Where', dataIndex: 'projectName', render: (v: string | null) => v ?? 'Every site' },
+          { title: 'Site', dataIndex: 'projectName', render: (v: string | null) => v ?? 'Every site' },
           ...(admin
             ? [
                 {
@@ -97,14 +97,14 @@ export function HolidayList() {
       {/* Blank Where is every site, so the header's project is not put in. */}
       <FormShell open={adding} onClose={() => setAdding(false)} form={form} layout="modal" title="New holiday" okText="Save" onSubmit={(v) => add.mutateAsync(v)} projectDefault={false}>
         <Form form={form} layout="vertical">
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Choose the date' }]}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="name" label="Holiday" rules={[{ required: true, whitespace: true, message: 'Name the holiday' }]}>
             <Input maxLength={100} placeholder="Ratha Yatra" />
           </Form.Item>
           <Form.Item name="projectId" label="Where" extra="Blank for every site">
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Every site" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Every site" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
           </Form.Item>
         </Form>
       </FormShell>

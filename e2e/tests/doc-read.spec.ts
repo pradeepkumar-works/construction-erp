@@ -72,7 +72,7 @@ test('an invoice photo fills the vendor bill, with checks on the draft, and noth
   await modal.getByLabel("Vendor's invoice no.").fill(invoiceNo);
   // The scan itself is attached to the bill.
   await expect(modal.locator('.ant-upload-list-item[title="sahoo-invoice.png"], .ant-upload-list-item:has([title="sahoo-invoice.png"])')).toHaveCount(1);
-  await modal.getByRole('button', { name: 'Save draft' }).click();
+  await modal.getByRole('button', { name: 'Save as draft' }).click();
   await expect(page.getByText(/VB-\d{4}-\d{4} saved as a draft/)).toBeVisible();
   const bill = (await api<Page<Bill>>(accounts, `/vendor-bills?q=${invoiceNo}`)).items[0];
   expect(bill.invoiceNo).toBe(invoiceNo);
@@ -109,8 +109,8 @@ test('a challan photo fills the GRN against the order', async ({ page }) => {
 
 test("a drawing's title block fills the register entry", async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Documents', exact: true }).click();
-  await page.getByRole('button', { name: 'New document' }).click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Drawings and documents', exact: true }).click();
+  await page.getByRole('button', { name: 'New drawing or document' }).click();
   const modal = formPanel(page, 'New drawing or document');
   const chooser = page.waitForEvent('filechooser');
   await modal.getByRole('button', { name: 'Fill from title block' }).click();

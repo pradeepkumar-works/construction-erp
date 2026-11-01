@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, Descriptions, Divider, Drawer, Flex, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { Alert, App, Button, Descriptions, Divider, Drawer, Flex, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
 import { AppTag } from '@/components/common/AppTag';
 import dayjs from 'dayjs';
@@ -11,12 +11,11 @@ import { BILLING_STATUS_LABELS, PRODUCT_NAME, SUPPORT_SESSION_HOURS, MODULE_TIER
 import { useAuth } from '@/lib/auth';
 import { errorMessage, startSupportSession } from '@/lib/api';
 import { useOpenSupportSession, usePlatformCompanies, usePlatformCompany, useSetModuleTier, useSetTrialEnd, useSuspendCompany } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, NO_VALUE, formatBytes } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { themeFontSize } from '@/lib/theme';
 
-const bytes = (n: number) => (n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 const supportOpen = (c: Pick<PlatformCompanyDto, 'supportAccessUntil'>) => !!c.supportAccessUntil && new Date(c.supportAccessUntil) > new Date();
 
 function StatusTags({ c }: { c: PlatformCompanyDto }) {
@@ -96,10 +95,10 @@ export default function PlatformPage() {
             width: 160,
             sorter: (a, b) => (a.lastActivityAt ?? '').localeCompare(b.lastActivityAt ?? ''),
             defaultSortOrder: 'descend',
-            render: (v: string | null) => (v ? formatDateTime(v) : '-'),
+            render: (v: string | null) => (v ? formatDateTime(v) : NO_VALUE),
           },
           { title: 'Actions (30 days)', dataIndex: 'actions30d', width: 140, align: 'right', sorter: (a, b) => a.actions30d - b.actions30d },
-          { title: 'Storage', key: 'storage', width: 130, align: 'right', sorter: (a, b) => a.storageBytes - b.storageBytes, render: (_, r) => `${bytes(r.storageBytes)} (${r.files})` },
+          { title: 'Storage', key: 'storage', width: 130, align: 'right', sorter: (a, b) => a.storageBytes - b.storageBytes, render: (_, r) => `${formatBytes(r.storageBytes)} (${r.files})` },
           { title: 'Status', key: 'status', width: 220, render: (_, r) => <StatusTags c={r} /> },
         ]}
       />
@@ -193,9 +192,9 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
               { key: 'since', label: 'Signed up', children: formatDate(c.createdAt) },
               { key: 'users', label: 'Active users', children: c.activeUsers },
               { key: 'projects', label: 'Projects', children: c.projects },
-              { key: 'last', label: 'Last activity', children: c.lastActivityAt ? formatDateTime(c.lastActivityAt) : '-' },
+              { key: 'last', label: 'Last activity', children: c.lastActivityAt ? formatDateTime(c.lastActivityAt) : NO_VALUE },
               { key: 'acts', label: 'Actions (30 days)', children: c.actions30d },
-              { key: 'storage', label: 'Storage', children: `${bytes(c.storageBytes)} in ${c.files} files` },
+              { key: 'storage', label: 'Storage', children: `${formatBytes(c.storageBytes)} in ${c.files} files` },
               { key: 'status', label: 'Status', children: <StatusTags c={c} /> },
               {
                 key: 'support',
@@ -265,7 +264,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
                 ),
               },
               { title: 'Role', dataIndex: 'roleName', width: 160 },
-              { title: 'Last activity', dataIndex: 'lastActivityAt', width: 160, render: (v: string | null) => (v ? formatDateTime(v) : '-') },
+              { title: 'Last activity', dataIndex: 'lastActivityAt', width: 160, render: (v: string | null) => (v ? formatDateTime(v) : NO_VALUE) },
             ]}
           />
         </>
@@ -280,7 +279,11 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
         destroyOnHidden
       >
         <Typography.Paragraph>Nobody in the company can sign in until the suspension is lifted. Their data is kept. The reason goes in the company's log, which their admins can read.</Typography.Paragraph>
-        <Input.TextArea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason, e.g. payment overdue" aria-label="Reason" maxLength={300} />
+        <Form layout="vertical" component={false}>
+          <Form.Item label="Reason" htmlFor="suspend-reason" style={{ marginBottom: 0 }}>
+            <Input.TextArea id="suspend-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. payment overdue" maxLength={300} />
+          </Form.Item>
+        </Form>
       </Modal>
     </Drawer>
   );

@@ -20,7 +20,7 @@ export type DprBuiltInKey = (typeof DPR_BUILT_IN_KEYS)[number];
 /** Where a field sits on the form, the record and the print. */
 export const DPR_SECTIONS = ['DAY', 'WORK', 'CREW', 'NOTES'] as const;
 export type DprSection = (typeof DPR_SECTIONS)[number];
-export const DPR_SECTION_LABELS: Record<DprSection, string> = { DAY: 'The day', WORK: 'Work done', CREW: 'Manpower and machinery', NOTES: 'Notes' };
+export const DPR_SECTION_LABELS: Record<DprSection, string> = { DAY: 'The day', WORK: 'Work done', CREW: 'Labour and machinery', NOTES: 'Notes' };
 
 export interface DprBuiltInInfo {
   label: string;
@@ -35,7 +35,7 @@ export const DPR_BUILT_INS: Record<DprBuiltInKey, DprBuiltInInfo> = {
   siteCondition: { label: 'Site condition', section: 'DAY', canHide: true, missing: 'Describe the site condition' },
   // Hidden only when the company records progress some other way too (`progressFromDpr` off).
   lines: { label: 'Work lines', section: 'WORK', canHide: true, missing: 'Add a work line for the work done today' },
-  manpower: { label: 'Manpower', section: 'CREW', canHide: true, missing: 'Add the manpower on site today' },
+  manpower: { label: 'Labour', section: 'CREW', canHide: true, missing: 'Add the labour on site today' },
   machinery: { label: 'Machinery', section: 'CREW', canHide: true, missing: 'Add the machinery used today' },
   materialReceived: { label: 'Material received', section: 'NOTES', canHide: true, missing: 'Say what material was received' },
   testsConducted: { label: 'Tests conducted', section: 'NOTES', canHide: true, missing: 'Say which tests were done' },

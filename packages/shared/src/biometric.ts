@@ -11,6 +11,8 @@ export const BIOMETRIC_PROTOCOL_LABELS: Record<BiometricProtocol, string> = {
   WEBHOOK: 'Sends to a web address (webhook)',
   FILE: 'Punch files imported by hand',
 };
+/** The same, in a table's column. */
+export const BIOMETRIC_PROTOCOL_SHORT_LABELS: Record<BiometricProtocol, string> = { ADMS: 'ADMS', WEBHOOK: 'Webhook', FILE: 'Files' };
 
 export const BIOMETRIC_PUNCH_RESULTS = ['APPLIED', 'UNMATCHED', 'LOCKED', 'SKIPPED'] as const;
 export type BiometricPunchResult = (typeof BIOMETRIC_PUNCH_RESULTS)[number];

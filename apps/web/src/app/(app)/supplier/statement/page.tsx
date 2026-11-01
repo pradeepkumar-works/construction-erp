@@ -8,7 +8,7 @@ import { AppTabs } from '@/components/common/AppTabs';
 import dayjs, { type Dayjs } from 'dayjs';
 import { PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, type PaymentMode, SUPPLIER_STATEMENT_KIND_LABELS, type SupplierBillDto, type SupplierPaymentDto, type SupplierStatementRowDto } from '@erp/shared';
 import { useSupplierStatement } from '@/lib/queries';
-import { formatDate, formatINR, STATUS_COLORS, toNumber } from '@/lib/format';
+import { formatDate, formatINR, STATUS_COLORS, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { Money } from '@/components/supplier/supplierUi';
@@ -113,10 +113,10 @@ function Bills({ bills }: { bills: SupplierBillDto[] }) {
           width: 130,
           render: (v: string, b) => (b.status === 'APPROVED' && toNumber(b.due) > 0 && v < today ? <AppTag tone="danger">{formatDate(v)}</AppTag> : formatDate(v)),
         },
-        { title: 'Worth', dataIndex: 'payable', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
+        { title: 'Value', dataIndex: 'payable', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Paid', dataIndex: 'paid', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Still due', dataIndex: 'due', width: 130, align: 'right', render: (v: string, b) => (b.status === 'APPROVED' ? <Money value={v} /> : <Typography.Text type="secondary">Once approved</Typography.Text>) },
-        { title: 'State', dataIndex: 'status', width: 110, render: (s: SupplierBillDto['status']) => <AppTag color={STATUS_COLORS[s]}>{SUBMISSION_STATUS_LABELS[s]}</AppTag> },
+        { title: 'Status', dataIndex: 'status', width: 110, render: (s: SupplierBillDto['status']) => <AppTag color={STATUS_COLORS[s]}>{SUBMISSION_STATUS_LABELS[s]}</AppTag> },
       ]}
     />
   );
@@ -135,7 +135,7 @@ function Payments({ payments }: { payments: SupplierPaymentDto[] }) {
         { title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
         { title: 'Against', dataIndex: 'against', render: (v: string) => <span translate="no">{v}</span> },
         { title: 'Mode', dataIndex: 'mode', width: 110, render: (m: string) => PAYMENT_MODE_LABELS[m as PaymentMode] ?? m },
-        { title: 'Reference', dataIndex: 'reference', width: 160, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
+        { title: 'Reference', dataIndex: 'reference', width: 160, render: (v: string | null) => <span translate="no">{v ?? NO_VALUE}</span> },
         { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'TDS', dataIndex: 'tds', width: 110, align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Other deduction', dataIndex: 'otherDeduction', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },

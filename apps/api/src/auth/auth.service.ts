@@ -161,7 +161,7 @@ export class AuthService {
       fullName: user.fullName,
       phone: user.phone,
       roleKey: user.role.key as RoleKey,
-      roleName: user.role.name,
+      roleName: ROLE_LABELS[user.role.key as RoleKey],
       organizationId: user.organizationId,
       organizationName: user.organization.name,
       approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
@@ -188,7 +188,7 @@ export class AuthService {
         this.prisma.groupAdmin.findUnique({ where: { groupId_loginId: { groupId, loginId: user.loginId } }, select: { id: true } }),
         this.prisma.user.findMany({
           where: { loginId: user.loginId, isActive: true, organization: { groupId, suspendedAt: null } },
-          select: { organizationId: true, role: { select: { name: true } }, organization: { select: { name: true, kind: true } } },
+          select: { organizationId: true, role: { select: { key: true } }, organization: { select: { name: true, kind: true } } },
           orderBy: { organization: { name: 'asc' } },
         }),
       ]),
@@ -197,7 +197,7 @@ export class AuthService {
       ...kind,
       group: { id: group.id, name: group.name, admin: !!admin },
       ...(places.length > 1
-        ? { companies: places.map((p) => ({ id: p.organizationId, name: p.organization.name, kind: p.organization.kind, roleName: p.role.name, current: p.organizationId === user.organizationId })) }
+        ? { companies: places.map((p) => ({ id: p.organizationId, name: p.organization.name, kind: p.organization.kind, roleName: ROLE_LABELS[p.role.key as RoleKey], current: p.organizationId === user.organizationId })) }
         : {}),
     };
   }

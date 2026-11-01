@@ -11,7 +11,7 @@ import dayjs from 'dayjs';
 import { LEAKAGE_SECTION_LABELS, canSeeLeakage, type LeakageFlagDto, type LeakageSection } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useLeakage } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact } from '@/lib/format';
+import { formatDate, formatINR, formatINRCompact, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { useProjectScope } from '@/lib/project-scope';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -112,7 +112,7 @@ function Leakage() {
           {f.detail}
         </Typography.Paragraph>
         <Button type="link" size="small" icon={open ? <UpOutlined /> : <DownOutlined />} aria-expanded={open} aria-controls={id} onClick={() => toggleWhy(f.key)} style={{ paddingInline: 0 }}>
-          Why: the working
+          Show how this was worked out
         </Button>
         {open ? (
           <ol id={id} style={{ margin: `${token.marginXS}px 0 0`, paddingInlineStart: token.paddingLG }} translate="no">
@@ -143,7 +143,7 @@ function Leakage() {
       <Flex wrap gap={token.marginSM} align="center" style={{ marginBottom: token.margin }}>
         <DatePicker
           picker="month"
-          format="MMM YYYY"
+          format={MONTH_PICKER_FORMAT}
           allowClear={false}
           aria-label="Month"
           value={dayjs(`${month}-01`)}
@@ -156,7 +156,7 @@ function Leakage() {
             style={{ maxWidth: '100%', overflowX: 'auto' }}
             value={section}
             onChange={(v) => setSection(v as LeakageSection | 'ALL')}
-            options={[{ value: 'ALL', label: `All (${scoped.length})` }, ...data.sections.map((s) => ({ value: s, label: `${LEAKAGE_SECTION_LABELS[s]} (${scoped.filter((f) => f.section === s).length})` }))]}
+            options={[{ value: 'ALL', label: <span>All <span className="text-muted" translate="no">{scoped.length}</span></span> }, ...data.sections.map((s) => ({ value: s, label: <span>{LEAKAGE_SECTION_LABELS[s]} <span className="text-muted" translate="no">{scoped.filter((f) => f.section === s).length}</span></span> }))]}
           />
         ) : null}
       </Flex>

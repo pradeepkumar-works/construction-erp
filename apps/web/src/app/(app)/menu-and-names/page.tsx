@@ -24,7 +24,7 @@ const LOOKS: Choice<NavLook>[] = [
 ];
 
 const SETS: Choice<NavModuleSet>[] = [
-  { value: 'DEPARTMENTS', label: NAV_MODULE_SET_LABELS.DEPARTMENTS, description: 'Twelve modules as a contractor’s departments run: project management, purchase, stores, contractors, machinery and so on.' },
+  { value: 'DEPARTMENTS', label: NAV_MODULE_SET_LABELS.DEPARTMENTS, description: 'Modules as a contractor’s departments run: project management, purchase, stores, contractors, machinery and so on.' },
   { value: 'AREAS', label: NAV_MODULE_SET_LABELS.AREAS, description: 'The modules as Nirmaan has them: site, materials, purchases, subcontracts, client billing and so on.' },
 ];
 

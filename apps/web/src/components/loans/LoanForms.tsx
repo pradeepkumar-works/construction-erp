@@ -132,7 +132,7 @@ export function LoanFormModal({ open, onClose, loan, equipmentId, onSaved }: { o
       draftKey={editing ? undefined : 'machine-loan'}
     >
       <Form form={form} layout="vertical">
-        {fixedTerms ? <Alert type="info" showIcon style={{ marginBottom: 16 }} title="EMIs are paid on this loan, so its terms stay as they are. The lender, account number and note can change." /> : null}
+        {fixedTerms ? <Alert type="info" showIcon style={{ marginBottom: 16 }} title="EMIs are paid on this loan, so its terms stay as they are. Who it was paid out to, the account number and the note can change." /> : null}
         <FormSection title="Loan">
           <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Choose the machine the loan is on' }]} extra="Owned machines only.">
             <EquipmentSelect aria-label="Machine" params={{ ownership: 'OWNED' }} disabled={fixedTerms} />
@@ -181,7 +181,7 @@ export function LoanFormModal({ open, onClose, loan, equipmentId, onSaved }: { o
               </Typography.Paragraph>
             )
           ) : null}
-          <Form.Item name="disbursal" label="The lender" extra={LOAN_DISBURSAL_HELP[disbursal]}>
+          <Form.Item name="disbursal" label="Paid out to" extra={LOAN_DISBURSAL_HELP[disbursal]}>
             <Radio.Group disabled={fixedTerms} options={LOAN_DISBURSALS.map((d) => ({ value: d, label: LOAN_DISBURSAL_LABELS[d] }))} />
           </Form.Item>
           <Form.Item name="note" label="Note">
@@ -235,7 +235,7 @@ export function PayEmiModal({ loan, close, onClose }: { loan: EquipmentLoanDetai
       form={form}
       layout="modal"
       title={loan && next ? (close ? `Close early · ${loan.loanNo}` : `Pay EMI ${next.no} · ${loan.loanNo}`) : 'Pay EMI'}
-      okText={close ? 'Close the loan' : 'Record paid'}
+      okText={close ? 'Close the loan' : 'Record payment'}
       projectDefault={false}
       onSubmit={(v) => mutation.mutateAsync(v)}
     >

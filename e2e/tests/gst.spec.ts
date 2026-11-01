@@ -38,7 +38,7 @@ test('GST registers show outward supplies and input tax, and download as Excel',
   await expect(page.getByText('9954').first()).toBeVisible();
 
   const downloading = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Excel' }).click();
+  await page.getByRole('button', { name: 'Export to Excel' }).click();
   const file = await downloading;
   expect(file.suggestedFilename()).toBe(`gst-registers-${from}-to-${to}.xlsx`);
   expect(statSync((await file.path())!).size).toBeGreaterThan(1000);

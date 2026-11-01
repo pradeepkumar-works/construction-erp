@@ -104,7 +104,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
       title: 'Component or activity',
       key: 'name',
       render: (_, r) => {
-        if (r.kind === 'loose') return <Typography.Text type="secondary">Outside the breakdown ({r.count})</Typography.Text>;
+        if (r.kind === 'loose') return <Typography.Text type="secondary">Outside the components ({r.count})</Typography.Text>;
         if (r.kind === 'element') {
           const e = r.element;
           return (
@@ -191,7 +191,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
                   </Dropdown>
                   <ConfirmDelete
                     what={`${e.code} ${e.name}`}
-                    description="Its sub-components go too. Its activities and BOQ items stay, outside the breakdown."
+                    description="Its sub-components go too. Its activities and BOQ items stay, outside the components."
                     onConfirm={() => del.mutateAsync(e.id)}
                   >
                     <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${e.code} ${e.name}`} />
@@ -244,7 +244,7 @@ export function StructurePanel({ project }: { project: ProjectDetail }) {
                 { header: 'Level', value: (x: (typeof r)[number]) => x.level },
                 { header: 'Number', value: (x) => x.code },
                 { header: 'Name', value: (x) => x.name, width: 40 },
-                { header: 'Kind', value: (x) => x.kind, width: 22 },
+                { header: 'Component type', value: (x) => x.kind, width: 22 },
                 { header: 'Weight %', value: (x) => (x.weight === '' ? '' : Number(x.weight)) },
                 { header: 'Weight used %', value: (x) => x.effective },
                 { header: 'Unit', value: (x) => x.unit },

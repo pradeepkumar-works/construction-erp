@@ -56,7 +56,7 @@ test('the modules post into balanced books, and a hand-made voucher counts once 
   await form.getByLabel('Credit').nth(1).fill('2500');
   await form.getByLabel('Narration').fill(narration);
   await form.getByRole('button', { name: 'Submit for approval' }).click();
-  await expect(page.getByText(/^PV\/\d{4}-\d{2}\/\d{4} sent for approval$/)).toBeVisible();
+  await expect(page.getByText(/^PV\/\d{4}-\d{2}\/\d{4} submitted for approval$/)).toBeVisible();
   const mine = await api<Page<Voucher>>(accounts, `/books/vouchers?q=${encodeURIComponent(narration)}`);
   const v = mine.items[0];
   expect(v.status).toBe('SUBMITTED');

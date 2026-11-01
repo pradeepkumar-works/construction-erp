@@ -26,7 +26,7 @@ export const SEARCH_KINDS = [
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 
 export const SEARCH_KIND_LABELS: Record<SearchKind, string> = {
-  material_request: 'Material requests',
+  material_request: 'Indents',
   purchase_order: 'Purchase orders',
   vendor_bill: 'Vendor bills',
   work_order: 'Work orders',
@@ -37,8 +37,8 @@ export const SEARCH_KIND_LABELS: Record<SearchKind, string> = {
   measurement: 'Measurement book',
   expense: 'Site expenses',
   inspection: 'Inspections',
-  risk: 'Delays & risks',
-  document: 'Documents',
+  risk: 'Delays and risks',
+  document: 'Drawings and documents',
   rfi: 'RFIs',
   letter: 'Letters',
   meeting: 'Meetings',
@@ -46,8 +46,8 @@ export const SEARCH_KIND_LABELS: Record<SearchKind, string> = {
   vendor: 'Vendors',
   client: 'Clients',
   tender: 'Tenders',
-  item: 'Items',
-  person: 'People',
+  item: 'Item master',
+  person: 'Staff',
 };
 
 /** Fewest characters a search needs before the API looks. */
