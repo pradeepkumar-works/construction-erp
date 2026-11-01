@@ -19,7 +19,7 @@ export function UnpricedNote({ unpriced }: { unpriced: UnpricedDto }) {
   if (!lines.length) return null;
   return (
     <Tooltip title={lines.join('; ')}>
-      <AppTag tone="pending" icon={<WarningOutlined />} style={{ margin: 0 }}>
+      <AppTag meaning="waiting" icon={<WarningOutlined />} style={{ margin: 0 }}>
         Rates missing
       </AppTag>
     </Tooltip>

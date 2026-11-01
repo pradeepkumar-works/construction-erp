@@ -191,7 +191,7 @@ function SupportAccessCard() {
           </Typography.Paragraph>
           {active ? (
             <Space wrap>
-              <AppTag tone="info" icon={<CustomerServiceOutlined />}>
+              <AppTag meaning="inHand" icon={<CustomerServiceOutlined />}>
                 Allowed until {formatDateTime(data!.until!)}
                 {data?.grantedByName ? ` by ${data.grantedByName}` : ''}
               </AppTag>

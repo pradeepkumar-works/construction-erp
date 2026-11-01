@@ -141,7 +141,7 @@ export default function Page() {
                     <Link href={`/bills/${b.billId}`} className="text-link">
                       {b.label}
                     </Link>, <Money value={b.outstanding} /> unpaid, sent {formatDate(b.sentDate)}: {b.daysOutstanding} of the {b.expectedDays} days the client takes{' '}
-                    {b.late ? <AppTag tone="danger">Late</AppTag> : null}
+                    {b.late ? <AppTag meaning="failed">Late</AppTag> : null}
                   </p>
                   {letters ? (
                     <Button size="small" icon={<MailOutlined />} loading={reminder.isPending && reminder.variables === b.billId} onClick={() => void draft(b.billId)}>

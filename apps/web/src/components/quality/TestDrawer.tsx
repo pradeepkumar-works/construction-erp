@@ -168,7 +168,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
                       children: (
                         <Space size={4} wrap>
                           <span translate="no">{data.instrumentName}</span>
-                          {data.outOfCalibration ? <AppTag tone="danger">Out of calibration that day</AppTag> : null}
+                          {data.outOfCalibration ? <AppTag meaning="failed">Out of calibration that day</AppTag> : null}
                         </Space>
                       ),
                     },

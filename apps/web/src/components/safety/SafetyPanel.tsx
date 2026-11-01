@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Statistic, Tooltip } from 'antd';
-import { AppTag } from '@/components/common/AppTag';
 import { AppTabs } from '@/components/common/AppTabs';
 import { SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_STATUS_LABELS } from '@erp/shared';
 import { useSafetySummary } from '@/lib/queries';
@@ -11,7 +10,6 @@ import { IncidentList } from './IncidentList';
 import { TalkList } from './TalkList';
 import { PermitList } from './PermitList';
 import { PpePanel } from './PpePanel';
-import { INCIDENT_TYPE_COLORS } from './safetyUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { useUrlTab } from '@/lib/url-state';
@@ -45,11 +43,7 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
               <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), marginRight: 4 }}>
                 This year:
               </span>
-              {s.byType.map((t) => (
-                <AppTag key={t.type} color={INCIDENT_TYPE_COLORS[t.type]}>
-                  {SAFETY_INCIDENT_TYPE_LABELS[t.type]}: {t.count}
-                </AppTag>
-              ))}
+              <span translate="no">{s.byType.map((t) => `${SAFETY_INCIDENT_TYPE_LABELS[t.type]} ${t.count}`).join(' · ')}</span>
               <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {s.injuredThisYear} {s.injuredThisYear === 1 ? 'person' : 'people'} hurt, {s.lostTimeThisYear} lost-time
               </span>

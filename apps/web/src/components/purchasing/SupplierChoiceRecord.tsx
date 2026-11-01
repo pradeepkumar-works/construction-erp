@@ -4,10 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import { Table, Typography } from 'antd';
 import type { RankedQuote } from '@erp/shared';
-import { rankLabel } from '@erp/shared';
 import { useSupplierChoice } from '@/lib/queries';
 import { toNumber } from '@/lib/format';
 import { AppTag } from '@/components/common/AppTag';
+import { RankText } from '@/components/tenders/tenderUi';
 import { StatusTag } from '@/components/common/StatusTag';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
@@ -55,12 +55,8 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
           tags: (
             <>
               <StatusTag status={data.status} />{' '}
-              {data.rank ? (
-                <AppTag tone={data.rank === 1 ? 'success' : 'pending'} style={{ margin: 0 }}>
-                  {rankLabel(data.rank)}
-                </AppTag>
-              ) : null}{' '}
-              {!data.current ? <AppTag style={{ margin: 0 }}>Replaced</AppTag> : null}
+              <RankText rank={data.rank} />{' '}
+              {!data.current ? <AppTag meaning="closed" style={{ margin: 0 }}>Replaced</AppTag> : null}
             </>
           ),
           notices: !data.current ? (
@@ -141,7 +137,7 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
                       title: 'Rank',
                       key: 'rank',
                       width: 90,
-                      render: (_, x) => (x.rank ? <AppTag tone={x.rank === 1 ? 'success' : 'neutral'} style={{ margin: 0 }}>{rankLabel(x.rank)}</AppTag> : <span className="text-muted">Part quote</span>),
+                      render: (_, x) => (x.rank ? <RankText rank={x.rank} /> : <span className="text-muted">Part quote</span>),
                     },
                     {
                       title: 'Vendor',
@@ -149,7 +145,7 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
                       render: (_, x) => (
                         <span>
                           <span translate="no">{x.vendorName}</span>
-                          {x.quotationId === data.quotationId ? <AppTag tone="info" style={{ marginLeft: 8 }}>Chosen</AppTag> : null}
+                          {x.quotationId === data.quotationId ? <AppTag meaning="done" style={{ marginLeft: 8 }}>Chosen</AppTag> : null}
                           {x.missing ? <div className="text-muted">Leaves out {x.missing} item{x.missing === 1 ? '' : 's'}</div> : null}
                         </span>
                       ),

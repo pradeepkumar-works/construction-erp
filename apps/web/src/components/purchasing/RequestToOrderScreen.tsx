@@ -15,6 +15,7 @@ import { formatDate, formatDateTime, formatINR, formatQty, toNumber, NO_VALUE, t
 import { themeFontSize } from '@/lib/theme';
 import { AppTabs } from '@/components/common/AppTabs';
 import { AppTag } from '@/components/common/AppTag';
+import { RankText } from '@/components/tenders/tenderUi';
 import { LinkButton } from '@/components/common/LinkButton';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
@@ -188,7 +189,7 @@ function ItemsToBuy({ items }: { items: MaterialRequestItemDto[] }) {
           dataIndex: 'toOrderQty',
           align: 'right',
           width: 140,
-          render: (v, i) => (toNumber(v) > 0 ? <strong translate="no">{formatQty(v)} {i.unit}</strong> : <AppTag tone="success" style={{ margin: 0 }}>Done</AppTag>),
+          render: (v, i) => (toNumber(v) > 0 ? <strong translate="no">{formatQty(v)} {i.unit}</strong> : <AppTag meaning="done" style={{ margin: 0 }}>Done</AppTag>),
         },
       ]}
     />
@@ -251,7 +252,7 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
             title: 'Valid until',
             dataIndex: 'validUntil',
             width: 130,
-            render: (v: string | null) => (v ? v < today ? <AppTag tone="danger" style={{ margin: 0 }}>Expired {formatDate(v)}</AppTag> : formatDate(v) : <span className="text-muted">{NO_VALUE}</span>),
+            render: (v: string | null) => (v ? v < today ? <AppTag meaning="failed" style={{ margin: 0 }}>Expired {formatDate(v)}</AppTag> : formatDate(v) : <span className="text-muted">{NO_VALUE}</span>),
           },
           { title: 'Delivery', dataIndex: 'deliveryDays', width: 100, align: 'right', render: (v: number | null) => (v != null ? `${v} days` : <span className="text-muted">{NO_VALUE}</span>) },
           { title: 'Payment', dataIndex: 'paymentTerms', width: 150, ellipsis: true, render: (v: string | null) => v ?? <span className="text-muted">{NO_VALUE}</span> },
@@ -274,7 +275,7 @@ function QuotationsStep({ request, cs, loading, buyer, onNext }: { request: Mate
               return (
                 <div>
                   <strong className="mono" translate="no">{x ? formatINR(x.total, true) : NO_VALUE}</strong>
-                  {x?.rank ? <div><AppTag tone={x.rank === 1 ? 'success' : 'neutral'} style={{ margin: 0 }}>{rankLabel(x.rank)}</AppTag></div> : null}
+                  {x?.rank ? <div><RankText rank={x.rank} /></div> : null}
                 </div>
               );
             },
@@ -402,7 +403,7 @@ function FinaliseStep({ request, row, cs, buyer, onNext }: { request: MaterialRe
         scroll={{ x: 920 }}
         style={{ marginBottom: token.marginLG }}
         columns={[
-          { title: 'Rank', key: 'rank', width: 80, render: (_, x) => (x.rank ? <AppTag tone={x.rank === 1 ? 'success' : 'neutral'} style={{ margin: 0 }}>{rankLabel(x.rank)}</AppTag> : <span className="text-muted">Part quotation</span>) },
+          { title: 'Rank', key: 'rank', width: 80, render: (_, x) => (x.rank ? <RankText rank={x.rank} /> : <span className="text-muted">Part quotation</span>) },
           {
             title: 'Vendor',
             key: 'vendor',

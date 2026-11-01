@@ -37,8 +37,8 @@ import { Money } from '@/components/common/Money';
 /** Tag for where an approved order stands: open, fully received or closed short. */
 export function PoStateTag({ order }: { order: Pick<PurchaseOrderDto, 'status' | 'closedAt' | 'open'> }) {
   if (order.status !== 'APPROVED') return null;
-  if (order.closedAt) return <AppTag style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.CLOSED}</AppTag>;
-  return order.open ? <AppTag tone="info" style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.OPEN}</AppTag> : <AppTag tone="success" style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.RECEIVED}</AppTag>;
+  if (order.closedAt) return <AppTag kind="poReceipt" status="CLOSED" style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.CLOSED}</AppTag>;
+  return order.open ? <AppTag kind="poReceipt" status="OPEN" style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.OPEN}</AppTag> : <AppTag meaning="done" style={{ margin: 0 }}>{PO_RECEIPT_STATE_LABELS.RECEIVED}</AppTag>;
 }
 
 interface RecordProps {
@@ -140,7 +140,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                 <span>
                   {data.vendorName}
                   {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
-                  {data.vendorMsme && <AppTag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
+                  {data.vendorMsme && <AppTag variant="kind" style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</AppTag>}
                 </span>
               ),
             },
@@ -361,7 +361,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                           { title: 'Bill', dataIndex: 'billNo', width: 140, render: (v, b) => <Link href={`/vendor-bills/${b.id}`} className="mono">{v}</Link> },
                           { title: 'Invoice', dataIndex: 'invoiceNo', render: (v, b) => `${v}, ${formatDate(b.invoiceDate)}` },
                           { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
-                          { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <AppTag tone="success">Matches</AppTag> : <AppTag tone="danger">Does not match</AppTag>) },
+                          { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <AppTag meaning="done">Matches</AppTag> : <AppTag meaning="failed">Does not match</AppTag>) },
                           { title: 'Status', dataIndex: 'status', width: 130, render: (st) => <StatusTag status={st} /> },
                         ]}
                       />

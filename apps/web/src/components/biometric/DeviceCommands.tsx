@@ -3,17 +3,16 @@
 import React from 'react';
 import { App, Button, Form, Input, Select, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import type { BiometricCommandDto, BiometricCommandStatus, BiometricUserDto } from '@erp/shared';
+import type { BiometricCommandDto, BiometricUserDto } from '@erp/shared';
 import { BIOMETRIC_COMMAND_KIND_LABELS, BIOMETRIC_COMMAND_STATUS_LABELS, DEVICE_NAME_MAX } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
 import { useBiometricAction, useBiometricCommands, useBiometricDevices } from '@/lib/queries';
 import { formatDateTime, NO_VALUE } from '@/lib/format';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { Section } from '@/components/common/Section';
 import { QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 
-const STATUS_TONE: Record<BiometricCommandStatus, TagTone> = { QUEUED: 'pending', SENT: 'info', DONE: 'success', FAILED: 'danger', CANCELLED: 'neutral' };
 
 /** Who a user number is, in a few words, for a title. */
 export const personOf = (u: BiometricUserDto) => u.employeeName ?? u.workerName ?? `user number ${u.pin}`;
@@ -73,9 +72,9 @@ export function DeviceUserForm({ user, removing, onClose }: { user: BiometricUse
 
 /** Where a user number stands on the devices, as a tag (nothing when no command was ever sent for it). */
 export function OnDevicesTag({ u }: { u: BiometricUserDto }) {
-  if (u.commandsWaiting) return <AppTag tone="pending">{`Waiting for ${u.commandsWaiting} ${u.commandsWaiting === 1 ? 'device' : 'devices'}`}</AppTag>;
-  if (u.commandsFailed) return <AppTag tone="danger">{`Failed on ${u.commandsFailed} ${u.commandsFailed === 1 ? 'device' : 'devices'}`}</AppTag>;
-  if (u.onDevices) return <AppTag tone="success">{`On ${u.onDevices} ${u.onDevices === 1 ? 'device' : 'devices'}`}</AppTag>;
+  if (u.commandsWaiting) return <AppTag meaning="waiting">{`Waiting for ${u.commandsWaiting} ${u.commandsWaiting === 1 ? 'device' : 'devices'}`}</AppTag>;
+  if (u.commandsFailed) return <AppTag meaning="failed">{`Failed on ${u.commandsFailed} ${u.commandsFailed === 1 ? 'device' : 'devices'}`}</AppTag>;
+  if (u.onDevices) return <AppTag meaning="done">{`On ${u.onDevices} ${u.onDevices === 1 ? 'device' : 'devices'}`}</AppTag>;
   return <span className="text-muted">{NO_VALUE}</span>;
 }
 
@@ -104,7 +103,7 @@ export function DeviceCommands() {
       width: 300,
       render: (_, c) => (
         <div>
-          <AppTag tone={STATUS_TONE[c.status]}>{BIOMETRIC_COMMAND_STATUS_LABELS[c.status]}</AppTag>
+          <AppTag kind="biometricCommand" status={c.status}>{BIOMETRIC_COMMAND_STATUS_LABELS[c.status]}</AppTag>
           {c.doneAt ? <span className="text-muted">{formatDateTime(c.doneAt)}</span> : c.sentAt ? <span className="text-muted">{`Sent ${formatDateTime(c.sentAt)}`}</span> : null}
           {c.note && c.status !== 'DONE' ? <div className="text-muted">{c.note}</div> : null}
         </div>

@@ -161,7 +161,7 @@ export function MasterListPage({ slug }: { slug: string }) {
                   <Typography.Text strong translate="no">
                     {e.name}
                   </Typography.Text>
-                  {!e.standard && <AppTag tone="info">Own</AppTag>}
+                  {!e.standard && <AppTag variant="kind">Own</AppTag>}
                 </Flex>
               ),
             },

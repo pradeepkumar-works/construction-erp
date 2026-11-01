@@ -18,7 +18,6 @@ import {
   canRaiseNcr,
   isExternalAudit,
   type AttachmentDto,
-  type FindingState,
   type NcrSeverity,
   type QaAuditDto,
   type QaAuditFindingDto,
@@ -53,16 +52,14 @@ const KEYS = ['kind', 'open'] as const;
 const SORT_FIELDS = ['date'] as const;
 type SortField = (typeof SORT_FIELDS)[number];
 
-const STATE_TONE: Record<FindingState, 'pending' | 'info' | 'success'> = { OPEN: 'pending', NCR: 'info', CLOSED: 'success' };
-const SEVERITY_TONE: Record<NcrSeverity, 'neutral' | 'pending' | 'danger'> = { MINOR: 'neutral', MAJOR: 'pending', CRITICAL: 'danger' };
 
 function FindingStateTag({ f }: { f: QaAuditFindingDto }) {
   return (
     <>
-      <AppTag tone={STATE_TONE[f.state]} dot>
+      <AppTag kind="finding" status={f.state}>
         {FINDING_STATE_LABELS[f.state]}
       </AppTag>
-      {f.overdueDays ? <AppTag tone="danger">{`${f.overdueDays} day${f.overdueDays === 1 ? '' : 's'} late`}</AppTag> : null}
+      {f.overdueDays ? <AppTag meaning="failed">{`${f.overdueDays} day${f.overdueDays === 1 ? '' : 's'} late`}</AppTag> : null}
     </>
   );
 }
@@ -70,9 +67,9 @@ function FindingStateTag({ f }: { f: QaAuditFindingDto }) {
 /** The findings of an audit by where they stand, in a few words: "2 of 5 open". */
 function OpenTag({ audit }: { audit: QaAuditDto }) {
   if (!audit.findings.length) return <Typography.Text type="secondary">No findings</Typography.Text>;
-  if (!audit.open) return <AppTag tone="success">All closed</AppTag>;
+  if (!audit.open) return <AppTag meaning="done">All closed</AppTag>;
   const late = audit.findings.some((f) => f.overdueDays);
-  return <AppTag tone={late ? 'danger' : 'pending'}>{`${audit.open} of ${audit.findings.length} open`}</AppTag>;
+  return <AppTag meaning={late ? 'failed' : 'waiting'}>{`${audit.open} of ${audit.findings.length} open`}</AppTag>;
 }
 
 interface AuditForm {
@@ -337,7 +334,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
         audit ? (
           <Flex gap={token.marginXS} align="center" wrap>
             <span translate="no">{audit.auditNo}</span>
-            <AppTag tone={isExternalAudit(audit.kind) ? 'violet' : 'neutral'}>{QA_AUDIT_KIND_LABELS[audit.kind]}</AppTag>
+            <AppTag variant="kind">{QA_AUDIT_KIND_LABELS[audit.kind]}</AppTag>
             <OpenTag audit={audit} />
           </Flex>
         ) : (
@@ -396,7 +393,7 @@ export function AuditDrawer({ id, onClose }: { id: string | null; onClose: () =>
                     </div>
                   ),
                 },
-                { title: 'Severity', dataIndex: 'severity', width: 100, render: (v: NcrSeverity) => <AppTag tone={SEVERITY_TONE[v]}>{NCR_SEVERITY_LABELS[v]}</AppTag> },
+                { title: 'Severity', dataIndex: 'severity', width: 100, render: (v: NcrSeverity) => <AppTag variant="kind">{NCR_SEVERITY_LABELS[v]}</AppTag> },
                 { title: 'Due', dataIndex: 'dueOn', width: 110, render: (v: string | null) => (v ? formatDate(v) : '-') },
                 { title: 'Status', key: 'state', width: 150, render: (_, f) => <FindingStateTag f={f} /> },
                 ...(mayRecord

@@ -236,7 +236,7 @@ function Thread({ t, kind, entityId, canComment, askRemove }: { t: CommentThread
       }}
     >
       {resolved && (
-        <AppTag tone="success" icon={<CheckCircleOutlined />} style={{ marginBottom: token.marginXS }}>
+        <AppTag meaning="done" icon={<CheckCircleOutlined />} style={{ marginBottom: token.marginXS }}>
           {`Resolved by ${t.resolvedByName ?? 'someone'} on ${formatDateTime(t.resolvedAt)}`}
         </AppTag>
       )}

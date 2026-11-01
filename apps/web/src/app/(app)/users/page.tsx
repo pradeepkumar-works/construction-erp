@@ -93,7 +93,7 @@ export default function UsersPage() {
             <div>
               <strong>{v}</strong>
               {r.invitePending ? (
-                <AppTag tone="pending" style={{ marginLeft: 8 }}>
+                <AppTag meaning="waiting" style={{ marginLeft: 8 }}>
                   Invited
                 </AppTag>
               ) : null}
@@ -102,7 +102,7 @@ export default function UsersPage() {
           ),
         },
         { key: 'phone', title: 'Phone', dataIndex: 'phone', width: 140, render: (v) => v ?? NO_VALUE },
-        { title: 'Role', dataIndex: 'roleKey', width: 220, render: (k: RoleKey) => <AppTag style={{ margin: 0 }}>{ROLE_LABELS[k]}</AppTag>, ...sort('role') },
+        { title: 'Role', dataIndex: 'roleKey', width: 220, render: (k: RoleKey) => <AppTag variant="kind" style={{ margin: 0 }}>{ROLE_LABELS[k]}</AppTag>, ...sort('role') },
         { title: 'Created', dataIndex: 'createdAt', width: 130, render: (v) => formatDate(v), ...sort('createdAt') },
         {
           title: 'Active',

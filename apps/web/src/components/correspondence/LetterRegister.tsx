@@ -91,7 +91,7 @@ export function LetterRegister({ direction, projectId: fixedProject, initialFilt
                 {r.subject}
               </RecordLink>
               {r.priority === 'URGENT' ? (
-                <AppTag tone="danger" style={{ marginInlineStart: 6 }}>
+                <AppTag meaning="failed" style={{ marginInlineStart: 6 }}>
                   Urgent
                 </AppTag>
               ) : null}

@@ -7,11 +7,9 @@ import {
   EOT_BASES,
   EOT_BASIS_LABELS,
   EOT_DECISION_DAYS,
-  EOT_STATE_COLORS,
   EOT_STATE_LABELS,
   PROGRAMME_STATUS_LABELS,
   PROGRAMME_UPDATE_DAYS,
-  PROGRAMME_WATCH_COLORS,
   PROGRAMME_WATCH_LABELS,
   canApplyEot,
   canApprove,
@@ -21,7 +19,6 @@ import {
   type EotBasis,
   type EotRegisterDto,
   type ProgrammeRegisterDto,
-  type ProgrammeStatus,
   type ProgrammeSubmissionDto,
 } from '@erp/shared';
 import { errorMessage } from '@/lib/api';
@@ -39,7 +36,7 @@ import {
 } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
-import { AppTag, toneOf } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
 import { QueryError } from '@/components/common/QueryState';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -51,16 +48,15 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
-const PROGRAMME_TONE: Record<ProgrammeStatus, string> = { SUBMITTED: 'blue', APPROVED: 'green', RETURNED: 'gold' };
 const small = { fontSize: themeFontSize('fontSizeSM') };
 
 const RevisionTag = ({ r }: { r: ProgrammeSubmissionDto }) => (
-  <AppTag tone={toneOf(PROGRAMME_TONE[r.status])} dot>
+  <AppTag kind="programme" status={r.status}>
     {r.inForce ? 'In force' : PROGRAMME_STATUS_LABELS[r.status]}
   </AppTag>
 );
 const EotTag = ({ a }: { a: EotApplicationDto }) => (
-  <AppTag tone={toneOf(EOT_STATE_COLORS[a.state])} dot>
+  <AppTag kind="eot" status={a.state}>
     {EOT_STATE_LABELS[a.state]}
   </AppTag>
 );
@@ -180,7 +176,7 @@ export function ProgrammeAndEot({
           {programme ? (
             <>
               <Flex gap={8} align="center" wrap style={{ marginBottom: 8 }}>
-                <AppTag tone={toneOf(PROGRAMME_WATCH_COLORS[programme.watch.state])} dot>
+                <AppTag kind="programmeWatch" status={programme.watch.state}>
                   {PROGRAMME_WATCH_LABELS[programme.watch.state]}
                 </AppTag>
                 <Typography.Text>

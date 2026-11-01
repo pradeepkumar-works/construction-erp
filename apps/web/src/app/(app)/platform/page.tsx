@@ -21,11 +21,11 @@ const supportOpen = (c: Pick<PlatformCompanyDto, 'supportAccessUntil'>) => !!c.s
 function StatusTags({ c }: { c: PlatformCompanyDto }) {
   return (
     <Space size={4} wrap>
-      {c.suspendedAt ? <AppTag tone="danger">Suspended</AppTag> : <AppTag tone="success">Active</AppTag>}
-      {c.deletionScheduledFor && <AppTag tone="pending">Deleting {formatDate(c.deletionScheduledFor)}</AppTag>}
-      {supportOpen(c) && <AppTag tone="info">Support allowed</AppTag>}
+      {c.suspendedAt ? <AppTag meaning="failed">Suspended</AppTag> : <AppTag meaning="done">Active</AppTag>}
+      {c.deletionScheduledFor && <AppTag meaning="waiting">Deleting {formatDate(c.deletionScheduledFor)}</AppTag>}
+      {supportOpen(c) && <AppTag meaning="inHand">Support allowed</AppTag>}
       {c.billing && (
-        <AppTag color={c.billing.status === 'READ_ONLY' ? 'red' : c.billing.status === 'ACTIVE' ? 'green' : 'default'}>
+        <AppTag kind="billing" status={c.billing.status}>
           {BILLING_STATUS_LABELS[c.billing.status]}
           {c.billing.status === 'ACTIVE' && c.billing.paidUntil ? ` to ${formatDate(c.billing.paidUntil)}` : ''}
           {c.billing.status === 'TRIAL' && c.billing.trialEndsAt ? ` to ${formatDate(c.billing.trialEndsAt)}` : ''}
@@ -256,7 +256,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
                 dataIndex: 'fullName',
                 render: (v: string, u) => (
                   <div>
-                    {v} {!u.isActive && <AppTag>Inactive</AppTag>}
+                    {v} {!u.isActive && <AppTag meaning="closed">Inactive</AppTag>}
                     <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {u.email}
                     </div>

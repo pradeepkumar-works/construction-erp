@@ -22,9 +22,9 @@ export function VendorScorecard({ data, quotation }: { data: ComparativeStatemen
   return (
     <Flex vertical align="flex-end" gap={2}>
       <Flex gap={4} wrap justify="flex-end">
-        {s.lateHabit ? <AppTag tone="pending" style={{ margin: 0 }}>Often late</AppTag> : null}
-        {s.rejectHabit ? <AppTag tone="danger" style={{ margin: 0 }}>Rejections</AppTag> : null}
-        {s.dear ? <AppTag tone="pending" style={{ margin: 0 }}>Dearer</AppTag> : null}
+        {s.lateHabit ? <AppTag meaning="waiting" style={{ margin: 0 }}>Often late</AppTag> : null}
+        {s.rejectHabit ? <AppTag meaning="failed" style={{ margin: 0 }}>Rejections</AppTag> : null}
+        {s.dear ? <AppTag meaning="waiting" style={{ margin: 0 }}>Dearer</AppTag> : null}
       </Flex>
       {record && !s.thin ? (
         <Typography.Text type="secondary" style={small}>

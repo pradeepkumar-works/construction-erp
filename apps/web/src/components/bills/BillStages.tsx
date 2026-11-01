@@ -71,7 +71,7 @@ export function BillStages({ bill, editable }: { bill: RaBillDto; editable: bool
                 {l.claimedByHand ? (
                   <div>
                     <Tooltip title={l.note ?? undefined}>
-                      <AppTag tone="pending" style={{ marginInlineEnd: 0 }}>
+                      <AppTag meaning="waiting" style={{ marginInlineEnd: 0 }}>
                         Claimed over the evidence
                       </AppTag>
                     </Tooltip>

@@ -7,23 +7,6 @@ export const QUEUE_TYPES: [SubmissionType, string][] = QUEUE_ORDER.map((t) => [t
 
 export const QUEUE_TYPE_LABELS = Object.fromEntries(QUEUE_TYPES) as Record<SubmissionType, string>;
 
-export const TYPE_COLORS: Record<SubmissionType, string> = {
-  PROGRESS: 'blue',
-  DPR: 'purple',
-  MATERIAL_REQUEST: 'cyan',
-  MACHINERY: 'magenta',
-  EXPENSE: 'default',
-  MEASUREMENT: 'geekblue',
-  BILL: 'gold',
-  PURCHASE_ORDER: 'orange',
-  VENDOR_BILL: 'volcano',
-  WORK_ORDER: 'lime',
-  SUBCONTRACT_BILL: 'green',
-  PAYMENT_REQUEST: 'red',
-  INSPECTION: 'orange',
-  SUPPLIER_CHOICE: 'gold',
-};
-
 /** Types whose record has its own page, and so shows whole in the inbox's right-hand pane. */
 export const RECORD_PAGES: Partial<Record<SubmissionType, string>> = {
   PROGRESS: '/progress',

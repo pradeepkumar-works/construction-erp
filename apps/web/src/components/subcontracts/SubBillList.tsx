@@ -86,7 +86,7 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
             {formatDate(v)}
             {late ? (
               <div>
-                <AppTag tone="danger" style={{ margin: 0 }}>
+                <AppTag meaning="failed" style={{ margin: 0 }}>
                   {late} days late
                 </AppTag>
               </div>

@@ -3,16 +3,15 @@
 import React, { useEffect } from 'react';
 import { Alert, App, Button, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
 import { DatePicker } from '@/components/common/DatePicker';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { CopyOutlined, WhatsAppOutlined } from '@/components/common/icons';
 import dayjs from 'dayjs';
-import { ENQUIRY_DEFAULT_DAYS, ENQUIRY_VENDOR_STATE_LABELS, MAX_PAGE_SIZE, whatsAppShareUrl, type EnquiryDto, type EnquiryVendorDto, type EnquiryVendorState, type MaterialRequestDto } from '@erp/shared';
+import { ENQUIRY_DEFAULT_DAYS, ENQUIRY_VENDOR_STATE_LABELS, MAX_PAGE_SIZE, whatsAppShareUrl, type EnquiryDto, type EnquiryVendorDto, type MaterialRequestDto } from '@erp/shared';
 import { useEnquiries, useSendEnquiry, useVendorsPage } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 
-const STATE_TONE: Record<EnquiryVendorState, TagTone> = { QUOTED: 'success', OPENED: 'info', SENT: 'neutral', NOT_SENT: 'pending', EXPIRED: 'neutral' };
 
 interface FormValues {
   vendorIds: string[];
@@ -159,7 +158,7 @@ export function EnquiriesList({ requestId }: { requestId: string }) {
           width: 170,
           render: (_, r) => (
             <div>
-              <AppTag tone={STATE_TONE[r.state]} style={{ margin: 0 }}>
+              <AppTag kind="enquiryVendor" status={r.state} style={{ margin: 0 }}>
                 {ENQUIRY_VENDOR_STATE_LABELS[r.state]}
               </AppTag>
               {r.respondedAt ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{formatDateTime(r.respondedAt)}</div> : null}

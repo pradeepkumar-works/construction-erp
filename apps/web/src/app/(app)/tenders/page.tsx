@@ -38,7 +38,7 @@ import {
 import { RecordLink } from "@/components/record/RecordLink";
 import {
   DueTag,
-  RankTag,
+  RankText,
   TenderStatusTag,
 } from "@/components/tenders/tenderUi";
 import { TenderForm } from "@/components/tenders/TenderForm";
@@ -192,7 +192,7 @@ function TendersPage() {
       render: (_, r) =>
         r.rank ? (
           <div>
-            <RankTag rank={r.rank} />
+            <RankText rank={r.rank} />
             {` of ${r.bidders}`}
             {r.rank > 1 && r.l1Amount ? (
               <Typography.Text

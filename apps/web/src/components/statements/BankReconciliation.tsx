@@ -549,7 +549,7 @@ export function BankReconciliation() {
                   render: (_, s) =>
                     s.bookLineId ? (
                       <Space size={4} wrap>
-                        <AppTag color={s.matchedBy === "HAND" ? "blue" : "green"}>
+                        <AppTag meaning="done">
                           {s.matchedBy === "HAND"
                             ? "Matched by hand"
                             : "Matched"}
@@ -661,7 +661,7 @@ export function BankReconciliation() {
                   dataIndex: "statementDate",
                   width: 130,
                   render: (d: string | null) =>
-                    d ? formatDate(d) : <AppTag tone="pending">Not yet</AppTag>,
+                    d ? formatDate(d) : <AppTag meaning="waiting">Not yet</AppTag>,
                 },
               ]}
             />

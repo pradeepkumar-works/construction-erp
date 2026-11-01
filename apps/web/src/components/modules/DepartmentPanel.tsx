@@ -3,22 +3,19 @@
 import React from 'react';
 import Link from 'next/link';
 import { Card, Flex, Table, Typography } from 'antd';
-import { PIPELINE_STAGES, type DepartmentPipelineDto, type PipelineRowDto } from '@erp/shared';
+import { PIPELINE_STAGES, type DepartmentPipelineDto, type PipelineRowDto, type StatusOf } from '@erp/shared';
 import { useDepartmentHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDate } from '@/lib/format';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { QueryError } from '@/components/common/QueryState';
 import { Figures } from '@/components/figures';
 import s from './DepartmentHome.module.css';
 
-/** A stage's tone: what waits on a decision is pending, part received violet, the rest in hand. */
-const STAGE_TONE: Record<string, TagTone> = { APPROVAL: 'pending', SIGN: 'pending', SEAL: 'pending', READY: 'info', PARTLY_RECEIVED: 'violet' };
-
 function Stage({ pipeline, row }: { pipeline: DepartmentPipelineDto; row: PipelineRowDto }) {
   const label = PIPELINE_STAGES[pipeline.key].find((x) => x.key === row.stage)?.label ?? row.stage;
   return (
-    <AppTag tone={STAGE_TONE[row.stage] ?? 'neutral'} dot>
+    <AppTag kind="pipelineStage" status={row.stage as StatusOf<'pipelineStage'>}>
       {label}
     </AppTag>
   );

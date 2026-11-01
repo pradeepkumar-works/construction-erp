@@ -21,9 +21,8 @@ const notAfterToday = (d: dayjs.Dayjs) => d.isAfter(dayjs(), 'day');
 /** Subcontractors and labour contractors, who are asked to quote. */
 const SUB_KINDS = 'SUBCONTRACTOR,LABOUR_CONTRACTOR';
 
-const STATUS_COLORS: Record<ScEnquiryStatus, string | undefined> = { OPEN: 'processing', AWARDED: 'success', CANCELLED: undefined };
 export function ScEnquiryStatusTag({ status }: { status: ScEnquiryStatus }) {
-  return <AppTag color={STATUS_COLORS[status]}>{SC_ENQUIRY_STATUS_LABELS[status]}</AppTag>;
+  return <AppTag kind="scEnquiry" status={status}>{SC_ENQUIRY_STATUS_LABELS[status]}</AppTag>;
 }
 
 /** The subcontractors on the vendor master, for asking to quote. */

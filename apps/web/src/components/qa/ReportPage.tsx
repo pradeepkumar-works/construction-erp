@@ -105,7 +105,7 @@ function ReportBody({ data }: { data: QaReportDto }) {
                 v.length ? (
                   <Flex gap={4} wrap>
                     {v.map((g) => (
-                      <AppTag key={g} tone="danger">
+                      <AppTag key={g} meaning="failed">
                         {g}
                       </AppTag>
                     ))}

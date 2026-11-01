@@ -26,7 +26,6 @@ import { EstimatePanel } from './EstimatePanel';
 import { ExceptionsView, KitsView, PipeView, StructureView } from './StockViews';
 
 const RED = themeColor('colorErrorText');
-const STATUS_COLOR: Record<ReconciliationStatus, string> = { OVER: 'error', UNDER: 'warning', WITHIN: 'success', NO_WORK: 'default' };
 
 export const qty = (v: string, unit?: string) => (
   <span className="mono" translate="no">
@@ -38,7 +37,7 @@ export const qty = (v: string, unit?: string) => (
 export function StatusCell({ status }: { status: ReconciliationStatus }) {
   return (
     <Tooltip title={RECONCILIATION_STATUS_HINTS[status]}>
-      <AppTag color={STATUS_COLOR[status]} style={{ margin: 0 }}>
+      <AppTag kind="reconciliation" status={status} style={{ margin: 0 }}>
         {RECONCILIATION_STATUS_LABELS[status]}
       </AppTag>
     </Tooltip>
@@ -53,7 +52,7 @@ export function FrontCell({ qtyValue, unit, flag }: { qtyValue: string | null; u
       {flag ? (
         <div>
           <Tooltip title={FRONT_FLAG_HINTS[flag]}>
-            <AppTag color={flag === 'USED_NOT_ISSUED' ? 'error' : 'warning'} style={{ margin: 0 }}>
+            <AppTag kind="frontFlag" status={flag} style={{ margin: 0 }}>
               {FRONT_FLAG_LABELS[flag]}
             </AppTag>
           </Tooltip>

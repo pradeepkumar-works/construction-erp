@@ -88,7 +88,7 @@ function GstRegistersPage() {
       cardText: (r) => [r.recipientName, r.section, r.recipientGstin ?? 'Unregistered'].join(' · '),
       render: (_, r) => (
         <div>
-          {r.recipientName} <AppTag style={{ marginLeft: 4 }}>{r.section}</AppTag>
+          {r.recipientName} <AppTag variant="kind" style={{ marginLeft: 4 }}>{r.section}</AppTag>
           <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.recipientGstin ? <span translate="no">{r.recipientGstin}</span> : 'Unregistered'} · {placeOfSupply(r.placeOfSupply) || 'place of supply not known'}
           </div>
@@ -127,7 +127,7 @@ function GstRegistersPage() {
         <div>
           {r.supplierName}
           {!r.itcEligible && (
-            <AppTag tone="danger" style={{ marginLeft: 6 }}>
+            <AppTag meaning="failed" style={{ marginLeft: 6 }}>
               No GSTIN
             </AppTag>
           )}

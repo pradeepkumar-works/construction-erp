@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import type { ContractCurrency, SubmissionStatus, MaterialPriority, NotificationType, ProjectStatus, StockEntryType } from '@erp/shared';
+import type { ContractCurrency } from '@erp/shared';
 import { currencySymbol, formatINR, formatINRCompact, fromRupees, isForeign, NO_VALUE, plural, toNumber, toRupees } from '@erp/shared';
 
 // Moved to @erp/shared (numbers.ts), so the headline figures, print, Excel and the API read numbers the same way.
@@ -79,71 +79,6 @@ export function formatTime(value: string | null | undefined): string {
   const d = dayjs(value);
   return d.isValid() ? d.format('HH:mm') : value;
 }
-
-export const STATUS_COLORS: Record<SubmissionStatus, string> = {
-  DRAFT: 'default',
-  // Pending is orange and changes-requested purple (as in the site app), so neither reads as the brand blue.
-  SUBMITTED: 'orange',
-  APPROVED: 'green',
-  REJECTED: 'red',
-  CHANGES_REQUESTED: 'purple',
-};
-
-export const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
-  PLANNED: 'blue',
-  ACTIVE: 'green',
-  ON_HOLD: 'orange',
-  COMPLETED: 'purple',
-  CLOSED: 'default',
-};
-
-export const STOCK_ENTRY_COLORS: Record<StockEntryType, string> = {
-  RECEIPT: 'green',
-  ISSUE: 'blue',
-  ADJUSTMENT: 'purple',
-  TRANSFER_OUT: 'gold',
-  TRANSFER_IN: 'cyan',
-  RETURN_TO_VENDOR: 'volcano',
-  RETURN_FROM_SITE: 'geekblue',
-};
-
-export const PRIORITY_COLORS: Record<MaterialPriority, string> = {
-  LOW: 'default',
-  NORMAL: 'blue',
-  HIGH: 'orange',
-  URGENT: 'red',
-};
-
-export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
-  SUBMISSION_SUBMITTED: 'orange',
-  SUBMISSION_APPROVED: 'green',
-  SUBMISSION_REJECTED: 'red',
-  SUBMISSION_CHANGES_REQUESTED: 'purple',
-  DPR_REMINDER: 'blue',
-  APPROVAL_DIGEST: 'purple',
-  LOW_STOCK: 'volcano',
-  RISK_RAISED: 'magenta',
-  TEST_DUE: 'geekblue',
-  TEST_FAILED: 'red',
-  NCR: 'volcano',
-  DOCUMENT_ISSUED: 'cyan',
-  LEAVE: 'lime',
-  OVERTIME: 'lime',
-  BILLS_DUE: 'gold',
-  PORTAL: 'geekblue',
-  SAFETY: 'red',
-  MACHINERY: 'orange',
-  IMPREST: 'gold',
-  COMPLIANCE: 'purple',
-  DEFECT: 'volcano',
-  WATCH_LIST: 'gold',
-  MORNING_BRIEF: 'cyan',
-  SUPPLIER: 'geekblue',
-  COMMENT: 'blue',
-  ACCESS_REQUEST: 'purple',
-  HANDOFF: 'blue',
-  LETTER: 'purple',
-};
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */
 export function timeAgo(value: string | null | undefined): string {

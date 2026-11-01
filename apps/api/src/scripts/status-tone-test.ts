@@ -170,6 +170,7 @@ const VALUES: Record<StatusKind, readonly string[]> = {
   inbound: INBOUND_STATES,
   typeImport: ['CREATE', 'REPLACE', 'SAME', 'REFUSED'],
   health: ['good', 'watch', 'act'],
+  signal: ['success', 'warning', 'error', 'default'],
 };
 
 const kinds = Object.keys(STATUS_TONES) as StatusKind[];

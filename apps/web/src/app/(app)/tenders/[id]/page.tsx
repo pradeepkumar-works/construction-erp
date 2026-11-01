@@ -20,7 +20,6 @@ import {
 import {
   COMPLIANCE_DOC_STATUS_LABELS,
   TENDER_BID_TYPE_LABELS,
-  rankLabel,
   sorPctLabel,
   type TenderBidDto,
   type TenderDetailDto,
@@ -38,7 +37,7 @@ import { AttachmentGallery } from "@/components/common/AttachmentGallery";
 import { useConfirmDelete } from "@/components/common/ConfirmDelete";
 import {
   DueTag,
-  RankTag,
+  RankText,
   TenderStatusTag,
 } from "@/components/tenders/tenderUi";
 import { TenderForm } from "@/components/tenders/TenderForm";
@@ -348,7 +347,7 @@ function TenderView({ tender }: { tender: TenderDetailDto }) {
           ? stat(
               "At opening",
               <span>
-                <RankTag rank={us.rank} /> {`of ${t.bids.length}`}
+                <RankText rank={us.rank} /> {`of ${t.bids.length}`}
               </span>,
               us.rank > 1 ? (
                 <span translate="no">{`L1 ${t.bids[0].bidderName} ${formatINR(t.bids[0].amount)}`}</span>
@@ -719,7 +718,7 @@ function BoqTab({
                         .join(" · ")}
                     </Typography.Text>
                     {i.unpriced ? (
-                      <AppTag tone="pending">{`${i.unpriced} line${i.unpriced === 1 ? "" : "s"} without a rate`}</AppTag>
+                      <AppTag meaning="waiting">{`${i.unpriced} line${i.unpriced === 1 ? "" : "s"} without a rate`}</AppTag>
                     ) : null}
                   </div>
                 ),
@@ -856,9 +855,7 @@ function BidsTab({
             title: "Rank",
             width: 80,
             render: (_, b) => (
-              <AppTag color={b.rank === 1 ? "success" : undefined}>
-                {rankLabel(b.rank)}
-              </AppTag>
+              <RankText rank={b.rank} />
             ),
           },
           {
@@ -867,7 +864,7 @@ function BidsTab({
             render: (_, b) => (
               <span translate="no">
                 {b.bidderName}
-                {b.us ? <AppTag style={{ marginLeft: 8 }}>Us</AppTag> : null}
+                {b.us ? <AppTag variant="kind" style={{ marginLeft: 8 }}>Us</AppTag> : null}
               </span>
             ),
           },

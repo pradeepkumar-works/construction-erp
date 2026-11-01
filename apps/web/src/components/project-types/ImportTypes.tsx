@@ -3,14 +3,13 @@
 import React, { useState } from 'react';
 import { Alert, App, Button, Checkbox, Flex, Modal, Space, Typography, Upload, theme } from 'antd';
 import type { UploadProps } from 'antd';
-import { IMPORT_ACTION_LABELS, MAX_BUNDLE_BYTES, bundleFileName, readBundle, type ImportAction, type ImportRowDto, type TypeBundle } from '@erp/shared';
+import { IMPORT_ACTION_LABELS, MAX_BUNDLE_BYTES, bundleFileName, readBundle, type ImportRowDto, type TypeBundle } from '@erp/shared';
 import { InboxOutlined } from '@/components/common/icons';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { formatDateTime } from '@/lib/format';
 import { useImportPreview, useImportTypes, type TypeImportPreviewDto } from '@/lib/queries';
 import { saveText } from '@/components/payroll/payrollUi';
 
-const TONE: Record<ImportAction, TagTone> = { CREATE: 'info', REPLACE: 'pending', SAME: 'neutral', REFUSED: 'danger' };
 const pickKey = (r: Pick<ImportRowDto, 'what' | 'code'>) => `${r.what}:${r.code}`;
 const importable = (r: ImportRowDto) => (r.action === 'CREATE' || r.action === 'REPLACE') && !r.problems.length;
 
@@ -104,7 +103,7 @@ export function ImportTypes({ open, onClose }: { open: boolean; onClose: () => v
                 >
                   <strong translate="no">{r.name || r.code}</strong> <span className="text-muted" translate="no">{r.code}</span>
                 </Checkbox>
-                <AppTag tone={TONE[r.action]}>{r.problems.length && r.action !== 'REFUSED' ? 'Cannot import' : IMPORT_ACTION_LABELS[r.action]}</AppTag>
+                <AppTag kind="typeImport" status={r.problems.length ? 'REFUSED' : r.action}>{r.problems.length && r.action !== 'REFUSED' ? 'Cannot import' : IMPORT_ACTION_LABELS[r.action]}</AppTag>
               </Flex>
               {r.note ? (
                 <Typography.Paragraph type="secondary" style={{ margin: 0, paddingInlineStart: 24 }}>

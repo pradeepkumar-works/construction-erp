@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Card, Col, Flex, Row, Statistic, Table, Typography, theme } from 'antd';
-import type { DesignDashboardDto, ImpactTone, RecentRevisionDto } from '@erp/shared';
+import type { DesignDashboardDto, RecentRevisionDto } from '@erp/shared';
 import { useDesignDashboard } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { formatDate } from '@/lib/format';
@@ -11,11 +11,10 @@ import { DISPLAY_FONT } from '@/lib/theme';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { AppTag, type TagTone } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { RevisionStatusTag } from '@/components/documents/docUi';
 import { ImpactList } from './RevisionImpact';
 
-const TONE: Record<ImpactTone, TagTone> = { danger: 'danger', warning: 'pending', info: 'info' };
 type ProjectRow = DesignDashboardDto['projects'][number];
 
 function CardTitle({ children }: { children: React.ReactNode }) {
@@ -75,7 +74,7 @@ function Body({ data }: { data: DesignDashboardDto }) {
                   {r.notes.length ? (
                     <Flex gap={4} wrap style={{ marginTop: 4 }}>
                       {r.notes.slice(0, 3).map((x) => (
-                        <AppTag key={x.text} tone={TONE[x.tone]}>
+                        <AppTag key={x.text} kind="impact" status={x.tone}>
                           {x.text}
                         </AppTag>
                       ))}

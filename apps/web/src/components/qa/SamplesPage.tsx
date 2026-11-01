@@ -129,7 +129,7 @@ export function SamplesPage() {
                 ) : (
                   <Flex gap={token.marginXS} align="center" wrap>
                     <span translate="no">{s.waitDays === 1 ? '1 day' : `${s.waitDays ?? 0} days`}</span>
-                    {s.late ? <AppTag tone="danger">Late</AppTag> : <AppTag tone="pending">At the lab</AppTag>}
+                    {s.late ? <AppTag meaning="failed">Late</AppTag> : <AppTag meaning="waiting">At the lab</AppTag>}
                   </Flex>
                 ),
             },

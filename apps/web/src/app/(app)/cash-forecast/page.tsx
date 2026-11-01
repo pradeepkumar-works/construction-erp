@@ -225,10 +225,10 @@ function Forecast({ data }: { data: CashForecastDto }) {
                       <span translate="no">{i.label}</span>
                     )}
                     <div>
-                      <AppTag>{CASH_FLOW_KIND_LABELS[i.kind]}</AppTag>
-                      {i.msme ? <AppTag tone="pending">MSME</AppTag> : null}
-                      {i.overdue ? <AppTag tone="danger">Overdue</AppTag> : null}
-                      {i.uncertain ? <AppTag>Not in the low case</AppTag> : null}
+                      <AppTag variant="kind">{CASH_FLOW_KIND_LABELS[i.kind]}</AppTag>
+                      {i.msme ? <AppTag meaning="waiting">MSME</AppTag> : null}
+                      {i.overdue ? <AppTag meaning="failed">Overdue</AppTag> : null}
+                      {i.uncertain ? <AppTag meaning="closed">Not in the low case</AppTag> : null}
                     </div>
                   </>
                 ),

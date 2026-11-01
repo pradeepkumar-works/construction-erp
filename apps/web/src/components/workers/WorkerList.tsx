@@ -93,7 +93,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
         ),
       },
       { key: 'contractor', title: 'Contractor', dataIndex: 'contractor', width: 200 },
-      { key: 'trade', title: 'Trade', dataIndex: 'trade', width: 140, render: (v: string, w) => <span>{v} <AppTag style={{ marginLeft: 4 }}>{WORKER_SKILL_LABELS[w.skill]}</AppTag></span> },
+      { key: 'trade', title: 'Trade', dataIndex: 'trade', width: 140, render: (v: string, w) => <span>{v} <AppTag variant="kind" style={{ marginLeft: 4 }}>{WORKER_SKILL_LABELS[w.skill]}</AppTag></span> },
       { key: 'dailyWage', title: 'Wage / day', dataIndex: 'dailyWage', width: 110, align: 'right', render: (v: string) => formatINR(v) },
       { key: 'effectiveOtRate', title: 'OT / hour', dataIndex: 'effectiveOtRate', width: 100, align: 'right', render: (v: string, w) => (w.otRate ? formatINR(v, true) : <Sub as="span">{formatINR(v, true)}</Sub>) },
       ...(!fixedProject ? [{ key: 'projectName', title: 'Project', dataIndex: 'projectName', width: 220, render: (v: string | null) => v ?? <Sub as="span">Not posted</Sub> } satisfies ListColumn<WorkerDto>] : []),

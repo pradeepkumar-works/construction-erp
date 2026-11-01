@@ -90,7 +90,7 @@ export function DeviceUsers() {
         ) : u.workerName ? (
           <span translate="no">{`${u.workerName} (${u.workerNo}, worker)`}</span>
         ) : (
-          <AppTag tone="pending">Not matched</AppTag>
+          <AppTag meaning="waiting">Not matched</AppTag>
         ),
     },
     {
@@ -99,7 +99,7 @@ export function DeviceUsers() {
       width: 200,
       render: (_, u) => (
         <Space size={4} wrap>
-          {u.left ? <AppTag tone="danger">Has left</AppTag> : null}
+          {u.left ? <AppTag meaning="failed">Has left</AppTag> : null}
           <OnDevicesTag u={u} />
         </Space>
       ),

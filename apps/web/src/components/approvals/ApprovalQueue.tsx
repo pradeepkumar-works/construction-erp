@@ -6,7 +6,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { CaretDownOutlined, CaretRightOutlined } from '@/components/common/icons';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
 import { formatDateTime, formatINR, inSentence, timeAgo } from '@/lib/format';
-import { decidedInPlace, queueKey, TYPE_COLORS, type QueueGroup } from './queue';
+import { decidedInPlace, queueKey, type QueueGroup } from './queue';
 
 interface Props {
   groups: QueueGroup[];
@@ -76,9 +76,9 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
               >
                 {g.label}
               </Button>
-              <AppTag variant="filled" style={{ marginInlineStart: 'auto', marginInlineEnd: 0 }}>
+              <span className="text-muted" translate="no" style={{ marginInlineStart: 'auto' }}>
                 {g.items.length}
-              </AppTag>
+              </span>
             </Flex>
             {!isCollapsed && (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -156,9 +156,9 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
   );
 }
 
-export function TypeTag({ type, label }: { type: SubmissionType; label: string }) {
+export function TypeTag({ label }: { label: string }) {
   return (
-    <AppTag color={TYPE_COLORS[type]} style={{ margin: 0 }}>
+    <AppTag variant="kind" style={{ margin: 0 }}>
       {label}
     </AppTag>
   );

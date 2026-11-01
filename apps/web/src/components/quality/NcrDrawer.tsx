@@ -24,8 +24,6 @@ import { NcrFormModal, useMasterOptions } from './NcrFormModal';
 import { themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
 
-const HISTORY_COLORS: Record<string, string> = { CREATED: 'red', ACTION_TAKEN: 'blue', CLOSED: 'green', REOPENED: 'orange', UPDATED: 'gray' };
-
 interface ActionValues {
   cause: string;
   correctiveAction: string;
@@ -191,7 +189,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
                 children: (
                   <Space size={4} wrap>
                     <SeverityTag severity={data.severity} />
-                    {data.raisedByClient ? <AppTag tone="violet">Raised by the client</AppTag> : null}
+                    {data.raisedByClient ? <AppTag variant="kind">Raised by the client</AppTag> : null}
                   </Space>
                 ),
               },
@@ -237,7 +235,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
           <Timeline
             items={(history ?? []).map((h) => ({
               key: h.id,
-              color: HISTORY_COLORS[h.action] ?? 'blue',
+              color: 'gray',
               content: (
                 <div>
                   <Typography.Text strong>{auditActionLabel(h.action)}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>

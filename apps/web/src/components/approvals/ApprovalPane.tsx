@@ -124,7 +124,7 @@ function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onO
           <span role="heading" aria-level={2} style={{ fontSize: token.fontSizeLG, fontWeight: token.fontWeightStrong }}>
             {item.title}
           </span>
-          <TypeTag type={item.type} label={SUBMISSION_TYPE_LABELS[item.type]} />
+          <TypeTag label={SUBMISSION_TYPE_LABELS[item.type]} />
         </Space>
         <Button size="small" icon={<FileSearchOutlined />} onClick={onOpenDetails}>
           Open details

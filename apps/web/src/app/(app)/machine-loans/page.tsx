@@ -84,7 +84,7 @@ function MachineLoansPage() {
       width: 190,
       render: (_, r) =>
         r.status === 'CLOSED' ? (
-          <AppTag>{`${EQUIPMENT_LOAN_STATUS_LABELS.CLOSED} ${formatDate(r.closedOn)}`}</AppTag>
+          <AppTag meaning="closed">{`${EQUIPMENT_LOAN_STATUS_LABELS.CLOSED} ${formatDate(r.closedOn)}`}</AppTag>
         ) : r.nextDue ? (
           <div>
             <span translate="no">{formatDate(r.nextDue.dueDate)}</span> <EmiStageTag stage={r.nextDue.stage} />

@@ -63,7 +63,7 @@ export function ApplyTemplateModal({ open, onClose, project, existing }: { open:
               return <Checkbox disabled={there} checked={!there && picked.includes(r.name)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, r.name] : p.filter((n) => n !== r.name)))} />;
             },
           },
-          { title: 'Activity', dataIndex: 'name', render: (v: string) => (have.has(v.toLowerCase()) ? <Typography.Text type="secondary">{v} <AppTag>already added</AppTag></Typography.Text> : v) },
+          { title: 'Activity', dataIndex: 'name', render: (v: string) => (have.has(v.toLowerCase()) ? <Typography.Text type="secondary">{v} <AppTag meaning="closed">already added</AppTag></Typography.Text> : v) },
           { title: 'Unit', dataIndex: 'unit', width: 70 },
           { title: 'Planned start', dataIndex: 'plannedStart', width: 120, render: (v: string | null) => formatDate(v) },
           { title: 'Planned finish', dataIndex: 'plannedEnd', width: 120, render: (v: string | null) => formatDate(v) },

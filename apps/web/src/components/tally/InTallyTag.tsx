@@ -8,7 +8,7 @@ import { AppTag } from '@/components/common/AppTag';
 export function InTallyTag() {
   return (
     <Tooltip title="Exported to Tally. To change it, undo that export in Accounts › Tally export.">
-      <AppTag tone="info" style={{ margin: 0 }}>
+      <AppTag meaning="done" style={{ margin: 0 }}>
         In Tally
       </AppTag>
     </Tooltip>

@@ -43,8 +43,8 @@ export function OrderQuotes({ order }: { order: PurchaseOrderDto }) {
             render: (_, q) => (
               <div>
                 <span translate="no">{q.vendorName}</span>{' '}
-                {q.id === lowest?.id ? <AppTag tone="success">Lowest</AppTag> : null}
-                {q.id === order.quotationId ? <AppTag tone="info">This order</AppTag> : null}
+                {q.id === lowest?.id ? <AppTag meaning="done">Lowest</AppTag> : null}
+                {q.id === order.quotationId ? <AppTag variant="kind">This order</AppTag> : null}
                 <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {q.deliveryDays !== null ? `Delivers in ${q.deliveryDays} days` : 'Delivery not said'}
                   {q.missingLines ? ` · ${q.missingLines} item${q.missingLines === 1 ? '' : 's'} not quoted` : ''}

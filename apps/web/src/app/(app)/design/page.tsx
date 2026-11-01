@@ -329,8 +329,8 @@ function DesignReference() {
             {SUBMISSION_STATUSES.map((s) => (
               <StatusTag key={s} status={s} />
             ))}
-            <AppTag tone="info">Building</AppTag>
-            <AppTag tone="info">Road / Infrastructure</AppTag>
+            <AppTag variant="kind">Building</AppTag>
+            <AppTag variant="kind">Road / Infrastructure</AppTag>
           </Flex>
         </Card>
 

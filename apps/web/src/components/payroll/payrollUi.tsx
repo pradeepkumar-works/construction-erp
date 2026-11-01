@@ -6,10 +6,9 @@ import type { PayrollRunStatus, SettlementStatus } from '@erp/shared';
 import { PAYROLL_RUN_STATUS_LABELS, SETTLEMENT_STATUS_LABELS } from '@erp/shared';
 import { formatMonthLong } from '@/lib/format';
 
-const COLOR: Record<PayrollRunStatus, string> = { DRAFT: 'default', SUBMITTED: 'processing', APPROVED: 'gold', PAID: 'success' };
 
-export const RunStatusTag = ({ status }: { status: PayrollRunStatus }) => <AppTag color={COLOR[status]}>{PAYROLL_RUN_STATUS_LABELS[status]}</AppTag>;
-export const SettlementStatusTag = ({ status }: { status: SettlementStatus }) => <AppTag color={COLOR[status]}>{SETTLEMENT_STATUS_LABELS[status]}</AppTag>;
+export const RunStatusTag = ({ status }: { status: PayrollRunStatus }) => <AppTag kind="payrollRun" status={status}>{PAYROLL_RUN_STATUS_LABELS[status]}</AppTag>;
+export const SettlementStatusTag = ({ status }: { status: SettlementStatus }) => <AppTag kind="settlement" status={status}>{SETTLEMENT_STATUS_LABELS[status]}</AppTag>;
 
 
 /** Save text the API made (bank file, ECR, ESI sheet) as a file. */

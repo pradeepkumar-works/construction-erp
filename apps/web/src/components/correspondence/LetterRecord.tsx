@@ -342,10 +342,10 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
             <Flex gap={4} wrap>
               <DirectionTag direction={data.direction} />
               <LetterStatusTag status={data.status} />
-              {data.priority === 'URGENT' ? <AppTag tone="danger">{LETTER_PRIORITY_LABELS.URGENT}</AppTag> : null}
-              {data.confidential ? <AppTag tone="violet">Confidential</AppTag> : null}
-              {data.overdue ? <AppTag tone="danger">Reply overdue</AppTag> : null}
-              {data.actionOverdue ? <AppTag tone="danger">Action overdue</AppTag> : null}
+              {data.priority === 'URGENT' ? <AppTag meaning="failed">{LETTER_PRIORITY_LABELS.URGENT}</AppTag> : null}
+              {data.confidential ? <AppTag variant="kind">Confidential</AppTag> : null}
+              {data.overdue ? <AppTag meaning="failed">Reply overdue</AppTag> : null}
+              {data.actionOverdue ? <AppTag meaning="failed">Action overdue</AppTag> : null}
             </Flex>
           ),
           lifecycle: lifecycleOf(data),

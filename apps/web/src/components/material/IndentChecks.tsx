@@ -10,24 +10,24 @@ function Verdict({ line }: { line: IndentCheckLineDto }) {
   const tags = [];
   if (line.notes.includes('OVER_BOQ'))
     tags.push(
-      <AppTag key="over" tone="danger" dot>
+      <AppTag key="over" meaning="failed">
         {formatQty(line.over)} past the BOQ
       </AppTag>,
     );
   if (line.notes.includes('STOCK_COVERS'))
     tags.push(
-      <AppTag key="stock" tone="pending" dot>
+      <AppTag key="stock" meaning="waiting">
         Store has it all
       </AppTag>,
     );
   else if (line.notes.includes('STOCK_PART'))
     tags.push(
-      <AppTag key="part" tone="info">
+      <AppTag key="part" meaning="inHand">
         {formatQty(line.fromStock)} from the store
       </AppTag>,
     );
   if (!tags.length && line.notes.includes('NO_NORM')) return <span className="text-muted">No norm for this item</span>;
-  if (!tags.length) return <AppTag tone="success">Within the BOQ</AppTag>;
+  if (!tags.length) return <AppTag meaning="done">Within the BOQ</AppTag>;
   return <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>{tags}</span>;
 }
 

@@ -45,7 +45,7 @@ import type { AccreditationState, CalibrationResult, CalibrationState } from './
 import type { InspectionResult, NcrStatus, TestResult } from './quality';
 import type { ReconciliationStatus } from './reconciliation';
 import type { MixDesignStatus, RmcBatchStatus, RmcInvoiceStatus, RmcOrderStatus } from './rmc';
-import type { LookaheadReadiness, MilestoneState } from './schedule';
+import type { LookaheadReadiness, MilestoneState, ScheduleReading } from './schedule';
 import type { EnquiryVendorState } from './small-purchase';
 import type { LeaveStatus, OvertimeStatus, StaffAttendanceStatus } from './staff';
 import type { FrontFlag, KitStatus, ReconExceptionKind } from './stock-against-dpr';
@@ -117,7 +117,7 @@ export const STATUS_TONES = {
   rfi: meanings<RfiStatus>({ OPEN: 'waiting', ANSWERED: 'done', CLOSED: 'closed', WITHDRAWN: 'closed' }),
   meetingAction: meanings<MeetingActionStatus>({ OPEN: 'waiting', DONE: 'done', DROPPED: 'closed' }),
   meeting: meanings<MeetingStatus>({ DRAFT: 'inHand', ISSUED: 'done' }),
-  siteOrder: meanings<SiteOrderState>({ OPEN: 'waiting', OVERDUE: 'failed', REPLIED: 'done', CLOSED: 'closed' }),
+  siteOrder: meanings<SiteOrderState>({ OPEN: 'waiting', OVERDUE: 'failed', REPLIED: 'waiting', CLOSED: 'closed' }),
   letter: meanings<LetterStatus>({ DRAFT: 'inHand', AWAITING_APPROVAL: 'waiting', ISSUED: 'done', OPEN: 'waiting', CLOSED: 'closed' }),
   maintenance: meanings<MaintenanceStatus>({ OPEN: 'waiting', CLOSED: 'closed' }),
   safetyIncident: meanings<SafetyIncidentStatus>({ OPEN: 'waiting', CLOSED: 'closed' }),
@@ -196,6 +196,8 @@ export const STATUS_TONES = {
   inbound: meanings<InboundState>({ RECEIVED: 'inHand', ANSWERED: 'done', DRAFTED: 'waiting', SAVED: 'done', DISCARDED: 'closed', FAILED: 'failed' }),
   typeImport: meanings<ImportAction>({ CREATE: 'inHand', REPLACE: 'waiting', SAME: 'closed', REFUSED: 'failed' }),
   health: meanings<HealthLevel>({ good: 'done', watch: 'waiting', act: 'failed' }),
+  /** A project's schedule, cost and billing signals (`ScheduleReading.level` and the header's chips). */
+  signal: meanings<ScheduleReading['level']>({ success: 'done', warning: 'waiting', error: 'failed', default: 'closed' }),
 } as const;
 
 export type StatusKind = keyof typeof STATUS_TONES;

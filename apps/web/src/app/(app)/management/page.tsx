@@ -103,7 +103,7 @@ function Dashboard({ data }: { data: PortfolioDto }) {
             <Card
               size="small"
               title="Needs action"
-              extra={acts ? <AppTag tone="danger">{acts === 1 ? '1 to act on' : `${acts} to act on`}</AppTag> : null}
+              extra={acts ? <AppTag meaning="failed">{acts === 1 ? '1 to act on' : `${acts} to act on`}</AppTag> : null}
               style={{ height: '100%' }}
             >
               <AttentionList items={data.attention} />

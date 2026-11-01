@@ -137,7 +137,7 @@ export function ChartOfAccounts() {
                   <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setEditing(a)}>
                     <span translate="no">{a.code ? `${a.code} · ${n}` : n}</span>
                   </Button>
-                  {!a.isActive && <AppTag>Closed</AppTag>}
+                  {!a.isActive && <AppTag meaning="closed">Closed</AppTag>}
                   {!a.isSystem && <Typography.Text type="secondary">added by hand</Typography.Text>}
                 </Space>
               ),

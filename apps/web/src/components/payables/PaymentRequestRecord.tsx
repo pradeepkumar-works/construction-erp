@@ -51,17 +51,17 @@ export function RequestPaidTag({ request }: { request: Pick<PaymentRequestDto, '
   const words = requestReleases(request) ? RELEASE_STATE_LABELS : PAID_STATE_LABELS;
   if (request.paidDate)
     return (
-      <AppTag tone="success" style={{ margin: 0 }}>
+      <AppTag meaning="done" style={{ margin: 0 }}>
         {words.PAID}
       </AppTag>
     );
   if (toNumber(request.paidAmount) > 0)
     return (
-      <AppTag tone="pending" style={{ margin: 0 }}>
+      <AppTag meaning="waiting" style={{ margin: 0 }}>
         {words.PART}
       </AppTag>
     );
-  return <AppTag style={{ margin: 0 }}>{words.UNPAID}</AppTag>;
+  return <AppTag kind="paid" status="UNPAID" style={{ margin: 0 }}>{words.UNPAID}</AppTag>;
 }
 
 interface RecordProps {
@@ -171,7 +171,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                     {releases && targetHref ? <Link href={targetHref}>{requestPayee(data)}</Link> : requestPayee(data)}
                     {fund && !releases ? <span className="text-muted"> · on account</span> : null}
                     {data.vendorMsme && data.vendorMsme !== 'MEDIUM' ? (
-                      <AppTag tone="pending" style={{ marginLeft: 8 }}>
+                      <AppTag meaning="waiting" style={{ marginLeft: 8 }}>
                         {MSME_CATEGORY_LABELS[data.vendorMsme]}
                       </AppTag>
                     ) : null}

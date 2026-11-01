@@ -60,7 +60,7 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
             r.manpower.length ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {r.manpower.map((m) => (
-                  <AppTag key={m.category} style={{ margin: 0 }}>
+                  <AppTag variant="kind" key={m.category} style={{ margin: 0 }}>
                     {m.category} {m.count}
                   </AppTag>
                 ))}

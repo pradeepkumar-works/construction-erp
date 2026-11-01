@@ -102,7 +102,7 @@ export function StandardNormsModal({ open, onClose, projectId }: { open: boolean
                 ? [
                     { title: 'BOQ item', key: 'work', render: (_, r) => workCell(r) },
                     { title: 'Per unit', key: 'materials', width: '42%', render: (_, r) => materialsCell(r) },
-                    { title: '', key: 'state', width: 110, render: (_, r) => (r.hasNorms ? <AppTag tone="info">Has norms</AppTag> : null) },
+                    { title: '', key: 'state', width: 110, render: (_, r) => (r.hasNorms ? <AppTag meaning="done">Has norms</AppTag> : null) },
                   ]
                 : [
                     {
@@ -112,7 +112,7 @@ export function StandardNormsModal({ open, onClose, projectId }: { open: boolean
                         <div>
                           {workCell(r)}
                           {materialsCell(r)}
-                          {r.hasNorms ? <AppTag tone="info">Has norms</AppTag> : null}
+                          {r.hasNorms ? <AppTag meaning="done">Has norms</AppTag> : null}
                         </div>
                       ),
                     },

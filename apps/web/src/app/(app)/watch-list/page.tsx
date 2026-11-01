@@ -17,7 +17,6 @@ import {
   WARNING_OUTCOMES,
   canSeeWatchList,
   trackRecordText,
-  type WarningConfidence,
   type WarningDto,
   type WarningKind,
   type WarningOutcome,
@@ -33,9 +32,6 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FormShell } from '@/components/form/FormShell';
 import { NoAccess } from '@/components/common/NoAccess';
-
-const KIND_COLOR: Record<WarningKind, string> = { SCHEDULE: 'orange', CASH: 'red', VENDOR: 'purple', STOCK: 'gold', MACHINE: 'blue', DPR: 'cyan', MATERIAL_OVERUSE: 'magenta', FUEL_NORM: 'volcano', LOAN_EMI: 'geekblue', RATE_ABOVE: 'purple', FUEL_NO_LOG: 'volcano', IDLE_HIRE: 'blue', NOTICE_DUE: 'red', MANDAYS_ABOVE: 'volcano', PACKAGE_LATE: 'orange', OM_SERVICE: 'cyan', BOQ_OFF_CONTRACT: 'gold', TESTS_SHORT: 'cyan', CALIBRATION_DUE: 'volcano', LAB_REPORT_LATE: 'blue', DRAWING_LATE: 'orange', DESIGN_REVIEW_LATE: 'gold', COPY_RECALL_LATE: 'red', MARGIN_FADE: 'magenta', CUBE_7DAY_LOW: 'red', PURCHASE_CONTROL: 'geekblue', FUEL_TANK: 'volcano', WEIGH_SHORT: 'gold', PROGRAMME_DUE: 'orange', EOT_OVERDUE: 'red' };
-const CONFIDENCE_COLOR: Record<WarningConfidence, string> = { CHECKED: 'green', LIKELY: 'blue', CHECK_THIS: 'orange' };
 
 type DismissForm = { outcome: WarningOutcome; reason?: string };
 
@@ -124,9 +120,9 @@ export default function Page() {
         <Flex justify="space-between" align="flex-start" gap={token.margin} wrap>
           <div style={{ flex: '1 1 320px', minWidth: 0 }}>
             <Flex gap={token.marginXS} wrap align="center" style={{ marginBottom: token.marginXS }}>
-              <AppTag color={KIND_COLOR[w.kind]}>{WARNING_KIND_LABELS[w.kind]}</AppTag>
+              <AppTag variant="kind">{WARNING_KIND_LABELS[w.kind]}</AppTag>
               <Tooltip title={WARNING_CONFIDENCE_HELP[w.confidence]}>
-                <AppTag color={CONFIDENCE_COLOR[w.confidence]} variant="outlined" dot={false}>
+                <AppTag variant="kind">
                   {WARNING_CONFIDENCE_LABELS[w.confidence]}
                 </AppTag>
               </Tooltip>
@@ -142,9 +138,7 @@ export default function Page() {
             <Flex gap={token.marginXS} wrap align="baseline" style={{ marginBottom: token.marginXS }}>
               <Typography.Text strong>{w.action}</Typography.Text>
               {w.impact ? (
-                <AppTag color={w.impact.inr ? 'red' : 'default'} translate="no">
-                  {w.impact.text}
-                </AppTag>
+                <Typography.Text translate="no">{w.impact.text}</Typography.Text>
               ) : null}
             </Flex>
             <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginXS }}>
@@ -215,7 +209,7 @@ export default function Page() {
         <div style={{ flex: '1 1 320px', minWidth: 0 }}>
           <Flex gap={token.marginXS} wrap align="center">
             <Typography.Text strong>{WARNING_KIND_LABELS[r.kind]}</Typography.Text>
-            {r.paused ? <AppTag tone="danger">Paused</AppTag> : null}
+            {r.paused ? <AppTag meaning="failed">Paused</AppTag> : null}
           </Flex>
           <Typography.Text type="secondary">
             {r.paused

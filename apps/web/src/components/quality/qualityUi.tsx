@@ -7,24 +7,21 @@ import { NCR_SEVERITY_LABELS, NCR_STATUS_LABELS, TEST_RESULT_LABELS } from '@erp
 import { formatDate } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 
-const RESULT_TAG: Record<TestResult, string> = { PENDING: 'default', PASS: 'green', FAIL: 'red' };
-const SEVERITY_TAG: Record<NcrSeverity, string> = { MINOR: 'gold', MAJOR: 'orange', CRITICAL: 'red' };
-const STATUS_TAG: Record<NcrStatus, string> = { OPEN: 'red', ACTION_TAKEN: 'blue', CLOSED: 'default' };
 
 export const TestResultTag = ({ result }: { result: TestResult }) => (
-  <AppTag color={RESULT_TAG[result]} dot style={{ margin: 0 }}>
+  <AppTag kind="testResult" status={result} style={{ margin: 0 }}>
     {TEST_RESULT_LABELS[result]}
   </AppTag>
 );
 
 export const SeverityTag = ({ severity }: { severity: NcrSeverity }) => (
-  <AppTag color={SEVERITY_TAG[severity]} style={{ margin: 0 }}>
+  <AppTag variant="kind" style={{ margin: 0 }}>
     {NCR_SEVERITY_LABELS[severity]}
   </AppTag>
 );
 
 export const NcrStatusTag = ({ status }: { status: NcrStatus }) => (
-  <AppTag color={STATUS_TAG[status]} dot style={{ margin: 0 }}>
+  <AppTag kind="ncr" status={status} style={{ margin: 0 }}>
     {NCR_STATUS_LABELS[status]}
   </AppTag>
 );

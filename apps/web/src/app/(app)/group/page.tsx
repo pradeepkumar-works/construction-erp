@@ -39,7 +39,7 @@ function CompaniesTab({ group, onEdit }: { group: GroupDto; onEdit: (c: GroupCom
           <div>
             <strong translate="no">{c.name}</strong>
             {c.current && (
-              <AppTag tone="info" style={{ marginLeft: 8 }}>
+              <AppTag variant="kind" style={{ marginLeft: 8 }}>
                 You are here
               </AppTag>
             )}
@@ -51,7 +51,7 @@ function CompaniesTab({ group, onEdit }: { group: GroupDto; onEdit: (c: GroupCom
           </div>
         ),
       },
-      { key: 'kind', title: 'Kind', width: 150, card: 'status', render: (_, c) => <AppTag style={{ margin: 0 }}>{COMPANY_KIND_LABELS[c.kind]}</AppTag> },
+      { key: 'kind', title: 'Kind', width: 150, card: 'status', render: (_, c) => <AppTag variant="kind" style={{ margin: 0 }}>{COMPANY_KIND_LABELS[c.kind]}</AppTag> },
       { key: 'gstin', title: 'GSTIN', width: 180, render: (_, c) => code(c.gstin) },
       { key: 'pan', title: 'PAN', width: 130, defaultFrom: 1280, render: (_, c) => code(c.pan) },
       { key: 'cin', title: 'CIN', width: 220, defaultHidden: true, render: (_, c) => code(c.cin) },
@@ -125,7 +125,7 @@ function PeopleTab({ group, myEmail, onGive }: { group: GroupDto; myEmail: strin
         render: (_, p) => (
           <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
             {p.places.map((pl) => (
-              <AppTag key={pl.organizationId} tone={pl.isActive ? 'neutral' : 'pending'} style={{ margin: 0 }}>
+              <AppTag key={pl.organizationId} {...(pl.isActive ? { variant: 'kind' as const } : { meaning: 'closed' as const })} style={{ margin: 0 }}>
                 <span translate="no">{pl.companyName}</span> · {pl.roleName}
                 {pl.isActive ? '' : ' (off)'}
               </AppTag>

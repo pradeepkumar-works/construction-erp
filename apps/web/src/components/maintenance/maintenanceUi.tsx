@@ -6,11 +6,9 @@ import type { ExpiryState, MaintenanceKind, MaintenanceStatus, ServiceState } fr
 import { EXPIRY_STATE_LABELS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUS_LABELS, SERVICE_STATE_LABELS } from '@erp/shared';
 import { NO_VALUE } from '@/lib/format';
 
-const SERVICE_COLORS: Record<ServiceState, string> = { OVERDUE: 'red', DUE_SOON: 'gold', OK: 'green', NOT_SET: 'default' };
-const EXPIRY_COLORS: Record<ExpiryState, string> = { EXPIRED: 'red', EXPIRING: 'gold', VALID: 'green' };
 
 export const ServiceStateTag = ({ state }: { state: ServiceState }) => (
-  <AppTag color={SERVICE_COLORS[state]} style={{ margin: 0 }}>
+  <AppTag kind="service" status={state} style={{ margin: 0 }}>
     {SERVICE_STATE_LABELS[state]}
   </AppTag>
 );
@@ -18,7 +16,7 @@ export const ServiceStateTag = ({ state }: { state: ServiceState }) => (
 /** Expired / expiring in N days / valid. */
 export const ExpiryTag = ({ state, daysLeft }: { state: ExpiryState | null; daysLeft: number | null }) =>
   state ? (
-    <AppTag color={EXPIRY_COLORS[state]} style={{ margin: 0 }}>
+    <AppTag kind="expiry" status={state} style={{ margin: 0 }}>
       {state === 'EXPIRING' && daysLeft !== null ? (daysLeft === 0 ? 'Expires today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`) : EXPIRY_STATE_LABELS[state]}
     </AppTag>
   ) : (
@@ -26,13 +24,13 @@ export const ExpiryTag = ({ state, daysLeft }: { state: ExpiryState | null; days
   );
 
 export const JobKindTag = ({ kind }: { kind: MaintenanceKind }) => (
-  <AppTag color={kind === 'BREAKDOWN' ? 'volcano' : 'blue'} style={{ margin: 0 }}>
+  <AppTag variant="kind" style={{ margin: 0 }}>
     {MAINTENANCE_KIND_LABELS[kind]}
   </AppTag>
 );
 
 export const JobStatusTag = ({ status }: { status: MaintenanceStatus }) => (
-  <AppTag color={status === 'OPEN' ? 'orange' : 'default'} style={{ margin: 0 }}>
+  <AppTag kind="maintenance" status={status} style={{ margin: 0 }}>
     {MAINTENANCE_STATUS_LABELS[status]}
   </AppTag>
 );

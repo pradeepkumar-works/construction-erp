@@ -246,7 +246,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         render: (_, i) => (
                           <div>
                             <span className="mono" translate="no">{i.itemNo}</span> {i.description}
-                            {i.extraItem ? <AppTag tone="pending" style={{ marginLeft: 6 }}>Extra item</AppTag> : toNumber(i.excessQty) > 0 ? <AppTag tone="danger" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</AppTag> : null}
+                            {i.extraItem ? <AppTag meaning="waiting" style={{ marginLeft: 6 }}>Extra item</AppTag> : toNumber(i.excessQty) > 0 ? <AppTag meaning="failed" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</AppTag> : null}
                           </div>
                         ),
                       },

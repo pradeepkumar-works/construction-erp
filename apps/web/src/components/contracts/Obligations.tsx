@@ -11,7 +11,6 @@ import {
   OBLIGATION_PARTY_LABELS,
   OBLIGATION_PENALTIES,
   OBLIGATION_PENALTY_LABELS,
-  OBLIGATION_STATE_COLORS,
   OBLIGATION_STATE_LABELS,
   PCT_PENALTIES,
   type ContractObligationDto,
@@ -25,7 +24,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useContractObligations } from '@/lib/queries';
 import { formatDate, formatINR, toNumber, todayDate } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
-import { AppTag, toneOf } from '@/components/common/AppTag';
+import { AppTag } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreOutlined, PlusOutlined } from '@/components/common/icons';
@@ -181,7 +180,7 @@ export function ObligationsCard({ projectId }: { projectId: string }) {
             key: 'state',
             render: (_, o) => (
               <div>
-                <AppTag tone={toneOf(OBLIGATION_STATE_COLORS[o.state])}>{OBLIGATION_STATE_LABELS[o.state]}</AppTag>
+                <AppTag kind="obligation" status={o.state}>{OBLIGATION_STATE_LABELS[o.state]}</AppTag>
                 <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {o.metOn ? `Met ${formatDate(o.metOn)}` : stateNote(o)}
                 </div>

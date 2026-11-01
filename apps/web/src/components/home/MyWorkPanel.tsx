@@ -126,7 +126,7 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
   if (!present.length) return null;
 
   return (
-    <Card title="My work" style={{ marginBottom: token.margin }} extra={busy.length === 0 ? <AppTag tone="success">All caught up</AppTag> : undefined}>
+    <Card title="My work" style={{ marginBottom: token.margin }} extra={busy.length === 0 ? <AppTag meaning="done">All caught up</AppTag> : undefined}>
       {busy.length === 0 ? (
         <Flex align="center" gap={token.marginXS}>
           <CheckCircleOutlined style={{ color: token.colorSuccess }} aria-hidden />

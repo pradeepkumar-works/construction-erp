@@ -291,7 +291,7 @@ function ScheduleOfRatesPage() {
                           {i.description}
                           {i.chapter ? (
                             <div>
-                              <AppTag style={{ marginTop: 2 }}>{i.chapter}</AppTag>
+                              <AppTag variant="kind" style={{ marginTop: 2 }}>{i.chapter}</AppTag>
                             </div>
                           ) : null}
                         </div>

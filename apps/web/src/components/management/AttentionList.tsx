@@ -6,7 +6,6 @@ import { Button, Typography, theme } from 'antd';
 import { HEALTH_LABELS, type AttentionItemDto } from '@erp/shared';
 import { AppTag } from '@/components/common/AppTag';
 import { CheckCircleOutlined } from '@/components/common/icons';
-import { HEALTH_TONES } from './report-format';
 
 const FIRST = 6;
 
@@ -51,7 +50,7 @@ export function AttentionList({
               borderBlockStart: i ? line : undefined,
             }}
           >
-            <AppTag tone={HEALTH_TONES[a.level]} style={{ flex: '0 0 auto', marginTop: 1 }}>
+            <AppTag kind="health" status={a.level} style={{ flex: '0 0 auto', marginTop: 1 }}>
               {HEALTH_LABELS[a.level]}
             </AppTag>
             <p style={{ margin: 0, minWidth: 0 }}>

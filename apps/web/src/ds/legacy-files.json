@@ -99,7 +99,6 @@
  "src/components/clients/ClientFormModal.tsx",
  "src/components/comments/CommentsSection.tsx",
  "src/components/common/AppTabs.tsx",
- "src/components/common/AppTag.tsx",
  "src/components/common/AttachmentGallery.tsx",
  "src/components/common/AuditTrail.tsx",
  "src/components/common/CardToolbar.tsx",

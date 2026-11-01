@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { QuoteForm } from '@/components/supplier/SupplierForms';
 
-const stateOf = (e: SupplierEnquiryDto) => (e.respondedAt ? <AppTag tone="success">Quoted {formatDateTime(e.respondedAt)}</AppTag> : e.open ? <AppTag tone="info">Open</AppTag> : <AppTag>Closed</AppTag>);
+const stateOf = (e: SupplierEnquiryDto) => (e.respondedAt ? <AppTag meaning="done">Quoted {formatDateTime(e.respondedAt)}</AppTag> : e.open ? <AppTag meaning="waiting">Open</AppTag> : <AppTag meaning="closed">Closed</AppTag>);
 
 /** Enquiries sent to the supplier: quote on the open ones, once each. */
 export default function SupplierEnquiriesPage() {

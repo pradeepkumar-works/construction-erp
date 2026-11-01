@@ -107,7 +107,7 @@ export function ItemsTable() {
             <span>
               {v}
               {r.isFuel ? (
-                <AppTag tone="pending" style={{ marginLeft: 6 }}>
+                <AppTag variant="kind" style={{ marginLeft: 6 }}>
                   Fuel
                 </AppTag>
               ) : null}
@@ -115,7 +115,7 @@ export function ItemsTable() {
           ),
         },
         { title: 'Unit', dataIndex: 'unit', width: 100, ...sort('unit') },
-        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>) },
+        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <AppTag variant="kind" style={{ margin: 0 }}>{v}</AppTag> : <Typography.Text type="secondary">{NO_VALUE}</Typography.Text>) },
         {
           key: 'rate',
           title: 'Rate',

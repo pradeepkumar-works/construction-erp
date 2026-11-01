@@ -30,22 +30,22 @@ const small = { fontSize: themeFontSize('fontSizeSM') };
 export function fuelTags(f: MachineFuelDto, withNorm = true): React.ReactNode[] {
   return [
     f.unslippedLitres !== null ? (
-      <AppTag key="unslipped" tone="danger">
+      <AppTag key="unslipped" meaning="failed">
         {`${formatQty(f.unslippedLitres)} L filled, no slip`}
       </AppTag>
     ) : null,
     f.notInTankLitres !== null ? (
-      <AppTag key="notintank" tone="danger">
+      <AppTag key="notintank" meaning="failed">
         {`${formatQty(f.notInTankLitres)} L on slips, not in tank`}
       </AppTag>
     ) : null,
     Number(f.drainedLitres) > 0 ? (
-      <AppTag key="drained" tone="danger">
+      <AppTag key="drained" meaning="failed">
         {`${formatQty(f.drainedLitres)} L drained`}
       </AppTag>
     ) : null,
     withNorm && f.aboveNormPct !== null ? (
-      <AppTag key="norm" tone="pending">
+      <AppTag key="norm" meaning="waiting">
         {`${f.aboveNormPct}% above norm`}
       </AppTag>
     ) : null,
@@ -147,7 +147,7 @@ export function FuelTanks({ date, projectId, canIssue }: { date: string; project
       width: 220,
       render: (_, d) => {
         const tags = fuelTags(d.fuel);
-        return tags.length ? <Space size={4} wrap>{tags}</Space> : <AppTag tone="success">In order</AppTag>;
+        return tags.length ? <Space size={4} wrap>{tags}</Space> : <AppTag meaning="done">In order</AppTag>;
       },
     },
   ];
