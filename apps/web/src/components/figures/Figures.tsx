@@ -77,7 +77,7 @@ export function Figures({ label, figures, scope, currency, bare }: FiguresProps)
   };
 
   return frame(
-    <section aria-label={label}>
+    <section aria-label={label} className={styles.box}>
       {cells.length > 0 && (
         <dl className={styles.grid} style={{ '--fig-cols-p': String(view.columns.phone), '--fig-cols-m': String(view.columns.medium), '--fig-cols-w': String(view.columns.wide) } as React.CSSProperties}>
           {cells.map((c, i) => (
