@@ -116,6 +116,18 @@
   white-space: nowrap;
 }
 
+/* A count to read, not a decision (the watch list's warnings): plain text, so the badges keep meaning "yours to act on". */
+.count {
+  align-self: flex-start;
+  color: var(--ant-color-text-secondary);
+  font-size: var(--ant-font-size-sm);
+  white-space: nowrap;
+}
+
+.compact .count {
+  align-self: center;
+}
+
 /* The tile's menu, in its corner. Not on a touch screen, where a long press opens it. */
 .more {
   position: absolute;

@@ -15,7 +15,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton } from '@/components/common/QueryState';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { useNavMenu } from '@/components/shell/menu';
-import { ProjectPick, tileBadge, type TileBadge } from '@/components/launcher/TileGrid';
+import { ProjectPick, nodeBadge, type TileBadge } from '@/components/launcher/TileGrid';
 import { useProjectScope } from '@/lib/project-scope';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import { ProjectFiguresPanel, ProjectProgressPanel } from './ProjectProgress';
@@ -49,7 +49,7 @@ function PageRow({ node, badge, projectId, onPick }: { node: NavNode; badge?: Ti
         )}
       </span>
       {waiting && (
-        <span className={s.badge} translate="no" aria-hidden>
+        <span className={badge?.info ? s.count : s.badge} translate="no" aria-hidden>
           {waiting}
         </span>
       )}
@@ -156,7 +156,7 @@ export function DepartmentHome({ moduleKey }: { moduleKey: string }) {
               <ul className={s.pages}>
                 {sub.nodes.map((n) => (
                   <li key={n.id}>
-                    <PageRow node={n} badge={tileBadge(badges?.nodes?.[n.id], badges?.words?.[n.id])} projectId={projectId} onPick={setPicking} />
+                    <PageRow node={n} badge={nodeBadge(badges, n.id)} projectId={projectId} onPick={setPicking} />
                   </li>
                 ))}
               </ul>
