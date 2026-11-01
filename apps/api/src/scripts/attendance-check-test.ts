@@ -193,18 +193,32 @@ async function demo(): Promise<number> {
         check('page: a flag for the bill with its working', !!billFlag && billFlag.valueInr === 4950 && billFlag.working.length >= 4 && billFlag.workers === null);
         check("page: one flag for the bill, none for Maa Tarini's", page.flags.filter((f) => f.kind === 'BILL_ABOVE').every((f) => f.billId !== mtlsBill.id));
 
-        // 2. The three helpers who did not punch: named to the PM and HR only.
-        const miss = page.flags.find((f) => f.kind === 'NO_PUNCH' && f.projectId === road.id && !!sjc && f.from >= sjc.from && f.to <= sjc.to);
+        // 2. The three helpers who did not punch: named to the PM and HR only. A day's flags show in that day's month, and
+        // in the first days of a month the bill's days start in the month before the one it is measured up to, so the
+        // missed punches are looked for in each month the bill spans.
+        const isMiss = (f: (typeof page.flags)[number]) => f.kind === 'NO_PUNCH' && f.projectId === road.id && !!sjc && f.from >= sjc.from && f.to <= sjc.to;
+        let missMonth = month;
+        let missPage = page;
+        for (const m of [...new Set([month, ...(sjc ? [sjc.from.slice(0, 7)] : [])])]) {
+          const p = m === month ? page : await attendance.get(pm, m, road.id);
+          if (p.flags.some(isMiss)) {
+            missMonth = m;
+            missPage = p;
+            break;
+          }
+        }
+        const miss = missPage.flags.find(isMiss);
         check('no punch: three helpers on one day', !!miss && miss.workers?.length === 3, JSON.stringify(miss?.workers));
-        const hrPage = await attendance.get(hr, month, road.id);
+        const hrPage = await attendance.get(hr, missMonth, road.id);
         check('no punch: HR sees their names too', hrPage.namesShown && !!hrPage.flags.find((f) => f.kind === 'NO_PUNCH')?.workers?.length);
-        const mdPage = await attendance.get(md, month, road.id);
+        const mdPage = await attendance.get(md, missMonth, road.id);
         check('no punch: management sees the count, not the names', !mdPage.namesShown && mdPage.flags.filter((f) => f.kind === 'NO_PUNCH').every((f) => f.workers === null) && mdPage.flags.some((f) => f.kind === 'NO_PUNCH'));
-        check('no punch: no head-count or DPR flags on the seeded days', !page.flags.some((f) => f.kind === 'HEADCOUNT_ABOVE' || f.kind === 'DPR_GAP'), page.flags.map((f) => f.title).join('; '));
+        const seededFlags = [...page.flags, ...(missPage === page ? [] : missPage.flags)];
+        check('no punch: no head-count or DPR flags on the seeded days', !seededFlags.some((f) => f.kind === 'HEADCOUNT_ABOVE' || f.kind === 'DPR_GAP'), seededFlags.map((f) => f.title).join('; '));
 
         // 3. The days: one row a day, and the day without three punches shows it.
-        const missDay = page.days.find((d) => d.date === miss?.from);
-        check('days: every day of the month so far', page.days.length === Number((month === today.slice(0, 7) ? today : page.to).slice(8)), String(page.days.length));
+        const missDay = missPage.days.find((d) => d.date === miss?.from);
+        check('days: every day of the month so far', missPage.days.length === Number((missMonth === today.slice(0, 7) ? today : missPage.to).slice(8)), String(missPage.days.length));
         const sjcCrew = missDay?.crews.find((c) => /Jagannath/.test(c.contractor));
         check('days: the crew three punches short that day', !!sjcCrew && sjcCrew.punched === (sjcCrew.rollCall ?? 0) - 3, JSON.stringify(sjcCrew));
 
