@@ -13,6 +13,7 @@ import { ChartCard } from '@/components/home/ChartCard';
 import { monthLabel } from '@/components/home/chartData';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { AskButton } from '@/components/ai/AskButton';
+import { Money } from '@/components/common/Money';
 
 const EarnedValueChart = dynamic(() => import('@/components/home/charts').then((m) => m.EarnedValueChart), {
   ssr: false,
@@ -23,7 +24,6 @@ const RED = themeColor('colorErrorText');
 const GREEN = themeColor('colorSuccessText');
 const big = (color?: string) => ({ content: { fontSize: themeFontSize('fontSizeXL'), color } });
 const small = { fontSize: themeFontSize('fontSizeSM') };
-const inr = (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no">{formatINR(v)}</span>);
 const signed = (v: string | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : toNumber(v) > 0 ? GREEN : undefined }}>{formatINR(v)}</span>);
 /** An index read in words, with 0.95 to 1.05 counted as on plan. */
 const indexColor = (v: number | null) => (v === null ? undefined : v < 0.95 ? RED : v > 1.05 ? GREEN : undefined);
@@ -44,9 +44,9 @@ function CurveTable({ data }: { data: EarnedValuePointDto[] }) {
       dataSource={data}
       columns={[
         { title: 'Month', dataIndex: 'month', render: (v: string) => monthLabel(v) },
-        { title: 'Planned value', dataIndex: 'pv', align: 'right', render: inr },
-        { title: 'Earned value', dataIndex: 'ev', align: 'right', render: inr },
-        { title: 'Actual cost', dataIndex: 'ac', align: 'right', render: inr },
+        { title: 'Planned value', dataIndex: 'pv', align: 'right', render: (v) => <Money value={v} /> },
+        { title: 'Earned value', dataIndex: 'ev', align: 'right', render: (v) => <Money value={v} /> },
+        { title: 'Actual cost', dataIndex: 'ac', align: 'right', render: (v) => <Money value={v} /> },
       ]}
     />
   );
@@ -134,10 +134,10 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
               bordered
               column={{ xs: 1, md: 2 }}
               items={[
-                { key: 'bac', label: 'Budget at completion', children: <span>{inr(data.bac)}<span className="text-muted" style={{ ...small, display: 'block' }}>{`From ${EV_BAC_SOURCE_LABELS[data.bacSource]}`}</span></span> },
-                { key: 'pv', label: 'Planned value', children: <span>{inr(data.pv)}<span className="text-muted" style={{ ...small, display: 'block' }}>{`${formatPct(data.plannedPct)} of the work planned by today`}</span></span> },
-                { key: 'ev', label: 'Earned value', children: <span>{inr(data.ev)}<span className="text-muted" style={{ ...small, display: 'block' }}>{`${formatPct(data.earnedPct)} of the BOQ done (${EV_BASIS_LABELS[data.basis].toLowerCase()})`}</span></span> },
-                { key: 'ac', label: 'Actual cost', children: inr(data.ac) },
+                { key: 'bac', label: 'Budget at completion', children: <span><Money value={data.bac} /><span className="text-muted" style={{ ...small, display: 'block' }}>{`From ${EV_BAC_SOURCE_LABELS[data.bacSource]}`}</span></span> },
+                { key: 'pv', label: 'Planned value', children: <span><Money value={data.pv} /><span className="text-muted" style={{ ...small, display: 'block' }}>{`${formatPct(data.plannedPct)} of the work planned by today`}</span></span> },
+                { key: 'ev', label: 'Earned value', children: <span><Money value={data.ev} /><span className="text-muted" style={{ ...small, display: 'block' }}>{`${formatPct(data.earnedPct)} of the BOQ done (${EV_BASIS_LABELS[data.basis].toLowerCase()})`}</span></span> },
+                { key: 'ac', label: 'Actual cost', children: <Money value={data.ac} /> },
                 { key: 'sv', label: 'Schedule variance', children: signed(data.sv) },
                 { key: 'cv', label: 'Cost variance', children: signed(data.cv) },
                 {
@@ -145,8 +145,8 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
                   label: 'Work done was planned by',
                   children: data.earnedOn ? formatDate(data.earnedOn) : NO_VALUE,
                 },
-                { key: 'eac2', label: 'Estimate at completion, if the delay also costs', children: inr(data.eacWithSchedule) },
-                { key: 'etc', label: 'Estimate to complete', children: inr(data.etc) },
+                { key: 'eac2', label: 'Estimate at completion, if the delay also costs', children: <Money value={data.eacWithSchedule} /> },
+                { key: 'etc', label: 'Estimate to complete', children: <Money value={data.etc} /> },
                 { key: 'tcpi', label: 'Cost index needed to finish on budget', children: data.tcpi === null ? NO_VALUE : <span style={{ color: data.tcpi > 1.1 ? RED : undefined }}>{data.tcpi.toFixed(2)}</span> },
               ]}
             />
@@ -163,7 +163,7 @@ export function EarnedValuePanel({ projectId }: { projectId: string }) {
               locale={{ emptyText: 'No activity is linked to a BOQ item with dates' }}
               columns={[
                 { title: 'Activity', dataIndex: 'name', fixed: 'left', width: 200 },
-                { title: 'Value', dataIndex: 'value', align: 'right', width: 150, render: inr },
+                { title: 'Value', dataIndex: 'value', align: 'right', width: 150, render: (v) => <Money value={v} /> },
                 { title: 'Planned by today', dataIndex: 'plannedPct', align: 'right', width: 130, render: (v: number) => formatPct(v) },
                 { title: 'Done', dataIndex: 'earnedPct', align: 'right', width: 90, render: (v: number) => formatPct(v) },
                 { title: 'Schedule variance', dataIndex: 'sv', align: 'right', width: 160, render: signed },

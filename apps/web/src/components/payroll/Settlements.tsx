@@ -15,9 +15,10 @@ import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-import { Rupees, SettlementStatusTag } from './payrollUi';
+import { SettlementStatusTag } from './payrollUi';
 import { openSettlement } from './payslipPrint';
 import { openableRow } from '@/components/list/openableRow';
+import { Money } from '@/components/common/Money';
 
 interface PrepareValues {
   otherEarnings?: number;
@@ -163,25 +164,25 @@ function SettlementModal({ s, onClose, onRedo, onPay }: { s: FinalSettlementDto 
         </Descriptions>
         <Descriptions size="small" column={1} bordered title="Owed to them">
           <Descriptions.Item label={`Salary, ${s.salaryDays} days`}>
-            <Rupees value={s.salary} />
+            <Money value={s.salary} />
           </Descriptions.Item>
           <Descriptions.Item label={`Leave encashment, ${s.leaveDays} days`}>
-            <Rupees value={s.leaveEncashment} />
+            <Money value={s.leaveEncashment} />
           </Descriptions.Item>
-          <Descriptions.Item label={`Gratuity, ${s.serviceYears} years`}>{Number(s.gratuity) ? <Rupees value={s.gratuity} /> : 'Not yet due (under five years)'}</Descriptions.Item>
+          <Descriptions.Item label={`Gratuity, ${s.serviceYears} years`}>{Number(s.gratuity) ? <Money value={s.gratuity} /> : 'Not yet due (under five years)'}</Descriptions.Item>
           <Descriptions.Item label="Other earnings">
-            <Rupees value={s.otherEarnings} />
+            <Money value={s.otherEarnings} />
           </Descriptions.Item>
         </Descriptions>
         <Descriptions size="small" column={1} bordered title="Recovered from them">
           <Descriptions.Item label={`Notice short by ${s.noticeShortDays} days`}>
-            <Rupees value={s.noticeRecovery} />
+            <Money value={s.noticeRecovery} />
           </Descriptions.Item>
           <Descriptions.Item label="Loans and advances">
-            <Rupees value={s.loanRecovery} />
+            <Money value={s.loanRecovery} />
           </Descriptions.Item>
           <Descriptions.Item label="Other deductions">
-            <Rupees value={s.otherDeductions} />
+            <Money value={s.otherDeductions} />
           </Descriptions.Item>
         </Descriptions>
         <Alert
@@ -191,7 +192,7 @@ function SettlementModal({ s, onClose, onRedo, onPay }: { s: FinalSettlementDto 
             <span>
               {net >= 0 ? 'Net payable to them ' : 'Net they owe the company '}
               <strong>
-                <Rupees value={Math.abs(net)} />
+                <Money value={Math.abs(net)} />
               </strong>
             </span>
           }
@@ -225,13 +226,13 @@ export function Settlements() {
     { title: 'Employee', key: 'e', width: 220, render: (_, s) => <span translate="no">{`${s.employeeName} (${s.employeeCode})`}</span> },
     { title: 'Last day', dataIndex: 'lastWorkingDay', width: 120, render: (v: string) => formatDate(v) },
     { title: 'Status', dataIndex: 'status', width: 150, render: (v: FinalSettlementDto['status']) => <SettlementStatusTag status={v} /> },
-    { title: 'Gratuity', dataIndex: 'gratuity', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
+    { title: 'Gratuity', dataIndex: 'gratuity', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Money value={v} /> : NO_VALUE) },
     {
       title: 'Net',
       dataIndex: 'net',
       width: 150,
       align: 'right',
-      render: (v: string) => (Number(v) >= 0 ? <Rupees value={v} /> : <span>owes <Rupees value={Math.abs(Number(v))} /></span>),
+      render: (v: string) => (Number(v) >= 0 ? <Money value={v} /> : <span>owes <Money value={Math.abs(Number(v))} /></span>),
     },
     { title: 'Settled on', dataIndex: 'paidOn', width: 120, render: (v: string | null) => (v ? formatDate(v) : NO_VALUE) },
   ];

@@ -8,12 +8,13 @@ import { PlusOutlined } from '@/components/common/icons';
 import { canEditProjects, type StoreSummaryDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useStores } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { LinkButton } from '@/components/common/LinkButton';
 import { ProjectStatusTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
+import { Money } from '@/components/common/Money';
 
 /**
  * Central stores and yards: each one is a project of type STORE, so it receives on GRNs and purchase
@@ -73,7 +74,7 @@ function StoreCard({ store: s }: { store: StoreSummaryDto }) {
         </Col>
         {s.value !== null ? (
           <Col xs={12} sm={8}>
-            <Statistic title="Stock value" value={0} formatter={() => <span translate="no">{formatINR(s.value)}</span>} />
+            <Statistic title="Stock value" value={0} formatter={() => <Money value={s.value} />} />
           </Col>
         ) : null}
         <Col xs={12} sm={8}>

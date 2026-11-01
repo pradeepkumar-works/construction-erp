@@ -4,11 +4,12 @@ import React from 'react';
 import { Button, Grid, Modal, Table, Typography } from 'antd';
 import type { ToMeasureItemDto } from '@erp/shared';
 import { useToMeasure } from '@/lib/queries';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatQty } from '@/lib/format';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { themeFontSize } from '@/lib/theme';
 import type { MeasurementPrefill } from './MeasurementFormModal';
+import { Money } from '@/components/common/Money';
 
 /**
  * Measure from progress: the quantities the site got approved on the daily
@@ -52,7 +53,7 @@ function leftCell(r: ToMeasureItemDto) {
         {formatQty(r.toMeasureQty)} {r.unit}
       </span>
       <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-        <span translate="no">{formatINR(r.toMeasureAmount)}</span>
+        <Money value={r.toMeasureAmount} />
       </div>
     </>
   );

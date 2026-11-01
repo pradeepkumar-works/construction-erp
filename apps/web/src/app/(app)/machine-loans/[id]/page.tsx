@@ -17,6 +17,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { EmiStageTag } from '@/components/loans/EmiStageTag';
 import { LoanFormModal, PayEmiModal } from '@/components/loans/LoanForms';
+import { Money } from '@/components/common/Money';
 
 /**
  * One machine loan: what it has repaid and still owes, the next EMI, the machine's cost of finance (the
@@ -140,11 +141,11 @@ export default function MachineLoanPage() {
         }
       />
       <Row gutter={[12, 12]} style={{ marginBottom: token.marginMD }}>
-        {stat('Owed', <span translate="no">{formatINR(loan.outstanding)}</span>, `of ${formatINR(loan.amount)} borrowed`)}
+        {stat('Owed', <Money value={loan.outstanding} />, `of ${formatINR(loan.amount)} borrowed`)}
         {stat('EMIs paid', `${loan.emisPaid} of ${loan.emiCount}`, `${formatINR(loan.principalRepaid)} repaid`)}
         {stat(
           'Next EMI',
-          next ? <span translate="no">{formatINR(next.emi)}</span> : 'None',
+          next ? <Money value={next.emi} /> : 'None',
           next ? (
             <span>
               {formatDate(next.dueDate)} <EmiStageTag stage={next.stage} />
@@ -172,10 +173,10 @@ export default function MachineLoanPage() {
               size="small"
               column={{ xs: 1, sm: 2 }}
               items={[
-                { key: 'amount', label: 'Amount', children: <span translate="no">{formatINR(loan.amount, true)}</span> },
+                { key: 'amount', label: 'Amount', children: <Money value={loan.amount} paise /> },
                 { key: 'rate', label: 'Rate', children: `${toNumber(loan.ratePct)}% a year` },
                 { key: 'tenure', label: 'Tenure', children: `${loan.tenureMonths} months` },
-                { key: 'emi', label: 'EMI', children: <span translate="no">{formatINR(loan.emi, true)}</span> },
+                { key: 'emi', label: 'EMI', children: <Money value={loan.emi} paise /> },
                 { key: 'sanction', label: 'Sanctioned on', children: formatDate(loan.sanctionDate) },
                 { key: 'first', label: 'First EMI', children: formatDate(loan.firstEmiDate) },
                 { key: 'disbursal', label: 'Paid out to', children: LOAN_DISBURSAL_LABELS[loan.disbursal] },
@@ -191,10 +192,10 @@ export default function MachineLoanPage() {
               size="small"
               column={1}
               items={[
-                { key: 'paid', label: 'Interest paid', children: <span translate="no">{formatINR(loan.interestPaid, true)}</span> },
+                { key: 'paid', label: 'Interest paid', children: <Money value={loan.interestPaid} paise /> },
                 { key: 'hours', label: 'Hours worked since the loan', children: `${formatQty(loan.hoursWorked)} h` },
-                { key: 'perHour', label: 'Interest a working hour', children: loan.interestPerHour ? <span translate="no">{formatINR(loan.interestPerHour, true)}</span> : 'No hours logged yet' },
-                { key: 'toCome', label: 'Interest still to come', children: <span translate="no">{formatINR(loan.interestToCome, true)}</span> },
+                { key: 'perHour', label: 'Interest a working hour', children: loan.interestPerHour ? <Money value={loan.interestPerHour} paise /> : 'No hours logged yet' },
+                { key: 'toCome', label: 'Interest still to come', children: <Money value={loan.interestToCome} paise /> },
               ]}
             />
           </Card>
@@ -210,11 +211,11 @@ export default function MachineLoanPage() {
           columns={[
             { key: 'no', title: 'No.', dataIndex: 'no', width: 60, align: 'right' },
             { key: 'due', title: 'Due', width: 120, render: (_, e) => formatDate(e.dueDate) },
-            { key: 'opening', title: 'Owed before', align: 'right', render: (_, e) => <span translate="no">{formatINR(e.opening, true)}</span> },
-            { key: 'principal', title: 'Principal', align: 'right', render: (_, e) => <span translate="no">{formatINR(e.principal, true)}</span> },
-            { key: 'interest', title: 'Interest', align: 'right', render: (_, e) => <span translate="no">{formatINR(e.interest, true)}</span> },
-            { key: 'emi', title: 'EMI', align: 'right', render: (_, e) => <span translate="no">{formatINR(e.emi, true)}</span> },
-            { key: 'closing', title: 'Owed after', align: 'right', render: (_, e) => <span translate="no">{formatINR(e.closing, true)}</span> },
+            { key: 'opening', title: 'Owed before', align: 'right', render: (_, e) => <Money value={e.opening} paise /> },
+            { key: 'principal', title: 'Principal', align: 'right', render: (_, e) => <Money value={e.principal} paise /> },
+            { key: 'interest', title: 'Interest', align: 'right', render: (_, e) => <Money value={e.interest} paise /> },
+            { key: 'emi', title: 'EMI', align: 'right', render: (_, e) => <Money value={e.emi} paise /> },
+            { key: 'closing', title: 'Owed after', align: 'right', render: (_, e) => <Money value={e.closing} paise /> },
             {
               key: 'stage',
               title: 'Paid',

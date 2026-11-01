@@ -11,8 +11,9 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
-import { formatINR } from '@/lib/format';
+
 import { ReadDocumentButton, ReadPreview, type ReadState } from '@/components/ai/ReadDocument';
+import { Money } from '@/components/common/Money';
 
 /** The columns a BOQ read off a PDF or scan comes in as, mapped to the fields at once. */
 const READ_COLUMNS: Partial<Record<Field, string>> = { itemNo: 'Item no.', section: 'Section', description: 'Description', unit: 'Unit', rate: 'Rate', originalQty: 'Quantity' };
@@ -255,7 +256,7 @@ export function BoqImportModal({ open, onClose, projectId, onImported }: { open:
               {readTotal !== null ? (
                 <>
                   {' '}
-                  The BOQ&apos;s total is <span translate="no">{formatINR(readTotal)}</span>; the rows read add up to <span translate="no">{formatINR(rowsTotal)}</span>
+                  The BOQ&apos;s total is <Money value={readTotal} />; the rows read add up to <Money value={rowsTotal} />
                   {Math.abs(readTotal - rowsTotal) > readTotal * 0.01 ? ', so some rows may be missing or misread.' : '.'}
                 </>
               ) : null}

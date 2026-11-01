@@ -10,8 +10,9 @@ import { useMixDesigns, useRmcAction } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { formatDate, formatQty, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { DesignStatusTag, PlantFilter, Rupees, usePlantScope } from './rmcUi';
+import { DesignStatusTag, PlantFilter, usePlantScope } from './rmcUi';
 import { DesignForm } from './DesignForm';
+import { Money } from '@/components/common/Money';
 
 /** Mix designs at the plants: what goes into a cubic metre of each grade, its material cost, and quality's approval. */
 export function MixDesigns() {
@@ -71,7 +72,7 @@ export function MixDesigns() {
             { title: 'Grade', dataIndex: 'grade', width: 80, render: (g: string) => <span translate="no">{g}</span> },
             { title: 'Description', dataIndex: 'description', ellipsis: true },
             { title: 'Slump', dataIndex: 'slumpMm', width: 90, render: (s: number | null) => (s === null ? NO_VALUE : <span translate="no">{`${s} mm`}</span>) },
-            { title: 'Material cost per m³', dataIndex: 'costPerM3', align: 'right', width: 140, render: (c: string | null) => (c ? <Rupees value={c} /> : <Typography.Text type="secondary">No rates</Typography.Text>) },
+            { title: 'Material cost per m³', dataIndex: 'costPerM3', align: 'right', width: 140, render: (c: string | null) => (c ? <Money paise value={c} /> : <Typography.Text type="secondary">No rates</Typography.Text>) },
             { title: 'Status', key: 's', width: 210, render: (_, d) => <Space size={4} wrap><DesignStatusTag status={d.status} />{d.approvedAt && <Typography.Text type="secondary">{`${d.approvedByName ?? ''}, ${formatDate(d.approvedAt)}`}</Typography.Text>}</Space> },
             {
               title: '',

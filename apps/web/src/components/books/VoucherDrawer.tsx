@@ -10,8 +10,9 @@ import { formatDate, formatDateTime, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { LinkButton } from '@/components/common/LinkButton';
-import { Amount, VoucherStatusTag, VoucherTypeTag, sourceHref, sourceLabel } from './booksUi';
+import { VoucherStatusTag, VoucherTypeTag, sourceHref, sourceLabel } from './booksUi';
 import { VoucherForm } from './VoucherForm';
+import { Money } from '@/components/common/Money';
 
 /** Sending back or cancelling needs a reason. */
 function ReasonModal({ open, title, okText, onClose, onOk }: { open: boolean; title: string; okText: string; onClose: () => void; onOk: (note: string) => Promise<unknown> }) {
@@ -149,8 +150,8 @@ export function VoucherDrawer({ id, onClose }: { id: string | null; onClose: () 
             scroll={{ x: 560 }}
             columns={[
               { title: 'Account', dataIndex: 'accountName', render: (n: string, l) => <span translate="no">{l.projectCode ? `${n} · ${l.projectCode}` : n}</span> },
-              { title: 'Debit', dataIndex: 'debit', align: 'right', width: 150, render: (x: string | null) => <Amount value={x} /> },
-              { title: 'Credit', dataIndex: 'credit', align: 'right', width: 150, render: (x: string | null) => <Amount value={x} /> },
+              { title: 'Debit', dataIndex: 'debit', align: 'right', width: 150, render: (x: string | null) => <Money paise value={x} /> },
+              { title: 'Credit', dataIndex: 'credit', align: 'right', width: 150, render: (x: string | null) => <Money paise value={x} /> },
             ]}
             summary={() => (
               <Table.Summary.Row>
@@ -159,12 +160,12 @@ export function VoucherDrawer({ id, onClose }: { id: string | null; onClose: () 
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
                   <Typography.Text strong>
-                    <Amount value={v.amount} />
+                    <Money paise value={v.amount} />
                   </Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={2} align="right">
                   <Typography.Text strong>
-                    <Amount value={v.amount} />
+                    <Money paise value={v.amount} />
                   </Typography.Text>
                 </Table.Summary.Cell>
               </Table.Summary.Row>

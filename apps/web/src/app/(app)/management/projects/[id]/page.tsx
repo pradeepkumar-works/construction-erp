@@ -17,7 +17,7 @@ import {
 } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useManagementProject } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, formatPct, toNumber, NO_VALUE } from '@/lib/format';
+import { formatDate, formatINRCompact, formatPct, toNumber, NO_VALUE } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LinkButton } from '@/components/common/LinkButton';
 import { AppTabs } from '@/components/common/AppTabs';
@@ -30,6 +30,7 @@ import { AttentionList } from '@/components/management/AttentionList';
 import { HEALTH_TONES } from '@/components/management/report-format';
 import { NoAccess } from '@/components/common/NoAccess';
 import { TrendTable, trendSummary } from '@/components/management/TrendTable';
+import { Money } from '@/components/common/Money';
 
 const TrendChart = dynamic(() => import('@/components/management/TrendChart').then((m) => m.TrendChart), {
   ssr: false,
@@ -322,7 +323,7 @@ function CostHeads({ data }: { data: PortfolioProjectDetailDto }) {
 }
 
 function OpenItems({ data }: { data: PortfolioProjectDetailDto }) {
-  const money = (v: string) => <span translate="no">{formatINR(v)}</span>;
+  const money = (v: string) => <Money value={v} />;
   const pid = data.project.projectId;
   return (
     <AppTabs

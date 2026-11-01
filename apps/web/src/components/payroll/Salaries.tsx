@@ -15,7 +15,8 @@ import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-import { Rupees } from './payrollUi';
+
+import { Money } from '@/components/common/Money';
 
 interface Values {
   employeeId: string;
@@ -108,7 +109,7 @@ export function StructureForm({ open, onClose, from }: { open: boolean; onClose:
             ))}
           </FormGrid>
           <Typography.Text>
-            Gross a month <strong translate="no">{formatINR(gross)}</strong>, a year <span translate="no">{formatINR(gross * 12)}</span>
+            Gross a month <Money value={gross} strong />, a year <Money value={gross * 12} />
           </Typography.Text>
         </FormSection>
         <FormSection title="Deductions and tax">
@@ -158,9 +159,9 @@ function History({ employeeId, admin }: { employeeId: string; admin: boolean }) 
       dataSource={data ?? []}
       columns={[
         { title: 'From', dataIndex: 'effectiveFrom', width: 120, render: (v: string) => formatDate(v) },
-        { title: 'Basic', dataIndex: 'basic', align: 'right', render: (v: string) => <Rupees value={v} /> },
-        { title: 'Gross a month', dataIndex: 'gross', align: 'right', render: (v: string) => <Rupees value={v} /> },
-        { title: 'CTC a year', dataIndex: 'ctcAnnual', align: 'right', render: (v: string) => <Rupees value={v} /> },
+        { title: 'Basic', dataIndex: 'basic', align: 'right', render: (v: string) => <Money value={v} /> },
+        { title: 'Gross a month', dataIndex: 'gross', align: 'right', render: (v: string) => <Money value={v} /> },
+        { title: 'CTC a year', dataIndex: 'ctcAnnual', align: 'right', render: (v: string) => <Money value={v} /> },
         { title: 'Note', dataIndex: 'note', ellipsis: true },
         {
           title: '',
@@ -200,12 +201,12 @@ export function Salaries() {
     { title: 'Code', dataIndex: 'employeeCode', width: 96, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'Name', dataIndex: 'employeeName', width: 180, ellipsis: true, render: (v: string) => <span translate="no">{v}</span> },
     { title: 'From', dataIndex: 'effectiveFrom', width: 120, render: (v: string) => formatDate(v) },
-    { title: 'Gross a month', dataIndex: 'gross', width: 130, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'PF', dataIndex: 'employeePf', width: 90, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'ESI', dataIndex: 'employeeEsi', width: 80, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
-    { title: 'TDS a month', dataIndex: 'monthlyTds', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Rupees value={v} /> : NO_VALUE) },
+    { title: 'Gross a month', dataIndex: 'gross', width: 130, align: 'right', render: (v: string) => <Money value={v} /> },
+    { title: 'PF', dataIndex: 'employeePf', width: 90, align: 'right', render: (v: string) => <Money value={v} /> },
+    { title: 'ESI', dataIndex: 'employeeEsi', width: 80, align: 'right', render: (v: string) => (Number(v) ? <Money value={v} /> : NO_VALUE) },
+    { title: 'TDS a month', dataIndex: 'monthlyTds', width: 120, align: 'right', render: (v: string) => (Number(v) ? <Money value={v} /> : NO_VALUE) },
     { title: 'Regime', dataIndex: 'taxRegime', width: 110, render: (v: TaxRegime) => TAX_REGIME_LABELS[v] },
-    { title: 'CTC a year', dataIndex: 'ctcAnnual', width: 140, align: 'right', render: (v: string) => <Rupees value={v} /> },
+    { title: 'CTC a year', dataIndex: 'ctcAnnual', width: 140, align: 'right', render: (v: string) => <Money value={v} /> },
     ...(admin
       ? [
           {

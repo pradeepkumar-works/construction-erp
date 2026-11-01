@@ -23,12 +23,12 @@ import { LocalDataTable } from '@/components/list/LocalDataTable';
 import type { ListColumn } from '@/components/list/DataTable';
 import { NoAccess } from '@/components/common/NoAccess';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v)}</span>;
 const taxColumns = <T extends { igst: string; cgst: string; sgst: string }>(): ListColumn<T>[] => [
-  { key: 'igst', title: 'IGST', dataIndex: 'igst', width: 120, align: 'right', render: money },
-  { key: 'cgst', title: 'CGST', dataIndex: 'cgst', width: 120, align: 'right', render: money },
-  { key: 'sgst', title: 'SGST', dataIndex: 'sgst', width: 120, align: 'right', render: money },
+  { key: 'igst', title: 'IGST', dataIndex: 'igst', width: 120, align: 'right', render: (v) => <Money value={v} /> },
+  { key: 'cgst', title: 'CGST', dataIndex: 'cgst', width: 120, align: 'right', render: (v) => <Money value={v} /> },
+  { key: 'sgst', title: 'SGST', dataIndex: 'sgst', width: 120, align: 'right', render: (v) => <Money value={v} /> },
 ];
 const TAB_KEYS = ['outward', 'inward', 'hsn'] as const;
 type GstTab = (typeof TAB_KEYS)[number];
@@ -97,9 +97,9 @@ function GstRegistersPage() {
     },
     { key: 'invoiceDate', title: 'Invoice date', dataIndex: 'invoiceDate', card: 'date', defaultHidden: true, width: 120, render: (v) => formatDate(v) },
     { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
-    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: money },
+    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: (v) => <Money value={v} /> },
     ...taxColumns<Keyed<GstOutwardRowDto>>(),
-    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong> },
+    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: (v) => <Money value={v} strong /> },
   ];
   const inwardColumns: ListColumn<Keyed<GstInwardRowDto>>[] = [
     {
@@ -139,9 +139,9 @@ function GstRegistersPage() {
     },
     { key: 'invoiceDate', title: 'Invoice date', dataIndex: 'invoiceDate', card: 'date', defaultHidden: true, width: 120, render: (v) => formatDate(v) },
     { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
-    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: money },
+    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: (v) => <Money value={v} /> },
     ...taxColumns<Keyed<GstInwardRowDto>>(),
-    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: money },
+    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: (v) => <Money value={v} /> },
   ];
   const hsn = data ? hsnSummary(data.outward) : [];
   const net = data ? toNumber(data.outwardTotals.tax) - toNumber(data.inwardTotals.tax) : 0;
@@ -280,11 +280,11 @@ function GstRegistersPage() {
                   columns={[
                     { title: 'SAC', key: 'sac', width: 90, render: () => <span className="mono" translate="no">{CONSTRUCTION_SAC}</span> },
                     { title: 'Rate', dataIndex: 'rate', width: 80, align: 'right', render: (v: number) => `${v}%` },
-                    { title: 'Total value', dataIndex: 'value', align: 'right', render: money },
-                    { title: 'Taxable value', dataIndex: 'taxable', align: 'right', render: money },
-                    { title: 'IGST', dataIndex: 'igst', align: 'right', render: money },
-                    { title: 'CGST', dataIndex: 'cgst', align: 'right', render: money },
-                    { title: 'SGST', dataIndex: 'sgst', align: 'right', render: money },
+                    { title: 'Total value', dataIndex: 'value', align: 'right', render: (v) => <Money value={v} /> },
+                    { title: 'Taxable value', dataIndex: 'taxable', align: 'right', render: (v) => <Money value={v} /> },
+                    { title: 'IGST', dataIndex: 'igst', align: 'right', render: (v) => <Money value={v} /> },
+                    { title: 'CGST', dataIndex: 'cgst', align: 'right', render: (v) => <Money value={v} /> },
+                    { title: 'SGST', dataIndex: 'sgst', align: 'right', render: (v) => <Money value={v} /> },
                   ]}
                 />
               ),

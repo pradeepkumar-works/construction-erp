@@ -8,7 +8,7 @@ import { CHECK_LEVEL_LABELS, CHECK_LEVEL_SHARE, CHECK_OUTCOME_LABELS, isGuest, t
 import { errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useCheckMeasurement } from '@/lib/queries';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 import { AppTag } from '@/components/common/AppTag';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -18,6 +18,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { FormGrid } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { CheckCoverage } from './CheckCoverage';
+import { Money } from '@/components/common/Money';
 
 const OUTCOME_TONE: Record<CheckOutcome, 'success' | 'danger' | 'pending'> = { AGREED: 'success', LESS: 'danger', MORE: 'pending' };
 
@@ -85,7 +86,7 @@ export function PortalMeasurements({ measurements, openId, onOpen }: { measureme
             ),
           },
           { title: 'Quantity', key: 'qty', align: 'right', width: 130, render: (_, r) => <span translate="no">{`${formatQty(r.totalQty)} ${r.unit}`}</span> },
-          { title: 'Amount', dataIndex: 'amount', align: 'right', width: 130, render: (v: string) => <span translate="no">{formatINR(v)}</span> },
+          { title: 'Amount', dataIndex: 'amount', align: 'right', width: 130, render: (v: string) => <Money value={v} /> },
           {
             title: 'Checked by',
             key: 'checks',
@@ -127,7 +128,7 @@ function MeasurementDrawer({ data, level, onClose }: { data: PortalMeasurementDt
               { key: 'date', label: 'Measured on', children: formatDate(data.date) },
               { key: 'bill', label: 'Billed in', children: data.billLabel ?? 'Not billed yet' },
               { key: 'qty', label: 'Recorded', children: <span translate="no">{`${formatQty(data.totalQty)} ${data.unit}`}</span> },
-              { key: 'amt', label: 'Amount', children: <span translate="no">{formatINR(data.amount)}</span> },
+              { key: 'amt', label: 'Amount', children: <Money value={data.amount} /> },
             ]}
           />
           <Divider titlePlacement="start" plain>

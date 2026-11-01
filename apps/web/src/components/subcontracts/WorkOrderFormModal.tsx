@@ -19,6 +19,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
+import { Money } from '@/components/common/Money';
 
 interface LineValue {
   boqItemId?: string | null;
@@ -292,7 +293,7 @@ export function WorkOrderFormModal({
                       );
                     },
                   },
-                  { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (_, f) => <span className="mono" translate="no">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
+                  { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (_, f) => <Money value={lineAmount(lines?.[f.name])} paise /> },
                   {
                     title: '',
                     key: 'x',
@@ -351,9 +352,9 @@ export function WorkOrderFormModal({
               title={
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
                   <span>Work order value</span>
-                  <strong className="mono" translate="no">{formatINR(value, true)}</strong>
+                  <Money value={value} paise strong />
                   <span>GST at {toNumber(gstRate)}%</span>
-                  <span className="mono" translate="no">{formatINR(Math.round(value * toNumber(gstRate)) / 100, true)}</span>
+                  <Money value={Math.round(value * toNumber(gstRate)) / 100} paise />
                 </div>
               }
               description="Material issued to them from the store is recovered from their bills at the item's rate."

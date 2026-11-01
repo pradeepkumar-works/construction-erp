@@ -13,8 +13,9 @@ import { errorMessage } from '@/lib/api';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { Amount, VoucherTypeTag, sourceLabel } from './booksUi';
+import { VoucherTypeTag, sourceLabel } from './booksUi';
 import { VoucherDrawer } from './VoucherDrawer';
+import { Money } from '@/components/common/Money';
 
 /** When the modules were last posted, a Post now, and the records that could not be posted with why. */
 function PostingLine() {
@@ -120,8 +121,8 @@ export function DayBook() {
                 dataSource={v.lines}
                 columns={[
                   { title: 'Account', dataIndex: 'accountName', render: (n: string) => <span translate="no">{n}</span> },
-                  { title: 'Debit', dataIndex: 'debit', align: 'right', width: 150, render: (x: string | null) => <Amount value={x} /> },
-                  { title: 'Credit', dataIndex: 'credit', align: 'right', width: 150, render: (x: string | null) => <Amount value={x} /> },
+                  { title: 'Debit', dataIndex: 'debit', align: 'right', width: 150, render: (x: string | null) => <Money paise value={x} /> },
+                  { title: 'Credit', dataIndex: 'credit', align: 'right', width: 150, render: (x: string | null) => <Money paise value={x} /> },
                 ]}
               />
             ),
@@ -142,7 +143,7 @@ export function DayBook() {
             { title: 'From', dataIndex: 'source', width: 150, render: (s: BookSource) => sourceLabel(s) },
             { title: 'Party', dataIndex: 'party', width: 180, ellipsis: true, render: (p: string | null) => (p ? <span translate="no">{p}</span> : '') },
             { title: 'Narration', dataIndex: 'narration', ellipsis: true },
-            { title: 'Amount', dataIndex: 'amount', align: 'right', width: 150, render: (a: string) => <Amount value={a} /> },
+            { title: 'Amount', dataIndex: 'amount', align: 'right', width: 150, render: (a: string) => <Money paise value={a} /> },
           ]}
           summary={() =>
             data && data.total ? (
@@ -152,7 +153,7 @@ export function DayBook() {
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={7} align="right">
                   <Typography.Text strong>
-                    <Amount value={data.debit} />
+                    <Money paise value={data.debit} />
                   </Typography.Text>
                 </Table.Summary.Cell>
               </Table.Summary.Row>

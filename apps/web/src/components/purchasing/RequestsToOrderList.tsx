@@ -7,7 +7,7 @@ import { Select, Typography, theme } from 'antd';
 import type { OrderStage, RequestToOrderDto } from '@erp/shared';
 import { ORDER_STAGES, ORDER_STAGE_LABELS, rankLabel } from '@erp/shared';
 import { useRequestsToOrder } from '@/lib/queries';
-import { formatDate, formatINR, NO_VALUE } from '@/lib/format';
+import { formatDate, NO_VALUE } from '@/lib/format';
 import dayjs from 'dayjs';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -16,6 +16,7 @@ import { AppTag } from '@/components/common/AppTag';
 import { PriorityTag } from '@/components/common/StatusTag';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
+import { Money } from '@/components/common/Money';
 
 const KEYS = ['stage'] as const;
 
@@ -125,7 +126,7 @@ function columns(showProject: boolean): ListColumn<RequestToOrderDto>[] {
       render: (_, r) =>
         r.l1 ? (
           <div>
-            <strong className="mono" translate="no">{formatINR(r.l1.total, true)}</strong>
+            <Money value={r.l1.total} paise strong />
             <Sub><span translate="no">{r.l1.vendorName}</span></Sub>
           </div>
         ) : (
@@ -141,7 +142,7 @@ function columns(showProject: boolean): ListColumn<RequestToOrderDto>[] {
       render: (_, r) =>
         r.l2 ? (
           <div>
-            <span className="mono" translate="no">{formatINR(r.l2.total, true)}</span>
+            <Money value={r.l2.total} paise />
             <Sub><span translate="no">{r.l2.vendorName}</span></Sub>
           </div>
         ) : (

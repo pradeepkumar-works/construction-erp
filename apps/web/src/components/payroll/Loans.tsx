@@ -15,7 +15,8 @@ import { formatDate, MONTH_PICKER_FORMAT } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-import { Rupees, monthLabel } from './payrollUi';
+import { monthLabel } from './payrollUi';
+import { Money } from '@/components/common/Money';
 
 interface Values {
   employeeId: string;
@@ -90,11 +91,11 @@ export function Loans() {
     { title: 'Employee', key: 'e', width: 200, render: (_, l) => <span translate="no">{`${l.employeeName} (${l.employeeCode})`}</span> },
     { title: 'Type', dataIndex: 'kind', width: 130, render: (v: StaffLoanKind) => STAFF_LOAN_KIND_LABELS[v] },
     { title: 'Given on', dataIndex: 'issuedOn', width: 120, render: (v: string) => formatDate(v) },
-    { title: 'Amount', dataIndex: 'amount', width: 120, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'EMI', dataIndex: 'emi', width: 110, align: 'right', render: (v: string) => <Rupees value={v} /> },
+    { title: 'Amount', dataIndex: 'amount', width: 120, align: 'right', render: (v: string) => <Money value={v} /> },
+    { title: 'EMI', dataIndex: 'emi', width: 110, align: 'right', render: (v: string) => <Money value={v} /> },
     { title: 'From', dataIndex: 'startMonth', width: 140, render: (v: string) => monthLabel(v) },
-    { title: 'Recovered', dataIndex: 'recovered', width: 120, align: 'right', render: (v: string) => <Rupees value={v} /> },
-    { title: 'Left', dataIndex: 'balance', width: 120, align: 'right', render: (v: string) => <strong><Rupees value={v} /></strong> },
+    { title: 'Recovered', dataIndex: 'recovered', width: 120, align: 'right', render: (v: string) => <Money value={v} /> },
+    { title: 'Left', dataIndex: 'balance', width: 120, align: 'right', render: (v: string) => <strong><Money value={v} /></strong> },
     {
       title: '',
       key: 'x',

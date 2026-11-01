@@ -15,6 +15,7 @@ import { approveTheme, makeTheme, themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { formatINR, formatINRCompact } from '@/lib/format';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
+import { Money } from '@/components/common/Money';
 
 /** Semantic tokens worth seeing side by side in each mode. */
 const TOKENS = [
@@ -207,7 +208,7 @@ function DesignReference() {
             <Typography.Text type="warning">Warning</Typography.Text>
             <Typography.Text type="danger">Danger</Typography.Text>
             <Typography.Link href="/design">Link</Typography.Link>
-            <span className="mono" translate="no">{formatINR('18650000')}</span>
+            <Money value={'18650000'} />
           </Space>
         </Card>
 

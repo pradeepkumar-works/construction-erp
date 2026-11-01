@@ -27,8 +27,8 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { openSubBillPrint } from './subcontractPrint';
 import { Section } from '@/components/common/Section';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
+import { Money } from '@/components/common/Money';
 
-const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
 interface RecordProps {
   id: string | null;
@@ -155,7 +155,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               ),
             },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
-            { key: 'net', label: 'Bill net', children: <strong>{money(data.netPayable)}</strong> },
+            { key: 'net', label: 'Bill net', children: <strong><Money value={data.netPayable} paise /></strong> },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
@@ -199,8 +199,8 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                           </Typography.Text>
                         ),
                       },
-                      { title: 'This bill (₹)', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong>{money(v)}</strong> },
-                      { title: 'Up to date (₹)', dataIndex: 'uptoAmount', width: 140, align: 'right', render: (v) => money(v) },
+                      { title: 'This bill (₹)', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
+                      { title: 'Up to date (₹)', dataIndex: 'uptoAmount', width: 140, align: 'right', render: (v) => <Money value={v} paise /> },
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
@@ -211,7 +211,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                       ].map(([k, v]) => (
                         <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                           <span>{k}</span>
-                          {money(v)}
+                          <Money value={v} paise />
                         </div>
                       ))}
                       {data.deductions
@@ -229,7 +229,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                       <Divider style={{ margin: '6px 0' }} />
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                         <span>Bill net</span>
-                        {money(data.netPayable)}
+                        <Money value={data.netPayable} paise />
                       </div>
                       {debited > 0 ? (
                         <>
@@ -239,7 +239,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                             <span>Payable</span>
-                            {money(payable)}
+                            <Money value={payable} paise />
                           </div>
                         </>
                       ) : null}
@@ -262,8 +262,8 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                           columns={[
                             { title: 'Item', dataIndex: 'itemName' },
                             { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, m) => <span className="mono" translate="no">{formatQty(v)} {m.unit}</span> },
-                            { title: 'Rate', dataIndex: 'rate', width: 120, align: 'right', render: (v) => money(v) },
-                            { title: 'Recovered', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong>{money(v)}</strong> },
+                            { title: 'Rate', dataIndex: 'rate', width: 120, align: 'right', render: (v) => <Money value={v} paise /> },
+                            { title: 'Recovered', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong><Money value={v} paise /></strong> },
                           ]}
                         />
                     ),

@@ -22,6 +22,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { VariationFormModal } from './VariationFormModal';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
 
@@ -136,8 +137,8 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
               { key: 'cause', label: 'Cause', children: VARIATION_CAUSE_LABELS[data.cause] },
               { key: 'by', label: 'Prepared by', children: `${data.createdByName}, ${formatDate(data.createdAt.slice(0, 10))}` },
               ...(data.description ? [{ key: 'desc', label: 'Justification', span: 2, children: <span style={{ whiteSpace: 'pre-wrap' }}>{data.description}</span> }] : []),
-              { key: 'claimed', label: 'Claimed', children: <span className="mono" translate="no">{formatINR(data.claimedAmount)}</span> },
-              { key: 'approved', label: 'Approved', children: data.approvedAmount ? <strong className="mono" translate="no">{formatINR(data.approvedAmount)}</strong> : '-' },
+              { key: 'claimed', label: 'Claimed', children: <Money value={data.claimedAmount} /> },
+              { key: 'approved', label: 'Approved', children: data.approvedAmount ? <Money value={data.approvedAmount} strong /> : '-' },
               ...(data.submittedDate ? [{ key: 'sent', label: 'Sent to client', span: 2, children: `${formatDate(data.submittedDate)}${data.submittedRef ? `, our ref ${data.submittedRef}` : ''}` }] : []),
               ...(data.decidedDate
                 ? [
@@ -301,7 +302,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                           </Form.Item>
                         ) : (
                           <Form.Item label="Rate">
-                            <span className="mono" translate="no">{formatINR(l.rate, true)}</span>
+                            <Money value={l.rate} paise />
                           </Form.Item>
                         )}
                       </div>
@@ -311,7 +312,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
               )}
             </Form.List>
             <Typography.Paragraph>
-              Approved <strong className="mono" translate="no">{formatINR(approvedTotal)}</strong> of {formatINR(variation.claimedAmount)} claimed. Recording this changes the BOQ quantities and adds new items to the BOQ.
+              Approved <Money value={approvedTotal} strong /> of {formatINR(variation.claimedAmount)} claimed. Recording this changes the BOQ quantities and adds new items to the BOQ.
             </Typography.Paragraph>
           </>
         ) : null}

@@ -6,13 +6,14 @@ import { Table, Typography } from 'antd';
 import type { RankedQuote } from '@erp/shared';
 import { rankLabel } from '@erp/shared';
 import { useSupplierChoice } from '@/lib/queries';
-import { formatINR, toNumber } from '@/lib/format';
+import { toNumber } from '@/lib/format';
 import { AppTag } from '@/components/common/AppTag';
 import { StatusTag } from '@/components/common/StatusTag';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { Money } from '@/components/common/Money';
 
 interface RecordProps {
   id: string | null;
@@ -20,16 +21,6 @@ interface RecordProps {
   onClose?: () => void;
 }
 
-const money = (v: string | number, strong?: boolean) =>
-  strong ? (
-    <strong className="mono" translate="no">
-      {formatINR(v, true)}
-    </strong>
-  ) : (
-    <span className="mono" translate="no">
-      {formatINR(v, true)}
-    </span>
-  );
 
 /**
  * A supplier choice: the supplier purchase finalised on a material request (Finalise L1), sent for approval when the
@@ -86,7 +77,7 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
               ),
             },
             { key: 'chosen', label: 'Vendor', children: <span translate="no">{chosen}</span> },
-            { key: 'amount', label: 'Value of the order', children: money(data.amount, true) },
+            { key: 'amount', label: 'Value of the order', children: <Money value={data.amount} paise strong /> },
             {
               key: 'l1',
               label: 'Against L1',
@@ -95,10 +86,10 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
                   <span className="text-muted">No quotation priced every item</span>
                 ) : above > 0 ? (
                   <span>
-                    {money(above)} more than L1 ({money(data.l1Amount)})
+                    <Money value={above} paise /> more than L1 (<Money value={data.l1Amount} paise />)
                   </span>
                 ) : (
-                  <span>{data.split && above < 0 ? <>{money(-above)} less than L1 ({money(data.l1Amount)})</> : 'Is L1'}</span>
+                  <span>{data.split && above < 0 ? <><Money value={-above} paise /> less than L1 (<Money value={data.l1Amount} paise />)</> : 'Is L1'}</span>
                 ),
             },
             {
@@ -127,7 +118,7 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
                         columns={[
                           { title: 'Vendor', dataIndex: 'vendorName', render: (v: string) => <span translate="no">{v}</span> },
                           { title: 'Items', dataIndex: 'items', width: 90, align: 'right' },
-                          { title: 'Total with GST and freight', dataIndex: 'total', width: 200, align: 'right', render: (v: number) => money(v, true) },
+                          { title: 'Total with GST and freight', dataIndex: 'total', width: 200, align: 'right', render: (v: number) => <Money value={v} paise strong /> },
                         ]}
                       />
                     ),
@@ -163,7 +154,7 @@ export function SupplierChoiceRecord({ id, mode, open, onClose }: RecordProps & 
                         </span>
                       ),
                     },
-                    { title: 'Total with GST and freight', key: 'total', width: 200, align: 'right', render: (_, x) => money(x.total, true) },
+                    { title: 'Total with GST and freight', key: 'total', width: 200, align: 'right', render: (_, x) => <Money value={x.total} paise strong /> },
                   ]}
                 />
               ),

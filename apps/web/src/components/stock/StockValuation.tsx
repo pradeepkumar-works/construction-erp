@@ -13,6 +13,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeFontSize } from '@/lib/theme';
+import { Money } from '@/components/common/Money';
 
 const EXPORT: ExportColumn<StockValuationRowDto>[] = [
   { header: 'Project', value: (r) => r.projectName, width: 30 },
@@ -34,8 +35,8 @@ export function StockValuation({ projectId }: { projectId?: string }) {
     { title: 'Item', dataIndex: 'itemName', render: (v, r) => <span>{v}{r.category ? <span className="text-muted"> · {r.category}</span> : null}</span> },
     ...(projectId ? [] : [{ title: 'Project', dataIndex: 'projectName', width: 220, ellipsis: true, render: (v: string, r: StockValuationRowDto) => <Link href={`/projects/${r.projectId}?tab=stock`}>{v}</Link> }]),
     { title: 'Balance', dataIndex: 'balance', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${unitLabel(r.unit)}`}</span> },
-    { title: 'Rate', dataIndex: 'rate', width: 120, align: 'right', render: (v: string | null) => (v === null ? <Typography.Text type="warning">No rate</Typography.Text> : <span className="mono" translate="no">{formatINR(v, true)}</span>) },
-    { title: 'Value', dataIndex: 'value', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v)}</span> },
+    { title: 'Rate', dataIndex: 'rate', width: 120, align: 'right', render: (v: string | null) => (v === null ? <Typography.Text type="warning">No rate</Typography.Text> : <Money value={v} paise />) },
+    { title: 'Value', dataIndex: 'value', width: 140, align: 'right', render: (v) => <Money value={v} /> },
     ...STOCK_AGEING_BUCKETS.map((b, i) => ({
       title: b,
       key: `age${i}`,

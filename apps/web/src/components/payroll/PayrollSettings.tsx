@@ -10,7 +10,8 @@ import { usePayrollAction, usePayrollSettings } from '@/lib/queries';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
-import { Rupees } from './payrollUi';
+import { Money } from '@/components/common/Money';
+
 
 type Values = Omit<PayrollSettingsDto, 'pfEmployeePct' | 'pfEmployerPct' | 'epsPct' | 'pfWageCeiling' | 'esiEmployeePct' | 'esiEmployerPct' | 'esiGrossCeiling' | 'overtimeMultiplier'> & {
   pfEmployeePct: number;
@@ -150,13 +151,13 @@ export function PayrollSettings() {
         </Descriptions.Item>
         <Descriptions.Item label="PF wages">
           {s.pfCapAtCeiling ? 'Up to ' : 'All, ceiling '}
-          <Rupees value={s.pfWageCeiling} />
+          <Money value={s.pfWageCeiling} />
         </Descriptions.Item>
         <Descriptions.Item label="ESI">
           {pct(s.esiEmployeePct)} employee, {pct(s.esiEmployerPct)} company
         </Descriptions.Item>
         <Descriptions.Item label="ESI for gross up to">
-          <Rupees value={s.esiGrossCeiling} />
+          <Money value={s.esiGrossCeiling} />
         </Descriptions.Item>
         <Descriptions.Item label="Professional tax">{s.ptState ? (GST_STATES[s.ptState] ?? s.ptState) : 'None'}</Descriptions.Item>
         <Descriptions.Item label="A day's pay">Month divided by {PAID_DAYS_BASIS_LABELS[s.paidDaysBasis as PaidDaysBasis].toLowerCase()}</Descriptions.Item>
