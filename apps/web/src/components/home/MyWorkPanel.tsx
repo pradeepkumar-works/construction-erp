@@ -29,35 +29,43 @@ import {
   WalletOutlined,
 } from '@/components/common/icons';
 import type { MyWorkCard, MyWorkDto } from '@erp/shared';
-import { formatINRCompact } from '@/lib/format';
+import { rankWaiting } from '@erp/shared';
+import { formatINRCompact, toNumber } from '@/lib/format';
+import { tk } from '@/ds';
 import { QUEUE_TYPE_LABELS } from '@/components/approvals/queue';
 import { LinkButton } from '@/components/common/LinkButton';
 import type { MyWorkKey } from './layout';
 
-export const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: React.ReactNode; href: string | null; tone: 'warning' | 'error' | 'info' }> = {
-  watchList: { title: 'Watch list', icon: <EyeOutlined />, href: '/watch-list', tone: 'warning' },
-  dprsMissing: { title: 'Daily reports not filed today', icon: <FileTextOutlined />, href: '/dpr', tone: 'warning' },
-  sentBack: { title: 'Sent back to you', icon: <RollbackOutlined />, href: null, tone: 'warning' },
-  waitingWithOthers: { title: 'Waiting with others', icon: <HourglassOutlined />, href: null, tone: 'info' },
-  receivables: { title: 'Bills waiting for payment', icon: <WalletOutlined />, href: '/receivables', tone: 'info' },
-  payablesDue: { title: 'Payments due this week', icon: <CreditCardOutlined />, href: '/payables', tone: 'error' },
-  expiring: { title: 'Guarantees and licences expiring', icon: <SafetyCertificateOutlined />, href: '/compliance', tone: 'warning' },
-  lateDeliveries: { title: 'Late deliveries', icon: <TruckOutlined />, href: '/purchase-orders', tone: 'error' },
-  lowStock: { title: 'Below minimum stock', icon: <InboxOutlined />, href: '/stock', tone: 'warning' },
-  meetingActions: { title: 'Your actions from meetings', icon: <CarryOutOutlined />, href: '/meetings?view=actions&mine=1', tone: 'warning' },
-  letters: { title: 'Letters for you', icon: <MailOutlined />, href: '/correspondence?mine=1', tone: 'warning' },
-  toOrder: { title: 'Requests to order', icon: <ShoppingCartOutlined />, href: '/requests-to-order', tone: 'error' },
-  dueThisWeek: { title: 'Deliveries due this week', icon: <ScheduleOutlined />, href: '/purchase-orders?tab=status', tone: 'info' },
-  staffToDecide: { title: 'Leave and overtime to decide', icon: <TeamOutlined />, href: '/staff?tab=leave', tone: 'warning' },
-  certifiedToReceive: { title: 'Certified, payment to come', icon: <FileDoneOutlined />, href: '/receivables', tone: 'error' },
-  toMatch: { title: 'Received, not billed', icon: <ReconciliationOutlined />, href: '/vendor-bills?tab=to-bill', tone: 'warning' },
-  grnsToCheck: { title: 'Material to check', icon: <AuditOutlined />, href: '/inspections?tab=grns', tone: 'warning' },
-  findingsToClose: { title: 'Audit findings to close', icon: <FileSearchOutlined />, href: '/qa-audits?open=1', tone: 'warning' },
-  toDebit: { title: 'Debit notes to raise', icon: <SyncOutlined />, href: '/payables?tab=debit-notes&sub=to-raise', tone: 'warning' },
-  transfersToReceive: { title: 'Material on the way', icon: <SendOutlined />, href: '/stock', tone: 'info' },
+/** A card's title, icon, list, and what its count counts (one, many), said beside the rupees when they lead ("3 bills"). */
+export const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: React.ReactNode; href: string | null; unit: [string, string] }> = {
+  watchList: { title: 'Watch list', icon: <EyeOutlined />, href: '/watch-list', unit: ['warning', 'warnings'] },
+  dprsMissing: { title: 'Daily reports not filed today', icon: <FileTextOutlined />, href: '/dpr', unit: ['project', 'projects'] },
+  sentBack: { title: 'Sent back to you', icon: <RollbackOutlined />, href: null, unit: ['entry', 'entries'] },
+  waitingWithOthers: { title: 'Waiting with others', icon: <HourglassOutlined />, href: null, unit: ['entry', 'entries'] },
+  receivables: { title: 'Bills waiting for payment', icon: <WalletOutlined />, href: '/receivables', unit: ['bill', 'bills'] },
+  payablesDue: { title: 'Payments due this week', icon: <CreditCardOutlined />, href: '/payables', unit: ['bill', 'bills'] },
+  expiring: { title: 'Guarantees and licences expiring', icon: <SafetyCertificateOutlined />, href: '/compliance', unit: ['document', 'documents'] },
+  lateDeliveries: { title: 'Late deliveries', icon: <TruckOutlined />, href: '/purchase-orders', unit: ['order', 'orders'] },
+  lowStock: { title: 'Below minimum stock', icon: <InboxOutlined />, href: '/stock', unit: ['item', 'items'] },
+  meetingActions: { title: 'Your actions from meetings', icon: <CarryOutOutlined />, href: '/meetings?view=actions&mine=1', unit: ['action', 'actions'] },
+  letters: { title: 'Letters for you', icon: <MailOutlined />, href: '/correspondence?mine=1', unit: ['letter', 'letters'] },
+  toOrder: { title: 'Requests to order', icon: <ShoppingCartOutlined />, href: '/requests-to-order', unit: ['request', 'requests'] },
+  dueThisWeek: { title: 'Deliveries due this week', icon: <ScheduleOutlined />, href: '/purchase-orders?tab=status', unit: ['order', 'orders'] },
+  staffToDecide: { title: 'Leave and overtime to decide', icon: <TeamOutlined />, href: '/staff?tab=leave', unit: ['request', 'requests'] },
+  certifiedToReceive: { title: 'Certified, payment to come', icon: <FileDoneOutlined />, href: '/receivables', unit: ['bill', 'bills'] },
+  toMatch: { title: 'Received, not billed', icon: <ReconciliationOutlined />, href: '/vendor-bills?tab=to-bill', unit: ['receipt', 'receipts'] },
+  grnsToCheck: { title: 'Material to check', icon: <AuditOutlined />, href: '/inspections?tab=grns', unit: ['receipt', 'receipts'] },
+  findingsToClose: { title: 'Audit findings to close', icon: <FileSearchOutlined />, href: '/qa-audits?open=1', unit: ['finding', 'findings'] },
+  toDebit: { title: 'Debit notes to raise', icon: <SyncOutlined />, href: '/payables?tab=debit-notes&sub=to-raise', unit: ['receipt', 'receipts'] },
+  transfersToReceive: { title: 'Material on the way', icon: <SendOutlined />, href: '/stock', unit: ['transfer', 'transfers'] },
 };
 
 export const APPROVALS_TITLE = 'Waiting for your approval';
+const APPROVALS_UNIT: [string, string] = ['entry', 'entries'];
+
+/** "3 bills": a count with its word, for the label under a card whose rupees lead. */
+export const countWords = (n: number, [one, many]: [string, string]) => `${n.toLocaleString('en-IN')} ${n === 1 ? one : many}`;
+export const unitOf = (k: MyWorkKey): [string, string] => (k === 'approvals' ? APPROVALS_UNIT : CARDS[k].unit);
 
 /** What each card is about, inside the "Nothing else waiting" line. */
 const CLEAR: Record<MyWorkKey, string> = {
@@ -84,25 +92,32 @@ const CLEAR: Record<MyWorkKey, string> = {
   transfersToReceive: 'transfers on the way',
 };
 
+/** An approval starts to press after two days in the queue, as an entry waiting with others does (`HomeService.myWork`). */
+const APPROVAL_PRESSES_AFTER = 2;
+
 /**
- * How pressing a card is, in days overdue, late or waiting: the API's `urgencyDays`, and for approvals how
- * long the oldest has waited. A card with no figure (an older API) ranks as due today.
+ * How many days a card is past its own mark (negative while still ahead of it): the API's `urgencyDays`, and for approvals
+ * how long the oldest has waited past two days. A card with no figure (an older API) counts as due today.
  */
 export function urgencyOf(data: MyWorkDto, k: MyWorkKey): number {
-  const days = k === 'approvals' ? data.approvalsWaitingDays : (data[k] as MyWorkCard | undefined)?.urgencyDays;
-  return days ?? 0;
+  if (k === 'approvals') return data.approvalsWaitingDays == null ? 0 : data.approvalsWaitingDays - APPROVAL_PRESSES_AFTER;
+  return (data[k] as MyWorkCard | undefined)?.urgencyDays ?? 0;
+}
+
+/** The rupees a card holds: the card's amount, and for approvals the amounts waiting on the caller; null where none is money. */
+export function amountOf(data: MyWorkDto, k: MyWorkKey): string | null {
+  if (k !== 'approvals') return (data[k] as MyWorkCard | undefined)?.amount ?? null;
+  const priced = (data.approvals ?? []).filter((a) => a.amount != null);
+  return priced.length ? String(priced.reduce((s, a) => s + toNumber(a.amount), 0)) : null;
 }
 
 /**
- * The cards that have something waiting, most urgent first: longest overdue or waiting first; cards
- * equally urgent keep the order of the role's layout (`homeLayout`). Cards with nothing waiting are left out.
+ * The cards that have something waiting, in the one order for what waits (`rankWaiting`): the bigger money first, then
+ * the later past its mark, then the role's layout (`homeLayout`). Cards with nothing waiting are left out.
  */
 export function myWorkOrder(data: MyWorkDto, order: MyWorkKey[], count: (k: MyWorkKey) => number): MyWorkKey[] {
-  return order
-    .filter((k) => data[k] !== undefined && count(k) > 0)
-    .map((k, i) => ({ k, i, u: urgencyOf(data, k) }))
-    .sort((a, b) => b.u - a.u || a.i - b.i)
-    .map((x) => x.k);
+  const busy = order.filter((k) => data[k] !== undefined && count(k) > 0);
+  return rankWaiting(busy, (k, place) => ({ amount: amountOf(data, k), daysLate: urgencyOf(data, k), place }));
 }
 
 /**
@@ -137,7 +152,7 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
           <Row gutter={[token.margin, token.margin]}>
             {busy.map((k) => (
               <Col key={k} xs={24} md={12} xl={8}>
-                {k === 'approvals' ? <ApprovalsCard approvals={data.approvals ?? []} waitingDays={data.approvalsWaitingDays ?? null} /> : <WorkCard k={k} card={data[k] as MyWorkCard} />}
+                {k === 'approvals' ? <ApprovalsCard data={data} /> : <WorkCard k={k} card={data[k] as MyWorkCard} />}
               </Col>
             ))}
           </Row>
@@ -153,10 +168,14 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
   );
 }
 
-function Frame({ title, icon, href, count, tone, children, amount, overdue }: { title: string; icon: React.ReactNode; href: string | null; count: number; tone: 'warning' | 'error' | 'info'; amount?: string | null; overdue?: boolean; children: React.ReactNode }) {
+/**
+ * One card. Rupees lead where the card holds money, with the count and its word under the title ("3 bills"); a card
+ * without money leads with its count. A card past its own mark says Overdue in words, never by colour alone.
+ */
+function Frame({ title, icon, href, count, unit, amount, daysLate, children }: { title: string; icon: React.ReactNode; href: string | null; count: number; unit: [string, string]; amount: string | null; daysLate: number; children: React.ReactNode }) {
   const { token } = theme.useToken();
-  // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade, and only while something in it is actually overdue: payments due later this week stay neutral.
-  const figure = tone === 'error' && overdue !== false ? token.colorErrorText : token.colorText;
+  const money = !!amount && count > 0;
+  const late = count > 0 && daysLate > 0;
   return (
     <section
       aria-label={title}
@@ -164,7 +183,7 @@ function Frame({ title, icon, href, count, tone, children, amount, overdue }: { 
       style={{ height: '100%', paddingTop: token.paddingSM, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}
     >
       <Flex align="center" gap={token.marginSM} style={{ marginBottom: token.marginXS }}>
-        {/* A plain grey glyph rather than a tinted square: the colour is kept for the figure, where it says something. */}
+        {/* A plain grey glyph rather than a tinted square: the figure and the words say what matters. */}
         <span aria-hidden style={{ display: 'inline-flex', color: count === 0 ? token.colorSuccessText : token.colorTextTertiary, fontSize: token.fontSizeLG }}>
           {count === 0 ? <CheckCircleOutlined /> : icon}
         </span>
@@ -176,24 +195,33 @@ function Frame({ title, icon, href, count, tone, children, amount, overdue }: { 
           ) : (
             <Typography.Text strong>{title}</Typography.Text>
           )}
-          {amount && count > 0 ? (
-            <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
-              {formatINRCompact(amount)}
-            </Typography.Text>
-          ) : null}
+          {(money || late) && (
+            <Flex align="center" wrap gap={token.marginXS}>
+              {money && (
+                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                  <span translate="no">{count.toLocaleString('en-IN')}</span> {count === 1 ? unit[0] : unit[1]}
+                </Typography.Text>
+              )}
+              {late && <AppTag meaning="failed">Overdue</AppTag>}
+            </Flex>
+          )}
         </div>
-        <span style={{ fontSize: token.fontSizeHeading2, fontWeight: token.fontWeightStrong, color: count === 0 ? token.colorTextTertiary : figure, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+        <span translate="no" style={{ ...tk.type.figure, whiteSpace: 'nowrap', color: count === 0 ? tk.color.text.muted : tk.color.text.base }}>
+          {money ? formatINRCompact(amount) : count}
+        </span>
       </Flex>
       {children}
     </section>
   );
 }
 
-function ApprovalsCard({ approvals, waitingDays }: { approvals: NonNullable<MyWorkDto['approvals']>; waitingDays: number | null }) {
+function ApprovalsCard({ data }: { data: MyWorkDto }) {
   const { token } = theme.useToken();
+  const approvals = data.approvals ?? [];
+  const waitingDays = data.approvalsWaitingDays ?? null;
   const total = approvals.reduce((n, a) => n + a.count, 0);
   return (
-    <Frame title={APPROVALS_TITLE} icon={<CheckSquareOutlined />} href="/approvals" count={total} tone="warning">
+    <Frame title={APPROVALS_TITLE} icon={<CheckSquareOutlined />} href="/approvals" count={total} unit={APPROVALS_UNIT} amount={amountOf(data, 'approvals')} daysLate={urgencyOf(data, 'approvals')}>
       {total === 0 ? (
         <Typography.Text type="secondary">Nothing to approve.</Typography.Text>
       ) : (
@@ -224,7 +252,7 @@ function WorkCard({ k, card }: { k: Exclude<MyWorkKey, 'approvals'>; card: MyWor
   // A phone stacks the cards, so each shows its first item only and links to the rest.
   const items = Grid.useBreakpoint().sm === false ? card.items.slice(0, 1) : card.items;
   return (
-    <Frame title={meta.title} icon={meta.icon} href={href} count={card.count} tone={meta.tone} amount={card.amount} overdue={card.urgencyDays == null ? undefined : card.urgencyDays > 0}>
+    <Frame title={meta.title} icon={meta.icon} href={href} count={card.count} unit={meta.unit} amount={card.amount} daysLate={card.urgencyDays ?? 0}>
       {card.count === 0 ? (
         <Typography.Text type="secondary">Nothing to do.</Typography.Text>
       ) : (

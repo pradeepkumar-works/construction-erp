@@ -13,7 +13,8 @@ export interface HomeLayout {
 /**
  * What the home page leads with for each kind of user. Order only: a card, tile or chart the
  * caller's role cannot see is left out by the API, so a layout never shows more than the role's permissions allow.
- * My work puts its most urgent card first; `myWork` orders the cards that are equally urgent.
+ * My work ranks its cards by the one order for what waits (`rankWaiting`: money, then days late); `myWork` is the last
+ * tie-break.
  */
 const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'purchase' | 'stores' | 'hr' | 'qs' | 'site' | 'documents', HomeLayout> = {
   director: {
