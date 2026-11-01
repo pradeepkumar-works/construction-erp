@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Drawer, Input, Popconfirm, Segmented, Space, Table, Typography } from 'antd';
+import { App, Button, Descriptions, Drawer, Popconfirm, Segmented, Space, Table, Typography } from 'antd';
 import { FileDoneOutlined, PayCircleOutlined } from '@/components/common/icons';
 import type { RmcInvoiceDto, RmcReceiptDto } from '@erp/shared';
 import { PAYMENT_MODE_LABELS, canBillRmc, type PaymentMode } from '@erp/shared';
@@ -9,10 +9,17 @@ import { useAuth } from '@/lib/auth';
 import { useRmcAction, useRmcInvoices, useRmcReceipts } from '@/lib/queries';
 import { errorMessage } from '@/lib/api';
 import { formatDate, NO_VALUE } from '@/lib/format';
+import { tk } from '@/ds';
 import { QueryError } from '@/components/common/QueryState';
+import { ListToolbar } from '@/components/common/ListToolbar';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { useListFrame } from '@/components/list/useListFrame';
 import { InvoiceStatusTag, M3, PlantFilter, usePlantScope } from './rmcUi';
 import { InvoiceForm, ReceiptForm } from './MoneyForms';
 import { Money } from '@/components/common/Money';
+
+const KEYS = ['due'] as const;
 
 /** A bill with its challans, GST and what has been received against it. */
 function InvoiceDrawer({ invoice, onClose, onReceive }: { invoice: RmcInvoiceDto | null; onClose: () => void; onReceive: (i: RmcInvoiceDto) => void }) {
@@ -103,65 +110,81 @@ export function Bills() {
   const { user } = useAuth();
   const bill = !!user && canBillRmc(user.roleKey);
   const [plantId] = usePlantScope();
-  const [due, setDue] = useState(false);
-  const [q, setQ] = useState('');
-  const [page, setPage] = useState(1);
   const [open, setOpen] = useState<string | null>(null);
   const [billing, setBilling] = useState(false);
   const [receiving, setReceiving] = useState<RmcInvoiceDto | null | 'free'>(null);
-  const { data, isLoading, isFetching, error, refetch } = useRmcInvoices({ plantId, due: due || undefined, q: q || undefined, page, pageSize: 50 });
+  const frame = useListFrame<'date', RmcInvoiceDto>({
+    list: 'rmc-bills',
+    url: false,
+    keys: KEYS,
+    sortBy: 'date',
+    sortOrder: 'desc',
+    sortFields: ['date'],
+    columns: (): ListColumn<RmcInvoiceDto>[] => [
+      { key: 'invoiceNo', title: 'Bill', dataIndex: 'invoiceNo', width: 150, locked: true, render: (n: string) => <span translate="no">{n}</span> },
+      { key: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (d: string) => formatDate(d) },
+      { key: 'customer', title: 'Customer', dataIndex: 'customer', ellipsis: true, card: 'meta', render: (c: string) => <span translate="no">{c}</span> },
+      { key: 'quantity', title: 'Concrete', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
+      { key: 'total', title: 'Total', dataIndex: 'total', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
+      { key: 'due', title: 'Due', dataIndex: 'due', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
+      { key: 'status', title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcInvoiceDto['status']) => <InvoiceStatusTag status={s} /> },
+    ],
+  });
+  const { page } = frame;
+  const due = page.filters.due === '1';
+  const { data, isLoading, isFetching, error, refetch } = useRmcInvoices({ plantId, due: due || undefined, q: page.params.q, page: page.params.page, pageSize: page.params.pageSize });
   const { data: receipts } = useRmcReceipts({ pageSize: 20 }, bill);
   const opened = data?.items.find((i) => i.id === open) ?? null;
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <Space wrap>
-          <Segmented
-            aria-label="Which bills"
-            value={due ? 'due' : 'all'}
-            onChange={(v) => (setDue(v === 'due'), setPage(1))}
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 'due', label: 'With money due' },
-            ]}
-          />
-          <PlantFilter />
-          <Input.Search allowClear placeholder="Bill, customer or order" aria-label="Search bills" onSearch={(v) => (setQ(v.trim()), setPage(1))} style={{ width: 230 }} />
-        </Space>
-        {bill && (
-          <Space wrap>
-            <Button icon={<PayCircleOutlined />} onClick={() => setReceiving('free')}>
-              Money received
-            </Button>
-            <Button type="primary" icon={<FileDoneOutlined />} onClick={() => setBilling(true)}>
-              Bill challans
-            </Button>
-          </Space>
-        )}
-      </div>
-      {error ? (
-        <QueryError error={error} onRetry={() => refetch()} />
-      ) : (
-        <Table<RmcInvoiceDto>
-          rowKey="id"
-          size="small"
-          loading={isLoading || isFetching}
-          dataSource={data?.items ?? []}
-          scroll={{ x: 960 }}
-          locale={{ emptyText: due ? 'Every bill is paid' : 'No bills yet' }}
-          pagination={{ current: page, pageSize: 50, total: data?.total ?? 0, onChange: setPage, hideOnSinglePage: true, showSizeChanger: false }}
-          onRow={(i) => ({ onClick: () => setOpen(i.id), style: { cursor: 'pointer' } })}
-          columns={[
-            { title: 'Bill', dataIndex: 'invoiceNo', width: 150, render: (n: string) => <span translate="no">{n}</span> },
-            { title: 'Date', dataIndex: 'date', width: 110, render: (d: string) => formatDate(d) },
-            { title: 'Customer', dataIndex: 'customer', ellipsis: true, render: (c: string) => <span translate="no">{c}</span> },
-            { title: 'Concrete', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-            { title: 'Total', dataIndex: 'total', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
-            { title: 'Due', dataIndex: 'due', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
-            { title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcInvoiceDto['status']) => <InvoiceStatusTag status={s} /> },
+    <div style={{ padding: tk.space[4] }}>
+      {error && <QueryError error={error} onRetry={() => refetch()} />}
+      <ListToolbar
+        filters={frame.filterState}
+        onProject={frame.setProjectFilter}
+        hideProject
+        search={page.search}
+        onSearch={page.setSearch}
+        searchPlaceholder="Bill, customer or order"
+        searchLabel="Search bills"
+        extra={
+          bill ? (
+            <>
+              <Button icon={<PayCircleOutlined />} onClick={() => setReceiving('free')}>
+                Money received
+              </Button>
+              <Button type="primary" icon={<FileDoneOutlined />} onClick={() => setBilling(true)}>
+                Bill challans
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        <Segmented
+          aria-label="Which bills"
+          value={due ? 'due' : 'all'}
+          onChange={(v) => page.setFilter('due', v === 'due' ? '1' : null)}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'due', label: 'With money due' },
           ]}
         />
-      )}
+        <PlantFilter />
+      </ListToolbar>
+      <DataTable<RmcInvoiceDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
+        loading={isLoading || isFetching}
+        table={page.tableProps<RmcInvoiceDto>(data?.total)}
+        onOpen={setOpen}
+        chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
+        scrollX={960}
+        emptyText={<EmptyArt art="entries" title={due ? 'Every bill is paid' : 'No bills yet'} />}
+      />
       {bill && (
         <>
           <Typography.Title level={2} style={{ fontSize: 16, marginTop: 20 }}>
