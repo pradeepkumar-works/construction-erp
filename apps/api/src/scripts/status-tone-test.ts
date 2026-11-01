@@ -140,6 +140,7 @@ const VALUES: Record<StatusKind, readonly string[]> = {
   revision: REVISION_STATUSES,
   controlledCopy: ['IN_FORCE', 'TO_RECALL', 'CLOSED'],
   impact: ['danger', 'warning', 'info'],
+  schedule: ['UNSCHEDULED', 'NOT_STARTED', 'ON_TRACK', 'BEHIND', 'LATE', 'DONE'],
   milestone: ['UPCOMING', 'DUE_SOON', 'MISSED', 'ACHIEVED', 'ACHIEVED_LATE'],
   lookahead: ['IN_PROGRESS', 'READY', 'WAITING'],
   programme: PROGRAMME_STATUSES,
@@ -215,6 +216,8 @@ test('a list of approved work is quiet, and what waits or was sent back stands o
   assert.equal(statusTone('submission', 'CHANGES_REQUESTED'), 'failed');
   assert.equal(statusTone('project', 'ACTIVE'), 'done');
   assert.equal(statusTone('billStage', 'PAID'), 'done');
+  assert.equal(statusTone('schedule', 'LATE'), 'failed', 'only an activity past its finish is red on the Gantt');
+  assert.equal(statusTone('schedule', 'BEHIND'), 'waiting');
 });
 
 test('a status the map does not know yet reads as quiet, never as an alarm', () => {

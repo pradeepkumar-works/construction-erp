@@ -45,7 +45,7 @@ import type { AccreditationState, CalibrationResult, CalibrationState } from './
 import type { InspectionResult, NcrStatus, TestResult } from './quality';
 import type { ReconciliationStatus } from './reconciliation';
 import type { MixDesignStatus, RmcBatchStatus, RmcInvoiceStatus, RmcOrderStatus } from './rmc';
-import type { LookaheadReadiness, MilestoneState, ScheduleReading } from './schedule';
+import type { LookaheadReadiness, MilestoneState, ScheduleReading, ScheduleState } from './schedule';
 import type { EnquiryVendorState } from './small-purchase';
 import type { LeaveStatus, OvertimeStatus, StaffAttendanceStatus } from './staff';
 import type { FrontFlag, KitStatus, ReconExceptionKind } from './stock-against-dpr';
@@ -166,6 +166,8 @@ export const STATUS_TONES = {
   }),
   controlledCopy: meanings<CopyState>({ IN_FORCE: 'done', TO_RECALL: 'waiting', CLOSED: 'closed' }),
   impact: meanings<ImpactTone>({ danger: 'failed', warning: 'waiting', info: 'inHand' }),
+  /** An activity on the Gantt: behind plan waits on the site, only past its planned finish is late. */
+  schedule: meanings<ScheduleState>({ UNSCHEDULED: 'closed', NOT_STARTED: 'inHand', ON_TRACK: 'inHand', BEHIND: 'waiting', LATE: 'failed', DONE: 'done' }),
   milestone: meanings<MilestoneState>({ UPCOMING: 'inHand', DUE_SOON: 'waiting', MISSED: 'failed', ACHIEVED: 'done', ACHIEVED_LATE: 'done' }),
   lookahead: meanings<LookaheadReadiness>({ IN_PROGRESS: 'inHand', READY: 'done', WAITING: 'waiting' }),
   programme: meanings<ProgrammeStatus>({ SUBMITTED: 'waiting', APPROVED: 'done', RETURNED: 'failed' }),

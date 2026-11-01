@@ -368,7 +368,6 @@
  "src/components/safety/TodaysTalk.tsx",
  "src/components/safety/safetyUi.tsx",
  "src/components/sc-enquiries/ScEnquiryForms.tsx",
- "src/components/schedule/GanttChart.tsx",
  "src/components/schedule/GanttPanel.tsx",
  "src/components/schedule/LookaheadPanel.tsx",
  "src/components/schedule/ScheduleLinks.tsx",
