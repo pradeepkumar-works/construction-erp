@@ -335,7 +335,6 @@
  "src/components/reconciliation/WastageReport.tsx",
  "src/components/record/ApprovalLevels.tsx",
  "src/components/record/RecordFrame.tsx",
- "src/components/record/StageBar.tsx",
  "src/components/reports/ProgressReportView.tsx",
  "src/components/reports/official/OfficialReportView.tsx",
  "src/components/reports/official/officialDocx.ts",

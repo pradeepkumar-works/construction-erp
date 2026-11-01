@@ -5,7 +5,7 @@ import { App, Button, Card, Col, Empty, Flex, Form, Grid, Input, Row, Space, Sta
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleFilled, DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@/components/common/icons';
 import type { ComparativeStatementDto, EnquiryDto, MaterialRequestDto, MaterialRequestItemDto, QuotationDto, RankedQuote, RequestToOrderDto } from '@erp/shared';
-import { awardLowestPerItem, canPurchase, enquiryOpen, finaliseProblem, lastRateKey, rankLabel, type OrderStage } from '@erp/shared';
+import { awardLowestPerItem, statusTone, canPurchase, enquiryOpen, finaliseProblem, lastRateKey, rankLabel, type OrderStage } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -83,7 +83,7 @@ export function RequestToOrderScreen({ id }: { id: string }) {
         <StageBar
           label="Where this indent stands"
           current={done ? 3 : at}
-          status={done ? 'finish' : 'process'}
+          status={done ? 'finish' : statusTone('orderStage', r.stage) === 'waiting' ? 'wait' : 'process'}
           style={{ marginBottom: 12 }}
           items={[
             { title: 'Enquiry', content: r.enquiry ? `${r.enquiry.replied} of ${r.enquiry.invited} replied` : 'Not sent' },

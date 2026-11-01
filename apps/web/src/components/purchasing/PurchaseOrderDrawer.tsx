@@ -193,7 +193,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
           lifecycle: submissionLifecycle(data, [
             data.closedAt
               ? { title: 'Closed', done: true, content: `${formatPct(data.receivedPct)} received` }
-              : { title: 'Received', done: !data.open, content: approved ? `${formatPct(data.receivedPct)} received` : undefined },
+              : { title: 'Received', done: !data.open, waits: true, content: approved ? `${formatPct(data.receivedPct)} received` : undefined },
           ]),
           sections: [
             {

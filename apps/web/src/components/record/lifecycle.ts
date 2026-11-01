@@ -8,6 +8,8 @@ export interface LaterStage {
   done: boolean;
   /** When or how far, shown under the title. */
   content?: string;
+  /** While it is the next stage, it waits on someone outside (the client to certify or pay, the vendor to deliver). */
+  waits?: boolean;
 }
 
 /** The stage bar's props (`StageBar`): where the entry is, how that stage stands, and the stages. */
@@ -21,7 +23,8 @@ const who = (name: string | null, at: string | null) => [name, at ? formatDateTi
 
 /**
  * Where a submission stands, for the stage bar on its page: drafted, submitted, the review, then
- * whatever comes after approval for its type. A rejected or sent-back entry stops, in red, at the review.
+ * whatever comes after approval for its type. An entry waiting for its review (or for the client or vendor after it) waits in
+ * amber; a rejected or sent-back one stops, in red, at the review.
  */
 export function submissionLifecycle(s: SubmissionBase, later: LaterStage[] = []): Lifecycle {
   const review =
@@ -42,8 +45,8 @@ export function submissionLifecycle(s: SubmissionBase, later: LaterStage[] = [])
     ...later.map((l) => ({ title: l.title, content: l.content })),
   ];
   if (s.status === 'DRAFT') return { current: 0, status: 'process', items };
-  if (s.status === 'SUBMITTED') return { current: 2, status: 'process', items };
+  if (s.status === 'SUBMITTED') return { current: 2, status: 'wait', items };
   if (s.status !== 'APPROVED') return { current: 2, status: 'error', items };
   const next = later.findIndex((l) => !l.done);
-  return next === -1 ? { current: items.length - 1, status: 'finish', items } : { current: 3 + next, status: 'process', items };
+  return next === -1 ? { current: items.length - 1, status: 'finish', items } : { current: 3 + next, status: later[next].waits ? 'wait' : 'process', items };
 }
