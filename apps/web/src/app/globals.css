@@ -40,8 +40,8 @@ a {
   justify-content: space-between;
   gap: 48px;
   padding: 40px 56px;
-  color: var(--ant-color-text-light-solid);
-  background-color: var(--brand-ink);
+  color: var(--c-chrome-ink);
+  background-color: var(--c-chrome-bg);
 }
 
 .auth-brand {
@@ -63,7 +63,7 @@ a {
   line-height: 1.04;
   letter-spacing: -0.01em;
   text-wrap: balance;
-  color: var(--ant-color-text-light-solid);
+  color: var(--c-chrome-ink);
 }
 
 .auth-points {
@@ -74,7 +74,7 @@ a {
   gap: 14px;
   font-size: var(--ant-font-size-lg);
   line-height: 1.45;
-  color: color-mix(in srgb, var(--ant-color-white) 72%, transparent);
+  color: color-mix(in srgb, var(--c-chrome-ink) 72%, transparent);
 }
 
 .auth-points li {
@@ -89,13 +89,13 @@ a {
   height: 6px;
   margin-top: 8px;
   border-radius: 1px;
-  background: var(--brand-accent-light);
+  background: var(--c-chrome-accent);
 }
 
 .auth-aside-foot {
   margin: 0;
   font-size: var(--ant-font-size-sm);
-  color: color-mix(in srgb, var(--ant-color-white) 62%, transparent);
+  color: color-mix(in srgb, var(--c-chrome-ink) 62%, transparent);
 }
 
 .auth-main {

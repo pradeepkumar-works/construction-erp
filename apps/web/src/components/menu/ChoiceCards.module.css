@@ -79,13 +79,13 @@
 .side {
   inset: 0 auto 0 0;
   width: 34px;
-  background: var(--brand-ink);
+  background: var(--c-chrome-bg);
 }
 
 .navy {
   inset: 0 0 auto 0;
   height: 14px;
-  background: var(--brand-ink);
+  background: var(--c-chrome-bg);
 }
 
 .row {

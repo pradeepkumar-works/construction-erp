@@ -19,7 +19,7 @@ import { useAiStatus, usePendingApprovals, useProjects, useSaveOwnLook } from '@
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import { AskContext } from '@/lib/ask';
-import { BRAND } from '@/lib/brand';
+import { tk } from '@/ds';
 import { BrandMark } from './BrandMark';
 import { CommandPalette } from './CommandPalette';
 import { HelpButton, dialogOpen, isTyping, useHelpMenu } from './HelpMenu';
@@ -297,7 +297,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         <Tooltip title={`Ask ${PRODUCT_NAME}  ${askShortcutLabel()}`}>
           <Button
             type="text"
-            icon={<SparkleIcon style={{ color: navyBar ? BRAND.colors.accentLight : token.colorPrimary }} />}
+            icon={<SparkleIcon style={{ color: navyBar ? tk.color.chrome.accent : token.colorPrimary }} />}
             onClick={() => (askOpen ? setAskOpen(false) : openAsk())}
             aria-label={toolsSpacious ? undefined : `Ask ${PRODUCT_NAME}`}
             aria-keyshortcuts="Alt+J Meta+J"
@@ -320,12 +320,12 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           <Space>
             {isMobile && help.unseen ? (
               <Badge dot offset={[-2, 2]}>
-                <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
+                <Avatar size="small" style={{ background: tk.color.accent.solid, color: tk.color.text.onAccent, fontWeight: 700 }}>
                   {initials}
                 </Avatar>
               </Badge>
             ) : (
-            <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
+            <Avatar size="small" style={{ background: tk.color.accent.solid, color: tk.color.text.onAccent, fontWeight: 700 }}>
               {initials}
             </Avatar>
             )}
@@ -367,7 +367,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             Skip to content
           </a>
           {isMobile && (
-            <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: BRAND.colors.ink } }}>
+            <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: tk.color.chrome.bg } }}>
               <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
             </Drawer>
           )}
@@ -391,7 +391,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         </aside>
       )}
       {isMobile && (
-        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: BRAND.colors.ink } }}>
+        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: tk.color.chrome.bg } }}>
           <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
         </Drawer>
       )}

@@ -62,6 +62,8 @@ export const ROLES = {
   } satisfies Record<Tone, ToneRoles>,
   chrome: {
     bg: p('ink'),
+    /** What the chrome's text, lines and fills are drawn in: CSS mixes it at a share over `bg`, so one value turns a dark rail light. */
+    ink: p('onAccent'),
     deep: p('inkDeep'),
     hover: p('primaryDeep'),
     caption: p('inkCaption'),
@@ -73,6 +75,8 @@ export const ROLES = {
     headerHover: p('hairline', 'nightBorderSoft'),
     track: p('border', 'nightBorder'),
     badgeFill: p('danger'),
+    /** A count of things waiting (sidebar, top bar, tiles), with `text.onAccent` on it. */
+    countFill: p('pending'),
     avatarFill: p('muted'),
     skeletonFrom: p('skeletonFrom', 'nightSkeletonFrom'),
     skeletonTo: p('skeletonTo', 'nightSkeletonTo'),

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Popover, Tooltip } from 'antd';
 import { DownOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@/components/common/icons';
 import type { AuthUser } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
+import { tk } from '@/ds';
 import { readPref, writePref } from '@/lib/prefs';
 import { useHoverIntent, usePrefetch } from '@/lib/prefetch';
 import { BrandMark, Wordmark } from './BrandMark';
@@ -81,7 +81,7 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
         <BrandMark size={32} />
         {!rail && (
           <div style={{ lineHeight: 1.15, minWidth: 0 }}>
-            <Wordmark color={BRAND.colors.onAccent} size={18} />
+            <Wordmark color={tk.color.chrome.ink} size={18} />
             <div className={s.org} title={user.organizationName} translate="no">
               {user.organizationName}
             </div>
@@ -241,7 +241,7 @@ function RailSection({ section, active, onNavigate }: { section: NavSection; act
       arrow={false}
       mouseEnterDelay={0.08}
       mouseLeaveDelay={0.15}
-      styles={{ container: { padding: 6, background: 'var(--brand-ink)', boxShadow: '0 12px 32px color-mix(in srgb, var(--brand-ink-deep) 35%, transparent)' } }}
+      styles={{ container: { padding: 6, background: tk.color.chrome.bg, boxShadow: `0 12px 32px color-mix(in srgb, ${tk.color.chrome.deep} 35%, transparent)` } }}
       afterOpenChange={(visible) => {
         if (visible && fromKeyboard.current) list.current?.querySelector('a')?.focus();
         fromKeyboard.current = false;

@@ -45,8 +45,12 @@ runs and is committed with the last PR.
 
 ### Move the shell onto `tk` (PR 3)
 
-- [ ] Sidebar, top bar, launcher and sign-in CSS read `--c-*`, `--s-*`, `--r-*` through a `chrome` role group, so the
-  sidebar's colours are table values rather than a navy written into the CSS. Still no visible change.
+- [x] Sidebar, top bar, launcher counts and sign-in panel read their colours from a `chrome` role group (`bg`, `deep`,
+  `ink`, `accent`, `caption`) and `state.countFill`, so the sidebar's colours are table values rather than a navy written
+  into the CSS. Its shades stay as shares of `chrome.ink` mixed over `chrome.bg`, which hold for a light rail as well as a
+  dark one. No visible change (pixel diff against the base: only the clock-driven greeting and relative times move).
+- [ ] The shell's sizes (34, 26 and 38 px rows, 10 and 11 px gaps) are off the scale, so they cannot move at parity. They
+  move in PR 5 with the page frame, and the shell CSS stays on the legacy list until then.
 
 ### Land the new look (PR 4)
 

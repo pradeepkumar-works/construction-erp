@@ -119,8 +119,8 @@
   box-sizing: border-box;
   border-radius: 10px;
   /* As the sidebar's counts: brick orange with white reads at AA in both themes. */
-  background: var(--brand-pending);
-  color: var(--brand-on-accent);
+  background: var(--c-state-count-fill);
+  color: var(--c-text-on-accent);
   font-size: var(--ant-font-size-sm);
   font-weight: var(--ant-font-weight-strong);
   line-height: 20px;
