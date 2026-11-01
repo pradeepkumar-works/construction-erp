@@ -89,7 +89,7 @@ export function statementLines(accounts: AccountFigure[], order: StatementLine[]
       amount: money(s?.amount ?? 0),
       previous: money(s?.previous ?? 0),
       accounts: [...(s?.accounts ?? new Map()).entries()]
-        .map(([accountId, x]) => ({ accountId, name: x.name, amount: money(x.amount)!, previous: money(x.previous)! }))
+        .map(([accountId, x]) => ({ accountId, name: x.name, amount: money(x.amount), previous: money(x.previous) }))
         .sort((p, q) => Math.abs(Number(q.amount)) - Math.abs(Number(p.amount)) || p.name.localeCompare(q.name)),
     };
   });

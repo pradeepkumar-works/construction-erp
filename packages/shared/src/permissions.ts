@@ -273,6 +273,8 @@ export const canEditTest = (user: SubmissionActor, t: { createdById: string }): 
 
 export const canEditRisk = (user: SubmissionActor, r: { raisedById: string; ownerId: string | null }): boolean =>
   canApprove(user.roleKey) || r.raisedById === user.id || r.ownerId === user.id;
+/** A register entry raised by mistake is deleted only by an approver; a resolved one is closed instead. */
+export const canDeleteRisk = (role: RoleKey): boolean => canApprove(role);
 
 /** See a project's contract terms (retention, advance, deductions) and its bills. */
 export const canViewContract = (role: RoleKey) => BILLING_ROLES.includes(role);

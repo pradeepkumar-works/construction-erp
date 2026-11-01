@@ -419,7 +419,7 @@ import type {
   ImportRowDto,
   ProjectUpdatesDto,
   TypeBundle, CalibrationRegisterDto, CertificateMissingDto, LabSamplesDto, QaInstrumentDto, QaLabDto, QaAuditDto, QaAuditKind, QaReportDto, DrawingNeedState, DrawingNeedDto, DrawingSource, DrawingScheduleDto, AsBuiltDueDto, DesignSubmissionListDto, DesignSubmissionDetailDto, DesignSubmissionStatus, DesignPurpose, DesignSubmissionKind, CopyState, ControlledCopyListDto, RevisionImpactDto, DesignDashboardDto, BillMeasureChecksDto, CheckLevel, MeasurementCheckDto, PortalMeasurementDto, PortalMeasurementsDto, SiteOrderDto, ProgrammeRegisterDto, ProgrammeSubmissionDto, EotRegisterDto, EotApplicationDto, EotBasis, EotDelayDto } from '@erp/shared';
-import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
+import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH, lastRateKey } from '@erp/shared';
 import { api } from './api';
 import { useModuleOn } from './modules';
 import { FAIL_NOTICE, failNoticeSaying } from './notify';
@@ -2917,7 +2917,7 @@ export function useCoverRequest(materialRequestId: string) {
 
 /** What other sites paid for the items in the 30 days before the order, for the PO form's rate check. */
 export const useRateCheck = (items: { itemName: string; unit: string }[], projectId: string | undefined, poDate: string | undefined, enabled = true, excludePoId?: string) => {
-  const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
+  const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => lastRateKey(i.itemName, i.unit)))].sort();
   return useQuery({
     queryKey: ['purchase-orders', 'rate-check', keys, projectId ?? null, poDate ?? null, excludePoId ?? null],
     queryFn: async () => {
@@ -2933,7 +2933,7 @@ export const useRateCheck = (items: { itemName: string; unit: string }[], projec
 };
 
 export const useLastRates = (items: { itemName: string; unit: string }[], enabled = true, excludePoId?: string) => {
-  const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
+  const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => lastRateKey(i.itemName, i.unit)))].sort();
   return useQuery({
     queryKey: ['purchase-orders', 'last-rates', keys, excludePoId ?? null],
     queryFn: async () => {
