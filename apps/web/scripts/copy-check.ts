@@ -48,6 +48,9 @@ const RETIRED_FOR: Retired[] = [
   { r: 'Outstanding', thing: 'What clients or vendors are owed', name: 'Clients owe; We owe', maps: ['FIGURE_LABELS'] },
   { r: 'Receivables', thing: 'What clients owe', name: 'Clients owe', maps: ['FIGURE_LABELS'] },
   { r: 'Vendor payable', thing: 'What the company owes vendors', name: 'We owe', maps: ['FIGURE_LABELS'] },
+  { r: 'Clients owe us', thing: 'What clients owe', name: 'Clients owe', maps: ['FIGURE_LABELS'] },
+  { r: 'Retention held', thing: 'Retention deducted by clients, not yet released', name: 'Retention with clients', maps: ['FIGURE_LABELS'] },
+  { r: 'Overdue to suppliers', thing: 'What we owe past its due date', name: 'Overdue to vendors', maps: ['FIGURE_LABELS'] },
 ];
 RETIRED.push(...RETIRED_FOR);
 
