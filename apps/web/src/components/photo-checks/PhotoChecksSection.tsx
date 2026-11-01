@@ -34,6 +34,7 @@ export const photosSection = (kind: PhotoCheckKind, id: string, attachments: Att
   key: 'photos',
   title: 'Photos',
   count: attachments.length,
+  empty: attachments.length === 0,
   children: <PhotosWithChecks kind={kind} id={id} attachments={attachments} />,
 });
 

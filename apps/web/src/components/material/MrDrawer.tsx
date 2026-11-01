@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Popover, Table, Typography } from 'antd';
+import { Button, Popover, Table } from 'antd';
 import { ImportOutlined, InboxOutlined } from '@/components/common/icons';
 import type { MaterialRequestDto, MaterialRequestItemDto, RequestLineStockDto } from '@erp/shared';
-import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
+import { canKeepStock, canViewPurchaseOrders, unitLabel } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useIndentCheck, useMaterialRequest, useRequestStock } from '@/lib/queries';
 import { formatDate, formatQty, toNumber, NO_VALUE } from '@/lib/format';
-import { themeFontSize } from '@/lib/theme';
+import { tk } from '@/ds';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -21,6 +21,8 @@ import { IndentChecks } from './IndentChecks';
 import { AppTag } from '@/components/common/AppTag';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+
+const qty = (v: string, unit: string) => `${formatQty(v)} ${unitLabel(unit)}`;
 
 interface RecordProps {
   id: string | null;
@@ -65,7 +67,8 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
       record={
         data && {
           href: `/material-requests/${data.id}`,
-          title: `${data.requestNo} · ${data.projectName}`,
+          title: data.requestNo,
+          context: { label: data.projectName, href: `/projects/${data.projectId}` },
           tags: (
             <>
               <StatusTag status={data.status} />
@@ -79,9 +82,8 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
           facts: [
             { key: 'priority', label: 'Priority', children: <PriorityTag priority={data.priority} /> },
             { key: 'req', label: 'Required by', children: formatDate(data.requiredDate) },
-            { key: 'count', label: 'Items', children: data.items.length },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
-            ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
+            ...submissionMetaItems(data),
           ],
           lifecycle: submissionLifecycle(data, [{ title: 'Received', done: receivedLines === data.items.length, content: data.status === 'APPROVED' ? `${receivedLines} of ${data.items.length} lines` : undefined }]),
           sections: [
@@ -95,21 +97,29 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
                   rowKey="id"
                   pagination={false}
                   dataSource={data.items}
-                  scroll={{ x: 640 }}
+                  // Before approval the four columns fit any width; after it the table scrolls only where it must.
+                  scroll={approved ? { x: 760 } : undefined}
                   columns={[
                     { title: '#', key: 'idx', width: 40, render: (_, __, i) => i + 1 },
                     { title: 'Item', dataIndex: 'itemName' },
                     { title: 'Specification', dataIndex: 'specification', render: (v) => v ?? <span className="text-muted">{NO_VALUE}</span> },
-                    { title: 'Qty', dataIndex: 'quantity', align: 'right', width: 90, render: (v) => formatQty(v) },
-                    { title: 'Unit', dataIndex: 'unit', width: 80 },
-                    ...(data.status === 'APPROVED'
+                    { title: 'Qty', dataIndex: 'quantity', align: 'right', width: 110, render: (v, i) => <span translate="no">{qty(v, i.unit)}</span> },
+                    ...(approved
                       ? [
+                          // What came in, beside what was asked for: the question once the indent is approved.
+                          {
+                            title: 'Received',
+                            dataIndex: 'receivedQty',
+                            align: 'right' as const,
+                            width: 110,
+                            render: (v: string, i: MaterialRequestItemDto) => (Number(v) > 0 ? <span translate="no">{qty(v, i.unit)}</span> : <span className="text-muted">0</span>),
+                          },
                           {
                             title: 'Ordered',
                             dataIndex: 'orderedQty',
                             align: 'right' as const,
                             width: 100,
-                            render: (v: string) => (Number(v) > 0 ? formatQty(v) : <span className="text-muted">0</span>),
+                            render: (v: string, i: MaterialRequestItemDto) => (Number(v) > 0 ? <span translate="no">{qty(v, i.unit)}</span> : <span className="text-muted">0</span>),
                           },
                           {
                             title: 'In stock',
@@ -124,24 +134,10 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
                                   dataIndex: 'coveredQty',
                                   align: 'right' as const,
                                   width: 100,
-                                  render: (v: string) => (Number(v) > 0 ? formatQty(v) : <span className="text-muted">0</span>),
+                                  render: (v: string, i: MaterialRequestItemDto) => (Number(v) > 0 ? <span translate="no">{qty(v, i.unit)}</span> : <span className="text-muted">0</span>),
                                 },
                               ]
                             : []),
-                          {
-                            title: 'Received',
-                            dataIndex: 'receivedQty',
-                            align: 'right' as const,
-                            width: 110,
-                            render: (v: string, i: MaterialRequestItemDto) =>
-                              Number(v) >= Number(i.quantity) ? (
-                                <Typography.Text type="success">{formatQty(v)}</Typography.Text>
-                              ) : Number(v) > 0 ? (
-                                <Typography.Text type="warning">{formatQty(v)}</Typography.Text>
-                              ) : (
-                                <span className="text-muted">0</span>
-                              ),
-                          },
                         ]
                       : []),
                   ]}
@@ -192,7 +188,7 @@ function StockCell({ line, loading }: { line: RequestLineStockDto | undefined; l
             trigger="click"
             title={`${line.itemName} at other sites and stores`}
             content={
-              <ul style={{ margin: 0, paddingInlineStart: 16 }}>
+              <ul style={{ margin: 0, paddingInlineStart: tk.space[4] }}>
                 {line.others.map((o) => (
                   <li key={o.projectId} translate="no">
                     {o.projectName}
@@ -202,7 +198,7 @@ function StockCell({ line, loading }: { line: RequestLineStockDto | undefined; l
               </ul>
             }
           >
-            <Button type="link" size="small" style={{ padding: 0, height: 'auto', minHeight: 24, fontSize: themeFontSize('fontSizeSM') }}>
+            <Button type="link" size="small" style={{ padding: 0, height: 'auto', minHeight: tk.control.sm, ...tk.type.caption }}>
               {formatQty(elsewhere)} at {line.others.length} {line.others.some((o) => o.store) ? 'other place' : 'other site'}
               {line.others.length === 1 ? '' : 's'}
             </Button>

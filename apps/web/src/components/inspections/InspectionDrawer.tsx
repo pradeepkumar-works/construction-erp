@@ -197,11 +197,11 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
           href: `/inspections/${data.id}`,
           title: `Inspection · ${data.inspectionNo}`,
           tags: <StatusTag status={data.status} labels={INSPECTION_STATUS_LABELS} />,
+          context: { label: data.projectName, href: `/projects/${data.projectId}` },
           facts: [
             { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <AppTag meaning="waiting" style={{ marginLeft: 8 }}>Hold point</AppTag>}</span> },
             { key: 'loc', label: 'Location', children: data.location },
             { key: 'date', label: 'Ready on', children: formatDate(data.date) },
-            { key: 'checklist', label: 'Checklist', children: data.checklistName ?? (data.checklist.length ? 'Own points' : 'None') },
             // Hidden work: signed off before cover-up and countersigned by the client's side in their portal.
             ...(data.hidden
               ? [
@@ -214,10 +214,9 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
                   },
                 ]
               : []),
-            ...submissionMetaItems(data)
-              .filter((i) => i.key !== 'status')
-              .map((i) => ({ ...i, label: ({ 'Submitted by': 'Requested by', 'Reviewed by': 'Inspected by', 'Review note': "Inspector's note" } as Record<string, string>)[i.label as string] ?? i.label })),
+            ...submissionMetaItems(data).map((i) => ({ ...i, label: ({ 'Submitted by': 'Requested by', 'Reviewed by': 'Inspected by', 'Review note': "Inspector's note" } as Record<string, string>)[i.label as string] ?? i.label })),
           ],
+          details: [{ key: 'checklist', label: 'Checklist', children: data.checklistName ?? (data.checklist.length ? 'Own points' : 'None') }],
           lifecycle: inspectionLifecycle(data),
           sections: [
             ...(data.remarks ? [{ key: 'remarks', title: 'Remarks', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</div> }] : []),
@@ -248,6 +247,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
               key: 'photos',
               title: 'Photos',
               count: data.attachments.length,
+              empty: data.attachments.length === 0,
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />

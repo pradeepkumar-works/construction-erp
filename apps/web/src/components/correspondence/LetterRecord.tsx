@@ -348,6 +348,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
               {data.actionOverdue ? <AppTag meaning="failed">Action overdue</AppTag> : null}
             </Flex>
           ),
+          context: data.projectId ? { label: data.projectName ?? '', href: `/projects/${data.projectId}` } : { label: 'Head office' },
           lifecycle: lifecycleOf(data),
           notices: (
             <>
@@ -357,12 +358,8 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
           ),
           facts: [
             { key: 'party', label: isIn ? 'From' : 'To', span: 2, children: data.party },
-            { key: 'project', label: 'Project', children: data.projectId ? <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> : 'Head office' },
-            { key: 'category', label: 'Category', children: data.categoryName ?? 'General' },
             { key: 'date', label: 'Dated', children: formatDate(data.letterDate) },
-            ...(isIn ? [{ key: 'received', label: 'Received on', children: data.receivedOn ? formatDate(data.receivedOn) : '-' }] : []),
-            { key: 'ref', label: isIn ? 'Their reference' : 'Reference', children: data.theirRef ?? '-' },
-            ...(data.mode ? [{ key: 'mode', label: isIn ? 'Came through' : 'Sent through', children: `${LETTER_MODE_LABELS[data.mode]}${data.docketNo ? `, ${data.docketNo}` : ''}` }] : []),
+            ...(isIn && data.receivedOn ? [{ key: 'received', label: 'Received on', children: formatDate(data.receivedOn) }] : []),
             {
               key: 'reply',
               label: isIn ? 'Reply needed by' : 'Their reply by',
@@ -397,6 +394,11 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
               : []),
             ...(data.riskNo ? [{ key: 'risk', label: 'Delay / risk', span: 2, children: <Link href={`/risks?id=${data.riskId}`}>{`${data.riskNo} ${data.riskTitle}`}</Link> }] : []),
             ...(data.status === 'CLOSED' ? [{ key: 'closed', label: 'Closed', span: 2, children: `${data.closedByName ?? ''}${data.closedAt ? `, ${formatDateTime(data.closedAt)}` : ''}${data.closedNote ? `: ${data.closedNote}` : ''}` }] : []),
+          ],
+          details: [
+            { key: 'category', label: 'Category', children: data.categoryName ?? 'General' },
+            ...(data.theirRef ? [{ key: 'ref', label: isIn ? 'Their reference' : 'Reference', children: <span translate="no">{data.theirRef}</span> }] : []),
+            ...(data.mode ? [{ key: 'mode', label: isIn ? 'Came through' : 'Sent through', children: `${LETTER_MODE_LABELS[data.mode]}${data.docketNo ? `, ${data.docketNo}` : ''}` }] : []),
             { key: 'by', label: isIn ? 'Recorded by' : 'Written by', children: `${data.createdByName}, ${formatDateTime(data.createdAt)}` },
           ],
           sections: [
@@ -442,7 +444,7 @@ export function LetterRecord({ id, mode, open, onClose }: RecordProps & { mode: 
                   },
                 ]
               : []),
-            { key: 'files', title: isIn ? 'Scanned letter' : 'Enclosures and proof', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
+            { key: 'files', title: isIn ? 'Scanned letter' : 'Enclosures and proof', count: data.attachments.length, empty: data.attachments.length === 0, children: <AttachmentGallery attachments={data.attachments} /> },
             { key: 'history', title: 'History', children: <Timeline items={storyOf(data).map((s) => ({ key: s.key, content: <div>{s.text}<div className="text-muted">{formatDateTime(s.at)}</div></div> }))} /> },
           ],
           actions,
