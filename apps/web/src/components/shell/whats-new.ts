@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-records',
+    date: '2026-11-02',
+    title: 'Records lead with the decision',
+    points: [
+      'A bill, order or daily report opens on the figures you decide on, such as net payable and what is still to receive, with its project named under the title.',
+      'Checks come first, and say so when they found nothing. An order line billed for more than was received says so.',
+      'Reference details such as the agreement and work order are folded under Details, and who did what and when is in History only.',
+      'Sections with nothing in them fold into one line, such as “Nothing yet: Photos, Comments”. Tap a name to add the first one.',
+    ],
+  },
+  {
     id: '2026-11-overviews',
     date: '2026-11-01',
     title: 'Overviews answer first',
