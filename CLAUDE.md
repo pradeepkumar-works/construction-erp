@@ -54,9 +54,10 @@ and the pre-delivery checklist.
   (add it to `components/shell/nav-icons.tsx`) and a one-line description; a planned node turns `live` when its item ships.
   A module (`parent: null`, no route) has a screen at `/modules/<key>` (a key in `MODULE_KEYS`, figures in `ModuleHomeService`).
   `apps/web/scripts/nav-check.ts` (CI) checks routes, icons, access keys and the Concord items. The product name (Nirmaan) is `PRODUCT_NAME` in
-  `packages/shared/src/brand.ts`; web brand colours live only in `src/lib/brand.ts` (plus `BrandMark` and
-  `app/icon.svg`), mobile ones in `src/theme.ts`. Use `BRAND.colors` instead of hex literals. A component's look is its
-  tokens in `makeTheme` and `componentConfig` (`src/lib/theme.ts`, both modes), never CSS of a page's own: titles and big
+  `packages/shared/src/brand.ts`; web colours and sizes live only in `src/ds/source/` (the design tokens, read through
+  `tk` from `@/ds`; `docs/design/REDESIGN.md`), plus `BrandMark` and `app/icon.svg`, mobile ones in `src/theme.ts`. New code
+  uses `tk` instead of hex or px literals; `BRAND.colors` is the old name for the same values while screens move over. A component's look is its
+  tokens in `antdTheme` and `componentConfig` (`src/ds/antd.ts`, both modes), never CSS of a page's own: titles and big
   figures are the display face (`DISPLAY_FONT`), fields have the blue ring, tables the canvas header.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
 - Taste: `.claude/skills/design-taste-frontend` (tasteskill, from leonxlnx/taste-skill) is the design guideline for the website

@@ -101,15 +101,17 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = dark ? 'dark' : 'light';
+    root.dataset.density = compact ? 'compact' : 'comfortable';
     // The theme's own CSS variables take over from the head script's stand-in colours.
     root.style.removeProperty('background');
     root.style.removeProperty('color-scheme');
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? BRAND.colors.nightLayout : BRAND.colors.canvas);
     return () => {
       delete root.dataset.theme;
+      delete root.dataset.density;
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BRAND.colors.canvas);
     };
-  }, [dark]);
+  }, [dark, compact]);
   const css = useMemo(() => `${cssVariablesFor(config)}:root{color-scheme:${dark ? 'dark' : 'light'}}`, [config, dark]);
   const value = useMemo(() => ({ prefs, dark, setPrefs }), [prefs, dark, setPrefs]);
 

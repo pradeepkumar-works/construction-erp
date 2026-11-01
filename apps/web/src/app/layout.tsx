@@ -4,6 +4,7 @@ import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { Providers } from './providers';
 import { WebVitals } from '@/components/shell/WebVitals';
 import { BRAND } from '@/lib/brand';
+import { tokenCss } from '@/ds/css';
 import { Archivo, Public_Sans } from 'next/font/google';
 import './globals.css';
 
@@ -24,13 +25,16 @@ export const viewport: Viewport = { themeColor: BRAND.colors.canvas };
  * pages stay light. It leaves the theme-colour meta to `AppearanceProvider`: changed before hydration, React adds a second
  * one. (The `\\/` keep the regex's slashes once the template literal is read: with a bare `\/` the script did not parse.)
  */
-const APPEARANCE_SCRIPT = `try{if(!/^\\/(login|signup|welcome|privacy|forgot-password|set-password)(\\/|$)/.test(location.pathname)){var a=JSON.parse(localStorage.getItem('nirmaan.appearance')||'{}');var d=a.mode==='dark'||(a.mode==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';if(d){var r=document.documentElement.style;r.colorScheme='dark';r.background='${BRAND.colors.nightLayout}'}}}catch(e){}`;
+const APPEARANCE_SCRIPT = `try{if(!/^\\/(login|signup|welcome|privacy|forgot-password|set-password)(\\/|$)/.test(location.pathname)){var a=JSON.parse(localStorage.getItem('nirmaan.appearance')||'{}');var d=a.mode==='dark'||(a.mode==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.dataset.density=a.density==='compact'?'compact':'comfortable';if(d){var r=document.documentElement.style;r.colorScheme='dark';r.background='${BRAND.colors.nightLayout}'}}}catch(e){}`;
+
+const TOKEN_CSS = tokenCss();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-IN" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_SCRIPT }} />
+        <style>{TOKEN_CSS}</style>
       </head>
       <body>
         <WebVitals />
