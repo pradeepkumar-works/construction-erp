@@ -12,6 +12,7 @@ import { StorageService } from '../common/storage.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { CAD_MIME_TYPES } from '@erp/shared';
 import { CompleteDirectUploadDto, StartDirectUploadDto } from './uploads.dto';
+import { todayIn } from '../notifications/time';
 import { ACTIVE_FILE, SANDBOXED_FILE_CSP } from '../common/security-headers';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf', ...Object.values(CAD_MIME_TYPES)];
@@ -74,7 +75,7 @@ export class UploadsController {
     if (!ALLOWED.includes(mimeType)) throw new BadRequestException(`File type not allowed (${ALLOWED_WORDS})`);
     if (dto.size > DIRECT_MAX_BYTES) throw new BadRequestException('Files up to 100 MB');
     const ext = extname(dto.fileName).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.pdf';
-    const pathname = `${user.organizationId}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${ext}`;
+    const pathname = `${user.organizationId}/${todayIn()}/${randomUUID()}${ext}`;
     const { generateClientTokenFromReadWriteToken } = await import('@vercel/blob/client');
     const clientToken = await generateClientTokenFromReadWriteToken({
       token: process.env.BLOB_READ_WRITE_TOKEN!,

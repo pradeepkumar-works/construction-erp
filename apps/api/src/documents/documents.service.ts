@@ -1,8 +1,7 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   REVISION_STATUS_LABELS,
-  canApprove,
   canViewLetters,
   type DocumentDetailDto,
   type DocumentDto,

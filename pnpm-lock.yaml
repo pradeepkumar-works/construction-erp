@@ -96,6 +96,9 @@ importers:
       '@types/passport-jwt':
         specifier: ^4.0.1
         version: 4.0.1
+      eslint:
+        specifier: 9.39.5
+        version: 9.39.5(jiti@2.7.0)
       prisma:
         specifier: ^6.19.3
         version: 6.19.3(typescript@5.9.3)
@@ -105,6 +108,9 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+      typescript-eslint:
+        specifier: 8.71.0
+        version: 8.71.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
 
   apps/connector:
     devDependencies:
@@ -7014,7 +7020,7 @@ packages:
     engines: {node: '>= 6.0'}
 
   xlsx@https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz:
-    resolution: {tarball: https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz}
+    resolution: {integrity: sha512-oLDq3jw7AcLqKWH2AhCpVTZl8mf6X2YReP+Neh0SJUzV/BdZYjth94tG5toiMB1PPrYtxOCfaoUCkvtuH+3AJA==, tarball: https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz}
     version: 0.20.3
     engines: {node: '>=0.8'}
     hasBin: true
@@ -9695,7 +9701,9 @@ snapshots:
       metro-runtime: 0.84.6
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
