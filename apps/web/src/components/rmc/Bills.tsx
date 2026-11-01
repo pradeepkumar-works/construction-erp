@@ -125,8 +125,8 @@ export function Bills() {
       { key: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (d: string) => formatDate(d) },
       { key: 'customer', title: 'Customer', dataIndex: 'customer', ellipsis: true, card: 'meta', render: (c: string) => <span translate="no">{c}</span> },
       { key: 'quantity', title: 'Concrete', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-      { key: 'total', title: 'Total', dataIndex: 'total', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
-      { key: 'due', title: 'Due', dataIndex: 'due', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
+      { key: 'total', title: 'Total', dataIndex: 'total', kind: 'money', width: 140 },
+      { key: 'due', title: 'Due', dataIndex: 'due', kind: 'money', width: 140 },
       { key: 'status', title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcInvoiceDto['status']) => <InvoiceStatusTag status={s} /> },
     ],
   });

@@ -106,7 +106,7 @@ function ToExport() {
         </div>
       ),
     },
-    { key: 'amount', title: 'Amount', dataIndex: 'amount', width: 150, align: 'right', card: 'amount', render: (v) => <Money value={v} paise strong /> },
+    { key: 'amount', title: 'Amount', dataIndex: 'amount', width: 150, kind: 'money', strong: true, card: 'amount' },
   ];
 
   return (

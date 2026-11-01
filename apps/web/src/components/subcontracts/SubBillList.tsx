@@ -28,7 +28,6 @@ import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
 import { SubBillDrawer } from './SubBillDrawer';
 import { SubBillFormModal } from './SubBillFormModal';
 import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
-import { Money } from '@/components/common/Money';
 
 const SUB_KINDS: VendorKind[] = ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'];
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId'] as const;
@@ -71,8 +70,8 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
       ),
     },
     ...(showProject ? [{ card: 'meta' as const, cardText: (r: SubcontractBillDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: SubcontractBillDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
-    { title: 'Work done', dataIndex: 'grossAmount', width: 140, align: 'right', ...sort('grossAmount'), render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
-    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 140, align: 'right', ...sort('netPayable'), render: (v) => <Money value={v} strong />, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
+    { title: 'Work done', dataIndex: 'grossAmount', width: 140, kind: 'money', ...sort('grossAmount'), total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
+    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 140, kind: 'money', strong: true, ...sort('netPayable'), total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
     {
       card: 'date',
       title: 'Due',

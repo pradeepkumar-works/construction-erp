@@ -9,7 +9,6 @@ import { StatusTag } from '@/components/common/StatusTag';
 import type { ListColumn } from '@/components/list/DataTable';
 import { RowActions } from '@/components/list/RowActions';
 import { RecordLink } from '@/components/record/RecordLink';
-import { Money } from '@/components/common/Money';
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
@@ -69,8 +68,7 @@ export function measurementColumns({
       title: 'Value',
       dataIndex: 'amount',
       width: 140,
-      align: 'right',
-      render: (v) => <Money value={v} />,
+      kind: 'money',
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.amount), 0)),
     },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, defaultFrom: 1400, ...sort('submittedBy') },

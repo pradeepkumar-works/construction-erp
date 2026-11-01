@@ -25,7 +25,6 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { WoStateTag, WorkOrderDrawer } from './WorkOrderDrawer';
 import { WorkOrderFormModal } from './WorkOrderFormModal';
 import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
-import { Money } from '@/components/common/Money';
 
 const SUB_KINDS: VendorKind[] = ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'];
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'open'] as const;
@@ -72,9 +71,9 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
       title: 'Value',
       dataIndex: 'value',
       width: 150,
-      align: 'right',
+      kind: 'money',
+      strong: true,
       ...sort('value'),
-      render: (v) => <Money value={v} strong />,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.value), 0)),
     },
     { defaultFrom: 1400, title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} aria-label={`${r.billedPct}% billed`} /> : NO_VALUE) },

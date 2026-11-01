@@ -27,6 +27,7 @@ import { useSingleKeys } from "@/lib/shortcuts";
 import { EmptyLine } from "@/components/common/EmptyArt";
 import { HOVER_INTENT_MS, usePrefetch } from "@/lib/prefetch";
 import { useIsPhone } from "@/lib/screen";
+import { tk } from "@/ds";
 import { ListCards, type CardRole } from "./ListCards";
 import { ROW_OWN_CONTROLS } from "./openableRow";
 
@@ -58,6 +59,8 @@ export type ListColumn<T> = TableColumnType<T> & {
   unit?: (row: T) => string | null | undefined;
   /** The column's figures in bold (the one that answers the list's question). */
   strong?: boolean;
+  /** A row's figure in a meaning's colour (an overdue amount in `danger`); none keeps the text colour. */
+  tone?: (row: T) => "danger" | "success" | undefined;
   /** What it is on a phone's card (see `cardFields`); false keeps it off the card. */
   card?: CardRole | false;
   /** The card's words for it, where the cell holds a link or more than text. */
@@ -94,21 +97,23 @@ function withKind<T>(c: ListColumn<T>, scale: MoneyScale): ListColumn<T> {
   const cell = (row: T): React.ReactNode => {
     const v = figureOf(c, row);
     if (blank(v)) return <span className="text-muted">{NO_VALUE}</span>;
+    const tone = c.tone?.(row);
+    const style = tone ? { color: tk.color.tone[tone].fg } : undefined;
     if (c.kind === "money")
       return (
-        <Tag className="mono" translate="no" title={scale === "rupees" ? undefined : formatINR(v)}>
+        <Tag className="mono" translate="no" style={style} title={scale === "rupees" ? undefined : formatINR(v)}>
           {formatInScale(v, scale)}
         </Tag>
       );
     if (c.kind === "pct")
       return (
-        <Tag className="mono" translate="no">
+        <Tag className="mono" translate="no" style={style}>
           {formatPct(toNumber(v))}
         </Tag>
       );
     const unit = c.unit?.(row);
     return (
-      <Tag className="mono" translate="no">
+      <Tag className="mono" translate="no" style={style}>
         {formatQty(v)}
         {unit ? <span className="text-muted"> {unit}</span> : null}
       </Tag>

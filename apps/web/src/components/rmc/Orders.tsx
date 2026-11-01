@@ -13,7 +13,6 @@ import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
-import { Money } from '@/components/common/Money';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { M3, OrderStatusTag, PlantFilter, usePlantScope } from './rmcUi';
@@ -48,7 +47,7 @@ export function Orders() {
       { key: 'pourDate', title: 'Pour on', dataIndex: 'pourDate', width: 110, render: (d: string | null) => formatDate(d) },
       { key: 'quantity', title: 'Ordered', dataIndex: 'quantity', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
       { key: 'delivered', title: 'Delivered', dataIndex: 'delivered', align: 'right', width: 100, render: (q: string) => <M3 value={q} /> },
-      { key: 'value', title: 'Value before GST', dataIndex: 'value', align: 'right', width: 140, render: (v: string) => <Money paise value={v} /> },
+      { key: 'value', title: 'Value before GST', dataIndex: 'value', kind: 'money', width: 140 },
       { key: 'status', title: 'Status', dataIndex: 'status', width: 110, render: (s: RmcOrderStatus) => <OrderStatusTag status={s} /> },
     ],
   });

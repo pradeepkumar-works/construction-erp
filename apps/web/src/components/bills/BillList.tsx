@@ -26,7 +26,6 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { BillStageTag } from './billUi';
 import { BillDrawer } from './BillDrawer';
 import { BillFormModal } from './BillFormModal';
-import { Money } from '@/components/common/Money';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'stage'] as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + Number(v || 0), 0));
@@ -66,8 +65,8 @@ function billColumns({ showProject, onOpen, sortOrderFor }: { showProject: boole
     ...(showProject
       ? [{ card: 'meta' as const, cardText: (r: RaBillDto) => [r.projectName, r.clientName].filter(Boolean).join(' · '), title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: RaBillDto) => <TwoLine top={<Link href={`/projects/${r.projectId}?tab=bills`}>{v}</Link>} sub={r.clientName ?? ''} /> }]
       : []),
-    { defaultFrom: 1600, title: 'Work done', dataIndex: 'grossAmount', width: 150, align: 'right', ...sort('grossAmount'), render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
-    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', ...sort('netPayable'), render: (v) => <Money value={v} strong />, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
+    { defaultFrom: 1600, title: 'Work done', dataIndex: 'grossAmount', width: 150, kind: 'money', ...sort('grossAmount'), total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
+    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 150, kind: 'money', strong: true, ...sort('netPayable'), total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
     { title: 'Prepared on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     { card: 'status', title: 'Status', dataIndex: 'status', width: 150, ...sort('status'), render: (s) => <StatusTag status={s} /> },
     { defaultFrom: 1400, title: 'With client', dataIndex: 'stage', width: 140, ...sort('stage'), render: (s, r) => (r.status === 'APPROVED' ? <BillStageTag stage={s} /> : NO_VALUE) },

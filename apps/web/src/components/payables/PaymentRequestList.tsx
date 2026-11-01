@@ -26,7 +26,6 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { PaymentRequestDrawer, PayRequestModal, RequestPaidTag, requestPayee, requestReleases, requestTargetHref } from './PaymentRequestRecord';
 import { PaymentRequestFormModal } from './PaymentRequestFormModal';
 import { FundRequestFormModal } from './FundRequestFormModal';
-import { Money } from '@/components/common/Money';
 
 const NO_KEYS: string[] = [];
 
@@ -152,9 +151,9 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
       title: 'Amount',
       dataIndex: 'amount',
       width: 140,
-      align: 'right',
+      kind: 'money',
+      strong: true,
       ...sort('amount'),
-      render: (v) => <Money value={v} strong />,
       total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)),
     },
     {
@@ -162,8 +161,7 @@ export function PaymentRequestList({ projectId: given, vendorId, fund }: { proje
       title: 'Paid',
       dataIndex: 'paidAmount',
       width: 130,
-      align: 'right',
-      render: (v) => <Money value={v} />,
+      kind: 'money',
       total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.paidAmount), 0)),
     },
     {

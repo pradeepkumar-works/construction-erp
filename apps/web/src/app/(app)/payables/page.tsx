@@ -42,9 +42,10 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { VendorSelect } from '@/components/common/SearchSelect';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { MoreActions } from '@/components/record/MoreActions';
-import { Money } from '@/components/common/Money';
 
-const late = (v: string) => (toNumber(v) > 0 ? <Money value={v} tone="danger" /> : <span className="mono text-muted" translate="no">{NO_VALUE}</span>);
+/** An overdue amount: shown in red, and the dash where nothing is late. */
+const lateOnly = (v: string) => (toNumber(v) > 0 ? v : null);
+const danger = () => 'danger' as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
 
@@ -58,17 +59,17 @@ function DueText({ days }: { days: number }) {
 /** The ageing columns of the by-vendor and by-project tables (keys are stable: the column chooser keeps them). */
 function ageingColumns<T extends PayableTotalsDto>(): ListColumn<T>[] {
   return [
-    { key: 'billed', title: 'Billed', dataIndex: 'billed', defaultHidden: true, width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'paid', title: 'Paid', dataIndex: 'paid', defaultHidden: true, width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => <Money value={v} strong /> },
-    { key: 'a0', title: 'Not due', width: 110, align: 'right', render: (_, r) => <Money value={r.ageing.notDue} /> },
-    { key: 'a1', title: '1-30 late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days1to30) },
-    { key: 'a2', title: '31-60', label: '31-60 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days31to60) },
-    { key: 'a3', title: '61-90', label: '61-90 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days61to90) },
-    { key: 'a4', title: 'Over 90', label: 'Over 90 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
-    { key: 'msmeAtRisk', title: 'MSME at risk', dataIndex: 'msmeAtRisk', width: 120, align: 'right', render: (v) => late(v) },
-    { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => <Money value={v} /> },
-    { key: 'advanceOutstanding', title: 'Advance not adjusted', label: 'Advance paid, not yet adjusted on bills', dataIndex: 'advanceOutstanding', defaultHidden: true, width: 150, align: 'right', render: (v) => <Money value={v} /> },
+    { key: 'billed', title: 'Billed', dataIndex: 'billed', defaultHidden: true, width: 130, kind: 'money' },
+    { key: 'paid', title: 'Paid', dataIndex: 'paid', defaultHidden: true, width: 130, kind: 'money' },
+    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, kind: 'money', strong: true },
+    { key: 'a0', title: 'Not due', defaultFrom: 1440, width: 110, kind: 'money', value: (r) => r.ageing.notDue },
+    { key: 'a1', title: '1-30 late', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.days1to30), tone: danger },
+    { key: 'a2', title: '31-60', label: '31-60 days late', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.days31to60), tone: danger },
+    { key: 'a3', title: '61-90', label: '61-90 days late', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.days61to90), tone: danger },
+    { key: 'a4', title: 'Over 90', label: 'Over 90 days late', width: 110, kind: 'money', value: (r) => lateOnly(r.ageing.over90), tone: danger },
+    { key: 'msmeAtRisk', title: 'MSME at risk', dataIndex: 'msmeAtRisk', width: 120, kind: 'money', value: (r) => lateOnly(r.msmeAtRisk), tone: danger },
+    { key: 'retentionHeld', title: 'Retention held', defaultFrom: 1600, dataIndex: 'retentionHeld', width: 130, kind: 'money' },
+    { key: 'advanceOutstanding', title: 'Advance not adjusted', label: 'Advance paid, not yet adjusted on bills', dataIndex: 'advanceOutstanding', defaultHidden: true, width: 150, kind: 'money' },
   ];
 }
 
@@ -131,13 +132,13 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
       ),
     },
     { title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
-    { title: 'Paid', dataIndex: 'amount', width: 140, align: 'right', ...sort('amount'), render: (v) => <Money value={v} strong />, total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)) },
+    { title: 'Paid', dataIndex: 'amount', width: 140, kind: 'money', strong: true, ...sort('amount'), total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)) },
     {
       title: 'Deducted',
       key: 'ded',
       width: 120,
-      align: 'right',
-      render: (_, r) => <Money value={String(toNumber(r.tdsAmount) + toNumber(r.otherDeduction))} />,
+      kind: 'money',
+      value: (r) => toNumber(r.tdsAmount) + toNumber(r.otherDeduction),
       total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.tdsAmount) + toNumber(r.otherDeduction), 0)),
     },
     {
@@ -305,9 +306,9 @@ export default function PayablesPage() {
         </div>
       ),
     },
-    { key: 'payable', title: 'Payable', dataIndex: 'payable', width: 130, align: 'right', render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.payable)) },
-    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 120, align: 'right', render: (v) => <Money value={v} />, total: (rows) => sumMoney(rows.map((r) => r.paid)) },
-    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 140, align: 'right', render: (v) => <Money value={v} strong />, total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
+    { key: 'payable', title: 'Payable', dataIndex: 'payable', width: 130, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.payable)) },
+    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 120, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.paid)) },
+    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 140, kind: 'money', strong: true, total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
     {
       key: 'dueDate',
       title: 'Due',

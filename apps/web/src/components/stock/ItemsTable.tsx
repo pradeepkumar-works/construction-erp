@@ -122,7 +122,7 @@ export function ItemsTable() {
           label: 'Rate',
           dataIndex: 'rate',
           width: 130,
-          align: 'right',
+          kind: 'money',
           className: 'mono',
           render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">{NO_VALUE}</Typography.Text> : `${formatINR(v, true).replace(RUPEE, '')} / ${r.unit}`),
         },
