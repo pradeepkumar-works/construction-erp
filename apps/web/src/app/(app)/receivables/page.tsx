@@ -307,10 +307,6 @@ export default function ReceivablesPage() {
         </div>
       ),
     },
-    { key: 'sentDate', title: 'Sent', dataIndex: 'sentDate', width: 110, card: 'date', render: (v) => formatDate(v) },
-    { key: 'stage', title: 'With client', dataIndex: 'stage', width: 120, card: 'status', render: (s) => <BillStageTag stage={s} /> },
-    { key: 'invoiceAmount', title: 'Bill amount with GST', dataIndex: 'invoiceAmount', width: 140, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.invoiceAmount)) },
-    { key: 'settledAmount', title: 'Settled', dataIndex: 'settledAmount', width: 130, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.settledAmount)) },
     { key: 'outstanding', title: 'Outstanding', dataIndex: 'outstanding', width: 140, kind: 'money', strong: true, card: 'amount', total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
     {
       key: 'daysOutstanding',
@@ -324,6 +320,10 @@ export default function ReceivablesPage() {
       sortDirections: ['descend', 'ascend'],
       render: (v: number) => <span style={{ color: v > 90 ? themeColor('colorErrorText') : v > 60 ? themeColor('colorWarningText') : undefined }}>{v}</span>,
     },
+    { key: 'sentDate', title: 'Sent', dataIndex: 'sentDate', width: 110, card: 'date', render: (v) => formatDate(v) },
+    { key: 'stage', title: 'With client', dataIndex: 'stage', width: 120, card: 'status', render: (s) => <BillStageTag stage={s} /> },
+    { key: 'invoiceAmount', title: 'Bill amount with GST', dataIndex: 'invoiceAmount', width: 140, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.invoiceAmount)) },
+    { key: 'settledAmount', title: 'Settled', dataIndex: 'settledAmount', width: 130, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.settledAmount)) },
   ];
   const openChoice = useColumnChoice('receivables-open', openColumns);
 

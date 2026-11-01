@@ -85,7 +85,7 @@ function TendersPage() {
       key: "tender",
       title: "Tender",
       locked: true,
-      width: 320,
+      width: 280,
       render: (_, r) => (
         <div>
           <RecordLink

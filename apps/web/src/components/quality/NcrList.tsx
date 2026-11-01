@@ -46,16 +46,12 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
     columns: (sortOrderFor): ListColumn<NcrDto>[] => {
       const sort = (key: NcrSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
       return [
-        { title: 'Raised', dataIndex: 'raisedOn', width: 110, render: (v) => formatDate(v), ...sort('raisedOn') },
         { title: 'No.', dataIndex: 'ncrNo', width: 150, className: 'mono', ...sort('ncrNo') },
-        ...(fixedProject
-          ? []
-          : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: NcrDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> } satisfies ListColumn<NcrDto>]),
         {
           title: 'Non-conformance',
           key: 'title',
           locked: true,
-          width: 300,
+          width: 260,
           render: (_, r) => (
             <div>
               <RecordLink onOpen={() => onOpen(r.id)}>{r.title}</RecordLink>
@@ -63,7 +59,7 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
             </div>
           ),
         },
-        { title: 'Severity', dataIndex: 'severity', width: 100, ...sort('severity'), render: (v: NcrSeverity) => <SeverityTag severity={v} /> },
+        { key: 'actionByName', title: 'Action by', dataIndex: 'actionByName', width: 150, render: (v: string | null) => v ?? <Sub>-</Sub> },
         {
           title: 'Due',
           dataIndex: 'dueDate',
@@ -71,7 +67,11 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
           ...sort('dueDate'),
           render: (v: string | null, r) => (v ? <Typography.Text type={r.overdue ? 'danger' : undefined}>{formatDate(v)}</Typography.Text> : <Sub>-</Sub>),
         },
-        { key: 'actionByName', title: 'Action by', dataIndex: 'actionByName', width: 150, render: (v: string | null) => v ?? <Sub>-</Sub> },
+        { title: 'Severity', dataIndex: 'severity', width: 100, ...sort('severity'), render: (v: NcrSeverity) => <SeverityTag severity={v} /> },
+        ...(fixedProject
+          ? []
+          : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: NcrDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> } satisfies ListColumn<NcrDto>]),
+        { title: 'Raised', dataIndex: 'raisedOn', width: 110, defaultFrom: 1600, render: (v) => formatDate(v), ...sort('raisedOn') },
         { title: 'Status', dataIndex: 'status', fixed: 'right' as const, width: 120, ...sort('status'), render: (v: NcrStatus) => <NcrStatusTag status={v} /> },
       ];
     },

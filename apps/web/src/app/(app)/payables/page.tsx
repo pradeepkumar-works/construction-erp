@@ -306,8 +306,6 @@ export default function PayablesPage() {
         </div>
       ),
     },
-    { key: 'payable', title: 'Payable', dataIndex: 'payable', width: 130, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.payable)) },
-    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 120, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.paid)) },
     { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 140, kind: 'money', strong: true, total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
     {
       key: 'dueDate',
@@ -342,6 +340,8 @@ export default function PayablesPage() {
           <span className="text-muted">{NO_VALUE}</span>
         ),
     },
+    { key: 'payable', title: 'Payable', dataIndex: 'payable', width: 130, defaultFrom: 1600, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.payable)) },
+    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 120, defaultFrom: 1600, kind: 'money', total: (rows) => sumMoney(rows.map((r) => r.paid)) },
     ...(accounts || requester
       ? [
           {

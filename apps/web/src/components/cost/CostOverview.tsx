@@ -2,13 +2,12 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Space, Statistic, Table, Typography } from 'antd';
+import { Button, Space, Statistic, Typography } from 'antd';
 import { TeamOutlined } from '@/components/common/icons';
-import type { TableProps } from 'antd';
 import type { ProjectCostSummaryDto } from '@erp/shared';
 import { PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useCostSummary } from '@/lib/queries';
-import { formatINR, formatPct, toNumber, NO_VALUE } from '@/lib/format';
+import { formatINR, toNumber } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -19,6 +18,10 @@ import { UnpricedNote, unpricedText } from './UnpricedNote';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { Money } from '@/components/common/Money';
+import { LocalDataTable } from '@/components/list/LocalDataTable';
+import type { ListColumn } from '@/components/list/DataTable';
+
+type CostRow = ProjectCostSummaryDto & { id: string };
 
 
 const EXPORT: ExportColumn<ProjectCostSummaryDto>[] = [
@@ -48,17 +51,20 @@ export function CostOverview() {
   const [ratesOpen, setRatesOpen] = useState(false);
   const params = periodParams(period);
   const { data, isLoading, isFetching, error, refetch } = useCostSummary(params);
-  const rows = useMemo(() => data ?? [], [data]);
+  const rows = useMemo<CostRow[]>(() => (data ?? []).map((r) => ({ ...r, id: r.projectId })), [data]);
   const totals = useMemo(() => {
     const sum = (f: (r: ProjectCostSummaryDto) => string) => rows.reduce((s, r) => s + toNumber(f(r)), 0);
     return { executed: sum((r) => r.executedValue), measured: sum((r) => r.measuredValue), cost: sum((r) => r.cost.total), margin: sum((r) => r.margin), billed: sum((r) => r.billedValue), cashIn: sum((r) => r.cashIn), cashOut: sum((r) => r.cashOut) };
   }, [rows]);
   const scale = Math.max(1, ...rows.map((r) => toNumber(r.cost.total)));
 
-  const columns: TableProps<ProjectCostSummaryDto>['columns'] = [
+  const columns: ListColumn<CostRow>[] = [
     {
+      key: 'project',
       title: 'Project',
       dataIndex: 'projectName',
+      locked: true,
+      card: 'title',
       render: (v, r) => (
         <div>
           <Link href={`/projects/${r.projectId}?tab=cost`}>{v}</Link>
@@ -68,12 +74,11 @@ export function CostOverview() {
         </div>
       ),
     },
-    { title: 'Work done', dataIndex: 'executedValue', width: 140, align: 'right', render: (v) => <Money value={v} />, sorter: (a, b) => toNumber(a.executedValue) - toNumber(b.executedValue) },
-    { title: 'Measured (MB)', dataIndex: 'measuredValue', width: 130, align: 'right', render: (v) => <Money value={v} /> },
+    { key: 'executedValue', title: 'Work done', dataIndex: 'executedValue', width: 140, kind: 'money', sorter: (a, b) => toNumber(a.executedValue) - toNumber(b.executedValue) },
     {
       title: 'Cost',
       key: 'cost',
-      width: 260,
+      width: 240,
       sorter: (a, b) => toNumber(a.cost.total) - toNumber(b.cost.total),
       render: (_, r) => (
         <div>
@@ -86,17 +91,21 @@ export function CostOverview() {
       ),
     },
     {
+      key: 'margin',
       title: 'Margin',
       dataIndex: 'margin',
       width: 140,
-      align: 'right',
+      kind: 'money',
+      strong: true,
+      card: 'amount',
+      tone: (r) => (toNumber(r.margin) < 0 ? 'danger' : 'success'),
       sorter: (a, b) => toNumber(a.margin) - toNumber(b.margin),
-      render: (v) => <Money value={v} tone={toNumber(v) < 0 ? 'danger' : 'success'} />,
     },
-    { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: (v) => <Money value={v} />, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
-    { title: 'Money in', dataIndex: 'cashIn', width: 130, align: 'right', render: (v) => <Money value={v} />, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
-    { title: 'Money out', dataIndex: 'cashOut', width: 130, align: 'right', render: (v) => <Money value={v} />, sorter: (a, b) => toNumber(a.cashOut) - toNumber(b.cashOut) },
-    { title: 'Cost %', dataIndex: 'costPct', width: 90, align: 'right', render: (v: number | null) => (v === null ? <span className="text-muted">{NO_VALUE}</span> : formatPct(v)), sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },
+    { key: 'costPct', title: 'Cost %', dataIndex: 'costPct', width: 90, kind: 'pct', sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },
+    { key: 'cashIn', title: 'Money in', dataIndex: 'cashIn', width: 130, kind: 'money', sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
+    { key: 'cashOut', title: 'Money out', dataIndex: 'cashOut', width: 130, kind: 'money', sorter: (a, b) => toNumber(a.cashOut) - toNumber(b.cashOut) },
+    { key: 'billedValue', title: 'Billed', dataIndex: 'billedValue', width: 130, defaultFrom: 1600, kind: 'money', sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
+    { key: 'measuredValue', title: 'Measured (MB)', dataIndex: 'measuredValue', width: 130, defaultFrom: 1600, kind: 'money' },
   ];
 
   return (
@@ -128,7 +137,7 @@ export function CostOverview() {
           <CostLegend />
         </div>
       </CardToolbar>
-      <Table<ProjectCostSummaryDto> rowKey="projectId" size="middle" loading={isLoading || isFetching} columns={columns} dataSource={rows} pagination={false} scroll={{ x: 1390 }} />
+      <LocalDataTable<CostRow> list="cost-overview" columns={columns} rows={rows} loading={isLoading || isFetching} failed={!!error} emptyText="No project has cost in this period" />
       <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), padding: '8px 16px 0' }}>
         {periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate, attendance at the
         trade&apos;s daily rate and the work value of approved subcontractor bills (their gangs and the material they were charged for are not counted

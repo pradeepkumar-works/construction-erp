@@ -36,7 +36,7 @@ export function riskColumns({
     ...(showProject
       ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: RiskDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> } satisfies ListColumn<RiskDto>]
       : []),
-    { title: 'Type', dataIndex: 'kind', width: 80, ...sort('kind'), render: (k) => <KindTag kind={k} /> },
+    { title: 'Type', dataIndex: 'kind', width: 80, defaultFrom: 1440, ...sort('kind'), render: (k) => <KindTag kind={k} /> },
     {
       title: 'Delay / risk',
       label: 'Delay or risk',
@@ -71,11 +71,12 @@ export function riskColumns({
         ),
     },
     { title: 'Category', dataIndex: 'category', width: 170, defaultHidden: true, ...sort('category'), render: (v: RiskDto['category']) => RISK_CATEGORY_LABELS[v] },
-    { title: 'Owner', dataIndex: 'ownerName', width: 150, ...sort('owner'), render: (v) => v ?? <Sub>-</Sub> },
+    { title: 'Owner', dataIndex: 'ownerName', width: 150, defaultFrom: 1600, ...sort('owner'), render: (v) => v ?? <Sub>-</Sub> },
     {
       title: 'Due',
       dataIndex: 'dueDate',
       width: 120,
+      defaultFrom: 1440,
       ...sort('dueDate'),
       render: (v, r) =>
         v ? (
