@@ -122,7 +122,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
                       {data.projectsWithoutBudget.map((p, i) => (
                         <React.Fragment key={p.projectId}>
                           {i ? ', ' : ''}
-                          <Link href={`/projects/${p.projectId}?tab=budget`}>{p.projectCode}</Link>
+                          <Link className="text-link" href={`/projects/${p.projectId}?tab=budget`}>{p.projectCode}</Link>
                         </React.Fragment>
                       ))}
                       .
@@ -134,7 +134,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
                       {data.projectsWithoutEndDate.map((p, i) => (
                         <React.Fragment key={p.projectId}>
                           {i ? ', ' : ''}
-                          <Link href={`/projects/${p.projectId}?tab=contract`}>{p.projectCode}</Link>
+                          <Link className="text-link" href={`/projects/${p.projectId}?tab=contract`}>{p.projectCode}</Link>
                         </React.Fragment>
                       ))}
                       .

@@ -67,6 +67,14 @@ function OpenSummary({ rows }: { rows: WarningDto[] }) {
   );
 }
 
+/** A warning's title without the project it opens with, since the row names its project in its own column. */
+function withoutProject(w: WarningDto): string {
+  const lead = w.projectName ? `${w.projectName}: ` : '';
+  if (!lead || !w.title.startsWith(lead)) return w.title;
+  const rest = w.title.slice(lead.length);
+  return rest.charAt(0).toUpperCase() + rest.slice(1);
+}
+
 /**
  * One row a warning, in the order the API gives (`rankWaiting`: rupees at stake, then days late, then the kinds' order).
  * A row opens the warning's card in a drawer; its ⋯ menu shows the working, dismisses or restores.
@@ -74,7 +82,7 @@ function OpenSummary({ rows }: { rows: WarningDto[] }) {
 function WarningTable({ list, rows, empty, dismissed, onOpen, actions }: { list: string; rows: WarningDto[]; empty: string; dismissed?: boolean; onOpen: (key: string) => void; actions: (w: WarningDto) => RecordMenuAction[] }) {
   const columns: ListColumn<WarningRow>[] = [
     { key: 'kind', title: 'Kind', width: 220, defaultFrom: 1200, card: 'status', render: (_, w) => <AppTag variant="kind">{WARNING_KIND_LABELS[w.kind]}</AppTag> },
-    { key: 'title', title: 'Warning', locked: true, card: 'title', ellipsis: true, render: (_, w) => <span data-warning-row={w.key}>{w.title}</span> },
+    { key: 'title', title: 'Warning', locked: true, card: 'title', ellipsis: true, render: (_, w) => <span data-warning-row={w.key}>{withoutProject(w)}</span> },
     {
       key: 'project',
       title: 'Project',

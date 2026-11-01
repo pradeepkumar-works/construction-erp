@@ -834,6 +834,10 @@ a.text-link {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+/* Inside an alert the link takes the alert's own text colour, which holds AA on every alert's tint; the underline marks it. */
+.ant-alert a.text-link:not(.ant-btn):not(.ant-typography) {
+  color: inherit;
+}
 .ant-table-cell a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
 .ant-descriptions-item-content a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
 .ant-card-extra a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
