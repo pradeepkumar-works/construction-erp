@@ -44,6 +44,10 @@ const RETIRED_FOR: Retired[] = [
   { r: 'Received', thing: 'An inward letter', name: 'Inward', maps: ['LETTER_DIRECTION_LABELS'] },
   { r: 'Sent', thing: 'An outward letter', name: 'Outward', maps: ['LETTER_DIRECTION_LABELS'] },
   { r: 'Waiting for approval', thing: 'A letter waiting for its signatory', name: 'Waiting for signature', maps: ['LETTER_STATUS_LABELS'] },
+  // One figure, one name (ARCHITECTURE "Headline figures"): right as page names, never as a figure's.
+  { r: 'Outstanding', thing: 'What clients or vendors are owed', name: 'Clients owe; We owe', maps: ['FIGURE_LABELS'] },
+  { r: 'Receivables', thing: 'What clients owe', name: 'Clients owe', maps: ['FIGURE_LABELS'] },
+  { r: 'Vendor payable', thing: 'What the company owes vendors', name: 'We owe', maps: ['FIGURE_LABELS'] },
 ];
 RETIRED.push(...RETIRED_FOR);
 

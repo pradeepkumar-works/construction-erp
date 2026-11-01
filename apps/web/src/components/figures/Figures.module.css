@@ -1,0 +1,108 @@
+/*
+ * The headline figures' grid (ARCHITECTURE "Headline figures"). Each cell's spans and inner hairlines at the three widths
+ * come from the presenter as custom properties and data attributes, so the layout renders on the server and every row
+ * is full. Below 576 px two to a row, then four, then one row of them all.
+ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--fig-cols-p), minmax(0, 1fr));
+  margin: 0;
+}
+
+.cell {
+  position: relative;
+  grid-column: span var(--fig-span-p);
+  min-width: 0;
+  padding: var(--s-3) var(--s-4);
+}
+
+.cell[data-p~='l'] {
+  border-inline-start: thin solid var(--c-line-hairline);
+}
+
+.cell[data-p~='t'] {
+  border-block-start: thin solid var(--c-line-hairline);
+}
+
+@media (min-width: 576px) {
+  .grid {
+    grid-template-columns: repeat(var(--fig-cols-m), minmax(0, 1fr));
+  }
+  .cell {
+    grid-column: span var(--fig-span-m);
+    border-inline-start: 0;
+    border-block-start: 0;
+  }
+  .cell[data-m~='l'] {
+    border-inline-start: thin solid var(--c-line-hairline);
+  }
+  .cell[data-m~='t'] {
+    border-block-start: thin solid var(--c-line-hairline);
+  }
+}
+
+@media (min-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(var(--fig-cols-w), minmax(0, 1fr));
+  }
+  .cell {
+    grid-column: span var(--fig-span-w);
+    border-inline-start: 0;
+    border-block-start: 0;
+  }
+  .cell[data-w~='l'] {
+    border-inline-start: thin solid var(--c-line-hairline);
+  }
+  .cell[data-w~='t'] {
+    border-block-start: thin solid var(--c-line-hairline);
+  }
+}
+
+.label,
+.value,
+.note {
+  margin: 0;
+}
+
+.value,
+.note {
+  margin-block-start: var(--s-1);
+}
+
+.value {
+  white-space: nowrap;
+}
+
+/* The label's link covers the whole cell, so the figure opens its list wherever it is pressed. */
+.link {
+  color: inherit;
+}
+
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.cell:has(.link):hover {
+  background: var(--c-state-row-hover);
+}
+
+.link:focus-visible {
+  outline: none;
+}
+
+.link:focus-visible::after {
+  outline: var(--s-half) solid var(--c-line-focus);
+  outline-offset: calc(-1 * var(--s-half));
+}
+
+.clear {
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+  color: var(--c-text-muted);
+}
+
+.grid + .clear {
+  border-block-start: thin solid var(--c-line-hairline);
+}

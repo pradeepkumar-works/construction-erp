@@ -56,8 +56,8 @@ test('accounts lead with money due and see cash flow', async ({ page }) => {
   const mine = page.locator('.ant-card').filter({ has: page.getByText('My work', { exact: true }) });
   await expect(mine.getByRole('region').first()).toHaveAccessibleName('Payments due this week');
   await expect(section(page, 'Bills waiting for payment')).toContainText(String(work.receivables!.count));
-  await expect(page.getByText('Vendor payable', { exact: true })).toBeVisible();
-  await expect(page.getByText(/^Received in [A-Z][a-z]{2,3}$/)).toBeVisible();
+  await expect(page.getByText('We owe', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Money received in [A-Z][a-z]{2,3}$/)).toBeVisible();
   await expect(page.getByText(/^Cost in [A-Z][a-z]{2,3}$/)).toBeVisible();
   await expect(page.getByRole('img', { name: /^Cash in and out\. / })).toBeVisible();
   await expect(page.getByRole('img', { name: /^Cost by head\. / })).toBeVisible();
@@ -79,8 +79,8 @@ test('a project manager sees approvals, missing DPRs and the progress curve', as
   else await expect(page.getByText(/^Nothing else waiting: .*\bDPRs\b/)).toBeVisible();
   await expect(page.getByText(/^Work done in [A-Z][a-z]{2,3}$/)).toBeVisible();
   // The approvals tile gave way to progress against plan: done against planned, not a lone number.
-  await expect(page.getByText('Progress against plan', { exact: true })).toBeVisible();
-  await expect(page.locator('.figure-cell').filter({ hasText: 'Progress against plan' })).toContainText(/\d+(\.\d)?% planned by now/);
+  await expect(page.getByText('Physical progress', { exact: true })).toBeVisible();
+  await expect(page.locator('.figure-cell').filter({ hasText: 'Physical progress' })).toContainText(/\d+(\.\d)?% planned by now/);
   await expect(page.getByRole('img', { name: /^Planned against actual progress\. / })).toBeVisible();
 });
 
@@ -136,16 +136,19 @@ test('a month with nothing billed yet says so in words, with no trend', async ({
   const token = await apiToken('md@demo.com');
   const trends = await api<Trends>(token, '/dashboard/trends');
   const month = monthName(trends.months[trends.months.length - 1]);
+  const before = monthName(trends.months[trends.months.length - 2]);
+  // A zero is a muted ₹ 0 that says what last month was, never a full-weight figure or a percentage.
+  const zero = /₹\s0(?![.,\d])/;
 
   await signIn(page, 'md@demo.com');
   await page.goto('/my-work');
   const billed = page.locator('.figure-cell').filter({ hasText: `Billed in ${month}` });
-  await expect(billed).toContainText('None yet');
+  await expect(billed).toContainText(zero);
   await expect(billed).not.toContainText('%');
   await expect(billed).not.toContainText('down');
-  await expect(billed).toContainText(/ in [A-Z][a-z]{2,3}$/);
-  const received = page.locator('.figure-cell').filter({ hasText: `Received in ${month}` });
-  await expect(received).toContainText('None yet');
+  await expect(billed).toContainText(` in ${before}`);
+  const received = page.locator('.figure-cell').filter({ hasText: `Money received in ${month}` });
+  await expect(received).toContainText(zero);
   await expect(received).not.toContainText('%');
   // A chart of nothing but zeros says so, and what will appear there.
   const cash = page.locator('.ant-card').filter({ has: page.getByText('Cash in and out', { exact: true }) });
@@ -163,9 +166,9 @@ test('a site engineer sees no money', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   await page.goto('/my-work');
   await expect(page.locator('.ant-card').filter({ has: page.getByText('My work', { exact: true }) }).first()).toBeVisible();
-  await expect(page.getByText('Delayed activities', { exact: true })).toBeVisible();
-  await expect(page.locator('.figure-cell').filter({ hasText: 'Delayed activities' })).toContainText(/due to finish by today|None was due/);
-  await expect(page.getByText('Vendor payable')).toHaveCount(0);
+  // Delayed activities is a figure while any is late, else a word in the strip's quiet line.
+  await expect(page.getByRole('region', { name: 'Key figures' })).toContainText(/Delayed activities.*due to finish by today|No activity delayed/);
+  await expect(page.getByText('We owe', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Bills waiting for payment')).toHaveCount(0);
   await expect(page.getByRole('img', { name: /^Cash in and out\. / })).toHaveCount(0);
 });

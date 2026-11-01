@@ -196,6 +196,34 @@ This month), and the API's month defaults (MIS, quality report, leakage) call th
 agree. The watch list's leakage warnings read the same month, so they match the Leakage checks page. A history note writes money with `inr` and days with `formatDay`, never a raw number or an ISO date.
 `src/scripts/reporting-period-test.ts` (CI) holds both.
 
+### Headline figures
+
+The three to six numbers at the top of a dashboard or report are one block, so one company figure has one name, one
+look and one rule for what stands out. Three parts, all in `@erp/shared` but the last:
+
+- **`MEASURES`** (`figures/measures.ts`) is the registry: each figure's name, kind (money, count, %, quantity, days),
+  which way is good, its definition, the list it opens, and either a flag (above zero it needs a look; at zero it folds
+  into one quiet line, in its own `clear` words) or a limit (a margin below zero). A margin below zero reads by its
+  `negativeLabel` ("Loss to date") with the amount above zero. `FIGURE_LABELS` is derived from it, so copy-check holds the
+  names to WRITING.md and retires "Outstanding", "Receivables" and "Vendor payable" as figure names.
+- **`figure(id, value, opts)`** states facts only: the value (a Decimal string or a number, or `{ none: reason }`), its
+  period (`when`), a count behind it, and at most one comparison (`was` last period, `plan`, `of` a whole, `part` that
+  matters, `trend` of months). A verdict from a domain rule comes with its reason in words (`unbilledAttention` for work
+  not billed). The API sends the same objects: `ManagementReportDto.figures` is `Figure[]`.
+- **`presentFigures(facts, { today, scope, currency })`** is pure and does the rest: one money unit across the values from
+  the largest (a note keeps its own), every word twice (shown, and spoken: "crore", "September", "minus"), each figure's
+  state (act, watch, calm, or quiet for a zero or no value), flag figures at zero folded into one line, the lead (the
+  figure that most needs action, money first, then the larger amount; none on a calm day) and the grid spans at two,
+  four and all columns so no row is ragged. It throws in development past `MAX_FIGURES` (6).
+
+On the web `<Figures label figures scope currency bare>` (`components/figures/`) draws the view on `tk` tokens: a `dl`, the
+lead first and two columns wide, danger for act, pending for watch, muted for quiet, never a success colour; the label
+links to the measure's list with the scope's filters and carries its definition as help; the value sits in
+`<data value>` with its spoken words in `.visually-hidden`. The management report's print and Excel read the same
+`presentFigures` view, so the page, the paper and the sheet say the same words. The management dashboard, the
+management reports and My work use it; the module, department and project progress screens, one project's management
+page and the watch list's other checks still use `FigureStrip` until they move. `src/scripts/figures-test.ts` (CI) holds the registry and the presenter.
+
 ### Launcher Home, pins and Recent (launcher phase 2)
 
 Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search

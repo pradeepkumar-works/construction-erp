@@ -1,4 +1,4 @@
-import type { ManagementReportDto, ReportSectionDto } from '@erp/shared';
+import { presentFigures, type FiguresView, type FigureView, type ManagementReportDto, type ReportSectionDto } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { formatDateTime } from '@/lib/format';
 import { exportFileName, downloadWorkbook, workbookSheet, type ExportColumn } from '@/lib/exportExcel';
@@ -30,12 +30,19 @@ function sectionHtml(s: ReportSectionDto) {
   return `<h2>${esc(s.title)}</h2>${s.note ? `<p class="note">${esc(s.note)}</p>` : ''}<table><thead><tr>${head}</tr></thead><tbody>${body}${total}</tbody></table>`;
 }
 
+/** The report's figures as the page words them: the lead first, then the rest, then the quiet line. */
+const figuresOf = (r: ManagementReportDto): { view: FiguresView; cells: FigureView[] } => {
+  const view = presentFigures(r.figures, { today: r.to });
+  return { view, cells: view.lead ? [view.lead, ...view.rest] : [...view.rest] };
+};
+
 export function buildManagementReportHtml(r: ManagementReportDto, organizationName: string, autoPrint = false) {
   const wide = r.sections.some((s) => s.columns.length > 8);
-  const figures = r.figures
+  const { view, cells } = figuresOf(r);
+  const figures = cells
     .map(
       (f) =>
-        `<div class="fig"><b>${esc(f.label)}</b><span class="${isNegative(f.kind, f.value) ? 'neg' : ''}">${esc(cellText(f.kind, f.value, true))}</span>${f.note ? `<small>${esc(f.note)}</small>` : ''}</div>`,
+        `<div class="fig${f === view.lead ? ' lead' : ''}"><b>${esc(f.label.text)}</b><span class="${f.state}">${esc(f.value.text)}</span>${f.note ? `<small class="${f.noteState}">${esc(f.note.text)}</small>` : ''}</div>`,
     )
     .join('');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><title>${esc(`${r.title} · ${r.period}`)}</title>${PRINT_FONT_LINKS}
@@ -57,6 +64,10 @@ export function buildManagementReportHtml(r: ManagementReportDto, organizationNa
   .fig b { display: block; font-weight: 400; color: ${BRAND.colors.muted}; font-size: 9.5px; }
   .fig span { display: block; font-size: 14px; font-weight: 700; color: ${BRAND.colors.ink}; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .fig small { display: block; color: ${BRAND.colors.muted}; font-size: 9px; }
+  .fig.lead span { font-size: 17px; }
+  .fig .act { color: ${BRAND.colors.danger}; }
+  .fig .watch { color: ${BRAND.colors.pending}; }
+  .fig span.quiet { color: ${BRAND.colors.muted}; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 4px; page-break-inside: auto; }
   thead { display: table-header-group; }
   tr { page-break-inside: avoid; }
@@ -65,7 +76,6 @@ export function buildManagementReportHtml(r: ManagementReportDto, organizationNa
   td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   tr.total td { font-weight: 700; border-top: 1px solid ${BRAND.colors.ink}; border-bottom: 0; }
   .neg { color: ${BRAND.colors.danger}; }
-  .fig span.neg { color: ${BRAND.colors.danger}; }
   .muted { color: ${BRAND.colors.muted}; }
   .commentary { font-size: 12px; line-height: 1.5; margin: 0 0 10px; color: ${BRAND.colors.ink}; }
   .notes { margin-top: 14px; color: ${BRAND.colors.muted}; }
@@ -79,6 +89,7 @@ export function buildManagementReportHtml(r: ManagementReportDto, organizationNa
   </div>
   ${r.commentary ? `<p class="commentary">${esc(r.commentary)}</p>` : ''}
   ${figures ? `<div class="figs">${figures}</div>` : ''}
+  ${view.clear ? `<p class="note">${esc(view.clear.text)}</p>` : ''}
   ${r.sections.map(sectionHtml).join('')}
   ${r.notes.length ? `<div class="notes">${r.notes.map((n) => `<p>${esc(n)}</p>`).join('')}</div>` : ''}
   ${brandFooter(esc(`${r.title}, ${r.period}`))}
@@ -100,6 +111,7 @@ type Row = Record<string, string | number | null>;
 
 /** The report as a workbook: a summary sheet (period, commentary, figures, notes) and a sheet per section with its total. */
 export async function exportManagementReport(r: ManagementReportDto) {
+  const { view, cells } = figuresOf(r);
   const summaryRows: Row[] = [
     { a: 'Report', b: r.title },
     { a: 'Period', b: r.period },
@@ -107,11 +119,12 @@ export async function exportManagementReport(r: ManagementReportDto) {
     { a: 'Made', b: formatDateTime(r.generatedAt) },
     ...(r.commentary ? [{ a: '', b: '' }, { a: r.commentary, b: '' }] : []),
     { a: '', b: '' },
-    ...r.figures.map((f) => ({
-      a: f.label,
-      b: cellExcel(f.kind, f.value),
-      c: f.note ?? '',
+    ...cells.map((f) => ({
+      a: f.label.text,
+      b: f.machine === null ? f.value.text : Number(f.machine),
+      c: f.note?.text ?? '',
     })),
+    ...(view.clear ? [{ a: view.clear.text, b: '' }] : []),
     { a: '', b: '' },
     ...r.notes.map((n) => ({ a: n, b: '' })),
   ];

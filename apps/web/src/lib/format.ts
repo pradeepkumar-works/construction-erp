@@ -1,40 +1,12 @@
 import dayjs from 'dayjs';
 import type { ContractCurrency, SubmissionStatus, MaterialPriority, NotificationType, ProjectStatus, StockEntryType } from '@erp/shared';
-import { currencySymbol, fromRupees, isForeign, toRupees } from '@erp/shared';
+import { currencySymbol, formatINR, formatINRCompact, fromRupees, isForeign, NO_VALUE, plural, toNumber, toRupees } from '@erp/shared';
 
-const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
-const inr2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const num = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
-
-export function toNumber(value: string | number | null | undefined): number {
-  if (value === null || value === undefined || value === '') return 0;
-  const n = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
-
-/** ₹ and a no-break space, so the symbol never wraps away from its figure (docs/WRITING.md). */
-export const RUPEE = '₹\u00A0';
-
-/** An empty cell or value: an en dash, so it never reads as a minus sign. */
-export const NO_VALUE = '–';
+// Moved to @erp/shared (numbers.ts), so the headline figures, print, Excel and the API read numbers the same way.
+export { formatCount, formatINR, formatINRCompact, formatPct, formatQty, inSentence, NO_VALUE, plural, RUPEE, toNumber } from '@erp/shared';
 
 /** How a month picker shows its month: "Oct 2026", as `formatMonth` writes it. */
 export const MONTH_PICKER_FORMAT = 'MMM YYYY';
-
-/** Full INR with Indian digit grouping: ₹ 18,65,00,000 */
-export function formatINR(value: string | number | null | undefined, decimals = false): string {
-  const n = toNumber(value);
-  return `${RUPEE}${decimals ? inr2.format(n) : inr.format(n)}`;
-}
-
-/** Compact INR for KPIs: ₹ 1.87 Cr / ₹ 12.5 L / ₹ 85,000 */
-export function formatINRCompact(value: string | number | null | undefined): string {
-  const n = toNumber(value);
-  const abs = Math.abs(n);
-  if (abs >= 1e7) return `${RUPEE}${(n / 1e7).toFixed(2)}\u00A0Cr`;
-  if (abs >= 1e5) return `${RUPEE}${(n / 1e5).toFixed(2)}\u00A0L`;
-  return `${RUPEE}${inr.format(n)}`;
-}
 
 const intl2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const intl0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
@@ -68,16 +40,6 @@ export function formatMoneyCompact(rupees: string | number | null | undefined, c
   return `${sym}${intl0.format(v)}`;
 }
 
-export function formatQty(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === '') return NO_VALUE;
-  return num.format(toNumber(value));
-}
-
-/** A count of things, grouped the Indian way: "1,23,456". */
-export function formatCount(value: number | null | undefined): string {
-  return value === null || value === undefined ? NO_VALUE : inr.format(value);
-}
-
 /** A file size: "820 KB", "12.4 MB". */
 export function formatBytes(value: number | null | undefined): string {
   if (value === null || value === undefined) return NO_VALUE;
@@ -89,9 +51,6 @@ export function formatBytes(value: number | null | undefined): string {
 
 /** Today as YYYY-MM-DD in India, the day the API counts by (`todayIn`), whatever the browser's own time zone. */
 export const todayDate = (): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-
-/** "1 bill", "3 bills"; `many` for a plural that is not `one` + s ("activity", "activities"). */
-export const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
 
 /** When something falls due, from the days left (negative when past): "in 1 day", "today", "3 days late". */
 export const formatDue = (days: number): string => (days < 0 ? `${plural(-days, 'day')} late` : days === 0 ? 'today' : `in ${plural(days, 'day')}`);
@@ -119,37 +78,6 @@ export function formatTime(value: string | null | undefined): string {
   if (!value) return NO_VALUE;
   const d = dayjs(value);
   return d.isValid() ? d.format('HH:mm') : value;
-}
-
-/** A label inside a sentence: "RA Bill" reads "RA bill", "Measurement (MB)" reads "measurement (MB)"; abbreviations keep their capitals. */
-export function inSentence(label: string): string {
-  return label
-    .split(' ')
-    .map((w) => (/^\(?[A-Z0-9]{2,}\)?$/.test(w) ? w : w.toLowerCase()))
-    .join(' ');
-}
-
-const pctFormats = new Map<string, Intl.NumberFormat>();
-
-/**
- * A percentage, written one way everywhere: whole numbers from 10% up, one decimal below it (2.5%, and 2%
- * rather than 2.0%), `%` without a space, `–` for none. `digits` fixes the decimals instead ({ digits: 0 } for a
- * whole number always).
- */
-export function formatPct(value: number | string | null | undefined, opts: { digits?: number } = {}): string {
-  if (value === null || value === undefined || value === '') return NO_VALUE;
-  const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(n)) return NO_VALUE;
-  const digits = opts.digits ?? (Math.abs(n) >= 9.95 ? 0 : 1);
-  const key = `${digits}:${opts.digits !== undefined}`;
-  let f = pctFormats.get(key);
-  if (!f) {
-    f = new Intl.NumberFormat('en-IN', { maximumFractionDigits: digits, minimumFractionDigits: opts.digits ?? 0 });
-    pctFormats.set(key, f);
-  }
-  // -0.04 rounds to "-0": a percentage that rounds to nothing reads 0%.
-  const text = f.format(n);
-  return `${/^-0(\.0+)?$/.test(text) ? text.slice(1) : text}%`;
 }
 
 export const STATUS_COLORS: Record<SubmissionStatus, string> = {
